@@ -118,7 +118,7 @@ class MailIntakeController extends Controller {
 			$sourceId = (string)$this->request->getParam('sourceId', '');
 		}
 
-		$source = $this->findMailbox($sourceId);
+		$source = $this->findMailbox(sourceId: $sourceId);
 		if ($source === null) {
 			return new JSONResponse(
 				['error' => $this->l->t('No mailbox source with that id.')],
@@ -143,7 +143,7 @@ class MailIntakeController extends Controller {
 		}
 
 		$parsed = $this->messageParser->parse((string)($upload['name'] ?? 'message.eml'), $raw);
-		$configuration = $this->configurationOf($source);
+		$configuration = $this->configurationOf(source: $source);
 		$casePattern = ($configuration['casePattern'] ?? null);
 		if ($casePattern !== null) {
 			$casePattern = (string)$casePattern;
@@ -186,7 +186,7 @@ class MailIntakeController extends Controller {
 
 		$this->actionAuth->requireAction(user: $user, action: self::ACTION_POLL);
 
-		$source = $this->findMailbox($id);
+		$source = $this->findMailbox(sourceId: $id);
 		if ($source === null) {
 			return new JSONResponse(
 				['error' => $this->l->t('No mailbox source with that id.')],

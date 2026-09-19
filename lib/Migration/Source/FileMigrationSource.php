@@ -99,7 +99,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 */
 	public function count(string $kind, array $config = []): array {
 		try {
-			$rows = $this->parse($this->readFile($config), $config);
+			$rows = $this->parse(content: $this->readFile(config: $config), config: $config);
 		} catch (InvalidArgumentException $e) {
 			return ['count' => 0, 'complete' => false];
 		}
@@ -118,8 +118,8 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @throws InvalidArgumentException When the mapping cannot read this file.
 	 */
 	public function read(string $kind, array $config = []): iterable {
-		$mapping = $this->mapping($config);
-		$rows = $this->parse($this->readFile($config), $config);
+		$mapping = $this->mapping(config: $config);
+		$rows = $this->parse(content: $this->readFile(config: $config), config: $config);
 		$readAt = time();
 		$identifierColumn = $mapping->getIdentifierColumn();
 
@@ -136,11 +136,11 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 			}
 
 			$records[] = new MigrationRecord(
-				$kind,
-				$mapping->apply($row),
-				self::ID,
-				$foreignId,
-				$readAt
+				kind: $kind,
+				data: $mapping->apply($row),
+				sourceId: self::ID,
+				foreignId: $foreignId,
+				readAt: $readAt
 			);
 		}
 
@@ -157,7 +157,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @return array<int,MigrationRecord> The sample.
 	 */
 	public function sample(string $kind, array $config = [], int $limit = 5): array {
-		return array_slice((array)$this->read($kind, $config), 0, max(0, $limit));
+		return array_slice((array)$this->read(kind: $kind, config: $config), 0, max(0, $limit));
 	}//end sample()
 
 	/**
@@ -170,7 +170,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @return array<int,string> The refusals, empty when the run may start.
 	 */
 	public function preflight(array $config, array $schemaFields, array $requiredFields): array {
-		$mapping = $this->mapping($config);
+		$mapping = $this->mapping(config: $config);
 
 		$refusals = array_merge(
 			$this->validator->validateTargets($mapping, $schemaFields),
@@ -179,7 +179,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 
 		$content = ($config['content'] ?? null);
 		if (is_string($content) === true) {
-			$headers = $this->headers($content, $config);
+			$headers = $this->headers(content: $content, config: $config);
 			$refusals = array_merge($refusals, $this->validator->validateColumns($mapping, $headers));
 		}
 

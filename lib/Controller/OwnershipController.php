@@ -134,7 +134,7 @@ class OwnershipController extends Controller {
 				// Written onto the object before it goes, so the statement
 				// survives in the audit trail rather than only in a log line.
 				$this->objectService->saveObject(
-					object: ([LocalDeleteGuard::OVERRIDE_KEY => $override] + $this->readObject($id, $register, $schema)),
+					object: ([LocalDeleteGuard::OVERRIDE_KEY => $override] + $this->readObject(id: $id, register: $register, schema: $schema)),
 					register: $register,
 					schema: $schema,
 					uuid: $id

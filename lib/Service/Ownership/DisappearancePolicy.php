@@ -72,7 +72,7 @@ final class DisappearancePolicy {
 		}
 
 		if (is_string($declared) === false || in_array($declared, self::ACCEPTED, true) === false) {
-			throw new InvalidArgumentException(self::refusalMessage($declared));
+			throw new InvalidArgumentException(self::refusalMessage(declared: $declared));
 		}
 
 		return $declared;
@@ -87,7 +87,7 @@ final class DisappearancePolicy {
 	 */
 	public static function isValid(array $sourceConfig): bool {
 		try {
-			self::fromSourceConfig($sourceConfig);
+			self::fromSourceConfig(sourceConfig: $sourceConfig);
 			return true;
 		} catch (InvalidArgumentException $e) {
 			return false;

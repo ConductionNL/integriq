@@ -69,13 +69,13 @@ class RecordOwnershipService {
 	 * @return OwnershipState The ownership answer. Never null, never an exception for an unknown id.
 	 */
 	public function forObject(string $targetId): OwnershipState {
-		$contract = $this->findContract($targetId);
+		$contract = $this->findContract(targetId: $targetId);
 		if ($contract === null) {
 			return OwnershipState::local();
 		}
 
-		$synchronization = $this->findSynchronization((string)($contract['synchronizationId'] ?? ''));
-		$mode = $this->readMode($synchronization);
+		$synchronization = $this->findSynchronization(synchronizationId: (string)($contract['synchronizationId'] ?? ''));
+		$mode = $this->readMode(synchronization: $synchronization);
 
 		if ($mode === OwnershipState::MODE_LOCAL) {
 			return OwnershipState::local();
@@ -186,7 +186,7 @@ class RecordOwnershipService {
 	 * @return array<string,mixed>|null The contract data.
 	 */
 	private function findContract(string $targetId): ?array {
-		return $this->findOne('synchronization_contract', ['targetId' => $targetId], 'targetId', $targetId);
+		return $this->findOne(schema: 'synchronization_contract', filters: ['targetId' => $targetId], matchKey: 'targetId', matchValue: $targetId);
 	}//end findContract()
 
 	/**
@@ -201,7 +201,7 @@ class RecordOwnershipService {
 			return null;
 		}
 
-		return $this->findOne('synchronization', ['uuid' => $synchronizationId], 'uuid', $synchronizationId);
+		return $this->findOne(schema: 'synchronization', filters: ['uuid' => $synchronizationId], matchKey: 'uuid', matchValue: $synchronizationId);
 	}//end findSynchronization()
 
 	/**

@@ -81,7 +81,7 @@ class MessageBodyReader {
 		$this->actionAuth->requireAction(user: $user, action: self::ACTION_READ_BODY);
 
 		$record = $this->recorder->read($uuid);
-		$this->recordRead($uuid, $record, $user->getUID());
+		$this->recordRead(uuid: $uuid, record: $record, actorUid: $user->getUID());
 
 		return [
 			'subject' => (string)($record['subject'] ?? ''),

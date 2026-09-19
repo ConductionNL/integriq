@@ -77,7 +77,7 @@ class UnsubscribeTokenService {
 		$payload = base64_encode($claims);
 		$payload = rtrim(strtr($payload, '+/', '-_'), '=');
 
-		return $payload . '.' . $this->sign($payload);
+		return $payload . '.' . $this->sign(payload: $payload);
 
 	}//end mint()
 
@@ -96,7 +96,7 @@ class UnsubscribeTokenService {
 		}
 
 		[$payload, $signature] = $parts;
-		if (hash_equals($this->sign($payload), $signature) === false) {
+		if (hash_equals($this->sign(payload: $payload), $signature) === false) {
 			return null;
 		}
 
@@ -127,7 +127,7 @@ class UnsubscribeTokenService {
 			return null;
 		}
 
-		return rtrim($baseUrl, '/') . '/index.php/apps/integriq/unsubscribe/' . $this->mint($address, $caseRef);
+		return rtrim($baseUrl, '/') . '/index.php/apps/integriq/unsubscribe/' . $this->mint(address: $address, caseRef: $caseRef);
 
 	}//end linkFor()
 

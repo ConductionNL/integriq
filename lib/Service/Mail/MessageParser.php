@@ -65,7 +65,7 @@ class MessageParser {
 
 			return $this->emlParser->parse($raw);
 		} catch (Throwable $exception) {
-			return $this->fallback($filename, $raw, $exception->getMessage());
+			return $this->fallback(filename: $filename, raw: $raw, reason: $exception->getMessage());
 		}
 
 	}//end parse()

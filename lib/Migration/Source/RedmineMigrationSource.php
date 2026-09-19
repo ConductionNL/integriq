@@ -188,7 +188,7 @@ class RedmineMigrationSource implements MigrationSourceAdapterInterface {
 					continue;
 				}
 
-				$records[] = $this->toRecord($kind, $definition, $row, $readAt);
+				$records[] = $this->toRecord(kind: $kind, definition: $definition, row: $row, readAt: $readAt);
 			}
 
 			$offset += count($page);
@@ -233,7 +233,7 @@ class RedmineMigrationSource implements MigrationSourceAdapterInterface {
 				continue;
 			}
 
-			$sample[] = $this->toRecord($kind, $definition, $row, $readAt);
+			$sample[] = $this->toRecord(kind: $kind, definition: $definition, row: $row, readAt: $readAt);
 			if (count($sample) >= $limit) {
 				break;
 			}
@@ -258,6 +258,6 @@ class RedmineMigrationSource implements MigrationSourceAdapterInterface {
 			$foreignId = (string)$row[$definition['identifier']];
 		}
 
-		return new MigrationRecord($kind, $row, self::ID, $foreignId, $readAt);
+		return new MigrationRecord(kind: $kind, data: $row, sourceId: self::ID, foreignId: $foreignId, readAt: $readAt);
 	}//end toRecord()
 }//end class

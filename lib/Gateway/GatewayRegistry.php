@@ -48,7 +48,7 @@ class GatewayRegistry {
 	 */
 	public function __construct(array $entries = []) {
 		foreach ($entries as $entry) {
-			$this->register($entry);
+			$this->register(entry: $entry);
 		}
 	}//end __construct()
 

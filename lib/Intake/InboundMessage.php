@@ -180,8 +180,8 @@ final class InboundMessage {
 			'externalId' => $this->externalId,
 			'correspondent' => $this->correspondent,
 			'text' => $this->text,
-			'attachments' => $this->describeFiles($this->attachments),
-			'media' => $this->describeFiles($this->media),
+			'attachments' => $this->describeFiles(files: $this->attachments),
+			'media' => $this->describeFiles(files: $this->media),
 			'location' => $this->location,
 			'fields' => $this->fields,
 			'rawPayload' => $this->rawPayload,
@@ -206,12 +206,12 @@ final class InboundMessage {
 		// statements because the coding standard allows neither `?:` nor a
 		// ternary; `location` keeps null rather than [] because "no location"
 		// and "an empty location" are different answers.
-		$correspondent = self::arrayOr(($object['correspondent'] ?? []), []);
-		$attachments = self::arrayOr(($object['attachments'] ?? null), []);
-		$media = self::arrayOr(($object['media'] ?? null), []);
-		$rawPayload = self::arrayOr(($object['rawPayload'] ?? null), []);
-		$fields = self::arrayOr(($object['fields'] ?? null), []);
-		$location = self::arrayOr(($object['location'] ?? null), null);
+		$correspondent = self::arrayOr(value: ($object['correspondent'] ?? []), fallback: []);
+		$attachments = self::arrayOr(value: ($object['attachments'] ?? null), fallback: []);
+		$media = self::arrayOr(value: ($object['media'] ?? null), fallback: []);
+		$rawPayload = self::arrayOr(value: ($object['rawPayload'] ?? null), fallback: []);
+		$fields = self::arrayOr(value: ($object['fields'] ?? null), fallback: []);
+		$location = self::arrayOr(value: ($object['location'] ?? null), fallback: null);
 
 		$receivedAt = ($object['receivedAt'] ?? null);
 		if ($receivedAt !== null) {

@@ -76,13 +76,13 @@ class MappingVersionService {
 	 * @return string The version snapshotted, empty when the mapping declares none.
 	 */
 	public function snapshot(array $mapping): string {
-		$slug = $this->slugOf($mapping);
+		$slug = $this->slugOf(mapping: $mapping);
 		$version = trim((string)($mapping['version'] ?? ''));
 		if ($slug === '' || $version === '') {
 			return '';
 		}
 
-		if ($this->find($slug, $version) !== null) {
+		if ($this->find(slug: $slug, version: $version) !== null) {
 			return $version;
 		}
 
@@ -110,7 +110,7 @@ class MappingVersionService {
 	 * @return array{recorded:string,current:string,differ:bool} What is on offer.
 	 */
 	public function choices(string $slug, string $recordedVersion): array {
-		$current = (string)($this->currentMapping($slug)['version'] ?? '');
+		$current = (string)($this->currentMapping(slug: $slug)['version'] ?? '');
 
 		return [
 			'recorded' => $recordedVersion,
@@ -139,7 +139,7 @@ class MappingVersionService {
 			$wanted = trim($requested);
 		}
 
-		$snapshot = $this->find($slug, $wanted);
+		$snapshot = $this->find(slug: $slug, version: $wanted);
 		if ($snapshot !== null) {
 			$mapping = ($snapshot['snapshot'] ?? []);
 			if (is_array($mapping) === false) {
@@ -152,7 +152,7 @@ class MappingVersionService {
 			];
 		}
 
-		$current = $this->currentMapping($slug);
+		$current = $this->currentMapping(slug: $slug);
 
 		return [
 			'version' => (string)($current['version'] ?? $wanted),
@@ -169,9 +169,9 @@ class MappingVersionService {
 	 * @return array<string,mixed> The mapping, empty when there is none.
 	 */
 	private function currentMapping(string $slug): array {
-		foreach ($this->rows(self::SCHEMA_MAPPING, ['slug' => $slug]) as $row) {
+		foreach ($this->rows(schema: self::SCHEMA_MAPPING, filters: ['slug' => $slug]) as $row) {
 			$mapping = $row->getObject();
-			if ($this->slugOf($mapping) === $slug) {
+			if ($this->slugOf(mapping: $mapping) === $slug) {
 				return $mapping;
 			}
 		}
@@ -189,7 +189,7 @@ class MappingVersionService {
 	 * @return array<string,mixed>|null The snapshot, or null.
 	 */
 	private function find(string $slug, string $version): ?array {
-		foreach ($this->rows(self::SCHEMA, ['mapping' => $slug, 'version' => $version]) as $row) {
+		foreach ($this->rows(schema: self::SCHEMA, filters: ['mapping' => $slug, 'version' => $version]) as $row) {
 			$snapshot = $row->getObject();
 			if ((string)($snapshot['mapping'] ?? '') === $slug
 				&& (string)($snapshot['version'] ?? '') === $version

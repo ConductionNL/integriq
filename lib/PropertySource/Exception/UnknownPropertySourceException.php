@@ -39,8 +39,8 @@ class UnknownPropertySourceException extends PropertySourceException {
 		}
 
 		parent::__construct(
-			$providerId,
-			sprintf(
+			providerId: $providerId,
+			message: sprintf(
 				'No property source provider is registered under the id "%s". Registered ids: %s.',
 				$providerId,
 				$knownText

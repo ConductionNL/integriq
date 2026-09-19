@@ -64,13 +64,12 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 	 */
 	public function describe(): ChannelCapabilities {
 		return new ChannelCapabilities(
-			self::CHANNEL_ID,
-			'Form submission',
-			false,
-			false,
-			true,
-			['formId', 'submissionId'],
-		);
+			channelId: self::CHANNEL_ID,
+			label: 'Form submission',
+			canReply: false,
+			supportsLocation: false,
+			supportsMedia: true,
+			fields: ['formId', 'submissionId']);
 
 	}//end describe()
 
@@ -115,22 +114,21 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 		}
 
 		return new InboundMessage(
-			self::CHANNEL_ID,
-			$submissionId,
-			[
+			channelId: self::CHANNEL_ID,
+			externalId: $submissionId,
+			correspondent: [
 				'id' => (string)($submitter['bsn'] ?? $submitter['kvk'] ?? ''),
 				'name' => (string)($submitter['name'] ?? ''),
 				'address' => (string)($submitter['email'] ?? ''),
 				'phone' => (string)($submitter['phone'] ?? ''),
 			],
-			(string)($payload['summary'] ?? ''),
-			$this->attachments($payload),
-			null,
-			[],
-			$payload,
-			$submittedAt,
-			$fields,
-		);
+			text: (string)($payload['summary'] ?? ''),
+			attachments: $this->attachments(payload: $payload),
+			location: null,
+			media: [],
+			rawPayload: $payload,
+			receivedAt: $submittedAt,
+			fields: $fields);
 
 	}//end receive()
 

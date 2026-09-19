@@ -77,9 +77,9 @@ class SubscriptionRoster {
 	 * @return void
 	 */
 	public function add(string $registryId, string $identity, string $reference = ''): void {
-		$roster = $this->identities($registryId);
+		$roster = $this->identities(registryId: $registryId);
 		$roster[$identity] = $reference;
-		$this->store($registryId, $roster);
+		$this->store(registryId: $registryId, roster: $roster);
 	}//end add()
 
 	/**
@@ -91,9 +91,9 @@ class SubscriptionRoster {
 	 * @return void
 	 */
 	public function remove(string $registryId, string $identity): void {
-		$roster = $this->identities($registryId);
+		$roster = $this->identities(registryId: $registryId);
 		unset($roster[$identity]);
-		$this->store($registryId, $roster);
+		$this->store(registryId: $registryId, roster: $roster);
 	}//end remove()
 
 	/**

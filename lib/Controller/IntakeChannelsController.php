@@ -128,7 +128,7 @@ class IntakeChannelsController extends Controller {
 		if ($configuration === null) {
 			// No source, no secret to verify against: fail closed rather than
 			// accepting an unverifiable payload on an unconfigured channel.
-			return $this->refused($channel, 'no configured channel source');
+			return $this->refused(channel: $channel, reason: 'no configured channel source');
 		}
 
 		$signature = ($configuration['webhookSignature'] ?? []);
@@ -149,7 +149,7 @@ class IntakeChannelsController extends Controller {
 		);
 
 		if ($verified === false) {
-			return $this->refused($channel, 'invalid signature');
+			return $this->refused(channel: $channel, reason: 'invalid signature');
 		}
 
 		try {

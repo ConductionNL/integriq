@@ -95,8 +95,8 @@ class PreCheckService {
 				$fixture = [];
 			}
 
-			$answer = $this->interpret($fixture);
-			$this->record($configuration, $payload, $answer, 200);
+			$answer = $this->interpret(body: $fixture);
+			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 200);
 			return $answer;
 		}
 
@@ -107,7 +107,7 @@ class PreCheckService {
 				'reason' => 'The pre-check names no system to ask.',
 				'raw' => [],
 			];
-			$this->record($configuration, $payload, $answer, 0);
+			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 0);
 			return $answer;
 		}
 
@@ -140,7 +140,7 @@ class PreCheckService {
 				'reason' => 'No answer within ' . $timeout . ' seconds: ' . $exception->getMessage(),
 				'raw' => [],
 			];
-			$this->record($configuration, $payload, $answer, 0);
+			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 0);
 			return $answer;
 		}
 
@@ -148,8 +148,8 @@ class PreCheckService {
 			$decoded = [];
 		}
 
-		$answer = $this->interpret($decoded);
-		$this->record($configuration, $payload, $answer, $statusCode);
+		$answer = $this->interpret(body: $decoded);
+		$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: $statusCode);
 
 		return $answer;
 

@@ -75,16 +75,16 @@ class DomainAlignmentChecker {
 	 * @return array<string,mixed> Per record: its state, what is published and what to publish.
 	 */
 	public function check(array $identity): array {
-		$domain = $this->domainOf((string)($identity['address'] ?? ''));
+		$domain = $this->domainOf(address: (string)($identity['address'] ?? ''));
 		$selector = trim((string)($identity['dkimSelector'] ?? 'default'));
 		$sendingHost = trim((string)($identity['sendingHost'] ?? ''));
 
 		return [
 			'domain' => $domain,
 			'checkedAt' => (new DateTimeImmutable())->format('c'),
-			'spf' => $this->checkSpf($domain, $sendingHost),
-			'dkim' => $this->checkDkim($domain, $selector),
-			'dmarc' => $this->checkDmarc($domain),
+			'spf' => $this->checkSpf(domain: $domain, sendingHost: $sendingHost),
+			'dkim' => $this->checkDkim(domain: $domain, selector: $selector),
+			'dmarc' => $this->checkDmarc(domain: $domain),
 		];
 
 	}//end check()
@@ -116,7 +116,7 @@ class DomainAlignmentChecker {
 	 * @return array<string,string> The state, what is published and what to publish.
 	 */
 	private function checkSpf(string $domain, string $sendingHost): array {
-		$published = $this->firstMatching($this->resolver->txt($domain), 'v=spf1');
+		$published = $this->firstMatching(records: $this->resolver->txt($domain), marker: 'v=spf1');
 		$include = 'include:_spf.example.org';
 		if ($sendingHost !== '') {
 			$include = 'include:' . $sendingHost;
@@ -162,7 +162,7 @@ class DomainAlignmentChecker {
 	 */
 	private function checkDkim(string $domain, string $selector): array {
 		$host = $selector . '._domainkey.' . $domain;
-		$published = $this->firstMatching($this->resolver->txt($host), 'v=DKIM1');
+		$published = $this->firstMatching(records: $this->resolver->txt($host), marker: 'v=DKIM1');
 		$suggested = $host . '. IN TXT "v=DKIM1; k=rsa; p=<the public key of the signing key>"';
 
 		if ($published === null) {
@@ -186,7 +186,7 @@ class DomainAlignmentChecker {
 	 */
 	private function checkDmarc(string $domain): array {
 		$host = '_dmarc.' . $domain;
-		$published = $this->firstMatching($this->resolver->txt($host), 'v=DMARC1');
+		$published = $this->firstMatching(records: $this->resolver->txt($host), marker: 'v=DMARC1');
 		$suggested = $host . '. IN TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@' . $domain . '"';
 
 		if ($published === null) {

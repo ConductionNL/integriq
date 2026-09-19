@@ -90,8 +90,8 @@ class MockMailboxTransport implements MailboxTransportInterface {
 				continue;
 			}
 
-			$message = $this->toMessage($entry, (int)$index);
-			if ($this->isAfterCursor($message, $cursor) === false) {
+			$message = $this->toMessage(entry: $entry, index: (int)$index);
+			if ($this->isAfterCursor(message: $message, cursor: $cursor) === false) {
 				continue;
 			}
 
@@ -142,15 +142,14 @@ class MockMailboxTransport implements MailboxTransportInterface {
 		}
 
 		return new ParsedMessage(
-			(string)($entry['messageId'] ?? ('fixture-' . $index)),
-			(string)($entry['from'] ?? ''),
-			array_map('strval', $to),
-			(string)($entry['subject'] ?? ''),
-			$receivedAt,
-			(string)($entry['bodyText'] ?? ''),
-			HtmlSanitizer::sanitize((string)($entry['bodyHtml'] ?? '')),
-			$attachments,
-		);
+			messageId: (string)($entry['messageId'] ?? ('fixture-' . $index)),
+			from: (string)($entry['from'] ?? ''),
+			to: array_map('strval', $to),
+			subject: (string)($entry['subject'] ?? ''),
+			receivedAt: $receivedAt,
+			bodyText: (string)($entry['bodyText'] ?? ''),
+			bodyHtml: HtmlSanitizer::sanitize((string)($entry['bodyHtml'] ?? '')),
+			attachments: $attachments);
 
 	}//end toMessage()
 

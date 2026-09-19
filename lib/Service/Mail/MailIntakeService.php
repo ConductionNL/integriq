@@ -131,7 +131,7 @@ class MailIntakeService {
 	 * @return ObjectEntity The stored `message` object.
 	 */
 	public function intake(string $sourceId, ParsedMessage $message, ?string $casePattern = null): ObjectEntity {
-		$existing = $this->findByMessageId($sourceId, $message->getMessageId());
+		$existing = $this->findByMessageId(sourceId: $sourceId, messageId: $message->getMessageId());
 		if ($existing !== null) {
 			return $existing;
 		}
@@ -153,20 +153,19 @@ class MailIntakeService {
 		);
 
 		$event = new MessageReceivedEvent(
-			$payload,
-			$reference,
-			(string)$stored->getUuid(),
-			$sourceId,
-		);
+			message: $payload,
+			detectedReference: $reference,
+			messageUuid: (string)$stored->getUuid(),
+			sourceId: $sourceId);
 		$this->eventDispatcher->dispatchTyped($event);
 
-		$outcome = $this->resolveStatus($event);
+		$outcome = $this->resolveStatus(event: $event);
 		$payload['status'] = $outcome;
 		$payload['outcome'] = (string)$event->getOutcome();
 		$payload['linkedObject'] = (string)$event->getObjectRef();
 
 		if ($outcome === self::STATUS_UNASSIGNED) {
-			$payload['handedToIntake'] = $this->handToIntake($message, (string)$stored->getUuid());
+			$payload['handedToIntake'] = $this->handToIntake(message: $message, messageUuid: (string)$stored->getUuid());
 		}
 
 		return $this->objectService->saveObject(

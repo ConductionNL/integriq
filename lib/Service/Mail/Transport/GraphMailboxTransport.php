@@ -113,14 +113,14 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			$query['$filter'] = 'receivedDateTime gt ' . trim($cursor);
 		}
 
-		$payload = $this->get($url, $token, $query);
+		$payload = $this->get(url: $url, token: $token, query: $query);
 		$messages = [];
 		foreach (($payload['value'] ?? []) as $raw) {
 			if (is_array($raw) === false) {
 				continue;
 			}
 
-			$messages[] = $this->toMessage($raw, $url, $token);
+			$messages[] = $this->toMessage(raw: $raw, messagesUrl: $url, token: $token);
 		}
 
 		return $messages;
@@ -149,7 +149,7 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 		$isHtml = (strtolower((string)($raw['body']['contentType'] ?? 'text')) === 'html');
 		$attachments = [];
 		if (($raw['hasAttachments'] ?? false) === true) {
-			$attachments = $this->fetchAttachments($messagesUrl, (string)($raw['id'] ?? ''), $token);
+			$attachments = $this->fetchAttachments(messagesUrl: $messagesUrl, messageId: (string)($raw['id'] ?? ''), token: $token);
 		}
 
 		$messageId = trim((string)($raw['internetMessageId'] ?? ''), " <>\t");
@@ -172,15 +172,14 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 		}
 
 		return new ParsedMessage(
-			$messageId,
-			(string)($raw['from']['emailAddress']['address'] ?? ''),
-			$recipients,
-			(string)($raw['subject'] ?? ''),
-			$receivedAt,
-			$text,
-			$html,
-			$attachments,
-		);
+			messageId: $messageId,
+			from: (string)($raw['from']['emailAddress']['address'] ?? ''),
+			to: $recipients,
+			subject: (string)($raw['subject'] ?? ''),
+			receivedAt: $receivedAt,
+			bodyText: $text,
+			bodyHtml: $html,
+			attachments: $attachments);
 
 	}//end toMessage()
 
@@ -198,7 +197,7 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			return [];
 		}
 
-		$payload = $this->get($messagesUrl . '/' . rawurlencode($messageId) . '/attachments', $token, []);
+		$payload = $this->get(url: $messagesUrl . '/' . rawurlencode($messageId) . '/attachments', token: $token, query: []);
 		$attachments = [];
 		foreach (($payload['value'] ?? []) as $raw) {
 			if (is_array($raw) === false) {

@@ -89,7 +89,7 @@ class ChannelReportingCapabilities {
 	 * @return string One of the {@see RecipientState} states.
 	 */
 	public function initialDeliveryState(string $channel): string {
-		if ($this->reportsDelivery($channel) === true) {
+		if ($this->reportsDelivery(channel: $channel) === true) {
 			return RecipientState::NOT_REPORTED;
 		}
 
@@ -105,7 +105,7 @@ class ChannelReportingCapabilities {
 	 * @return string One of the {@see RecipientState} states.
 	 */
 	public function initialReadState(string $channel): string {
-		if ($this->reportsRead($channel) === true) {
+		if ($this->reportsRead(channel: $channel) === true) {
 			return RecipientState::NOT_REPORTED;
 		}
 

@@ -83,7 +83,7 @@ class CallReplayService {
 	 */
 	public function preview(string $uuid): array {
 		$record = $this->recorder->read($uuid);
-		$request = $this->requestOf($record);
+		$request = $this->requestOf(record: $record);
 
 		return [
 			'request' => $request,
@@ -118,7 +118,7 @@ class CallReplayService {
 			$wantedVersion
 		);
 
-		$request = $this->requestOf($record);
+		$request = $this->requestOf(record: $record);
 
 		if ($dryRun === true) {
 			// A dry run writes nothing at all: no call, no attempt, no record.
@@ -148,7 +148,7 @@ class CallReplayService {
 					'mappingVersion' => $resolved['version'],
 				]
 			);
-			$this->deadLetterIfExhausted($uuid);
+			$this->deadLetterIfExhausted(uuid: $uuid);
 
 			return [
 				'call' => $uuid,
@@ -174,7 +174,7 @@ class CallReplayService {
 
 		$succeeded = ((int)$response['statusCode'] >= 200 && (int)$response['statusCode'] < 300);
 		if ($succeeded === false) {
-			$this->deadLetterIfExhausted($uuid);
+			$this->deadLetterIfExhausted(uuid: $uuid);
 		}
 
 		return [
@@ -204,7 +204,7 @@ class CallReplayService {
 		$failed = 0;
 		foreach ($uuids as $uuid) {
 			try {
-				$outcome = $this->replay((string)$uuid, $actorUid, $options);
+				$outcome = $this->replay(uuid: (string)$uuid, actorUid: $actorUid, options: $options);
 			} catch (Throwable $exception) {
 				$outcome = [
 					'call' => (string)$uuid,
@@ -325,7 +325,7 @@ class CallReplayService {
 			return false;
 		}
 
-		$deadLetterPayload = $this->requestOf($record);
+		$deadLetterPayload = $this->requestOf(record: $record);
 
 		$entry = $this->objectService->saveObject(
 			object: [

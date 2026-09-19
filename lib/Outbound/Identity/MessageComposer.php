@@ -69,7 +69,7 @@ class MessageComposer {
 			$composed .= "\n\n-- \n" . $signature;
 		}
 
-		$quoted = $this->quote($level, $history);
+		$quoted = $this->quote(level: $level, history: $history);
 		if ($quoted !== '') {
 			$composed .= "\n\n" . $quoted;
 		}

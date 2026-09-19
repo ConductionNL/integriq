@@ -95,13 +95,13 @@ class ImapMailboxTransport implements MailboxTransportInterface {
 			throw new MailboxTransportException('An IMAP mailbox needs a host and a username.');
 		}
 
-		$connection = @imap_open($this->mailboxString($configuration), $username, $password, 0, 1);
+		$connection = @imap_open($this->mailboxString(configuration: $configuration), $username, $password, 0, 1);
 		if ($connection === false) {
 			throw new MailboxTransportException('The IMAP server refused the connection or the credentials.');
 		}
 
 		try {
-			return $this->readMessages($connection, $cursor);
+			return $this->readMessages(connection: $connection, cursor: $cursor);
 		} catch (Throwable $exception) {
 			throw new MailboxTransportException('The IMAP mailbox could not be read: ' . $exception->getMessage());
 		} finally {

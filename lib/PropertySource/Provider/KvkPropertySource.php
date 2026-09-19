@@ -118,8 +118,8 @@ class KvkPropertySource implements PropertySourceProviderInterface {
 
 		if (($body['kvkNummer'] ?? null) === null && ($body['identifier'] ?? null) === null) {
 			throw new SourceUnreachableException(
-				self::ID,
-				sprintf('The kvk registry returned no record for "%s".', $identifier)
+				providerId: self::ID,
+				message: sprintf('The kvk registry returned no record for "%s".', $identifier)
 			);
 		}
 

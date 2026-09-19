@@ -110,7 +110,7 @@ class BridgeRegistry {
 			'revokedAt' => null,
 		];
 
-		$this->store($bridges);
+		$this->store(bridges: $bridges);
 		$this->logger->info('bridge.registered', ['bridge' => $bridgeId]);
 
 		return ($bridges[$bridgeId] + ['token' => $token]);
@@ -131,7 +131,7 @@ class BridgeRegistry {
 
 		$bridges[$bridgeId]['state'] = self::STATE_REVOKED;
 		$bridges[$bridgeId]['revokedAt'] = gmdate('c');
-		$this->store($bridges);
+		$this->store(bridges: $bridges);
 		$this->logger->warning('bridge.revoked', ['bridge' => $bridgeId]);
 
 		return true;

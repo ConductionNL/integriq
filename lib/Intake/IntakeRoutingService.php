@@ -128,30 +128,29 @@ class IntakeRoutingService {
 			schema: self::SCHEMA_MESSAGE,
 		);
 
-		$rule = $this->firstMatchingRule($message);
+		$rule = $this->firstMatchingRule(message: $message);
 		if ($rule === null) {
 			return $this->hold(
-				$payload,
-				(string)$stored->getUuid(),
-				'No routing rule matched channel "' . $message->getChannelId() . '".'
+				payload: $payload,
+				uuid: (string)$stored->getUuid(),
+				reason: 'No routing rule matched channel "' . $message->getChannelId() . '".'
 			);
 		}
 
 		$event = new IntakeMessageRoutedEvent(
-			$message->toObject(),
-			(string)($rule['targetSchema'] ?? ''),
-			$this->buildTargetPayload($rule, $message),
-			$this->transferableFiles($message),
-			(string)$stored->getUuid(),
-			(string)($rule['name'] ?? ''),
-		);
+			message: $message->toObject(),
+			targetSchema: (string)($rule['targetSchema'] ?? ''),
+			targetPayload: $this->buildTargetPayload(rule: $rule, message: $message),
+			files: $this->transferableFiles(message: $message),
+			messageUuid: (string)$stored->getUuid(),
+			ruleName: (string)($rule['name'] ?? ''));
 		$this->eventDispatcher->dispatchTyped($event);
 
 		if ($event->getCreatedRef() === null) {
 			return $this->hold(
-				$payload,
-				(string)$stored->getUuid(),
-				'No app opened a "' . (string)($rule['targetSchema'] ?? '') . '" for this message.'
+				payload: $payload,
+				uuid: (string)$stored->getUuid(),
+				reason: 'No app opened a "' . (string)($rule['targetSchema'] ?? '') . '" for this message.'
 			);
 		}
 
@@ -185,7 +184,7 @@ class IntakeRoutingService {
 		$result = ['routed' => 0, 'held' => 0, 'failed' => 0, 'failures' => []];
 		foreach ($messages as $message) {
 			try {
-				$stored = $this->route($message);
+				$stored = $this->route(message: $message);
 				$status = (string)($stored->getObject()['status'] ?? self::STATUS_HELD);
 				if ($status === self::STATUS_ROUTED) {
 					$result['routed']++;
@@ -196,7 +195,7 @@ class IntakeRoutingService {
 			} catch (Throwable $exception) {
 				$result['failed']++;
 				$result['failures'][] = $message->getExternalId() . ': ' . $exception->getMessage();
-				$this->captureFailure($message, $exception->getMessage());
+				$this->captureFailure(message: $message, reason: $exception->getMessage());
 			}
 		}
 
@@ -231,7 +230,7 @@ class IntakeRoutingService {
 			throw new IntakeRoutingException('A routing rule must name the case type it opens.');
 		}
 
-		$properties = $this->targetProperties($targetSchema);
+		$properties = $this->targetProperties(targetSchema: $targetSchema);
 		$mapped = ($rule['fieldMapping'] ?? []);
 		if (is_array($mapped) === false) {
 			throw new IntakeRoutingException('The field mapping must be an object of target field to source.');
@@ -305,7 +304,7 @@ class IntakeRoutingService {
 		);
 
 		foreach ($rules as $rule) {
-			if ($this->matches($rule, $message) === true) {
+			if ($this->matches(rule: $rule, message: $message) === true) {
 				return $rule;
 			}
 		}
@@ -330,7 +329,7 @@ class IntakeRoutingService {
 			return true;
 		}
 
-		$actual = $this->readSource((string)($condition['field'] ?? ''), $message);
+		$actual = $this->readSource(source: (string)($condition['field'] ?? ''), message: $message);
 		$expected = ($condition['value'] ?? null);
 
 		return match ((string)($condition['operator'] ?? 'equals')) {
@@ -360,7 +359,7 @@ class IntakeRoutingService {
 	public function buildTargetPayload(array $rule, InboundMessage $message): array {
 		$payload = [];
 		foreach (($rule['fieldMapping'] ?? []) as $targetField => $source) {
-			$value = $this->readSource((string)$source, $message);
+			$value = $this->readSource(source: (string)$source, message: $message);
 			if ($value === null) {
 				continue;
 			}

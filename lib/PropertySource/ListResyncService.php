@@ -113,7 +113,7 @@ class ListResyncService {
 	 */
 	public function resync(string $providerId, array $config = []): array {
 		$provider = $this->registry->get($providerId);
-		$previous = $this->currentList($providerId);
+		$previous = $this->currentList(providerId: $providerId);
 
 		try {
 			$fetched = $provider->suggest('', $config);
@@ -127,9 +127,9 @@ class ListResyncService {
 			);
 
 			return $this->storeReport(
-				$providerId,
-				[
-					'lastResyncAt' => $this->lastReport($providerId)['lastResyncAt'],
+				providerId: $providerId,
+				report: [
+					'lastResyncAt' => $this->lastReport(providerId: $providerId)['lastResyncAt'],
 					'changed' => 0,
 					'succeeded' => false,
 					'message' => $e->getMessage(),
@@ -138,7 +138,7 @@ class ListResyncService {
 			);
 		}//end try
 
-		$changed = $this->countChanges($previous, $fetched);
+		$changed = $this->countChanges(previous: $previous, fetched: $fetched);
 		$encodedList = json_encode($fetched);
 		if ($encodedList === false) {
 			$encodedList = '[]';
@@ -147,8 +147,8 @@ class ListResyncService {
 		$this->appConfig->setValueString(self::APP_ID, self::LIST_KEY_PREFIX . $providerId, $encodedList);
 
 		return $this->storeReport(
-			$providerId,
-			[
+			providerId: $providerId,
+			report: [
 				'lastResyncAt' => time(),
 				'changed' => $changed,
 				'succeeded' => true,

@@ -86,7 +86,7 @@ class OutboundSecurityService {
 			return $result;
 		}
 
-		$signed = $this->sign($result['payload'], $certificate, $privateKey);
+		$signed = $this->sign(message: $result['payload'], certificate: $certificate, privateKey: $privateKey);
 		if ($signed === null) {
 			$result['detail'] = 'Signing failed; the message was not sent signed.';
 			return $result;
@@ -96,13 +96,13 @@ class OutboundSecurityService {
 		$result['payload'] = $signed;
 		$result['detail'] = 'Signed.';
 
-		$recipientKey = $this->recipientKey($recipient);
+		$recipientKey = $this->recipientKey(recipient: $recipient);
 		if ($recipientKey === null) {
 			$result['detail'] = 'Signed, not encrypted: no public key is known for this recipient.';
 			return $result;
 		}
 
-		$encrypted = $this->encrypt($result['payload'], $recipientKey);
+		$encrypted = $this->encrypt(message: $result['payload'], certificate: $recipientKey);
 		if ($encrypted === null) {
 			$result['detail'] = 'Signed, not encrypted: the recipient key could not be used.';
 			return $result;
@@ -128,17 +128,17 @@ class OutboundSecurityService {
 			return ['verified' => false, 'detail' => 'This host cannot verify S/MIME signatures.'];
 		}
 
-		$input = $this->tempFile($message);
-		$signers = $this->tempFile('');
+		$input = $this->tempFile(contents: $message);
+		$signers = $this->tempFile(contents: '');
 		try {
 			$outcome = @openssl_pkcs7_verify($input, PKCS7_NOVERIFY, $signers);
 		} catch (Throwable $exception) {
-			$this->remove([$input, $signers]);
+			$this->remove(paths: [$input, $signers]);
 			return ['verified' => false, 'detail' => 'Verification failed: ' . $exception->getMessage()];
 		}
 
 		$certificates = (string)@file_get_contents($signers);
-		$this->remove([$input, $signers]);
+		$this->remove(paths: [$input, $signers]);
 
 		if ($outcome !== true) {
 			return ['verified' => false, 'detail' => 'The signature did not verify.'];
@@ -213,8 +213,8 @@ class OutboundSecurityService {
 			return null;
 		}
 
-		$input = $this->tempFile($message);
-		$output = $this->tempFile('');
+		$input = $this->tempFile(contents: $message);
+		$output = $this->tempFile(contents: '');
 		try {
 			$signed = @openssl_pkcs7_sign($input, $output, $certificate, $privateKey, []);
 		} catch (Throwable) {
@@ -225,7 +225,7 @@ class OutboundSecurityService {
 		if ($signed === true) {
 			$payload = (string)@file_get_contents($output);
 		}
-		$this->remove([$input, $output]);
+		$this->remove(paths: [$input, $output]);
 
 		if (($payload === null || $payload === '')) {
 			return null;
@@ -248,8 +248,8 @@ class OutboundSecurityService {
 			return null;
 		}
 
-		$input = $this->tempFile($message);
-		$output = $this->tempFile('');
+		$input = $this->tempFile(contents: $message);
+		$output = $this->tempFile(contents: '');
 		try {
 			$encrypted = @openssl_pkcs7_encrypt($input, $output, $certificate, []);
 		} catch (Throwable) {
@@ -260,7 +260,7 @@ class OutboundSecurityService {
 		if ($encrypted === true) {
 			$payload = (string)@file_get_contents($output);
 		}
-		$this->remove([$input, $output]);
+		$this->remove(paths: [$input, $output]);
 
 		if (($payload === null || $payload === '')) {
 			return null;

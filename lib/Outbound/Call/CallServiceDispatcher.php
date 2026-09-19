@@ -67,7 +67,7 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 	 * @throws CallDispatchException When the target is unknown or the engine refused outright.
 	 */
 	public function dispatch(string $target, array $request): array {
-		$source = $this->source($target);
+		$source = $this->source(target: $target);
 
 		$config = [];
 		foreach (['headers', 'query', 'body'] as $key) {

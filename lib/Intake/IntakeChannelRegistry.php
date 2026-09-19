@@ -55,7 +55,7 @@ class IntakeChannelRegistry {
 		array $adapters = [],
 	) {
 		foreach ($adapters as $adapter) {
-			$this->register($adapter);
+			$this->register(adapter: $adapter);
 		}
 
 	}//end __construct()

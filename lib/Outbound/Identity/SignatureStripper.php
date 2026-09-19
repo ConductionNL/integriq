@@ -66,8 +66,8 @@ class SignatureStripper {
 		$normalised = str_replace(["\r\n", "\r"], "\n", $message);
 		$lines = explode("\n", $normalised);
 
-		$cut = $this->signatureCut($lines);
-		$disclaimerCut = $this->disclaimerCut($lines);
+		$cut = $this->signatureCut(lines: $lines);
+		$disclaimerCut = $this->disclaimerCut(lines: $lines);
 		if ($disclaimerCut !== null && ($cut === null || $disclaimerCut < $cut)) {
 			$cut = $disclaimerCut;
 		}

@@ -129,7 +129,7 @@ final class CompoundFileReader {
 	 * @throws MessageParseException When the bytes are not a readable compound file.
 	 */
 	public function __construct(private readonly string $raw) {
-		if (self::isCompoundFile($raw) === false) {
+		if (self::isCompoundFile(raw: $raw) === false) {
 			throw new MessageParseException('Not a compound file: the MS-CFB signature is missing.');
 		}
 
@@ -137,9 +137,9 @@ final class CompoundFileReader {
 			throw new MessageParseException('Truncated compound file: the header is incomplete.');
 		}
 
-		$this->sectorSize = (1 << $this->uint16(30));
-		$this->miniSectorSize = (1 << $this->uint16(32));
-		$this->miniCutoff = $this->uint32(56);
+		$this->sectorSize = (1 << $this->uint16(offset: 30));
+		$this->miniSectorSize = (1 << $this->uint16(offset: 32));
+		$this->miniCutoff = $this->uint32(offset: 56);
 
 		if ($this->sectorSize < 128 || $this->miniSectorSize < 16) {
 			throw new MessageParseException('Unsupported compound file: implausible sector size.');
@@ -190,7 +190,7 @@ final class CompoundFileReader {
 		}
 
 		$children = [];
-		$this->collectSiblings((int)$entry['child'], $children, []);
+		$this->collectSiblings(entryId: (int)$entry['child'], collected: $children, seen: []);
 		return $children;
 
 	}//end getChildren()
@@ -218,15 +218,15 @@ final class CompoundFileReader {
 
 		if ($entryId !== 0 && $size < $this->miniCutoff) {
 			return $this->readChain(
-				$start,
-				$size,
-				$this->miniFat,
-				$this->miniSectorSize,
-				$this->readMiniStream()
+				start: $start,
+				size: $size,
+				table: $this->miniFat,
+				sectorSize: $this->miniSectorSize,
+				container: $this->readMiniStream()
 			);
 		}
 
-		return $this->readChain($start, $size, $this->fat, $this->sectorSize, null);
+		return $this->readChain(start: $start, size: $size, table: $this->fat, sectorSize: $this->sectorSize, container: null);
 
 	}//end readStream()
 
@@ -273,7 +273,7 @@ final class CompoundFileReader {
 	private function readFat(): void {
 		$fatSectors = [];
 		for ($index = 0; $index < 109; $index++) {
-			$sector = $this->uint32((76 + ($index * 4)));
+			$sector = $this->uint32(offset: (76 + ($index * 4)));
 			if ($sector === self::END_OF_CHAIN || $sector === 0xFFFFFFFF) {
 				continue;
 			}
@@ -281,13 +281,13 @@ final class CompoundFileReader {
 			$fatSectors[] = $sector;
 		}
 
-		$difatSector = $this->uint32(68);
+		$difatSector = $this->uint32(offset: 68);
 		$perSector = (int)(($this->sectorSize / 4) - 1);
 		$guard = 1024;
 		while ($difatSector !== self::END_OF_CHAIN && $difatSector !== 0xFFFFFFFF && $guard > 0) {
 			$base = (($difatSector + 1) * $this->sectorSize);
 			for ($index = 0; $index < $perSector; $index++) {
-				$sector = $this->uint32(($base + ($index * 4)));
+				$sector = $this->uint32(offset: ($base + ($index * 4)));
 				if ($sector === self::END_OF_CHAIN || $sector === 0xFFFFFFFF) {
 					continue;
 				}
@@ -295,14 +295,14 @@ final class CompoundFileReader {
 				$fatSectors[] = $sector;
 			}
 
-			$difatSector = $this->uint32(($base + ($perSector * 4)));
+			$difatSector = $this->uint32(offset: ($base + ($perSector * 4)));
 			$guard--;
 		}
 
 		foreach ($fatSectors as $fatSector) {
 			$base = (($fatSector + 1) * $this->sectorSize);
 			for ($index = 0; $index < ($this->sectorSize / 4); $index++) {
-				$this->fat[] = $this->uint32(($base + ($index * 4)));
+				$this->fat[] = $this->uint32(offset: ($base + ($index * 4)));
 			}
 		}
 
@@ -314,17 +314,17 @@ final class CompoundFileReader {
 	 * @return void
 	 */
 	private function readMiniFat(): void {
-		$count = $this->uint32(64);
+		$count = $this->uint32(offset: 64);
 		if ($count === 0) {
 			return;
 		}
 
 		$raw = $this->readChain(
-			$this->uint32(60),
-			($count * $this->sectorSize),
-			$this->fat,
-			$this->sectorSize,
-			null
+			start: $this->uint32(offset: 60),
+			size: ($count * $this->sectorSize),
+			table: $this->fat,
+			sectorSize: $this->sectorSize,
+			container: null
 		);
 		for ($offset = 0; ($offset + 4) <= strlen($raw); $offset += 4) {
 			$unpacked = unpack('V', substr($raw, $offset, 4));
@@ -341,7 +341,7 @@ final class CompoundFileReader {
 	 * @throws MessageParseException When the directory chain holds no root entry.
 	 */
 	private function readDirectory(): void {
-		$raw = $this->readChain($this->uint32(48), PHP_INT_MAX, $this->fat, $this->sectorSize, null);
+		$raw = $this->readChain(start: $this->uint32(offset: 48), size: PHP_INT_MAX, table: $this->fat, sectorSize: $this->sectorSize, container: null);
 		$count = (int)floor(strlen($raw) / 128);
 		for ($index = 0; $index < $count; $index++) {
 			$base = ($index * 128);
@@ -375,9 +375,9 @@ final class CompoundFileReader {
 				'type' => $type,
 				'size' => (int)(unpack('V', substr($raw, ($base + 120), 4))[1] ?? 0),
 				'start' => (int)(unpack('V', substr($raw, ($base + 116), 4))[1] ?? self::END_OF_CHAIN),
-				'left' => $this->directoryId($raw, ($base + 68)),
-				'right' => $this->directoryId($raw, ($base + 72)),
-				'child' => $this->directoryId($raw, ($base + 76)),
+				'left' => $this->directoryId(raw: $raw, offset: ($base + 68)),
+				'right' => $this->directoryId(raw: $raw, offset: ($base + 72)),
+				'child' => $this->directoryId(raw: $raw, offset: ($base + 76)),
 			];
 		}
 
@@ -421,8 +421,8 @@ final class CompoundFileReader {
 
 		$seen[$entryId] = true;
 		$collected[] = $entryId;
-		$this->collectSiblings((int)$this->entries[$entryId]['left'], $collected, $seen);
-		$this->collectSiblings((int)$this->entries[$entryId]['right'], $collected, $seen);
+		$this->collectSiblings(entryId: (int)$this->entries[$entryId]['left'], collected: $collected, seen: $seen);
+		$this->collectSiblings(entryId: (int)$this->entries[$entryId]['right'], collected: $collected, seen: $seen);
 
 	}//end collectSiblings()
 
@@ -435,11 +435,11 @@ final class CompoundFileReader {
 		if ($this->miniStream === null) {
 			$root = $this->entries[0];
 			$this->miniStream = $this->readChain(
-				(int)$root['start'],
-				(int)$root['size'],
-				$this->fat,
-				$this->sectorSize,
-				null
+				start: (int)$root['start'],
+				size: (int)$root['size'],
+				table: $this->fat,
+				sectorSize: $this->sectorSize,
+				container: null
 			);
 		}
 

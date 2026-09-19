@@ -93,7 +93,7 @@ class NoReplyHandler {
 			if ($writeInstead !== '') {
 				$notice = 'This address takes no replies. Please write to ' . $writeInstead . ' instead.';
 			}
-			$this->record($identity, $message, self::MODE_REFUSE, $writeInstead, $notice);
+			$this->record(identity: $identity, message: $message, outcome: self::MODE_REFUSE, target: $writeInstead, notice: $notice);
 
 			return ['outcome' => self::MODE_REFUSE, 'target' => $writeInstead, 'notice' => $notice];
 		}
@@ -103,12 +103,12 @@ class NoReplyHandler {
 			// Configured to divert with nowhere to divert to. Refusing is the
 			// only remaining option that does not drop the message.
 			$notice = 'This address takes no replies, and no forwarding mailbox is configured.';
-			$this->record($identity, $message, self::MODE_REFUSE, '', $notice);
+			$this->record(identity: $identity, message: $message, outcome: self::MODE_REFUSE, target: '', notice: $notice);
 
 			return ['outcome' => self::MODE_REFUSE, 'target' => '', 'notice' => $notice];
 		}
 
-		$this->record($identity, $message, self::MODE_DIVERT, $divertTo, '');
+		$this->record(identity: $identity, message: $message, outcome: self::MODE_DIVERT, target: $divertTo, notice: '');
 
 		return ['outcome' => self::MODE_DIVERT, 'target' => $divertTo, 'notice' => ''];
 

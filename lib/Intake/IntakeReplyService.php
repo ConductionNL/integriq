@@ -65,7 +65,7 @@ class IntakeReplyService {
 	 * @throws IntakeChannelException When the message is unknown, or its channel is.
 	 */
 	public function reply(string $messageUuid, string $text): ReplyResult {
-		$stored = $this->findMessage($messageUuid);
+		$stored = $this->findMessage(messageUuid: $messageUuid);
 		$object = $stored->getObject();
 		$message = InboundMessage::fromObject($object);
 
@@ -75,12 +75,12 @@ class IntakeReplyService {
 				$message->getChannelId(),
 				'The "' . $message->getChannelId() . '" channel cannot carry a reply.'
 			);
-			$this->record($stored, $object, $text, $result);
+			$this->record(stored: $stored, object: $object, text: $text, result: $result);
 			return $result;
 		}
 
 		$result = $adapter->reply($message, $text);
-		$this->record($stored, $object, $text, $result);
+		$this->record(stored: $stored, object: $object, text: $text, result: $result);
 
 		return $result;
 

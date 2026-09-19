@@ -83,7 +83,7 @@ class MailboxSourceHandler {
 			$configuration = [];
 		}
 
-		$transport = $this->resolveTransport($configuration);
+		$transport = $this->resolveTransport(configuration: $configuration);
 		$cursor = ($configuration['sinceCursor'] ?? null);
 
 		// The stored cursor is read three times below and is nullable, so it is
@@ -117,11 +117,11 @@ class MailboxSourceHandler {
 				$patternText
 			);
 			$created++;
-			$latest = $this->later($latest, $message->getReceivedAt());
+			$latest = $this->later(current: $latest, candidate: $message->getReceivedAt());
 		}
 
 		if ($latest !== $cursorText) {
-			$this->storeCursor($source, $object, $configuration, $latest);
+			$this->storeCursor(source: $source, object: $object, configuration: $configuration, cursor: $latest);
 		}
 
 		return [

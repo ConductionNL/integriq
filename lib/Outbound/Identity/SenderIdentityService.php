@@ -110,7 +110,7 @@ class SenderIdentityService {
 
 			if (($entity instanceof ObjectEntity) === true) {
 				return [
-					'identity' => $this->withDefaults($entity->getObject()),
+					'identity' => $this->withDefaults(identity: $entity->getObject()),
 					'id' => (string)$entity->getUuid(),
 					'fallback' => false,
 				];
@@ -125,7 +125,7 @@ class SenderIdentityService {
 		}
 
 		return [
-			'identity' => $this->withDefaults($default->getObject()),
+			'identity' => $this->withDefaults(identity: $default->getObject()),
 			'id' => (string)$default->getUuid(),
 			'fallback' => true,
 		];
