@@ -94,7 +94,7 @@ abstract class MessageGateway {
 	 * @return GatewayDelivery What happened.
 	 */
 	public function send(string $messageType, array $message, array $config = []): GatewayDelivery {
-		$refusals = $this->validate($messageType, $message);
+		$refusals = $this->validate(messageType: $messageType, message: $message);
 		if ($refusals !== []) {
 			return GatewayDelivery::notSent($this->id(), implode(' ', $refusals));
 		}

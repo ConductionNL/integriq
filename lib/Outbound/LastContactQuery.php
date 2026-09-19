@@ -64,7 +64,7 @@ class LastContactQuery {
 		$latest = null;
 		$latestMessage = null;
 
-		foreach ($this->messagesFor($subjectRef) as $entity) {
+		foreach ($this->messagesFor(subjectRef: $subjectRef) as $entity) {
 			$record = $entity->getObject();
 			$recipients = ($record['recipients'] ?? []);
 			if (is_array($recipients) === false) {

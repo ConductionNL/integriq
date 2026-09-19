@@ -46,6 +46,8 @@ class LocalDeleteGuard {
 	 * @return array<string,mixed>|null The override record to store, or null when no override was needed.
 	 *
 	 * @throws InvalidArgumentException When the delete is refused.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public function guard(OwnershipState $ownership, ?string $reason = null, ?string $userId = null): ?array {
 		if ($ownership->isSourceOwned() === false) {
@@ -53,7 +55,7 @@ class LocalDeleteGuard {
 		}
 
 		if ($reason === null) {
-			throw new InvalidArgumentException($this->refusalMessage($ownership));
+			throw new InvalidArgumentException($this->refusalMessage(ownership: $ownership));
 		}
 
 		if (trim($reason) === '') {
@@ -77,6 +79,8 @@ class LocalDeleteGuard {
 	 * @param OwnershipState $ownership The record's ownership.
 	 *
 	 * @return string The message.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public function refusalMessage(OwnershipState $ownership): string {
 		$name = ($ownership->getSynchronizationName() ?? $ownership->getSynchronizationId() ?? 'an external synchronisation');

@@ -72,7 +72,7 @@ class MigrationSourcesController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 	) {
-		parent::__construct($appName, $request);
+		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
 
 	/**
@@ -104,6 +104,10 @@ class MigrationSourcesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 *
+	 * @no-admin-idor-exempt Takes no object id. The one adapter that reaches storage, FileMigrationSource,
+	 *     resolves the path through the ACTING USER's folder (IRootFolder::getUserFolder), so another
+	 *     account's files are unreachable rather than merely undocumented.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

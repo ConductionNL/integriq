@@ -108,14 +108,14 @@ class ZgwRegistryBinding {
 		$kind = (string)($binding['kind'] ?? self::KIND_OPENREGISTER);
 
 		if ($kind === self::KIND_OPENREGISTER) {
-			$this->markUsable(true);
+			$this->markUsable(usable: true);
 
 			return ['ok' => true, 'message' => 'The binding resolves to OpenRegister on this instance.', 'binding' => $binding];
 		}
 
 		$baseUrl = (string)($binding['baseUrl'] ?? '');
 		if ($baseUrl === '') {
-			$this->markUsable(false);
+			$this->markUsable(usable: false);
 
 			return ['ok' => false, 'message' => 'An external ZGW binding needs a base URL.', 'binding' => $binding];
 		}
@@ -127,7 +127,7 @@ class ZgwRegistryBinding {
 			);
 			$status = $response->getStatusCode();
 		} catch (Throwable $e) {
-			$this->markUsable(false);
+			$this->markUsable(usable: false);
 			$this->logger->warning('zgw.binding.unreachable', ['baseUrl' => $baseUrl, 'error' => $e->getMessage()]);
 
 			return [
@@ -140,7 +140,7 @@ class ZgwRegistryBinding {
 		// A 401 is a reachable registry asking for credentials, which is a
 		// different problem from a base URL pointing at nothing.
 		if ($status >= 500 || $status === 404) {
-			$this->markUsable(false);
+			$this->markUsable(usable: false);
 
 			return [
 				'ok' => false,
@@ -149,7 +149,7 @@ class ZgwRegistryBinding {
 			];
 		}
 
-		$this->markUsable(true);
+		$this->markUsable(usable: true);
 
 		return ['ok' => true, 'message' => sprintf('The ZGW registry at "%s" answered.', $baseUrl), 'binding' => $binding];
 	}//end test()
@@ -162,6 +162,11 @@ class ZgwRegistryBinding {
 	 * @return void
 	 */
 	private function markUsable(bool $usable): void {
-		$this->appConfig->setValueString(self::APP_ID, self::USABLE_KEY, ($usable === true ? '1' : '0'));
+		$flag = '0';
+		if ($usable === true) {
+			$flag = '1';
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::USABLE_KEY, $flag);
 	}//end markUsable()
 }//end class

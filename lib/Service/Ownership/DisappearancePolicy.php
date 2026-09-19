@@ -64,6 +64,8 @@ final class DisappearancePolicy {
 	 * @return string One of the accepted values.
 	 *
 	 * @throws InvalidArgumentException When the declared value is not one the engine knows.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public static function fromSourceConfig(array $sourceConfig): string {
 		$declared = ($sourceConfig[self::CONFIG_KEY] ?? null);
@@ -72,7 +74,7 @@ final class DisappearancePolicy {
 		}
 
 		if (is_string($declared) === false || in_array($declared, self::ACCEPTED, true) === false) {
-			throw new InvalidArgumentException(self::refusalMessage($declared));
+			throw new InvalidArgumentException(self::refusalMessage(declared: $declared));
 		}
 
 		return $declared;
@@ -84,10 +86,12 @@ final class DisappearancePolicy {
 	 * @param array<string,mixed> $sourceConfig The synchronisation's sourceConfig.
 	 *
 	 * @return bool True when the declaration is absent or accepted.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public static function isValid(array $sourceConfig): bool {
 		try {
-			self::fromSourceConfig($sourceConfig);
+			self::fromSourceConfig(sourceConfig: $sourceConfig);
 			return true;
 		} catch (InvalidArgumentException $e) {
 			return false;
@@ -100,13 +104,20 @@ final class DisappearancePolicy {
 	 * @param mixed $declared What was declared.
 	 *
 	 * @return string The message.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public static function refusalMessage(mixed $declared): string {
+		$declaredText = gettype($declared);
+		if (is_scalar($declared) === true) {
+			$declaredText = (string)$declared;
+		}
+
 		return sprintf(
 			'sourceConfig.%s must be one of %s. "%s" is not a policy this engine knows, and it is not treated as the default.',
 			self::CONFIG_KEY,
 			implode(', ', self::ACCEPTED),
-			(is_scalar($declared) === true ? (string)$declared : gettype($declared))
+			$declaredText
 		);
 	}//end refusalMessage()
 }//end class

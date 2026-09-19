@@ -53,9 +53,11 @@ class CaseReferenceDetector {
 	 * @param string|null $pattern The source's `casePattern`, or null for the default.
 	 *
 	 * @return string|null The reference, or null when the message names none.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function detect(ParsedMessage $message, ?string $pattern = null): ?string {
-		$effective = $this->resolvePattern($pattern);
+		$effective = $this->resolvePattern(pattern: $pattern);
 		if ($effective === null) {
 			return null;
 		}
@@ -88,7 +90,7 @@ class CaseReferenceDetector {
 	 * @return bool True when the pattern compiles.
 	 */
 	public function isUsable(string $pattern): bool {
-		return $this->resolvePattern($pattern) !== null;
+		return $this->resolvePattern(pattern: $pattern) !== null;
 
 	}//end isUsable()
 

@@ -79,6 +79,8 @@ class IntakeDocumentDispatcher {
 	 *                                     sender, subject, sourceRef, receivedAt.
 	 *
 	 * @return bool True when the event was dispatched, false when nothing here can receive it.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function dispatch(array $payload): bool {
 		if ($this->isAvailable() === false) {
@@ -90,7 +92,7 @@ class IntakeDocumentDispatcher {
 		}
 
 		try {
-			$event = $this->construct($payload);
+			$event = $this->construct(payload: $payload);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'Integriq mail intake: the document intake event could not be constructed.',

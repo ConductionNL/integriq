@@ -223,7 +223,7 @@ class Application extends App implements IBootstrap {
 		$dispatcher = $this->getContainer()->get(IEventDispatcher::class);
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ObjectCreatedEventListener::class);
 
-		// registry-subscription-connector Task 3: the binding that was blocked
+		// Spec registry-subscription-connector Task 3: the binding that was blocked
 		// on OpenRegister shipping the event. It has, and dispatches it from
 		// RegistrySubscriptionNotifier, so the wire shape is read rather than
 		// guessed.
@@ -378,12 +378,12 @@ class Application extends App implements IBootstrap {
 			PropertySourceRegistry::class,
 			static function ($c): PropertySourceRegistry {
 				return new PropertySourceRegistry(
-					[
+					providers: [
 						$c->get(BagPropertySource::class),
 						$c->get(BrpPropertySource::class),
 						$c->get(KvkPropertySource::class),
 					],
-					$c->get('Psr\Log\LoggerInterface')
+					logger: $c->get('Psr\Log\LoggerInterface')
 				);
 			}
 		);
@@ -398,8 +398,8 @@ class Application extends App implements IBootstrap {
 			IntakeChannelRegistry::class,
 			static function ($c): IntakeChannelRegistry {
 				return new IntakeChannelRegistry(
-					$c->get('Psr\Log\LoggerInterface'),
-					[
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					adapters: [
 						$c->get(FormSubmissionAdapter::class),
 						$c->get(MessagingChannelAdapter::class),
 						$c->get(PublicSpaceReportAdapter::class),
@@ -415,7 +415,7 @@ class Application extends App implements IBootstrap {
 			SubscriptionRegistry::class,
 			static function ($c): SubscriptionRegistry {
 				return new SubscriptionRegistry(
-					[
+					providers: [
 						$c->get(BrpVolgindicatieProvider::class),
 						$c->get(KvkMutatieProvider::class),
 						$c->get(LogSubscriptionProvider::class),
@@ -430,7 +430,7 @@ class Application extends App implements IBootstrap {
 			MigrationSourceRegistry::class,
 			static function ($c): MigrationSourceRegistry {
 				return new MigrationSourceRegistry(
-					[
+					adapters: [
 						$c->get(FileMigrationSource::class),
 						$c->get(RedmineMigrationSource::class),
 					]
@@ -445,7 +445,7 @@ class Application extends App implements IBootstrap {
 			DigitalPostProviderRegistry::class,
 			static function ($c): DigitalPostProviderRegistry {
 				return new DigitalPostProviderRegistry(
-					[
+					providers: [
 						$c->get(BerichtenboxProvider::class),
 						$c->get(PostexProvider::class),
 						$c->get(LogDigitalPostProvider::class),
@@ -460,7 +460,7 @@ class Application extends App implements IBootstrap {
 		$context->registerService(
 			GatewayRegistry::class,
 			static function ($c): GatewayRegistry {
-				return new GatewayRegistry(GatewayCatalogue::entries());
+				return new GatewayRegistry(entries: GatewayCatalogue::entries());
 			}
 		);
 		$context->registerServiceAlias(GatewayTransport::class, SourceGatewayTransport::class);

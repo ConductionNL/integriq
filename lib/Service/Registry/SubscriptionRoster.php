@@ -55,12 +55,18 @@ class SubscriptionRoster {
 	 * @param string $registryId Registry id.
 	 *
 	 * @return array<string,string> Identity value to subscription reference.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function identities(string $registryId): array {
 		$raw = $this->appConfig->getValueString(self::APP_ID, (self::KEY_PREFIX . $registryId), '{}');
 		$decoded = json_decode($raw, true);
 
-		return (is_array($decoded) === true ? $decoded : []);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return [];
 	}//end identities()
 
 	/**
@@ -71,11 +77,13 @@ class SubscriptionRoster {
 	 * @param string $reference The registry's own subscription reference.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function add(string $registryId, string $identity, string $reference = ''): void {
-		$roster = $this->identities($registryId);
+		$roster = $this->identities(registryId: $registryId);
 		$roster[$identity] = $reference;
-		$this->store($registryId, $roster);
+		$this->store(registryId: $registryId, roster: $roster);
 	}//end add()
 
 	/**
@@ -85,11 +93,13 @@ class SubscriptionRoster {
 	 * @param string $identity The identity value.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function remove(string $registryId, string $identity): void {
-		$roster = $this->identities($registryId);
+		$roster = $this->identities(registryId: $registryId);
 		unset($roster[$identity]);
-		$this->store($registryId, $roster);
+		$this->store(registryId: $registryId, roster: $roster);
 	}//end remove()
 
 	/**
@@ -101,10 +111,15 @@ class SubscriptionRoster {
 	 * @return void
 	 */
 	private function store(string $registryId, array $roster): void {
+		$encoded = json_encode($roster);
+		if ($encoded === false) {
+			$encoded = '{}';
+		}
+
 		$this->appConfig->setValueString(
 			self::APP_ID,
 			(self::KEY_PREFIX . $registryId),
-			(json_encode($roster) ?: '{}')
+			$encoded
 		);
 	}//end store()
 }//end class

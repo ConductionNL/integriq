@@ -80,11 +80,13 @@ class ImapMailboxTransport implements MailboxTransportInterface {
 	 *
 	 * @throws MailboxTransportException When the extension is absent, the mailbox is
 	 *                                   misconfigured, or the server refuses.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function fetch(array $configuration, ?string $cursor): array {
 		if ($this->isUsable() === false) {
 			throw new MailboxTransportException(
-				'This host has no imap extension, so an IMAP mailbox cannot be polled here.'
+				message: 'This host has no imap extension, so an IMAP mailbox cannot be polled here.'
 			);
 		}
 
@@ -92,18 +94,18 @@ class ImapMailboxTransport implements MailboxTransportInterface {
 		$username = trim((string)($configuration['username'] ?? ''));
 		$password = (string)($configuration['password'] ?? '');
 		if ($host === '' || $username === '') {
-			throw new MailboxTransportException('An IMAP mailbox needs a host and a username.');
+			throw new MailboxTransportException(message: 'An IMAP mailbox needs a host and a username.');
 		}
 
-		$connection = @imap_open($this->mailboxString($configuration), $username, $password, 0, 1);
+		$connection = @imap_open($this->mailboxString(configuration: $configuration), $username, $password, 0, 1);
 		if ($connection === false) {
-			throw new MailboxTransportException('The IMAP server refused the connection or the credentials.');
+			throw new MailboxTransportException(message: 'The IMAP server refused the connection or the credentials.');
 		}
 
 		try {
-			return $this->readMessages($connection, $cursor);
+			return $this->readMessages(connection: $connection, cursor: $cursor);
 		} catch (Throwable $exception) {
-			throw new MailboxTransportException('The IMAP mailbox could not be read: ' . $exception->getMessage());
+			throw new MailboxTransportException(message: 'The IMAP mailbox could not be read: ' . $exception->getMessage());
 		} finally {
 			@imap_close($connection);
 		}

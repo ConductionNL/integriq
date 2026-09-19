@@ -66,6 +66,8 @@ class RegistryUpdateClient {
 	 * @param array<string,mixed> $payload The identity, the changed properties and the event reference.
 	 *
 	 * @return int The HTTP status, or 0 when the call could not be made.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function postUpdate(string $registryId, array $payload): int {
 		$url = $this->urlGenerator->getAbsoluteURL('/index.php/apps/openregister/api/registry/' . rawurlencode($registryId) . '/updates');
@@ -76,11 +78,16 @@ class RegistryUpdateClient {
 			$headers['Authorization'] = 'Basic ' . $credential;
 		}
 
+		$encodedBody = json_encode($payload);
+		if ($encodedBody === false) {
+			$encodedBody = '{}';
+		}
+
 		try {
 			$response = $this->clientService->newClient()->post(
 				$url,
 				[
-					'body' => (json_encode($payload) ?: '{}'),
+					'body' => $encodedBody,
 					'headers' => $headers,
 					'timeout' => 15,
 				]

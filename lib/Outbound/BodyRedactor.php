@@ -115,18 +115,18 @@ class BodyRedactor {
 	public function redactContext(array $context): array {
 		$redacted = [];
 		foreach ($context as $key => $value) {
-			if ($this->isSecretKey((string)$key) === true) {
+			if ($this->isSecretKey(key: (string)$key) === true) {
 				$redacted[$key] = self::PLACEHOLDER;
 				continue;
 			}
 
 			if (is_array($value) === true) {
-				$redacted[$key] = $this->redactContext($value);
+				$redacted[$key] = $this->redactContext(context: $value);
 				continue;
 			}
 
 			if (is_string($value) === true) {
-				$redacted[$key] = $this->redactBody($value);
+				$redacted[$key] = $this->redactBody(body: $value);
 				continue;
 			}
 

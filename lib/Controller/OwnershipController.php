@@ -22,6 +22,7 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
+use OCA\Integriq\Service\Ownership\OwnershipState;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -60,7 +61,7 @@ class OwnershipController extends Controller {
 		private readonly OrObjectService $objectService,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct($appName, $request);
+		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
 
 	/**
@@ -69,7 +70,22 @@ class OwnershipController extends Controller {
 	 * An object no synchronisation maintains answers `local` and the call
 	 * succeeds. It is not an error to ask about a record nobody follows.
 	 *
+	 * SCOPED TO THE CALLER, WITHOUT BREAKING THE UNKNOWN-ANSWERS-LOCAL CONTRACT.
+	 *
+	 * The ownership answer names the synchronisation, the source id and when the
+	 * record was last seen — facts about a record, not about the asker — and this
+	 * used to answer for any id at all.
+	 *
+	 * A 404 for an unreadable id would have contradicted the scenario this
+	 * method is tagged with: an object nobody follows answers `local` and the
+	 * call succeeds. So an id the caller cannot read answers `local` too. That
+	 * is the same answer an unknown id gets, which is the point — the two are
+	 * indistinguishable, so the endpoint cannot be used to discover that a
+	 * record exists or who maintains it.
+	 *
 	 * @param string $id The object's id.
+	 * @param string $register The register the object lives in.
+	 * @param string $schema The schema the object lives in.
 	 *
 	 * @return JSONResponse The ownership answer.
 	 *
@@ -80,7 +96,11 @@ class OwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function show(string $id): JSONResponse {
+	public function show(string $id, string $register = 'integriq', string $schema = ''): JSONResponse {
+		if ($this->readObject(id: $id, register: $register, schema: $schema) === []) {
+			return new JSONResponse(OwnershipState::local()->toArray());
+		}
+
 		return new JSONResponse($this->ownership->forObject($id)->toArray());
 	}//end show()
 
@@ -134,7 +154,7 @@ class OwnershipController extends Controller {
 				// Written onto the object before it goes, so the statement
 				// survives in the audit trail rather than only in a log line.
 				$this->objectService->saveObject(
-					object: ([LocalDeleteGuard::OVERRIDE_KEY => $override] + $this->readObject($id, $register, $schema)),
+					object: ([LocalDeleteGuard::OVERRIDE_KEY => $override] + $this->readObject(id: $id, register: $register, schema: $schema)),
 					register: $register,
 					schema: $schema,
 					uuid: $id
@@ -212,6 +232,10 @@ class OwnershipController extends Controller {
 
 		$data = $entity->getObject();
 
-		return (is_array($data) === true ? $data : []);
+		if (is_array($data) === true) {
+			return $data;
+		}
+
+		return [];
 	}//end readObject()
 }//end class

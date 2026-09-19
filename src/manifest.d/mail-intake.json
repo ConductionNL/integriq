@@ -8,7 +8,7 @@
       "title": "Mail intake",
       "config": {
         "register": "integriq",
-        "schema": "message",
+        "schema": "mail_message",
         "sortKey": "receivedAt",
         "sortOrder": "desc",
         "pagination": {

@@ -93,12 +93,14 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 	 * @return array<int,ParsedMessage> The messages, oldest first.
 	 *
 	 * @throws MailboxTransportException When the mailbox is not configured or Graph refuses.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function fetch(array $configuration, ?string $cursor): array {
 		$mailbox = trim((string)($configuration['mailbox'] ?? ''));
 		$token = trim((string)($configuration['accessToken'] ?? ''));
 		if ($mailbox === '' || $token === '') {
-			throw new MailboxTransportException('A Graph mailbox needs both a mailbox address and an access token.');
+			throw new MailboxTransportException(message: 'A Graph mailbox needs both a mailbox address and an access token.');
 		}
 
 		$folder = trim((string)($configuration['folder'] ?? 'Inbox'));
@@ -113,14 +115,14 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			$query['$filter'] = 'receivedDateTime gt ' . trim($cursor);
 		}
 
-		$payload = $this->get($url, $token, $query);
+		$payload = $this->get(url: $url, token: $token, query: $query);
 		$messages = [];
 		foreach (($payload['value'] ?? []) as $raw) {
 			if (is_array($raw) === false) {
 				continue;
 			}
 
-			$messages[] = $this->toMessage($raw, $url, $token);
+			$messages[] = $this->toMessage(raw: $raw, messagesUrl: $url, token: $token);
 		}
 
 		return $messages;
@@ -149,7 +151,7 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 		$isHtml = (strtolower((string)($raw['body']['contentType'] ?? 'text')) === 'html');
 		$attachments = [];
 		if (($raw['hasAttachments'] ?? false) === true) {
-			$attachments = $this->fetchAttachments($messagesUrl, (string)($raw['id'] ?? ''), $token);
+			$attachments = $this->fetchAttachments(messagesUrl: $messagesUrl, messageId: (string)($raw['id'] ?? ''), token: $token);
 		}
 
 		$messageId = trim((string)($raw['internetMessageId'] ?? ''), " <>\t");
@@ -157,16 +159,29 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			$messageId = (string)($raw['id'] ?? '');
 		}
 
+		$receivedAt = ($raw['receivedDateTime'] ?? null);
+		if ($receivedAt !== null) {
+			$receivedAt = (string)$receivedAt;
+		}
+
+		// A Graph message carries either a preview plus sanitised HTML, or a
+		// plain-text body and no HTML at all.
+		$text = $body;
+		$html = '';
+		if ($isHtml === true) {
+			$text = (string)($raw['bodyPreview'] ?? '');
+			$html = HtmlSanitizer::sanitize($body);
+		}
+
 		return new ParsedMessage(
-			$messageId,
-			(string)($raw['from']['emailAddress']['address'] ?? ''),
-			$recipients,
-			(string)($raw['subject'] ?? ''),
-			(($raw['receivedDateTime'] ?? null) === null ? null : (string)$raw['receivedDateTime']),
-			($isHtml === true ? (string)($raw['bodyPreview'] ?? '') : $body),
-			($isHtml === true ? HtmlSanitizer::sanitize($body) : ''),
-			$attachments,
-		);
+			messageId: $messageId,
+			from: (string)($raw['from']['emailAddress']['address'] ?? ''),
+			to: $recipients,
+			subject: (string)($raw['subject'] ?? ''),
+			receivedAt: $receivedAt,
+			bodyText: $text,
+			bodyHtml: $html,
+			attachments: $attachments);
 
 	}//end toMessage()
 
@@ -184,7 +199,7 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			return [];
 		}
 
-		$payload = $this->get($messagesUrl . '/' . rawurlencode($messageId) . '/attachments', $token, []);
+		$payload = $this->get(url: $messagesUrl . '/' . rawurlencode($messageId) . '/attachments', token: $token, query: []);
 		$attachments = [];
 		foreach (($payload['value'] ?? []) as $raw) {
 			if (is_array($raw) === false) {
@@ -230,11 +245,11 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			);
 			$decoded = json_decode((string)$response->getBody(), true);
 		} catch (Throwable $exception) {
-			throw new MailboxTransportException('Graph refused the mailbox read: ' . $exception->getMessage());
+			throw new MailboxTransportException(message: 'Graph refused the mailbox read: ' . $exception->getMessage());
 		}
 
 		if (is_array($decoded) === false) {
-			throw new MailboxTransportException('Graph answered something that is not JSON.');
+			throw new MailboxTransportException(message: 'Graph answered something that is not JSON.');
 		}
 
 		return $decoded;

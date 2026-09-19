@@ -94,7 +94,7 @@ class VerdictController extends Controller {
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-an-external-verdict-is-recorded-against-the-record-it-judges-req-ocd-006
+	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -133,13 +133,18 @@ class VerdictController extends Controller {
 
 		$body = $this->request->getParams();
 
+		$verdictPayload = ($body['payload'] ?? null);
+		if (is_array($verdictPayload) === false) {
+			$verdictPayload = [];
+		}
+
 		try {
 			$verdict = $this->verdicts->record(
 				(string)($body['objectRef'] ?? ''),
 				(string)($body['state'] ?? ''),
 				(string)($body['source'] ?? ''),
 				(string)($body['reason'] ?? ''),
-				(is_array(($body['payload'] ?? null)) === true ? $body['payload'] : []),
+				$verdictPayload,
 			);
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
@@ -160,7 +165,7 @@ class VerdictController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-an-external-verdict-is-recorded-against-the-record-it-judges-req-ocd-006
+	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -185,6 +190,8 @@ class VerdictController extends Controller {
 	 * Read the raw request body bytes for signature verification.
 	 *
 	 * @return string The raw request body.
+	 *
+	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
 	 */
 	protected function getRawContent(): string {
 		$content = file_get_contents(filename: 'php://input');

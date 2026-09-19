@@ -180,8 +180,8 @@ final class InboundMessage {
 			'externalId' => $this->externalId,
 			'correspondent' => $this->correspondent,
 			'text' => $this->text,
-			'attachments' => $this->describeFiles($this->attachments),
-			'media' => $this->describeFiles($this->media),
+			'attachments' => $this->describeFiles(files: $this->attachments),
+			'media' => $this->describeFiles(files: $this->media),
 			'location' => $this->location,
 			'fields' => $this->fields,
 			'rawPayload' => $this->rawPayload,
@@ -201,23 +201,90 @@ final class InboundMessage {
 	 * @return self The message.
 	 */
 	public static function fromObject(array $object): self {
-		$correspondent = ($object['correspondent'] ?? []);
-		$location = ($object['location'] ?? null);
+		// A stored payload is whatever was written, so every list-shaped field
+		// is narrowed to an array before it reaches the constructor. Written as
+		// statements because the coding standard allows neither `?:` nor a
+		// ternary; `location` keeps null rather than [] because "no location"
+		// and "an empty location" are different answers.
+		$correspondent = self::mapOrEmpty(value: ($object['correspondent'] ?? []));
+		$attachments = self::listOrEmpty(value: ($object['attachments'] ?? null));
+		$media = self::listOrEmpty(value: ($object['media'] ?? null));
+		$rawPayload = self::mapOrEmpty(value: ($object['rawPayload'] ?? null));
+		$fields = self::mapOrEmpty(value: ($object['fields'] ?? null));
+		$location = self::mapOrNull(value: ($object['location'] ?? null));
+
+		$receivedAt = ($object['receivedAt'] ?? null);
+		if ($receivedAt !== null) {
+			$receivedAt = (string)$receivedAt;
+		}
 
 		return new self(
 			(string)($object['channelId'] ?? ''),
 			(string)($object['externalId'] ?? ''),
-			(is_array($correspondent) === true ? $correspondent : []),
+			$correspondent,
 			(string)($object['text'] ?? ''),
-			(is_array(($object['attachments'] ?? null)) === true ? $object['attachments'] : []),
-			(is_array($location) === true ? $location : null),
-			(is_array(($object['media'] ?? null)) === true ? $object['media'] : []),
-			(is_array(($object['rawPayload'] ?? null)) === true ? $object['rawPayload'] : []),
-			(($object['receivedAt'] ?? null) === null ? null : (string)$object['receivedAt']),
-			(is_array(($object['fields'] ?? null)) === true ? $object['fields'] : []),
+			$attachments,
+			$location,
+			$media,
+			$rawPayload,
+			$receivedAt,
+			$fields,
 		);
 
 	}//end fromObject()
+
+	/**
+	 * The value when it is a list of records, an empty list otherwise.
+	 *
+	 * Separate from {@see self::mapOrEmpty()} because the constructor's
+	 * `attachments` and `media` are `array<int,array<string,mixed>>`, and a
+	 * single helper returning `array<string,mixed>|null` satisfies neither
+	 * that shape nor its non-nullability.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<int,array<string,mixed>> The list.
+	 */
+	private static function listOrEmpty(mixed $value): array {
+		if (is_array($value) === true) {
+			return array_values($value);
+		}
+
+		return [];
+	}//end listOrEmpty()
+
+	/**
+	 * The value when it is a map, an empty map otherwise.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<string,mixed> The map.
+	 */
+	private static function mapOrEmpty(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [];
+	}//end mapOrEmpty()
+
+	/**
+	 * The value when it is a map, null otherwise.
+	 *
+	 * `location` keeps null rather than an empty map, because "no location"
+	 * and "an empty location" are different answers.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<string,mixed>|null The map, or null.
+	 */
+	private static function mapOrNull(mixed $value): ?array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return null;
+	}//end mapOrNull()
 
 	/**
 	 * Strip the bytes out of a file list.

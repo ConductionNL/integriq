@@ -56,6 +56,8 @@ class MessageParser {
 	 * @param string $raw The file bytes.
 	 *
 	 * @return ParsedMessage The parsed message, carrying a warning when the parse fell back.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function parse(string $filename, string $raw): ParsedMessage {
 		try {
@@ -65,7 +67,7 @@ class MessageParser {
 
 			return $this->emlParser->parse($raw);
 		} catch (Throwable $exception) {
-			return $this->fallback($filename, $raw, $exception->getMessage());
+			return $this->fallback(filename: $filename, raw: $raw, reason: $exception->getMessage());
 		}
 
 	}//end parse()
@@ -80,7 +82,10 @@ class MessageParser {
 	 * @return ParsedMessage The fallback message.
 	 */
 	private function fallback(string $filename, string $raw, string $reason): ParsedMessage {
-		$safeName = (basename($filename) !== '' ? basename($filename) : 'message');
+		$safeName = 'message';
+		if (basename($filename) !== '') {
+			$safeName = basename($filename);
+		}
 
 		return new ParsedMessage(
 			'sha256:' . hash('sha256', $raw),

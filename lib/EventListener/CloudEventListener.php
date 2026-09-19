@@ -222,12 +222,15 @@ class CloudEventListener implements IEventListener {
 		// the only thing standing between this instance and the storm is a
 		// counter. It is also the one refusal an operator can act on.
 		if ($decision['reason'] === EventLoopGuard::REFUSED_CEILING) {
+			$ceilingNote = '';
+			if ($decision['identified'] === false) {
+				$ceilingNote = '; the event-machinery schema ids resolved to nothing, so only the ceiling was left';
+			}
+
 			$this->logger->warning(
 				'[CloudEventListener] stopped forwarding: ' . $decision['reason']
 				. ' after ' . $decision['chain'] . ' events in one request'
-				. ($decision['identified'] === false
-					? '; the event-machinery schema ids resolved to nothing, so only the ceiling was left'
-					: ''),
+				. $ceilingNote,
 				['uuid' => $object->getUuid()]
 			);
 

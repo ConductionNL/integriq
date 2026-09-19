@@ -67,15 +67,17 @@ class RecordOwnershipService {
 	 * @param string $targetId The object's id at the target, which is its OpenRegister uuid.
 	 *
 	 * @return OwnershipState The ownership answer. Never null, never an exception for an unknown id.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public function forObject(string $targetId): OwnershipState {
-		$contract = $this->findContract($targetId);
+		$contract = $this->findContract(targetId: $targetId);
 		if ($contract === null) {
 			return OwnershipState::local();
 		}
 
-		$synchronization = $this->findSynchronization((string)($contract['synchronizationId'] ?? ''));
-		$mode = $this->readMode($synchronization);
+		$synchronization = $this->findSynchronization(synchronizationId: (string)($contract['synchronizationId'] ?? ''));
+		$mode = $this->readMode(synchronization: $synchronization);
 
 		if ($mode === OwnershipState::MODE_LOCAL) {
 			return OwnershipState::local();
@@ -83,16 +85,28 @@ class RecordOwnershipService {
 
 		$lastSeenAt = ($contract['sourceLastSeen'] ?? null);
 
+		// Each of these is an "empty means absent" narrowing, delegated to a
+		// helper rather than written out four times. Four inline `if`s here put
+		// forObject() at an NPath complexity of 256 against a threshold of 200 —
+		// the branches multiply, even though none of them is a decision worth
+		// reading. An absent source id stays a different fact from an empty one.
+		$sourceId = self::absentWhenEmpty(value: ($synchronization['sourceId'] ?? ''));
+		$originId = self::absentWhenEmpty(value: ($contract['originId'] ?? ''));
+		$synchronizationId = self::absentWhenEmpty(value: ($contract['synchronizationId'] ?? ''));
+		$synchronizationName = self::absentWhenEmpty(value: ($synchronization['name'] ?? ''));
+		$lastSeenText = self::textOrNull(value: $lastSeenAt);
+		$endedAtText = self::textOrNull(value: ($contract['endedAt'] ?? null));
+
 		return new OwnershipState(
 			$mode,
-			(string)($synchronization['sourceId'] ?? '') ?: null,
-			(string)($contract['originId'] ?? '') ?: null,
-			($lastSeenAt !== null ? (string)$lastSeenAt : null),
+			$sourceId,
+			$originId,
+			$lastSeenText,
 			($lastSeenAt === null),
 			((bool)($contract['absentAtSource'] ?? false)),
-			(($contract['endedAt'] ?? null) !== null ? (string)$contract['endedAt'] : null),
-			(string)($contract['synchronizationId'] ?? '') ?: null,
-			(string)($synchronization['name'] ?? '') ?: null
+			$endedAtText,
+			$synchronizationId,
+			$synchronizationName
 		);
 	}//end forObject()
 
@@ -114,17 +128,25 @@ class RecordOwnershipService {
 		}
 
 		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
-		$declared = (is_array($sourceConfig) === true ? ($sourceConfig[self::MODE_KEY] ?? null) : null);
+		$declared = null;
+		if (is_array($sourceConfig) === true) {
+			$declared = ($sourceConfig[self::MODE_KEY] ?? null);
+		}
 
 		if ($declared === null || $declared === '') {
 			return OwnershipState::MODE_SOURCE;
 		}
 
 		if (in_array($declared, OwnershipState::MODES, true) === false) {
+			$declaredText = gettype($declared);
+			if (is_scalar($declared) === true) {
+				$declaredText = (string)$declared;
+			}
+
 			$this->logger->warning(
 				'ownership.unknown-mode',
 				[
-					'declared' => (is_scalar($declared) === true ? (string)$declared : gettype($declared)),
+					'declared' => $declaredText,
 					'synchronization' => ($synchronization['id'] ?? $synchronization['uuid'] ?? null),
 				]
 			);
@@ -143,7 +165,7 @@ class RecordOwnershipService {
 	 * @return array<string,mixed>|null The contract data.
 	 */
 	private function findContract(string $targetId): ?array {
-		return $this->findOne('synchronization_contract', ['targetId' => $targetId], 'targetId', $targetId);
+		return $this->findOne(schema: 'synchronization_contract', filters: ['targetId' => $targetId], matchKey: 'targetId', matchValue: $targetId);
 	}//end findContract()
 
 	/**
@@ -158,7 +180,7 @@ class RecordOwnershipService {
 			return null;
 		}
 
-		return $this->findOne('synchronization', ['uuid' => $synchronizationId], 'uuid', $synchronizationId);
+		return $this->findOne(schema: 'synchronization', filters: ['uuid' => $synchronizationId], matchKey: 'uuid', matchValue: $synchronizationId);
 	}//end findSynchronization()
 
 	/**
@@ -191,7 +213,10 @@ class RecordOwnershipService {
 		}
 
 		foreach (($result['results'] ?? $result) as $entity) {
-			$data = ($entity instanceof ObjectEntity === true ? $entity->getObject() : $entity);
+			$data = $entity;
+			if ($entity instanceof ObjectEntity === true) {
+				$data = $entity->getObject();
+			}
 			if (is_array($data) === false) {
 				continue;
 			}
@@ -203,4 +228,34 @@ class RecordOwnershipService {
 
 		return null;
 	}//end findOne()
+	/**
+	 * The value as a string, or null when it is empty.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return string|null The text, or null when there is none.
+	 */
+	private static function absentWhenEmpty(mixed $value): ?string {
+		$text = (string)$value;
+		if ($text === '') {
+			return null;
+		}
+
+		return $text;
+	}//end absentWhenEmpty()
+
+	/**
+	 * The value as a string, keeping null as null.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return string|null The text, or null when the value was null.
+	 */
+	private static function textOrNull(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end textOrNull()
 }//end class

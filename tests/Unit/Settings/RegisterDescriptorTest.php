@@ -97,7 +97,7 @@ class RegisterDescriptorTest extends TestCase {
 		'EventSubscription' => 'event_subscription',
 		'Job' => 'job',
 		'Mapping' => 'mapping',
-		'Message' => 'message',
+		'Message' => 'mail_message',
 		'IntakeMessage' => 'intake_message',
 		'IntakeRoutingRule' => 'intake_routing_rule',
 		'OutboundMessage' => 'outbound_message',

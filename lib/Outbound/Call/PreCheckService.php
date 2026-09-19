@@ -91,8 +91,12 @@ class PreCheckService {
 	public function ask(array $configuration, array $payload): array {
 		if (($configuration['mock'] ?? false) === true) {
 			$fixture = ($configuration['fixture'] ?? []);
-			$answer = $this->interpret(is_array($fixture) === true ? $fixture : []);
-			$this->record($configuration, $payload, $answer, 200);
+			if (is_array($fixture) === false) {
+				$fixture = [];
+			}
+
+			$answer = $this->interpret(body: $fixture);
+			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 200);
 			return $answer;
 		}
 
@@ -103,11 +107,16 @@ class PreCheckService {
 				'reason' => 'The pre-check names no system to ask.',
 				'raw' => [],
 			];
-			$this->record($configuration, $payload, $answer, 0);
+			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 0);
 			return $answer;
 		}
 
 		$timeout = (int)($configuration['timeoutSeconds'] ?? self::DEFAULT_TIMEOUT_SECONDS);
+
+		$extraHeaders = ($configuration['headers'] ?? null);
+		if (is_array($extraHeaders) === false) {
+			$extraHeaders = [];
+		}
 
 		try {
 			$response = $this->clientService->newClient()->post(
@@ -115,7 +124,7 @@ class PreCheckService {
 				[
 					'headers' => array_merge(
 						['Accept' => 'application/json'],
-						(is_array(($configuration['headers'] ?? null)) === true ? $configuration['headers'] : [])
+						$extraHeaders
 					),
 					'json' => $payload,
 					'timeout' => $timeout,
@@ -131,12 +140,16 @@ class PreCheckService {
 				'reason' => 'No answer within ' . $timeout . ' seconds: ' . $exception->getMessage(),
 				'raw' => [],
 			];
-			$this->record($configuration, $payload, $answer, 0);
+			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 0);
 			return $answer;
 		}
 
-		$answer = $this->interpret(is_array($decoded) === true ? $decoded : []);
-		$this->record($configuration, $payload, $answer, $statusCode);
+		if (is_array($decoded) === false) {
+			$decoded = [];
+		}
+
+		$answer = $this->interpret(body: $decoded);
+		$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: $statusCode);
 
 		return $answer;
 
@@ -164,9 +177,13 @@ class PreCheckService {
 			return ['decision' => self::REFUSE, 'reason' => $reason, 'raw' => $body];
 		}
 
+		if ($reason === '') {
+			$reason = 'The answer did not say allow or refuse.';
+		}
+
 		return [
 			'decision' => self::NO_ANSWER,
-			'reason' => ($reason === '' ? 'The answer did not say allow or refuse.' : $reason),
+			'reason' => $reason,
 			'raw' => $body,
 		];
 
@@ -183,13 +200,18 @@ class PreCheckService {
 	 * @return void
 	 */
 	private function record(array $configuration, array $payload, array $answer, int $statusCode): void {
+		$statusMessage = $answer['decision'];
+		if ($answer['reason'] !== '') {
+			$statusMessage .= ': ' . $answer['reason'];
+		}
+
 		$this->recorder->record(
 			[
 				'target' => (string)($configuration['url'] ?? 'pre-check'),
 				'request' => ['method' => 'POST', 'url' => (string)($configuration['url'] ?? ''), 'body' => $payload],
 				'response' => $answer['raw'],
 				'statusCode' => $statusCode,
-				'statusMessage' => $answer['decision'] . ($answer['reason'] === '' ? '' : ': ' . $answer['reason']),
+				'statusMessage' => $statusMessage,
 				'kind' => CallRecorder::KIND_TRIGGERED,
 			]
 		);

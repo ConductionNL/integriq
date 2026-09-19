@@ -64,13 +64,12 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 	 */
 	public function describe(): ChannelCapabilities {
 		return new ChannelCapabilities(
-			self::CHANNEL_ID,
-			'Form submission',
-			false,
-			false,
-			true,
-			['formId', 'submissionId'],
-		);
+			channelId: self::CHANNEL_ID,
+			label: 'Form submission',
+			canReply: false,
+			supportsLocation: false,
+			supportsMedia: true,
+			fields: ['formId', 'submissionId']);
 
 	}//end describe()
 
@@ -91,7 +90,7 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 		$formId = trim((string)($payload['formId'] ?? ''));
 		if ($submissionId === '' || $formId === '') {
 			throw new IntakeChannelException(
-				'A "' . self::CHANNEL_ID . '" payload must carry a submissionId and a formId.'
+				message: 'A "' . self::CHANNEL_ID . '" payload must carry a submissionId and a formId.'
 			);
 		}
 
@@ -109,23 +108,27 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 		$fields['formId'] = $formId;
 		$fields['submissionId'] = $submissionId;
 
+		$submittedAt = ($payload['submittedAt'] ?? null);
+		if ($submittedAt !== null) {
+			$submittedAt = (string)$submittedAt;
+		}
+
 		return new InboundMessage(
-			self::CHANNEL_ID,
-			$submissionId,
-			[
+			channelId: self::CHANNEL_ID,
+			externalId: $submissionId,
+			correspondent: [
 				'id' => (string)($submitter['bsn'] ?? $submitter['kvk'] ?? ''),
 				'name' => (string)($submitter['name'] ?? ''),
 				'address' => (string)($submitter['email'] ?? ''),
 				'phone' => (string)($submitter['phone'] ?? ''),
 			],
-			(string)($payload['summary'] ?? ''),
-			$this->attachments($payload),
-			null,
-			[],
-			$payload,
-			(($payload['submittedAt'] ?? null) === null ? null : (string)$payload['submittedAt']),
-			$fields,
-		);
+			text: (string)($payload['summary'] ?? ''),
+			attachments: $this->attachments(payload: $payload),
+			location: null,
+			media: [],
+			rawPayload: $payload,
+			receivedAt: $submittedAt,
+			fields: $fields);
 
 	}//end receive()
 

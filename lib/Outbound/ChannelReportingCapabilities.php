@@ -89,9 +89,11 @@ class ChannelReportingCapabilities {
 	 * @return string One of the {@see RecipientState} states.
 	 */
 	public function initialDeliveryState(string $channel): string {
-		return ($this->reportsDelivery($channel) === true
-			? RecipientState::NOT_REPORTED
-			: RecipientState::UNSUPPORTED);
+		if ($this->reportsDelivery(channel: $channel) === true) {
+			return RecipientState::NOT_REPORTED;
+		}
+
+		return RecipientState::UNSUPPORTED;
 
 	}//end initialDeliveryState()
 
@@ -103,9 +105,11 @@ class ChannelReportingCapabilities {
 	 * @return string One of the {@see RecipientState} states.
 	 */
 	public function initialReadState(string $channel): string {
-		return ($this->reportsRead($channel) === true
-			? RecipientState::NOT_REPORTED
-			: RecipientState::UNSUPPORTED);
+		if ($this->reportsRead(channel: $channel) === true) {
+			return RecipientState::NOT_REPORTED;
+		}
+
+		return RecipientState::UNSUPPORTED;
 
 	}//end initialReadState()
 

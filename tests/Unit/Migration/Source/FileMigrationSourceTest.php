@@ -27,6 +27,8 @@ use OCA\Integriq\Migration\MigrationRecord;
 use OCA\Integriq\Migration\Source\FileMigrationSource;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -70,9 +72,28 @@ class FileMigrationSourceTest extends TestCase {
 		return new FileMigrationSource(
 			$this->createMock(IRootFolder::class),
 			new ColumnMappingValidator(),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->session()
 		);
 	}//end source()
+
+	/**
+	 * A signed-in caller.
+	 *
+	 * The adapter resolves a delivered file through the ACTING USER's folder
+	 * rather than the server root, so every construction needs a session.
+	 *
+	 * @return IUserSession The session.
+	 */
+	private function session(): IUserSession {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		return $session;
+	}//end session()
 
 	/**
 	 * An adapter whose root folder answers a FOLDER for every path.
@@ -80,13 +101,17 @@ class FileMigrationSourceTest extends TestCase {
 	 * @return FileMigrationSource The adapter.
 	 */
 	private function sourceOverAFolder(): FileMigrationSource {
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('get')->willReturn($this->createMock(Folder::class));
+
 		$root = $this->createMock(IRootFolder::class);
-		$root->method('get')->willReturn($this->createMock(Folder::class));
+		$root->method('getUserFolder')->willReturn($userFolder);
 
 		return new FileMigrationSource(
 			$root,
 			new ColumnMappingValidator(),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->session()
 		);
 	}//end sourceOverAFolder()
 

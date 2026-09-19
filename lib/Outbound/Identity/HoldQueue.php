@@ -94,7 +94,7 @@ class HoldQueue {
 
 		if ($window <= 0) {
 			$record['hold'] = ['status' => self::STATUS_DUE, 'windowSeconds' => 0, 'releaseAt' => null];
-			$this->write($uuid, $record);
+			$this->write(uuid: $uuid, record: $record);
 			return ['status' => self::STATUS_DUE, 'releaseAt' => null];
 		}
 
@@ -104,7 +104,7 @@ class HoldQueue {
 			'windowSeconds' => $window,
 			'releaseAt' => $releaseAt,
 		];
-		$this->write($uuid, $record);
+		$this->write(uuid: $uuid, record: $record);
 
 		return ['status' => self::STATUS_HELD, 'releaseAt' => $releaseAt];
 
@@ -144,7 +144,7 @@ class HoldQueue {
 	 *                          to recall something that has already left.
 	 */
 	public function withdraw(string $uuid, string $actorUid): ObjectEntity {
-		if ($this->isWithdrawable($uuid) === false) {
+		if ($this->isWithdrawable(uuid: $uuid) === false) {
 			throw new RuntimeException(
 				'This message has left; nothing can be recalled after the hold window.'
 			);
@@ -168,7 +168,7 @@ class HoldQueue {
 			$record['recipients'][$index]['reason'] = 'Withdrawn before it was sent.';
 		}
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end withdraw()
 
@@ -192,7 +192,7 @@ class HoldQueue {
 		}
 
 		$record['hold']['status'] = self::STATUS_DUE;
-		$this->write($uuid, $record);
+		$this->write(uuid: $uuid, record: $record);
 
 		return true;
 

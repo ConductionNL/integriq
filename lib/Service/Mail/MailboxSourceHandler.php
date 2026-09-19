@@ -74,6 +74,8 @@ class MailboxSourceHandler {
 	 * @return array{created:int,skipped:int,cursor:string|null} What the poll did.
 	 *
 	 * @throws MailboxTransportException When the source is not a usable mailbox.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function poll(ObjectEntity $source): array {
 		$object = $source->getObject();
@@ -83,14 +85,28 @@ class MailboxSourceHandler {
 			$configuration = [];
 		}
 
-		$transport = $this->resolveTransport($configuration);
+		$transport = $this->resolveTransport(configuration: $configuration);
 		$cursor = ($configuration['sinceCursor'] ?? null);
-		$messages = $transport->fetch($configuration, ($cursor === null ? null : (string)$cursor));
+
+		// The stored cursor is read three times below and is nullable, so it is
+		// narrowed once here rather than at each use.
+		$cursorText = null;
+		if ($cursor !== null) {
+			$cursorText = (string)$cursor;
+		}
+
+		$messages = $transport->fetch($configuration, $cursorText);
 
 		$created = 0;
 		$skipped = 0;
-		$latest = ($cursor === null ? null : (string)$cursor);
+		$latest = $cursorText;
+
 		$pattern = ($configuration['casePattern'] ?? null);
+		$patternText = null;
+		if ($pattern !== null) {
+			$patternText = (string)$pattern;
+		}
+
 		foreach ($messages as $message) {
 			if ($this->intakeService->findByMessageId($sourceId, $message->getMessageId()) !== null) {
 				$skipped++;
@@ -100,14 +116,14 @@ class MailboxSourceHandler {
 			$this->intakeService->intake(
 				$sourceId,
 				$message,
-				($pattern === null ? null : (string)$pattern)
+				$patternText
 			);
 			$created++;
-			$latest = $this->later($latest, $message->getReceivedAt());
+			$latest = $this->later(current: $latest, candidate: $message->getReceivedAt());
 		}
 
-		if ($latest !== ($cursor === null ? null : (string)$cursor)) {
-			$this->storeCursor($source, $object, $configuration, $latest);
+		if ($latest !== $cursorText) {
+			$this->storeCursor(source: $source, object: $object, configuration: $configuration, cursor: $latest);
 		}
 
 		return [
@@ -129,6 +145,8 @@ class MailboxSourceHandler {
 	 * @return MailboxTransportInterface The binding.
 	 *
 	 * @throws MailboxTransportException When the protocol is unknown or unusable here.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
 	 */
 	public function resolveTransport(array $configuration): MailboxTransportInterface {
 		if (($configuration['mock'] ?? false) === true) {
@@ -144,13 +162,13 @@ class MailboxSourceHandler {
 
 		if ($transport === null) {
 			throw new MailboxTransportException(
-				'Unknown mailbox protocol "' . $protocol . '": integriq speaks imap and graph.'
+				message: 'Unknown mailbox protocol "' . $protocol . '": integriq speaks imap and graph.'
 			);
 		}
 
 		if ($transport->isUsable() === false) {
 			throw new MailboxTransportException(
-				'The ' . $protocol . ' binding cannot run on this host, so the mailbox was not polled.'
+				message: 'The ' . $protocol . ' binding cannot run on this host, so the mailbox was not polled.'
 			);
 		}
 
@@ -175,7 +193,11 @@ class MailboxSourceHandler {
 			return $candidate;
 		}
 
-		return (strtotime($candidate) > strtotime($current) ? $candidate : $current);
+		if (strtotime($candidate) > strtotime($current)) {
+			return $candidate;
+		}
+
+		return $current;
 
 	}//end later()
 

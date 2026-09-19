@@ -106,7 +106,7 @@ class EnvironmentValueSource implements ExpressionValueSourceInterface {
 			);
 		}
 
-		$value = ($this->environmentRead === null ? getenv($key) : ($this->environmentRead)($key));
+		$value = $this->readEnvironment(key: $key);
 
 		if ($value === false || $value === null) {
 			// 🔑 ALLOWED BUT UNSET IS ITS OWN ANSWER. Returning null here would
@@ -180,4 +180,26 @@ class EnvironmentValueSource implements ExpressionValueSourceInterface {
 			message: 'The "env" source is read only: an expression cannot change this instance\'s environment.'
 		);
 	}//end store()
+	/**
+	 * Read one environment value, through the injected reader when there is one.
+	 *
+	 * An early return rather than an if/else: exactly one of the two may run,
+	 * and calling getenv() when a reader is injected would defeat the point of
+	 * injecting it. phpmd refuses the else; flattening it would call both.
+	 *
+	 * @param string $key The environment key.
+	 *
+	 * The injected reader is an arbitrary `callable`, so it may answer null
+	 * where getenv() answers false. Both are "unset" to the caller, and the
+	 * check above distinguishes them from an empty string.
+	 *
+	 * @return string|false|null The value, or false/null when it is not set.
+	 */
+	private function readEnvironment(string $key): string|false|null {
+		if ($this->environmentRead !== null) {
+			return ($this->environmentRead)($key);
+		}
+
+		return getenv($key);
+	}//end readEnvironment()
 }//end class

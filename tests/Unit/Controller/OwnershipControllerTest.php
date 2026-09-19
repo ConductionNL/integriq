@@ -24,6 +24,7 @@ use OCA\Integriq\Controller\OwnershipController;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
 use OCA\Integriq\Service\Ownership\OwnershipState;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -46,6 +47,25 @@ class OwnershipControllerTest extends TestCase {
 	 *
 	 * @return OwnershipController The controller under test.
 	 */
+	/**
+	 * An object service that answers with a readable object.
+	 *
+	 * `show()` resolves the object through the ordinary scoped read before it
+	 * will disclose ownership, so a test asserting the ownership answer has to
+	 * present an object the caller can actually read.
+	 *
+	 * @return OrObjectService The double.
+	 */
+	private function readable(): OrObjectService {
+		$entity = new ObjectEntity();
+		$entity->setObject(['id' => 'obj-1']);
+
+		$service = $this->createMock(OrObjectService::class);
+		$service->method('find')->willReturn($entity);
+
+		return $service;
+	}//end readable()
+
 	private function controller(
 		OwnershipState $state,
 		?OrObjectService $objectService = null,
@@ -106,8 +126,27 @@ class OwnershipControllerTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testAnObjectTheCallerCannotReadAnswersLocalRatherThanItsOwnership(): void {
+		// THE DISCLOSURE TEST. The ownership answer names the synchronisation,
+		// the source id and when the record was last seen. Asking for an id the
+		// caller cannot read used to return all three.
+		//
+		// The answer is `local` rather than a 404 on purpose: an unknown object
+		// answers `local` by spec, so an unreadable one answering the same way
+		// makes the two indistinguishable — the endpoint cannot be used to
+		// discover that a record exists or who maintains it.
+		$unreadable = $this->createMock(OrObjectService::class);
+		$unreadable->method('find')->willReturn(null);
+
+		$data = $this->controller($this->owned(), $unreadable)->show('obj-1')->getData();
+
+		$this->assertSame('local', $data['mode']);
+		$this->assertNull($data['source']);
+		$this->assertNull($data['originId']);
+	}//end testAnObjectTheCallerCannotReadAnswersLocalRatherThanItsOwnership()
+
 	public function testOneReadAnswersOwnership(): void {
-		$data = $this->controller($this->owned())->show('obj-1')->getData();
+		$data = $this->controller($this->owned(), $this->readable())->show('obj-1')->getData();
 
 		$this->assertSame('source', $data['mode']);
 		$this->assertSame('brp-haalcentraal', $data['source']);

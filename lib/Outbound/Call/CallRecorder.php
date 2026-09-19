@@ -108,18 +108,23 @@ class CallRecorder {
 		$kind = (string)($call['kind'] ?? self::KIND_TRIGGERED);
 		$statusCode = (int)($call['statusCode'] ?? 0);
 
+		$outcome = 'failed';
+		if ($this->isSuccess(statusCode: $statusCode) === true) {
+			$outcome = 'succeeded';
+		}
+
 		$record = [
 			'target' => (string)($call['target'] ?? ''),
 			'traceId' => (string)($call['traceId'] ?? ''),
 			'direction' => 'outbound',
-			'request' => $this->redactor->redactContext($this->asArray(($call['request'] ?? []))),
-			'response' => $this->redactor->redactContext($this->asArray(($call['response'] ?? []))),
+			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? []))),
+			'response' => $this->redactor->redactContext($this->asArray(value: ($call['response'] ?? []))),
 			'statusCode' => $statusCode,
 			'statusMessage' => (string)($call['statusMessage'] ?? ''),
 			'durationMs' => (int)($call['durationMs'] ?? 0),
 			'kind' => $kind,
 			'firedBy' => (string)($call['firedBy'] ?? ''),
-			'retryPolicy' => $this->asArray(($call['retryPolicy'] ?? [])),
+			'retryPolicy' => $this->asArray(value: ($call['retryPolicy'] ?? [])),
 			'mapping' => (string)($call['mapping'] ?? ''),
 			'mappingVersion' => (string)($call['mappingVersion'] ?? ''),
 			'deadLettered' => false,
@@ -131,7 +136,7 @@ class CallRecorder {
 					'by' => (string)($call['firedBy'] ?? ''),
 					'kind' => $kind,
 					'statusCode' => $statusCode,
-					'outcome' => ($this->isSuccess($statusCode) === true ? 'succeeded' : 'failed'),
+					'outcome' => $outcome,
 					'detail' => (string)($call['statusMessage'] ?? ''),
 					'mappingVersion' => (string)($call['mappingVersion'] ?? ''),
 				],
@@ -159,27 +164,32 @@ class CallRecorder {
 	 * @return ObjectEntity The updated record.
 	 */
 	public function appendAttempt(string $uuid, array $attempt): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$statusCode = (int)($attempt['statusCode'] ?? 0);
+
+		$outcome = 'failed';
+		if ($this->isSuccess(statusCode: $statusCode) === true) {
+			$outcome = 'succeeded';
+		}
 
 		$record['attempts'][] = [
 			'at' => (new DateTimeImmutable())->format('c'),
 			'by' => (string)($attempt['by'] ?? ''),
 			'kind' => (string)($attempt['kind'] ?? self::KIND_REPLAYED),
 			'statusCode' => $statusCode,
-			'outcome' => ($this->isSuccess($statusCode) === true ? 'succeeded' : 'failed'),
+			'outcome' => $outcome,
 			'detail' => (string)($attempt['detail'] ?? ''),
 			'mappingVersion' => (string)($attempt['mappingVersion'] ?? ($record['mappingVersion'] ?? '')),
 		];
 
 		if (isset($attempt['response']) === true) {
-			$record['response'] = $this->redactor->redactContext($this->asArray($attempt['response']));
+			$record['response'] = $this->redactor->redactContext($this->asArray(value: $attempt['response']));
 		}
 
 		$record['statusCode'] = $statusCode;
 		$record['statusMessage'] = (string)($attempt['detail'] ?? $record['statusMessage'] ?? '');
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end appendAttempt()
 
@@ -192,11 +202,11 @@ class CallRecorder {
 	 * @return ObjectEntity The updated record.
 	 */
 	public function markDeadLettered(string $uuid, string $deadLetterRef = ''): ObjectEntity {
-		$record = $this->read($uuid);
+		$record = $this->read(uuid: $uuid);
 		$record['deadLettered'] = true;
 		$record['deadLetterRef'] = $deadLetterRef;
 
-		return $this->write($uuid, $record);
+		return $this->write(uuid: $uuid, record: $record);
 
 	}//end markDeadLettered()
 

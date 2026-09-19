@@ -61,6 +61,8 @@ class PostexProvider implements DigitalPostProviderInterface {
 	 * What a Postex source has to be configured with.
 	 *
 	 * @return array<string,mixed> The configuration schema.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function getConfigSchema(): array {
 		return [
@@ -90,6 +92,8 @@ class PostexProvider implements DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return array<int,string> The refusals.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function activationRefusals(array $config): array {
 		if (trim((string)($config['campaign'] ?? '')) === '') {
@@ -106,9 +110,11 @@ class PostexProvider implements DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return DigitalPostResult What Postex answered, or the refusal.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function send(array $message, array $config = []): DigitalPostResult {
-		$refusals = $this->activationRefusals($config);
+		$refusals = $this->activationRefusals(config: $config);
 		if ($refusals !== []) {
 			return DigitalPostResult::refused(implode(' ', $refusals));
 		}
@@ -143,6 +149,8 @@ class PostexProvider implements DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return DigitalPostResult The status.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function status(string $providerReference, array $config = []): DigitalPostResult {
 		$outcome = $this->transport->send(
@@ -171,6 +179,8 @@ class PostexProvider implements DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return array<int,array<string,mixed>> The inbound items.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function pollInbound(array $config = []): array {
 		unset($config);

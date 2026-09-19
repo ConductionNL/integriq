@@ -66,6 +66,8 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 * What a Berichtenbox source has to be configured with.
 	 *
 	 * @return array<string,mixed> The configuration schema.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function getConfigSchema(): array {
 		return [
@@ -102,6 +104,8 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return array<int,string> The refusals, naming what is missing.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function activationRefusals(array $config): array {
 		$refusals = [];
@@ -126,9 +130,11 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return DigitalPostResult What Logius answered, or the refusal.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function send(array $message, array $config = []): DigitalPostResult {
-		$refusals = $this->activationRefusals($config);
+		$refusals = $this->activationRefusals(config: $config);
 		if ($refusals !== []) {
 			return DigitalPostResult::refused(implode(' ', $refusals));
 		}
@@ -155,7 +161,7 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 		}
 
 		$simulated = ($this->client->flavour() === 'mock');
-		$status = $this->mapStatus((string)($answer['deliveryStatus'] ?? ''));
+		$status = $this->mapStatus(deliveryStatus: (string)($answer['deliveryStatus'] ?? ''));
 
 		return DigitalPostResult::accepted(
 			$status,
@@ -171,6 +177,8 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return DigitalPostResult The status.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function status(string $providerReference, array $config = []): DigitalPostResult {
 		unset($config);
@@ -192,6 +200,8 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return array<int,array<string,mixed>> The inbound items.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function pollInbound(array $config = []): array {
 		$items = [];

@@ -77,6 +77,8 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 * @param mixed $argument Job argument, unused.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	protected function run($argument): void {
 		foreach ($this->registry->all() as $registryId => $provider) {
@@ -98,7 +100,7 @@ class RegistrySubscriptionPollJob extends TimedJob {
 				continue;
 			}
 
-			$this->postChanges((string)$registryId, $changes);
+			$this->postChanges(registryId: (string)$registryId, changes: $changes);
 		}
 	}//end run()
 
@@ -109,6 +111,8 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 * @param iterable<SubscriptionChange> $changes The polled changes.
 	 *
 	 * @return int How many changes were posted.
+	 *
+	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
 	 */
 	public function postChanges(string $registryId, iterable $changes): int {
 		$posted = 0;

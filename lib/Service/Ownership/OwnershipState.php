@@ -80,6 +80,8 @@ final class OwnershipState {
 	 * A record nobody outside maintains.
 	 *
 	 * @return self A local ownership state.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public static function local(): self {
 		return new self(self::MODE_LOCAL);
@@ -143,14 +145,21 @@ final class OwnershipState {
 	 * The answer as a consuming app reads it.
 	 *
 	 * @return array<string,mixed> Serialisable ownership state.
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
 	 */
 	public function toArray(): array {
+		$lastSeen = 'known';
+		if ($this->lastSeenUnknown === true) {
+			$lastSeen = 'unknown';
+		}
+
 		return [
 			'mode' => $this->mode,
 			'source' => $this->source,
 			'originId' => $this->originId,
 			'lastSeenAt' => $this->lastSeenAt,
-			'lastSeen' => ($this->lastSeenUnknown === true ? 'unknown' : 'known'),
+			'lastSeen' => $lastSeen,
 			'absentAtSource' => $this->absentAtSource,
 			'endedAt' => $this->endedAt,
 			'synchronization' => [

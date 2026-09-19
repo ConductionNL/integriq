@@ -87,12 +87,14 @@ class DigitalPostInboundJob extends TimedJob {
 	 * @param mixed $argument Job argument, unused.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	protected function run($argument): void {
 		unset($argument);
 
 		foreach ($this->activeSources() as $source) {
-			$this->pollSource($source);
+			$this->pollSource(source: $source);
 		}
 	}//end run()
 
@@ -102,6 +104,8 @@ class DigitalPostInboundJob extends TimedJob {
 	 * @param array<string,mixed> $source The source's data.
 	 *
 	 * @return int How many items were offered to the intake inbox.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function pollSource(array $source): int {
 		$config = ($source['configuration'] ?? []);
@@ -157,6 +161,8 @@ class DigitalPostInboundJob extends TimedJob {
 	 * Every enabled digital post source.
 	 *
 	 * @return array<int,array<string,mixed>> The sources.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function activeSources(): array {
 		try {
@@ -171,7 +177,10 @@ class DigitalPostInboundJob extends TimedJob {
 
 		$sources = [];
 		foreach (($result['results'] ?? $result) as $entity) {
-			$data = ($entity instanceof ObjectEntity === true ? $entity->getObject() : $entity);
+			$data = $entity;
+		if ($entity instanceof ObjectEntity === true) {
+			$data = $entity->getObject();
+		}
 			if (is_array($data) === false || ($data['isEnabled'] ?? false) !== true) {
 				continue;
 			}

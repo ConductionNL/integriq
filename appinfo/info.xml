@@ -59,13 +59,31 @@
         object — so the app cannot function there. Declaring 28 advertised a range
         this app cannot deliver. See issue #1172.
 
-        max-version is 34, NOT 35, for the same "do not advertise a range you
-        cannot deliver" reason in the other direction: NC 35 does not exist —
-        there is no tag, no branch, and this app's own CI matrix has no leg past
-        stable33. The rest of the fleet declares 34; integriq was the only
-        repo claiming 35, so the claim was untested everywhere it mattered.
+        max-version is 35. The previous 34 was recorded here because "NC 35 does
+        not exist — there is no tag, no branch"; nextcloud/server now carries
+        stable35 and nextcloud/ocp has shipped v35.0.0, so that reason has
+        expired. This app's own surface was checked against the change rather
+        than assumed: of the eleven OCP classes removed in 35 (the OCP\Remote\*
+        family, AutoCompleteEvent, CacheInsertEvent, CacheUpdateEvent) integriq
+        references none, and the migration-signature break that NC 35 introduced
+        — ISchemaWrapper handing out OCP\DB\Schema\ITable where Doctrine's
+        Schema\Table used to be — cannot reach this app: it ships ONE migration
+        and that migration type-hints no table at all. The two symfony packages
+        NC 35 core ships and an app can collide with, console and
+        http-foundation, are already required at ^7.4 here, which is what
+        stable35's 3rdparty declares (^7.4.15).
+
+        THE CLAIM STILL DEPENDS ON openregister. min-version above is 32 because
+        openregister is a HARD dependency and declares 32; the same sentence
+        governs this end of the range. openregister declares max-version="34"
+        today, so on NC 35 it refuses to install and every integriq entity —
+        each one an OpenRegister object — has nowhere to live. This bump is
+        therefore correct about integriq and premature about the stack until
+        ConductionNL/openregister#3777 (max-version 34 -> 35) merges. Landing it
+        first would re-advertise a range this app cannot deliver, which is the
+        exact mistake the deleted paragraph above was written to record.
         -->
-        <nextcloud min-version="32" max-version="34"/>
+        <nextcloud min-version="32" max-version="35"/>
 	</dependencies>
 
 	<background-jobs>

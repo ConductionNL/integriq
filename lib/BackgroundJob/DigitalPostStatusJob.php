@@ -75,6 +75,8 @@ class DigitalPostStatusJob extends TimedJob {
 	 * @param mixed $argument Job argument, unused.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	protected function run($argument): void {
 		unset($argument);
@@ -94,6 +96,8 @@ class DigitalPostStatusJob extends TimedJob {
 	 * Messages that have left but have not finished.
 	 *
 	 * @return array<int,array<string,mixed>> The messages.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function openMessages(): array {
 		try {
@@ -113,7 +117,10 @@ class DigitalPostStatusJob extends TimedJob {
 
 		$open = [];
 		foreach (($result['results'] ?? $result) as $entity) {
-			$data = ($entity instanceof ObjectEntity === true ? $entity->getObject() : $entity);
+			$data = $entity;
+		if ($entity instanceof ObjectEntity === true) {
+			$data = $entity->getObject();
+		}
 			if (is_array($data) === false) {
 				continue;
 			}

@@ -41,7 +41,7 @@ class MigrationSourceRegistry {
 	 */
 	public function __construct(iterable $adapters = []) {
 		foreach ($adapters as $adapter) {
-			$this->register($adapter);
+			$this->register(adapter: $adapter);
 		}
 	}//end __construct()
 

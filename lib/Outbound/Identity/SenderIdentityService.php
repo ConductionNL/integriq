@@ -110,7 +110,7 @@ class SenderIdentityService {
 
 			if (($entity instanceof ObjectEntity) === true) {
 				return [
-					'identity' => $this->withDefaults($entity->getObject()),
+					'identity' => $this->withDefaults(identity: $entity->getObject()),
 					'id' => (string)$entity->getUuid(),
 					'fallback' => false,
 				];
@@ -125,7 +125,7 @@ class SenderIdentityService {
 		}
 
 		return [
-			'identity' => $this->withDefaults($default->getObject()),
+			'identity' => $this->withDefaults(identity: $default->getObject()),
 			'id' => (string)$default->getUuid(),
 			'fallback' => true,
 		];
@@ -190,8 +190,13 @@ class SenderIdentityService {
 		$address = (string)($identity['address'] ?? '');
 		$displayName = (string)($identity['displayName'] ?? '');
 
+		$from = $address;
+		if ($displayName !== '') {
+			$from = $displayName . ' <' . $address . '>';
+		}
+
 		return [
-			'from' => ($displayName === '' ? $address : $displayName . ' <' . $address . '>'),
+			'from' => $from,
 			'replyTo' => (string)($identity['replyTo'] ?? $address),
 			'signature' => (string)($identity['signature'] ?? ''),
 			'account' => (string)($identity['mailAccount'] ?? ''),

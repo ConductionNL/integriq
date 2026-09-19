@@ -55,7 +55,7 @@ class PublicationGateway {
 	 * @return GatewayDelivery What happened.
 	 */
 	public function publish(array $reference, array $instruction, array $config = []): GatewayDelivery {
-		$refusals = $this->validate($reference, $instruction);
+		$refusals = $this->validate(reference: $reference, instruction: $instruction);
 		if ($refusals !== []) {
 			return GatewayDelivery::notSent(self::ID, implode(' ', $refusals));
 		}
