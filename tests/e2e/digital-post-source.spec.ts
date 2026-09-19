@@ -62,7 +62,9 @@ test.describe('digital post source', () => {
 			{ providerId: 'berichtenbox', senderOin: '00000001234567890000' },
 			`E2E berichtenbox no cert ${stamp}`,
 		)
-		const id = String(source.id ?? (source['@self'] as Record<string, string>)?.id)
+		const id = String(
+			source.id ?? (source['@self'] as Record<string, string>)?.id,
+		)
 
 		// Activation is enabling the source. The refusal has to reach the
 		// operator rather than surfacing at the first letter.
@@ -90,10 +92,9 @@ test.describe('digital post source', () => {
 	test('a flagged instance with no credentials refuses rather than simulating', async ({
 		request,
 	}) => {
-		const resp = await request.get(
-			'/index.php/apps/integriq/api/health',
-			{ failOnStatusCode: false },
-		)
+		const resp = await request.get('/index.php/apps/integriq/api/health', {
+			failOnStatusCode: false,
+		})
 		expect(resp.status()).toBe(200)
 
 		// The flag is off on a stock instance, so what this asserts is the
@@ -123,7 +124,10 @@ test.describe('digital post source', () => {
 				.toLowerCase()
 				.includes('berichtenbox'),
 		)
-		test.skip(entry === undefined, 'no Berichtenbox catalog entry on this instance')
+		test.skip(
+			entry === undefined,
+			'no Berichtenbox catalog entry on this instance',
+		)
 
 		const text = JSON.stringify(entry).toLowerCase()
 		// The product, and both credentials it cannot work without.

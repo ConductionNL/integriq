@@ -32,7 +32,9 @@ const SECRET = 'e2e-intake-secret'
  */
 function sign(body: string): string {
 	const timestamp = Math.floor(Date.now() / 1000)
-	const signature = createHmac('sha256', SECRET).update(`${timestamp}.${body}`).digest('hex')
+	const signature = createHmac('sha256', SECRET)
+		.update(`${timestamp}.${body}`)
+		.digest('hex')
 
 	return `t=${timestamp},v1=${signature}`
 }
@@ -43,7 +45,10 @@ function sign(body: string): string {
  * @param request The Playwright request context.
  * @param channelId The channel id.
  */
-async function seedChannelSource(request: APIRequestContext, channelId: string): Promise<void> {
+async function seedChannelSource(
+	request: APIRequestContext,
+	channelId: string,
+): Promise<void> {
 	const resp = await request.post(`${OR_BASE}/source`, {
 		failOnStatusCode: false,
 		data: {
@@ -67,7 +72,10 @@ async function seedChannelSource(request: APIRequestContext, channelId: string):
  * @param request The Playwright request context.
  * @param rule The rule.
  */
-async function seedRule(request: APIRequestContext, rule: Record<string, unknown>): Promise<void> {
+async function seedRule(
+	request: APIRequestContext,
+	rule: Record<string, unknown>,
+): Promise<void> {
 	const resp = await request.post(`${OR_BASE}/intake_routing_rule`, {
 		failOnStatusCode: false,
 		data: rule,
@@ -89,14 +97,17 @@ async function deliver(
 	payload: Record<string, unknown>,
 ): Promise<Record<string, any>> {
 	const body = JSON.stringify(payload)
-	const resp = await request.post(`${API_BASE}/intake/channels/${channelId}/inbound`, {
-		failOnStatusCode: false,
-		headers: {
-			'Content-Type': 'application/json',
-			'X-OpenConnector-Signature': sign(body),
+	const resp = await request.post(
+		`${API_BASE}/intake/channels/${channelId}/inbound`,
+		{
+			failOnStatusCode: false,
+			headers: {
+				'Content-Type': 'application/json',
+				'X-OpenConnector-Signature': sign(body),
+			},
+			data: body,
 		},
-		data: body,
-	})
+	)
 	expect(resp.status(), 'a signed delivery must be accepted').toBe(202)
 
 	return await resp.json()
@@ -164,14 +175,18 @@ test.describe('intake channels', () => {
 		expect(result.status).toBe('held')
 		expect(result.reason).toContain('messaging')
 
-		await page.goto(`${APP_BASE}/messages/intake`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/messages/intake`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(
 			page.getByText('Een vraag zonder regel').first(),
 			'a held message is on the page somebody actually reads',
 		).toBeVisible({ timeout: 20_000 })
 	})
 
-	test('a mapping onto a field that does not exist fails at configuration time', async ({ request }) => {
+	test('a mapping onto a field that does not exist fails at configuration time', async ({
+		request,
+	}) => {
 		const resp = await request.post(`${API_BASE}/intake/routing-rules`, {
 			failOnStatusCode: false,
 			headers: { 'OCS-APIRequest': 'true' },
@@ -186,7 +201,9 @@ test.describe('intake channels', () => {
 
 		expect(resp.status(), 'the save must be refused').toBe(400)
 		const body = await resp.json()
-		expect(body.error, 'and it must name the field').toContain('veldDatNietBestaat')
+		expect(body.error, 'and it must name the field').toContain(
+			'veldDatNietBestaat',
+		)
 	})
 
 	test('an anonymous caller cannot change routing', async () => {
@@ -200,7 +217,11 @@ test.describe('intake channels', () => {
 		const resp = await anonymous.post(`${API_BASE}/intake/routing-rules`, {
 			failOnStatusCode: false,
 			headers: { 'OCS-APIRequest': 'true' },
-			data: { name: 'nope', channelId: 'messaging', targetSchema: 'algemene_vraag' },
+			data: {
+				name: 'nope',
+				channelId: 'messaging',
+				targetSchema: 'algemene_vraag',
+			},
 		})
 
 		expect(resp.status()).toBeGreaterThanOrEqual(401)

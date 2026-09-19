@@ -69,17 +69,24 @@ async function seedCall(
 }
 
 test.describe('outbound call log', () => {
-	test('a failed call is found without a container log', async ({ page, request }) => {
+	test('a failed call is found without a container log', async ({
+		page,
+		request,
+	}) => {
 		await seedCall(request, { statusMessage: 'E2E StUF fout op de partner' })
 
-		await page.goto(`${APP_BASE}/sources/logs`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/sources/logs`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await expect(
 			page.getByText('E2E StUF fout op de partner').first(),
 			'the failure is on the screen, with the fault the partner returned',
 		).toBeVisible({ timeout: 20_000 })
 	})
 
-	test('a replay shows what it would send before it sends it', async ({ request }) => {
+	test('a replay shows what it would send before it sends it', async ({
+		request,
+	}) => {
 		const id = await seedCall(request)
 
 		const preview = await request.get(`${API_BASE}/calls/${id}/preview`, {
@@ -116,7 +123,9 @@ test.describe('outbound call log', () => {
 		).toBe(1)
 	})
 
-	test('a replay appends an attempt and leaves the first readable', async ({ request }) => {
+	test('a replay appends an attempt and leaves the first readable', async ({
+		request,
+	}) => {
 		const id = await seedCall(request)
 
 		const resp = await request.post(`${API_BASE}/calls/${id}/replay`, {
@@ -127,14 +136,19 @@ test.describe('outbound call log', () => {
 		expect(resp.status(), 'the replay must answer, not error').toBeLessThan(500)
 
 		const after = await (await request.get(`${OR_BASE}/call_log/${id}`)).json()
-		expect(after.attempts.length, 'the replay is an attempt on the same record').toBeGreaterThan(1)
+		expect(
+			after.attempts.length,
+			'the replay is an attempt on the same record',
+		).toBeGreaterThan(1)
 		expect(
 			after.attempts[0].outcome,
 			'and the attempt that failed first is still there, because it is why somebody looked',
 		).toBe('failed')
 	})
 
-	test('a replay can be asked to run under the current mapping version', async ({ request }) => {
+	test('a replay can be asked to run under the current mapping version', async ({
+		request,
+	}) => {
 		const id = await seedCall(request)
 
 		const resp = await request.post(`${API_BASE}/calls/${id}/replay`, {
@@ -157,18 +171,28 @@ test.describe('outbound call log', () => {
 			headers: { 'OCS-APIRequest': 'true' },
 			data: {
 				target: 'e2e-notificaties-partner',
-				request: { method: 'POST', endpoint: '/notificaties', body: { kanaal: 'zaken' } },
+				request: {
+					method: 'POST',
+					endpoint: '/notificaties',
+					body: { kanaal: 'zaken' },
+				},
 				dryRun: true,
 			},
 		})
 
 		expect(resp.status()).toBe(201)
 		const body = await resp.json()
-		expect(body.sent, 'a dry run of a hand-fired call sends nothing either').toBe(false)
+		expect(
+			body.sent,
+			'a dry run of a hand-fired call sends nothing either',
+		).toBe(false)
 		expect(body.request.endpoint).toBe('/notificaties')
 	})
 
-	test('an external verdict is visible, and changes nothing', async ({ page, request }) => {
+	test('an external verdict is visible, and changes nothing', async ({
+		page,
+		request,
+	}) => {
 		const seed = await request.post(`${OR_BASE}/verdict`, {
 			failOnStatusCode: false,
 			data: {
@@ -182,6 +206,8 @@ test.describe('outbound call log', () => {
 		expect(seed.status(), 'seeding a verdict must succeed').toBeLessThan(300)
 
 		await page.goto(`${APP_BASE}/verdicts`, { waitUntil: 'domcontentloaded' })
-		await expect(page.getByText('E2E ontbrekende bijlage').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.getByText('E2E ontbrekende bijlage').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })

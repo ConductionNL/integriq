@@ -78,7 +78,12 @@ async function seedMessage(
 				},
 			],
 			steps: [
-				{ step: 'rendered', outcome: 'succeeded', at: new Date().toISOString(), detail: '' },
+				{
+					step: 'rendered',
+					outcome: 'succeeded',
+					at: new Date().toISOString(),
+					detail: '',
+				},
 				{
 					step: 'transport',
 					outcome: 'failed',
@@ -89,7 +94,9 @@ async function seedMessage(
 			...overrides,
 		},
 	})
-	expect(resp.status(), 'seeding an outbound message must succeed').toBeLessThan(300)
+	expect(resp.status(), 'seeding an outbound message must succeed').toBeLessThan(
+		300,
+	)
 	const body = await resp.json()
 
 	return String(body.id ?? body.uuid)
@@ -99,7 +106,9 @@ test.describe('outbound message log', () => {
 	test('an administrator finds where a send failed', async ({ page, request }) => {
 		await seedMessage(request, { subject: 'E2E ontvangstbevestiging' })
 
-		await page.goto(`${APP_BASE}/messages/outbound`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP_BASE}/messages/outbound`, {
+			waitUntil: 'domcontentloaded',
+		})
 		const row = page
 			.getByRole('row')
 			.filter({ hasText: 'E2E ontvangstbevestiging' })
@@ -115,26 +124,49 @@ test.describe('outbound message log', () => {
 			page.getByText('550 mailbox unavailable').first(),
 			'the failed recipient names the step and what the transport said',
 		).toBeVisible({ timeout: 20_000 })
-		await expect(page.getByText('gemachtigde@advocaat.example').first()).toBeVisible()
+		await expect(
+			page.getByText('gemachtigde@advocaat.example').first(),
+		).toBeVisible()
 	})
 
 	test('the queue is readable as a queue', async ({ page, request }) => {
-		await seedMessage(request, { subject: 'E2E mislukt bericht', status: 'failed' })
-		await seedMessage(request, { subject: 'E2E verzonden bericht', status: 'sent' })
+		await seedMessage(request, {
+			subject: 'E2E mislukt bericht',
+			status: 'failed',
+		})
+		await seedMessage(request, {
+			subject: 'E2E verzonden bericht',
+			status: 'sent',
+		})
 
-		await page.goto(`${APP_BASE}/messages/outbound`, { waitUntil: 'domcontentloaded' })
-		await expect(page.getByText('E2E mislukt bericht').first()).toBeVisible({ timeout: 20_000 })
+		await page.goto(`${APP_BASE}/messages/outbound`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(page.getByText('E2E mislukt bericht').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 
-	test('a failed message is retried and the attempt lands on the same record', async ({ request }) => {
-		const id = await seedMessage(request, { subject: 'E2E opnieuw versturen', status: 'failed' })
-
-		const resp = await request.post(`${API_BASE}/outbound/messages/${id}/retry`, {
-			failOnStatusCode: false,
-			headers: { 'OCS-APIRequest': 'true' },
-			data: {},
+	test('a failed message is retried and the attempt lands on the same record', async ({
+		request,
+	}) => {
+		const id = await seedMessage(request, {
+			subject: 'E2E opnieuw versturen',
+			status: 'failed',
 		})
-		expect(resp.status(), 'the retry must be accepted or refused, never 500').toBeLessThan(500)
+
+		const resp = await request.post(
+			`${API_BASE}/outbound/messages/${id}/retry`,
+			{
+				failOnStatusCode: false,
+				headers: { 'OCS-APIRequest': 'true' },
+				data: {},
+			},
+		)
+		expect(
+			resp.status(),
+			'the retry must be accepted or refused, never 500',
+		).toBeLessThan(500)
 
 		const body = await resp.json()
 		expect(body.items, 'a retry reports per item').toHaveLength(1)
@@ -150,32 +182,53 @@ test.describe('outbound message log', () => {
 	test('a misdirected request is passed on provably', async ({ request }) => {
 		const id = await seedMessage(request, { subject: 'E2E doorzenden' })
 
-		const resp = await request.post(`${API_BASE}/outbound/messages/${id}/forward`, {
-			failOnStatusCode: false,
-			headers: { 'OCS-APIRequest': 'true' },
-			data: {
-				recipients: [{ address: 'info@anderegemeente.example', name: 'Andere gemeente' }],
-				note: 'Doorgezonden op grond van artikel 2:3 Awb.',
+		const resp = await request.post(
+			`${API_BASE}/outbound/messages/${id}/forward`,
+			{
+				failOnStatusCode: false,
+				headers: { 'OCS-APIRequest': 'true' },
+				data: {
+					recipients: [
+						{
+							address: 'info@anderegemeente.example',
+							name: 'Andere gemeente',
+						},
+					],
+					note: 'Doorgezonden op grond van artikel 2:3 Awb.',
+				},
 			},
-		})
+		)
 		expect(resp.status(), 'the forward must be created').toBe(201)
 
 		const forward = await resp.json()
 		expect(forward.message.forwardedFrom ?? '').toBe(id)
 
-		const original = await (await request.get(`${OR_BASE}/outbound_message/${id}`)).json()
-		expect(original.forwardedTo?.[0]?.message, 'the link reads from the original too').toBe(forward.id)
+		const original = await (
+			await request.get(`${OR_BASE}/outbound_message/${id}`)
+		).json()
+		expect(
+			original.forwardedTo?.[0]?.message,
+			'the link reads from the original too',
+		).toBe(forward.id)
 		expect(
 			original.recipients?.length,
 			'the original is evidence, so the forward changes nothing but the link',
 		).toBe(3)
 	})
 
-	test('a channel without read receipts says so rather than reporting none', async ({ page, request }) => {
+	test('a channel without read receipts says so rather than reporting none', async ({
+		page,
+		request,
+	}) => {
 		await seedMessage(request, { subject: 'E2E leesbevestiging' })
 
-		await page.goto(`${APP_BASE}/messages/outbound`, { waitUntil: 'domcontentloaded' })
-		const row = page.getByRole('row').filter({ hasText: 'E2E leesbevestiging' }).first()
+		await page.goto(`${APP_BASE}/messages/outbound`, {
+			waitUntil: 'domcontentloaded',
+		})
+		const row = page
+			.getByRole('row')
+			.filter({ hasText: 'E2E leesbevestiging' })
+			.first()
 		await expect(row).toBeVisible({ timeout: 20_000 })
 		await row.click()
 
@@ -185,7 +238,9 @@ test.describe('outbound message log', () => {
 		).toBeVisible({ timeout: 20_000 })
 	})
 
-	test('a handler without the permission sees that a letter went out and not what it said', async ({ request }) => {
+	test('a handler without the permission sees that a letter went out and not what it said', async ({
+		request,
+	}) => {
 		const id = await seedMessage(request, { subject: 'E2E brieftekst' })
 
 		// The seeded session is an administrator, so this asserts the endpoint
@@ -197,6 +252,9 @@ test.describe('outbound message log', () => {
 			headers: { 'OCS-APIRequest': 'true' },
 		})
 
-		expect(resp.status(), 'reading a body is a request that is answered or refused').toBeLessThan(500)
+		expect(
+			resp.status(),
+			'reading a body is a request that is answered or refused',
+		).toBeLessThan(500)
 	})
 })

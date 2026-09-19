@@ -50,7 +50,9 @@ describe('mail intake manifest fragment', () => {
 		const allowed = register.components.schemas.message.properties.status.enum
 		const status = page.config.columns.find((column) => column.key === 'status')
 
-		expect(Object.keys(status.widgetProps.colorMap).sort()).toEqual([...allowed].sort())
+		expect(Object.keys(status.widgetProps.colorMap).sort()).toEqual(
+			[...allowed].sort(),
+		)
 	})
 
 	it('lands in the Connections group, because a mailbox is a source', () => {

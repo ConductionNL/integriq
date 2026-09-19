@@ -17,9 +17,7 @@ const API_BASE = '/index.php/apps/integriq/api/gateways'
 
 test.describe('on-premise bridges', () => {
 	// @e2e statutory-gateways::a-revoked-bridge-stops-answering
-	test('an anonymous request cannot revoke a bridge', async ({
-		playwright,
-	}) => {
+	test('an anonymous request cannot revoke a bridge', async ({ playwright }) => {
 		const anonymous = await playwright.request.newContext()
 		try {
 			const resp = await anonymous.post(
