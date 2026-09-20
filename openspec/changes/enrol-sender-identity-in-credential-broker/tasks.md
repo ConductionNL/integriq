@@ -43,19 +43,19 @@
   - The existing `source` migration path keeps its current behaviour, proven by the existing tests still passing unchanged
   - `--dry-run --json` reports `"clean": true` only when no schema in the map holds an unmigrated inline secret
   - Mint `smimePrivateKey` under the existing `generic-apikey` provider (decided 2026-09-20). It is `inject_only: true`, so `resolveInjectable()` returns the PEM and integriq signs locally; its `authScheme` is unused. The label is wrong and correcting it later means a re-mint — do NOT add a provider to OpenRegister in this change (tracked as ConductionNL/openregister#4008)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Refuse key material written where a reference belongs
 - **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-outside-debug`
-- **files**: `lib/Service/Security/SenderIdentitySecretGuard.php`, `lib/Outbound/Identity/SenderIdentityService.php`
+- **files**: `lib/Settings/integriq_register.json` — implemented as a JSON Schema `pattern`, not a PHP guard; integriq has no write hook (see design.md, Implementation deviations)
 - **acceptance_criteria**:
   - GIVEN an instance not in debug configuration WHEN a write places `-----BEGIN` PEM material in `smimePrivateKeyRef` THEN the write is refused and the refusal names the field that accepts key material
   - GIVEN a genuine reference THEN the write is accepted — a test asserts this, because a guard that refuses legitimate input trains operators to work around it
   - Match on the `-----BEGIN` header only; do NOT classify by entropy or heuristics
   - Model the refusal on `FlowConfigGuard`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: Seed data for the modified schema
 - **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
@@ -65,18 +65,18 @@
   - NO seed object carries key material, real or placeholder, and none carries a PEM-shaped string — a fixture that looks like a key is indistinguishable from a leaked one to `gitleaks`
   - Every seeded identity sets `signOutgoing: false`, because a signing identity would need a broker credential that seed data cannot mint
   - Related seeds: a `mail_message` per identity for the timeline, and a `recipient_opt_out` on `no-reply-nieuwsbrief`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ## Verification
-- [ ] All tasks checked off
-- [ ] `openspec validate` passes
+- [x] All tasks checked off
+- [x] `openspec validate` passes
 - [ ] Manual testing against acceptance criteria
-- [ ] Code review against spec requirements
+- [x] Code review against spec requirements
 
 ## Tests (company-wide ADR-009)
 
-- [ ] PHPUnit unit tests for new/changed business logic (`tests/Unit/`)
+- [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/`)
 - [ ] Newman/Postman tests for new/changed API endpoints — N/A, no endpoint is added or changed in shape
 - [ ] Vitest tests for new/changed frontend logic — N/A unless the sender-identity page surfaces the guard's refusal
 - [ ] Playwright e2e for new/changed user journeys — N/A, the journey needs a minted broker credential that cannot be staged in a browser

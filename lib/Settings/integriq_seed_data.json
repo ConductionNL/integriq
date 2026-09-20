@@ -1,5 +1,5 @@
 {
-  "$comment": "Seed data for the openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Per REQ-A-007 (openspec/changes/openconnector-register-schema-declaration), this file ships 3-5 seed objects per mutable config schema; log schemas (call_log, job_log, synchronization_log, synchronization_contract_log) are append-only at runtime and MUST NOT appear here. All secret-bearing fields (apikey, password, secret, jwt) use safe placeholders (\"YOUR_API_KEY_HERE\", \"<placeholder>\", or the all-zero UUID). The top-level `authenticationConfig` field is NOT seeded at all: ocon#232 established it is vestigial (nothing reads it), so seeding it would plant dead data on every install and teach the wrong pattern — credentials belong under `configuration.authentication`. Operators replace the placeholders via the OpenConnector admin UI or via Configuration export/import (ADR-015). Chain B's storage migration translates any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
+  "$comment": "Seed data for the openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Per REQ-A-007 (openspec/changes/openconnector-register-schema-declaration), this file ships 3-5 seed objects per mutable config schema; log schemas (call_log, job_log, synchronization_log, synchronization_contract_log) are append-only at runtime and MUST NOT appear here. All secret-bearing fields (apikey, password, secret, jwt) use safe placeholders (\"YOUR_API_KEY_HERE\", \"<placeholder>\", or the all-zero UUID). The top-level `authenticationConfig` field is NOT seeded at all: ocon#232 established it is vestigial (nothing reads it), so seeding it would plant dead data on every install and teach the wrong pattern — credentials belong under `configuration.authentication`. Operators replace the placeholders via the OpenConnector admin UI or via Configuration export/import (ADR-015). Chain B's storage migration translates any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file. sender_identity seeds carry NO S/MIME material of any kind — no certificate, no key and no `smimePrivateKeyRef`. A PEM-shaped fixture is indistinguishable from a leaked key to gitleaks, and it would teach that key material belongs in a repository. Every seeded identity therefore sets `signOutgoing: false`: an identity demonstrating signing would need a credential minted in the broker, which seed data cannot do, so it would ship as a permanently broken fixture. `no-reply-nieuwsbrief` exists so REQ-OSI-008 (mail to a no-reply address) has something to exercise on a fresh install.",
   "source": [
     {
       "@self": { "register": "integriq", "schema": "source", "slug": "example-rest-api" },
@@ -571,6 +571,44 @@
       "lastOutcome": "authorized",
       "createdAt": "2026-07-13T08:00:00+00:00",
       "updatedAt": "2026-07-13T08:02:00+00:00"
+    }
+  ],
+  "sender_identity": [
+    {
+      "@self": { "register": "integriq", "schema": "sender_identity", "slug": "algemeen" },
+      "displayName": "Gemeente Voorbeeld",
+      "address": "info@example.org",
+      "replyTo": "info@example.org",
+      "isDefault": true,
+      "quotingLevel": "last-message",
+      "holdWindowSeconds": 30,
+      "signOutgoing": false,
+      "dkimSelector": "default",
+      "signature": "Met vriendelijke groet,\n\nGemeente Voorbeeld"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "sender_identity", "slug": "vergunningen" },
+      "displayName": "Vergunningen",
+      "address": "vergunningen@example.org",
+      "replyTo": "vergunningen@example.org",
+      "isDefault": false,
+      "quotingLevel": "none",
+      "holdWindowSeconds": 0,
+      "signOutgoing": false,
+      "dkimSelector": "default"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "sender_identity", "slug": "no-reply-nieuwsbrief" },
+      "displayName": "Nieuwsbrief",
+      "address": "no-reply@example.org",
+      "isDefault": false,
+      "quotingLevel": "none",
+      "holdWindowSeconds": 0,
+      "signOutgoing": false,
+      "noReply": {
+        "bounce": true,
+        "notice": "Dit is een verzendadres; antwoorden worden niet gelezen."
+      }
     }
   ]
 }

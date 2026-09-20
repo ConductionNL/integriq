@@ -146,7 +146,12 @@ class MigrateInlineSecrets extends Command {
 		}
 
 		try {
-			$plan = $this->planner->planAll(limit: $limit);
+			// planEverything(), not planAll(): the Phase D gate must be true only
+			// when NO migratable schema holds an unmigrated inline secret. planAll()
+			// remains the SOURCE-only gate that RemoveMigratedSourceSecretFields
+			// reads, because source's property removal must not be blocked by an
+			// unrelated schema's state.
+			$plan = $this->planner->planEverything(limit: $limit);
 		} catch (Throwable $e) {
 			// Log-friendly, no stack trace to stdout per ADR-005. The message is
 			// not interpolated with any object data.
@@ -159,8 +164,38 @@ class MigrateInlineSecrets extends Command {
 			return Command::SUCCESS;
 		}
 
-		return $this->renderPlan(io: $io, plan: $plan);
+		return $this->renderEstate(io: $io, estate: $plan);
 	}//end execute()
+
+	/**
+	 * Render one dry-run plan per migratable schema.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 * @param array<string,mixed> $estate The planEverything() payload.
+	 *
+	 * @return integer Command::SUCCESS.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	private function renderEstate(SymfonyStyle $io, array $estate): int {
+		foreach ((array)($estate['schemas'] ?? []) as $schema => $plan) {
+			$io->section((string)$schema);
+			// renderPlan() speaks the source vocabulary; the generic payload is
+			// adapted rather than duplicating the table for a second shape.
+			$this->renderPlan(
+				io: $io,
+				plan: [
+					'sources' => ($plan['objects'] ?? []),
+					'totalSources' => ($plan['totalObjects'] ?? 0),
+					'wouldMigrate' => ($plan['wouldMigrate'] ?? 0),
+					'needsReview' => ($plan['needsReview'] ?? 0),
+				]
+			);
+		}
+
+		return Command::SUCCESS;
+
+	}//end renderEstate()
 
 	/**
 	 * Perform a REAL (writing) run: mint → verify → null, then re-report the gate.

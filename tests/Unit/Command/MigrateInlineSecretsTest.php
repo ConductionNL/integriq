@@ -181,10 +181,11 @@ class MigrateInlineSecretsTest extends TestCase {
 	 * @return void
 	 */
 	public function testDryRunDrivesPlannerNotExecutor(): void {
-		$this->planner->expects($this->once())->method('planAll')->willReturn(
+		// planEverything(), not planAll(): the dry-run gate is estate-wide, so a
+		// second migratable schema holding an inline secret keeps Phase D closed.
+		$this->planner->expects($this->once())->method('planEverything')->willReturn(
 			[
-				'sources' => [],
-				'totalSources' => 0,
+				'schemas' => [],
 				'wouldMigrate' => 0,
 				'needsReview' => 0,
 				'clean' => true,

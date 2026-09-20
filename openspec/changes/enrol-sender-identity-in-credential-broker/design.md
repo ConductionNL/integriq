@@ -64,8 +64,12 @@ code.
 
 - **Controllers:** none changed.
 - **Services:**
-  - `OCA\Integriq\Outbound\Identity\SenderIdentityService` — resolves the reference;
-    **switches its own reads to `_rbac: false`**. See Security Considerations.
+  - `OCA\Integriq\Outbound\Identity\SenderIdentityService` — resolves the reference.
+    **Revised during implementation:** only the new `signingMaterial()` reads with
+    `_rbac: false`. The design said "switches its own reads", which would have been
+    wrong: `SenderIdentityController` uses this service to render identities to a
+    person, so a blanket switch would hand a caller exactly what the lockdown in
+    Task 1 refuses. `resolve()`, `all()` and `defaultIdentity()` stay RBAC-scoped.
   - `OCA\Integriq\Outbound\Identity\OutboundSecurityService` — consumes resolved key
     material rather than an inline property, and distinguishes "no key configured"
     from "key could not be resolved".
@@ -287,3 +291,40 @@ broken fixture.
 4. ~~`generic-private-key`, or reuse `generic-apikey`.~~ **Resolved: `generic-apikey`.**
    No `depends_on`; implementation unblocked. Re-mint accepted as the cost.
 5. Generalise the planner or add a sibling. Recommend generalise; see the table.
+
+
+## Implementation deviations
+
+Recorded as they happened, so the artifacts do not read as though the code
+followed them exactly.
+
+**The write guard is declarative, not a PHP class.** The design named
+`SenderIdentitySecretGuard`. There is nowhere in integriq to hang it:
+`SenderIdentityController` has no write endpoint, and identities are written
+through the generic OpenRegister object API, which this app cannot intercept. The
+refusal is therefore a JSON Schema `pattern` on `smimePrivateKeyRef`
+(`^(?!.*-----BEGIN)[^\s]*$`), which OpenRegister enforces through Opis JsonSchema
+on **every** write — including the one path a PHP guard could never see.
+
+A consequence worth stating: the debug exemption is gone, because a schema pattern
+cannot be conditioned on instance configuration. That is arguably better. An escape
+hatch on a guard whose whole job is to stop key material being pasted where a
+reference belongs is a hatch someone eventually leaves open.
+
+**`planAll()` stays `source`-only, and `planEverything()` is new.** Folding a second
+schema into `planAll()` would have changed the number
+`RemoveMigratedSourceSecretFields` reads to decide whether SOURCE properties may be
+removed — blocking source's Phase D on an unrelated schema's state. The OCC
+command's dry-run gate uses `planEverything()` because the gate an operator reads
+should be estate-wide; the repair step keeps the narrow one.
+
+**The executor carries the run's schema as a property, not a parameter.**
+`mintVerifyNull()` already takes nine arguments and a tenth would trip phpmd's
+parameter-list rule, while being passed unchanged the whole way down. It is set
+once at the top of a run and never mutated inside one.
+
+**One real bug the tests caught.** `migrateSource()` re-classifies from fresh raw
+data, and its `planSource()` call defaulted to `source`. Without threading the run's
+schema into it, a `sender_identity` migration found no declared fields, migrated
+nothing, and reported success with no error. Covered now by
+`testASeparateReferenceFieldIsWrittenAndTheKeyEmptied`.

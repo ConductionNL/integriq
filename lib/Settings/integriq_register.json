@@ -4140,6 +4140,7 @@
           },
           "smimePrivateKeyRef": {
             "type": "string",
+            "pattern": "^(?!.*-----BEGIN)[^\\s]*$",
             "description": "Where this identity's signing key is held, as a `{credentialRef}` into the OpenRegister credential broker (keepiq when eligible, the Nextcloud vault otherwise). READABLE on purpose, and it is not a secret: an operator has to be able to see which credential an identity points at, and which one to correct when signing fails. Writing PEM material here is refused outside a debug configuration — the key goes to `smimePrivateKey` once, and the migration moves it.",
             "title": "S/MIME Private Key Reference"
           },
