@@ -62,9 +62,9 @@ is present in `IAppConfig`; otherwise it returns the Nextcloud vault leaf. So th
 change works today with or without keepiq installed, and starts using keepiq
 automatically once it is eligible — nothing to build there, and nothing to wait for.
 
-There is one cross-repo item, but it is in OpenRegister rather than keepiq and it
-only surfaced while writing the design: the provider catalogue has no entry that
-describes a private key. See Cross-Project Dependencies and Open Question 4.
+One cross-repo item surfaced while writing the design — in OpenRegister, not keepiq:
+the provider catalogue has no entry describing a private key. It has been **decided
+not to block on it**; see Cross-Project Dependencies.
 
 The Phase-C blocker that once held this migration up (organisation-scoped
 credentials could not be minted or resolved without a live user session) is
@@ -116,9 +116,9 @@ None.
   only once the migration reports `clean: true` across the estate, and that is a
   separate, gated step — the same discipline `source` followed.
 - **Any change to keepiq.** Its leaf already exists and is already preferred.
-- **Anything in OpenRegister beyond the one provider entry** described under
-  Cross-Project Dependencies. The broker, the store resolver and the sessionless
-  mint are all in place and are consumed as-is.
+- **Any change to OpenRegister.** The broker, the store resolver and the
+  sessionless mint are all in place and are consumed as-is, and the provider
+  question is deliberately deferred rather than fixed here.
 - **Field encryption at rest via `x-openregister-encrypted`.** It is available and
   integriq uses it nowhere, but a brokered credential is not stored in the register
   at all, so encrypting the register column is not the right tool for this field.
@@ -177,11 +177,23 @@ the minted `APP_ID` "fails every brokered resolve CLOSED", and the same coupling
 applies to the provider a credential was minted under. Choosing the wrong label now
 buys a re-mint later.
 
-So this change SHOULD be sequenced behind a small OpenRegister PR adding a
-`generic-private-key` provider entry. That is a single JSON entry in a file whose
-immutability is the point, which makes it a low-risk change — but it is a
-cross-repo dependency and a merge order, and it was not visible when this proposal
-was first written. See Open Question 4.
+**Decided: reuse `generic-apikey` for now, and file the correct-provider work as a
+follow-up.** `generic-apikey` is `inject_only: true`, and its own catalogue comment
+says the calling app "reads the raw key" — so `resolveInjectable()` returns the PEM
+and integriq signs locally. It works today and adds **no** cross-repo dependency.
+
+The reason not to wait for the correct provider is the release chain rather than the
+engineering. Keepiq's own Nextcloud 35 beta (ConductionNL/keepiq#712) is blocked on
+integriq having an NC35-compatible beta, which is blocked on the #1983 review
+findings, which is this change. Adding an OpenRegister merge in front of it would
+serialise a fourth repo into a chain that already runs three deep, to fix a label.
+
+What is given up: the credential is minted under a provider that describes an API
+key, so an operator inspecting it sees the wrong kind. That is cosmetic today and
+becomes a re-mint later, which is the honest cost of the decision rather than a
+reason to avoid it. Recorded as ConductionNL/openregister#4008, and the resolution offered on
+#1983 says so explicitly — the correct provider lands in the beta after keepiq's
+NC35 beta exists.
 
 ## Risks
 
@@ -244,12 +256,10 @@ something a revert should do implicitly.
    cleaner and matches `FlowConfigGuard`; accepting and immediately minting is
    friendlier to an operator pasting a key. Recommend refusing outside debug, with
    the message naming the ref field.
-4. **`generic-private-key` in OpenRegister first, or reuse `generic-apikey`?**
-   Recommend adding the provider, because a mislabelled provider is expensive to
-   correct once credentials are minted under it. The counter-argument is that it
-   couples this change to an OpenRegister merge, and the mislabelling is cosmetic.
-   **This is the one decision that blocks starting implementation**, because it
-   determines whether this change has a `depends_on`.
+4. ~~`generic-private-key` in OpenRegister first, or reuse `generic-apikey`?~~
+   **Resolved 2026-09-20: reuse `generic-apikey`.** See Cross-Project Dependencies.
+   This change carries **no** `depends_on` and implementation is unblocked. The
+   correct provider is a follow-up, and a re-mint is the accepted cost.
 5. **Does the migration machinery generalise, or get a sibling?**
    `InlineSecretMigrationPlanner` hardcodes `SCHEMA = 'source'` and a
    `PROVIDER_MAP` keyed by source field names. Extending it to a second schema is

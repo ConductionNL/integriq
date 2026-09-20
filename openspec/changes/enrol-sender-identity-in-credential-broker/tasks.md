@@ -1,8 +1,5 @@
 # Tasks: enrol-sender-identity-in-credential-broker
 
-> **Blocked on Open Question 4** (proposal + design): whether OpenRegister gains a
-> `generic-private-key` provider first, or this change reuses `generic-apikey`.
-> Only Task 3 depends on the answer — Tasks 1, 2, 4 and 5 can proceed either way.
 >
 > **Tasks 1 and 2 ship in the same commit.** Task 1 alone makes the key unreadable;
 > Task 2 is what keeps signing able to obtain it. Splitting them across releases
@@ -45,7 +42,7 @@
   - Mint at `SCOPE_ORGANISATION`, never `personal`; `APP_ID` stays `'openconnector'` — renaming it fails every existing brokered resolve closed
   - The existing `source` migration path keeps its current behaviour, proven by the existing tests still passing unchanged
   - `--dry-run --json` reports `"clean": true` only when no schema in the map holds an unmigrated inline secret
-  - Provider for `smimePrivateKey` per Open Question 4
+  - Mint `smimePrivateKey` under the existing `generic-apikey` provider (decided 2026-09-20). It is `inject_only: true`, so `resolveInjectable()` returns the PEM and integriq signs locally; its `authScheme` is unused. The label is wrong and correcting it later means a re-mint — do NOT add a provider to OpenRegister in this change (tracked as ConductionNL/openregister#4008)
 - [ ] Implement
 - [ ] Test
 

@@ -113,7 +113,7 @@ public const MIGRATABLE = [
     ],
     'sender_identity' => [
         'fields'   => ['smimePrivateKey'],
-        'providers'=> ['smimePrivateKey' => 'generic-private-key'],
+        'providers'=> ['smimePrivateKey' => 'generic-apikey'],  // interim — see below
         'refField' => ['smimePrivateKey' => 'smimePrivateKeyRef'],
     ],
 ];
@@ -140,14 +140,28 @@ An S/MIME private key is none of those. Every inject-only provider stores exactl
 one opaque secret string, so `generic-apikey` would function as a container, and
 this change could ship today by reusing it.
 
-It should not. The provider is recorded on the minted credential, it is what an
-operator sees in keepiq's list, and changing it later means re-minting every
-credential — the same coupling the executor warns about for `APP_ID`. A one-line
-JSON entry in OpenRegister now is much cheaper than a re-mint later.
+**Decided: reuse `generic-apikey`.** It is `inject_only: true`, and the catalogue's
+own comment for it reads: *"resolved app-side via resolveInjectable(): the calling
+app reads the raw key"*. `resolveInjectable()` returns the raw secret for any
+inject-only provider that is not an OAuth2 token set, so integriq reads the PEM back
+and signs locally. Its `authScheme` (`Authorization: {secret}`) is simply unused —
+integriq is not making an HTTP request with this credential.
 
-**Recommended:** add `generic-private-key` to OpenRegister first; this change
-declares `depends_on` that PR. Open Question 4 in the proposal, and the one decision
-that gates starting implementation.
+The cost is a mislabelled credential, and it is real: the provider is recorded on
+the minted credential, so correcting it later means a re-mint. It is accepted
+because the alternative serialises an OpenRegister merge in front of a release chain
+that is already three repos deep (keepiq#712 waits on integriq's NC35 beta, which
+waits on the #1983 findings, which is this change) in order to fix a label.
+
+Tracked as ConductionNL/openregister#4008.
+
+**Longer term this is not a provider-entry problem at all.** openregister#2720 case 3
+("Signing operations") describes exactly this shape — *"the key signs a payload; it
+is never transmitted. There is no request to proxy — the app needs a signature
+back"* — and proposes a broker `sign` endpoint so the key never leaves custody. That
+is strictly better than reading a PEM back into integriq's memory, and it makes the
+provider label question moot. It is out of scope here and worth recording integriq
+as a second affected app on that issue.
 
 ## Security Considerations
 
@@ -270,6 +284,6 @@ broken fixture.
 2. Which group the `sender_identity` `authorization` block names for `read`.
    Overlaps the blocker-3 conversation.
 3. Refuse-vs-accept for the PEM write guard. Recommend refuse; see above.
-4. `generic-private-key` in OpenRegister, or reuse `generic-apikey`. **Gates
-   implementation** — it decides whether this change carries a `depends_on`.
+4. ~~`generic-private-key`, or reuse `generic-apikey`.~~ **Resolved: `generic-apikey`.**
+   No `depends_on`; implementation unblocked. Re-mint accepted as the cost.
 5. Generalise the planner or add a sibling. Recommend generalise; see the table.
