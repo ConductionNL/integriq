@@ -37,7 +37,9 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Directory\ScimProvisioningService;
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Exception\DirectorySyncRefusalException;
 use OCA\Integriq\Service\AuthorizationService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -67,6 +69,17 @@ class ScimController extends Controller {
 	 * @var string
 	 */
 	private const ERROR_SCHEMA = 'urn:ietf:params:scim:api:messages:2.0:Error';
+
+	/**
+	 * The consumer this request was answered as, resolved by authorize().
+	 *
+	 * Request-scoped: the controller is constructed per request, so this never
+	 * carries an identity from one call into the next. Set by authorize(), which
+	 * carries the REQ-DS-007 reference.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	private ?ObjectEntity $callingConsumer = null;
 
 	/**
 	 * Constructor.
@@ -259,7 +272,28 @@ class ScimController extends Controller {
 		}
 
 		$members = (array)($this->request->getParam('members', []));
-		if ($this->provisioningService->setGroupMembers(groupId: $id, members: $members) === false) {
+
+		try {
+			$written = $this->provisioningService->setGroupMembers(
+				groupId: $id,
+				members: $members,
+				consumerLabel: $this->consumerLabel()
+			);
+		} catch (DirectorySyncRefusalException $refusal) {
+			// The message names what was refused, for the operator reading the log.
+			// The body carries only what the refusal itself decided is safe to tell
+			// a caller — see ScimProvisioningService::REFUSAL_DETAIL_*.
+			$this->logger->warning(
+				'[Scim] refused a group write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+			);
+
+			return $this->scimError(
+				status: Http::STATUS_FORBIDDEN,
+				detail: (string)($refusal->getContext()['detail'] ?? 'This group cannot be managed over SCIM.')
+			);
+		}
+
+		if ($written === false) {
 			return $this->scimError(status: Http::STATUS_NOT_FOUND, detail: 'Resource not found');
 		}
 
@@ -295,9 +329,43 @@ class ScimController extends Controller {
 			return $this->scimError(status: Http::STATUS_UNAUTHORIZED, detail: 'Unauthorized');
 		}
 
+		// REQ-DS-007: a SCIM call is answered as a NAMED consumer. Authentication
+		// alone is not enough, because a call nobody can be held to is a call an
+		// operator cannot investigate afterwards. `keys: []` above means the
+		// rule-inline branch never matches, so a successful authorisation always
+		// leaves a resolved consumer behind — the guard is a fail-closed backstop
+		// against that invariant changing, not a path expected to be taken.
+		$consumer = $this->authorizationService->getResolvedConsumer();
+		if ($consumer === null) {
+			$this->logger->warning('[Scim] rejected a call that authenticated without naming a consumer');
+
+			return $this->scimError(status: Http::STATUS_UNAUTHORIZED, detail: 'Unauthorized');
+		}
+
+		$this->callingConsumer = $consumer;
+
 		return null;
 
 	}//end authorize()
+
+	/**
+	 * The consumer this call was answered as, for a log line.
+	 *
+	 * Never returned to the caller — attribution belongs in the log, where an
+	 * operator can read it, and not in a response an attacker can probe.
+	 *
+	 * @return string The consumer's uuid, or `unknown` before authorize() has run.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	private function consumerLabel(): string {
+		if ($this->callingConsumer === null) {
+			return 'unknown';
+		}
+
+		return (string)$this->callingConsumer->getUuid();
+
+	}//end consumerLabel()
 
 	/**
 	 * Read an exact-match value out of a SCIM `filter` query parameter.

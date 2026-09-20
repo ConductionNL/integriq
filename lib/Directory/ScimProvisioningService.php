@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Directory;
 
+use OCA\Integriq\Exception\DirectorySyncRefusalException;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -73,6 +74,28 @@ class ScimProvisioningService {
 	private const GENERATED_PASSWORD_LENGTH = 48;
 
 	/**
+	 * The groups SCIM may never write, whatever the caller presents.
+	 *
+	 * Not configurable, by design. A deployment that could switch this off would
+	 * eventually be a deployment that had.
+	 *
+	 * @var array<int,string>
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
+	 */
+	private const PRIVILEGED_GROUPS = ['admin'];
+
+	/**
+	 * What a caller is told when it names a privileged group.
+	 *
+	 * Deliberately says nothing about which groups are privileged or why. A
+	 * caller probing the boundary should learn only that it exists.
+	 *
+	 * @var string
+	 */
+	private const REFUSAL_DETAIL_PRIVILEGED = 'This group cannot be managed over SCIM.';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IUserManager $userManager Nextcloud's account model.
@@ -80,6 +103,8 @@ class ScimProvisioningService {
 	 * @param ISecureRandom $secureRandom Source of the throwaway password.
 	 * @param OpenWorkReporter $openWorkReporter Asks consumers what a leaver still holds.
 	 * @param LoggerInterface $logger Logger for provisioning outcomes.
+	 * @param DirectorySource $directorySource Supplies the configured directory connections.
+	 * @param GroupMappingResolver $mappingResolver Supplies the groups a connection declares it manages.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
@@ -89,9 +114,106 @@ class ScimProvisioningService {
 		private readonly ISecureRandom $secureRandom,
 		private readonly OpenWorkReporter $openWorkReporter,
 		private readonly LoggerInterface $logger,
+		private readonly DirectorySource $directorySource,
+		private readonly GroupMappingResolver $mappingResolver,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Refuse a group write, naming the group for the log and not for the caller.
+	 *
+	 * @param string $groupId The group that was named.
+	 * @param string $consumerLabel The consumer the call was answered as.
+	 * @param string $reason What was refused, for the operator reading the log.
+	 * @param string $detail What the caller is told.
+	 *
+	 * @return never
+	 *
+	 * @throws DirectorySyncRefusalException Always — that is the point.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
+	 */
+	private function refuse(string $groupId, string $consumerLabel, string $reason, string $detail): never {
+		$this->logger->warning(
+			'[Scim] consumer ' . $consumerLabel . ' was refused a write to the group ' . $groupId . ': ' . $reason
+		);
+
+		throw new DirectorySyncRefusalException(
+			message: $reason,
+			context: ['group' => $groupId, 'consumer' => $consumerLabel, 'detail' => $detail]
+		);
+
+	}//end refuse()
+
+	/**
+	 * Refuse the write unless this group is one SCIM may manage.
+	 *
+	 * @param string $groupId The group the caller named.
+	 * @param string $consumerLabel The consumer the call was answered as.
+	 *
+	 * @return void
+	 *
+	 * @throws DirectorySyncRefusalException When the group is privileged, or no
+	 *                                       directory connection declares it managed.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-only-the-groups-a-connection-declares-it-manages-req-ds-009
+	 */
+	private function assertWritableGroup(string $groupId, string $consumerLabel): void {
+		// Checked first and independently of the allow-list, so that an operator
+		// who mistakenly declares `admin` managed still cannot write it.
+		if (in_array(needle: $groupId, haystack: self::PRIVILEGED_GROUPS, strict: true) === true) {
+			$this->refuse(
+				groupId: $groupId,
+				consumerLabel: $consumerLabel,
+				reason: 'the group is privileged and is never writable over SCIM',
+				detail: self::REFUSAL_DETAIL_PRIVILEGED
+			);
+		}
+
+		if (in_array(needle: $groupId, haystack: $this->managedGroupUnion(), strict: true) === true) {
+			return;
+		}
+
+		// This refusal names the group to the caller, unlike the one above. An
+		// unmanaged group is a configuration mistake an operator has to be able
+		// to diagnose; a privileged group is a boundary an attacker should learn
+		// nothing about.
+		$this->refuse(
+			groupId: $groupId,
+			consumerLabel: $consumerLabel,
+			reason: 'no directory connection declares the group as managed',
+			detail: 'The group \'' . $groupId . '\' is not managed by a directory connection.'
+		);
+
+	}//end assertWritableGroup()
+
+	/**
+	 * Every group any configured directory connection declares that it manages.
+	 *
+	 * Read in system context: the connection is consulted here as policy, never
+	 * rendered to the caller. An RBAC read would answer nothing for a consumer
+	 * that is not an administrator, and an empty answer is indistinguishable
+	 * from "this instance manages no groups" — which would refuse every write
+	 * rather than the intended ones.
+	 *
+	 * @return array<int,string> The union of declared managed groups, possibly empty.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-only-the-groups-a-connection-declares-it-manages-req-ds-009
+	 */
+	private function managedGroupUnion(): array {
+		$union = [];
+		foreach ($this->directorySource->findConnectionsForPolicy() as $connection) {
+			$configuration = (array)($connection->getObject()['configuration'] ?? []);
+			foreach ($this->mappingResolver->managedGroups(configuration: $configuration) as $groupId) {
+				$union[$groupId] = true;
+			}
+		}
+
+		return array_keys($union);
+
+	}//end managedGroupUnion()
 
 	/**
 	 * Create or update an account from a SCIM user resource.
@@ -247,12 +369,28 @@ class ScimProvisioningService {
 	 *
 	 * @param string $groupId The Nextcloud group id.
 	 * @param array<int,array<string,mixed>> $members The SCIM member list.
+	 * @param string $consumerLabel The consumer this call was answered as, for the log.
 	 *
-	 * @return boolean True when the group exists and was set.
+	 * @return boolean True when the group exists and was set, false when it does not exist.
+	 *
+	 * @throws DirectorySyncRefusalException When the group is privileged, or is not
+	 *                                       declared managed by any directory connection.
+	 *                                       A refusal is distinct from the false return:
+	 *                                       false means "no such group", the exception
+	 *                                       means "not yours to write".
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-only-the-groups-a-connection-declares-it-manages-req-ds-009
 	 */
-	public function setGroupMembers(string $groupId, array $members): bool {
+	public function setGroupMembers(string $groupId, array $members, string $consumerLabel = 'unknown'): bool {
+		// Refuse before every read and every write, including the lookup below.
+		// The ordering is the requirement, not an optimisation: this method
+		// reconciles membership, so it REMOVES anyone absent from $members. A
+		// refusal placed after the removal loop would still empty the group it
+		// was meant to protect.
+		$this->assertWritableGroup(groupId: $groupId, consumerLabel: $consumerLabel);
+
 		$group = $this->groupManager->get($groupId);
 		if ($group === null) {
 			return false;

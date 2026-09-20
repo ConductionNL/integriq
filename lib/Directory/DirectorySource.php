@@ -109,22 +109,79 @@ class DirectorySource {
 	/**
 	 * Every enabled directory connection, as Source objects.
 	 *
+	 * Read under RBAC, so a caller who may not see a Source is answered as if it
+	 * did not exist. `source` is admin-only (register.d/99-source-lockdown.json)
+	 * because it holds credentials.
+	 *
 	 * @return array<int,ObjectEntity> The directory connections.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
 	 */
 	public function findConnections(): array {
+		$matches = $this->orObjectService->findAll(config: self::connectionQuery());
+
+		return $this->directoryRows(matches: $matches);
+
+	}//end findConnections()
+
+	/**
+	 * The same connections, read outside RBAC, for consulting them as policy.
+	 *
+	 * Separate from findConnections() rather than a flag on it, because the two
+	 * differ in who is asking and not merely in how. Here the reader is the app
+	 * deciding what it is permitted to do, and the connection is never rendered
+	 * to the caller.
+	 *
+	 * The distinction matters because `source` is admin-only: an RBAC read on
+	 * behalf of a SCIM consumer answers nothing, and "no connections" would then
+	 * be indistinguishable from "this instance manages no groups". One means the
+	 * reader may not look; the other means there is nothing to see. Confusing
+	 * them would refuse every write on a correctly configured instance.
+	 *
+	 * @return array<int,ObjectEntity> The directory connections.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-only-the-groups-a-connection-declares-it-manages-req-ds-009
+	 */
+	public function findConnectionsForPolicy(): array {
 		$matches = $this->orObjectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA,
-					'type' => self::SOURCE_TYPE,
-				],
-				'limit' => 100,
-			]
+			config: self::connectionQuery(),
+			_rbac: false,
+			_multitenancy: false
 		);
 
+		return $this->directoryRows(matches: $matches);
+
+	}//end findConnectionsForPolicy()
+
+	/**
+	 * The query both readers issue.
+	 *
+	 * @return array<string,mixed> The findAll configuration.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
+	 */
+	private static function connectionQuery(): array {
+		return [
+			'filters' => [
+				'register' => self::REGISTER,
+				'schema' => self::SCHEMA,
+				'type' => self::SOURCE_TYPE,
+			],
+			'limit' => 100,
+		];
+
+	}//end connectionQuery()
+
+	/**
+	 * Keep only the rows that really are directory connections.
+	 *
+	 * @param array<string,mixed> $matches What the register answered.
+	 *
+	 * @return array<int,ObjectEntity> The directory connections.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
+	 */
+	private function directoryRows(array $matches): array {
 		$rows = ($matches['results'] ?? $matches);
 		$connections = [];
 		foreach ($rows as $row) {
@@ -145,7 +202,7 @@ class DirectorySource {
 
 		return $connections;
 
-	}//end findConnections()
+	}//end directoryRows()
 
 	/**
 	 * Read one directory connection.
