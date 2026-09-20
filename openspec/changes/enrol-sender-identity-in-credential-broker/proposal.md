@@ -245,9 +245,25 @@ something a revert should do implicitly.
 
 ## Open Questions
 
-1. **Should `smimeCertificate` move too?** A certificate is public by nature, so
-   the default answer is no — it stays inline and readable. Confirm, because
-   treating it as a secret would needlessly break certificate inspection in the UI.
+1. ~~Should `smimeCertificate` move too?~~ **Resolved 2026-09-20: it stays inline
+   and literal in this change** — but not for the reason first given here, which
+   was "a certificate is public, so it needs no custody". That reasons from the
+   sensitivity of each half rather than from the lifecycle of the artifact. A
+   certificate and its key are issued together, rotated together and are useless
+   apart, so the better model is **one credential holding the pair**, with
+   brokering the public half an operator's choice rather than an enforced path.
+
+   That model needs a multi-field credential, and the read path cannot express one
+   today: a provider stores one opaque string, `CredentialStore::get()` returns
+   `?string`, and `DoriathCredentialStore` reads only the secret's `key` field.
+   Keepiq is not the constraint — its `Secret` already carries `url`, `login`,
+   `key` and `additionalFields`, and secret requests are shipped (keepiq#285). The
+   flattening is on the OpenRegister side. Filed as
+   ConductionNL/openregister#4009.
+
+   Building half of that mechanism here would leave a bespoke shape to migrate away
+   from, so the certificate stays a plain inline property and the pair-custody model
+   arrives with #4009.
 2. **What group should the `sender_identity` `authorization` block name for
    `read`?** `admin` is the safe default and matches `99-source-lockdown.json`, but
    the sender-identity page may be intended for a wider operator group. This
