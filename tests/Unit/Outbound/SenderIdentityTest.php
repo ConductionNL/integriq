@@ -36,7 +36,46 @@ use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
+
+/**
+ * A SenderIdentityService whose broker access is supplied by the test.
+ *
+ * The real seams probe for an OpenRegister class that is not autoloadable in a
+ * pure-unit run, so without this every brokered path would report "unresolvable"
+ * and the tests would pass for the wrong reason.
+ */
+class BrokeredSenderIdentityService extends SenderIdentityService {
+
+	/**
+	 * The broker double, or null to simulate an unavailable broker.
+	 *
+	 * @var object|null
+	 */
+	public ?object $brokerDouble = null;
+
+	/**
+	 * Whether the broker class is loadable.
+	 *
+	 * @return bool Whether a double was supplied.
+	 */
+	protected function isBrokerClassAvailable(): bool {
+		return $this->brokerDouble !== null;
+
+	}//end isBrokerClassAvailable()
+
+	/**
+	 * The broker double.
+	 *
+	 * @return object The double.
+	 */
+	protected function resolveBroker(): object {
+		return $this->brokerDouble;
+
+	}//end resolveBroker()
+}//end class
 
 /**
  * A DNS zone a test hands the checker instead of the internet.
@@ -126,7 +165,7 @@ class SenderIdentityTest extends TestCase {
 	 */
 	public function testTwoTeamsSendUnderTheirOwnAddress(): void {
 		$this->seedIdentities();
-		$service = new SenderIdentityService($this->objectService);
+		$service = $this->service();
 
 		$belastingen = $service->resolve('belastingen');
 		$envelope = $service->envelopeFor($belastingen['identity']);
@@ -146,7 +185,7 @@ class SenderIdentityTest extends TestCase {
 	 */
 	public function testAMessageWithoutAnIdentityFallsBack(): void {
 		$this->seedIdentities();
-		$service = new SenderIdentityService($this->objectService);
+		$service = $this->service();
 
 		$resolved = $service->resolve(null);
 
@@ -163,7 +202,7 @@ class SenderIdentityTest extends TestCase {
 	 */
 	public function testWithoutADefaultAMessageIsRefused(): void {
 		$this->identities = [];
-		$service = new SenderIdentityService($this->objectService);
+		$service = $this->service();
 
 		$this->expectException(RuntimeException::class);
 		$service->resolve(null);
@@ -412,4 +451,165 @@ class SenderIdentityTest extends TestCase {
 
 	}//end seedIdentities()
 
+
+	/**
+	 * The service under test, with the collaborators the signing path needs.
+	 *
+	 * @return SenderIdentityService The service.
+	 */
+	private function service(): SenderIdentityService {
+		return new SenderIdentityService(
+			objectService: $this->objectService,
+			container: $this->createMock(ContainerInterface::class),
+			logger: $this->createMock(LoggerInterface::class)
+		);
+
+	}//end service()
+
+	/**
+	 * A brokered reference yields key material, so signing keeps working once the
+	 * inline field is write-only.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 */
+	public function testABrokeredReferenceYieldsKeyMaterial(): void {
+		$broker = new class {
+			/**
+			 * Resolve a credential.
+			 *
+			 * @param string $credentialId The credential.
+			 * @param string $appId The app.
+			 * @param string|null $userId The acting user.
+			 * @param string|null $organisationId The acting organisation.
+			 *
+			 * @return string The secret.
+			 */
+			public function resolveInjectable($credentialId, $appId, $userId = null, $organisationId = null) {
+				return 'RESOLVED_KEY_MATERIAL';
+			}
+		};
+
+		$service = $this->brokeredService(broker: $broker, storedKey: '');
+
+		$material = $service->signingMaterial(
+			identity: ['smimePrivateKeyRef' => 'cred-1'],
+			identityId: 'identity-1'
+		);
+
+		$this->assertSame(SenderIdentityService::SIGNING_KEY_AVAILABLE, $material['state']);
+		$this->assertSame('RESOLVED_KEY_MATERIAL', $material['key']);
+
+	}//end testABrokeredReferenceYieldsKeyMaterial()
+
+	/**
+	 * A reference the broker refuses reports UNRESOLVABLE, never ABSENT.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 */
+	public function testARefusedReferenceIsUnresolvableNotAbsent(): void {
+		$broker = new class {
+			/**
+			 * Refuse to resolve.
+			 *
+			 * @param string $credentialId The credential.
+			 * @param string $appId The app.
+			 * @param string|null $userId The acting user.
+			 * @param string|null $organisationId The acting organisation.
+			 *
+			 * @return string Never returns.
+			 *
+			 * @throws RuntimeException Always.
+			 */
+			public function resolveInjectable($credentialId, $appId, $userId = null, $organisationId = null) {
+				throw new RuntimeException('refused');
+			}
+		};
+
+		$service = $this->brokeredService(broker: $broker, storedKey: '');
+
+		$material = $service->signingMaterial(
+			identity: ['smimePrivateKeyRef' => 'cred-1'],
+			identityId: 'identity-1'
+		);
+
+		$this->assertSame(SenderIdentityService::SIGNING_KEY_UNRESOLVABLE, $material['state']);
+		$this->assertNull($material['key']);
+
+	}//end testARefusedReferenceIsUnresolvableNotAbsent()
+
+	/**
+	 * An identity whose key is not yet migrated still signs, because the signing
+	 * path reads outside RBAC and write-only stripping is gated on `_rbac`.
+	 *
+	 * This is the regression that would otherwise ship silently: mail keeps
+	 * sending, just unsigned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 */
+	public function testAnUnmigratedIdentityStillYieldsItsInlineKey(): void {
+		$service = $this->brokeredService(broker: null, storedKey: 'INLINE_KEY_MATERIAL');
+
+		$material = $service->signingMaterial(identity: [], identityId: 'identity-1');
+
+		$this->assertSame(SenderIdentityService::SIGNING_KEY_AVAILABLE, $material['state']);
+		$this->assertSame('INLINE_KEY_MATERIAL', $material['key']);
+
+	}//end testAnUnmigratedIdentityStillYieldsItsInlineKey()
+
+	/**
+	 * An identity with neither a reference nor an inline key reports ABSENT.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 */
+	public function testAnIdentityWithNoKeyAtAllReportsAbsent(): void {
+		$service = $this->brokeredService(broker: null, storedKey: '');
+
+		$material = $service->signingMaterial(identity: [], identityId: 'identity-1');
+
+		$this->assertSame(SenderIdentityService::SIGNING_KEY_ABSENT, $material['state']);
+		$this->assertNull($material['key']);
+
+	}//end testAnIdentityWithNoKeyAtAllReportsAbsent()
+
+	/**
+	 * Build the service with a broker double and a stored identity.
+	 *
+	 * @param object|null $broker The broker double, or null for "unavailable".
+	 * @param string $storedKey The inline key the system-context read finds.
+	 *
+	 * @return BrokeredSenderIdentityService The service.
+	 */
+	private function brokeredService(?object $broker, string $storedKey): BrokeredSenderIdentityService {
+		// A REAL ObjectEntity: getOrganisation() is a magic method via
+		// Entity::__call, so createMock() cannot stub it (see #1015 and the note
+		// in ObjectServiceMockBuilder).
+		$entity = ObjectServiceMockBuilder::objectEntity(
+			test: $this,
+			body: ['smimePrivateKey' => $storedKey],
+			uuid: 'identity-1'
+		);
+		// Positional arg: Entity::__call's setter uses $args[0].
+		$entity->setOrganisation('org-1');
+
+		$objectService = $this->createMock(ORObjectService::class);
+		$objectService->method('find')->willReturn($entity);
+
+		$service = new BrokeredSenderIdentityService(
+			objectService: $objectService,
+			container: $this->createMock(ContainerInterface::class),
+			logger: $this->createMock(LoggerInterface::class)
+		);
+		$service->brokerDouble = $broker;
+
+		return $service;
+
+	}//end brokeredService()
 }//end class

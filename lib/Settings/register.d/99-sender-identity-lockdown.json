@@ -1,0 +1,16 @@
+{
+	"_comment": "ADR-037 register fragment — sender-identity-lockdown (integriq#1983 review 5260087915, blocker 3, resolved for this beta). SECURITY FIX. `sender_identity` had NO `authorization` block, so it fell back to OpenRegister's default. That default is NOT deny: `PermissionHandler::hasGroupPermission()` treats an absent-or-empty block as default-OPEN, and `enforce_default_closed` cannot close it because `read` is absent from `DEFAULT_CLOSED_WRITE_ACTIONS` (create/update/delete/destroy). Every authenticated account could read every sending identity. NOTE THE SHAPE, because the wrong one looks identical and closes nothing: `\"authorization\": {}` is an EMPTY BLOCK and stays wide open (empty($authorization) takes the default-OPEN branch). What closes a schema is a NON-EMPTY block whose rule LISTS are empty — `\"read\": []` makes empty($authorization['read']) true, which PermissionHandler reads as 'grant to nobody'. Hence the five explicit empty lists below. Two bypasses still precede these lists and are intended: the `admin` group, and the object OWNER for their own objects. So the effective rule is administrators plus whoever owns the identity. Nine sibling schemas from the same release carry the same lockdown; they ship in their own fragment because they are a separate finding with a separate decision about who should eventually read them. Refining that — a functional-beheerder group, case-based access, per-object ownership — is its own change; this fragment is the interim that stops the disclosure.",
+	"components": {
+		"schemas": {
+			"sender_identity": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			}
+		}
+	}
+}

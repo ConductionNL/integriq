@@ -56,22 +56,27 @@ class OutboundSecurityService {
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService Reads the recipient keys.
+	 * @param SenderIdentityService $identities Resolves an identity's signing key through the broker.
 	 */
-	public function __construct(private readonly ORObjectService $objectService) {
+	public function __construct(
+		private readonly ORObjectService $objectService,
+		private readonly SenderIdentityService $identities,
+	) {
 
 	}//end __construct()
 
 	/**
 	 * Protect one message for one recipient.
 	 *
-	 * @param array<string,mixed> $identity The sending identity, which may carry S/MIME material.
+	 * @param array<string,mixed> $identity The sending identity.
+	 * @param string $identityId The identity's uuid, so its signing key can be resolved.
 	 * @param string $recipient The recipient address.
 	 * @param string $message The MIME message to protect.
 	 *
 	 * @return array{signed:bool,encrypted:bool,payload:string,detail:string} What happened, and
 	 *         the protected payload. `detail` always says why something did not happen.
 	 */
-	public function protect(array $identity, string $recipient, string $message): array {
+	public function protect(array $identity, string $identityId, string $recipient, string $message): array {
 		$result = ['signed' => false, 'encrypted' => false, 'payload' => $message, 'detail' => ''];
 
 		if (($identity['signOutgoing'] ?? false) !== true) {
@@ -80,11 +85,28 @@ class OutboundSecurityService {
 		}
 
 		$certificate = trim((string)($identity['smimeCertificate'] ?? ''));
-		$privateKey = trim((string)($identity['smimePrivateKey'] ?? ''));
-		if ($certificate === '' || $privateKey === '') {
-			$result['detail'] = 'This identity is set to sign but carries no S/MIME certificate and key.';
+		if ($certificate === '') {
+			$result['detail'] = 'This identity is set to sign but carries no S/MIME certificate.';
 			return $result;
 		}
+
+		// REQ-OSI-011: an unresolvable credential and an unconfigured identity are
+		// NOT the same answer. They used to share one message, which is precisely
+		// how a write-only field the signing path could no longer read would look
+		// like an operator's mistake — while the message went out unsigned.
+		$material = $this->identities->signingMaterial(identity: $identity, identityId: $identityId);
+		if ($material['state'] === SenderIdentityService::SIGNING_KEY_UNRESOLVABLE) {
+			$result['detail'] = 'This identity names a signing credential that could not be resolved; '
+				. 'the message was not sent signed.';
+			return $result;
+		}
+
+		if ($material['state'] !== SenderIdentityService::SIGNING_KEY_AVAILABLE) {
+			$result['detail'] = 'This identity is set to sign but carries no S/MIME private key.';
+			return $result;
+		}
+
+		$privateKey = (string)$material['key'];
 
 		$signed = $this->sign(message: $result['payload'], certificate: $certificate, privateKey: $privateKey);
 		if ($signed === null) {

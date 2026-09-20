@@ -266,21 +266,24 @@ something a revert should do implicitly.
    Building half of that mechanism here would leave a bespoke shape to migrate away
    from, so the certificate stays a plain inline property and the pair-custody model
    arrives with #4009.
-2. **What group should the `sender_identity` `authorization` block name for
-   `read`?** `admin` is the safe default and matches `99-source-lockdown.json`, but
-   the sender-identity page may be intended for a wider operator group. This
-   overlaps the blocker-3 conversation with Ruben.
-3. **Does the write-time PEM guard refuse, or accept-and-migrate?** Refusing is
-   cleaner and matches `FlowConfigGuard`; accepting and immediately minting is
-   friendlier to an operator pasting a key. Recommend refusing outside debug, with
-   the message naming the ref field.
+2. ~~What group should the `sender_identity` `authorization` block name for
+   `read`?~~ **Resolved 2026-09-20: the same treatment as the other nine schemas
+   from the same review** — a `register.d` lockdown with explicit empty rule lists
+   (`{"create": [], "read": [], "update": [], "delete": []}`), which closes reads to
+   the `admin` group and the object owner. Note this is NOT `"authorization": {}`,
+   which is default-OPEN for reads. Two conventions in one release would be worse
+   than one imperfect one; refining who may read the mail schemas is its own change.
+3. ~~Does the write-time PEM guard refuse, or accept-and-migrate?~~ **Resolved:
+   refuse, outside debug.** Accept-and-migrate mints a credential as a side effect
+   of a write: the operator gets no signal it happened, and the audit trail shows a
+   credential appearing from nowhere. `FlowConfigGuard` already establishes refusal
+   as this app's answer to a config shape it will not accept.
 4. ~~`generic-private-key` in OpenRegister first, or reuse `generic-apikey`?~~
    **Resolved 2026-09-20: reuse `generic-apikey`.** See Cross-Project Dependencies.
    This change carries **no** `depends_on` and implementation is unblocked. The
    correct provider is a follow-up, and a re-mint is the accepted cost.
-5. **Does the migration machinery generalise, or get a sibling?**
-   `InlineSecretMigrationPlanner` hardcodes `SCHEMA = 'source'` and a
-   `PROVIDER_MAP` keyed by source field names. Extending it to a second schema is
-   either a generalisation of that class or a parallel planner. Recommend
-   generalising — two near-identical planners is how the verify-before-null rule
-   ends up implemented twice and correctly once. Detail in design.md.
+5. ~~Does the migration machinery generalise, or get a sibling?~~ **Resolved:
+   generalise.** Verify-before-null is the entire safety property, and duplication
+   is how it ends up implemented correctly once. The `source` path's existing tests
+   are what make the refactor checkable; a sibling has nothing holding the two in
+   agreement. Detail in design.md.

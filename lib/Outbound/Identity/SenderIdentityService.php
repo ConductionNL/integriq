@@ -33,7 +33,10 @@ use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Resolves which identity a message leaves under.
@@ -48,6 +51,50 @@ class SenderIdentityService {
 	 * @var string
 	 */
 	public const SCHEMA = 'sender_identity';
+
+	/**
+	 * Signing key material was obtained.
+	 *
+	 * @var string
+	 */
+	public const SIGNING_KEY_AVAILABLE = 'available';
+
+	/**
+	 * This identity has no signing key configured at all.
+	 *
+	 * @var string
+	 */
+	public const SIGNING_KEY_ABSENT = 'absent';
+
+	/**
+	 * This identity names a credential the broker could not resolve.
+	 *
+	 * Distinct from ABSENT on purpose. The two used to share one message, which is
+	 * how a write-only field that nobody could read looked exactly like an
+	 * identity nobody had configured.
+	 *
+	 * @var string
+	 */
+	public const SIGNING_KEY_UNRESOLVABLE = 'unresolvable';
+
+	/**
+	 * FQCN of the OpenRegister credential broker, resolved lazily so this app
+	 * carries no compile-time dependency on it.
+	 *
+	 * @var string
+	 */
+	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
+
+	/**
+	 * The app id every credential minted by this app is allowed for.
+	 *
+	 * `openconnector` rather than `integriq`: every credential minted so far
+	 * carries it, and renaming it fails every brokered resolve CLOSED. Correcting
+	 * it is its own migration.
+	 *
+	 * @var string
+	 */
+	private const BROKER_APP_ID = 'openconnector';
 
 	/**
 	 * Quote nothing of the case history.
@@ -81,8 +128,14 @@ class SenderIdentityService {
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService Reads and writes identities.
+	 * @param ContainerInterface $container Resolves the OpenRegister credential broker lazily.
+	 * @param LoggerInterface $logger Logs why a signing key could not be obtained, never the key.
 	 */
-	public function __construct(private readonly ORObjectService $objectService) {
+	public function __construct(
+		private readonly ORObjectService $objectService,
+		private readonly ContainerInterface $container,
+		private readonly LoggerInterface $logger,
+	) {
 
 	}//end __construct()
 
@@ -131,6 +184,172 @@ class SenderIdentityService {
 		];
 
 	}//end resolve()
+
+	/**
+	 * The signing key for one identity, and why there is none when there is none.
+	 *
+	 * Signing reads OUTSIDE RBAC, and only here. `resolve()`, `all()` and
+	 * `defaultIdentity()` stay RBAC-scoped because SenderIdentityController
+	 * renders them to a person, and `sender_identity` is locked down
+	 * (register.d/99-sender-identity-lockdown.json). Widening those would hand a
+	 * caller exactly what that lockdown refuses.
+	 *
+	 * The system-context read is needed for a different reason: `smimePrivateKey`
+	 * is `writeOnly`, and OpenRegister strips write-only values when
+	 * `_rbac === true`. An identity whose key has not yet been migrated would
+	 * therefore read as EMPTY to the signing path, and the message would go out
+	 * unsigned under a reason that reads like an unconfigured identity. That is
+	 * the transitional path; a migrated identity resolves through the broker and
+	 * never touches the inline field.
+	 *
+	 * @param array<string,mixed> $identity The identity object as read.
+	 * @param string $identityId The identity's uuid, for the system-context read.
+	 *
+	 * @return array{key: string|null, state: string} The material, and the state
+	 *         explaining its absence. Never carries a secret in the state.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 */
+	public function signingMaterial(array $identity, string $identityId): array {
+		$reference = trim((string)($identity['smimePrivateKeyRef'] ?? ''));
+		if ($reference !== '') {
+			return $this->materialFromBroker(reference: $reference, identityId: $identityId);
+		}
+
+		return $this->materialFromInlineValue(identityId: $identityId);
+
+	}//end signingMaterial()
+
+	/**
+	 * Resolve key material from the credential broker.
+	 *
+	 * @param string $reference The credential id held on the identity.
+	 * @param string $identityId The identity's uuid, for the organisation lookup.
+	 *
+	 * @return array{key: string|null, state: string} The material or why not.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 */
+	private function materialFromBroker(string $reference, string $identityId): array {
+		if ($this->isBrokerClassAvailable() === false) {
+			$this->logger->warning('[SenderIdentity] the credential broker is unavailable, so ' . $identityId . ' cannot sign');
+
+			return ['key' => null, 'state' => self::SIGNING_KEY_UNRESOLVABLE];
+		}
+
+		$entity = $this->systemContextEntity(identityId: $identityId);
+		if ($entity === null) {
+			return ['key' => null, 'state' => self::SIGNING_KEY_UNRESOLVABLE];
+		}
+
+		try {
+			$broker = $this->resolveBroker();
+			$secret = $broker->resolveInjectable(
+				$reference,
+				self::BROKER_APP_ID,
+				null,
+				trim((string)($entity->getOrganisation() ?? ''))
+			);
+		} catch (Throwable $e) {
+			// The cause is logged by class only — a broker refusal message is
+			// deliberately opaque and must never be widened with a secret.
+			$this->logger->warning(
+				'[SenderIdentity] the broker refused the signing credential for ' . $identityId
+				. ' (' . $e::class . ')'
+			);
+
+			return ['key' => null, 'state' => self::SIGNING_KEY_UNRESOLVABLE];
+		}
+
+		$material = trim((string)$secret);
+		if ($material === '') {
+			$this->logger->warning('[SenderIdentity] the broker returned no material for ' . $identityId);
+
+			return ['key' => null, 'state' => self::SIGNING_KEY_UNRESOLVABLE];
+		}
+
+		return ['key' => $material, 'state' => self::SIGNING_KEY_AVAILABLE];
+
+	}//end materialFromBroker()
+
+	/**
+	 * Whether the broker class is loadable (protected seam for tests).
+	 *
+	 * @return bool Whether the OpenRegister credential broker class exists.
+	 *
+	 * @spec exclude Cross-app availability probe — no domain behaviour (overridden in tests).
+	 */
+	protected function isBrokerClassAvailable(): bool {
+		return class_exists(self::BROKER_CLASS);
+
+	}//end isBrokerClassAvailable()
+
+	/**
+	 * Resolve the broker from the container (protected seam for tests).
+	 *
+	 * @return object The CredentialBrokerService instance.
+	 *
+	 * @spec exclude Container-resolution seam — lazy cross-app lookup, no domain behaviour (overridden in tests).
+	 */
+	protected function resolveBroker(): object {
+		return $this->container->get(self::BROKER_CLASS);
+
+	}//end resolveBroker()
+
+	/**
+	 * Read the not-yet-migrated inline value, outside RBAC so `writeOnly` does
+	 * not strip it from the one caller entitled to it.
+	 *
+	 * @param string $identityId The identity's uuid.
+	 *
+	 * @return array{key: string|null, state: string} The material or why not.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 */
+	private function materialFromInlineValue(string $identityId): array {
+		$entity = $this->systemContextEntity(identityId: $identityId);
+		if ($entity === null) {
+			return ['key' => null, 'state' => self::SIGNING_KEY_ABSENT];
+		}
+
+		$material = trim((string)($entity->getObject()['smimePrivateKey'] ?? ''));
+		if ($material === '') {
+			return ['key' => null, 'state' => self::SIGNING_KEY_ABSENT];
+		}
+
+		return ['key' => $material, 'state' => self::SIGNING_KEY_AVAILABLE];
+
+	}//end materialFromInlineValue()
+
+	/**
+	 * One identity, read outside RBAC. Used only by the signing path.
+	 *
+	 * @param string $identityId The identity's uuid.
+	 *
+	 * @return ObjectEntity|null The entity, or null when it cannot be read.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 */
+	private function systemContextEntity(string $identityId): ?ObjectEntity {
+		try {
+			$entity = $this->objectService->find(
+				id: $identityId,
+				register: MessageRecorder::REGISTER,
+				schema: self::SCHEMA,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if (($entity instanceof ObjectEntity) === false) {
+			return null;
+		}
+
+		return $entity;
+
+	}//end systemContextEntity()
 
 	/**
 	 * The instance default identity, when there is one.

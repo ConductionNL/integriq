@@ -17,8 +17,8 @@
   - The lockdown fragment carries an `authorization` block with an explicit `read` entry, because an absent block grants reads unconditionally
   - Each fragment's `_comment` states what it closes and why, matching the convention in `99-source-lockdown.json`
   - The inline `smimePrivateKey` property is NOT removed — that is Phase D, gated on the estate reporting `clean: true`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: Resolve through the broker in system context, and report failure honestly
 - **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered`
@@ -29,8 +29,8 @@
   - GIVEN an identity with no key configured at all THEN the existing reason is unchanged
   - A test asserts the two reasons differ, because sharing one message is how a stripped field masquerades as a configuration mistake
   - Ships in the SAME commit as Task 1
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: Generalise the migration machinery to a second schema
 - **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`

@@ -4135,8 +4135,13 @@
           },
           "smimePrivateKey": {
             "type": "string",
-            "description": "The PEM private key this identity signs with. Write only; it is never read back over the API",
+            "description": "LEGACY, being emptied. The PEM private key this identity signs with, held inline. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-sender-identity-secrets-writeonly.json). Custody moved to the OpenRegister credential broker under ADR-064: `occ integriq:migrate-inline-secrets` mints this value, verifies it resolves back byte-for-byte, writes `smimePrivateKeyRef`, and only then clears this field. The property remains declared so a pre-existing value is not silently pruned; removal is gated on the estate reporting `clean: true`.",
             "title": "S/MIME Private Key"
+          },
+          "smimePrivateKeyRef": {
+            "type": "string",
+            "description": "Where this identity's signing key is held, as a `{credentialRef}` into the OpenRegister credential broker (keepiq when eligible, the Nextcloud vault otherwise). READABLE on purpose, and it is not a secret: an operator has to be able to see which credential an identity points at, and which one to correct when signing fails. Writing PEM material here is refused outside a debug configuration — the key goes to `smimePrivateKey` once, and the migration moves it.",
+            "title": "S/MIME Private Key Reference"
           },
           "dkimSelector": {
             "type": "string",
