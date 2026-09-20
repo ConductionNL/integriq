@@ -114,7 +114,8 @@ rather than returning an error, so a functional-beheerder opening Mail intake se
 an empty table, not a permission message. Nothing breaks and nothing says why. This
 is a real usability regression, and the honest mitigation is that it is visible
 immediately to anyone who opens the page — unlike the disclosure it replaces, which
-was invisible to everyone. The access model that fixes it properly is the follow-up.
+was invisible to everyone. The access model that fixes it properly is
+ConductionNL/integriq#2105.
 
 ### Risk 2: The fragment is written with an empty block and closes nothing
 
@@ -140,11 +141,11 @@ removing it restores the previous (open) behaviour on the next `occ upgrade`.
 
 ## Open Questions
 
-1. **Who should read a `mail_message`?** A functional-beheerder group, case-based
-   access, or per-object ownership with the poller attributing messages to a real
-   user rather than the system identity. This is the design conversation this
-   change defers, and the third option is the one that would make the intake page
-   work as intended.
+1. **Who should read a `mail_message`?** Tracked as ConductionNL/integriq#2105.
+   A functional-beheerder group, case-based access, or per-object ownership with
+   the poller attributing messages to a real user rather than the system identity.
+   This is the design conversation this change defers, and the third option is the
+   one that would make the intake page work as intended.
 2. **Should `mapping_version` and `intake_routing_rule` be admin-only permanently?**
    They are configuration rather than content, so unlike the message schemas they
    are probably correct as they now are, and need no follow-up.
