@@ -1,0 +1,88 @@
+{
+	"_comment": "ADR-037 register fragment — mail-schemas-lockdown (integriq#1983 review 5260087915, blocker 3). SECURITY FIX. These nine schemas shipped with NO `authorization` block. In OpenRegister that is not deny: PermissionHandler::hasGroupPermission() treats an absent-or-empty block as default-OPEN (PermissionHandler.php:1964), and `enforce_default_closed` cannot close it for reads because `read` is absent from DEFAULT_CLOSED_WRITE_ACTIONS (create/update/delete/destroy). So every authenticated account on the instance could read every object of these schemas — for `mail_message` that is the body, subject, sender and recipients of every intercepted message, with nothing recording the access. READ THE SHAPE BELOW BEFORE CHANGING IT. `\"authorization\": {}` is an empty BLOCK and closes NOTHING; it takes the same default-OPEN branch as no block at all. What denies is a NON-EMPTY block whose rule LISTS are empty: empty($authorization['read']) is then true and PermissionHandler (:2004) reads it as 'grant to nobody'. Its own comment says so: \"`empty()` rather than `isset()` additionally denies an explicitly empty rule list (e.g. `\\\"create\\\": []`), which reads as 'grant to nobody'\". All five actions are declared so none falls through. TWO BYPASSES REMAIN AND ARE INTENDED: the `admin` group, and the OWNER of an individual object — both are evaluated before these lists. Note what that does NOT buy: SaveObject::applyOwnerAttribution() falls back to the SYSTEM user id when there is no session, and MailboxSourceHandler (the mailbox poll, i.e. how mail normally arrives) runs sessionless. Polled messages are therefore owned by nobody real and are administrator-only; only an .eml imported through MailIntakeController carries a human owner. THIS IS AN INTERIM, NOT A DESIGN. The Mail intake page exists so people can read their messages, and a non-administrator will now see an empty table rather than a refusal, because RBAC filters rows instead of erroring. That is accepted for this beta only, because the state it replaces is worse. Deciding who should read a message — a functional-beheerder group, case-based access, or attributing polled mail to a real user — is its own change. Documented here rather than left implicit, following the convention catalog-item-schema.json sets for a deliberate authorization choice. `sender_identity` is the tenth schema from the same finding and is closed by 99-sender-identity-lockdown.json, because it also held a secret.",
+	"components": {
+		"schemas": {
+			"digitalPostMessage": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"intake_message": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"intake_routing_rule": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"mail_message": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"mapping_version": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"outbound_message": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"recipient_key": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"recipient_opt_out": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"verdict": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			}
+		}
+	}
+}
