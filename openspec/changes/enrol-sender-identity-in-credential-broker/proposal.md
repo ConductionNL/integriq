@@ -259,7 +259,9 @@ something a revert should do implicitly.
    Keepiq is not the constraint — its `Secret` already carries `url`, `login`,
    `key` and `additionalFields`, and secret requests are shipped (keepiq#285). The
    flattening is on the OpenRegister side. Filed as
-   ConductionNL/openregister#4009.
+   ConductionNL/openregister#4009, with the integriq-side halves as #2102 (mTLS
+   refused when brokered) and #2103 (placeholders resolve only under
+   `authentication`), and the operational trap as openregister#4010.
 
    Building half of that mechanism here would leave a bespoke shape to migrate away
    from, so the certificate stays a plain inline property and the pair-custody model
