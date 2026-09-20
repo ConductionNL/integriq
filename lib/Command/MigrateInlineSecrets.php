@@ -146,8 +146,9 @@ class MigrateInlineSecrets extends Command {
 		}
 
 		try {
-			// planEverything(), not planAll(): the Phase D gate must be true only
-			// when NO migratable schema holds an unmigrated inline secret. planAll()
+			// Deliberately planEverything() rather than planAll(): the Phase D gate
+			// must be true only when NO migratable schema holds an unmigrated
+			// inline secret. planAll()
 			// remains the SOURCE-only gate that RemoveMigratedSourceSecretFields
 			// reads, because source's property removal must not be blocked by an
 			// unrelated schema's state.
@@ -180,8 +181,8 @@ class MigrateInlineSecrets extends Command {
 	private function renderEstate(SymfonyStyle $io, array $estate): int {
 		foreach ((array)($estate['schemas'] ?? []) as $schema => $plan) {
 			$io->section((string)$schema);
-			// renderPlan() speaks the source vocabulary; the generic payload is
-			// adapted rather than duplicating the table for a second shape.
+			// The existing renderPlan() speaks the source vocabulary, so the generic
+			// payload is adapted rather than duplicating the table for a second shape.
 			$this->renderPlan(
 				io: $io,
 				plan: [
