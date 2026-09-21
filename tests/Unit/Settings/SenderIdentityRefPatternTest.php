@@ -85,6 +85,24 @@ class SenderIdentityRefPatternTest extends TestCase {
 	}//end deepMerge()
 
 	/**
+	 * Apply the schema pattern the way the JSON Schema validator applies it.
+	 *
+	 * Opis compiles `pattern` with the `u` modifier; this test previously compiled
+	 * it without, so it was not running the engine's exact regex. Not what made
+	 * blocker 3 possible, but there is no reason for the test's engine and the
+	 * validator's to differ.
+	 *
+	 * @param string $pattern The JSON Schema `pattern`.
+	 * @param string $subject The value under test.
+	 *
+	 * @return integer 1 when the pattern matches, 0 when it does not.
+	 */
+	private function applyPattern(string $pattern, string $subject): int {
+		return (int)preg_match('/' . str_replace('/', '\\/', $pattern) . '/u', $subject);
+
+	}//end applyPattern()
+
+	/**
 	 * The reference field declares a pattern at all.
 	 *
 	 * @return void
@@ -113,17 +131,24 @@ class SenderIdentityRefPatternTest extends TestCase {
 	public function testPastingAKeyWhereAReferenceBelongsIsRefused(): void {
 		$pattern = $this->properties()['smimePrivateKeyRef']['pattern'];
 
+		// The first three are multi-line, and `[^\s]*` alone already refuses those —
+		// so on their own they never exercise the `(?!.*-----BEGIN)` lookahead, and
+		// the test passed with the lookahead deleted (integriq#2104 review
+		// 5266971176, blocker 3). The fourth is the case that tells the real
+		// pattern apart from a guard weakened to "no whitespace": single-line, so
+		// only the lookahead can refuse it. Keep it.
 		$pems = [
 			"-----BEGIN PRIVATE KEY-----\nMIIEvQ==\n-----END PRIVATE KEY-----",
 			"-----BEGIN RSA PRIVATE KEY-----\nMIIEpA==\n-----END RSA PRIVATE KEY-----",
 			"-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIIFHD==\n-----END ENCRYPTED PRIVATE KEY-----",
+			'-----BEGINPRIVATEKEYMIIEvQ',
 		];
 
 		foreach ($pems as $pem) {
 			$this->assertSame(
 				0,
-				preg_match('/' . str_replace('/', '\/', $pattern) . '/', $pem),
-				'PEM material must not satisfy the reference pattern.'
+				$this->applyPattern(pattern: $pattern, subject: $pem),
+				'PEM material must not satisfy the reference pattern: ' . var_export($pem, true)
 			);
 		}
 
@@ -153,7 +178,7 @@ class SenderIdentityRefPatternTest extends TestCase {
 		foreach ($accepted as $reference) {
 			$this->assertSame(
 				1,
-				preg_match('/' . str_replace('/', '\/', $pattern) . '/', $reference),
+				$this->applyPattern(pattern: $pattern, subject: $reference),
 				'A credential reference must satisfy the pattern: ' . var_export($reference, true)
 			);
 		}

@@ -120,6 +120,36 @@ class ScimProvisioningService {
 	private const MAX_PAGE_SIZE = 200;
 
 	/**
+	 * Clamp a caller-supplied SCIM `count` to a page size that is safe to pass on.
+	 *
+	 * Shared by both list routes deliberately. The first cap shipped as a bare
+	 * `min()` inside `listUsers()`, which capped the ceiling — the direction that
+	 * was never the risk, since a caller asking for more than the cap always got
+	 * the cap — and left the bottom open. Nextcloud's `Database::fixLimit()`
+	 * returns the limit only when `is_int($limit) && $limit >= 0` and `null`
+	 * otherwise, and `null` means UNBOUNDED, so `?count=-1` walked the whole
+	 * estate. `listGroups()` meanwhile never got a cap at all and answers with
+	 * every group's complete membership. Both are integriq#2104 review
+	 * 5266971176; one helper so the pair cannot drift apart again.
+	 *
+	 * RFC 7644 §3.4.2.4: `count` is a non-negative integer, "a negative value
+	 * SHALL be interpreted as '0'", and 0 means no resources are returned. The
+	 * callers therefore answer an empty list without reaching the backend at all,
+	 * rather than passing 0 down and trusting every user/group backend to read it
+	 * as `LIMIT 0` instead of "no limit".
+	 *
+	 * @param integer $requested The caller's `count`, unvalidated.
+	 *
+	 * @return integer A page size in [0, MAX_PAGE_SIZE].
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	private function pageSize(int $requested): int {
+		return max(0, min($requested, self::MAX_PAGE_SIZE));
+
+	}//end pageSize()
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IUserManager $userManager Nextcloud's account model.
@@ -396,7 +426,7 @@ class ScimProvisioningService {
 	 * List accounts as SCIM user resources.
 	 *
 	 * @param string $filterUserName An exact `userName` to filter on, or the empty string.
-	 * @param integer $limit How many resources to answer with, capped at MAX_PAGE_SIZE.
+	 * @param integer $limit How many resources to answer with; clamped to [0, MAX_PAGE_SIZE] by pageSize().
 	 *
 	 * @return array<int,array<string,mixed>> The resources.
 	 *
@@ -412,8 +442,13 @@ class ScimProvisioningService {
 			return [$resource];
 		}
 
+		$pageSize = $this->pageSize(requested: $limit);
+		if ($pageSize === 0) {
+			return [];
+		}
+
 		$resources = [];
-		foreach ($this->userManager->search('', min($limit, self::MAX_PAGE_SIZE)) as $user) {
+		foreach ($this->userManager->search('', $pageSize) as $user) {
 			$resources[] = $this->toUserResource(user: $user, userId: $user->getUID());
 		}
 
@@ -425,14 +460,19 @@ class ScimProvisioningService {
 	 * List groups as SCIM group resources.
 	 *
 	 * @param string $filterDisplayName An exact `displayName` to filter on, or the empty string.
-	 * @param integer $limit How many resources to answer with.
+	 * @param integer $limit How many resources to answer with; clamped to [0, MAX_PAGE_SIZE] by pageSize().
 	 *
 	 * @return array<int,array<string,mixed>> The resources.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
 	public function listGroups(string $filterDisplayName = '', int $limit = 100): array {
-		$groups = $this->groupManager->search($filterDisplayName, $limit);
+		$pageSize = $this->pageSize(requested: $limit);
+		if ($pageSize === 0) {
+			return [];
+		}
+
+		$groups = $this->groupManager->search($filterDisplayName, $pageSize);
 
 		$resources = [];
 		foreach ($groups as $group) {

@@ -353,6 +353,84 @@ class ScimProvisioningServiceTest extends TestCase {
 	}//end testASmallerPageSizeIsHonoured()
 
 	/**
+	 * A NEGATIVE count cannot bypass the cap.
+	 *
+	 * `min($limit, MAX_PAGE_SIZE)` capped the ceiling, which was never the risk —
+	 * a caller asking for more than the cap was always going to get the cap. The
+	 * direction that works is down: Nextcloud's `Database::fixLimit()` returns
+	 * `$limit` only when `is_int($limit) && $limit >= 0` and `null` otherwise,
+	 * and `null` means UNBOUNDED, so `?count=-1` restored the whole-estate dump
+	 * (integriq#2104 review 5266971176, blocker 1).
+	 *
+	 * RFC 7644 §3.4.2.4: count is a non-negative integer, a negative value SHALL
+	 * be interpreted as 0, and 0 means no resources are returned. So the search
+	 * must not be reached at all.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testANegativeCountCannotBypassTheCap(): void {
+		$this->userManager->expects($this->never())->method('search');
+
+		$this->assertSame([], $this->service()->listUsers(limit: -1));
+
+	}//end testANegativeCountCannotBypassTheCap()
+
+	/**
+	 * `listGroups()` caps an unbounded count too.
+	 *
+	 * The cap shipped on `listUsers()` only, and the sibling route answers with
+	 * every group AND its complete membership — the same uid and display-name
+	 * estate, plus the group topology (integriq#2104 review 5266971176,
+	 * blocker 2).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testListGroupsCapsAnUnboundedCount(): void {
+		$this->groupManager->expects($this->once())
+			->method('search')
+			->with('', 200)
+			->willReturn([]);
+
+		$this->service()->listGroups(limit: 999999);
+
+	}//end testListGroupsCapsAnUnboundedCount()
+
+	/**
+	 * A negative count cannot bypass `listGroups()`' cap either.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testListGroupsRefusesANegativeCount(): void {
+		$this->groupManager->expects($this->never())->method('search');
+
+		$this->assertSame([], $this->service()->listGroups(limit: -1));
+
+	}//end testListGroupsRefusesANegativeCount()
+
+	/**
+	 * A smaller page size is honoured on the group route as well.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testListGroupsHonoursASmallerPageSize(): void {
+		$this->groupManager->expects($this->once())
+			->method('search')
+			->with('', 25)
+			->willReturn([]);
+
+		$this->service()->listGroups(limit: 25);
+
+	}//end testListGroupsHonoursASmallerPageSize()
+
+	/**
 	 * A group no connection declares is refused, and the refusal names it so an
 	 * operator can extend the mapping.
 	 *

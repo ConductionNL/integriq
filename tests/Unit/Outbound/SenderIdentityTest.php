@@ -544,7 +544,14 @@ class SenderIdentityTest extends TestCase {
 
 	/**
 	 * An identity whose key is not yet migrated still signs, because the signing
-	 * path reads outside RBAC and write-only stripping is gated on `_rbac`.
+	 * path reads outside RBAC AND unrendered.
+	 *
+	 * Write-only stripping is NOT gated on `_rbac`: `RenderObject::doWriteOnly`
+	 * is computed from the schema alone, so `_rbac: false` does not defeat it and
+	 * `find()` renders by default. `_render: false` is the flag that keeps the
+	 * value readable here. This docblock asserted the opposite until
+	 * integriq#2104 review 5266971176 — the fourth copy of a claim the test
+	 * below disproves, and the copy a reader trusts most.
 	 *
 	 * This is the regression that would otherwise ship silently: mail keeps
 	 * sending, just unsigned.
