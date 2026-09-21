@@ -57,13 +57,13 @@ log — which is why they are specified rather than left to judgement.
 - **why it matters**: the generalisation touches working, shipped code protecting live credentials. Needing to edit these tests to make them pass would mean the `source` path changed behaviour, which is out of scope.
 
 ### TC-6: The PEM guard refuses key material and accepts a reference
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-outside-debug`
+- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs`
 - **type**: functional
 - **persona**: Henk (operator configuring an identity)
-- **preconditions**: An instance not in debug configuration
-- **steps**: (a) Write `-----BEGIN PRIVATE KEY-----…` into `smimePrivateKeyRef`. (b) Write a genuine credential reference into the same field.
-- **expected result**: (a) refused, naming the field that accepts key material. (b) accepted.
-- **test command**: PHPUnit on `SenderIdentitySecretGuard`
+- **preconditions**: None — the guard is a schema `pattern`, so there is no debug exemption to configure
+- **steps**: (a) Write `-----BEGIN PRIVATE KEY-----…` into `smimePrivateKeyRef`. (b) Write a genuine credential reference into the same field. (c) Leave the field empty.
+- **expected result**: (a) refused by schema validation, naming `smimePrivateKeyRef` as the property that failed. (b) accepted. (c) accepted — an identity that has not been enrolled yet is a normal state.
+- **test command**: `vendor/bin/phpunit tests/Unit/Settings/SenderIdentityRefPatternTest.php`
 - **why both halves**: a guard tested only on the refusal can be trivially over-broad. (b) is what stops it refusing legitimate references and training operators to route around it.
 
 ### TC-7: Migration reporting reflects the estate

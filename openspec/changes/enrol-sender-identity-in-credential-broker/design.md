@@ -80,7 +80,7 @@ code.
 - **Mappers/Entities:** none.
 - **Events/Hooks:** `CredentialRelinkRequiredEvent` (OpenRegister) already exists for
   the re-link case and is consumed, not defined here.
-- **OCP:** `IAppConfig` for the debug-mode check behind the write guard.
+- **OCP:** none for the write guard — it ships as a schema `pattern`, so there is no debug-mode check and no `IAppConfig` dependency (see Implementation deviations).
 
 ## Generalising the planner
 

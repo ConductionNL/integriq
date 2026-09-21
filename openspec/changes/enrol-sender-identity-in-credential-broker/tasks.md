@@ -48,10 +48,11 @@
 - [x] Test
 
 ### Task 4: Refuse key material written where a reference belongs
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-outside-debug`
+- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs`
 - **files**: `lib/Settings/integriq_register.json` — implemented as a JSON Schema `pattern`, not a PHP guard; integriq has no write hook (see design.md, Implementation deviations)
 - **acceptance_criteria**:
-  - GIVEN an instance not in debug configuration WHEN a write places `-----BEGIN` PEM material in `smimePrivateKeyRef` THEN the write is refused and the refusal names the field that accepts key material
+  - WHEN a write places `-----BEGIN` PEM material in `smimePrivateKeyRef` THEN the write is refused by schema validation, which names `smimePrivateKeyRef` as the property that failed. There is no debug exemption — nothing was built for one and none is wanted — and a JSON-Schema error cannot name a DIFFERENT property as the one to use instead, so the requirement no longer asks for either
+  - GIVEN an empty reference THEN the write is accepted: an identity that has not been enrolled yet is a normal state, and a pattern that refused it would fire on every unmigrated identity
   - GIVEN a genuine reference THEN the write is accepted — a test asserts this, because a guard that refuses legitimate input trains operators to work around it
   - Match on the `-----BEGIN` header only; do NOT classify by entropy or heuristics
   - Model the refusal on `FlowConfigGuard`

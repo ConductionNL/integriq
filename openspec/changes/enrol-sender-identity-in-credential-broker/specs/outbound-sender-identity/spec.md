@@ -75,29 +75,46 @@ cause was the latter.
 - AND the recorded reason says the key could not be resolved, not that none is configured
 - @e2e exclude covered by PHPUnit on the security service
 
-### Requirement: REQ-OSI-012 An inline secret is refused outside debug
+### Requirement: REQ-OSI-012 An inline secret is refused where a reference belongs
 
 The system MUST refuse a write that places private key material directly in the
-reference field, unless the instance is explicitly in a debug configuration. The
-refusal MUST name the field that should have been used.
+reference field.
 
 PEM material is self-identifying by its `-----BEGIN` header, so this check is
 exact. The system MUST NOT attempt to classify a value as secret by entropy or by
 guessing, because a false refusal on a legitimate reference is worse than the
 narrow check missing an unusual format.
 
+The refusal is enforced by a schema `pattern` on `smimePrivateKeyRef`
+(`^(?!.*-----BEGIN)[^\s]*$`) rather than in application code, per ADR-031's
+preference for declaring a constraint where the schema can enforce it for every
+writer at once. That choice bounds what the refusal can say: a JSON-Schema
+validation error names the property that FAILED, and cannot name a different
+property as the one that should have been used. The requirement therefore does
+not ask for that, and an earlier draft of this document did — see the note below.
+
+There is no debug exemption. An earlier draft of this requirement granted one
+"unless the instance is explicitly in a debug configuration"; nothing was ever
+built for it, and it is not wanted. A debug flag that re-opens a path for pasting
+a private key into a readable field is a production foot-gun whose only
+beneficiary is a developer who can already use the broker locally.
+
 #### Scenario: pasting a key where a reference belongs is refused
-- GIVEN an instance not in debug configuration
 - WHEN a write places PEM private key material in the reference field
-- THEN the write is refused
-- AND the refusal names the field that accepts key material
-- @e2e exclude covered by PHPUnit on the write guard
+- THEN the write is refused by schema validation
+- AND the refusal names `smimePrivateKeyRef` as the property that failed
+- @e2e exclude covered by PHPUnit on the schema pattern
 
 #### Scenario: a legitimate reference is never refused
-- GIVEN an instance not in debug configuration
 - WHEN a write places a credential reference in the reference field
 - THEN the write is accepted
-- @e2e exclude covered by PHPUnit on the write guard
+- @e2e exclude covered by PHPUnit on the schema pattern
+
+#### Scenario: an empty reference is accepted
+- WHEN a write leaves the reference field empty
+- THEN the write is accepted, because an identity that has not been enrolled yet
+  is a normal state and not a violation
+- @e2e exclude covered by PHPUnit on the schema pattern
 
 ## MODIFIED Requirements
 
