@@ -13,6 +13,16 @@ itself. This delta moves that key out of the register and into the credential
 broker, leaving behind a reference an operator can read, so that custody of the
 key stops depending on nobody reading a schema they are permitted to read.
 
+<!-- Heading form: this file uses ADR-038 Form D — `### Requirement: <ID> <title>`
+     — throughout, while the three sibling deltas in this change set use Form A,
+     `### Requirement: <title> (<ID>)`. Both are valid; the inconsistency is
+     within the change set, not within this file. Left as Form D deliberately
+     rather than reformatted: every heading here is an anchor target from
+     tasks.md, test-plan.md, design.md and the @spec tags in lib/ and tests/, and
+     a cosmetic reflow would move all of them at once for no reader's benefit.
+     Raised in integriq#2104 review 5264751700. A fleet-wide pass that settles on
+     one form belongs in its own change, where the anchor churn is the point. -->
+
 ## ADDED Requirements
 
 ### Requirement: REQ-OSI-010 A signing key is held in the broker, not in the register

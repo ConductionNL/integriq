@@ -53,6 +53,14 @@ membership is read or written.
 The refusal MUST cover both directions: adding a member to `admin`, and removing
 members from `admin` by omitting them from a reconciling write.
 
+Scope, stated because the implementation's comment previously overstated it: this
+requirement governs the SCIM route. The directory-sync route
+(`DirectorySyncService::write()`, driven by an admin-gated controller and a system
+background job) writes group membership through `IGroupManager` directly and is not
+covered by this assertion. That is a narrower exposure — it needs an administrator
+or the system — but it is not closed, and a shared assertion both routes call is
+tracked separately rather than assumed here.
+
 #### Scenario: a consumer cannot make itself an administrator
 - GIVEN a SCIM request presenting a valid consumer API key
 - WHEN it sends a membership write naming the `admin` group and listing a user

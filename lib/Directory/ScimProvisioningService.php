@@ -241,7 +241,16 @@ class ScimProvisioningService {
 	 */
 	private function assertWritableGroup(string $groupId, string $consumerLabel): void {
 		// Checked first and independently of the allow-list, so that an operator
-		// who mistakenly declares `admin` managed still cannot write it.
+		// who mistakenly declares `admin` managed still cannot write it OVER SCIM.
+		// Scope matters and the comment used to overstate it: this guard sits on
+		// the SCIM route only. `DirectorySyncService::write()` calls
+		// IGroupManager::addUser()/removeUser() directly and honours exactly the
+		// misconfiguration described above, as does GroupMappingResolver's
+		// createGroup(). That path is admin-triggered — DirectorySyncController is
+		// `#[AuthorizedAdminSetting]`, and DirectorySyncJob runs as the system —
+		// so it is a narrower exposure, not a closed one (integriq#2104 review
+		// 5264751700). Lifting the assertion to a shared place both routes call is
+		// its own change.
 		if (in_array(needle: $groupId, haystack: self::PRIVILEGED_GROUPS, strict: true) === true) {
 			$this->refuse(
 				groupId: $groupId,
