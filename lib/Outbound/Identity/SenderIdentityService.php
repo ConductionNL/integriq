@@ -194,13 +194,16 @@ class SenderIdentityService {
 	 * (register.d/99-sender-identity-lockdown.json). Widening those would hand a
 	 * caller exactly what that lockdown refuses.
 	 *
-	 * The system-context read is needed for a different reason: `smimePrivateKey`
-	 * is `writeOnly`, and OpenRegister strips write-only values when
-	 * `_rbac === true`. An identity whose key has not yet been migrated would
-	 * therefore read as EMPTY to the signing path, and the message would go out
-	 * unsigned under a reason that reads like an unconfigured identity. That is
-	 * the transitional path; a migrated identity resolves through the broker and
-	 * never touches the inline field.
+	 * The system-context read is needed for a different reason, and it takes TWO
+	 * flags rather than one. `smimePrivateKey` is `writeOnly`, and OpenRegister
+	 * strips write-only values in the RENDER pass — `RenderObject::doWriteOnly`
+	 * is computed from the schema alone and has no `_rbac` term, so `_rbac: false`
+	 * does not defeat it and `find()` renders by default. The read therefore
+	 * passes `_render: false` as well; without it an identity whose key has not
+	 * yet been migrated reads as EMPTY to the signing path and the message goes
+	 * out unsigned under a reason that looks like an unconfigured identity. That
+	 * is the transitional path; a migrated identity resolves through the broker
+	 * and never touches the inline field.
 	 *
 	 * @param array<string,mixed> $identity The identity object as read.
 	 * @param string $identityId The identity's uuid, for the system-context read.
@@ -297,8 +300,10 @@ class SenderIdentityService {
 	}//end resolveBroker()
 
 	/**
-	 * Read the not-yet-migrated inline value, outside RBAC so `writeOnly` does
-	 * not strip it from the one caller entitled to it.
+	 * Read the not-yet-migrated inline value. Outside RBAC because the schema is
+	 * locked down, and unrendered because write-only stripping lives in the
+	 * render pass, not in the RBAC check — both flags are required for the one
+	 * caller entitled to this value.
 	 *
 	 * @param string $identityId The identity's uuid.
 	 *
@@ -337,7 +342,8 @@ class SenderIdentityService {
 				register: MessageRecorder::REGISTER,
 				schema: self::SCHEMA,
 				_rbac: false,
-				_multitenancy: false
+				_multitenancy: false,
+				_render: false
 			);
 		} catch (Throwable) {
 			return null;

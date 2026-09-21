@@ -29,6 +29,7 @@ use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\SignatureStripper;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -588,19 +589,15 @@ class SenderIdentityTest extends TestCase {
 	 * @return BrokeredSenderIdentityService The service.
 	 */
 	private function brokeredService(?object $broker, string $storedKey): BrokeredSenderIdentityService {
-		// A REAL ObjectEntity: getOrganisation() is a magic method via
-		// Entity::__call, so createMock() cannot stub it (see #1015 and the note
-		// in ObjectServiceMockBuilder).
-		$entity = ObjectServiceMockBuilder::objectEntity(
-			test: $this,
-			body: ['smimePrivateKey' => $storedKey],
-			uuid: 'identity-1'
-		);
-		// Positional arg: Entity::__call's setter uses $args[0].
-		$entity->setOrganisation('org-1');
-
-		$objectService = $this->createMock(ORObjectService::class);
-		$objectService->method('find')->willReturn($entity);
+		// The render-boundary double, NOT a plain mock. A `createMock(...)` whose
+		// `find()` ignores its arguments returns the inline key whatever read
+		// context the production code used, so the test passes even when
+		// `_render: false` is missing — which is how integriq#2104 review
+		// 5264751700 blocker 1 shipped green. This double strips `writeOnly`
+		// fields on any RENDERED read, so forgetting either flag fails here the
+		// way it fails in production.
+		$objectService = new RenderBoundarySimulatingObjectService();
+		$objectService->stored['identity-1'] = ['smimePrivateKey' => $storedKey];
 
 		$service = new BrokeredSenderIdentityService(
 			objectService: $objectService,

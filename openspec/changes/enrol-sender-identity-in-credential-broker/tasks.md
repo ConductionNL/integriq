@@ -24,7 +24,7 @@
 - **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered`
 - **files**: `lib/Outbound/Identity/SenderIdentityService.php`, `lib/Outbound/Identity/OutboundSecurityService.php`
 - **acceptance_criteria**:
-  - GIVEN the write-only fragment from Task 1 is deployed WHEN a message is protected THEN signing still obtains key material — `SenderIdentityService` reads with `_rbac: false`, because write-only stripping is gated on `_rbac === true`
+  - GIVEN the write-only fragment from Task 1 is deployed WHEN a message is protected THEN signing still obtains key material — `SenderIdentityService` reads with `_rbac: false` AND `_render: false`, because write-only stripping happens in the render pass and is computed from the schema alone — it has no `_rbac` term, and `find()` renders by default
   - GIVEN a reference the broker cannot resolve WHEN a message is protected THEN the recorded reason says the key could not be resolved, NOT "carries no S/MIME certificate and key"
   - GIVEN an identity with no key configured at all THEN the existing reason is unchanged
   - A test asserts the two reasons differ, because sharing one message is how a stripped field masquerades as a configuration mistake
