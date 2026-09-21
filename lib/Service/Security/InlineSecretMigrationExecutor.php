@@ -237,8 +237,13 @@ class InlineSecretMigrationExecutor {
 	 * @param integer $limit Maximum objects to inspect per schema.
 	 *
 	 * @return array{schemas: array<string,mixed>, migrated: int, failed: int,
-	 *         blocked: int, skipped: int, clean: bool} The per-schema runs and
-	 *         their totals.
+	 *         blocked: int, skipped: int} The per-schema runs and their totals.
+	 *         Deliberately NO `clean` key: `migrateSchema()` already returns one
+	 *         inside `postRun`, meaning the post-run RE-PLAN verdict (nothing
+	 *         pending AND nothing needing manual review). A second `clean` here
+	 *         would mean something narrower — no failures and no blocks, while a
+	 *         manual-review field counts as `skipped` — and nothing read it
+	 *         (integriq#2104 review 5266971176).
 	 *
 	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
@@ -264,10 +269,6 @@ class InlineSecretMigrationExecutor {
 			'failed'   => $failed,
 			'blocked'  => $blocked,
 			'skipped'  => $skipped,
-			// Summed rather than `$failed === 0 && $blocked === 0`: both are counts
-			// and cannot be negative, so the two forms are identical, and this one
-			// keeps the class inside its complexity budget.
-			'clean'    => (($failed + $blocked) === 0),
 		];
 
 	}//end migrateEverything()

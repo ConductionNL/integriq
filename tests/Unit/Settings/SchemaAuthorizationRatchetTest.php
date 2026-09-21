@@ -68,6 +68,37 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	];
 
 	/**
+	 * The schemas whose block denies by EMPTY RULE LISTS, not by existing.
+	 *
+	 * This is the distinction the lockdown fragments are built on and the one
+	 * `CLOSED` alone cannot see: `"authorization": {}` is an empty BLOCK and
+	 * closes nothing — it takes the same default-OPEN branch as no block at all —
+	 * while a non-empty block whose rule lists are empty reads as "grant to
+	 * nobody". A schema here could have `"read": []` changed to
+	 * `"read": [{"groups":["everyone"]}]` and stay in `CLOSED`, so presence was
+	 * one assertion short of guarding what the PR documents (integriq#2104 review
+	 * 5266971176).
+	 *
+	 * The six closed schemas NOT listed here — app_connection, consumer,
+	 * lti_platform, lti_tool, rule, source — grant deliberately and are covered
+	 * by `CLOSED` only.
+	 *
+	 * @var array<int,string>
+	 */
+	private const DENY_ALL = [
+		'digitalPostMessage',
+		'intake_message',
+		'intake_routing_rule',
+		'mail_message',
+		'mapping_version',
+		'outbound_message',
+		'recipient_key',
+		'recipient_opt_out',
+		'sender_identity',
+		'verdict',
+	];
+
+	/**
 	 * Schemas known to ship WITHOUT an authorization block, i.e. readable by
 	 * every authenticated account.
 	 *
@@ -274,4 +305,40 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		);
 
 	}//end testTheAcknowledgedOpenListIsNotStale()
+
+	/**
+	 * The locked-down schemas still deny by EMPTY rule lists.
+	 *
+	 * Guards the direction `CLOSED` cannot: a block that stays present while its
+	 * lists start granting. Every declared action must be an empty array.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 */
+	public function testTheLockedDownSchemasStillDenyToEveryone(): void {
+		$schemas = $this->schemas();
+		$granting = [];
+
+		foreach (self::DENY_ALL as $name) {
+			$block = (array)(($schemas[$name]['authorization'] ?? []));
+			$this->assertNotSame([], $block, "`$name` lost its authorization block entirely.");
+
+			foreach ($block as $action => $rules) {
+				if ($rules === []) {
+					continue;
+				}
+
+				$granting[] = $name . '.' . $action;
+			}
+		}
+
+		$this->assertSame(
+			[],
+			$granting,
+			'These locked-down rule lists are no longer empty, so they now GRANT rather than deny: '
+			. implode(', ', $granting)
+		);
+
+	}//end testTheLockedDownSchemasStillDenyToEveryone()
 }//end class

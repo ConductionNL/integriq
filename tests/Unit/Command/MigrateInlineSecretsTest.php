@@ -107,7 +107,6 @@ class MigrateInlineSecretsTest extends TestCase {
 					'failed' => 0,
 					'blocked' => 0,
 					'skipped' => 0,
-					'clean' => true,
 				]
 			);
 
@@ -159,7 +158,6 @@ class MigrateInlineSecretsTest extends TestCase {
 				'failed' => 1,
 				'blocked' => 1,
 				'skipped' => 0,
-				'clean' => false,
 			]
 		);
 

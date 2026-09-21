@@ -254,6 +254,11 @@ class MigrateInlineSecrets extends Command {
 
 		if ($json === false) {
 			$this->renderResult(io: $io, result: $result);
+			// The renderer above speaks the `source` vocabulary and prints per-object
+			// rows for `source` alone, so without this a sender_identity failure
+			// reached the operator as a non-zero exit next to a table showing
+			// nothing wrong (integriq#2104 review 5266971176).
+			$this->renderSchemaOutcomes(io: $io, schemas: (array)$result['schemas']);
 		}
 
 		// A field that failed to migrate is a non-zero exit so an operator/CI notices.
@@ -263,6 +268,37 @@ class MigrateInlineSecrets extends Command {
 
 		return Command::SUCCESS;
 	}//end runMigrate()
+
+	/**
+	 * Print one line per migrated schema, so no schema's outcome is invisible.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 * @param array<string,mixed> $schemas The per-schema runs from migrateEverything().
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	private function renderSchemaOutcomes(SymfonyStyle $io, array $schemas): void {
+		$rows = [];
+		foreach ($schemas as $schema => $run) {
+			$rows[] = [
+				(string)$schema,
+				(int)($run['migrated'] ?? 0),
+				(int)($run['failed'] ?? 0),
+				(int)($run['blocked'] ?? 0),
+				(int)($run['skipped'] ?? 0),
+			];
+		}
+
+		if ($rows === []) {
+			return;
+		}
+
+		$io->section('Per schema');
+		$io->table(['schema', 'migrated', 'failed', 'blocked', 'skipped'], $rows);
+
+	}//end renderSchemaOutcomes()
 
 	/**
 	 * Persist the post-run Phase D gate into appconfig (fails closed on a bad shape).

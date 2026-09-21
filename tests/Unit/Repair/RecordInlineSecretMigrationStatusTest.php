@@ -214,7 +214,6 @@ class SpyMigrationExecutor extends InlineSecretMigrationExecutor {
 			'failed' => 0,
 			'blocked' => 0,
 			'skipped' => 0,
-			'clean' => true,
 		];
 	}//end migrateEverything()
 
