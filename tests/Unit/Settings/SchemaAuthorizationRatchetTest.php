@@ -213,7 +213,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-mail-schemas-are-not-world-readable-req-mail-010
+	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testNoSchemaLosesItsAuthorizationBlock(): void {
 		$closed = $this->split()['closed'];
@@ -234,7 +234,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-mail-schemas-are-not-world-readable-req-mail-010
+	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testNoNewSchemaShipsWorldReadable(): void {
 		$open = $this->split()['open'];
@@ -259,7 +259,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-mail-schemas-are-not-world-readable-req-mail-010
+	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testTheAcknowledgedOpenListIsNotStale(): void {
 		$open = $this->split()['open'];

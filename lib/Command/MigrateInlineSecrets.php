@@ -217,7 +217,7 @@ class MigrateInlineSecrets extends Command {
 	 */
 	private function runMigrate(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
 		try {
-			// migrateEverything(), NOT migrateAll(): the dry-run above plans every
+			// Drives migrateEverything(), NOT migrateAll(): the dry-run above plans every
 			// schema in MIGRATABLE, and a real run that only drove `source` made
 			// `--dry-run` report `wouldMigrate: N` for `sender_identity` while the
 			// real run migrated 0 (integriq#2104 review 5264751700, blocker 2).

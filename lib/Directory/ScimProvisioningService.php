@@ -195,7 +195,7 @@ class ScimProvisioningService {
 	 *
 	 * @throws DirectorySyncRefusalException When the account is privileged.
 	 *
-	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
 	 */
 	private function assertWritableUser(string $userId, string $consumerLabel): void {
 		$user = $this->userManager->get($userId);

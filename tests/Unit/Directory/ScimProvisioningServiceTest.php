@@ -271,7 +271,7 @@ class ScimProvisioningServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
 	 */
 	public function testAConsumerCannotDeactivateAnAdministrator(): void {
 		$user = $this->createMock(IUser::class);
@@ -295,7 +295,7 @@ class ScimProvisioningServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
 	 */
 	public function testAConsumerCannotRewriteAnAdministratorsEmail(): void {
 		$user = $this->createMock(IUser::class);
@@ -323,7 +323,7 @@ class ScimProvisioningServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
 	 */
 	public function testAnUnboundedCountIsCapped(): void {
 		$this->userManager->expects($this->once())
@@ -340,7 +340,7 @@ class ScimProvisioningServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
 	 */
 	public function testASmallerPageSizeIsHonoured(): void {
 		$this->userManager->expects($this->once())
