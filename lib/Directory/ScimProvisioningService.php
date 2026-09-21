@@ -96,6 +96,30 @@ class ScimProvisioningService {
 	private const REFUSAL_DETAIL_PRIVILEGED = 'This group cannot be managed over SCIM.';
 
 	/**
+	 * What a caller is told when it names a privileged ACCOUNT.
+	 *
+	 * Same reasoning as {@see REFUSAL_DETAIL_PRIVILEGED}: the caller learns that
+	 * a boundary exists and nothing about where it runs.
+	 *
+	 * @var string
+	 */
+	private const REFUSAL_DETAIL_PRIVILEGED_USER = 'This account cannot be managed over SCIM.';
+
+	/**
+	 * The most resources one list call may answer with.
+	 *
+	 * SCIM lets the caller name a page size and the consumer supplied it
+	 * unbounded, so a single request could walk the whole account estate —
+	 * every display name and e-mail address on the instance — in one answer
+	 * (integriq#2104 review 5264751700, blocker 3). The cap is applied to the
+	 * value the caller asked for, not substituted for it, so a smaller page
+	 * size is still honoured.
+	 *
+	 * @var integer
+	 */
+	private const MAX_PAGE_SIZE = 200;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IUserManager $userManager Nextcloud's account model.
@@ -145,6 +169,61 @@ class ScimProvisioningService {
 		);
 
 	}//end refuse()
+
+	/**
+	 * Refuse the write when the named account holds a privileged group membership.
+	 *
+	 * The consumer resolved by {@see \OCA\Integriq\Controller\ScimController}
+	 * was recorded in the log line and nothing else, so a valid consumer key
+	 * could disable `admin`, or rewrite any account's e-mail address and thereby
+	 * take over its password reset (integriq#2104 review 5264751700, blocker 3).
+	 * `assertWritableGroup()` guards the group ROUTES; this guards the user ones,
+	 * which reach the same privilege by a different door.
+	 *
+	 * An account that does not exist is not refused — there is nothing to
+	 * protect yet, and `upsertUser()` legitimately creates accounts. A newly
+	 * created account holds no group membership, so it cannot be privileged.
+	 *
+	 * The per-consumer scoping this does NOT do — which consumer may manage
+	 * which accounts — needs a permission property on `consumer` and is tracked
+	 * as ConductionNL/integriq#2112.
+	 *
+	 * @param string $userId The account the caller named.
+	 * @param string $consumerLabel The consumer the call was answered as.
+	 *
+	 * @return void
+	 *
+	 * @throws DirectorySyncRefusalException When the account is privileged.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 */
+	private function assertWritableUser(string $userId, string $consumerLabel): void {
+		$user = $this->userManager->get($userId);
+		if ($user === null) {
+			return;
+		}
+
+		foreach (self::PRIVILEGED_GROUPS as $privilegedGroup) {
+			if ($this->groupManager->isInGroup($userId, $privilegedGroup) !== true) {
+				continue;
+			}
+
+			$this->logger->warning(
+				'[Scim] consumer ' . $consumerLabel . ' was refused a write to the account ' . $userId
+				. ': the account holds a privileged group membership'
+			);
+
+			throw new DirectorySyncRefusalException(
+				message: 'the account holds a privileged group membership and is never writable over SCIM',
+				context: [
+					'user' => $userId,
+					'consumer' => $consumerLabel,
+					'detail' => self::REFUSAL_DETAIL_PRIVILEGED_USER,
+				]
+			);
+		}
+
+	}//end assertWritableUser()
 
 	/**
 	 * Refuse the write unless this group is one SCIM may manage.
@@ -219,13 +298,15 @@ class ScimProvisioningService {
 	 * Create or update an account from a SCIM user resource.
 	 *
 	 * @param array<string,mixed> $resource The SCIM user resource.
+	 * @param string $consumerLabel The consumer the call was answered as.
 	 *
 	 * @return array<string,mixed> The SCIM user resource as it now stands.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
-	public function upsertUser(array $resource): array {
+	public function upsertUser(array $resource, string $consumerLabel): array {
 		$userId = (string)($resource['userName'] ?? $resource['id'] ?? '');
+		$this->assertWritableUser(userId: $userId, consumerLabel: $consumerLabel);
 		$user = $this->userManager->get($userId);
 
 		if ($user === null) {
@@ -262,13 +343,16 @@ class ScimProvisioningService {
 	 * Deactivate an account: disable it, and never delete it.
 	 *
 	 * @param string $userId The Nextcloud account id.
+	 * @param string $consumerLabel The consumer the call was answered as.
 	 * @param array<int,string> $expectedConsumers Consumer ids to ask about the account's open work.
 	 *
 	 * @return array<string,mixed> What the account still holds, per consumer.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
-	public function deactivateUser(string $userId, array $expectedConsumers = []): array {
+	public function deactivateUser(string $userId, string $consumerLabel, array $expectedConsumers = []): array {
+		$this->assertWritableUser(userId: $userId, consumerLabel: $consumerLabel);
+
 		$user = $this->userManager->get($userId);
 		if ($user === null) {
 			return [];
@@ -303,7 +387,7 @@ class ScimProvisioningService {
 	 * List accounts as SCIM user resources.
 	 *
 	 * @param string $filterUserName An exact `userName` to filter on, or the empty string.
-	 * @param integer $limit How many resources to answer with.
+	 * @param integer $limit How many resources to answer with, capped at MAX_PAGE_SIZE.
 	 *
 	 * @return array<int,array<string,mixed>> The resources.
 	 *
@@ -320,7 +404,7 @@ class ScimProvisioningService {
 		}
 
 		$resources = [];
-		foreach ($this->userManager->search('', $limit) as $user) {
+		foreach ($this->userManager->search('', min($limit, self::MAX_PAGE_SIZE)) as $user) {
 			$resources[] = $this->toUserResource(user: $user, userId: $user->getUID());
 		}
 
@@ -383,7 +467,7 @@ class ScimProvisioningService {
 	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
 	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-only-the-groups-a-connection-declares-it-manages-req-ds-009
 	 */
-	public function setGroupMembers(string $groupId, array $members, string $consumerLabel = 'unknown'): bool {
+	public function setGroupMembers(string $groupId, array $members, string $consumerLabel): bool {
 		// Refuse before every read and every write, including the lookup below.
 		// The ordering is the requirement, not an optimisation: this method
 		// reconciles membership, so it REMOVES anyone absent from $members. A

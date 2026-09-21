@@ -171,7 +171,23 @@ class ScimController extends Controller {
 			return $rejected;
 		}
 
-		$resource = $this->provisioningService->upsertUser(resource: $this->request->getParams());
+		try {
+			$resource = $this->provisioningService->upsertUser(
+				resource: $this->request->getParams(),
+				consumerLabel: $this->consumerLabel()
+			);
+		} catch (DirectorySyncRefusalException $refusal) {
+			// Same shape as the group route: the log names what was refused, the
+			// body carries only what the refusal decided is safe to tell a caller.
+			$this->logger->warning(
+				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+			);
+
+			return $this->scimError(
+				status: Http::STATUS_FORBIDDEN,
+				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
+			);
+		}
 
 		return new JSONResponse($resource, Http::STATUS_CREATED);
 
@@ -198,7 +214,25 @@ class ScimController extends Controller {
 		$body = $this->request->getParams();
 		$resource = array_merge($this->normalisePatch(body: $body), ['userName' => $id]);
 
-		return new JSONResponse($this->provisioningService->upsertUser(resource: $resource));
+		try {
+			$updated = $this->provisioningService->upsertUser(
+				resource: $resource,
+				consumerLabel: $this->consumerLabel()
+			);
+		} catch (DirectorySyncRefusalException $refusal) {
+			// Same shape as the group route: the log names what was refused, the
+			// body carries only what the refusal decided is safe to tell a caller.
+			$this->logger->warning(
+				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+			);
+
+			return $this->scimError(
+				status: Http::STATUS_FORBIDDEN,
+				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
+			);
+		}
+
+		return new JSONResponse($updated);
 
 	}//end updateUser()
 
@@ -220,7 +254,24 @@ class ScimController extends Controller {
 			return $rejected;
 		}
 
-		$openWork = $this->provisioningService->deactivateUser(userId: $id);
+		try {
+			$openWork = $this->provisioningService->deactivateUser(
+				userId: $id,
+				consumerLabel: $this->consumerLabel()
+			);
+		} catch (DirectorySyncRefusalException $refusal) {
+			// Same shape as the group route: the log names what was refused, the
+			// body carries only what the refusal decided is safe to tell a caller.
+			$this->logger->warning(
+				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+			);
+
+			return $this->scimError(
+				status: Http::STATUS_FORBIDDEN,
+				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
+			);
+		}
+
 
 		// 200 with the open-work report rather than 204: a deprovision that
 		// leaves a live case list behind is exactly what the caller needs told.

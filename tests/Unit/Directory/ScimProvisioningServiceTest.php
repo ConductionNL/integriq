@@ -143,8 +143,9 @@ class ScimProvisioningServiceTest extends TestCase {
 		$user->expects($this->never())->method('delete');
 
 		$this->userManager->method('get')->willReturn($user);
+		$this->groupManager->method('isInGroup')->willReturn(false);
 
-		$report = $this->service()->deactivateUser(userId: 'dana', expectedConsumers: ['dossiq']);
+		$report = $this->service()->deactivateUser(userId: 'dana', consumerLabel: 'consumer-1', expectedConsumers: ['dossiq']);
 
 		$this->assertSame(OpenWorkReporter::UNKNOWN, $report['dossiq']);
 
@@ -165,8 +166,9 @@ class ScimProvisioningServiceTest extends TestCase {
 		$this->userManager->method('get')->willReturn($user);
 		$this->userManager->expects($this->never())->method('createUser');
 		$this->groupManager->method('getUserGroups')->willReturn([]);
+		$this->groupManager->method('isInGroup')->willReturn(false);
 
-		$resource = $this->service()->upsertUser(resource: ['userName' => 'dana', 'active' => false]);
+		$resource = $this->service()->upsertUser(resource: ['userName' => 'dana', 'active' => false], consumerLabel: 'consumer-1');
 
 		$this->assertSame('dana', $resource['userName']);
 		$this->assertFalse($resource['active']);
@@ -186,8 +188,9 @@ class ScimProvisioningServiceTest extends TestCase {
 		$this->userManager->method('get')->willReturn(null);
 		$this->userManager->expects($this->once())->method('createUser')->willReturn($created);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
+		$this->groupManager->method('isInGroup')->willReturn(false);
 
-		$resource = $this->service()->upsertUser(resource: ['userName' => 'eva']);
+		$resource = $this->service()->upsertUser(resource: ['userName' => 'eva'], consumerLabel: 'consumer-1');
 
 		$this->assertSame('eva', $resource['userName']);
 		$this->assertStringNotContainsString('a-throwaway-password', (string)json_encode($resource));
@@ -255,6 +258,99 @@ class ScimProvisioningServiceTest extends TestCase {
 		);
 
 	}//end testAdminIsRefusedEvenWhenDeclaredManaged()
+
+	/**
+	 * A consumer cannot disable an administrator through the user route.
+	 *
+	 * `assertWritableGroup()` guarded the GROUP routes, and the review found the
+	 * user routes reach the same privilege by a different door: the resolved
+	 * consumer was written to a log line and never consulted, so a valid
+	 * consumer key could deactivate `admin` (integriq#2104 review 5264751700,
+	 * blocker 3). Asserting `setEnabled` is never reached rather than only that
+	 * the exception is thrown, so the guard's ORDERING is under test.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 */
+	public function testAConsumerCannotDeactivateAnAdministrator(): void {
+		$user = $this->createMock(IUser::class);
+		$user->expects($this->never())->method('setEnabled');
+		$user->expects($this->never())->method('delete');
+
+		$this->userManager->method('get')->willReturn($user);
+		$this->groupManager->method('isInGroup')->willReturn(true);
+
+		$this->expectException(DirectorySyncRefusalException::class);
+
+		$this->service()->deactivateUser(userId: 'root', consumerLabel: 'consumer-1');
+
+	}//end testAConsumerCannotDeactivateAnAdministrator()
+
+	/**
+	 * A consumer cannot rewrite an administrator's e-mail address.
+	 *
+	 * The e-mail address is the password-reset destination, so an unguarded
+	 * `upsertUser()` was an account-takeover path and not merely a data edit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 */
+	public function testAConsumerCannotRewriteAnAdministratorsEmail(): void {
+		$user = $this->createMock(IUser::class);
+		$user->expects($this->never())->method('setEMailAddress');
+		$user->expects($this->never())->method('setDisplayName');
+
+		$this->userManager->method('get')->willReturn($user);
+		$this->groupManager->method('isInGroup')->willReturn(true);
+
+		$this->expectException(DirectorySyncRefusalException::class);
+
+		$this->service()->upsertUser(
+			resource: ['userName' => 'root', 'emails' => [['value' => 'mallory@example.org']]],
+			consumerLabel: 'consumer-1'
+		);
+
+	}//end testAConsumerCannotRewriteAnAdministratorsEmail()
+
+	/**
+	 * A caller cannot walk the whole account estate with one `count`.
+	 *
+	 * SCIM lets the caller name a page size and it was passed to
+	 * `IUserManager::search()` unbounded, so one request could return every
+	 * display name and e-mail address on the instance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 */
+	public function testAnUnboundedCountIsCapped(): void {
+		$this->userManager->expects($this->once())
+			->method('search')
+			->with('', 200)
+			->willReturn([]);
+
+		$this->service()->listUsers(limit: 100000);
+
+	}//end testAnUnboundedCountIsCapped()
+
+	/**
+	 * A page size below the cap is still honoured.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-are-attributed-to-a-consumer-req-ds-007
+	 */
+	public function testASmallerPageSizeIsHonoured(): void {
+		$this->userManager->expects($this->once())
+			->method('search')
+			->with('', 25)
+			->willReturn([]);
+
+		$this->service()->listUsers(limit: 25);
+
+	}//end testASmallerPageSizeIsHonoured()
 
 	/**
 	 * A group no connection declares is refused, and the refusal names it so an
