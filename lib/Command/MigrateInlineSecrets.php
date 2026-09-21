@@ -282,6 +282,10 @@ class MigrateInlineSecrets extends Command {
 	private function renderSchemaOutcomes(SymfonyStyle $io, array $schemas): void {
 		$rows = [];
 		foreach ($schemas as $schema => $run) {
+			// Cast the row as well as its fields, matching renderResult()'s
+			// `(array)($result['sources'] ?? [])` shape. Only reachable through a
+			// malformed executor return, but the asymmetry was new.
+			$run = (array)$run;
 			$rows[] = [
 				(string)$schema,
 				(int)($run['migrated'] ?? 0),

@@ -131,6 +131,67 @@ class MigrateInlineSecretsTest extends TestCase {
 	}//end testRealRunWritesCleanPhaseDGate()
 
 	/**
+	 * A non-`source` failure is visible in the human output, not only the exit code.
+	 *
+	 * The finding this covers was "a `sender_identity` failure exits non-zero
+	 * next to a table showing nothing wrong" — `renderResult()` speaks the
+	 * `source` vocabulary and prints per-object rows for `source` alone. The fix
+	 * was `renderSchemaOutcomes()`, and it shipped without a test: both existing
+	 * fixtures are single-schema `source` maps, so nothing rendered a second row
+	 * (integriq#2104 review 5266971176).
+	 *
+	 * Asserting the schema NAME and its failure count reach the output, so a
+	 * refactor that drops the call, reorders it so `$rows === []` short-circuits,
+	 * or mis-keys the counters puts this red rather than staying green.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function testANonSourceFailureIsVisibleInTheTable(): void {
+		$this->executor->method('migrateEverything')->willReturn(
+			[
+				'schemas' => [
+					'source' => [
+						'objects' => [],
+						'totalObjects' => 0,
+						'migrated' => 0,
+						'failed' => 0,
+						'blocked' => 0,
+						'skipped' => 0,
+						'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
+					],
+					'sender_identity' => [
+						'objects' => [],
+						'totalObjects' => 1,
+						'migrated' => 0,
+						'failed' => 1,
+						'blocked' => 0,
+						'skipped' => 0,
+						'postRun' => ['clean' => false, 'pending' => 1, 'manual' => 0],
+					],
+				],
+				'migrated' => 0,
+				'failed' => 1,
+				'blocked' => 0,
+				'skipped' => 0,
+			]
+		);
+
+		$exit = $this->tester->execute([]);
+		$display = $this->tester->getDisplay();
+
+		$this->assertSame(Command::FAILURE, $exit, 'A failed field must exit non-zero.');
+		$this->assertStringContainsString('Per schema', $display, 'The per-schema section must render.');
+		$this->assertStringContainsString(
+			'sender_identity',
+			$display,
+			'The failing schema must be named in the human output, not only in --json.'
+		);
+
+	}//end testANonSourceFailureIsVisibleInTheTable()
+
+	/**
 	 * A real run that leaves pending/blocked fields keeps the gate closed ('0')
 	 * and exits non-zero when a field failed.
 	 *

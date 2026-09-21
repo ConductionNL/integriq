@@ -433,6 +433,16 @@ class ScimProvisioningService {
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
 	public function listUsers(string $filterUserName = '', int $limit = 100): array {
+		// Clamped BEFORE the exact-filter branch, so both list routes agree on
+		// `count <= 0`. listGroups() clamps first and answers `[]`; this route
+		// used to answer one resource for `?filter=userName eq "x"&count=-1`
+		// (integriq#2104 review 5266971176). RFC 7644 §3.4.2.4 makes 0 mean "no
+		// resources", and a filter does not change that.
+		$pageSize = $this->pageSize(requested: $limit);
+		if ($pageSize === 0) {
+			return [];
+		}
+
 		if ($filterUserName !== '') {
 			$resource = $this->getUser(userId: $filterUserName);
 			if ($resource === null) {
@@ -440,11 +450,6 @@ class ScimProvisioningService {
 			}
 
 			return [$resource];
-		}
-
-		$pageSize = $this->pageSize(requested: $limit);
-		if ($pageSize === 0) {
-			return [];
 		}
 
 		$resources = [];
