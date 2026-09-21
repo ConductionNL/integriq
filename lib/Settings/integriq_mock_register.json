@@ -4131,7 +4131,7 @@
           "smimePrivateKey": {
             "type": "string",
             "description": "The PEM private key this identity signs with. Write only; it is never read back over the API",
-            "title": "S/MIME Private Key"
+            "title": "S/MIME private key"
           },
           "dkimSelector": {
             "type": "string",

@@ -4136,13 +4136,13 @@
           "smimePrivateKey": {
             "type": "string",
             "description": "The PEM private key this identity signs with. Write only; it is never read back over the API. Being replaced by the credential reference below.",
-            "title": "S/MIME Private Key"
+            "title": "S/MIME private key"
           },
           "smimePrivateKeyRef": {
             "type": "string",
             "pattern": "^(?!.*-----BEGIN)[^\\s]*$",
             "description": "Where this identity's signing key is kept in the credential vault. Shown so you can check which credential is used, and correct it when signing fails. Key material itself is refused here.",
-            "title": "S/MIME Private Key Reference"
+            "title": "S/MIME private key reference"
           },
           "dkimSelector": {
             "type": "string",
