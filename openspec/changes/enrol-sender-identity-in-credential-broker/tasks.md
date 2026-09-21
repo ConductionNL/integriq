@@ -42,6 +42,7 @@
   - Mint at `SCOPE_ORGANISATION`, never `personal`; `APP_ID` stays `'openconnector'` — renaming it fails every existing brokered resolve closed
   - The existing `source` migration path keeps its current behaviour, proven by the existing tests still passing unchanged
   - `--dry-run --json` reports `"clean": true` only when no schema in the map holds an unmigrated inline secret
+  - The REAL run drives every schema in the map too — `migrateEverything()`, not the source-only `migrateAll()` — in both callers: the OCC command and `RecordInlineSecretMigrationStatus`. A dry-run that plans a schema the real run never touches is the defect this criterion exists for. The Phase D gate stays source-only, because `RemoveMigratedSourceSecretFields` reads it
   - Mint `smimePrivateKey` under the existing `generic-apikey` provider (decided 2026-09-20). It is `inject_only: true`, so `resolveInjectable()` returns the PEM and integriq signs locally; its `authScheme` is unused. The label is wrong and correcting it later means a re-mint — do NOT add a provider to OpenRegister in this change (tracked as ConductionNL/openregister#4008)
 - [x] Implement
 - [x] Test

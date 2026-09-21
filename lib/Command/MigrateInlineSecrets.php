@@ -217,7 +217,11 @@ class MigrateInlineSecrets extends Command {
 	 */
 	private function runMigrate(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
 		try {
-			$result = $this->executor->migrateAll(limit: $limit);
+			// migrateEverything(), NOT migrateAll(): the dry-run above plans every
+			// schema in MIGRATABLE, and a real run that only drove `source` made
+			// `--dry-run` report `wouldMigrate: N` for `sender_identity` while the
+			// real run migrated 0 (integriq#2104 review 5264751700, blocker 2).
+			$estate = $this->executor->migrateEverything(limit: $limit);
 		} catch (Throwable $e) {
 			// Fail closed: broker unavailable/too old, or the run could not start.
 			// Nothing was rewritten; the message carries the upgrade hint.
@@ -225,8 +229,24 @@ class MigrateInlineSecrets extends Command {
 			return Command::FAILURE;
 		}
 
-		// Persist the TRUE post-run Phase D gate so the repair-step signal stays honest.
-		$this->recordPhaseDGate(result: $result);
+		// The Phase D gate stays SOURCE-only on purpose: RemoveMigratedSourceSecretFields
+		// reads it to decide whether source's properties may be dropped, and that
+		// must not be blocked by an unrelated schema's state.
+		$sourceRun = (array)($estate['schemas'][InlineSecretMigrationPlanner::SCHEMA] ?? []);
+		$this->recordPhaseDGate(result: $sourceRun);
+
+		// Keep the source-shaped keys the renderer and the exit code speak, and
+		// carry the per-schema runs alongside them for --json.
+		$result = [
+			'sources' => ($sourceRun['objects'] ?? []),
+			'totalSources' => ($sourceRun['totalObjects'] ?? 0),
+			'migrated' => $estate['migrated'],
+			'failed' => $estate['failed'],
+			'blocked' => $estate['blocked'],
+			'skipped' => $estate['skipped'],
+			'postRun' => ($sourceRun['postRun'] ?? []),
+			'schemas' => $estate['schemas'],
+		];
 
 		if ($json === true) {
 			$output->writeln((string)json_encode($result, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)));

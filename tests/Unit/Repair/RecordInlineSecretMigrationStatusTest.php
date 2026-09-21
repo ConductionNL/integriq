@@ -159,47 +159,78 @@ class RecordingAppConfig implements IAppConfig {
 }//end class
 
 /**
- * A migration executor spy that records whether migrateAll() ran, without touching
- * \OCP\Server or any real broker.
+ * A migration executor spy that records whether migrateEverything() ran, without
+ * touching \OCP\Server or any real broker.
+ *
+ * It overrides migrateEverything() and NOT migrateAll() on purpose: the repair
+ * step is the only thing that drives the migration on an upgrade, and
+ * migrateAll() is hardcoded to `source`, so a spy on migrateAll() would keep
+ * passing while `sender_identity` was never migrated (integriq#2104 review
+ * 5264751700, blocker 2). migrateAll() is deliberately left throwing here so a
+ * regression to it fails loudly rather than silently.
  */
 class SpyMigrationExecutor extends InlineSecretMigrationExecutor {
 
 	/**
-	 * How many times migrateAll() was invoked.
+	 * How many times migrateEverything() was invoked.
 	 *
 	 * @var int
 	 */
 	public int $migrateCalls = 0;
 
 	/**
-	 * When true, migrateAll() throws (simulating a blocked/absent broker).
+	 * When true, migrateEverything() throws (simulating a blocked/absent broker).
 	 *
 	 * @var boolean
 	 */
 	public bool $throws = false;
 
 	/**
-	 * Record the invocation and return a fixed summary.
+	 * Record the invocation and return a fixed estate summary.
 	 *
 	 * @param int $limit Unused.
 	 *
 	 * @return array<string, mixed>
 	 */
-	public function migrateAll(int $limit = 1000): array {
+	public function migrateEverything(int $limit = 1000): array {
 		$this->migrateCalls++;
 		if ($this->throws === true) {
 			throw new \RuntimeException('broker unavailable (test)');
 		}
 
 		return [
-			'sources' => [],
-			'totalSources' => 0,
+			'schemas' => [
+				'source' => [
+					'objects' => [],
+					'totalObjects' => 0,
+					'migrated' => 1,
+					'failed' => 0,
+					'blocked' => 0,
+					'skipped' => 0,
+					'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
+				],
+			],
 			'migrated' => 1,
 			'failed' => 0,
 			'blocked' => 0,
 			'skipped' => 0,
-			'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
+			'clean' => true,
 		];
+	}//end migrateEverything()
+
+	/**
+	 * The source-only entry point, which the repair step must NOT call.
+	 *
+	 * @param int $limit Unused.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws \RuntimeException Always.
+	 */
+	public function migrateAll(int $limit = 1000): array {
+		throw new \RuntimeException(
+			'the repair step must drive migrateEverything(), not the source-only migrateAll()'
+		);
 	}//end migrateAll()
 }//end class
 

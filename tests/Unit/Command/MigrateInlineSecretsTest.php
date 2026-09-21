@@ -83,18 +83,31 @@ class MigrateInlineSecretsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRealRunWritesCleanPhaseDGate(): void {
+		// migrateEverything(), matching the dry-run's planEverything(): a real run
+		// that only drove `source` reported wouldMigrate for `sender_identity` and
+		// migrated 0 (integriq#2104 blocker 2). The Phase D gate below is still
+		// read from the SOURCE run alone.
 		$this->executor->expects($this->once())
-			->method('migrateAll')
+			->method('migrateEverything')
 			->with(1000)
 			->willReturn(
 				[
-					'sources' => [],
-					'totalSources' => 1,
+					'schemas' => [
+						'source' => [
+							'objects' => [],
+							'totalObjects' => 1,
+							'migrated' => 1,
+							'failed' => 0,
+							'blocked' => 0,
+							'skipped' => 0,
+							'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
+						],
+					],
 					'migrated' => 1,
 					'failed' => 0,
 					'blocked' => 0,
 					'skipped' => 0,
-					'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
+					'clean' => true,
 				]
 			);
 
@@ -125,19 +138,28 @@ class MigrateInlineSecretsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRealRunKeepsGateClosedWhenNotClean(): void {
-		$this->executor->method('migrateAll')->willReturn(
+		$this->executor->method('migrateEverything')->willReturn(
 			[
-				'sources' => [
-					['uuid' => 's1', 'name' => 'S1', 'organisation' => null, 'fields' => [
-						['field' => 'apikey', 'provider' => 'generic-apikey', 'outcome' => 'blocked', 'reason' => 'no-organisation', 'credentialId' => null],
-					]],
+				'schemas' => [
+					'source' => [
+						'objects' => [
+							['uuid' => 's1', 'name' => 'S1', 'organisation' => null, 'fields' => [
+								['field' => 'apikey', 'provider' => 'generic-apikey', 'outcome' => 'blocked', 'reason' => 'no-organisation', 'credentialId' => null],
+							]],
+						],
+						'totalObjects' => 1,
+						'migrated' => 0,
+						'failed' => 1,
+						'blocked' => 1,
+						'skipped' => 0,
+						'postRun' => ['clean' => false, 'pending' => 1, 'manual' => 0],
+					],
 				],
-				'totalSources' => 1,
 				'migrated' => 0,
 				'failed' => 1,
 				'blocked' => 1,
 				'skipped' => 0,
-				'postRun' => ['clean' => false, 'pending' => 1, 'manual' => 0],
+				'clean' => false,
 			]
 		);
 
@@ -162,7 +184,7 @@ class MigrateInlineSecretsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRealRunFailsClosedWhenExecutorRefuses(): void {
-		$this->executor->method('migrateAll')->willThrowException(
+		$this->executor->method('migrateEverything')->willThrowException(
 			new \RuntimeException('CredentialBrokerService::mint() is missing. Nothing was rewritten.')
 		);
 
@@ -191,7 +213,7 @@ class MigrateInlineSecretsTest extends TestCase {
 				'clean' => true,
 			]
 		);
-		$this->executor->expects($this->never())->method('migrateAll');
+		$this->executor->expects($this->never())->method('migrateEverything');
 		$this->appConfig->expects($this->never())->method('setValueString');
 
 		$exit = $this->tester->execute(['--dry-run' => true]);

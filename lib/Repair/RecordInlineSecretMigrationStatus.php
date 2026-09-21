@@ -233,7 +233,14 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	protected function runMigration(OrObjectService $objectService, InlineSecretMigrationPlanner $planner, IOutput $output): void {
 		try {
 			$executor = $this->makeExecutor(objectService: $objectService, planner: $planner);
-			$result = $executor->migrateAll();
+			// migrateEverything(), NOT migrateAll(): on upgrade this is the only
+			// thing that drives the migration, and migrateAll() is hardcoded to
+			// `source`, so `sender_identity` would never be migrated on any
+			// instance that never runs the OCC command by hand (integriq#2104
+			// review 5264751700, blocker 2). The Phase D gate below deliberately
+			// stays planAll() — source-only — because RemoveMigratedSourceSecretFields
+			// reads it.
+			$result = $executor->migrateEverything();
 
 			// Counts only — never a secret.
 			$output->info(

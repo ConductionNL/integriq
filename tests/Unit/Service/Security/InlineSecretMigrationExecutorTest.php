@@ -808,4 +808,54 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 		$this->assertArrayNotHasKey('smimePrivateKeyRef', $object, 'No reference may be written on a failed verify.');
 
 	}//end testAFailedVerifyLeavesTheSigningKeyIntact()
+
+	/**
+	 * A real run reaches EVERY migratable schema, not just `source`.
+	 *
+	 * The regression this guards: `migrateAll()` is hardcoded to
+	 * `InlineSecretMigrationPlanner::SCHEMA` ('source'), while the dry-run plans
+	 * every schema in `MIGRATABLE`. An operator running `--dry-run` saw
+	 * `wouldMigrate: 1` for `sender_identity` and a real run migrated 0, with no
+	 * error anywhere (integriq#2104 review 5264751700, blocker 2).
+	 *
+	 * Asserting on the OBJECT rather than on a call count, so the test fails if
+	 * the schema is reached but does nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function testARealRunMigratesEverySchemaNotJustSource(): void {
+		$this->objectService->seed(
+			'identity-1',
+			['name' => 'Gemeente Voorbeeld', 'smimePrivateKey' => self::SECRET],
+			self::OWNER,
+			self::ORG
+		);
+
+		$estate = $this->executor->migrateEverything();
+
+		$this->assertArrayHasKey(
+			'sender_identity',
+			$estate['schemas'],
+			'Every schema in MIGRATABLE must be driven by a real run.'
+		);
+		$this->assertSame(1, $estate['schemas']['sender_identity']['migrated']);
+
+		$entity = $this->objectService->find(
+			id: 'identity-1',
+			register: 'integriq',
+			schema: 'sender_identity',
+			_render: false
+		);
+		$object = ($entity?->getObject() ?? []);
+
+		$this->assertArrayHasKey(
+			'smimePrivateKeyRef',
+			$object,
+			'The reference must be written, or the real run did nothing.'
+		);
+		$this->assertSame('', (string)($object['smimePrivateKey'] ?? ''), 'The inline key must be nulled.');
+
+	}//end testARealRunMigratesEverySchemaNotJustSource()
 }//end class

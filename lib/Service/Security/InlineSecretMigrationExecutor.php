@@ -204,6 +204,57 @@ class InlineSecretMigrationExecutor {
 	}//end migrateAll()
 
 	/**
+	 * Perform a REAL run across EVERY migratable schema.
+	 *
+	 * The counterpart of {@see InlineSecretMigrationPlanner::planEverything()},
+	 * and the reason it exists: the dry-run planned every schema in `MIGRATABLE`
+	 * while the real run called {@see migrateAll()}, which is hardcoded to
+	 * `source`. `sender_identity` was therefore reported as `wouldMigrate: N` by
+	 * `--dry-run` and migrated 0 by the real run — a divergence an operator sees
+	 * as a migration that silently does nothing (integriq#2104 review
+	 * 5264751700, blocker 2).
+	 *
+	 * `migrateAll()` stays as the `source` entry point, and its `postRun.clean`
+	 * is still the SOURCE-only Phase D gate that
+	 * {@see \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields} reads —
+	 * folding another schema into that number would block source's property
+	 * removal on an unrelated schema's state. The per-schema runs are returned
+	 * separately for exactly that reason.
+	 *
+	 * @param integer $limit Maximum objects to inspect per schema.
+	 *
+	 * @return array{schemas: array<string,mixed>, migrated: int, failed: int, blocked: int, skipped: int, clean: bool} The per-schema runs and their totals.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function migrateEverything(int $limit = 1000): array {
+		$schemas  = [];
+		$migrated = 0;
+		$failed   = 0;
+		$blocked  = 0;
+		$skipped  = 0;
+
+		foreach (array_keys(InlineSecretMigrationPlanner::MIGRATABLE) as $schema) {
+			$run = $this->migrateSchema(schema: $schema, limit: $limit);
+			$schemas[$schema] = $run;
+			$migrated += (int)$run['migrated'];
+			$failed   += (int)$run['failed'];
+			$blocked  += (int)$run['blocked'];
+			$skipped  += (int)$run['skipped'];
+		}
+
+		return [
+			'schemas'  => $schemas,
+			'migrated' => $migrated,
+			'failed'   => $failed,
+			'blocked'  => $blocked,
+			'skipped'  => $skipped,
+			'clean'    => ($failed === 0 && $blocked === 0),
+		];
+
+	}//end migrateEverything()
+
+	/**
 	 * Migrate one schema's estate.
 	 *
 	 * The generic form of {@see migrateAll()}, which stays as the `source` entry
