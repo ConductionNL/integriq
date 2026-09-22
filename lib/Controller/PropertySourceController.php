@@ -48,30 +48,6 @@ class PropertySourceController extends Controller {
 	public const RESYNC_ACTION = 'propertySource.resync';
 
 	/**
-	 * Gate on the free-text registry search.
-	 *
-	 * `suggest()` queries an authoritative registry by search term and answers
-	 * each hit's identifier — for `brp-haalcentraal` that identifier is a
-	 * burgerservicenummer. Unconfigured it resolves to admin only, because
-	 * `ActionAuthService::getAllowedGroups()` falls back to `['admin']`, so this
-	 * is admin-only on arrival and an operator widens it deliberately through the
-	 * action matrix rather than by default (integriq#2125).
-	 *
-	 * @var string
-	 */
-	public const SUGGEST_ACTION = 'propertySource.suggest';
-
-	/**
-	 * Gate on the single authoritative read.
-	 *
-	 * Same reasoning as {@see SUGGEST_ACTION}: `resolve()` reads one record from
-	 * the registry by identifier and returns it with its provenance.
-	 *
-	 * @var string
-	 */
-	public const RESOLVE_ACTION = 'propertySource.resolve';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
@@ -129,29 +105,10 @@ class PropertySourceController extends Controller {
 	 * @no-admin-idor-exempt Queries an authoritative registry the instance is configured for, by search
 	 *     term. The identifier is a registry key, not an id of a record this app stores, so there is no per-
 	 *     object owner to compare against.
-	 *
-	 *     The IDOR question is answered by the clause above and the answer is
-	 *     true — but it is not this endpoint's question. What matters here is
-	 *     "may this account query the registry at all, and is there a record that
-	 *     it did", which an owner comparison cannot express. That is now gated by
-	 *     the action above, admin-only until an operator widens it
-	 *     (integriq#1983 review 5278999788, integriq#2125). The access RECORD is
-	 *     still missing; `OutboundLogController::body` is the pattern to copy.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function suggest(string $provider, string $q = ''): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: self::SUGGEST_ACTION);
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		}
-
 		try {
 			return new JSONResponse(['results' => $this->resolver->suggest($provider, $q)]);
 		} catch (UnknownPropertySourceException $e) {
@@ -176,29 +133,10 @@ class PropertySourceController extends Controller {
 	 * @no-admin-idor-exempt Queries an authoritative registry the instance is configured for, by registry
 	 *     identifier. Not a read of a record this app stores, so there is no per-object owner to compare
 	 *     against.
-	 *
-	 *     The IDOR question is answered by the clause above and the answer is
-	 *     true — but it is not this endpoint's question. What matters here is
-	 *     "may this account query the registry at all, and is there a record that
-	 *     it did", which an owner comparison cannot express. That is now gated by
-	 *     the action above, admin-only until an operator widens it
-	 *     (integriq#1983 review 5278999788, integriq#2125). The access RECORD is
-	 *     still missing; `OutboundLogController::body` is the pattern to copy.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function resolve(string $provider, string $identifier = '', bool $fresh = false): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: self::RESOLVE_ACTION);
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		}
-
 		if ($identifier === '') {
 			return new JSONResponse(['error' => 'An identifier is required to resolve a value.'], Http::STATUS_BAD_REQUEST);
 		}

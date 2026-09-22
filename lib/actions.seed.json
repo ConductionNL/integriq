@@ -64,9 +64,6 @@
     "configuration.export": ["admin"],
     "configuration.import": ["admin"],
     "environment.manage": ["admin"],
-    "environment.promote": ["admin"],
-    "propertySource.resync": ["admin"],
-    "propertySource.suggest": ["admin"],
-    "propertySource.resolve": ["admin"]
+    "environment.promote": ["admin"]
   }
 }
