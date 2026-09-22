@@ -71,6 +71,13 @@ class ScimController extends Controller {
 	private const ERROR_SCHEMA = 'urn:ietf:params:scim:api:messages:2.0:Error';
 
 	/**
+	 * The page size used when the caller names none, or names one we cannot read.
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_PAGE_SIZE = 100;
+
+	/**
 	 * The consumer this request was answered as, resolved by authorize().
 	 *
 	 * Request-scoped: the controller is constructed per request, so this never
@@ -121,7 +128,7 @@ class ScimController extends Controller {
 
 		$resources = $this->provisioningService->listUsers(
 			filterUserName: $this->filterValue(attribute: 'userName'),
-			limit: (int)$this->request->getParam('count', 100)
+			limit: $this->requestedCount()
 		);
 
 		return $this->listResponse(resources: $resources);
@@ -297,7 +304,7 @@ class ScimController extends Controller {
 
 		$resources = $this->provisioningService->listGroups(
 			filterDisplayName: $this->filterValue(attribute: 'displayName'),
-			limit: (int)$this->request->getParam('count', 100)
+			limit: $this->requestedCount()
 		);
 
 		return $this->listResponse(resources: $resources);
@@ -398,6 +405,40 @@ class ScimController extends Controller {
 		return null;
 
 	}//end authorize()
+
+	/**
+	 * The caller's `count`, validated rather than silently coerced.
+	 *
+	 * `(int)$request->getParam('count', 100)` looked safe and was not. NC's
+	 * `getParam()` returns the default only when the key is ABSENT, so
+	 * `?count=` present-but-empty yields `''`, and PHP maps `''`, `'abc'`,
+	 * `'undefined'` and `'null'` all to `0`. Once the page-size clamp moved above
+	 * the exact-filter branch, that `0` began short-circuiting the lookup an
+	 * identity system runs before deciding whether to create an account — so a
+	 * client emitting a blank or malformed `count` was told the account does not
+	 * exist and would create a duplicate, with nothing logged and nothing thrown
+	 * (integriq#2104 review 5276350047).
+	 *
+	 * A non-numeric value is therefore treated as absent and takes the default.
+	 * `count=0` and `count=-1` stay deliberate caller choices, which RFC 7644
+	 * §3.4.2.4 defines: a negative value SHALL be read as 0, and 0 returns no
+	 * resources.
+	 *
+	 * Shared by both list routes so the pair cannot drift apart.
+	 *
+	 * @return integer The requested page size, or the default when none was given.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	private function requestedCount(): int {
+		$raw = $this->request->getParam('count');
+		if (is_numeric($raw) === false) {
+			return self::DEFAULT_PAGE_SIZE;
+		}
+
+		return (int)$raw;
+
+	}//end requestedCount()
 
 	/**
 	 * The consumer this call was answered as, for a log line.

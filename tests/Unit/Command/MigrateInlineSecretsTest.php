@@ -188,6 +188,15 @@ class MigrateInlineSecretsTest extends TestCase {
 			$display,
 			'The failing schema must be named in the human output, not only in --json.'
 		);
+		// The counters too, not just the name: without this a renderer that read
+		// `$run['failures']` instead of `$run['failed']` would print 0 in the failed
+		// column and keep this test green, which is the case the docblock above
+		// claims to guard (integriq#2104 review 5276350047).
+		$this->assertMatchesRegularExpression(
+			'/sender_identity\s+0\s+1\s+0\s+0/',
+			$display,
+			'The per-schema row must carry the real migrated/failed counters.'
+		);
 
 	}//end testANonSourceFailureIsVisibleInTheTable()
 

@@ -378,6 +378,28 @@ class ScimProvisioningServiceTest extends TestCase {
 	}//end testANegativeCountCannotBypassTheCap()
 
 	/**
+	 * The clamp runs ABOVE the exact-filter branch, so both routes agree.
+	 *
+	 * Every other `listUsers()` case here is unfiltered, so moving the clamp back
+	 * below the filter branch left the whole suite green — the assertion that the
+	 * two routes now agree lived in a comment and nowhere else (integriq#2104
+	 * review 5276350047).
+	 *
+	 * Asserting the lookup is never reached rather than only the return value, so
+	 * the ORDERING is what is under test.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testAFilteredLookupIsAlsoClamped(): void {
+		$this->userManager->expects($this->never())->method('get');
+
+		$this->assertSame([], $this->service()->listUsers(filterUserName: 'alice', limit: -1));
+
+	}//end testAFilteredLookupIsAlsoClamped()
+
+	/**
 	 * `listGroups()` caps an unbounded count too.
 	 *
 	 * The cap shipped on `listUsers()` only, and the sibling route answers with
@@ -442,7 +464,7 @@ class ScimProvisioningServiceTest extends TestCase {
 	 * trimming here: RFC 7643 §4.1.2 makes `Group` the AUTHORITATIVE membership
 	 * resource ("group membership changes MUST be applied via the `Group`
 	 * Resource") and `User.groups` a derived projection, and `Group.members`
-	 * carries `returned: "default"` (§4.2). We accept the write side already, so
+	 * carries `returned: "default"` (§8.7.1, the schema representation). We accept the write side already, so
 	 * refusing the read side would leave us conformant in neither direction. The
 	 * RFC has pagination for resources and attribute selection, but none for a
 	 * multi-valued attribute, so it offers no bound for one large group either.
@@ -452,7 +474,7 @@ class ScimProvisioningServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
 	public function testAGroupsFullMembershipIsReturned(): void {
 		$members = [];
@@ -468,11 +490,16 @@ class ScimProvisioningServiceTest extends TestCase {
 		$group->method('getDisplayName')->willReturn('Everyone');
 		$group->method('getUsers')->willReturn($members);
 
-		$this->groupManager->method('search')->willReturn([$group]);
+		// Constrained, not open: `willReturn([$group])` answers any argument, so an
+		// assertion on the result count would hold whatever pageSize() did.
+		$this->groupManager->expects($this->once())
+			->method('search')
+			->with('', 1)
+			->willReturn([$group]);
 
 		$resources = $this->service()->listGroups(limit: 1);
 
-		$this->assertCount(1, $resources, 'One group was asked for.');
+		$this->assertCount(1, $resources);
 		$this->assertCount(
 			250,
 			$resources[0]['members'],

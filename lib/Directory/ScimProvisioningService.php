@@ -498,7 +498,8 @@ class ScimProvisioningService {
 			// attribute has a mutability of `readOnly`, group membership changes
 			// MUST be applied via the `Group` Resource" — so Group is the
 			// AUTHORITATIVE membership resource and `User.groups` is a derived
-			// projection. `Group.members` carries `returned: "default"` (§4.2),
+			// projection. `Group.members` carries `returned: "default"` (§8.7.1, the
+			// schema representation — §4.2's prose never mentions it),
 			// meaning a conformant provider answers it unless the client narrows
 			// the request. We already accept the write side here
 			// (`PATCH /Groups/{id}`); refusing the read side would leave us

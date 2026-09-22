@@ -168,6 +168,107 @@ class ScimControllerTest extends TestCase {
 	}//end testEverySCIMRouteRejectsAnUnauthenticatedCall()
 
 	/**
+	 * A blank or malformed `count` takes the default, it does not become 0.
+	 *
+	 * `(int)$request->getParam('count', 100)` looked safe and was not: NC's
+	 * `getParam()` defaults only when the key is ABSENT, so `?count=` yields `''`,
+	 * and PHP maps `''`, `'abc'`, `'undefined'` and `'null'` all to `0`. Harmless
+	 * until the page-size clamp moved above the exact-filter branch — after which
+	 * a `0` short-circuited the lookup an identity system runs before deciding to
+	 * create an account, so a client sending a blank `count` was told the account
+	 * does not exist and would create a duplicate, silently (integriq#2104 review
+	 * 5276350047).
+	 *
+	 * @param string $raw The raw `count` the caller sent.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider unreadableCountProvider
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testAnUnreadableCountTakesTheDefault(string $raw): void {
+		$this->request->method('getHeader')->willReturn('Bearer right-key');
+		$this->request->method('getParams')->willReturn(['count' => $raw]);
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($raw) {
+				return ($key === 'count') ? $raw : $default;
+			}
+		);
+
+		$this->provisioningService->expects($this->once())
+			->method('listUsers')
+			->with($this->anything(), 100)
+			->willReturn([]);
+
+		$this->controller()->listUsers();
+
+	}//end testAnUnreadableCountTakesTheDefault()
+
+	/**
+	 * Values PHP would silently coerce to 0.
+	 *
+	 * @return array<string, array{string}> The cases.
+	 */
+	public static function unreadableCountProvider(): array {
+		return [
+			'empty string' => [''],
+			'alphabetic' => ['abc'],
+			'javascript undefined' => ['undefined'],
+			'javascript null' => ['null'],
+		];
+
+	}//end unreadableCountProvider()
+
+	/**
+	 * A numeric `count` is passed through untouched, including 0 and negatives.
+	 *
+	 * Those two are deliberate caller choices RFC 7644 §3.4.2.4 defines — a
+	 * negative SHALL be read as 0, and 0 returns no resources — so the controller
+	 * must not second-guess them. The clamp belongs in the service.
+	 *
+	 * @param string  $raw      The raw `count` the caller sent.
+	 * @param integer $expected What the service must receive.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider numericCountProvider
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testANumericCountIsPassedThrough(string $raw, int $expected): void {
+		$this->request->method('getHeader')->willReturn('Bearer right-key');
+		$this->request->method('getParams')->willReturn(['count' => $raw]);
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($raw) {
+				return ($key === 'count') ? $raw : $default;
+			}
+		);
+
+		$this->provisioningService->expects($this->once())
+			->method('listGroups')
+			->with($this->anything(), $expected)
+			->willReturn([]);
+
+		$this->controller()->listGroups();
+
+	}//end testANumericCountIsPassedThrough()
+
+	/**
+	 * Numeric values the controller must not alter.
+	 *
+	 * @return array<string, array{string, int}> The cases.
+	 */
+	public static function numericCountProvider(): array {
+		return [
+			'zero is a deliberate probe' => ['0', 0],
+			'negative is read as 0 by the service' => ['-1', -1],
+			'an ordinary page size' => ['25', 25],
+		];
+
+	}//end numericCountProvider()
+
+	/**
 	 * A valid credential reads the users and answers a SCIM ListResponse.
 	 *
 	 * @return void
