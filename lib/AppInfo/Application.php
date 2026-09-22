@@ -65,6 +65,11 @@ use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\Integriq\Broker\BrokerTransportRegistry;
+use OCA\Integriq\Broker\Transport\CloudEventsHttpTransport;
+use OCA\Integriq\Broker\Transport\KafkaRestTransport;
+use OCA\Integriq\Broker\Transport\LogBrokerTransport;
+use OCA\Integriq\Broker\Transport\RabbitMqHttpTransport;
 use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
 use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
 use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
@@ -385,6 +390,31 @@ class Application extends App implements IBootstrap {
 						$c->get(KvkPropertySource::class),
 					],
 					logger: $c->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		// The broker transport registry: one keyed list of the brokers this
+		// instance can publish a matched CloudEvent to. Registered explicitly
+		// rather than autowired, for the same reason as the intake channel
+		// registry below: autowiring would build one with an EMPTY transport
+		// list, which fails as "no transport answers to rabbitmq" on the
+		// first matched event rather than at boot
+		// (openspec/changes/event-broker-transport).
+		//
+		// `log` is LAST, so a real transport always wins its own id and the
+		// dormant one only answers to `log`.
+		$context->registerService(
+			BrokerTransportRegistry::class,
+			static function ($c): BrokerTransportRegistry {
+				return new BrokerTransportRegistry(
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					transports: [
+						$c->get(CloudEventsHttpTransport::class),
+						$c->get(KafkaRestTransport::class),
+						$c->get(RabbitMqHttpTransport::class),
+						$c->get(LogBrokerTransport::class),
+					]
 				);
 			}
 		);

@@ -17,6 +17,7 @@
     * [Mapping](administrators/mapping/mapping.md)
   * [Consumer](administrators/consumer.md)
   * [Cloudevents](administrators/cloudevents.md)
+  * [Publish events to a message broker](administrators/event-brokers.md)
 * [Developers](developers/README.md)
   * [Developer Guide](developers/developers.md)
   * [Styleguide](developers/styleguide.md)
