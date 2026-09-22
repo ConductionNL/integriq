@@ -310,15 +310,14 @@
 			     same migration on demand. -->
 			<step>OCA\Integriq\Repair\MigrateFlowStepsToGraph</step>
 			<step>OCA\Integriq\Repair\RemoveRetiredCronJobs</step>
-			<!-- Written but never registered, so it had never run once: a class
-			     that exists is not a class that runs. It moves openconnector
-			     data out of the Dutch columns into the English ones, so every
-			     instance that predates the column rename still holds its data
-			     where nothing reads it.
-
-			     post-migration only: a fresh install has no Dutch columns to
-			     move, and the step is idempotent either way. -->
-			<step>OCA\Integriq\Repair\RenameDutchColumns</step>
+			<!-- RenameDutchColumns is NOT repeated here. It was registered twice
+			     — once above, after InitializeRegister and MagicMapper where its
+			     own comment reasons the placement out, and once here under a note
+			     saying it had "never been registered", which the earlier entry
+			     disproves. The duplicate ran the step twice per upgrade; it is
+			     idempotent, so nothing broke, but the second registration's
+			     stated reason was false and the placement above is the
+			     deliberate one (integriq#1983 review 5278999788). -->
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes
