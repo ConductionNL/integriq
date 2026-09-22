@@ -142,7 +142,8 @@ class PropertySourceControllerTest extends TestCase {
 			ResolvedValue::fromSource(['street' => 'Kerkstraat'], 'bag', 'adres-1', 1700000000)
 		);
 
-		$data = $this->controller($resolver)->resolve('bag', 'adres-1')->getData();
+		$data = $this->controller($resolver, null, null, $this->createMock(IUser::class))
+			->resolve('bag', 'adres-1')->getData();
 
 		$this->assertSame('Kerkstraat', $data['value']['street']);
 		$this->assertSame('bag', $data['provenance']['provider']);
@@ -155,7 +156,7 @@ class PropertySourceControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testResolveWithoutAnIdentifierIsRefused(): void {
-		$response = $this->controller()->resolve('bag', '');
+		$response = $this->controller(null, null, null, $this->createMock(IUser::class))->resolve('bag', '');
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 	}//end testResolveWithoutAnIdentifierIsRefused()
@@ -169,7 +170,7 @@ class PropertySourceControllerTest extends TestCase {
 		$resolver = $this->resolverDouble();
 		$resolver->method('resolve')->willThrowException(new UnknownPropertySourceException('kadaster', ['bag']));
 
-		$response = $this->controller($resolver)->resolve('kadaster', 'x');
+		$response = $this->controller($resolver, null, null, $this->createMock(IUser::class))->resolve('kadaster', 'x');
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 		$this->assertStringContainsString('kadaster', $response->getData()['error']);
@@ -193,6 +194,112 @@ class PropertySourceControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 	}//end testAnOrdinaryAccountMayNotResync()
+
+	/**
+	 * An ordinary account may not search the registry.
+	 *
+	 * `suggest()` takes a free-text query and answers each hit's identifier — for
+	 * `brp-haalcentraal` that identifier is a burgerservicenummer. It shipped
+	 * `#[NoAdminRequired]` with no authorization decision at all, so any signed-in
+	 * account reached it (integriq#2125, found reviewing #1983).
+	 *
+	 * Asserting the resolver is NEVER reached, not merely that the status is 403,
+	 * so the gate's position is what is under test.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
+	 */
+	public function testAnOrdinaryAccountMayNotSearchTheRegistry(): void {
+		$actionAuth = $this->actionAuthDouble();
+		$actionAuth->method('requireAction')->willThrowException(
+			new OCSForbiddenException("Action 'propertySource.suggest' requires admin rights")
+		);
+		$resolver = $this->resolverDouble();
+		$resolver->expects($this->never())->method('suggest');
+
+		$response = $this->controller($resolver, null, $actionAuth, $this->createMock(IUser::class))
+			->suggest('brp-haalcentraal', 'jansen');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+	}//end testAnOrdinaryAccountMayNotSearchTheRegistry()
+
+	/**
+	 * An ordinary account may not read one record from the registry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
+	 */
+	public function testAnOrdinaryAccountMayNotResolveFromTheRegistry(): void {
+		$actionAuth = $this->actionAuthDouble();
+		$actionAuth->method('requireAction')->willThrowException(
+			new OCSForbiddenException("Action 'propertySource.resolve' requires admin rights")
+		);
+		$resolver = $this->resolverDouble();
+		$resolver->expects($this->never())->method('resolve');
+
+		$response = $this->controller($resolver, null, $actionAuth, $this->createMock(IUser::class))
+			->resolve('brp-haalcentraal', '999990019');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+	}//end testAnOrdinaryAccountMayNotResolveFromTheRegistry()
+
+	/**
+	 * Both registry routes refuse an unauthenticated caller before any read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
+	 */
+	public function testTheRegistryRoutesRefuseAnAnonymousCaller(): void {
+		$resolver = $this->resolverDouble();
+		$resolver->expects($this->never())->method('suggest');
+		$resolver->expects($this->never())->method('resolve');
+
+		$controller = $this->controller($resolver, null, null, null);
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->suggest('brp-haalcentraal', 'jansen')->getStatus());
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->resolve('brp-haalcentraal', '999990019')->getStatus());
+
+	}//end testTheRegistryRoutesRefuseAnAnonymousCaller()
+
+	/**
+	 * Every action the controller gates is seeded, so an operator can see it.
+	 *
+	 * An action absent from `lib/actions.seed.json` still defaults to admin-only
+	 * — `getAllowedGroups()` falls back to `['admin']` — but it does not appear in
+	 * the admin matrix, so it cannot be widened or even known about.
+	 * `propertySource.resync` shipped that way.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Registry-completeness invariant over a seed file; no requirement states which actions exist.
+	 */
+	public function testEveryGatedActionIsSeeded(): void {
+		$seed = json_decode(
+			(string)file_get_contents(dirname(__DIR__, 3) . '/lib/actions.seed.json'),
+			true
+		);
+		$seeded = array_keys((array)($seed['actions'] ?? []));
+
+		foreach (
+			[
+				PropertySourceController::RESYNC_ACTION,
+				PropertySourceController::SUGGEST_ACTION,
+				PropertySourceController::RESOLVE_ACTION,
+			] as $action
+		) {
+			$this->assertContains(
+				$action,
+				$seeded,
+				"`$action` is gated but not seeded, so it never appears in the admin action matrix."
+			);
+		}
+
+	}//end testEveryGatedActionIsSeeded()
 
 	/**
 	 * An anonymous request is refused before the action gate is consulted.
@@ -232,7 +339,8 @@ class PropertySourceControllerTest extends TestCase {
 		$resolver = $this->resolverDouble();
 		$resolver->method('suggest')->willReturn([['identifier' => 'adres-1', 'label' => 'Kerkstraat 1', 'authoritative' => false]]);
 
-		$data = $this->controller($resolver)->suggest('bag', 'kerk')->getData();
+		$data = $this->controller($resolver, null, null, $this->createMock(IUser::class))
+			->suggest('bag', 'kerk')->getData();
 
 		$this->assertFalse($data['results'][0]['authoritative']);
 	}//end testSuggestionsAreNotAuthoritative()
