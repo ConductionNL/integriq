@@ -2537,7 +2537,19 @@ OC.L10N.register(
         "The recipient identity the provider addresses, for example a BSN for Berichtenbox": "The recipient identity the provider addresses, for example a BSN for Berichtenbox",
         "True when the binding that handled this letter sends nothing, so a delivered status can never be read as a letter that arrived": "True when the binding that handled this letter sends nothing, so a delivered status can never be read as a letter that arrived",
         "URL": "URL",
-        "Where the document is held. The letter carries a reference, not a copy": "Where the document is held. The letter carries a reference, not a copy"
+        "Where the document is held. The letter carries a reference, not a copy": "Where the document is held. The letter carries a reference, not a copy",
+        "Broker ID": "Broker ID",
+        "Broker Topic": "Broker Topic",
+        "Broker Routing Key": "Broker Routing Key",
+        "Broker Content Mode": "Broker Content Mode",
+        "Broker Ordering Key": "Broker Ordering Key",
+        "Which broker publishes a matched event: rabbitmq, kafka-rest, cloudevents-http or log.": "Which broker publishes a matched event: rabbitmq, kafka-rest, cloudevents-http or log.",
+        "The exchange, topic or path the event is published into.": "The exchange, topic or path the event is published into.",
+        "The key the broker routes on. Leave it empty to route on the event type.": "The key the broker routes on. Leave it empty to route on the event type.",
+        "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.": "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.",
+        "Keeps related events together, when the broker honours it.": "Keeps related events together, when the broker honours it.",
+        "A label for your own reference. The delivery action decides where an event actually goes.": "A label for your own reference. The delivery action decides where an event actually goes.",
+        "How a matched event is delivered. Leave it empty to post to the sink above.": "How a matched event is delivered. Leave it empty to post to the sink above."
     },
     "nplurals=2; plural=(n != 1);"
 )
