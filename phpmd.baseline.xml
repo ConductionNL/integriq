@@ -87,6 +87,7 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Http/XMLResponse.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/FormSubmissionAdapter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/MessagingChannelAdapter.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/TeamsChannelAdapter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/PublicSpaceReportAdapter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Intake/ChannelCapabilities.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Intake/InboundMessage.php" method="__construct"/>
@@ -226,7 +227,7 @@
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Lti/LtiLaunchService.php" method="signJwt"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Lti/LtiLaunchService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Lti/LtiRegistrationResolverService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/CaseReferenceDetector.php" method="detect"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/CaseReferenceDetector.php" method="scan"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/CaseReferenceDetector.php" method="resolvePattern"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Mail/CompoundFileReader.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Mail/CompoundFileReader.php"/>

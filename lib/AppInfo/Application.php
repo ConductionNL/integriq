@@ -68,6 +68,7 @@ use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
 use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
 use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
 use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
+use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Observability\IntegriqMetricsProvider;
 use OCA\Integriq\Repair\InitializeActions;
@@ -403,6 +404,7 @@ class Application extends App implements IBootstrap {
 						$c->get(FormSubmissionAdapter::class),
 						$c->get(MessagingChannelAdapter::class),
 						$c->get(PublicSpaceReportAdapter::class),
+						$c->get(TeamsChannelAdapter::class),
 					]
 				);
 			}

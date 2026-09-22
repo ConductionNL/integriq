@@ -176,4 +176,110 @@ class WebhookSignatureServiceTest extends TestCase {
 		$this->assertFalse($this->service->isRotationGraceActive((new \DateTime('-25 hour'))->format('c')));
 		$this->assertFalse($this->service->isRotationGraceActive(null));
 	}//end testRotationGraceWindow()
+
+	/**
+	 * REQ-WHS-005: a correctly signed Teams post passes.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 */
+	public function testTeamsSchemeAcceptsACorrectlySignedPost(): void {
+		$secret = base64_encode('teams-shared-secret-bytes-0123456789');
+		$body = '{"type":"message","text":"hello"}';
+		$header = 'HMAC ' . base64_encode(hash_hmac('sha256', $body, base64_decode($secret, true), true));
+
+		$this->assertTrue(
+			$this->service->verify(
+				rawBody: $body,
+				headerValue: $header,
+				config: ['scheme' => 'teams', 'secret' => $secret]
+			)
+		);
+	}//end testTeamsSchemeAcceptsACorrectlySignedPost()
+
+	/**
+	 * REQ-WHS-005: the secret is used base64-decoded, so a signature made
+	 * under the literal secret string is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 */
+	public function testTeamsSchemeRefusesASignatureMadeUnderTheLiteralSecret(): void {
+		$secret = base64_encode('teams-shared-secret-bytes-0123456789');
+		$body = '{"type":"message","text":"hello"}';
+		$header = 'HMAC ' . base64_encode(hash_hmac('sha256', $body, $secret, true));
+
+		$this->assertFalse(
+			$this->service->verify(
+				rawBody: $body,
+				headerValue: $header,
+				config: ['scheme' => 'teams', 'secret' => $secret]
+			)
+		);
+	}//end testTeamsSchemeRefusesASignatureMadeUnderTheLiteralSecret()
+
+	/**
+	 * REQ-WHS-005: a tampered body fails, and so does a missing header.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 */
+	public function testTeamsSchemeRefusesTamperedBodyAndMissingHeader(): void {
+		$secret = base64_encode('teams-shared-secret-bytes-0123456789');
+		$body = '{"type":"message","text":"hello"}';
+		$header = 'HMAC ' . base64_encode(hash_hmac('sha256', $body, base64_decode($secret, true), true));
+
+		$this->assertFalse(
+			$this->service->verify(
+				rawBody: '{"type":"message","text":"tampered"}',
+				headerValue: $header,
+				config: ['scheme' => 'teams', 'secret' => $secret]
+			)
+		);
+		$this->assertFalse(
+			$this->service->verify(
+				rawBody: $body,
+				headerValue: '',
+				config: ['scheme' => 'teams', 'secret' => $secret]
+			)
+		);
+		$this->assertFalse(
+			$this->service->verify(
+				rawBody: $body,
+				headerValue: base64_encode(hash_hmac('sha256', $body, base64_decode($secret, true), true)),
+				config: ['scheme' => 'teams', 'secret' => $secret]
+			)
+		);
+	}//end testTeamsSchemeRefusesTamperedBodyAndMissingHeader()
+
+	/**
+	 * REQ-WHS-005: `toleranceSeconds` is ignored with a logged warning rather
+	 * than refused, the way `github` already ignores it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 */
+	public function testTeamsSchemeIgnoresToleranceWithAWarning(): void {
+		$secret = base64_encode('teams-shared-secret-bytes-0123456789');
+		$body = '{"type":"message","text":"hello"}';
+		$header = 'HMAC ' . base64_encode(hash_hmac('sha256', $body, base64_decode($secret, true), true));
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('warning')
+			->with($this->stringContains('toleranceSeconds is ignored for scheme "teams"'));
+		$service = new WebhookSignatureService($logger);
+
+		$this->assertTrue(
+			$service->verify(
+				rawBody: $body,
+				headerValue: $header,
+				config: ['scheme' => 'teams', 'secret' => $secret, 'toleranceSeconds' => 900]
+			)
+		);
+	}//end testTeamsSchemeIgnoresToleranceWithAWarning()
 }//end class
