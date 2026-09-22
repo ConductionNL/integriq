@@ -18,6 +18,7 @@
   * [Consumer](administrators/consumer.md)
   * [Cloudevents](administrators/cloudevents.md)
   * [Publish events to a message broker](administrators/event-brokers.md)
+  * [Sign people in with DigiD, eHerkenning or eIDAS](administrators/citizen-authentication.md)
 * [Developers](developers/README.md)
   * [Developer Guide](developers/developers.md)
   * [Styleguide](developers/styleguide.md)
