@@ -137,27 +137,15 @@ class WebhookSignatureService {
 			return false;
 		}
 
-		if ($scheme === 'teams') {
-			// Microsoft Teams: Authorization: HMAC <base64 over the raw body>,
-			// keyed with the base64-DECODED shared secret. No timestamp.
-			if ($tolerance !== self::DEFAULT_TOLERANCE_SECONDS) {
-				$this->logger->warning(
-					'webhook_signature: toleranceSeconds is ignored for scheme "teams" (the scheme carries no timestamp).'
-				);
-			}
-
-			return $this->verifyTeams(rawBody: $rawBody, headerValue: $headerValue, secret: $secret);
-		}
-
-		if ($scheme === 'github') {
-			// GitHub: X-Hub-Signature-256: sha256=<hex over body>. No timestamp.
-			if ($tolerance !== self::DEFAULT_TOLERANCE_SECONDS) {
-				$this->logger->warning(
-					'webhook_signature: toleranceSeconds is ignored for scheme "github" (the scheme carries no timestamp).'
-				);
-			}
-
-			return $this->verifyGithub(rawBody: $rawBody, headerValue: $headerValue, secret: $secret);
+		$untimestamped = $this->verifyUntimestamped(
+			scheme: (string)$scheme,
+			rawBody: $rawBody,
+			headerValue: $headerValue,
+			secret: $secret,
+			tolerance: $tolerance
+		);
+		if ($untimestamped !== null) {
+			return $untimestamped;
 		}
 
 		// Timestamped schemes: openconnector / stripe (t=<unix>,v1=<hex>).
@@ -181,6 +169,52 @@ class WebhookSignatureService {
 
 		return false;
 	}//end verify()
+
+	/**
+	 * Verify the schemes that carry no timestamp.
+	 *
+	 * `github` and `teams` both sign the raw body alone, so neither can use
+	 * `toleranceSeconds`. Both ignore it with a logged warning rather than
+	 * refusing the rule, because a rule refused for a setting that does not
+	 * apply is a rule an administrator cannot fix by reading the error.
+	 *
+	 * @param string $scheme The configured scheme.
+	 * @param string $rawBody The raw request body bytes.
+	 * @param string $headerValue The received signature header value.
+	 * @param string $secret The shared secret.
+	 * @param integer $tolerance The configured tolerance, which these schemes ignore.
+	 *
+	 * @return boolean|null The verdict, or null when the scheme is not one of these.
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 */
+	private function verifyUntimestamped(
+		string $scheme,
+		string $rawBody,
+		string $headerValue,
+		string $secret,
+		int $tolerance,
+	): ?bool {
+		if ($scheme !== 'github' && $scheme !== 'teams') {
+			return null;
+		}
+
+		if ($tolerance !== self::DEFAULT_TOLERANCE_SECONDS) {
+			$this->logger->warning(
+				'webhook_signature: toleranceSeconds is ignored for scheme "' . $scheme
+				. '" (the scheme carries no timestamp).'
+			);
+		}
+
+		if ($scheme === 'teams') {
+			// Microsoft Teams: Authorization: HMAC <base64 over the raw body>,
+			// keyed with the base64-DECODED shared secret.
+			return $this->verifyTeams(rawBody: $rawBody, headerValue: $headerValue, secret: $secret);
+		}
+
+		// GitHub: X-Hub-Signature-256: sha256=<hex over body>.
+		return $this->verifyGithub(rawBody: $rawBody, headerValue: $headerValue, secret: $secret);
+	}//end verifyUntimestamped()
 
 	/**
 	 * Verify a GitHub `sha256=<hex>` style signature over the raw body.

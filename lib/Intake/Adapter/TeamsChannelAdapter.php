@@ -78,6 +78,8 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 * The channel id this adapter answers to.
 	 *
 	 * @return string The channel id.
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function getChannelId(): string {
 		return self::CHANNEL_ID;
@@ -88,6 +90,8 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 * What this channel can do.
 	 *
 	 * @return ChannelCapabilities The capabilities.
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function describe(): ChannelCapabilities {
 		return new ChannelCapabilities(
@@ -186,9 +190,7 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function reply(InboundMessage $message, string $text): ReplyResult {
-		$raw = $message->getRawPayload();
-		$conversation = $this->mapAt(value: ($raw['conversation'] ?? null));
-		$conversationId = trim((string)($conversation['id'] ?? $message->getFields()['conversationId'] ?? ''));
+		$conversationId = $this->conversationOf(message: $message);
 		if ($conversationId === '') {
 			return ReplyResult::failed(self::CHANNEL_ID, 'The message records no Teams conversation.');
 		}
@@ -208,6 +210,53 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 			);
 		}
 
+		return $this->post(
+			message: $message,
+			text: $text,
+			conversationId: $conversationId,
+			configuration: $configuration
+		);
+
+	}//end reply()
+
+	/**
+	 * The conversation the message arrived in.
+	 *
+	 * Read off the raw activity first and off `fields` second, so a message
+	 * rebuilt from its stored object still knows where to answer.
+	 *
+	 * @param InboundMessage $message The message.
+	 *
+	 * @return string The conversation id, or an empty string.
+	 */
+	private function conversationOf(InboundMessage $message): string {
+		$conversation = $this->mapAt(value: ($message->getRawPayload()['conversation'] ?? null));
+		$conversationId = trim((string)($conversation['id'] ?? ''));
+		if ($conversationId !== '') {
+			return $conversationId;
+		}
+
+		return trim((string)($message->getFields()['conversationId'] ?? ''));
+
+	}//end conversationOf()
+
+	/**
+	 * Post the reply to the Bot Framework connector.
+	 *
+	 * @param InboundMessage $message The message being replied to.
+	 * @param string $text The reply text.
+	 * @param string $conversationId The conversation to answer in.
+	 * @param array<string,mixed> $configuration The source configuration.
+	 *
+	 * @return ReplyResult What happened.
+	 */
+	private function post(
+		InboundMessage $message,
+		string $text,
+		string $conversationId,
+		array $configuration,
+	): ReplyResult {
+		$raw = $message->getRawPayload();
 		$serviceUrl = trim((string)($raw['serviceUrl'] ?? $configuration['serviceUrl'] ?? ''));
 		if ($serviceUrl === '') {
 			return ReplyResult::failed(
@@ -225,19 +274,13 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 		}
 
 		$url = rtrim($serviceUrl, '/') . '/v3/conversations/' . rawurlencode($conversationId) . '/activities';
-		$body = ['type' => 'message', 'text' => $text];
-
-		$replyToId = trim((string)($raw['id'] ?? $message->getExternalId()));
-		if ($replyToId !== '') {
-			$body['replyToId'] = $replyToId;
-		}
 
 		try {
 			$response = $this->clientService->newClient()->post(
 				$url,
 				[
 					'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $token],
-					'json' => $body,
+					'json' => $this->replyBody(message: $message, text: $text),
 					'timeout' => 30,
 				]
 			);
@@ -249,18 +292,50 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 			);
 		}
 
-		$reference = null;
-		if (is_array($decoded) === true) {
-			$reference = trim((string)($decoded['id'] ?? ''));
+		return ReplyResult::sent(self::CHANNEL_ID, $this->referenceFrom(decoded: $decoded));
+
+	}//end post()
+
+	/**
+	 * The activity the reply is posted as.
+	 *
+	 * @param InboundMessage $message The message being replied to.
+	 * @param string $text The reply text.
+	 *
+	 * @return array<string,mixed> The activity.
+	 */
+	private function replyBody(InboundMessage $message, string $text): array {
+		$body = ['type' => 'message', 'text' => $text];
+
+		$replyToId = trim((string)($message->getRawPayload()['id'] ?? $message->getExternalId()));
+		if ($replyToId !== '') {
+			$body['replyToId'] = $replyToId;
 		}
 
+		return $body;
+
+	}//end replyBody()
+
+	/**
+	 * Teams' own id for the posted reply.
+	 *
+	 * @param mixed $decoded The decoded response body.
+	 *
+	 * @return string|null The reference, or null when Teams gave none.
+	 */
+	private function referenceFrom(mixed $decoded): ?string {
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		$reference = trim((string)($decoded['id'] ?? ''));
 		if ($reference === '') {
-			$reference = null;
+			return null;
 		}
 
-		return ReplyResult::sent(self::CHANNEL_ID, $reference);
+		return $reference;
 
-	}//end reply()
+	}//end referenceFrom()
 
 	/**
 	 * The message text with its markup taken off.
