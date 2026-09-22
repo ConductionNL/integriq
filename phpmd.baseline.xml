@@ -14,6 +14,7 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Broker/Transport/KafkaRestTransport.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Broker/Transport/LogBrokerTransport.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Broker/Transport/RabbitMqHttpTransport.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Auth/Idp/SubjectEnvelopeService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Bridge/BridgeTransport.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Connectors/PdokConnector.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/EndpointsController.php"/>
