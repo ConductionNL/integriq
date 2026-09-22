@@ -127,6 +127,46 @@ class KafkaRestTransport implements BrokerTransportInterface {
 			);
 		}
 
+		$options = $this->requestOptions(publication: $publication, configuration: $configuration);
+
+		try {
+			$response = $this->clientService->newClient()->post(
+				rtrim($baseUrl, '/') . '/topics/' . rawurlencode($topic),
+				$options
+			);
+		} catch (Throwable $exception) {
+			return BrokerResult::refused(
+				self::BROKER_ID,
+				'The Kafka REST Proxy refused the produce: ' . $exception->getMessage()
+			);
+		}
+
+		$statusCode = $response->getStatusCode();
+		if ($statusCode < 200 || $statusCode >= 300) {
+			return BrokerResult::refused(
+				self::BROKER_ID,
+				'The Kafka REST Proxy answered ' . $statusCode . ' to the produce.',
+				$statusCode
+			);
+		}
+
+		return $this->readOffsets(
+			body: (string)$response->getBody(),
+			statusCode: $statusCode,
+			publication: $publication
+		);
+
+	}//end publish()
+
+	/**
+	 * The produce request's options.
+	 *
+	 * @param BrokerPublication $publication The event and its routing.
+	 * @param array<string,mixed> $configuration The broker connection settings.
+	 *
+	 * @return array<string,mixed> The options.
+	 */
+	private function requestOptions(BrokerPublication $publication, array $configuration): array {
 		$record = ['value' => $publication->getCloudEvent()];
 
 		$key = $publication->getOrderingKey();
@@ -158,34 +198,9 @@ class KafkaRestTransport implements BrokerTransportInterface {
 			$options['auth'] = [$username, (string)($configuration['password'] ?? '')];
 		}
 
-		try {
-			$response = $this->clientService->newClient()->post(
-				rtrim($baseUrl, '/') . '/topics/' . rawurlencode($topic),
-				$options
-			);
-		} catch (Throwable $exception) {
-			return BrokerResult::refused(
-				self::BROKER_ID,
-				'The Kafka REST Proxy refused the produce: ' . $exception->getMessage()
-			);
-		}
+		return $options;
 
-		$statusCode = $response->getStatusCode();
-		if ($statusCode < 200 || $statusCode >= 300) {
-			return BrokerResult::refused(
-				self::BROKER_ID,
-				'The Kafka REST Proxy answered ' . $statusCode . ' to the produce.',
-				$statusCode
-			);
-		}
-
-		return $this->readOffsets(
-			body: (string)$response->getBody(),
-			statusCode: $statusCode,
-			publication: $publication
-		);
-
-	}//end publish()
+	}//end requestOptions()
 
 	/**
 	 * Read the produce answer's per-record result.

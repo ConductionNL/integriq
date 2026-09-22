@@ -22,8 +22,12 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
+use OCA\Integriq\Broker\BrokerPublication;
+use OCA\Integriq\Broker\BrokerTransportRegistry;
+use OCA\Integriq\Broker\CloudEventHttpBinding;
 use OCA\Integriq\Event\DeliveryConcludedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
+use OCA\Integriq\Exception\BrokerTransportException;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\Event\EventLoopGuard;
@@ -162,7 +166,14 @@ class EventService {
 	 *                                               provenance-carrying delivery reaches a terminal
 	 *                                               state (ADR-041 seam). Nullable + defaulted for
 	 *                                               the same test-compatibility reason as above.
+	 * @param BrokerTransportRegistry|null $brokerRegistry The broker transports this instance has, for
+	 *                                                     `action.kind = 'broker'` (REQ-013). Nullable +
+	 *                                                     defaulted for the same test-compatibility reason
+	 *                                                     as above; null means no broker is wired, which
+	 *                                                     the dispatch reports as a configuration error
+	 *                                                     rather than as a delivery.
 	 *
+	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
@@ -182,6 +193,7 @@ class EventService {
 		private readonly ?FormsSyncAdapter $formsSyncAdapter = null,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
+		private readonly ?BrokerTransportRegistry $brokerRegistry = null,
 	) {
 
 	}//end __construct()
@@ -985,34 +997,16 @@ class EventService {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
+	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	private function attemptDeliveryDispatch(ObjectEntity $message, ?ObjectEntity $subscription, ExecutionTraceContext $trace): bool {
 		if ($subscription === null) {
-			$messageData = $message->getObject();
-			$subscriptionId = ($messageData['subscription'] ?? null);
-			if ($subscriptionId === null) {
-				return false;
-			}
+			$subscription = $this->resolveDispatchSubscription(message: $message);
+		}
 
-			// System context (ocon#147): see deliverMessage(). The engine dispatches
-			// this subscription's action; it must see the whole subscription, and
-			// `protocolSettings` is stripped from EVERY rendered read — including
-			// an `_rbac: false` one (ocon#215, openregister#389/#429). `_render: false`
-			// is what actually preserves it; see the note on deliverMessage().
-			// `$subscriptionId` holds the message's `subscription` uuid FK; the
-			// `(string)` cast below is defensive (find() signs for a string $id).
-			$subscription = $this->objectService->find(
-				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false,
-				_render: false
-			);
-			if ($subscription === null) {
-				return false;
-			}
-		}//end if
+		if ($subscription === null) {
+			return false;
+		}
 
 		$subscriptionData = $subscription->getObject();
 		$action = ($subscriptionData['action'] ?? null);
@@ -1068,6 +1062,13 @@ class EventService {
 					action: $actionArray
 				);
 
+			case 'broker':
+				return $this->dispatchBrokerAction(
+					message: $message,
+					subscriptionData: $subscriptionData,
+					action: $actionArray
+				);
+
 			default:
 				// Unrecognised action.kind: a configuration error, not a
 				// transient failure — fails once without entering the retry loop.
@@ -1079,6 +1080,40 @@ class EventService {
 		}//end switch
 
 	}//end attemptDeliveryDispatch()
+
+	/**
+	 * Resolve the subscription a message belongs to, in system context.
+	 *
+	 * System context (ocon#147): see deliverMessage(). The engine dispatches
+	 * this subscription's action; it must see the whole subscription, and
+	 * `protocolSettings` is stripped from EVERY rendered read, including an
+	 * `_rbac: false` one (ocon#215, openregister#389/#429). `_render: false`
+	 * is what actually preserves it; see the note on deliverMessage().
+	 *
+	 * @param ObjectEntity $message The message being dispatched.
+	 *
+	 * @return ObjectEntity|null The subscription, or null when the message names none that exists.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+	 */
+	private function resolveDispatchSubscription(ObjectEntity $message): ?ObjectEntity {
+		$subscriptionId = ($message->getObject()['subscription'] ?? null);
+		if ($subscriptionId === null) {
+			return null;
+		}
+
+		// `$subscriptionId` holds the message's `subscription` uuid FK; the
+		// `(string)` cast is defensive (find() signs for a string $id).
+		return $this->objectService->find(
+			id: (string)$subscriptionId,
+			register: 'integriq',
+			schema: 'event_subscription',
+			_rbac: false,
+			_multitenancy: false,
+			_render: false
+		);
+
+	}//end resolveDispatchSubscription()
 
 	/**
 	 * Dispatch an `action.kind = 'synchronization'` message: resolve the
@@ -1711,6 +1746,171 @@ class EventService {
 		);
 		return false;
 	}//end dispatchMappingAction()
+
+	/**
+	 * Dispatch an `action.kind = 'broker'` message: hand the CloudEvent to
+	 * the named broker transport in place of an HTTP POST.
+	 *
+	 * Success and failure bookkeeping is identical to {@see deliverMessage}'s
+	 * (REQ-002), so a broker publish is subject to the same retry, backoff,
+	 * dead-letter and replay machinery as a webhook delivery.
+	 *
+	 * The connection settings come off `protocolSettings.broker` rather than
+	 * off the action, because `protocolSettings` is the block already stripped
+	 * from every rendered read. A broker password on the action would be
+	 * returned by the subscriptions API to anyone who can list them.
+	 *
+	 * @param ObjectEntity $message The message being dispatched.
+	 * @param array $subscriptionData The owning subscription's OR object array.
+	 * @param array $action The resolved `action` block.
+	 *
+	 * @return boolean True when the broker took the message and routed it.
+	 *
+	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
+	 */
+	private function dispatchBrokerAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
+		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
+
+		$brokerId = trim((string)($action['brokerId'] ?? ''));
+		if ($brokerId === '') {
+			$this->recordConfigurationError(
+				message: $message,
+				error: "action.brokerId is required for action.kind='broker'"
+			);
+			return false;
+		}
+
+		if ($this->brokerRegistry === null) {
+			// No registry wired at all: this dispatch kind cannot run in this
+			// deployment. A configuration problem, not a transient one.
+			$this->recordConfigurationError(
+				message: $message,
+				error: "No broker transport registry is available for action.kind='broker' dispatch."
+			);
+			return false;
+		}
+
+		try {
+			$transport = $this->brokerRegistry->get($brokerId);
+		} catch (BrokerTransportException $exception) {
+			// A brokerId nothing answers to will not start answering on a
+			// retry, so it fails once outside the retry loop, the same
+			// treatment an unrecognised action.kind gets.
+			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
+			return false;
+		}
+
+		$messageData = $message->getObject();
+		$cloudEvent = ($messageData['payload'] ?? []);
+		if (is_array($cloudEvent) === false) {
+			$cloudEvent = [];
+		}
+
+		try {
+			$result = $transport->publish(
+				publication: $this->brokerPublication(
+					cloudEvent: $cloudEvent,
+					subscriptionData: $subscriptionData,
+					action: $action
+				),
+				configuration: $this->brokerSettings(subscriptionData: $subscriptionData)
+			);
+		} catch (\Throwable $exception) {
+			$this->logger->error(
+				'Failed to dispatch broker action for event message: ' . $exception->getMessage(),
+				[
+					'exception' => $exception,
+					// NOT 'message': Nextcloud's logger treats a `message` key
+					// in the CONTEXT as the log message itself.
+					'eventMessage' => $message->jsonSerialize(),
+				]
+			);
+			$this->recordFailure(
+				message: $message,
+				error: $exception->getMessage(),
+				statusCode: null,
+				retryAfter: null,
+				retryPolicy: $retryPolicy
+			);
+			return false;
+		}//end try
+
+		if ($result->isPublished() === true) {
+			$this->recordDeliverySuccess(message: $message);
+			return true;
+		}
+
+		// REQ-014. A refusal here includes the two answers that look like a
+		// success: RabbitMQ routing to no queue under a 200, and a Kafka
+		// per-record error_code under a 200. Both retry.
+		$this->recordFailure(
+			message: $message,
+			error: 'Broker publish refused: ' . (string)$result->getDetail(),
+			statusCode: $result->getStatusCode(),
+			retryAfter: null,
+			retryPolicy: $retryPolicy
+		);
+		return false;
+
+	}//end dispatchBrokerAction()
+
+	/**
+	 * Build the publication one broker dispatch sends.
+	 *
+	 * @param array $cloudEvent The message's CloudEvent payload.
+	 * @param array $subscriptionData The owning subscription's OR object array.
+	 * @param array $action The resolved `action` block.
+	 *
+	 * @return BrokerPublication The publication.
+	 *
+	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 */
+	private function brokerPublication(array $cloudEvent, array $subscriptionData, array $action): BrokerPublication {
+		$contentMode = trim((string)($action['contentMode'] ?? ''));
+		if ($contentMode === '') {
+			$contentMode = CloudEventHttpBinding::MODE_STRUCTURED;
+		}
+
+		$orderingKey = trim((string)($action['orderingKey'] ?? ''));
+		if ($orderingKey === '') {
+			$orderingKey = null;
+		}
+
+		$headers = ($subscriptionData['protocolSettings']['headers'] ?? []);
+		if (is_array($headers) === false) {
+			$headers = [];
+		}
+
+		return new BrokerPublication(
+			cloudEvent: $cloudEvent,
+			topic: trim((string)($action['topic'] ?? '')),
+			routingKey: trim((string)($action['routingKey'] ?? '')),
+			contentMode: $contentMode,
+			orderingKey: $orderingKey,
+			headers: $headers
+		);
+
+	}//end brokerPublication()
+
+	/**
+	 * The broker connection settings off a subscription.
+	 *
+	 * @param array $subscriptionData The owning subscription's OR object array.
+	 *
+	 * @return array The settings, empty when the subscription configures none.
+	 *
+	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
+	 */
+	private function brokerSettings(array $subscriptionData): array {
+		$settings = ($subscriptionData['protocolSettings']['broker'] ?? []);
+		if (is_array($settings) === false) {
+			return [];
+		}
+
+		return $settings;
+
+	}//end brokerSettings()
 
 	/**
 	 * Resolve every answer in a form's `questions` list, keyed BOTH by

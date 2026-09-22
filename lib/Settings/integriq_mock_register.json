@@ -980,7 +980,7 @@
           },
           "protocol": {
             "type": "string",
-            "description": "Delivery protocol (HTTP, AMQP, MQTT, NATS)",
+            "description": "Free-text protocol label. NOTHING READS IT: `action.kind` and `action.brokerId` decide where a matched event goes. It used to promise HTTP, AMQP, MQTT and NATS while only HTTP was implemented, which let an administrator configure AMQP, see it saved, and watch deliveries go out over HTTP.",
             "title": "Delivery Protocol"
           },
           "protocolSettings": {
@@ -1000,7 +1000,7 @@
           },
           "action": {
             "type": "object",
-            "description": "Delivery action dispatch. {kind: 'webhook'|'synchronization'|'job'|'notificaties'|'flow'|'mapping', sink?, synchronizationId?, jobId?, sourceId?, flowId?, mappingId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field: 100% backward compatible with subscriptions created before this field existed.",
+            "description": "Delivery action dispatch. {kind: 'webhook'|'synchronization'|'job'|'notificaties'|'flow'|'mapping'|'broker', sink?, synchronizationId?, jobId?, sourceId?, flowId?, mappingId?, brokerId?, topic?, routingKey?, contentMode?, orderingKey?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field: 100% backward compatible with subscriptions created before this field existed.",
             "title": "Delivery Action",
             "properties": {
               "kind": {
@@ -1011,7 +1011,8 @@
                   "job",
                   "notificaties",
                   "flow",
-                  "mapping"
+                  "mapping",
+                  "broker"
                 ],
                 "description": "Which delivery mechanism a matched event drives",
                 "title": "Action Kind"
@@ -1020,6 +1021,32 @@
                 "type": "string",
                 "description": "Override sink URL for kind=webhook (falls back to the top-level `sink` when absent)",
                 "title": "Action Sink"
+              },
+              "brokerId": {
+                "type": "string",
+                "description": "Required for kind=broker: the registered broker transport the event is published through (rabbitmq, kafka-rest, cloudevents-http, log). An id nothing answers to is a configuration error, not a transient failure.",
+                "title": "Broker ID"
+              },
+              "topic": {
+                "type": "string",
+                "description": "For kind=broker: the exchange (RabbitMQ), topic (Kafka) or path (generic sink) the event is published into",
+                "title": "Broker Topic"
+              },
+              "routingKey": {
+                "type": "string",
+                "description": "For kind=broker: the routing key a broker routes on. Absent means the event type is used, because a broker that routes on a key and receives an empty one delivers to nothing.",
+                "title": "Broker Routing Key"
+              },
+              "contentMode": {
+                "type": "string",
+                "enum": ["structured", "binary"],
+                "description": "For kind=broker: the CloudEvents HTTP content mode. `structured` puts the whole event in the body; `binary` puts the data in the body and the attributes in `ce-` headers. Defaults to structured.",
+                "title": "Broker Content Mode"
+              },
+              "orderingKey": {
+                "type": "string",
+                "description": "For kind=broker: the key that keeps related events in one partition or correlation, when the broker honours one",
+                "title": "Broker Ordering Key"
               },
               "synchronizationId": {
                 "type": "string",
