@@ -4131,7 +4131,7 @@
           "smimeCertificate": {
             "type": "string",
             "description": "The PEM certificate this identity signs with",
-            "title": "S/MIME Certificate"
+            "title": "S/MIME certificate"
           },
           "smimePrivateKey": {
             "type": "string",

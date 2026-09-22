@@ -105,9 +105,26 @@ class MigrationSourcesController extends Controller {
 	 *
 	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
 	 *
-	 * @no-admin-idor-exempt Takes no object id. The one adapter that reaches storage, FileMigrationSource,
-	 *     resolves the path through the ACTING USER's folder (IRootFolder::getUserFolder), so another
-	 *     account's files are unreachable rather than merely undocumented.
+	 * @no-admin-idor-exempt The authorization decision is made IN the method:
+	 *     `requireAction(ACTION_PREVIEW)` runs before any read, and an unset action
+	 *     resolves to admin only. The exemption records why there is no per-object
+	 *     OWNER comparison, not that the method is ungated.
+	 *
+	 *     There is no owner to compare against because the two adapters reach
+	 *     storage differently and neither stores a record this app owns.
+	 *     `FileMigrationSource` resolves the path through the ACTING USER's folder
+	 *     (`IRootFolder::getUserFolder`), so another account's files are
+	 *     unreachable. `RedmineMigrationSource` resolves `$config['source']` —
+	 *     caller-supplied — to a configured source via
+	 *     `RegistrySourceGateway::read()`, which is an instance-level connection
+	 *     rather than a per-user object, and is exactly why the action gate above
+	 *     is the control here.
+	 *
+	 *     An earlier version of this reason said "takes no object id" and named
+	 *     one adapter. Both halves were false — the method's own parameter is
+	 *     `string $source` and there are two adapters — and the gate believes
+	 *     whatever this says, so it was corrected rather than left (integriq#1983
+	 *     review 5278999788).
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
