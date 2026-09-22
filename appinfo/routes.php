@@ -324,6 +324,14 @@ return [
 		['name' => 'notificatiesSubscriber#destroy', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'DELETE'],
 		['name' => 'notificatiesSubscriber#callback', 'url' => '/api/notificaties/callback/{abonnementId}', 'verb' => 'POST'],
 
+		// The government identity broker's exchange endpoint. A consuming app's
+		// SERVER redeems the one-time code it received through the browser
+		// redirect, proving who it is with a per-consumer shared secret. No NC
+		// session is involved, same shape as the notificaties callback above.
+		// Every refusal is one undifferentiated 401
+		// (openspec/specs/digid-eherkenning-auth-adapter/spec.md).
+		['name' => 'idpBroker#exchange', 'url' => '/api/idp/envelope/exchange', 'verb' => 'POST'],
+
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],

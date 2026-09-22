@@ -65,6 +65,8 @@ use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
+use OCA\Integriq\Auth\Idp\LogGovernmentIdpAdapter;
 use OCA\Integriq\Broker\BrokerTransportRegistry;
 use OCA\Integriq\Broker\Transport\CloudEventsHttpTransport;
 use OCA\Integriq\Broker\Transport\KafkaRestTransport;
@@ -391,6 +393,24 @@ class Application extends App implements IBootstrap {
 					],
 					logger: $c->get('Psr\Log\LoggerInterface')
 				);
+			}
+		);
+
+		// The government identity provider seam, bound to the adapter that
+		// REFUSES (openspec/specs/digid-eherkenning-auth-adapter/spec.md,
+		// "Dormant seam"). Nothing resolves this interface yet: the SAML
+		// Service Provider and the OIDC Relying Party are vendor work behind
+		// it, and until they land every authentication attempt logs and
+		// throws "broker not configured".
+		//
+		// It is registered rather than left unbound because an unbound
+		// interface fails with a container error nobody can act on, and
+		// because flipping to a live adapter must be this one line and not a
+		// search for every call site.
+		$context->registerService(
+			GovernmentIdpAdapterInterface::class,
+			static function ($c): GovernmentIdpAdapterInterface {
+				return new LogGovernmentIdpAdapter(logger: $c->get('Psr\Log\LoggerInterface'));
 			}
 		);
 
