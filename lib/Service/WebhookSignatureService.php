@@ -137,6 +137,18 @@ class WebhookSignatureService {
 			return false;
 		}
 
+		if ($scheme === 'teams') {
+			// Microsoft Teams: Authorization: HMAC <base64 over the raw body>,
+			// keyed with the base64-DECODED shared secret. No timestamp.
+			if ($tolerance !== self::DEFAULT_TOLERANCE_SECONDS) {
+				$this->logger->warning(
+					'webhook_signature: toleranceSeconds is ignored for scheme "teams" (the scheme carries no timestamp).'
+				);
+			}
+
+			return $this->verifyTeams(rawBody: $rawBody, headerValue: $headerValue, secret: $secret);
+		}
+
 		if ($scheme === 'github') {
 			// GitHub: X-Hub-Signature-256: sha256=<hex over body>. No timestamp.
 			if ($tolerance !== self::DEFAULT_TOLERANCE_SECONDS) {
@@ -190,6 +202,42 @@ class WebhookSignatureService {
 		$expected = hash_hmac('sha256', $rawBody, $secret);
 		return hash_equals($expected, $value);
 	}//end verifyGithub()
+
+	/**
+	 * Verify a Microsoft Teams `HMAC <base64>` signature over the raw body.
+	 *
+	 * Teams signs an outgoing webhook with the base64-DECODED bytes of the
+	 * shared secret, not with the secret string. Signing under the literal
+	 * string produces a different digest, so a sender that gets this wrong
+	 * fails verification rather than being quietly accepted.
+	 *
+	 * @param string $rawBody The raw request body bytes.
+	 * @param string $headerValue The received `Authorization` header value.
+	 * @param string $secret The shared secret, base64 as Teams issues it.
+	 *
+	 * @return boolean True when the signature verifies.
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 */
+	private function verifyTeams(string $rawBody, string $headerValue, string $secret): bool {
+		$value = trim($headerValue);
+		if (str_starts_with($value, 'HMAC ') === false) {
+			return false;
+		}
+
+		$value = trim(substr($value, strlen('HMAC ')));
+		if ($value === '') {
+			return false;
+		}
+
+		$key = base64_decode($secret, true);
+		if ($key === false || $key === '') {
+			return false;
+		}
+
+		$expected = base64_encode(hash_hmac('sha256', $rawBody, $key, true));
+		return hash_equals($expected, $value);
+	}//end verifyTeams()
 
 	/**
 	 * Parse a timestamped `t=<unix>,v1=<hex>[,v1=<hex>]` header.
