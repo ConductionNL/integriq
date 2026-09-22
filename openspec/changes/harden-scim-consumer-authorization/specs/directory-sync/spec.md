@@ -125,6 +125,28 @@ valid credential MUST NOT by itself permit a membership write, and the constrain
 of REQ-DS-008 and REQ-DS-009 apply to every such write. A deactivation MUST disable
 the Nextcloud account and MUST NOT delete it.
 
+What this requirement does NOT constrain, stated because the omission is deliberate
+and was raised in review: **reads**. `GET /Groups` answers each group's complete
+membership, and `pageSize()` bounds how many groups answer, not how much data — so
+`?count=1` returns one group carrying every uid and display name in it. For an
+`everyone`-style group that is the account estate, reachable with any valid consumer
+key.
+
+It is not closed by trimming the response. RFC 7643 §4.1.2 makes `Group` the
+authoritative membership resource — *"Since this attribute has a mutability of
+`readOnly`, group membership changes MUST be applied via the `Group` Resource"* — and
+§4.2 gives `Group.members` `returned: "default"`, so a conformant provider answers it
+unless the client narrows the request. Integriq already accepts the write side of that
+resource, so refusing its read side would leave it conformant in neither direction.
+The RFC paginates resources (§3.4.2.4) and selects attributes (§3.4.2.5) but has no
+pagination *within* a multi-valued attribute, so it offers no bound for one large
+group either.
+
+The bound is therefore an authorization question — which consumer key may read which
+accounts and groups — tracked as ConductionNL/integriq#2112, with the protocol half
+(paging, attribute selection, discovery) as ConductionNL/integriq#2116. Pinned
+meanwhile by `testAGroupsFullMembershipIsReturned()`.
+
 <!-- Previous behavior: the requirement asked only that the endpoint be "gated by its
      own credential and rejecting an unauthenticated call before any read". It
      required authentication and never required authorisation, so an implementation

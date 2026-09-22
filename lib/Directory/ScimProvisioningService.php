@@ -485,6 +485,33 @@ class ScimProvisioningService {
 				continue;
 			}
 
+			// DELIBERATELY UNBOUNDED, and the bound belongs elsewhere.
+			//
+			// `pageSize()` above caps how many GROUPS answer, not how much data,
+			// so `?count=1` returns one group carrying its complete membership —
+			// on an `everyone`-style group, every uid and display name on the
+			// instance (integriq#2104 review, Wilco). That walks around the cap
+			// the Users route has.
+			//
+			// It is not fixed by trimming this list, because SCIM puts the data
+			// here on purpose. RFC 7643 §4.1.2 on `User.groups`: "Since this
+			// attribute has a mutability of `readOnly`, group membership changes
+			// MUST be applied via the `Group` Resource" — so Group is the
+			// AUTHORITATIVE membership resource and `User.groups` is a derived
+			// projection. `Group.members` carries `returned: "default"` (§4.2),
+			// meaning a conformant provider answers it unless the client narrows
+			// the request. We already accept the write side here
+			// (`PATCH /Groups/{id}`); refusing the read side would leave us
+			// conformant in neither direction.
+			//
+			// The RFC also offers no bound for a single large group: it has
+			// pagination for RESOURCES (§3.4.2.4) and attribute selection
+			// (§3.4.2.5), but none for a multi-valued attribute. So the limit
+			// cannot be a protocol one — it is a question of which consumer key
+			// may read this at all, which is ConductionNL/integriq#2112.
+			//
+			// Pinned by testAGroupsFullMembershipIsReturned() so this stays a
+			// decision rather than drifting into an accident.
 			$members = [];
 			foreach ($group->getUsers() as $user) {
 				$members[] = ['value' => $user->getUID(), 'display' => $user->getDisplayName()];

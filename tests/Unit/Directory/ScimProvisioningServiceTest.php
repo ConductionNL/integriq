@@ -431,6 +431,58 @@ class ScimProvisioningServiceTest extends TestCase {
 	}//end testListGroupsHonoursASmallerPageSize()
 
 	/**
+	 * A group answers its COMPLETE membership, deliberately and unbounded.
+	 *
+	 * This pins a decision rather than guarding an invariant, so it is written to
+	 * fail loudly if someone bounds the list without revisiting the reasoning.
+	 *
+	 * `pageSize()` caps how many groups answer, not how much data, so
+	 * `?count=1` returns one group with every member — which on a large group is
+	 * the account estate (integriq#2104 review, Wilco). It is not closed by
+	 * trimming here: RFC 7643 §4.1.2 makes `Group` the AUTHORITATIVE membership
+	 * resource ("group membership changes MUST be applied via the `Group`
+	 * Resource") and `User.groups` a derived projection, and `Group.members`
+	 * carries `returned: "default"` (§4.2). We accept the write side already, so
+	 * refusing the read side would leave us conformant in neither direction. The
+	 * RFC has pagination for resources and attribute selection, but none for a
+	 * multi-valued attribute, so it offers no bound for one large group either.
+	 *
+	 * The bound is therefore an authorization question — which consumer key may
+	 * read this — tracked as ConductionNL/integriq#2112.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
+	 */
+	public function testAGroupsFullMembershipIsReturned(): void {
+		$members = [];
+		for ($i = 0; $i < 250; $i++) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn('user-' . $i);
+			$user->method('getDisplayName')->willReturn('User ' . $i);
+			$members[] = $user;
+		}
+
+		$group = $this->createMock(IGroup::class);
+		$group->method('getGID')->willReturn('everyone');
+		$group->method('getDisplayName')->willReturn('Everyone');
+		$group->method('getUsers')->willReturn($members);
+
+		$this->groupManager->method('search')->willReturn([$group]);
+
+		$resources = $this->service()->listGroups(limit: 1);
+
+		$this->assertCount(1, $resources, 'One group was asked for.');
+		$this->assertCount(
+			250,
+			$resources[0]['members'],
+			'Membership is deliberately unbounded — see the note at the call site and integriq#2112. '
+			. 'If you are bounding it, update that reasoning and this test together, do not just relax the count.'
+		);
+
+	}//end testAGroupsFullMembershipIsReturned()
+
+	/**
 	 * A group no connection declares is refused, and the refusal names it so an
 	 * operator can extend the mapping.
 	 *
