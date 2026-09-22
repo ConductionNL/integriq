@@ -146,7 +146,13 @@ class MigrateInlineSecrets extends Command {
 		}
 
 		try {
-			$plan = $this->planner->planAll(limit: $limit);
+			// Deliberately planEverything() rather than planAll(): the Phase D gate
+			// must be true only when NO migratable schema holds an unmigrated
+			// inline secret. planAll()
+			// remains the SOURCE-only gate that RemoveMigratedSourceSecretFields
+			// reads, because source's property removal must not be blocked by an
+			// unrelated schema's state.
+			$plan = $this->planner->planEverything(limit: $limit);
 		} catch (Throwable $e) {
 			// Log-friendly, no stack trace to stdout per ADR-005. The message is
 			// not interpolated with any object data.
@@ -159,8 +165,38 @@ class MigrateInlineSecrets extends Command {
 			return Command::SUCCESS;
 		}
 
-		return $this->renderPlan(io: $io, plan: $plan);
+		return $this->renderEstate(io: $io, estate: $plan);
 	}//end execute()
+
+	/**
+	 * Render one dry-run plan per migratable schema.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 * @param array<string,mixed> $estate The planEverything() payload.
+	 *
+	 * @return integer Command::SUCCESS.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	private function renderEstate(SymfonyStyle $io, array $estate): int {
+		foreach ((array)($estate['schemas'] ?? []) as $schema => $plan) {
+			$io->section((string)$schema);
+			// The existing renderPlan() speaks the source vocabulary, so the generic
+			// payload is adapted rather than duplicating the table for a second shape.
+			$this->renderPlan(
+				io: $io,
+				plan: [
+					'sources' => ($plan['objects'] ?? []),
+					'totalSources' => ($plan['totalObjects'] ?? 0),
+					'wouldMigrate' => ($plan['wouldMigrate'] ?? 0),
+					'needsReview' => ($plan['needsReview'] ?? 0),
+				]
+			);
+		}
+
+		return Command::SUCCESS;
+
+	}//end renderEstate()
 
 	/**
 	 * Perform a REAL (writing) run: mint → verify → null, then re-report the gate.
@@ -181,7 +217,11 @@ class MigrateInlineSecrets extends Command {
 	 */
 	private function runMigrate(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
 		try {
-			$result = $this->executor->migrateAll(limit: $limit);
+			// Drives migrateEverything(), NOT migrateAll(): the dry-run above plans every
+			// schema in MIGRATABLE, and a real run that only drove `source` made
+			// `--dry-run` report `wouldMigrate: N` for `sender_identity` while the
+			// real run migrated 0 (integriq#2104 review 5264751700, blocker 2).
+			$estate = $this->executor->migrateEverything(limit: $limit);
 		} catch (Throwable $e) {
 			// Fail closed: broker unavailable/too old, or the run could not start.
 			// Nothing was rewritten; the message carries the upgrade hint.
@@ -189,8 +229,24 @@ class MigrateInlineSecrets extends Command {
 			return Command::FAILURE;
 		}
 
-		// Persist the TRUE post-run Phase D gate so the repair-step signal stays honest.
-		$this->recordPhaseDGate(result: $result);
+		// The Phase D gate stays SOURCE-only on purpose: RemoveMigratedSourceSecretFields
+		// reads it to decide whether source's properties may be dropped, and that
+		// must not be blocked by an unrelated schema's state.
+		$sourceRun = (array)($estate['schemas'][InlineSecretMigrationPlanner::SCHEMA] ?? []);
+		$this->recordPhaseDGate(result: $sourceRun);
+
+		// Keep the source-shaped keys the renderer and the exit code speak, and
+		// carry the per-schema runs alongside them for --json.
+		$result = [
+			'sources' => ($sourceRun['objects'] ?? []),
+			'totalSources' => ($sourceRun['totalObjects'] ?? 0),
+			'migrated' => $estate['migrated'],
+			'failed' => $estate['failed'],
+			'blocked' => $estate['blocked'],
+			'skipped' => $estate['skipped'],
+			'postRun' => ($sourceRun['postRun'] ?? []),
+			'schemas' => $estate['schemas'],
+		];
 
 		if ($json === true) {
 			$output->writeln((string)json_encode($result, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)));
@@ -198,6 +254,11 @@ class MigrateInlineSecrets extends Command {
 
 		if ($json === false) {
 			$this->renderResult(io: $io, result: $result);
+			// The renderer above speaks the `source` vocabulary and prints per-object
+			// rows for `source` alone, so without this a sender_identity failure
+			// reached the operator as a non-zero exit next to a table showing
+			// nothing wrong (integriq#2104 review 5266971176).
+			$this->renderSchemaOutcomes(io: $io, schemas: (array)$result['schemas']);
 		}
 
 		// A field that failed to migrate is a non-zero exit so an operator/CI notices.
@@ -207,6 +268,41 @@ class MigrateInlineSecrets extends Command {
 
 		return Command::SUCCESS;
 	}//end runMigrate()
+
+	/**
+	 * Print one line per migrated schema, so no schema's outcome is invisible.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 * @param array<string,mixed> $schemas The per-schema runs from migrateEverything().
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	private function renderSchemaOutcomes(SymfonyStyle $io, array $schemas): void {
+		$rows = [];
+		foreach ($schemas as $schema => $run) {
+			// Cast the row as well as its fields, matching renderResult()'s
+			// `(array)($result['sources'] ?? [])` shape. Only reachable through a
+			// malformed executor return, but the asymmetry was new.
+			$run = (array)$run;
+			$rows[] = [
+				(string)$schema,
+				(int)($run['migrated'] ?? 0),
+				(int)($run['failed'] ?? 0),
+				(int)($run['blocked'] ?? 0),
+				(int)($run['skipped'] ?? 0),
+			];
+		}
+
+		if ($rows === []) {
+			return;
+		}
+
+		$io->section('Per schema');
+		$io->table(['schema', 'migrated', 'failed', 'blocked', 'skipped'], $rows);
+
+	}//end renderSchemaOutcomes()
 
 	/**
 	 * Persist the post-run Phase D gate into appconfig (fails closed on a bad shape).

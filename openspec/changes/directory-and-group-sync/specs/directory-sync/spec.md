@@ -65,8 +65,11 @@ membership.
 
 Integriq MUST expose a SCIM 2.0 endpoint for `Users` and `Groups` that an
 identity system calls to create, change and deactivate accounts, gated by its
-own credential and rejecting an unauthenticated call before any read. A
-deactivation MUST disable the Nextcloud account and MUST NOT delete it.
+own credential and rejecting an unauthenticated call before any read. An
+authenticated call MUST additionally be authorised for what it writes: holding a
+valid credential MUST NOT by itself permit a membership write, and REQ-DS-008 and
+REQ-DS-009 constrain every such write. A deactivation MUST disable the Nextcloud
+account and MUST NOT delete it.
 
 #### Scenario: a leaver is deactivated the same day
 - GIVEN an identity system that sends a SCIM deactivation for a user
@@ -79,6 +82,13 @@ deactivation MUST disable the Nextcloud account and MUST NOT delete it.
 - WHEN it arrives
 - THEN it is rejected before any user is read and the rejection is logged
 - @e2e exclude covered by Newman and PHPUnit on the endpoint
+
+#### Scenario: a valid credential is not by itself permission to write a group
+- GIVEN a SCIM request presenting the valid API key of a registered consumer
+- WHEN it sends a membership write that REQ-DS-008 or REQ-DS-009 refuses
+- THEN the call is refused although the credential is valid
+- AND the refusal is distinguishable in the log from an authentication failure
+- @e2e exclude covered by PHPUnit on the provisioning service
 
 ### Requirement: A leaver's open work is reported, never silently dropped (REQ-DS-004)
 

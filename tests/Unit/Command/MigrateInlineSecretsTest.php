@@ -83,18 +83,30 @@ class MigrateInlineSecretsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRealRunWritesCleanPhaseDGate(): void {
+		// migrateEverything(), matching the dry-run's planEverything(): a real run
+		// that only drove `source` reported wouldMigrate for `sender_identity` and
+		// migrated 0 (integriq#2104 blocker 2). The Phase D gate below is still
+		// read from the SOURCE run alone.
 		$this->executor->expects($this->once())
-			->method('migrateAll')
+			->method('migrateEverything')
 			->with(1000)
 			->willReturn(
 				[
-					'sources' => [],
-					'totalSources' => 1,
+					'schemas' => [
+						'source' => [
+							'objects' => [],
+							'totalObjects' => 1,
+							'migrated' => 1,
+							'failed' => 0,
+							'blocked' => 0,
+							'skipped' => 0,
+							'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
+						],
+					],
 					'migrated' => 1,
 					'failed' => 0,
 					'blocked' => 0,
 					'skipped' => 0,
-					'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
 				]
 			);
 
@@ -119,25 +131,103 @@ class MigrateInlineSecretsTest extends TestCase {
 	}//end testRealRunWritesCleanPhaseDGate()
 
 	/**
+	 * A non-`source` failure is visible in the human output, not only the exit code.
+	 *
+	 * The finding this covers was "a `sender_identity` failure exits non-zero
+	 * next to a table showing nothing wrong" — `renderResult()` speaks the
+	 * `source` vocabulary and prints per-object rows for `source` alone. The fix
+	 * was `renderSchemaOutcomes()`, and it shipped without a test: both existing
+	 * fixtures are single-schema `source` maps, so nothing rendered a second row
+	 * (integriq#2104 review 5266971176).
+	 *
+	 * Asserting the schema NAME and its failure count reach the output, so a
+	 * refactor that drops the call, reorders it so `$rows === []` short-circuits,
+	 * or mis-keys the counters puts this red rather than staying green.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function testANonSourceFailureIsVisibleInTheTable(): void {
+		$this->executor->method('migrateEverything')->willReturn(
+			[
+				'schemas' => [
+					'source' => [
+						'objects' => [],
+						'totalObjects' => 0,
+						'migrated' => 0,
+						'failed' => 0,
+						'blocked' => 0,
+						'skipped' => 0,
+						'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
+					],
+					'sender_identity' => [
+						'objects' => [],
+						'totalObjects' => 1,
+						'migrated' => 0,
+						'failed' => 1,
+						'blocked' => 0,
+						'skipped' => 0,
+						'postRun' => ['clean' => false, 'pending' => 1, 'manual' => 0],
+					],
+				],
+				'migrated' => 0,
+				'failed' => 1,
+				'blocked' => 0,
+				'skipped' => 0,
+			]
+		);
+
+		$exit = $this->tester->execute([]);
+		$display = $this->tester->getDisplay();
+
+		$this->assertSame(Command::FAILURE, $exit, 'A failed field must exit non-zero.');
+		$this->assertStringContainsString('Per schema', $display, 'The per-schema section must render.');
+		$this->assertStringContainsString(
+			'sender_identity',
+			$display,
+			'The failing schema must be named in the human output, not only in --json.'
+		);
+		// The counters too, not just the name: without this a renderer that read
+		// `$run['failures']` instead of `$run['failed']` would print 0 in the failed
+		// column and keep this test green, which is the case the docblock above
+		// claims to guard (integriq#2104 review 5276350047).
+		$this->assertMatchesRegularExpression(
+			'/sender_identity\s+0\s+1\s+0\s+0/',
+			$display,
+			'The per-schema row must carry the real migrated/failed counters.'
+		);
+
+	}//end testANonSourceFailureIsVisibleInTheTable()
+
+	/**
 	 * A real run that leaves pending/blocked fields keeps the gate closed ('0')
 	 * and exits non-zero when a field failed.
 	 *
 	 * @return void
 	 */
 	public function testRealRunKeepsGateClosedWhenNotClean(): void {
-		$this->executor->method('migrateAll')->willReturn(
+		$this->executor->method('migrateEverything')->willReturn(
 			[
-				'sources' => [
-					['uuid' => 's1', 'name' => 'S1', 'organisation' => null, 'fields' => [
-						['field' => 'apikey', 'provider' => 'generic-apikey', 'outcome' => 'blocked', 'reason' => 'no-organisation', 'credentialId' => null],
-					]],
+				'schemas' => [
+					'source' => [
+						'objects' => [
+							['uuid' => 's1', 'name' => 'S1', 'organisation' => null, 'fields' => [
+								['field' => 'apikey', 'provider' => 'generic-apikey', 'outcome' => 'blocked', 'reason' => 'no-organisation', 'credentialId' => null],
+							]],
+						],
+						'totalObjects' => 1,
+						'migrated' => 0,
+						'failed' => 1,
+						'blocked' => 1,
+						'skipped' => 0,
+						'postRun' => ['clean' => false, 'pending' => 1, 'manual' => 0],
+					],
 				],
-				'totalSources' => 1,
 				'migrated' => 0,
 				'failed' => 1,
 				'blocked' => 1,
 				'skipped' => 0,
-				'postRun' => ['clean' => false, 'pending' => 1, 'manual' => 0],
 			]
 		);
 
@@ -162,7 +252,7 @@ class MigrateInlineSecretsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRealRunFailsClosedWhenExecutorRefuses(): void {
-		$this->executor->method('migrateAll')->willThrowException(
+		$this->executor->method('migrateEverything')->willThrowException(
 			new \RuntimeException('CredentialBrokerService::mint() is missing. Nothing was rewritten.')
 		);
 
@@ -181,16 +271,17 @@ class MigrateInlineSecretsTest extends TestCase {
 	 * @return void
 	 */
 	public function testDryRunDrivesPlannerNotExecutor(): void {
-		$this->planner->expects($this->once())->method('planAll')->willReturn(
+		// planEverything(), not planAll(): the dry-run gate is estate-wide, so a
+		// second migratable schema holding an inline secret keeps Phase D closed.
+		$this->planner->expects($this->once())->method('planEverything')->willReturn(
 			[
-				'sources' => [],
-				'totalSources' => 0,
+				'schemas' => [],
 				'wouldMigrate' => 0,
 				'needsReview' => 0,
 				'clean' => true,
 			]
 		);
-		$this->executor->expects($this->never())->method('migrateAll');
+		$this->executor->expects($this->never())->method('migrateEverything');
 		$this->appConfig->expects($this->never())->method('setValueString');
 
 		$exit = $this->tester->execute(['--dry-run' => true]);

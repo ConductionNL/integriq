@@ -24,7 +24,9 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\ScimController;
 use OCA\Integriq\Directory\ScimProvisioningService;
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Exception\DirectorySyncRefusalException;
 use OCA\Integriq\Service\AuthorizationService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -61,6 +63,13 @@ class ScimControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->provisioningService = $this->createMock(ScimProvisioningService::class);
 		$this->authorizationService = $this->createMock(AuthorizationService::class);
+
+		// The default is an authenticated call that resolves to a named consumer,
+		// which is what every pre-existing test assumed implicitly. REQ-DS-007
+		// makes the resolution explicit, so the double has to answer it.
+		$consumer = $this->createMock(ObjectEntity::class);
+		$consumer->method('getUuid')->willReturn('consumer-1');
+		$this->authorizationService->method('getResolvedConsumer')->willReturn($consumer);
 
 	}//end setUp()
 
@@ -159,6 +168,107 @@ class ScimControllerTest extends TestCase {
 	}//end testEverySCIMRouteRejectsAnUnauthenticatedCall()
 
 	/**
+	 * A blank or malformed `count` takes the default, it does not become 0.
+	 *
+	 * `(int)$request->getParam('count', 100)` looked safe and was not: NC's
+	 * `getParam()` defaults only when the key is ABSENT, so `?count=` yields `''`,
+	 * and PHP maps `''`, `'abc'`, `'undefined'` and `'null'` all to `0`. Harmless
+	 * until the page-size clamp moved above the exact-filter branch — after which
+	 * a `0` short-circuited the lookup an identity system runs before deciding to
+	 * create an account, so a client sending a blank `count` was told the account
+	 * does not exist and would create a duplicate, silently (integriq#2104 review
+	 * 5276350047).
+	 *
+	 * @param string $raw The raw `count` the caller sent.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider unreadableCountProvider
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testAnUnreadableCountTakesTheDefault(string $raw): void {
+		$this->request->method('getHeader')->willReturn('Bearer right-key');
+		$this->request->method('getParams')->willReturn(['count' => $raw]);
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($raw) {
+				return ($key === 'count') ? $raw : $default;
+			}
+		);
+
+		$this->provisioningService->expects($this->once())
+			->method('listUsers')
+			->with($this->anything(), 100)
+			->willReturn([]);
+
+		$this->controller()->listUsers();
+
+	}//end testAnUnreadableCountTakesTheDefault()
+
+	/**
+	 * Values PHP would silently coerce to 0.
+	 *
+	 * @return array<string, array{string}> The cases.
+	 */
+	public static function unreadableCountProvider(): array {
+		return [
+			'empty string' => [''],
+			'alphabetic' => ['abc'],
+			'javascript undefined' => ['undefined'],
+			'javascript null' => ['null'],
+		];
+
+	}//end unreadableCountProvider()
+
+	/**
+	 * A numeric `count` is passed through untouched, including 0 and negatives.
+	 *
+	 * Those two are deliberate caller choices RFC 7644 §3.4.2.4 defines — a
+	 * negative SHALL be read as 0, and 0 returns no resources — so the controller
+	 * must not second-guess them. The clamp belongs in the service.
+	 *
+	 * @param string  $raw      The raw `count` the caller sent.
+	 * @param integer $expected What the service must receive.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider numericCountProvider
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testANumericCountIsPassedThrough(string $raw, int $expected): void {
+		$this->request->method('getHeader')->willReturn('Bearer right-key');
+		$this->request->method('getParams')->willReturn(['count' => $raw]);
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($raw) {
+				return ($key === 'count') ? $raw : $default;
+			}
+		);
+
+		$this->provisioningService->expects($this->once())
+			->method('listGroups')
+			->with($this->anything(), $expected)
+			->willReturn([]);
+
+		$this->controller()->listGroups();
+
+	}//end testANumericCountIsPassedThrough()
+
+	/**
+	 * Numeric values the controller must not alter.
+	 *
+	 * @return array<string, array{string, int}> The cases.
+	 */
+	public static function numericCountProvider(): array {
+		return [
+			'zero is a deliberate probe' => ['0', 0],
+			'negative is read as 0 by the service' => ['-1', -1],
+			'an ordinary page size' => ['25', 25],
+		];
+
+	}//end numericCountProvider()
+
+	/**
 	 * A valid credential reads the users and answers a SCIM ListResponse.
 	 *
 	 * @return void
@@ -228,4 +338,56 @@ class ScimControllerTest extends TestCase {
 		$this->assertFalse($captured['active']);
 
 	}//end testAPatchDeactivationFlattensOntoTheAccount()
+	/**
+	 * A credential that authenticates but names no consumer is refused, because
+	 * a SCIM write nobody can be held to is a write nobody can investigate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	public function testACallThatNamesNoConsumerIsRefused(): void {
+		$unattributable = $this->createMock(AuthorizationService::class);
+		$unattributable->method('getResolvedConsumer')->willReturn(null);
+		$this->authorizationService = $unattributable;
+
+		$this->request->method('getHeader')->willReturn('Bearer right-key');
+		$this->provisioningService->expects($this->never())->method('listUsers');
+
+		$response = $this->controller()->listUsers();
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+	}//end testACallThatNamesNoConsumerIsRefused()
+
+	/**
+	 * A refused group write answers 403, distinct from the 404 that means the
+	 * group does not exist.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
+	 */
+	public function testARefusedGroupWriteAnswersForbidden(): void {
+		$this->request->method('getHeader')->willReturn('Bearer right-key');
+		$this->request->method('getParam')->willReturn([]);
+		$this->provisioningService->method('setGroupMembers')->willThrowException(
+			new DirectorySyncRefusalException(
+				message: 'the group is privileged and is never writable over SCIM',
+				context: [
+					'group' => 'admin',
+					'consumer' => 'consumer-1',
+					'detail' => 'This group cannot be managed over SCIM.',
+				]
+			)
+		);
+
+		$response = $this->controller()->updateGroup(id: 'admin');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		// The body must not disclose why the group is special.
+		$this->assertSame('This group cannot be managed over SCIM.', $response->getData()['detail']);
+		$this->assertStringNotContainsString('privileged', (string)json_encode($response->getData()));
+
+	}//end testARefusedGroupWriteAnswersForbidden()
 }//end class

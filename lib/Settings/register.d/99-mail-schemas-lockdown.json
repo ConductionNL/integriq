@@ -1,0 +1,88 @@
+{
+	"_comment": "ADR-037 register fragment — mail-schemas-lockdown (integriq#1983 review 5260087915, blocker 3). SECURITY FIX. These nine schemas shipped with NO `authorization` block. In OpenRegister that is not deny: PermissionHandler::hasGroupPermission() treats an absent-or-empty block as default-OPEN (PermissionHandler.php:1964), and `enforce_default_closed` cannot close it for reads because `read` is absent from DEFAULT_CLOSED_WRITE_ACTIONS (create/update/delete/destroy). So every authenticated account on the instance could read every object of these schemas — for `mail_message` that is the body, subject, sender and recipients of every intercepted message, with nothing recording the access. READ THE SHAPE BELOW BEFORE CHANGING IT. `\"authorization\": {}` is an empty BLOCK and closes NOTHING; it takes the same default-OPEN branch as no block at all. What denies is a NON-EMPTY block whose rule LISTS are empty: empty($authorization['read']) is then true and PermissionHandler (:2004) reads it as 'grant to nobody'. Its own comment says so: \"`empty()` rather than `isset()` additionally denies an explicitly empty rule list (e.g. `\\\"create\\\": []`), which reads as 'grant to nobody'\". All five actions are declared so none falls through. TWO BYPASSES REMAIN AND ARE INTENDED: the `admin` group, and the OWNER of an individual object — both are evaluated before these lists. Note what that does NOT buy: SaveObject::applyOwnerAttribution() falls back to the SYSTEM user id when there is no session, and MailboxSourceHandler (the mailbox poll, i.e. how mail normally arrives) runs sessionless. Polled messages are therefore owned by nobody real and are administrator-only; only an .eml imported through MailIntakeController carries a human owner. IT CLOSES WRITES TOO, NOT ONLY READS (integriq#2104 review 5264751700, blocker 4). All five actions are declared with empty lists, so `create`/`update`/`delete`/`destroy` deny by the same rule as `read`, and the owner bypass does not rescue a create: ObjectService checks `create` with `objectOwner: null`, so there is no owner to match yet. Newly closed for authenticated non-admin, non-owner callers: `MailIntakeController::import()` and `::poll()` (both `#[NoAdminRequired]`, via MailIntakeService::saveObject) and `IntakeChannelsController::saveRule()` and `::reply()` (both `#[NoAdminRequired]`). NOT newly closed, although it looks that way: the `#[PublicPage]` paths — `OptOutRegistry::add()` behind `SenderIdentityController::unsubscribe()`, `IntakeChannelsController::inbound()`, `VerdictController::inbound()` — run with no session and have been denied since OpenRegister `bb0f23dbcd` (2026-05-27) by ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS, well before this fragment existed. That is a pre-existing defect with its own owner, ConductionNL/integriq#2113, and must not be attributed to this lockdown. AND THE READ HALF FAILS OPEN WHERE THE WRITE HALF FAILS SAFE: `OptOutRegistry::find()` and `MailIntakeService::findByMessageId()` both read through rendered, RBAC-filtered `findAll()`, so a denial returns an empty set that the caller reads as 'has not opted out' / 'this message is new'. A write that is refused is a message not stored; a read that is refused can be a message SENT to someone who asked not to receive it. Latent only because `decide()` has no production caller yet — tracked as ConductionNL/integriq#2114. THIS IS AN INTERIM, NOT A DESIGN. The Mail intake page exists so people can read their messages, and a non-administrator will now see an empty table rather than a refusal, because RBAC filters rows instead of erroring. That is accepted for this beta only, because the state it replaces is worse. Deciding who should read a message — a functional-beheerder group, case-based access, or attributing polled mail to a real user — is its own change, tracked as ConductionNL/integriq#2105. Documented here rather than left implicit, following the convention catalog-item-schema.json sets for a deliberate authorization choice. `sender_identity` is the tenth schema from the same finding and is closed by 99-sender-identity-lockdown.json, because it also held a secret.",
+	"components": {
+		"schemas": {
+			"digitalPostMessage": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"intake_message": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"intake_routing_rule": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"mail_message": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"mapping_version": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"outbound_message": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"recipient_key": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"recipient_opt_out": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			},
+			"verdict": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": [],
+					"destroy": []
+				}
+			}
+		}
+	}
+}

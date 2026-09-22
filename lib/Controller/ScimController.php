@@ -37,7 +37,9 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Directory\ScimProvisioningService;
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Exception\DirectorySyncRefusalException;
 use OCA\Integriq\Service\AuthorizationService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -67,6 +69,24 @@ class ScimController extends Controller {
 	 * @var string
 	 */
 	private const ERROR_SCHEMA = 'urn:ietf:params:scim:api:messages:2.0:Error';
+
+	/**
+	 * The page size used when the caller names none, or names one we cannot read.
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_PAGE_SIZE = 100;
+
+	/**
+	 * The consumer this request was answered as, resolved by authorize().
+	 *
+	 * Request-scoped: the controller is constructed per request, so this never
+	 * carries an identity from one call into the next. Set by authorize(), which
+	 * carries the REQ-DS-007 reference.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	private ?ObjectEntity $callingConsumer = null;
 
 	/**
 	 * Constructor.
@@ -108,7 +128,7 @@ class ScimController extends Controller {
 
 		$resources = $this->provisioningService->listUsers(
 			filterUserName: $this->filterValue(attribute: 'userName'),
-			limit: (int)$this->request->getParam('count', 100)
+			limit: $this->requestedCount()
 		);
 
 		return $this->listResponse(resources: $resources);
@@ -158,7 +178,23 @@ class ScimController extends Controller {
 			return $rejected;
 		}
 
-		$resource = $this->provisioningService->upsertUser(resource: $this->request->getParams());
+		try {
+			$resource = $this->provisioningService->upsertUser(
+				resource: $this->request->getParams(),
+				consumerLabel: $this->consumerLabel()
+			);
+		} catch (DirectorySyncRefusalException $refusal) {
+			// Same shape as the group route: the log names what was refused, the
+			// body carries only what the refusal decided is safe to tell a caller.
+			$this->logger->warning(
+				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+			);
+
+			return $this->scimError(
+				status: Http::STATUS_FORBIDDEN,
+				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
+			);
+		}
 
 		return new JSONResponse($resource, Http::STATUS_CREATED);
 
@@ -185,7 +221,25 @@ class ScimController extends Controller {
 		$body = $this->request->getParams();
 		$resource = array_merge($this->normalisePatch(body: $body), ['userName' => $id]);
 
-		return new JSONResponse($this->provisioningService->upsertUser(resource: $resource));
+		try {
+			$updated = $this->provisioningService->upsertUser(
+				resource: $resource,
+				consumerLabel: $this->consumerLabel()
+			);
+		} catch (DirectorySyncRefusalException $refusal) {
+			// Same shape as the group route: the log names what was refused, the
+			// body carries only what the refusal decided is safe to tell a caller.
+			$this->logger->warning(
+				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+			);
+
+			return $this->scimError(
+				status: Http::STATUS_FORBIDDEN,
+				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
+			);
+		}
+
+		return new JSONResponse($updated);
 
 	}//end updateUser()
 
@@ -207,7 +261,24 @@ class ScimController extends Controller {
 			return $rejected;
 		}
 
-		$openWork = $this->provisioningService->deactivateUser(userId: $id);
+		try {
+			$openWork = $this->provisioningService->deactivateUser(
+				userId: $id,
+				consumerLabel: $this->consumerLabel()
+			);
+		} catch (DirectorySyncRefusalException $refusal) {
+			// Same shape as the group route: the log names what was refused, the
+			// body carries only what the refusal decided is safe to tell a caller.
+			$this->logger->warning(
+				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+			);
+
+			return $this->scimError(
+				status: Http::STATUS_FORBIDDEN,
+				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
+			);
+		}
+
 
 		// 200 with the open-work report rather than 204: a deprovision that
 		// leaves a live case list behind is exactly what the caller needs told.
@@ -233,7 +304,7 @@ class ScimController extends Controller {
 
 		$resources = $this->provisioningService->listGroups(
 			filterDisplayName: $this->filterValue(attribute: 'displayName'),
-			limit: (int)$this->request->getParam('count', 100)
+			limit: $this->requestedCount()
 		);
 
 		return $this->listResponse(resources: $resources);
@@ -259,7 +330,28 @@ class ScimController extends Controller {
 		}
 
 		$members = (array)($this->request->getParam('members', []));
-		if ($this->provisioningService->setGroupMembers(groupId: $id, members: $members) === false) {
+
+		try {
+			$written = $this->provisioningService->setGroupMembers(
+				groupId: $id,
+				members: $members,
+				consumerLabel: $this->consumerLabel()
+			);
+		} catch (DirectorySyncRefusalException $refusal) {
+			// The message names what was refused, for the operator reading the log.
+			// The body carries only what the refusal itself decided is safe to tell
+			// a caller — see ScimProvisioningService::REFUSAL_DETAIL_*.
+			$this->logger->warning(
+				'[Scim] refused a group write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+			);
+
+			return $this->scimError(
+				status: Http::STATUS_FORBIDDEN,
+				detail: (string)($refusal->getContext()['detail'] ?? 'This group cannot be managed over SCIM.')
+			);
+		}
+
+		if ($written === false) {
 			return $this->scimError(status: Http::STATUS_NOT_FOUND, detail: 'Resource not found');
 		}
 
@@ -295,9 +387,77 @@ class ScimController extends Controller {
 			return $this->scimError(status: Http::STATUS_UNAUTHORIZED, detail: 'Unauthorized');
 		}
 
+		// REQ-DS-007: a SCIM call is answered as a NAMED consumer. Authentication
+		// alone is not enough, because a call nobody can be held to is a call an
+		// operator cannot investigate afterwards. `keys: []` above means the
+		// rule-inline branch never matches, so a successful authorisation always
+		// leaves a resolved consumer behind — the guard is a fail-closed backstop
+		// against that invariant changing, not a path expected to be taken.
+		$consumer = $this->authorizationService->getResolvedConsumer();
+		if ($consumer === null) {
+			$this->logger->warning('[Scim] rejected a call that authenticated without naming a consumer');
+
+			return $this->scimError(status: Http::STATUS_UNAUTHORIZED, detail: 'Unauthorized');
+		}
+
+		$this->callingConsumer = $consumer;
+
 		return null;
 
 	}//end authorize()
+
+	/**
+	 * The caller's `count`, validated rather than silently coerced.
+	 *
+	 * `(int)$request->getParam('count', 100)` looked safe and was not. NC's
+	 * `getParam()` returns the default only when the key is ABSENT, so
+	 * `?count=` present-but-empty yields `''`, and PHP maps `''`, `'abc'`,
+	 * `'undefined'` and `'null'` all to `0`. Once the page-size clamp moved above
+	 * the exact-filter branch, that `0` began short-circuiting the lookup an
+	 * identity system runs before deciding whether to create an account — so a
+	 * client emitting a blank or malformed `count` was told the account does not
+	 * exist and would create a duplicate, with nothing logged and nothing thrown
+	 * (integriq#2104 review 5276350047).
+	 *
+	 * A non-numeric value is therefore treated as absent and takes the default.
+	 * `count=0` and `count=-1` stay deliberate caller choices, which RFC 7644
+	 * §3.4.2.4 defines: a negative value SHALL be read as 0, and 0 returns no
+	 * resources.
+	 *
+	 * Shared by both list routes so the pair cannot drift apart.
+	 *
+	 * @return integer The requested page size, or the default when none was given.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	private function requestedCount(): int {
+		$raw = $this->request->getParam('count');
+		if (is_numeric($raw) === false) {
+			return self::DEFAULT_PAGE_SIZE;
+		}
+
+		return (int)$raw;
+
+	}//end requestedCount()
+
+	/**
+	 * The consumer this call was answered as, for a log line.
+	 *
+	 * Never returned to the caller — attribution belongs in the log, where an
+	 * operator can read it, and not in a response an attacker can probe.
+	 *
+	 * @return string The consumer's uuid, or `unknown` before authorize() has run.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
+	 */
+	private function consumerLabel(): string {
+		if ($this->callingConsumer === null) {
+			return 'unknown';
+		}
+
+		return (string)$this->callingConsumer->getUuid();
+
+	}//end consumerLabel()
 
 	/**
 	 * Read an exact-match value out of a SCIM `filter` query parameter.
