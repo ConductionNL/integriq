@@ -62,12 +62,49 @@ class CaseReferenceDetector {
 			return null;
 		}
 
-		foreach ([$message->getSubject(), $message->getBodyText()] as $haystack) {
+		return $this->scan(haystacks: [$message->getSubject(), $message->getBodyText()], pattern: $effective);
+
+	}//end detect()
+
+	/**
+	 * Detect the case reference a piece of text names.
+	 *
+	 * The same detector every channel reads, so a Teams message and a mail
+	 * find the same reference under the same configured pattern. A channel
+	 * that carries no subject passes its text alone.
+	 *
+	 * @param string $text The text to read.
+	 * @param string|null $pattern The source's `casePattern`, or null for the default.
+	 *
+	 * @return string|null The reference, or null when the text names none.
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	public function detectInText(string $text, ?string $pattern = null): ?string {
+		$effective = $this->resolvePattern(pattern: $pattern);
+		if ($effective === null) {
+			return null;
+		}
+
+		return $this->scan(haystacks: [$text], pattern: $effective);
+
+	}//end detectInText()
+
+	/**
+	 * Read the first reference out of a list of haystacks, in order.
+	 *
+	 * @param array<int,string> $haystacks The strings to read, most authoritative first.
+	 * @param string $pattern The compiled-and-checked pattern.
+	 *
+	 * @return string|null The reference, or null.
+	 */
+	private function scan(array $haystacks, string $pattern): ?string {
+		foreach ($haystacks as $haystack) {
 			if ($haystack === '') {
 				continue;
 			}
 
-			$matched = @preg_match($effective, $haystack, $matches);
+			$matched = @preg_match($pattern, $haystack, $matches);
 			if ($matched !== 1) {
 				continue;
 			}
@@ -80,7 +117,7 @@ class CaseReferenceDetector {
 
 		return null;
 
-	}//end detect()
+	}//end scan()
 
 	/**
 	 * Whether a configured pattern is a usable regular expression.
