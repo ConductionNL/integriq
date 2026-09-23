@@ -48,6 +48,29 @@ class PropertySourceController extends Controller {
 	public const RESYNC_ACTION = 'propertySource.resync';
 
 	/**
+	 * Prefix of the ADR-023 action a query is gated on, completed with the provider id.
+	 */
+	public const QUERY_ACTION_PREFIX = 'propertySource.query.';
+
+	/**
+	 * Providers exempt from the query gate, because what they return is public.
+	 *
+	 * The list is an EXEMPTION list, not a sensitive list, and deliberately so.
+	 * A gate keyed on "which providers are sensitive" ships a new personal-data
+	 * provider OPEN whenever someone forgets to add it — which is how
+	 * `suggest()` came to hand out a BSN to any signed-in account
+	 * (integriq#1983 review 5278999788). Keyed this way a new provider is gated
+	 * until someone consciously declares it public, so what a maintainer has to
+	 * remember fails in the safe direction.
+	 *
+	 * `bag` is the Dutch address register and `kvk` the company register. Both
+	 * are open registries, and an applicant filling in a form needs them — that
+	 * is the scenario `suggest()` exists for. Gating them would put an address
+	 * lookup behind an administrator, which is not what this gate is for.
+	 */
+	public const PUBLIC_PROVIDERS = ['bag', 'kvk'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
@@ -109,6 +132,11 @@ class PropertySourceController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function suggest(string $provider, string $q = ''): JSONResponse {
+		$refusal = $this->requireQueryPermission(provider: $provider);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		try {
 			return new JSONResponse(['results' => $this->resolver->suggest($provider, $q)]);
 		} catch (UnknownPropertySourceException $e) {
@@ -137,6 +165,11 @@ class PropertySourceController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function resolve(string $provider, string $identifier = '', bool $fresh = false): JSONResponse {
+		$refusal = $this->requireQueryPermission(provider: $provider);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		if ($identifier === '') {
 			return new JSONResponse(['error' => 'An identifier is required to resolve a value.'], Http::STATUS_BAD_REQUEST);
 		}
@@ -151,6 +184,69 @@ class PropertySourceController extends Controller {
 
 		return new JSONResponse($resolved->toArray());
 	}//end resolve()
+
+	/**
+	 * The authorization decision for querying a provider, or null when it passes.
+	 *
+	 * `suggest()` and `resolve()` reach an authoritative registry on the
+	 * caller's behalf. For `brp` that registry answers with a person and their
+	 * **burgerservicenummer**, so *who may ask* is itself the control: there is
+	 * no such thing as a harmless result.
+	 *
+	 * This is deliberately NOT an OpenRegister RBAC check, and the reason is
+	 * worth stating so the next reader does not "fix" it into one:
+	 *
+	 * - The source row IS the credential store.
+	 *   `configuration.headers.Authorization`, `configuration.cert` and
+	 *   `configuration.ssl_key` are NOT covered by
+	 *   `99-source-nested-auth-writeonly.json`, which is an exact-path list with
+	 *   no wildcards. A read permission on that row would hand out the RvIG keys
+	 *   along with the right to query. "May query" and "may see the credentials"
+	 *   are different questions and a read permission only answers the second.
+	 * - `ConnectionStore::findSourceBySlug()` reads in system context
+	 *   (`_rbac: false`) — as ocon#147 designed it, so the engine can serve
+	 *   non-admin syncs — so `PermissionHandler` never runs on this path and an
+	 *   `authorization` block on the source object would be inert.
+	 *
+	 * The action matrix is the one authorization surface `_rbac: false` cannot
+	 * switch off, because it is consulted here, before anything is read.
+	 * Per-object granularity needs the RBAC rebuild: integriq#2112,
+	 * integriq#2125, openregister#2432.
+	 *
+	 * The action is unseeded on purpose. `getAllowedGroups()` answers
+	 * `['admin']` for an unknown action and `requireAction()` reads `['admin']`
+	 * as "no non-admin passes", so a provider is admin-only the moment it is
+	 * added, with no seed entry to forget. An operator then delegates it to the
+	 * group that carries the connector — `brp-beheer` — in Admin Settings >
+	 * Integriq > Action authorization, without a deploy. That is the convention
+	 * `docs/administrators/sources/sensitive-sources.md` prescribes; until now
+	 * nothing enforced it.
+	 *
+	 * @param string $provider Provider id the caller named.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the query may proceed.
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 */
+	private function requireQueryPermission(string $provider): ?JSONResponse {
+		if (in_array($provider, self::PUBLIC_PROVIDERS, true) === true) {
+			return null;
+		}
+
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		try {
+			$this->actionAuth->requireAction(user: $user, action: (self::QUERY_ACTION_PREFIX . $provider));
+		} catch (OCSForbiddenException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		}
+
+		return null;
+
+	}//end requireQueryPermission()
 
 	/**
 	 * Resync a list-shaped provider from the administration screen.
