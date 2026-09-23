@@ -258,6 +258,68 @@ class IntakeChannelsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * The adapter is handed the SIGNED BYTES, not the framework's merged params.
+	 *
+	 * Nextcloud builds `getParams()` as
+	 * `array_merge($get, $post, $urlParams, $params)` with the JSON body merged
+	 * last (`Request.php:123`, `:412`). Body keys therefore win a collision, but
+	 * a key ABSENT from the signed body could be injected through the query
+	 * string and reached the adapter — which stores what it is given verbatim as
+	 * `rawPayload`, and for Teams that payload later names an outbound
+	 * destination carrying a bearer token.
+	 *
+	 * So the signature covered the body while the action ran on something else.
+	 * Asserting on what `receive()` actually gets, because that is the desync.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md
+	 */
+	public function testTheAdapterOnlyEverSeesTheSignedBody(): void {
+		$this->sourceResolver->method('configurationFor')->willReturn(
+			['webhookSignature' => ['secret' => 'shh']]
+		);
+		$this->signatureService->method('verify')->willReturn(true);
+
+		// The merged set the framework would hand over: the signed body plus a
+		// key that was never signed, as a query string supplies it.
+		$this->request->method('getParams')->willReturn(
+			[
+				'messageId' => 'WA-1',
+				'serviceUrl' => 'https://attacker.example',
+			]
+		);
+
+		$seen = null;
+		$adapter = $this->createMock(\OCA\Integriq\Intake\IntakeChannelAdapterInterface::class);
+		$adapter->method('receive')->willReturnCallback(
+			function (array $payload) use (&$seen) {
+				$seen = $payload;
+				return new \OCA\Integriq\Intake\InboundMessage('messaging', 'WA-1', [], 'Hallo');
+			}
+		);
+		$this->registry->method('get')->willReturn($adapter);
+
+		$this->routingService->method('route')->willReturn(
+			ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['status' => 'routed', 'targetRef' => 'zaak/1', 'reason' => ''],
+				'intake-uuid'
+			)
+		);
+
+		$this->controller->inbound('messaging');
+
+		$this->assertSame(
+			['messageId' => 'WA-1'],
+			$seen,
+			'The adapter must receive the decoded signed body, with no unsigned key merged in.'
+		);
+		$this->assertArrayNotHasKey('serviceUrl', (array)$seen);
+
+	}//end testTheAdapterOnlyEverSeesTheSignedBody()
+
 	public function testASignedDeliveryIsRouted(): void {
 		$this->sourceResolver->method('configurationFor')->willReturn(
 			['webhookSignature' => ['secret' => 'shh']]

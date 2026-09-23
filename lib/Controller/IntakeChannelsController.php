@@ -154,7 +154,7 @@ class IntakeChannelsController extends Controller {
 
 		try {
 			$adapter = $this->registry->get($channel);
-			$message = $adapter->receive($this->request->getParams());
+			$message = $adapter->receive($this->decodeVerifiedBody(rawBody: $rawBody));
 			$stored = $this->routingService->route($message);
 		} catch (IntakeChannelException $exception) {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
@@ -316,6 +316,46 @@ class IntakeChannelsController extends Controller {
 		return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
 
 	}//end refused()
+
+	/**
+	 * Decode the bytes that were signed, and only those.
+	 *
+	 * This used to hand the adapter `$request->getParams()`, which is not the
+	 * body: Nextcloud builds it as
+	 * `array_merge($get, $post, $urlParams, $params)` with the JSON body merged
+	 * LAST (`Request.php:123` and `:412`). Body keys therefore win a collision,
+	 * but any key ABSENT from the signed body could be injected through the
+	 * query string and survived into the adapter — and `TeamsChannelAdapter`
+	 * stores what it is given verbatim as `rawPayload`, which the reply leg
+	 * later reads as an outbound destination.
+	 *
+	 * So the signature covered the body bytes while the action ran on a
+	 * different structure. The docblock below already said this must not
+	 * happen; the check honoured it and the caller did not.
+	 *
+	 * Derived from `$rawBody` alone, so what is verified is what is acted on.
+	 * Form-encoded senders are still supported, because the fix must not turn a
+	 * signature desync into a broken integration: `parse_str` runs over the same
+	 * signed bytes.
+	 *
+	 * @param string $rawBody The exact bytes the signature was verified over.
+	 *
+	 * @return array<string,mixed> The decoded payload.
+	 *
+	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md
+	 */
+	private function decodeVerifiedBody(string $rawBody): array {
+		$decoded = json_decode($rawBody, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		$parsed = [];
+		parse_str($rawBody, $parsed);
+
+		return $parsed;
+
+	}//end decodeVerifiedBody()
 
 	/**
 	 * Read the raw request body bytes for signature verification.

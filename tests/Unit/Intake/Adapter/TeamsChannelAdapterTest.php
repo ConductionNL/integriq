@@ -293,4 +293,116 @@ class TeamsChannelAdapterTest extends TestCase {
 
 	}//end testAStoredMessageStillNamesItsConversation()
 
+	/**
+	 * A reply is never sent to a serviceUrl outside the trusted connector hosts.
+	 *
+	 * The reply carries `Authorization: Bearer <connector access token>`, and
+	 * `serviceUrl` arrives on the activity, which is attacker-influenceable.
+	 * Without a list this method posts the bot's credential wherever the payload
+	 * says (integriq#1983 security re-review).
+	 *
+	 * Asserting the client is NEVER asked for a request, not merely that the
+	 * result failed, so the refusal is proven to happen before the egress.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	public function testAReplyIsNotSentToAnUntrustedServiceUrl(): void {
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->never())->method('post');
+
+		$activity = $this->activity('hoi');
+		$activity['serviceUrl'] = 'https://attacker.example/';
+
+		$adapter = $this->adapter(['accessToken' => 'connector-token'], $client);
+		$result = $adapter->reply($adapter->receive($activity), 'ZAAK-2026-0099 is aangemaakt.');
+
+		$this->assertFalse($result->isSent());
+
+	}//end testAReplyIsNotSentToAnUntrustedServiceUrl()
+
+	/**
+	 * A host that merely CONTAINS a trusted name is not a trusted host.
+	 *
+	 * The check is a suffix match on the parsed host, so
+	 * `https://evil.example/smba.trafficmanager.net` and
+	 * `https://smba.trafficmanager.net.evil.example/` both fail. A substring
+	 * match on the URL would admit both.
+	 *
+	 * @param string $serviceUrl The candidate destination.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider untrustedServiceUrlProvider
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	public function testALookalikeHostIsNotTrusted(string $serviceUrl): void {
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->never())->method('post');
+
+		$activity = $this->activity('hoi');
+		$activity['serviceUrl'] = $serviceUrl;
+
+		$adapter = $this->adapter(['accessToken' => 'connector-token'], $client);
+
+		$this->assertFalse($adapter->reply($adapter->receive($activity), 'x')->isSent());
+
+	}//end testALookalikeHostIsNotTrusted()
+
+	/**
+	 * Destinations that must never be reached.
+	 *
+	 * @return array<string, array{string}> The cases.
+	 */
+	public static function untrustedServiceUrlProvider(): array {
+		return [
+			'trusted name in the path' => ['https://evil.example/smba.trafficmanager.net'],
+			'trusted name as a prefix of the host' => ['https://smba.trafficmanager.net.evil.example/'],
+			'plain http to a trusted host' => ['http://smba.trafficmanager.net/emea/'],
+			'loopback' => ['https://127.0.0.1/'],
+			'link-local metadata' => ['https://169.254.169.254/'],
+			'not a url at all' => ['not-a-url'],
+		];
+
+	}//end untrustedServiceUrlProvider()
+
+	/**
+	 * The configured serviceUrl wins over the one on the activity.
+	 *
+	 * The precedence was the other way round, so a value on the payload
+	 * overrode the operator's.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	public function testTheConfiguredServiceUrlWinsOverThePayload(): void {
+		$seen = null;
+		$client = $this->createMock(IClient::class);
+		$client->method('post')->willReturnCallback(
+			function (string $url) use (&$seen) {
+				$seen = $url;
+				throw new \RuntimeException('stop after the destination is known');
+			}
+		);
+
+		$activity = $this->activity('hoi');
+		$activity['serviceUrl'] = 'https://smba.trafficmanager.net/attacker-region/';
+
+		$adapter = $this->adapter(
+			[
+				'accessToken' => 'connector-token',
+				'serviceUrl' => 'https://smba.trafficmanager.net/emea/',
+			],
+			$client
+		);
+		$adapter->reply($adapter->receive($activity), 'x');
+
+		$this->assertIsString($seen);
+		$this->assertStringStartsWith('https://smba.trafficmanager.net/emea/', $seen);
+
+	}//end testTheConfiguredServiceUrlWinsOverThePayload()
+
 }//end class
