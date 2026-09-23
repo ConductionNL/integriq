@@ -2009,7 +2009,7 @@ OC.L10N.register(
         "Rule kind (authorization, transformation, validation, audit)": "Rule kind (authorization, transformation, validation, audit)",
         "Rule name": "Rule name",
         "Rule slugs applied during sync": "Rule slugs applied during sync",
-        "S/MIME Certificate": "S/MIME Certificate",
+        "S/MIME certificate": "S/MIME certificate",
         "S/MIME private key": "S/MIME private key",
         "SHA-256 hash of the client BSN sent on the wire for a toewijzing: the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)": "SHA-256 hash of the client BSN sent on the wire for a toewijzing: the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)",
         "SHA-256 hash of the opaque access_token returned to the wallet; the plaintext token is never persisted": "SHA-256 hash of the opaque access_token returned to the wallet; the plaintext token is never persisted",

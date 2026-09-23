@@ -82,6 +82,20 @@
         ConductionNL/openregister#3777 (max-version 34 -> 35) merges. Landing it
         first would re-advertise a range this app cannot deliver, which is the
         exact mistake the deleted paragraph above was written to record.
+
+        SEQUENCING, decided rather than assumed (integriq#1983 review
+        5278999788, @rjzondervan 2026-09-22): openregister#3777 has merged and
+        is on OpenRegister's `beta` and `development`, while its `main` is still
+        at 34. So an instance taking OpenRegister from the app store's stable
+        channel gets a combination that has not shipped together.
+
+        That is accepted because the channels are paired: integriq `beta` runs
+        against OpenRegister `beta`, and the promotion into `main` waits on
+        OpenRegister's. A beta channel is where an unshipped combination is
+        meant to be exercised. If that pairing ever changes — beta expected to
+        run against OpenRegister `main` — this bump becomes a blocker rather
+        than a sequencing note, so the assumption is written here rather than
+        held in someone's head.
         -->
         <nextcloud min-version="32" max-version="35"/>
 	</dependencies>
@@ -310,15 +324,14 @@
 			     same migration on demand. -->
 			<step>OCA\Integriq\Repair\MigrateFlowStepsToGraph</step>
 			<step>OCA\Integriq\Repair\RemoveRetiredCronJobs</step>
-			<!-- Written but never registered, so it had never run once: a class
-			     that exists is not a class that runs. It moves openconnector
-			     data out of the Dutch columns into the English ones, so every
-			     instance that predates the column rename still holds its data
-			     where nothing reads it.
-
-			     post-migration only: a fresh install has no Dutch columns to
-			     move, and the step is idempotent either way. -->
-			<step>OCA\Integriq\Repair\RenameDutchColumns</step>
+			<!-- RenameDutchColumns is NOT repeated here. It was registered twice
+			     — once above, after InitializeRegister and MagicMapper where its
+			     own comment reasons the placement out, and once here under a note
+			     saying it had "never been registered", which the earlier entry
+			     disproves. The duplicate ran the step twice per upgrade; it is
+			     idempotent, so nothing broke, but the second registration's
+			     stated reason was false and the placement above is the
+			     deliberate one (integriq#1983 review 5278999788). -->
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes

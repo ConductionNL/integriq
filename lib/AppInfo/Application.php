@@ -78,6 +78,10 @@ use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
 use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Observability\IntegriqMetricsProvider;
+use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
+use OCA\Integriq\Outbound\Call\CallServiceDispatcher;
+use OCA\Integriq\Outbound\Identity\DnsResolverInterface;
+use OCA\Integriq\Outbound\Identity\SystemDnsResolver;
 use OCA\Integriq\Repair\InitializeActions;
 use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
@@ -516,6 +520,26 @@ class Application extends App implements IBootstrap {
 			}
 		);
 		$context->registerServiceAlias(GatewayTransport::class, SourceGatewayTransport::class);
+
+		// Two app-owned interfaces injected BARE as required constructor
+		// parameters, with exactly one implementation each and nothing binding
+		// them. Without these lines Nextcloud's container cannot construct
+		// DomainAlignmentChecker or CallReplayService, so SenderIdentityController
+		// and CallLogController cannot be built and their NINE routes answer 500 —
+		// including `GET /unsubscribe/{token}`, the opt-out link in outbound mail,
+		// which is the one a recipient follows rather than an operator.
+		//
+		// Nothing caught it: psalm and phpstan are green because the types are
+		// right, the unit suite is green because it binds its own fixtures, and
+		// the route-reachability gate checks that a route resolves to a class and
+		// method, not that the class can be INSTANTIATED. Both interfaces arrived
+		// with their implementation and a test fixture and missed only this line
+		// (integriq#1983 review 5278999788, from PRs #2060 and #2063).
+		//
+		// AppOwnedInterfaceBindingTest pins the property rather than these two
+		// instances, so the next bare interface fails a test instead of a route.
+		$context->registerServiceAlias(DnsResolverInterface::class, SystemDnsResolver::class);
+		$context->registerServiceAlias(CallDispatcherInterface::class, CallServiceDispatcher::class);
 
 		// Explicit factories for the *ClientHttp flavours so the Guzzle
 		// ClientInterface is injected via a shared singleton; NC's
