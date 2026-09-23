@@ -163,13 +163,23 @@ class PropertySourceControllerTest extends TestCase {
 	/**
 	 * An unknown provider answers 404 and names the id.
 	 *
+	 * The caller is now authenticated and permitted, which it did not have to
+	 * be before: an unknown provider is not on the public-registry exemption
+	 * list, so the query gate runs BEFORE the provider is looked up. That
+	 * ordering is deliberate — answering 404 first would let an anonymous
+	 * caller enumerate which registries an instance is wired to. The 404 is
+	 * still what a permitted caller gets, which is what this test is about.
+	 *
 	 * @return void
 	 */
 	public function testAnUnknownProviderIsA404ThatNamesTheId(): void {
 		$resolver = $this->resolverDouble();
 		$resolver->method('resolve')->willThrowException(new UnknownPropertySourceException('kadaster', ['bag']));
 
-		$response = $this->controller($resolver)->resolve('kadaster', 'x');
+		$response = $this->controller(
+			resolver: $resolver,
+			user: $this->createMock(IUser::class)
+		)->resolve('kadaster', 'x');
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 		$this->assertStringContainsString('kadaster', $response->getData()['error']);
@@ -236,4 +246,129 @@ class PropertySourceControllerTest extends TestCase {
 
 		$this->assertFalse($data['results'][0]['authoritative']);
 	}//end testSuggestionsAreNotAuthoritative()
+	/**
+	 * A BRP suggestion is refused for an account without the action.
+	 *
+	 * The resolver is asserted NEVER to be reached, not merely that the status
+	 * is 403 — the refusal has to happen before the registry is queried, or the
+	 * BSN has already left RvIG by the time we answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 */
+	public function testABrpSuggestionIsRefusedWithoutTheAction(): void {
+		$auth = $this->actionAuthDouble();
+		$auth->method('requireAction')->willThrowException(new OCSForbiddenException('nope'));
+
+		$resolver = $this->resolverDouble();
+		$resolver->expects($this->never())->method('suggest');
+
+		$response = $this->controller(
+			resolver: $resolver,
+			actionAuth: $auth,
+			user: $this->createMock(IUser::class)
+		)->suggest('brp', 'Jansen');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testABrpSuggestionIsRefusedWithoutTheAction()
+
+	/**
+	 * A BRP resolve is refused for an account without the action.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 */
+	public function testABrpResolveIsRefusedWithoutTheAction(): void {
+		$auth = $this->actionAuthDouble();
+		$auth->method('requireAction')->willThrowException(new OCSForbiddenException('nope'));
+
+		$resolver = $this->resolverDouble();
+		$resolver->expects($this->never())->method('resolve');
+
+		$response = $this->controller(
+			resolver: $resolver,
+			actionAuth: $auth,
+			user: $this->createMock(IUser::class)
+		)->resolve('brp', '999993653');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testABrpResolveIsRefusedWithoutTheAction()
+
+	/**
+	 * A public registry is not gated at all, so an applicant keeps working.
+	 *
+	 * This is the half that keeps the gate honest. `suggest()` exists for the
+	 * scenario "an applicant types an address"; if closing BRP also put the BAG
+	 * lookup behind an administrator the feature would be gone, and the control
+	 * would be a blanket closure rather than an authorization decision.
+	 *
+	 * The gate is asserted NEVER to be consulted for `bag` — not merely that
+	 * the call succeeds — so a future change that starts gating every provider
+	 * fails here by name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
+	 */
+	public function testAPublicRegistryIsNotGated(): void {
+		$auth = $this->actionAuthDouble();
+		$auth->expects($this->never())->method('requireAction');
+
+		$resolver = $this->resolverDouble();
+		$resolver->expects($this->once())->method('suggest')->willReturn([]);
+
+		$response = $this->controller(resolver: $resolver, actionAuth: $auth)->suggest('bag', 'Dorpsstraat');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testAPublicRegistryIsNotGated()
+
+	/**
+	 * A provider nobody declared public is gated, by default and by name.
+	 *
+	 * The exemption list is keyed the safe way round: a provider added
+	 * tomorrow is closed until someone consciously declares it public. Keyed as
+	 * a list of SENSITIVE providers instead, a new personal-data provider would
+	 * ship open whenever the list was not updated — which is how `suggest()`
+	 * came to hand out a BSN in the first place.
+	 *
+	 * The action NAME is asserted too, so the prefix cannot drift away from the
+	 * one an operator types into Admin Settings.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 */
+	public function testAProviderNotDeclaredPublicIsGated(): void {
+		$auth = $this->actionAuthDouble();
+		$auth->expects($this->once())
+			->method('requireAction')
+			->with($this->anything(), 'propertySource.query.some-new-registry')
+			->willThrowException(new OCSForbiddenException('nope'));
+
+		$response = $this->controller(
+			actionAuth: $auth,
+			user: $this->createMock(IUser::class)
+		)->suggest('some-new-registry', 'x');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testAProviderNotDeclaredPublicIsGated()
+
+	/**
+	 * An anonymous caller is refused a gated provider before anything is read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 */
+	public function testAnAnonymousCallerIsRefusedAGatedProvider(): void {
+		$resolver = $this->resolverDouble();
+		$resolver->expects($this->never())->method('suggest');
+
+		$response = $this->controller(resolver: $resolver, user: null)->suggest('brp', 'Jansen');
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	}//end testAnAnonymousCallerIsRefusedAGatedProvider()
+
 }//end class
