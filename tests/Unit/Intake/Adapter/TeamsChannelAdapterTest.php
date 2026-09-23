@@ -364,6 +364,11 @@ class TeamsChannelAdapterTest extends TestCase {
 			'loopback' => ['https://127.0.0.1/'],
 			'link-local metadata' => ['https://169.254.169.254/'],
 			'not a url at all' => ['not-a-url'],
+			// parse_url() itself returns false for these two, rather than an
+			// array with a missing host, so they take a different branch than
+			// the cases above and are not a duplicate of them.
+			'unparseable, no authority' => ['https:///emea/'],
+			'a scheme and nothing else' => ['https:'],
 		];
 
 	}//end untrustedServiceUrlProvider()
@@ -404,5 +409,145 @@ class TeamsChannelAdapterTest extends TestCase {
 		$this->assertStringStartsWith('https://smba.trafficmanager.net/emea/', $seen);
 
 	}//end testTheConfiguredServiceUrlWinsOverThePayload()
+
+	/**
+	 * A configured host list REPLACES the default, it does not extend it.
+	 *
+	 * An instance on a sovereign or air-gapped Azure cloud talks to a host
+	 * Microsoft's public list does not name, so the list has to be configurable
+	 * or the allow-list is a Dutch-government-instance outage waiting to happen.
+	 *
+	 * Replacing rather than extending is the deliberate half: an operator who
+	 * narrows the list to their own tenant's host expects the public ones to
+	 * STOP being trusted. Both halves are asserted here, because a bug that made
+	 * this additive would leave the narrowing silently ineffective.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	public function testAConfiguredHostListReplacesTheDefaultOne(): void {
+		$seen = null;
+		$client = $this->createMock(IClient::class);
+		$client->method('post')->willReturnCallback(
+			function (string $url) use (&$seen) {
+				$seen = $url;
+				throw new \RuntimeException('stop after the destination is known');
+			}
+		);
+
+		$configuration = [
+			'accessToken' => 'connector-token',
+			'trustedServiceHosts' => ['teams.sovereign.example'],
+		];
+
+		$admitted = $this->activity('hoi');
+		$admitted['serviceUrl'] = 'https://eu.teams.sovereign.example/emea/';
+		$adapter = $this->adapter($configuration, $client);
+		$adapter->reply($adapter->receive($admitted), 'x');
+		$this->assertIsString($seen, 'A host on the configured list must be reachable.');
+
+		$seen = null;
+		$refused = $this->activity('hoi');
+		$refused['serviceUrl'] = 'https://smba.trafficmanager.net/emea/';
+		$adapter = $this->adapter($configuration, $client);
+		$result = $adapter->reply($adapter->receive($refused), 'x');
+
+		$this->assertNull($seen, 'A configured list REPLACES the defaults; the public host must no longer pass.');
+		$this->assertFalse($result->isSent());
+
+	}//end testAConfiguredHostListReplacesTheDefaultOne()
+
+	/**
+	 * A host list that is not a usable list falls back to the default.
+	 *
+	 * `trustedServiceHosts: ""` or `[]` is a half-finished edit, not a statement
+	 * that nothing is trusted. Reading it as "trust nobody" would take Teams
+	 * replies down on a typo; reading it as "trust anybody" would delete the
+	 * control. It falls back to the shipped list, which is neither.
+	 *
+	 * @param mixed $configured The malformed value.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider unusableHostListProvider
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	public function testAnUnusableHostListFallsBackToTheDefault(mixed $configured): void {
+		$seen = null;
+		$client = $this->createMock(IClient::class);
+		$client->method('post')->willReturnCallback(
+			function (string $url) use (&$seen) {
+				$seen = $url;
+				throw new \RuntimeException('stop after the destination is known');
+			}
+		);
+
+		$configuration = [
+			'accessToken' => 'connector-token',
+			'trustedServiceHosts' => $configured,
+		];
+
+		$activity = $this->activity('hoi');
+		$activity['serviceUrl'] = 'https://smba.trafficmanager.net/emea/';
+		$adapter = $this->adapter($configuration, $client);
+		$adapter->reply($adapter->receive($activity), 'x');
+		$this->assertIsString($seen, 'The shipped default must still apply.');
+
+		$seen = null;
+		$activity['serviceUrl'] = 'https://attacker.example/';
+		$adapter = $this->adapter($configuration, $client);
+		$adapter->reply($adapter->receive($activity), 'x');
+		$this->assertNull($seen, 'Falling back must not mean trusting everything.');
+
+	}//end testAnUnusableHostListFallsBackToTheDefault()
+
+	/**
+	 * A list of nothing but blanks trusts nobody, rather than everybody.
+	 *
+	 * `['', '']` survives the is-it-a-usable-list check — it is a non-empty
+	 * array — so it reaches the match loop, where every entry is skipped. The
+	 * loop must then fall through to a refusal. An implementation that treated
+	 * an unmatched-because-skipped entry as a pass would turn a whitespace typo
+	 * in configuration into an open redirect for the bot's bearer token.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	public function testAListOfBlankEntriesTrustsNobody(): void {
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->never())->method('post');
+
+		$activity = $this->activity('hoi');
+		$activity['serviceUrl'] = 'https://smba.trafficmanager.net/emea/';
+
+		$adapter = $this->adapter(
+			[
+				'accessToken' => 'connector-token',
+				'trustedServiceHosts' => ['', '  '],
+			],
+			$client
+		);
+
+		$this->assertFalse($adapter->reply($adapter->receive($activity), 'x')->isSent());
+
+	}//end testAListOfBlankEntriesTrustsNobody()
+
+	/**
+	 * Values that are not a usable host list.
+	 *
+	 * @return array<string,array<int,mixed>> The cases.
+	 */
+	public static function unusableHostListProvider(): array {
+		return [
+			'empty list'  => [[]],
+			'empty string' => [''],
+			'a bare string' => ['teams.sovereign.example'],
+			'null'        => [null],
+		];
+
+	}//end unusableHostListProvider()
 
 }//end class

@@ -320,6 +320,88 @@ class IntakeChannelsControllerTest extends TestCase {
 
 	}//end testTheAdapterOnlyEverSeesTheSignedBody()
 
+	/**
+	 * A form-encoded sender still works, decoded from the same signed bytes.
+	 *
+	 * The fix for the params desync must not turn a signature bug into a broken
+	 * integration: a sender that posts `application/x-www-form-urlencoded` is
+	 * still signed over its body, so the body is what is parsed — with
+	 * `parse_str`, not with the framework's merged parameter set.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-submission-arrives-over-a-signed-webhook-and-maps-to-a-case-type-req-ic-003
+	 */
+	public function testAFormEncodedBodyIsDecodedFromTheSignedBytes(): void {
+		$controller = $this->controllerWithRawBody(rawBody: 'messageId=WA-2&text=hallo');
+
+		$this->sourceResolver->method('configurationFor')->willReturn(
+			['webhookSignature' => ['secret' => 'shh']]
+		);
+		$this->signatureService->method('verify')->willReturn(true);
+		$this->request->method('getParams')->willReturn(['injected' => 'no']);
+
+		$seen = null;
+		$adapter = $this->createMock(\OCA\Integriq\Intake\IntakeChannelAdapterInterface::class);
+		$adapter->method('receive')->willReturnCallback(
+			function (array $payload) use (&$seen) {
+				$seen = $payload;
+				return new \OCA\Integriq\Intake\InboundMessage('messaging', 'WA-2', [], 'hallo');
+			}
+		);
+		$this->registry->method('get')->willReturn($adapter);
+		$this->routingService->method('route')->willReturn(
+			ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['status' => 'routed', 'targetRef' => 'zaak/1', 'reason' => ''],
+				'intake-uuid'
+			)
+		);
+
+		$controller->inbound('messaging');
+
+		$this->assertSame(['messageId' => 'WA-2', 'text' => 'hallo'], $seen);
+
+	}//end testAFormEncodedBodyIsDecodedFromTheSignedBytes()
+
+	/**
+	 * A controller whose raw body is the one this test wants.
+	 *
+	 * `getRawContent()` reads php://input, which a unit test cannot fill, so it
+	 * is stubbed — the same seam setUp() uses, with a per-test body.
+	 *
+	 * @param string $rawBody The body bytes.
+	 *
+	 * @return IntakeChannelsController The controller.
+	 */
+	private function controllerWithRawBody(string $rawBody): IntakeChannelsController {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+
+		$controller = $this->getMockBuilder(IntakeChannelsController::class)
+			->setConstructorArgs(
+				[
+					'integriq',
+					$this->request,
+					$this->userSession,
+					$this->actionAuth,
+					$this->registry,
+					$this->sourceResolver,
+					$this->routingService,
+					$this->replyService,
+					$this->signatureService,
+					$this->objectService,
+					$l10n,
+				]
+			)
+			->onlyMethods(['getRawContent'])
+			->getMock();
+		$controller->method('getRawContent')->willReturn($rawBody);
+
+		return $controller;
+
+	}//end controllerWithRawBody()
+
 	public function testASignedDeliveryIsRouted(): void {
 		$this->sourceResolver->method('configurationFor')->willReturn(
 			['webhookSignature' => ['secret' => 'shh']]
