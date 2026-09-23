@@ -53,6 +53,31 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	public const CHANNEL_ID = 'teams';
 
 	/**
+	 * Host suffixes a connector reply may be sent to.
+	 *
+	 * The reply carries `Authorization: Bearer <connector access token>`, so the
+	 * destination is a credential-disclosure decision, not a routing detail.
+	 * `serviceUrl` arrives on the activity, and an activity is attacker-
+	 * influenceable — Microsoft's own Bot Framework guidance is that it must be
+	 * validated before use. Without a list this method is an SSRF with a bearer
+	 * token attached (integriq#1983 security re-review of the delta since
+	 * f370f878).
+	 *
+	 * Suffix match on the host, never a substring match on the URL:
+	 * `https://evil.example/smba.trafficmanager.net` must not pass.
+	 *
+	 * An operator extends this per source with `trustedServiceHosts`, for a
+	 * sovereign or test connector.
+	 *
+	 * @var string[]
+	 */
+	public const DEFAULT_TRUSTED_SERVICE_HOSTS = [
+		'botframework.com',
+		'smba.trafficmanager.net',
+		'skype.com',
+	];
+
+	/**
 	 * The attachment content type a Teams file upload carries.
 	 *
 	 * @var string
@@ -257,11 +282,24 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 		array $configuration,
 	): ReplyResult {
 		$raw = $message->getRawPayload();
-		$serviceUrl = trim((string)($raw['serviceUrl'] ?? $configuration['serviceUrl'] ?? ''));
+
+		// CONFIGURED FIRST, payload second. This was the other way round, so a
+		// value on the activity overrode the operator's. The payload is still
+		// honoured when the source configures nothing, because that is how a
+		// multi-tenant connector legitimately works — but it is checked against
+		// the trusted list either way.
+		$serviceUrl = trim((string)($configuration['serviceUrl'] ?? $raw['serviceUrl'] ?? ''));
 		if ($serviceUrl === '') {
 			return ReplyResult::failed(
 				self::CHANNEL_ID,
 				'The activity names no serviceUrl and the source configures none.'
+			);
+		}
+
+		if ($this->isTrustedServiceUrl(serviceUrl: $serviceUrl, configuration: $configuration) === false) {
+			return ReplyResult::failed(
+				self::CHANNEL_ID,
+				'The serviceUrl is not a trusted connector host, so no reply is sent.'
 			);
 		}
 
@@ -431,5 +469,74 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 		return [];
 
 	}//end mapAt()
+
+	/**
+	 * Whether a reply may be sent to this serviceUrl.
+	 *
+	 * Requires https and a host that equals, or is a subdomain of, one of the
+	 * trusted suffixes. Anything unparseable is refused rather than allowed.
+	 *
+	 * @param string $serviceUrl The candidate destination.
+	 * @param array<string,mixed> $configuration The source configuration.
+	 *
+	 * @return boolean Whether the destination is trusted.
+	 *
+	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	private function isTrustedServiceUrl(string $serviceUrl, array $configuration): bool {
+		$parts = parse_url($serviceUrl);
+		if (is_array($parts) === false) {
+			return false;
+		}
+
+		if (strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
+			return false;
+		}
+
+		$host = strtolower(trim((string)($parts['host'] ?? '')));
+		if ($host === '') {
+			return false;
+		}
+
+		foreach ($this->trustedHosts(configuration: $configuration) as $candidate) {
+			$suffix = strtolower(trim((string)$candidate));
+			if ($suffix === '') {
+				continue;
+			}
+
+			if ($host === $suffix || str_ends_with($host, '.' . $suffix) === true) {
+				return true;
+			}
+		}
+
+		return false;
+
+	}//end isTrustedServiceUrl()
+
+	/**
+	 * The host suffixes this source may reply to.
+	 *
+	 * Split out so {@see isTrustedServiceUrl()} stays inside the complexity
+	 * budget, and because "which hosts are trusted" is a separate question from
+	 * "is this URL one of them".
+	 *
+	 * A configured list REPLACES the default rather than extending it, so an
+	 * operator on a sovereign connector is not forced to keep the public hosts.
+	 * An empty or malformed value falls back to the default rather than trusting
+	 * nothing — the refusal would otherwise look like a broken integration.
+	 *
+	 * @param array<string,mixed> $configuration The source configuration.
+	 *
+	 * @return array<int,string> The trusted host suffixes.
+	 */
+	private function trustedHosts(array $configuration): array {
+		$trusted = ($configuration['trustedServiceHosts'] ?? null);
+		if (is_array($trusted) === false || $trusted === []) {
+			return self::DEFAULT_TRUSTED_SERVICE_HOSTS;
+		}
+
+		return $trusted;
+
+	}//end trustedHosts()
 
 }//end class
