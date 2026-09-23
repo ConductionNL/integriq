@@ -127,6 +127,33 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 	}//end constructorParams()
 
 	/**
+	 * Whether Application.php actually BINDS this interface, not merely names it.
+	 *
+	 * The earlier check was `str_contains($application, $short . '::class')`,
+	 * which matches any occurrence — a `use` statement, or prose in a comment.
+	 * `Application.php` already mentions `TablesClientInterface` in a comment,
+	 * one `::class` away from a false green (integriq#2127 review 5280620536).
+	 * Today's result was right; the assertion was not.
+	 *
+	 * Matches the two forms the file uses: an alias to a concrete class, and an
+	 * explicit factory registration.
+	 *
+	 * @param string $application The contents of Application.php.
+	 * @param string $interface The short interface name.
+	 *
+	 * @return boolean Whether a binding exists.
+	 */
+	private function isAliased(string $application, string $interface): bool {
+		$quoted = preg_quote($interface, '/');
+
+		return (bool)preg_match(
+			'/register(?:ServiceAlias|Service)\s*\(\s*(?:[A-Za-z0-9_\\\\]*\\\\)?' . $quoted . '::class/',
+			$application
+		);
+
+	}//end isAliased()
+
+	/**
 	 * No app-owned interface is injected bare without a container binding.
 	 *
 	 * @return void
@@ -147,11 +174,19 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 				continue;
 			}
 
-			// A required, non-nullable, non-variadic parameter typed as an
-			// interface: `Foo $bar` but not `?Foo $bar`, `Foo ...$bar` or
-			// `Foo $bar = null`.
+			// Any required, non-nullable, non-variadic typed parameter:
+			// `Foo $bar`, but not `?Foo $bar`, `Foo ...$bar` or `Foo $bar = null`.
+			//
+			// Deliberately NOT filtered on a name ending in `Interface`. An
+			// earlier version matched `\w*Interface` and therefore could not see
+			// `GatewayTransport` — an app-owned interface injected bare into five
+			// classes whose name does not carry the suffix. Removing its alias
+			// left this test green while five classes stopped constructing
+			// (integriq#2127 review 5280620536). The type is matched against the
+			// set of interfaces this app actually DECLARES, which is the question
+			// the test claims to ask.
 			preg_match_all(
-				'/(?:^|,)\s*(?:(?:private|protected|public)\s+)?(?:readonly\s+)?([A-Za-z_\\\\]*\b\w*Interface)\s+\$(\w+)(?!\s*=)/',
+				'/(?:^|,)\s*(?:(?:private|protected|public)\s+)?(?:readonly\s+)?([A-Za-z_][A-Za-z0-9_\\\\]*)\s+\$(\w+)(?!\s*=)/',
 				$params,
 				$matches,
 				PREG_SET_ORDER
@@ -164,7 +199,7 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 					continue;
 				}
 
-				if (str_contains($application, $short . '::class') === true) {
+				if ($this->isAliased(application: $application, interface: $short) === true) {
 					continue;
 				}
 

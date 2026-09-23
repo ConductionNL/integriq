@@ -46,7 +46,7 @@ sensitive source is restricted without restricting every source.
 ```json
 {
   "authorization": {
-    "read":    [{ "groups": ["brp-beheer"] }],
+    "read":    ["brp-beheer"],
     "create":  [],
     "update":  [],
     "delete":  [],
@@ -54,6 +54,26 @@ sensitive source is restricted without restricting every source.
   }
 }
 ```
+
+### The entry forms that are actually recognised
+
+A rule list holds *entries*, and `PermissionHandler::hasGroupPermission()` recognises
+exactly these:
+
+| Entry | Meaning |
+|---|---|
+| `"brp-beheer"` | A bare group id. **This is the form every block in this repo uses.** |
+| `{"group": "brp-beheer"}` | The same thing, object form. Note **`group`, singular**. |
+| `{"group": "…", "match": {…}}` | Conditional — granted only when the object matches. |
+
+Anything else falls through every branch and the loop ends in `return false`, so the
+entry grants nothing and the action is denied to everyone but the two bypasses below.
+
+⚠️ **`{"groups": [...]}` — plural — is not a form.** It looks like the others and reads
+naturally, which is exactly why it is worth naming: `grep -c "'groups'"` on
+`PermissionHandler` returns **0**. An earlier version of this page used it in the
+example above, so a reader following it would have written a block that denied
+everything while appearing to delegate to a group.
 
 ### Read this part before writing one
 
