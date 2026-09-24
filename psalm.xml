@@ -76,6 +76,14 @@
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatingEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
+                <!-- registry-subscription-connector: OpenRegister dispatches this
+                     from RegistrySubscriptionNotifier and this app listens for it
+                     lazily through addServiceListener, so the class is touched only
+                     on an instance that has OpenRegister. Same reason, same
+                     treatment, as the five sibling events above. The shape is
+                     pinned by tests/stubs/OCA/OpenRegister/Event/RegistrySubscriptionRequestedEvent.php,
+                     which the listener test runs against. -->
+                <referencedClass name="OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
                 <!-- hitl-on-shared-tasks: the shared task service the HITL
                      mirror writes through, resolved at runtime like

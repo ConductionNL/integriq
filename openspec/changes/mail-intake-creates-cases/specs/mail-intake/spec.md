@@ -41,8 +41,8 @@ dropped.
 
 #### Scenario: An operator imports a saved Outlook message
 - GIVEN a mailbox source and an `.msg` file with two attachments
-- WHEN the operator imports it from the source page
-- THEN one `message` with two attachments exists and the page shows it
+- WHEN the operator imports it onto that source
+- THEN one `message` with two attachments exists and the mail intake page shows it
 - e2e: `tests/e2e/mail-intake.spec.ts`
 
 ### Requirement: A received message is offered to the owning app as a typed event (REQ-MAIL-003)

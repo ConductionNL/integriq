@@ -152,6 +152,46 @@ class InlineSecretMigrationPlanner {
 	public const SECRET_FIELDS = ['apikey', 'secret', 'password', 'jwt', 'authenticationConfig'];
 
 	/**
+	 * Every schema this migration knows how to move, and how.
+	 *
+	 * `source` repeats the constants above rather than replacing them: they are
+	 * public, `RenderBoundarySimulatingObjectService` and `AuthenticationConfigAuditor`
+	 * read them, and changing their meaning would change behaviour for credentials
+	 * already in production. The map is the generalisation; the constants remain
+	 * the `source` answer.
+	 *
+	 * `refField` is where the `{credentialRef}` placeholder is written:
+	 *   - null  → in place, over the secret itself (what `source` has always done)
+	 *   - map   → into a SEPARATE readable property, the original then emptied
+	 *
+	 * That asymmetry is the point of the sender_identity enrolment. The reference
+	 * has to stay readable — an operator must be able to see which credential an
+	 * identity points at — while the key itself becomes write-only.
+	 *
+	 * @var array<string, array{fields: array<int,string>, providers: array<string,string>,
+	 *     unmappable: array<int,string>, refField: array<string,string>|null}>
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public const MIGRATABLE = [
+		self::SCHEMA => [
+			'fields' => self::SECRET_FIELDS,
+			'providers' => self::PROVIDER_MAP,
+			'unmappable' => self::UNMAPPABLE_FIELDS,
+			'refField' => null,
+		],
+		'sender_identity' => [
+			'fields' => ['smimePrivateKey'],
+			// `generic-apikey` is a deliberate interim: it is `inject_only`, so the
+			// app reads the material back and signs locally, but it describes an
+			// API key rather than key material. See ConductionNL/openregister#4008.
+			'providers' => ['smimePrivateKey' => 'generic-apikey'],
+			'unmappable' => [],
+			'refField' => ['smimePrivateKey' => 'smimePrivateKeyRef'],
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OrObjectService $objectService The OpenRegister object service.
@@ -202,17 +242,18 @@ class InlineSecretMigrationPlanner {
 	 * it looks like a raw mapper and is not one.
 	 *
 	 * @param string $uuid The source object's UUID.
+	 * @param string $schema The schema to read it from; defaults to `source`.
 	 *
 	 * @return array<string, mixed> The raw source data (secrets intact), or [] when unreadable.
 	 *
 	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-raw-secret-read
 	 */
-	public function readRawSource(string $uuid): array {
+	public function readRawSource(string $uuid, string $schema = self::SCHEMA): array {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
 				register: self::REGISTER,
-				schema: self::SCHEMA,
+				schema: $schema,
 				_rbac: false,
 				_multitenancy: false,
 				_render: false
@@ -239,12 +280,13 @@ class InlineSecretMigrationPlanner {
 	 *
 	 * @param string $field The field name.
 	 * @param mixed $value The raw field value (never returned, never logged).
+	 * @param string $schema The schema whose field map applies; defaults to `source`.
 	 *
 	 * @return array{field: string, state: string, provider: string|null}
 	 *
 	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
-	private function describeValue(string $field, mixed $value): array {
+	private function describeValue(string $field, mixed $value, string $schema = self::SCHEMA): array {
 		// Already a `{credentialRef: {...}}` placeholder → nothing to do. Matches
 		// BrokeredCallService::isPlaceholder(): credentialRef must be the SOLE key.
 		if (is_array($value) === true && array_keys($value) === ['credentialRef']) {
@@ -256,11 +298,13 @@ class InlineSecretMigrationPlanner {
 			return ['field' => $field, 'state' => 'empty', 'provider' => null];
 		}
 
-		if (in_array($field, self::UNMAPPABLE_FIELDS, true) === true) {
+		$unmappable = (self::MIGRATABLE[$schema]['unmappable'] ?? self::UNMAPPABLE_FIELDS);
+		if (in_array($field, $unmappable, true) === true) {
 			return ['field' => $field, 'state' => 'needs-manual-review', 'provider' => null];
 		}
 
-		$provider = (self::PROVIDER_MAP[$field] ?? null);
+		$providers = (self::MIGRATABLE[$schema]['providers'] ?? self::PROVIDER_MAP);
+		$provider = ($providers[$field] ?? null);
 		if ($provider === null) {
 			return ['field' => $field, 'state' => 'needs-manual-review', 'provider' => null];
 		}
@@ -274,23 +318,25 @@ class InlineSecretMigrationPlanner {
 	 * @param string $uuid The source UUID.
 	 * @param string $name The source's human-readable name (not a secret).
 	 * @param array<string, mixed> $rawData The RAW source data (from {@see readRawSource()}).
+	 * @param string $schema The schema being planned; defaults to `source`.
 	 *
 	 * @return array{uuid: string, name: string, fields: array<int, array{field: string,
 	 *     state: string, provider: string|null}>, wouldMigrate: int, needsReview: int}
 	 *
 	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
-	public function planSource(string $uuid, string $name, array $rawData): array {
+	public function planSource(string $uuid, string $name, array $rawData, string $schema = self::SCHEMA): array {
 		$fields = [];
 		$wouldMigrate = 0;
 		$needsReview = 0;
 
-		foreach (self::SECRET_FIELDS as $field) {
+		$declared = (self::MIGRATABLE[$schema]['fields'] ?? self::SECRET_FIELDS);
+		foreach ($declared as $field) {
 			if (array_key_exists($field, $rawData) === false) {
 				continue;
 			}
 
-			$described = $this->describeValue(field: $field, value: $rawData[$field]);
+			$described = $this->describeValue(field: $field, value: $rawData[$field], schema: $schema);
 			if ($described['state'] === 'empty') {
 				continue;
 			}
@@ -314,6 +360,119 @@ class InlineSecretMigrationPlanner {
 			'needsReview' => $needsReview,
 		];
 	}//end planSource()
+
+	/**
+	 * The fields one schema declares as migratable.
+	 *
+	 * @param string $schema The schema slug.
+	 *
+	 * @return array<int,string> The field names, empty when the schema is unknown.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function fieldsFor(string $schema): array {
+		return (self::MIGRATABLE[$schema]['fields'] ?? []);
+
+	}//end fieldsFor()
+
+	/**
+	 * Where one schema's field writes its reference, if not in place.
+	 *
+	 * @param string $schema The schema slug.
+	 * @param string $field The field name.
+	 *
+	 * @return string|null The separate reference property, or null to write in place.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function referenceFieldFor(string $schema, string $field): ?string {
+		return (self::MIGRATABLE[$schema]['refField'][$field] ?? null);
+
+	}//end referenceFieldFor()
+
+	/**
+	 * Plan one schema's whole estate.
+	 *
+	 * Separate from {@see planAll()} on purpose: planAll() is the `source` Phase D
+	 * gate and {@see \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields} reads
+	 * it to decide whether SOURCE properties may be removed. Folding another
+	 * schema into that number would block source's removal on an unrelated
+	 * schema's state, which is not what the gate means.
+	 *
+	 * @param string $schema The schema slug.
+	 * @param int $limit Maximum objects to inspect.
+	 *
+	 * @return array{schema: string, objects: array<int, array<string,mixed>>,
+	 *     totalObjects: int, wouldMigrate: int, needsReview: int, clean: bool}
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function planSchema(string $schema, int $limit = 1000): array {
+		$uuids = $this->listUuids(schema: $schema, limit: $limit);
+
+		$plans = [];
+		$wouldMigrate = 0;
+		$needsReview = 0;
+
+		foreach ($uuids as $uuid => $name) {
+			// Per-object isolation, exactly as planAll(): one unreadable object
+			// must never abort the batch or mask the rest of the estate.
+			$rawData = $this->readRawSource(uuid: (string)$uuid, schema: $schema);
+			if ($rawData === []) {
+				continue;
+			}
+
+			$plan = $this->planSource(uuid: (string)$uuid, name: $name, rawData: $rawData, schema: $schema);
+			if ($plan['fields'] === []) {
+				continue;
+			}
+
+			$wouldMigrate += $plan['wouldMigrate'];
+			$needsReview += $plan['needsReview'];
+			$plans[] = $plan;
+		}//end foreach
+
+		return [
+			'schema' => $schema,
+			'objects' => $plans,
+			'totalObjects' => count($uuids),
+			'wouldMigrate' => $wouldMigrate,
+			'needsReview' => $needsReview,
+			'clean' => ($wouldMigrate === 0 && $needsReview === 0),
+		];
+
+	}//end planSchema()
+
+	/**
+	 * Plan every migratable schema.
+	 *
+	 * @param int $limit Maximum objects per schema.
+	 *
+	 * @return array{schemas: array<string, array<string,mixed>>, wouldMigrate: int,
+	 *     needsReview: int, clean: bool} The estate, and whether ALL of it is clean.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function planEverything(int $limit = 1000): array {
+		$schemas = [];
+		$wouldMigrate = 0;
+		$needsReview = 0;
+
+		foreach (array_keys(self::MIGRATABLE) as $schema) {
+			$plan = $this->planSchema(schema: $schema, limit: $limit);
+			$schemas[$schema] = $plan;
+			$wouldMigrate += $plan['wouldMigrate'];
+			$needsReview += $plan['needsReview'];
+		}
+
+		return [
+			'schemas' => $schemas,
+			'wouldMigrate' => $wouldMigrate,
+			'needsReview' => $needsReview,
+			'clean' => ($wouldMigrate === 0 && $needsReview === 0),
+		];
+
+	}//end planEverything()
 
 	/**
 	 * Build the full fleet plan across every `source` object.
@@ -410,11 +569,34 @@ class InlineSecretMigrationPlanner {
 	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	public function listSourceUuids(int $limit): array {
+		return $this->listUuids(schema: self::SCHEMA, limit: $limit);
+
+	}//end listSourceUuids()
+
+	/**
+	 * List one schema's uuid => name.
+	 *
+	 * The generic form of {@see listSourceUuids()}, which stays as the `source`
+	 * entry point because {@see \OCA\Integriq\Service\Security\AuthenticationConfigAuditor}
+	 * enumerates the fleet through it.
+	 *
+	 * Deliberately uses the RENDERED findAll(): this call needs identity only
+	 * (uuid + name), never a secret. The per-object raw read happens in
+	 * {@see readRawSource()}, one object at a time.
+	 *
+	 * @param string $schema The schema slug.
+	 * @param int $limit Maximum number of objects to list.
+	 *
+	 * @return array<string, string> uuid => name.
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function listUuids(string $schema, int $limit): array {
 		try {
 			$result = $this->objectService->findAll(
 				config: [
 					'limit' => $limit,
-					'filters' => ['register' => self::REGISTER, 'schema' => self::SCHEMA],
+					'filters' => ['register' => self::REGISTER, 'schema' => $schema],
 				]
 			);
 		} catch (Throwable $e) {

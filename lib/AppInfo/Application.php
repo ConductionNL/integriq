@@ -30,6 +30,7 @@ use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\Forms\Events\FormSubmittedEvent;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientUnavailable;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
@@ -42,9 +43,16 @@ use OCA\Integriq\Adapters\Pdok\PdokWmsClientMock;
 use OCA\Integriq\Capabilities;
 use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
+use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
+use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
+use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
+use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
+use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
+use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
+use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
 use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
 use OCA\Integriq\EventListener\NextcloudFileEventListener;
@@ -52,11 +60,28 @@ use OCA\Integriq\EventListener\NextcloudFileTagEventListener;
 use OCA\Integriq\EventListener\NextcloudFormsEventListener;
 use OCA\Integriq\EventListener\NextcloudTablesEventListener;
 use OCA\Integriq\EventListener\ObjectCreatedEventListener;
+use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
+use OCA\Integriq\Auth\Idp\LogGovernmentIdpAdapter;
+use OCA\Integriq\Broker\BrokerTransportRegistry;
+use OCA\Integriq\Broker\Transport\CloudEventsHttpTransport;
+use OCA\Integriq\Broker\Transport\KafkaRestTransport;
+use OCA\Integriq\Broker\Transport\LogBrokerTransport;
+use OCA\Integriq\Broker\Transport\RabbitMqHttpTransport;
+use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
+use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
+use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
+use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
+use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Observability\IntegriqMetricsProvider;
+use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
+use OCA\Integriq\Outbound\Call\CallServiceDispatcher;
+use OCA\Integriq\Outbound\Identity\DnsResolverInterface;
+use OCA\Integriq\Outbound\Identity\SystemDnsResolver;
 use OCA\Integriq\Repair\InitializeActions;
 use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
@@ -73,6 +98,27 @@ use OCA\Integriq\Service\Tables\TablesOcsClient;
 use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
 use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\Integriq\Sources\Berichtenbox\BerichtenboxSourceAdapter;
+use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
+use OCA\Integriq\Service\Registry\KvkMutatieProvider;
+use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
+use OCA\Integriq\Service\Registry\SubscriptionRegistry;
+use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
+use OCA\Integriq\EventListener\DigitalPostSendRequestedListener;
+use OCA\Integriq\Gateway\GatewayCatalogue;
+use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
+use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
+use OCA\Integriq\Service\DigitalPost\LogDigitalPostProvider;
+use OCA\Integriq\Service\DigitalPost\PostexProvider;
+use OCA\Integriq\Gateway\GatewayRegistry;
+use OCA\Integriq\Gateway\GatewayTransport;
+use OCA\Integriq\Gateway\SourceGatewayTransport;
+use OCA\Integriq\Migration\MigrationSourceRegistry;
+use OCA\Integriq\Migration\Source\FileMigrationSource;
+use OCA\Integriq\Migration\Source\RedmineMigrationSource;
+use OCA\Integriq\PropertySource\PropertySourceRegistry;
+use OCA\Integriq\PropertySource\Provider\BagPropertySource;
+use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
+use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
 use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
@@ -83,12 +129,15 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\Tables\Event\RowAddedEvent;
 use OCA\Tables\Event\RowDeletedEvent;
 use OCA\Tables\Event\RowUpdatedEvent;
+use OCP\App\Events\AppDisableEvent;
+use OCP\App\Events\AppEnableEvent;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -185,6 +234,15 @@ class Application extends App implements IBootstrap {
 
 		$dispatcher = $this->getContainer()->get(IEventDispatcher::class);
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ObjectCreatedEventListener::class);
+
+		// Spec registry-subscription-connector Task 3: the binding that was blocked
+		// on OpenRegister shipping the event. It has, and dispatches it from
+		// RegistrySubscriptionNotifier, so the wire shape is read rather than
+		// guessed.
+		$dispatcher->addServiceListener(
+			eventName: RegistrySubscriptionRequestedEvent::class,
+			className: RegistrySubscriptionRequestedListener::class
+		);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ObjectUpdatedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
@@ -207,6 +265,23 @@ class Application extends App implements IBootstrap {
 		// same CloudEvents pipeline (subscription routing, retry, dead-letter,
 		// replay) and writes the synchronous result slot back on the event.
 		$dispatcher->addServiceListener(eventName: DeliveryRequestedEvent::class, className: DeliveryRequestedListener::class);
+		$dispatcher->addServiceListener(eventName: DigitalPostSendRequestedEvent::class, className: DigitalPostSendRequestedListener::class);
+		// Connection registry (connection-registry D5/D6): apps report a
+		// connection status or ask for a fresh resolve with two typed events,
+		// and enabling or disabling an app syncs or resolves its declared
+		// connections. Every listener resolves its service lazily and never
+		// throws into the sender.
+		$context->registerEventListener(ConnectionStatusReportedEvent::class, ConnectionStatusReportedListener::class);
+		$context->registerEventListener(ConnectionRefreshRequestedEvent::class, ConnectionRefreshRequestedListener::class);
+		$context->registerEventListener(AppEnableEvent::class, ConnectionAppLifecycleListener::class);
+		$context->registerEventListener(AppDisableEvent::class, ConnectionAppLifecycleListener::class);
+		// Document generation (document-generation-vendor-adapter REQ-DGV-002):
+		// filinq asks for a vendor render with a typed command and reads the
+		// job id, or the structured refusal, off the same instance.
+		$context->registerEventListener(
+			DocumentRenderRequestedEvent::class,
+			DocumentRenderRequestedListener::class
+		);
 		// Nextcloud-core-event triggers (nextcloud-event-hub). Each family
 		// normalizes its NC event into the SAME `event` CloudEvents envelope
 		// shape the OR-object pipeline above already uses, then hands off to
@@ -306,6 +381,166 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The property-source registry: one keyed list of the registry
+		// bindings a schema property can name through
+		// `x-openregister-property-source`. Registered explicitly rather than
+		// autowired so the order, and therefore the first-wins collision
+		// policy, is readable in one place.
+		$context->registerService(
+			PropertySourceRegistry::class,
+			static function ($c): PropertySourceRegistry {
+				return new PropertySourceRegistry(
+					providers: [
+						$c->get(BagPropertySource::class),
+						$c->get(BrpPropertySource::class),
+						$c->get(KvkPropertySource::class),
+					],
+					logger: $c->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
+		// The government identity provider seam, bound to the adapter that
+		// REFUSES (openspec/specs/digid-eherkenning-auth-adapter/spec.md,
+		// "Dormant seam"). Nothing resolves this interface yet: the SAML
+		// Service Provider and the OIDC Relying Party are vendor work behind
+		// it, and until they land every authentication attempt logs and
+		// throws "broker not configured".
+		//
+		// It is registered rather than left unbound because an unbound
+		// interface fails with a container error nobody can act on, and
+		// because flipping to a live adapter must be this one line and not a
+		// search for every call site.
+		$context->registerService(
+			GovernmentIdpAdapterInterface::class,
+			static function ($c): GovernmentIdpAdapterInterface {
+				return new LogGovernmentIdpAdapter(logger: $c->get('Psr\Log\LoggerInterface'));
+			}
+		);
+
+		// The broker transport registry: one keyed list of the brokers this
+		// instance can publish a matched CloudEvent to. Registered explicitly
+		// rather than autowired, for the same reason as the intake channel
+		// registry below: autowiring would build one with an EMPTY transport
+		// list, which fails as "no transport answers to rabbitmq" on the
+		// first matched event rather than at boot
+		// (openspec/changes/event-broker-transport).
+		//
+		// `log` is LAST, so a real transport always wins its own id and the
+		// dormant one only answers to `log`.
+		$context->registerService(
+			BrokerTransportRegistry::class,
+			static function ($c): BrokerTransportRegistry {
+				return new BrokerTransportRegistry(
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					transports: [
+						$c->get(CloudEventsHttpTransport::class),
+						$c->get(KafkaRestTransport::class),
+						$c->get(RabbitMqHttpTransport::class),
+						$c->get(LogBrokerTransport::class),
+					]
+				);
+			}
+		);
+
+		// The intake channel registry: one keyed list of the channel adapters
+		// this instance has. Registered explicitly rather than autowired, for
+		// the same reason as the property-source registry above: the order,
+		// and therefore the first-wins collision policy, is readable in one
+		// place instead of depending on discovery order
+		// (openspec/changes/intake-channels-beyond-mail).
+		$context->registerService(
+			IntakeChannelRegistry::class,
+			static function ($c): IntakeChannelRegistry {
+				return new IntakeChannelRegistry(
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					adapters: [
+						$c->get(FormSubmissionAdapter::class),
+						$c->get(MessagingChannelAdapter::class),
+						$c->get(PublicSpaceReportAdapter::class),
+						$c->get(TeamsChannelAdapter::class),
+					]
+				);
+			}
+		);
+
+		// The registry subscription bindings, keyed by registry id. The `log`
+		// binding is last, so a real registry always wins its own id and the
+		// development binding only answers to `log`.
+		$context->registerService(
+			SubscriptionRegistry::class,
+			static function ($c): SubscriptionRegistry {
+				return new SubscriptionRegistry(
+					providers: [
+						$c->get(BrpVolgindicatieProvider::class),
+						$c->get(KvkMutatieProvider::class),
+						$c->get(LogSubscriptionProvider::class),
+					]
+				);
+			}
+		);
+
+		// The migration source adapters. A second incumbent is a class beside
+		// the Redmine one and a line here: no engine change, no consumer change.
+		$context->registerService(
+			MigrationSourceRegistry::class,
+			static function ($c): MigrationSourceRegistry {
+				return new MigrationSourceRegistry(
+					adapters: [
+						$c->get(FileMigrationSource::class),
+						$c->get(RedmineMigrationSource::class),
+					]
+				);
+			}
+		);
+
+		// The digital post bindings. `log` is registered last so a real binding
+		// always wins its own id and the development one only ever answers to
+		// `log`.
+		$context->registerService(
+			DigitalPostProviderRegistry::class,
+			static function ($c): DigitalPostProviderRegistry {
+				return new DigitalPostProviderRegistry(
+					providers: [
+						$c->get(BerichtenboxProvider::class),
+						$c->get(PostexProvider::class),
+						$c->get(LogDigitalPostProvider::class),
+					]
+				);
+			}
+		);
+
+		// The statutory gateway entries. Declared in one place so the catalogue
+		// page and the gateway overview can never disagree about which laws this
+		// instance reaches.
+		$context->registerService(
+			GatewayRegistry::class,
+			static function ($c): GatewayRegistry {
+				return new GatewayRegistry(entries: GatewayCatalogue::entries());
+			}
+		);
+		$context->registerServiceAlias(GatewayTransport::class, SourceGatewayTransport::class);
+
+		// Two app-owned interfaces injected BARE as required constructor
+		// parameters, with exactly one implementation each and nothing binding
+		// them. Without these lines Nextcloud's container cannot construct
+		// DomainAlignmentChecker or CallReplayService, so SenderIdentityController
+		// and CallLogController cannot be built and their NINE routes answer 500 —
+		// including `GET /unsubscribe/{token}`, the opt-out link in outbound mail,
+		// which is the one a recipient follows rather than an operator.
+		//
+		// Nothing caught it: psalm and phpstan are green because the types are
+		// right, the unit suite is green because it binds its own fixtures, and
+		// the route-reachability gate checks that a route resolves to a class and
+		// method, not that the class can be INSTANTIATED. Both interfaces arrived
+		// with their implementation and a test fixture and missed only this line
+		// (integriq#1983 review 5278999788, from PRs #2060 and #2063).
+		//
+		// AppOwnedInterfaceBindingTest pins the property rather than these two
+		// instances, so the next bare interface fails a test instead of a route.
+		$context->registerServiceAlias(DnsResolverInterface::class, SystemDnsResolver::class);
+		$context->registerServiceAlias(CallDispatcherInterface::class, CallServiceDispatcher::class);
+
 		// Explicit factories for the *ClientHttp flavours so the Guzzle
 		// ClientInterface is injected via a shared singleton; NC's
 		// auto-wiring can't construct GuzzleHttp\Client directly because
@@ -378,6 +613,20 @@ class Application extends App implements IBootstrap {
 		$context->registerService(
 			BerichtenboxClient::class,
 			static function ($c) {
+				$config = $c->get('OCP\IAppConfig');
+				$raw = $config->getValueString('integriq', 'logius.berichtenbox.feature_flag', '0');
+				$live = ($raw === '1' || strtolower($raw) === 'true');
+
+				// REQ-DPA-005: the flag selects the binding, and on a flagged
+				// instance the mock is not served at all. An operator who turns
+				// the flag on is asking for real letters; a simulated delivery
+				// there would be indistinguishable from a real one. Until
+				// BerichtenboxClientHttp exists, a flagged instance resolves to
+				// a binding that refuses and names what is missing.
+				if ($live === true) {
+					return $c->get(BerichtenboxClientUnavailable::class);
+				}
+
 				return $c->get(BerichtenboxClientMock::class);
 			}
 		);

@@ -30,11 +30,14 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\Integriq\Tests\Helpers\AppContainerInjection;
 
 /**
  * @covers \OCA\Integriq\AppInfo\Application
  */
 class ApplicationStorageMigratedTest extends TestCase {
+	use AppContainerInjection;
+
 	/**
 	 * The env var name that bypasses the assertion.
 	 *
@@ -89,7 +92,7 @@ class ApplicationStorageMigratedTest extends TestCase {
 	 * @return Application
 	 */
 	private function makeApp(?IAppConfig $appConfig, ?LoggerInterface $logger = null): Application {
-		$container = $this->createMock(IAppContainer::class);
+		$container = $this->createMock($this->appContainerType());
 		if ($appConfig === null) {
 			$container->method('get')->willThrowException(new \RuntimeException('no IAppConfig'));
 		} else {
@@ -111,13 +114,9 @@ class ApplicationStorageMigratedTest extends TestCase {
 
 		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
 
-		// Inject the mock container into App's protected $container property.
-		$appReflection = new ReflectionClass(\OCP\AppFramework\App::class);
-		if ($appReflection->hasProperty('container') === true) {
-			$prop = $appReflection->getProperty('container');
-			$prop->setAccessible(true);
-			$prop->setValue($app, $container);
-		}
+		// Inject the container double. The helper reads App::$container's own
+		// declared type, because NC 35 types it and NC 32-34 do not.
+		$this->injectAppContainer($app, $container);
 
 		return $app;
 	}//end makeApp()

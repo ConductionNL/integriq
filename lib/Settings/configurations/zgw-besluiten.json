@@ -1,0 +1,39 @@
+{
+  "slug": "zgw-besluiten",
+  "title": "Besluiten API",
+  "version": "1.0.0",
+  "description": "Decisions as the Besluiten API holds them.",
+  "component": "Besluiten API",
+  "resource": "besluit",
+  "auth": "jwt-zgw",
+  "apiVersion": "1.6",
+  "supportedApiVersions": [
+    "1.0",
+    "1.2",
+    "1.3",
+    "1.5",
+    "1.6"
+  ],
+  "translator": "ZgwResourceTranslatorInterface",
+  "synchronizations": [
+    "zgw-besluiten-pull",
+    "zgw-besluiten-push"
+  ],
+  "mappings": [
+    "zgw-besluit-to-object",
+    "object-to-zgw-besluit"
+  ],
+  "storageStrategy": "external",
+  "writesBack": true,
+  "target": {
+    "register": "",
+    "schema": "",
+    "chosenBy": "operator"
+  },
+  "source": {
+    "name": "Besluiten API",
+    "type": "api",
+    "location": "",
+    "isEnabled": false
+  }
+}

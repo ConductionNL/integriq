@@ -730,4 +730,132 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 			$this->assertSame(self::SECRET, $this->rawField('src-1', 'apikey'));
 		}
 	}//end testFailsClosedWhenBrokerUnavailable()
+
+	/**
+	 * A schema declaring a SEPARATE reference property writes the credential id
+	 * there and empties the original, instead of writing a placeholder in place.
+	 *
+	 * This asymmetry is the whole point of the sender_identity enrolment: the key
+	 * becomes write-only while the reference stays readable, because a signing
+	 * failure nobody can diagnose is how an operator ends up pasting the private
+	 * key somewhere else.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function testASeparateReferenceFieldIsWrittenAndTheKeyEmptied(): void {
+		$this->objectService->seed(
+			'identity-1',
+			['name' => 'Gemeente Voorbeeld', 'smimePrivateKey' => self::SECRET],
+			self::OWNER,
+			self::ORG
+		);
+
+		$result = $this->executor->migrateSchema(schema: 'sender_identity');
+
+		$this->assertSame(1, $result['migrated']);
+		$this->assertSame(0, $result['failed']);
+
+		$entity = $this->objectService->find(
+			id: 'identity-1',
+			register: 'integriq',
+			schema: 'sender_identity',
+			_render: false
+		);
+		$object = ($entity?->getObject() ?? []);
+
+		$this->assertNull($object['smimePrivateKey'], 'The inline key must be emptied after migration.');
+		$this->assertIsString($object['smimePrivateKeyRef'] ?? null);
+		$this->assertNotSame('', $object['smimePrivateKeyRef'], 'The reference must name the minted credential.');
+		// A bare credential id, NOT a nested placeholder: the property is declared
+		// `type: string` and SenderIdentityService hands it straight to the broker.
+		$this->assertIsNotArray($object['smimePrivateKeyRef']);
+
+	}//end testASeparateReferenceFieldIsWrittenAndTheKeyEmptied()
+
+	/**
+	 * VERIFY BEFORE NULL, on the second schema too: a mint that does not resolve
+	 * back byte-for-byte leaves the key exactly as it was and writes no reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function testAFailedVerifyLeavesTheSigningKeyIntact(): void {
+		$this->objectService->seed(
+			'identity-1',
+			['name' => 'Gemeente Voorbeeld', 'smimePrivateKey' => self::SECRET],
+			self::OWNER,
+			self::ORG
+		);
+		$this->broker->forceResolveReturn = 'A DIFFERENT SECRET';
+
+		$result = $this->executor->migrateSchema(schema: 'sender_identity');
+
+		$this->assertSame(0, $result['migrated']);
+		$this->assertSame(1, $result['failed']);
+
+		$entity = $this->objectService->find(
+			id: 'identity-1',
+			register: 'integriq',
+			schema: 'sender_identity',
+			_render: false
+		);
+		$object = ($entity?->getObject() ?? []);
+
+		$this->assertSame(self::SECRET, $object['smimePrivateKey'], 'A failed verify must leave the key intact.');
+		$this->assertArrayNotHasKey('smimePrivateKeyRef', $object, 'No reference may be written on a failed verify.');
+
+	}//end testAFailedVerifyLeavesTheSigningKeyIntact()
+
+	/**
+	 * A real run reaches EVERY migratable schema, not just `source`.
+	 *
+	 * The regression this guards: `migrateAll()` is hardcoded to
+	 * `InlineSecretMigrationPlanner::SCHEMA` ('source'), while the dry-run plans
+	 * every schema in `MIGRATABLE`. An operator running `--dry-run` saw
+	 * `wouldMigrate: 1` for `sender_identity` and a real run migrated 0, with no
+	 * error anywhere (integriq#2104 review 5264751700, blocker 2).
+	 *
+	 * Asserting on the OBJECT rather than on a call count, so the test fails if
+	 * the schema is reached but does nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function testARealRunMigratesEverySchemaNotJustSource(): void {
+		$this->objectService->seed(
+			'identity-1',
+			['name' => 'Gemeente Voorbeeld', 'smimePrivateKey' => self::SECRET],
+			self::OWNER,
+			self::ORG
+		);
+
+		$estate = $this->executor->migrateEverything();
+
+		$this->assertArrayHasKey(
+			'sender_identity',
+			$estate['schemas'],
+			'Every schema in MIGRATABLE must be driven by a real run.'
+		);
+		$this->assertSame(1, $estate['schemas']['sender_identity']['migrated']);
+
+		$entity = $this->objectService->find(
+			id: 'identity-1',
+			register: 'integriq',
+			schema: 'sender_identity',
+			_render: false
+		);
+		$object = ($entity?->getObject() ?? []);
+
+		$this->assertArrayHasKey(
+			'smimePrivateKeyRef',
+			$object,
+			'The reference must be written, or the real run did nothing.'
+		);
+		$this->assertSame('', (string)($object['smimePrivateKey'] ?? ''), 'The inline key must be nulled.');
+
+	}//end testARealRunMigratesEverySchemaNotJustSource()
 }//end class

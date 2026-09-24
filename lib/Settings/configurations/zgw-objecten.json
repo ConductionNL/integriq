@@ -1,0 +1,39 @@
+{
+  "slug": "zgw-objecten",
+  "title": "Objecten API",
+  "version": "1.0.0",
+  "description": "Arbitrary registered objects as the Objecten API holds them.",
+  "component": "Objecten API",
+  "resource": "object",
+  "auth": "jwt-zgw",
+  "apiVersion": "1.6",
+  "supportedApiVersions": [
+    "1.0",
+    "1.2",
+    "1.3",
+    "1.5",
+    "1.6"
+  ],
+  "translator": "ZgwResourceTranslatorInterface",
+  "synchronizations": [
+    "zgw-objecten-pull",
+    "zgw-objecten-push"
+  ],
+  "mappings": [
+    "zgw-object-to-object",
+    "object-to-zgw-object"
+  ],
+  "storageStrategy": "external",
+  "writesBack": true,
+  "target": {
+    "register": "",
+    "schema": "",
+    "chosenBy": "operator"
+  },
+  "source": {
+    "name": "Objecten API",
+    "type": "api",
+    "location": "",
+    "isEnabled": false
+  }
+}

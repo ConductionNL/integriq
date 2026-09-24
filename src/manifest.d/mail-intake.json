@@ -1,0 +1,79 @@
+{
+  "$comment": "ADR-037 manifest fragment (mail-intake-creates-cases). The backend writes `message` objects from a mailbox poll and from an imported .eml or .msg, and without a page they would be invisible in the product, which is exactly how stuf_message shipped dark. Columns are declared schema properties; the status colours map the schema's own enum members, so a value the schema cannot hold gets no colour rather than a wrong one. The entry joins the existing Connections group, because a mailbox is a source.",
+  "pages": [
+    {
+      "id": "MailMessages",
+      "route": "/messages/mail",
+      "type": "logs",
+      "title": "Mail intake",
+      "config": {
+        "register": "integriq",
+        "schema": "mail_message",
+        "sortKey": "receivedAt",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "receivedAt",
+            "label": "Received",
+            "sortable": true,
+            "width": "16%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "from",
+            "label": "From",
+            "sortable": true,
+            "width": "20%"
+          },
+          {
+            "key": "subject",
+            "label": "Subject",
+            "sortable": true,
+            "width": "28%"
+          },
+          {
+            "key": "detectedReference",
+            "label": "Reference",
+            "sortable": true,
+            "width": "16%"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "sortable": true,
+            "width": "12%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "received": "info",
+                "linked": "success",
+                "caseCreated": "success",
+                "unassigned": "warning"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "ConnectionsGroup",
+      "children": [
+        {
+          "id": "MailMessages",
+          "label": "Mail intake",
+          "icon": "EmailOutline",
+          "route": "MailMessages",
+          "order": 40
+        }
+      ]
+    }
+  ]
+}

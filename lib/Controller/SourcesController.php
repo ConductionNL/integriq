@@ -23,6 +23,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SourceTestService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -34,7 +35,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Controller for source-test and call-log endpoints.
@@ -59,7 +59,6 @@ class SourcesController extends Controller {
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
-	 * @param LoggerInterface $logger Logger for source-test failures.
 	 *
 	 * @return void
 	 */
@@ -70,7 +69,6 @@ class SourcesController extends Controller {
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
-		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -235,7 +233,7 @@ class SourcesController extends Controller {
 	 *
 	 * This method fires a test call to the source and returns the response.
 	 *
-	 * @param CallService $callService The CallService used to dispatch the outbound test call.
+	 * @param SourceTestService $sourceTestService Fires the outbound test call (shared with the connection health job).
 	 * @param string $id The UUID of the source to test.
 	 *
 	 * @return JSONResponse A JSON response containing the test results.
@@ -244,10 +242,11 @@ class SourcesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function test(CallService $callService, string $id): JSONResponse {
+	public function test(SourceTestService $sourceTestService, string $id): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
@@ -305,32 +304,20 @@ class SourcesController extends Controller {
 			}
 		}
 
-		// Fire the call with persistLog:false — an interactive connection test returns the
-		// live response but must NOT write a CallLog: persisting one runs a full OpenRegister
-		// object save plus a source-rate-limit mutation (test noise + latency). And any engine
-		// failure must surface as clean JSON, never an empty 200 the UI cannot interpret, so
-		// the whole call is wrapped: the Test-connection modal always gets a readable result.
-		try {
-			$callLog = $callService->call(
-				source: $source,
-				endpoint: $endpoint,
-				method: $method,
-				config: $config,
-				persistLog: false
-			);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				'Source test failed: ' . $e->getMessage(),
-				['app' => 'integriq', 'sourceId' => $id, 'exception' => $e]
-			);
+		// The call itself lives in SourceTestService, shared with the
+		// connection health job, so a probe and this button test a source the
+		// same way. It fires with persistLog:false and never throws: the
+		// Test-connection modal always gets a readable result.
+		$test = $sourceTestService->run(source: $source, endpoint: $endpoint, method: $method, config: $config);
+
+		if ($test['outcome'] === SourceTestService::OUTCOME_FAILED) {
 			return new JSONResponse(
-				data: ['error' => $this->l->t('The source test could not be completed: %s', [$e->getMessage()])],
+				data: ['error' => $this->l->t('The source test could not be completed: %s', [$test['error']])],
 				statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
 			);
 		}
 
-		$result = $callLog->getObject();
-		if (is_array($result) === false || isset($result['response']) === false) {
+		if ($test['outcome'] === SourceTestService::OUTCOME_NO_RESPONSE) {
 			// The engine returned without a usable response (e.g. an early-exit CallLog).
 			// Give the UI an explicit error rather than an empty/opaque body.
 			return new JSONResponse(
@@ -338,6 +325,8 @@ class SourcesController extends Controller {
 				statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
 			);
 		}
+
+		$result = $test['result'];
 
 		return new JSONResponse($result);
 	}//end test()

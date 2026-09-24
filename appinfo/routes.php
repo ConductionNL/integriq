@@ -58,6 +58,95 @@ return [
 		// signature (HMAC), not an NC session; see PeppolController::inbound().
 		['name' => 'peppol#inbound', 'url' => '/api/peppol/inbound', 'verb' => 'POST'],
 
+		// Directory and group synchronisation
+		// (openspec/changes/directory-and-group-sync). The admin surface below is
+		// session- and CSRF-protected; the SCIM endpoints that follow are not,
+		// because an identity system carries its own credential rather than a
+		// Nextcloud session — the credential check is the auth body of every SCIM
+		// route and runs before any account is read.
+		['name' => 'directorySync#connections', 'url' => '/api/directory/connections', 'verb' => 'GET'],
+		['name' => 'directorySync#run', 'url' => '/api/directory/connections/{id}/run', 'verb' => 'POST'],
+		['name' => 'directorySync#runs', 'url' => '/api/directory/runs', 'verb' => 'GET'],
+
+		// Mail intake (openspec/changes/mail-intake-creates-cases). Importing a
+		// saved message and polling a mailbox both write `message` objects that
+		// other apps act on, so both sit behind the ADR-023 action matrix
+		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
+		['name' => 'mailIntake#import', 'url' => '/api/mail-intake/import', 'verb' => 'POST'],
+		['name' => 'mailIntake#poll', 'url' => '/api/mail-intake/sources/{id}/poll', 'verb' => 'POST'],
+
+		// Intake channels beyond mail (openspec/changes/intake-channels-beyond-mail).
+		// The inbound leg is public and gated by a webhook signature verified over
+		// the raw bytes before the body is read, like peppol#inbound and
+		// notifyNl#inbound. The rule save and the reply are session calls behind
+		// the ADR-023 action matrix (`intake.rules`, `intake.reply`), because a
+		// rule decides what opens a case and a reply leaves the building.
+		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
+		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		// Inbound call events from a phone system. #[PublicPage]: a PBX posts
+		// here with no Nextcloud session, authenticated by the source's own
+		// binding, and every refusal is the same undifferentiated 401.
+		['name' => 'cti#events', 'url' => '/api/cti/{sourceId}/events', 'verb' => 'POST', 'requirements' => ['sourceId' => '[A-Za-z0-9\\-]+']],
+		// What digital post bindings this instance has, so the source form's
+		// provider picker is built from the registry rather than from a list
+		// written beside it and left to go stale.
+		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
+		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
+		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
+		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
+
+		// The outbound communication log (openspec/changes/outbound-communication-log).
+		// Listing the log is the declarative page over `outbound_message`; these are
+		// the acts on it. Reading a stored body sits behind its own action
+		// (`outbound.read-body`), distinct from seeing that a message was sent,
+		// because the text of a letter is a different question from the fact of it.
+		['name' => 'outboundLog#body', 'url' => '/api/outbound/messages/{id}/body', 'verb' => 'GET'],
+		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/{id}/retry', 'verb' => 'POST'],
+		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/retry', 'verb' => 'POST', 'postfix' => 'bulk'],
+		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
+		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
+
+		// Sender identity and deliverability
+		// (openspec/changes/outbound-sender-identity-and-deliverability). An
+		// identity is the face on an account Nextcloud Mail owns (D12), so these
+		// routes read and check identities, take a message back inside its hold
+		// window, and let a recipient stop a case's updates. The unsubscribe leg
+		// is public and needs no account: the person following it usually has
+		// neither, and asking them to make one is asking them to keep receiving
+		// the mail instead.
+		['name' => 'senderIdentity#index', 'url' => '/api/outbound/identities', 'verb' => 'GET'],
+		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
+		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
+		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
+
+		// The outbound call log, its replay and the verdicts
+		// (openspec/changes/outbound-call-delivery-and-replay). Reading a call
+		// means reading the request and the response it carried, so it sits
+		// behind its own action (`call-log.read`) rather than the listing's.
+		// Replaying and hand-firing share one action (`call-log.replay`),
+		// because they are the same act to the receiver. The verdict leg is
+		// public and signature-gated like every other inbound endpoint here.
+		['name' => 'callLog#show', 'url' => '/api/calls/{id}', 'verb' => 'GET'],
+		['name' => 'callLog#preview', 'url' => '/api/calls/{id}/preview', 'verb' => 'GET'],
+		['name' => 'callLog#replay', 'url' => '/api/calls/{id}/replay', 'verb' => 'POST'],
+		['name' => 'callLog#replay', 'url' => '/api/calls/replay', 'verb' => 'POST', 'postfix' => 'bulk'],
+		['name' => 'callLog#fire', 'url' => '/api/calls/fire', 'verb' => 'POST'],
+		['name' => 'verdict#inbound', 'url' => '/api/verdicts/inbound', 'verb' => 'POST'],
+		['name' => 'verdict#index', 'url' => '/api/verdicts', 'verb' => 'GET'],
+
+		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
+		// disables the Nextcloud account and never deletes it, so DELETE on a
+		// user is a deprovision, not a removal.
+		['name' => 'scim#listUsers', 'url' => '/api/scim/v2/Users', 'verb' => 'GET'],
+		['name' => 'scim#createUser', 'url' => '/api/scim/v2/Users', 'verb' => 'POST'],
+		['name' => 'scim#getUser', 'url' => '/api/scim/v2/Users/{id}', 'verb' => 'GET'],
+		['name' => 'scim#updateUser', 'url' => '/api/scim/v2/Users/{id}', 'verb' => 'PUT'],
+		['name' => 'scim#updateUser', 'url' => '/api/scim/v2/Users/{id}', 'verb' => 'PATCH', 'postfix' => 'patch'],
+		['name' => 'scim#deleteUser', 'url' => '/api/scim/v2/Users/{id}', 'verb' => 'DELETE'],
+		['name' => 'scim#listGroups', 'url' => '/api/scim/v2/Groups', 'verb' => 'GET'],
+		['name' => 'scim#updateGroup', 'url' => '/api/scim/v2/Groups/{id}', 'verb' => 'PATCH'],
+		['name' => 'scim#updateGroup', 'url' => '/api/scim/v2/Groups/{id}', 'verb' => 'PUT', 'postfix' => 'put'],
+
 		// Live payment providers connector (openspec/changes/live-payment-providers).
 		// Payment creation is an authenticated NC-session call (production binding
 		// for shillinq's MolliePaymentAdapterInterface::createPayment, a follow-up
@@ -149,7 +238,10 @@ return [
 		// Platform/Tool, never by an NC session; authentication is the
 		// protocol itself (signed id_token / RFC 7523 client assertion /
 		// previously-issued access token), enforced inside LtiController.
-		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'GET'],
+		// Both verbs are the OIDC third-party login initiation. A route name
+		// carries no verb, so without a 'postfix' this entry and the POST below
+		// register as one name and only the last one survives.
+		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'GET', 'postfix' => 'Get'],
 		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'POST'],
 		['name' => 'lti#launch', 'url' => '/api/lti/{deployment}/launch', 'verb' => 'POST'],
 		['name' => 'lti#token', 'url' => '/api/lti/token', 'verb' => 'POST'],
@@ -211,6 +303,14 @@ return [
 		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
 		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
 
+		// Vendor document generation (openspec/changes/document-generation-vendor-adapter).
+		// The operator's half only: read the vendor's own template list for a
+		// source, and activate a source that can actually render. Filinq asks
+		// for a render through the typed DocumentRenderRequestedEvent, not
+		// through a route, so there is no render endpoint here.
+		['name' => 'documentGeneration#templates', 'url' => '/api/document-generation/sources/{sourceId}/templates', 'verb' => 'GET'],
+		['name' => 'documentGeneration#activate', 'url' => '/api/document-generation/sources/{sourceId}/activate', 'verb' => 'POST'],
+
 		// ZGW Notificaties API subscriber/publisher (openspec/changes/archive/2026-07-15-notificaties-api-subscriber).
 		// Abonnement CRUD is authenticated NC-session (action RBAC), dedicated
 		// controller — NOT the generic OR object CRUD a CnIndexPage would drive,
@@ -223,6 +323,14 @@ return [
 		['name' => 'notificatiesSubscriber#update', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'PUT'],
 		['name' => 'notificatiesSubscriber#destroy', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'DELETE'],
 		['name' => 'notificatiesSubscriber#callback', 'url' => '/api/notificaties/callback/{abonnementId}', 'verb' => 'POST'],
+
+		// The government identity broker's exchange endpoint. A consuming app's
+		// SERVER redeems the one-time code it received through the browser
+		// redirect, proving who it is with a per-consumer shared secret. No NC
+		// session is involved, same shape as the notificaties callback above.
+		// Every refusal is one undifferentiated 401
+		// (openspec/specs/digid-eherkenning-auth-adapter/spec.md).
+		['name' => 'idpBroker#exchange', 'url' => '/api/idp/envelope/exchange', 'verb' => 'POST'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
@@ -404,6 +512,46 @@ return [
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
 		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
 
+		// registry-backed-field-source: openregister resolves a property that
+		// declares `x-openregister-property-source` through these routes, and the
+		// administration screen resyncs a list-shaped provider through the last
+		// one. A suggestion is never an answer, so suggest and resolve are two
+		// routes rather than one with a flag.
+		['name' => 'propertySource#index', 'url' => '/api/property-sources', 'verb' => 'GET'],
+		['name' => 'propertySource#suggest', 'url' => '/api/property-sources/{provider}/suggest', 'verb' => 'GET', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+		['name' => 'propertySource#resolve', 'url' => '/api/property-sources/{provider}/resolve', 'verb' => 'GET', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+		['name' => 'propertySource#resync', 'url' => '/api/property-sources/{provider}/resync', 'verb' => 'POST', 'requirements' => ['provider' => '[a-z0-9\\-]+']],
+
+		// records-owned-by-an-external-source: one read answers ownership for a
+		// consuming app, so nobody has to open a contract, a synchronisation and a
+		// source to render "the registry owns this". The delete is refused here
+		// when a source owns the record, and the override is a written statement.
+		['name' => 'ownership#show', 'url' => '/api/ownership/{id}', 'verb' => 'GET'],
+		['name' => 'ownership#destroy', 'url' => '/api/ownership/{id}', 'verb' => 'DELETE'],
+		['name' => 'ownership#validatePolicy', 'url' => '/api/ownership/validate-policy', 'verb' => 'POST'],
+
+		// migration-source-adapters: integriq reads an incumbent system or a
+		// delivered file and reports what a migration would bring. It writes
+		// nothing: OpenRegister's import engine owns the writing half.
+		['name' => 'migrationSources#index', 'url' => '/api/migration-sources', 'verb' => 'GET'],
+		['name' => 'migrationSources#preview', 'url' => '/api/migration-sources/preview', 'verb' => 'POST'],
+		['name' => 'migrationSources#validateMapping', 'url' => '/api/migration-sources/column-mapping/validate', 'verb' => 'POST'],
+
+		// statutory-gateways-and-frameworks: which laws this instance reaches,
+		// how far it claims to meet each one, where every endpoint sits, and
+		// which bridge a call behind a firewall travels over.
+		['name' => 'gateways#index', 'url' => '/api/gateways', 'verb' => 'GET'],
+		['name' => 'gateways#overview', 'url' => '/api/gateways/overview', 'verb' => 'GET'],
+		['name' => 'gateways#exportOverview', 'url' => '/api/gateways/overview/export', 'verb' => 'GET'],
+		['name' => 'gateways#testBinding', 'url' => '/api/gateways/registry-binding/test', 'verb' => 'POST'],
+		['name' => 'gateways#bridges', 'url' => '/api/gateways/bridges', 'verb' => 'GET'],
+		['name' => 'gateways#revokeBridge', 'url' => '/api/gateways/bridges/{id}/revoke', 'verb' => 'POST'],
+
+		// Connection registry (connection-registry D9): link a source to a
+		// declared connection and probe it at once. Listing goes through OR's
+		// generic /api/objects/integriq/app_connection (ADR-022).
+		['name' => 'connections#link', 'url' => '/api/connections/{id}/link', 'verb' => 'POST'],
+
 		// Configuration import/export UI endpoints (connector-catalog-ui) — a
 		// thin, routed wrapper over the existing, already-tested
 		// ConfigurationService::exportConfiguration()/importConfiguration().
@@ -444,6 +592,30 @@ return [
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])
+		// The environment allowlist: what an expression may read out of the
+		// process, and who said so. Administrator only, enforced by the
+		// #[AuthorizedAdminSetting] attribute AND again in each method body —
+		// this list is a code-execution-adjacent surface, so the guard must not
+		// live only in an attribute a hand-written route could miss.
+		// The VNG Objecten and Objecttypen APIs. Every route is #[PublicPage]
+		// and CSRF-free ON PURPOSE: the consumers are other suppliers' systems
+		// presenting "Authorization: Token <key>" with no Nextcloud session,
+		// which the requirement states outright. ObjectenTokenService is the
+		// guard and it runs FIRST on every method — a route here without that
+		// call is an unauthenticated read of a register.
+		['name' => 'objectenApi#objecttypes',       'url' => '/api/v2/objecttypes', 'verb' => 'GET'],
+		['name' => 'objectenApi#objecttype',        'url' => '/api/v2/objecttypes/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#objecttypeVersion', 'url' => '/api/v2/objecttypes/{uuid}/versions/{version}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+', 'version' => '[^/]+']],
+		['name' => 'objectenApi#objects',           'url' => '/api/v2/objects', 'verb' => 'GET'],
+		['name' => 'objectenApi#search',            'url' => '/api/v2/objects/search', 'verb' => 'POST'],
+		['name' => 'objectenApi#createObject',      'url' => '/api/v2/objects', 'verb' => 'POST'],
+		['name' => 'objectenApi#object',            'url' => '/api/v2/objects/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#replaceObject',     'url' => '/api/v2/objects/{uuid}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#updateObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'objectenApi#deleteObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
+		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
+		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
@@ -466,7 +638,14 @@ return [
 		['name' => 'genericPreferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
 
 		// UI page routes for SPA deep links
-		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET'],
+		// The 'postfix' goes on THIS entry, not on the catch-all further down.
+		// Both name the same controller action, so one of the two had to be
+		// renamed, and the catch-all is the one that already answers to
+		// 'integriq.ui.dashboard': info.xml navigation and
+		// Flow\SynchronizationLogActions both resolve that name, and the latter
+		// passes ['path' => ''], which only the catch-all takes as a path
+		// segment rather than as a query string.
+		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET', 'postfix' => 'Index'],
 		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
 		['name' => 'ui#sourcesLogs', 'url' => '/sources/logs', 'verb' => 'GET'],
 		['name' => 'ui#endpoints', 'url' => '/endpoints', 'verb' => 'GET'],

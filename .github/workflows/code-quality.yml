@@ -161,34 +161,35 @@ jobs:
       # need the matching runtime or `vendor/composer/platform_check.php` aborts
       # with `Composer dependencies require a PHP version ">= 8.3.0"`.
       php-version: "8.3"
-      # Set explicitly, because the shared workflow defaults to
-      # `["stable31", "stable32"]` and stable31 CANNOT WORK here. integriq
-      # declares <app>openregister</app> as a hard dependency, and openregister
-      # declares min-version="32". On NC31 the E2E job logs
-      #   App "Open Register" cannot be installed because it is not compatible
-      #   with this version of the server.
-      # then continues with a WARNING, so the run proceeds without its central
-      # dependency and fails ~70s later on missing tables — which reads like a
-      # migration fault rather than a missing app. Testing a version the app
-      # cannot support produces red that says nothing. See issue #1172.
+      # NO `nextcloud-test-refs` HERE, DELIBERATELY. Unset, the shared workflow
+      # derives the PHPUnit matrix from appinfo/info.xml, so the tested range and
+      # the declared range cannot disagree.
       #
-      # WHY THIS IS NOW stable34 AND NOT `["stable32", "stable33"]`. This PR
-      # moves the dev requirement to `nextcloud/ocp ^34`, so the stubs every
-      # static-analysis leg resolves against are NC34's. Running the suite
-      # against an older server would check the app under one set of API
-      # signatures and analyse it under another, and the two disagreeing is
-      # exactly the class of defect the analysers exist to find.
+      # THIS BUMP IS WHY IT HAD TO GO. The list read
+      # `["stable34", "stable32", "stable33"]` while info.xml now declares NC
+      # 32-35 — gate-65 rule 11, NC 35 advertised to the App Store and exercised
+      # by nothing. Appending "stable35" would clear the gate for this PR and
+      # re-arm the same trap for NC 36; worse, it would arm it on `development`
+      # rather than here, because the gate fires on the manifest/matrix
+      # disagreement for EVERY later PR, not just the one that introduced it.
+      # openregister#3777 took the same decision for the same reason.
       #
-      # ✅ THE NARROWING IS CLOSED, THE FIRST WAY. The previous revision of this
-      # comment recorded a deliberate trade: info.xml declared three server
-      # versions while the suite exercised one, leaving NC32 and NC33 unmeasured
-      # rather than known-broken. It named its own closure condition — "restoring
-      # the older refs alongside stable34 once ocp ^34 stubs are proven compatible
-      # with them" — and that condition is now met: portaliq runs stable32,
-      # stable33 and stable34 against `nextcloud/ocp ^34` and all six PHPUnit
-      # legs pass (run 31599055849). So the refs come back rather than info.xml's
-      # floor going up, and the two numbers agree again.
-      nextcloud-test-refs: '["stable34", "stable32", "stable33"]'
+      # WHAT THE OLD LIST WAS PROTECTING, AND WHY IT NO LONGER HAS TO. Its first
+      # entry mattered: E2E, newman and journeydoc-capture ran against
+      # `fromJSON(nextcloud-test-refs)[0]`, so stable34 had to lead to keep them
+      # off a server openregister cannot load — openregister declares
+      # min-version="32", and on NC31 the E2E job logged `App "Open Register"
+      # cannot be installed…`, continued with a WARNING, and failed ~70s later on
+      # missing tables (issue #1172). Those jobs now consume the workflow's
+      # `single-server` output — the numerically highest branch in the resolved
+      # set — so list order is inert and the floor is carried by info.xml's
+      # min-version="32" instead of by a hand-written array.
+      #
+      # THE stable35 LEG DEPENDS ON openregister. `additional-apps` below installs
+      # openregister from `development`, and the shared workflow aborts a job whose
+      # `occ app:enable` fails for an additional app. openregister#3777 (max-version
+      # 34 -> 35) is merged, so that leg can enable it; if openregister's declared
+      # ceiling ever lags this one again, this leg is where it will show.
       # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
       # the comment it replaced instructed: "Remove this line in the change
       # that wires those producers up, so the coverage requirement arrives with

@@ -34,6 +34,8 @@
           "event_subscription",
           "fsc_call",
           "fsc_service",
+          "intake_message",
+          "intake_routing_rule",
           "iwmo_ijw_message",
           "job",
           "job_log",
@@ -43,13 +45,19 @@
           "lti_platform",
           "lti_tool",
           "mapping",
+          "mapping_version",
+          "mail_message",
           "notificaties_abonnement",
+          "outbound_message",
           "openformulieren_form_mapping",
           "openformulieren_submission",
           "payment_intent",
           "peppol_transmission",
+          "recipient_key",
+          "recipient_opt_out",
           "ris_sync_record",
           "rule",
+          "sender_identity",
           "sms_message",
           "source",
           "stuf_message",
@@ -57,8 +65,10 @@
           "synchronization",
           "synchronization_contract",
           "synchronization_contract_log",
+          "verdict",
           "synchronization_log",
-          "zgw_version_translation_log"
+          "zgw_version_translation_log",
+          "digitalPostMessage"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -126,8 +136,10 @@
               "database",
               "file",
               "fsc",
+              "intake-channel",
               "iwmo-ijw",
               "kiss",
+              "mailbox",
               "open-formulieren",
               "payment",
               "peppol",
@@ -1016,7 +1028,8 @@
           },
           "protocol": {
             "type": "string",
-            "description": "Delivery protocol (HTTP, AMQP, MQTT, NATS)",
+            "description": "A label for your own reference. The delivery action decides where an event actually goes.",
+            "x-notes": "Nothing reads this field. It used to promise HTTP, AMQP, MQTT and NATS while only HTTP was implemented, which let an administrator configure AMQP, see it saved, and watch deliveries go out over HTTP. action.kind and action.brokerId are the authority.",
             "title": "Delivery Protocol"
           },
           "protocolSettings": {
@@ -1036,12 +1049,13 @@
           },
           "action": {
             "type": "object",
-            "description": "Delivery action dispatch. {kind: 'webhook'|'synchronization'|'job'|'notificaties', sink?, synchronizationId?, jobId?, sourceId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field: 100% backward compatible with subscriptions created before this field existed.",
+            "description": "How a matched event is delivered. Leave it empty to post to the sink above.",
+            "x-notes": "{kind: 'webhook'|'synchronization'|'job'|'notificaties'|'flow'|'mapping'|'broker', sink?, synchronizationId?, jobId?, sourceId?, flowId?, mappingId?, brokerId?, topic?, routingKey?, contentMode?, orderingKey?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field: 100% backward compatible with subscriptions created before this field existed.",
             "title": "Delivery Action",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["webhook", "synchronization", "job", "notificaties"],
+                "enum": ["webhook", "synchronization", "job", "notificaties", "flow", "mapping", "broker"],
                 "description": "Which delivery mechanism a matched event drives",
                 "title": "Action Kind"
               },
@@ -1049,6 +1063,37 @@
                 "type": "string",
                 "description": "Override sink URL for kind=webhook (falls back to the top-level `sink` when absent)",
                 "title": "Action Sink"
+              },
+              "brokerId": {
+                "type": "string",
+                "description": "Which broker publishes a matched event: rabbitmq, kafka-rest, cloudevents-http or log.",
+                "x-notes": "Required when action.kind is broker. An id nothing answers to is a configuration error, not a transient failure: it fails once and does not enter the retry loop.",
+                "title": "Broker ID"
+              },
+              "topic": {
+                "type": "string",
+                "description": "The exchange, topic or path the event is published into.",
+                "x-notes": "The exchange for RabbitMQ, the topic for Kafka, the path after the base URL for a generic CloudEvents sink.",
+                "title": "Broker Topic"
+              },
+              "routingKey": {
+                "type": "string",
+                "description": "The key the broker routes on. Leave it empty to route on the event type.",
+                "x-notes": "The event type is the fallback rather than the empty string: a broker that routes on a key and receives an empty one delivers to nothing.",
+                "title": "Broker Routing Key"
+              },
+              "contentMode": {
+                "type": "string",
+                "enum": ["structured", "binary"],
+                "description": "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.",
+                "x-notes": "The two content modes of the CloudEvents HTTP protocol binding. Binary carries every attribute as a ce- prefixed header. Defaults to structured.",
+                "title": "Broker Content Mode"
+              },
+              "orderingKey": {
+                "type": "string",
+                "description": "Keeps related events together, when the broker honours it.",
+                "x-notes": "Kafka keeps records with the same key in one partition, which is the only ordering guarantee it gives. RabbitMQ carries it as correlation_id.",
+                "title": "Broker Ordering Key"
               },
               "synchronizationId": {
                 "type": "string",
@@ -1061,6 +1106,16 @@
                 "format": "uuid",
                 "description": "Target job UUID for kind=job",
                 "title": "Job ID"
+              },
+              "flowId": {
+                "type": "string",
+                "description": "Target flow id for kind=flow: the OpenRegister flow a matched event starts",
+                "title": "Flow ID"
+              },
+              "mappingId": {
+                "type": "string",
+                "description": "Target mapping id for kind=mapping: the answer-to-target transform a matched event runs",
+                "title": "Mapping ID"
               },
               "sourceId": {
                 "type": "string",
@@ -1972,7 +2027,108 @@
             "description": "Canonical UUID",
             "title": "UUID"
           },
-          "statusCode": {
+                    "target": {
+            "type": "string",
+            "description": "What was called: the source, endpoint or subscription this call went to. The call log answers what happened to this partner today, where the trace answers what happened in this execution",
+            "title": "Target"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "The execution-trace id this call belongs to, so the two views thread together",
+            "title": "Trace ID"
+          },
+          "durationMs": {
+            "type": "integer",
+            "description": "How long the call took, in milliseconds",
+            "title": "Duration"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "triggered",
+              "replayed",
+              "hand-fired",
+              "dry-run"
+            ],
+            "description": "Whether the event triggered this call, an administrator replayed it, an administrator fired it by hand, or it was a dry run that sent nothing. To the receiver a replay and a hand-fired call are identical, which is deliberate",
+            "title": "Kind"
+          },
+          "firedBy": {
+            "type": "string",
+            "description": "The principal who replayed or hand-fired this call. Empty for a triggered one",
+            "title": "Fired By"
+          },
+          "retryPolicy": {
+            "type": "object",
+            "description": "The policy that governed this call's attempts, recorded so a call that stopped after two attempts can still be explained a month later when the policy has changed twice",
+            "title": "Retry Policy"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Every attempt on this call, including replays. A replay appends here and never overwrites the first attempt",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                },
+                "by": {
+                  "type": "string",
+                  "description": "Who, for a replay or a hand-fired call",
+                  "title": "By"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "triggered, replayed, hand-fired or dry-run",
+                  "title": "Kind"
+                },
+                "statusCode": {
+                  "type": "integer",
+                  "description": "What came back",
+                  "title": "Status Code"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "succeeded",
+                    "failed"
+                  ],
+                  "description": "How it ended",
+                  "title": "Outcome"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "What it said",
+                  "title": "Detail"
+                },
+                "mappingVersion": {
+                  "type": "string",
+                  "description": "The mapping version this attempt ran under",
+                  "title": "Mapping Version"
+                }
+              }
+            },
+            "title": "Attempts"
+          },
+          "mapping": {
+            "type": "string",
+            "description": "The mapping this call ran under",
+            "title": "Mapping"
+          },
+          "mappingVersion": {
+            "type": "string",
+            "description": "The version of that mapping at the time of the call. A replay offers this version and the current one, states which it used, and switches neither silently",
+            "title": "Mapping Version"
+          },
+          "deadLettered": {
+            "type": "boolean",
+            "description": "Whether this call exhausted its retries and landed in the dead-letter list, where it stays replayable",
+            "title": "Dead Lettered"
+          },
+        "statusCode": {
             "type": "integer",
             "description": "HTTP status code returned by the upstream",
             "title": "HTTP Status Code"
@@ -2268,6 +2424,58 @@
         },
         "appendOnly": true,
         "immutable": true
+      },
+      "verdict": {
+        "slug": "verdict",
+        "title": "Verdict",
+        "icon": "Gavel",
+        "version": "1.0.0",
+        "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
+        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "required": [
+          "objectRef",
+          "state",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "objectRef": {
+            "type": "string",
+            "description": "The object this verdict is about, as the owning app references it",
+            "title": "Object Reference"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "pending"
+            ],
+            "description": "What the checker concluded. Pending is a real answer: a checker that has not finished has not passed anything",
+            "title": "State"
+          },
+          "source": {
+            "type": "string",
+            "description": "Which checker said it",
+            "title": "Source"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why, in the checker's own words",
+            "title": "Reason"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the verdict arrived",
+            "title": "Received At"
+          },
+          "payload": {
+            "type": "object",
+            "description": "What the checker sent, for the app that wants more than the state",
+            "title": "Payload"
+          }
+        }
       },
       "synchronization_log": {
         "slug": "synchronization_log",
@@ -2685,6 +2893,95 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "recipient_key": {
+        "slug": "recipient_key",
+        "title": "Recipient Key",
+        "icon": "KeyOutline",
+        "version": "1.0.0",
+        "summary": "A public key known for one recipient address, used to encrypt what is sent there",
+        "description": "A Recipient Key is the public key material known for one address. Where a key is known the message is signed and encrypted; where none is known it is signed and not encrypted, and the log says which of the two happened, so nobody assumes an encryption they did not get. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "address",
+          "publicKey"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The recipient address this key belongs to",
+            "title": "Address"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "smime",
+              "pgp"
+            ],
+            "description": "Which kind of key material this is",
+            "title": "Type"
+          },
+          "publicKey": {
+            "type": "string",
+            "description": "The public key material, PEM for S/MIME",
+            "title": "Public Key"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "The fingerprint an administrator can check against",
+            "title": "Fingerprint"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was added",
+            "title": "Added At"
+          }
+        }
+      },
+      "recipient_opt_out": {
+        "slug": "recipient_opt_out",
+        "title": "Recipient Opt Out",
+        "icon": "EmailOffOutline",
+        "version": "1.0.0",
+        "summary": "One address that asked not to be written to, honoured by every sender in the product",
+        "description": "A Recipient Opt Out is held once per address per instance and checked before every send. A recipient who asked not to be written to should not have to ask each app separately, and the AVG duty is the sender's, not the app's. Protected categories, such as a besluit, are not stopped by an opt-out; a send that overrides one is recorded as having done so. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The address that opted out, lower case",
+            "title": "Address"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "case"
+            ],
+            "description": "Everything but the protected categories, or the updates on one case",
+            "title": "Scope"
+          },
+          "caseRef": {
+            "type": "string",
+            "description": "The case, for a case scoped opt-out",
+            "title": "Case Reference"
+          },
+          "source": {
+            "type": "string",
+            "description": "Who or what added it: the unsubscribe link, an administrator, a bounce",
+            "title": "Source"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was added",
+            "title": "Created At"
+          }
+        }
       },
       "ris_sync_record": {
         "slug": "ris_sync_record",
@@ -3521,6 +3818,441 @@
         "appendOnly": false,
         "immutable": false
       },
+      "mapping_version": {
+        "slug": "mapping_version",
+        "title": "Mapping Version",
+        "icon": "SourceBranch",
+        "version": "1.0.0",
+        "summary": "A snapshot of a mapping as it stood when a call ran under it",
+        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "required": [
+          "mapping",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "mapping": {
+            "type": "string",
+            "description": "The mapping this is a version of",
+            "title": "Mapping"
+          },
+          "version": {
+            "type": "string",
+            "description": "The version, as the mapping declared it at the time",
+            "title": "Version"
+          },
+          "snapshot": {
+            "type": "object",
+            "description": "The mapping exactly as it stood",
+            "title": "Snapshot"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the snapshot was taken",
+            "title": "Recorded At"
+          }
+        }
+      },
+      "mail_message": {
+        "slug": "mail_message",
+        "title": "Message",
+        "icon": "EmailOutline",
+        "version": "1.0.0",
+        "summary": "One mail message integriq received, from a mailbox poll or an imported .eml/.msg file",
+        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md.",
+        "required": [
+          "sourceId",
+          "messageId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "description": "The mailbox source this message arrived on",
+            "title": "Source ID"
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Per-source unique message id (RFC 5322 Message-ID, Graph id, or a sha256 of the bytes). A re-poll of the same id never creates a second object",
+            "title": "Message ID"
+          },
+          "from": {
+            "type": "string",
+            "description": "Sender address",
+            "title": "From"
+          },
+          "to": {
+            "type": "array",
+            "description": "Recipient addresses",
+            "items": {
+              "type": "string"
+            },
+            "title": "To"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject line, decoded from any RFC 2047 encoded words",
+            "title": "Subject"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the mail server received the message",
+            "title": "Received At"
+          },
+          "bodyText": {
+            "type": "string",
+            "description": "Plain-text body",
+            "title": "Body Text"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "HTML body, sanitized on the way in: script, style, iframe, object, embed and form elements, event handler attributes and script targets are removed",
+            "title": "Body HTML"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "Attachment metadata. The bytes live in integriq's file store or travel to filinq, never in this object",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fileRef": {
+                  "type": "string",
+                  "description": "Reference to the stored file, empty while the bytes are still in flight",
+                  "title": "File Reference"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Attachment file name",
+                  "title": "Name"
+                },
+                "mime": {
+                  "type": "string",
+                  "description": "Attachment media type",
+                  "title": "MIME Type"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Attachment size in bytes",
+                  "title": "Size"
+                }
+              }
+            },
+            "title": "Attachments"
+          },
+          "detectedReference": {
+            "type": "string",
+            "description": "The case reference the message names, read with the source's casePattern. Empty when the message names none, or when the configured pattern does not compile",
+            "title": "Detected Reference"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "received",
+              "linked",
+              "caseCreated",
+              "unassigned"
+            ],
+            "description": "Lifecycle: received (stored, offered to the owning app) -> linked (a listener linked it to an object it already had) | caseCreated (a listener created one) | unassigned (nobody claimed it; a decline lands here too)",
+            "title": "Status"
+          },
+          "outcome": {
+            "type": "string",
+            "description": "The raw outcome the listener set: linked, created or declined. Empty when nobody answered",
+            "title": "Outcome"
+          },
+          "linkedObject": {
+            "type": "string",
+            "description": "The object reference the listener answered with",
+            "title": "Linked Object"
+          },
+          "handedToIntake": {
+            "type": "integer",
+            "description": "How many attachments the document intake inbox took. Zero means they stayed in integriq",
+            "title": "Handed To Intake"
+          },
+          "warning": {
+            "type": "string",
+            "description": "A non-fatal parse warning. A file that could not be parsed is kept whole as a single attachment and says so here",
+            "title": "Warning"
+          }
+        }
+      },
+      "digitalPostMessage": {
+        "slug": "digitalPostMessage",
+        "title": "Digital Post Message",
+        "icon": "EmailOutline",
+        "version": "1.0.0",
+        "summary": "Audit and lifecycle record for one letter sent through a configured digital post source",
+        "description": "A Digital Post Message tracks one letter a fleet app asked integriq to send, from queued through the provider's acceptance to whatever became of it. A failed send keeps the message and its attachments, so the letter can be retried rather than rewritten. See openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002.",
+        "required": [
+          "recipient",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceApp": {
+            "type": "string",
+            "description": "Slug of the app that asked for this letter (e.g. dossiq)",
+            "title": "Source App"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Slug of the digital post source the letter was sent over",
+            "title": "Source"
+          },
+          "providerId": {
+            "type": "string",
+            "description": "The binding that handled this letter (log|berichtenbox|postex)",
+            "title": "Provider"
+          },
+          "recipient": {
+            "type": "string",
+            "description": "The recipient identity the provider addresses, for example a BSN for Berichtenbox",
+            "title": "Recipient"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The letter's subject",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "description": "The letter's body",
+            "title": "Body"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "References to the documents sent with the letter. They stay on a failed message, so it can be retried rather than rewritten",
+            "title": "Attachments",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Identifier of the document in the app that owns it",
+                  "title": "Id"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "File name as the recipient sees it",
+                  "title": "Name"
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Where the document is held. The letter carries a reference, not a copy",
+                  "title": "URL"
+                },
+                "mimeType": {
+                  "type": "string",
+                  "description": "Media type of the document",
+                  "title": "MIME type"
+                }
+              }
+            }
+          },
+          "requestedBy": {
+            "type": "string",
+            "description": "The acting user or system id that asked for this letter",
+            "title": "Requested By"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Caller-generated id, echoed on every status change",
+            "title": "Correlation ID"
+          },
+          "providerReference": {
+            "type": "string",
+            "description": "The provider's own reference, for example the logiusKenmerk. Empty until the provider accepts the send",
+            "title": "Provider Reference"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sent",
+              "delivered",
+              "read",
+              "failed"
+            ],
+            "description": "Lifecycle state: queued (created) -> sent (provider accepted) -> delivered -> read, or failed at any point",
+            "title": "Status"
+          },
+          "lastError": {
+            "type": "string",
+            "description": "The provider's reason, when the status is failed. Empty otherwise",
+            "title": "Last Error"
+          },
+          "simulated": {
+            "type": "boolean",
+            "description": "True when the binding that handled this letter sends nothing, so a delivered status can never be read as a letter that arrived",
+            "title": "Simulated"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp the message was tracked from",
+            "title": "Created"
+          }
+        }
+      },
+      "sender_identity": {
+        "slug": "sender_identity",
+        "title": "Sender Identity",
+        "icon": "AccountBoxOutline",
+        "version": "1.0.0",
+        "summary": "The face an outgoing message wears: address, signature, quoting, hold window and keys",
+        "description": "A Sender Identity is not an account. The account holds the credentials and the OAuth grant and Nextcloud Mail owns it (decision D12); the identity holds what the recipient sees. Many identities may share one account, and moving an identity to another account changes no policy. See openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md.",
+        "required": [
+          "displayName",
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "The name a recipient sees in the From line",
+            "title": "Display Name"
+          },
+          "address": {
+            "type": "string",
+            "description": "The address a message leaves under. A policy decision, not a deployment variable",
+            "title": "Address"
+          },
+          "replyTo": {
+            "type": "string",
+            "description": "Where replies go, when that is not the sending address",
+            "title": "Reply To"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Appended below the body, under the RFC 3676 separator",
+            "title": "Signature"
+          },
+          "mailAccount": {
+            "type": "string",
+            "description": "The Nextcloud Mail account this identity sends through. Referenced, never held here",
+            "title": "Mail Account"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Whether a message naming no identity leaves under this one",
+            "title": "Default"
+          },
+          "quotingLevel": {
+            "type": "string",
+            "enum": [
+              "none",
+              "last-message",
+              "full-history"
+            ],
+            "description": "How much case history the outgoing message quotes. The whole dossier quoted back to a bezwaarmaker is a disclosure, so none is a real option. Defaults to last-message",
+            "title": "Quoting Level"
+          },
+          "holdWindowSeconds": {
+            "type": "integer",
+            "description": "How long a message waits before the send is attempted, during which it can be withdrawn. Zero, the default, sends at once. Nothing is recalled after the window, because nothing can be",
+            "title": "Hold Window"
+          },
+          "signOutgoing": {
+            "type": "boolean",
+            "description": "Whether every message from this identity is signed",
+            "title": "Sign Outgoing"
+          },
+          "smimeCertificate": {
+            "type": "string",
+            "description": "The PEM certificate this identity signs with",
+            "title": "S/MIME certificate"
+          },
+          "smimePrivateKey": {
+            "type": "string",
+            "description": "The PEM private key this identity signs with. Write only; it is never read back over the API. Being replaced by the credential reference below.",
+            "title": "S/MIME private key"
+          },
+          "smimePrivateKeyRef": {
+            "type": "string",
+            "pattern": "^(?!.*-----BEGIN)[^\\s]*$",
+            "description": "Where this identity's signing key is kept in the credential vault. Shown so you can check which credential is used, and correct it when signing fails. Key material itself is refused here.",
+            "title": "S/MIME private key reference"
+          },
+          "dkimSelector": {
+            "type": "string",
+            "description": "The DKIM selector to check, default 'default'",
+            "title": "DKIM Selector"
+          },
+          "sendingHost": {
+            "type": "string",
+            "description": "The host mail actually leaves from, compared against the published SPF record",
+            "title": "Sending Host"
+          },
+          "noReply": {
+            "type": "object",
+            "description": "What happens to a reply to this address. A reply is never dropped: it is diverted or refused",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether this identity takes replies",
+                "title": "Enabled"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "divert",
+                  "refuse"
+                ],
+                "description": "Send it on, or answer the sender",
+                "title": "Mode"
+              },
+              "divertTo": {
+                "type": "string",
+                "description": "The mailbox a diverted reply lands in",
+                "title": "Divert To"
+              },
+              "writeInstead": {
+                "type": "string",
+                "description": "The address a refusal points the sender at",
+                "title": "Write Instead"
+              }
+            },
+            "title": "No Reply"
+          },
+          "alignment": {
+            "type": "object",
+            "description": "What this domain's DNS says, from the last check. A failing identity still sends, with the risk shown: blocking would break an instance the day a DNS change propagates slowly",
+            "properties": {
+              "domain": {
+                "type": "string",
+                "description": "The domain checked",
+                "title": "Domain"
+              },
+              "checkedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was checked",
+                "title": "Checked At"
+              },
+              "spf": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "SPF"
+              },
+              "dkim": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "DKIM"
+              },
+              "dmarc": {
+                "type": "object",
+                "description": "State, what is published and what to publish",
+                "title": "DMARC"
+              }
+            },
+            "title": "Alignment"
+          }
+        }
+      },
       "sms_message": {
         "slug": "sms_message",
         "title": "SMS Message",
@@ -3955,6 +4687,337 @@
         "appendOnly": false,
         "immutable": false
       },
+      "outbound_message": {
+        "slug": "outbound_message",
+        "title": "Outbound Message",
+        "icon": "SendOutline",
+        "version": "1.0.0",
+        "summary": "One message the product sent to a person, per recipient and per step",
+        "description": "An Outbound Message records what was sent, to whom, on which channel, and the point at which it failed. The record is per recipient because the failure is: three people on one ontvangstbevestiging can have three outcomes. The body is redacted before it is stored and readable only behind its own action (outbound.read-body), distinct from seeing that a message was sent. A forward is its own linked record, never an edit to the original, because Awb 2:3 asks for provability. See openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md.",
+        "required": [
+          "channel",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "subjectRef": {
+            "type": "string",
+            "description": "What the message is about, as the sending app references it. The log answers questions per subject, never by writing a field onto the sending app's record",
+            "title": "Subject Reference"
+          },
+          "channel": {
+            "type": "string",
+            "description": "The channel the message travelled on, which also decides what can be reported about it afterwards",
+            "title": "Channel"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The subject line",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "description": "The rendered body as it left, redacted before the write per execution-trace REQ-003. Readable only with the outbound.read-body action",
+            "title": "Body"
+          },
+          "context": {
+            "type": "object",
+            "description": "The render context, redacted before the write",
+            "title": "Context"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "Which app asked for the send",
+            "title": "Source App"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Correlation id carried from the sending app",
+            "title": "Correlation ID"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "Attachment metadata; the bytes are the transport's business",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "File name",
+                  "title": "Name"
+                },
+                "mime": {
+                  "type": "string",
+                  "description": "Media type",
+                  "title": "MIME Type"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Size in bytes",
+                  "title": "Size"
+                },
+                "fileRef": {
+                  "type": "string",
+                  "description": "Reference to the stored file",
+                  "title": "File Reference"
+                }
+              }
+            },
+            "title": "Attachments"
+          },
+          "recipients": {
+            "type": "array",
+            "description": "One row per recipient, each with its own status, states and failure. An external address with no Nextcloud account is a recipient like any other",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "description": "Where the copy went",
+                  "title": "Address"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Who that is",
+                  "title": "Name"
+                },
+                "accountId": {
+                  "type": "string",
+                  "description": "The Nextcloud account, empty for an external address",
+                  "title": "Account"
+                },
+                "external": {
+                  "type": "boolean",
+                  "description": "Whether this recipient has no account here. No account is ever created for one",
+                  "title": "External"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "sent",
+                    "failed"
+                  ],
+                  "description": "pending (not handed over yet) | sent (the transport accepted this copy, which is not the same as delivered) | failed",
+                  "title": "Status"
+                },
+                "deliveryState": {
+                  "type": "string",
+                  "enum": [
+                    "reported",
+                    "not reported",
+                    "unsupported by this channel"
+                  ],
+                  "description": "reported (the transport said so) | not reported (it can and has not) | unsupported by this channel. Never inferred from the absence of a failure",
+                  "title": "Delivery State"
+                },
+                "readState": {
+                  "type": "string",
+                  "enum": [
+                    "reported",
+                    "not reported",
+                    "unsupported by this channel"
+                  ],
+                  "description": "The same three states for a read. A read is never inferred from a delivery",
+                  "title": "Read State"
+                },
+                "failedStep": {
+                  "type": "string",
+                  "description": "The step this recipient's copy failed in",
+                  "title": "Failed Step"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "What the transport said",
+                  "title": "Reason"
+                },
+                "reference": {
+                  "type": "string",
+                  "description": "The transport's own reference for this copy",
+                  "title": "Reference"
+                },
+                "handedOverAt": {
+                  "type": "string",
+                  "description": "When the transport accepted this copy",
+                  "title": "Handed Over At"
+                },
+                "deliveredAt": {
+                  "type": "string",
+                  "description": "When the delivery was reported",
+                  "title": "Delivered At"
+                },
+                "readAt": {
+                  "type": "string",
+                  "description": "When the read was reported",
+                  "title": "Read At"
+                },
+                "deliveryDetail": {
+                  "type": "string",
+                  "description": "What the delivery receipt said",
+                  "title": "Delivery Detail"
+                },
+                "readDetail": {
+                  "type": "string",
+                  "description": "What the read receipt said",
+                  "title": "Read Detail"
+                }
+              }
+            },
+            "title": "Recipients"
+          },
+          "steps": {
+            "type": "array",
+            "description": "The ordered steps the send went through, so a failure names where it happened",
+            "items": {
+              "type": "object",
+              "properties": {
+                "step": {
+                  "type": "string",
+                  "description": "Which step",
+                  "title": "Step"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "succeeded",
+                    "failed"
+                  ],
+                  "description": "How it ended",
+                  "title": "Outcome"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "What it said",
+                  "title": "Detail"
+                }
+              }
+            },
+            "title": "Steps"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Every retry, audited with who asked for it. A retry appends here rather than replacing what happened the first time",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                },
+                "by": {
+                  "type": "string",
+                  "description": "Who retried",
+                  "title": "By"
+                },
+                "recipients": {
+                  "type": "array",
+                  "description": "Which recipients were retried",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Recipients"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "succeeded",
+                    "failed"
+                  ],
+                  "description": "How it ended",
+                  "title": "Outcome"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "What happened",
+                  "title": "Detail"
+                }
+              }
+            },
+            "title": "Attempts"
+          },
+          "retryCount": {
+            "type": "integer",
+            "description": "How many retries this message has had",
+            "title": "Retry Count"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "sent",
+              "partially failed",
+              "failed"
+            ],
+            "description": "What the recipient rows add up to: pending (not every recipient is settled) | sent (every copy accepted) | partially failed (some accepted, some not) | failed (none left)",
+            "title": "Status"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the record was opened, which is before the first transport call",
+            "title": "Created At"
+          },
+          "bodyReads": {
+            "type": "array",
+            "description": "Every read of the stored body. Reading what a letter said is itself an act worth recording",
+            "items": {
+              "type": "object",
+              "properties": {
+                "by": {
+                  "type": "string",
+                  "description": "Who read it",
+                  "title": "By"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When",
+                  "title": "At"
+                }
+              }
+            },
+            "title": "Body Reads"
+          },
+          "forwardedFrom": {
+            "type": "string",
+            "description": "The message this one forwards, read from this end of the link",
+            "title": "Forwarded From"
+          },
+          "forwardedBy": {
+            "type": "string",
+            "description": "Who forwarded it",
+            "title": "Forwarded By"
+          },
+          "forwardedTo": {
+            "type": "array",
+            "description": "The forwards made from this message, read from the other end of the link. The rest of this record is left exactly as it was, because it is the evidence",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "description": "The forward record",
+                  "title": "Message"
+                },
+                "by": {
+                  "type": "string",
+                  "description": "Who forwarded it",
+                  "title": "By"
+                }
+              }
+            },
+            "title": "Forwarded To"
+          }
+        }
+      },
       "openformulieren_form_mapping": {
         "slug": "openformulieren_form_mapping",
         "title": "Open Formulieren Form Mapping",
@@ -4314,6 +5377,269 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "intake_message": {
+        "slug": "intake_message",
+        "title": "Intake Message",
+        "icon": "InboxArrowDown",
+        "version": "1.0.0",
+        "summary": "One message an intake channel delivered, in the normalised shape every consumer reads",
+        "description": "An Intake Message is one message delivered by a channel adapter, normalised so no consuming app contains channel-specific code. A routing rule decides which case type it opens; a message matching no rule is held with its reason rather than dropped or opened as a default case. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
+        "required": [
+          "channelId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "The channel that delivered the message",
+            "title": "Channel"
+          },
+          "externalId": {
+            "type": "string",
+            "description": "The channel's own id for the message, unique per channel",
+            "title": "External ID"
+          },
+          "correspondent": {
+            "type": "object",
+            "description": "Who wrote: whatever of id, name, address and phone the channel knows. A reply goes back here",
+            "title": "Correspondent"
+          },
+          "text": {
+            "type": "string",
+            "description": "The message text",
+            "title": "Text"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "Attachment metadata; the bytes travel with the hand-off, not in this object",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "File name",
+                  "title": "Name"
+                },
+                "mime": {
+                  "type": "string",
+                  "description": "Media type",
+                  "title": "MIME Type"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Size in bytes",
+                  "title": "Size"
+                }
+              }
+            },
+            "title": "Attachments"
+          },
+          "media": {
+            "type": "array",
+            "description": "Ordered media metadata, kept as files rather than pasted into the text",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "File name",
+                  "title": "Name"
+                },
+                "mime": {
+                  "type": "string",
+                  "description": "Media type",
+                  "title": "MIME Type"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Size in bytes",
+                  "title": "Size"
+                }
+              }
+            },
+            "title": "Media"
+          },
+          "location": {
+            "type": "object",
+            "description": "Latitude, longitude and address, written only when the channel supplied them. A channel with no location writes none",
+            "title": "Location"
+          },
+          "fields": {
+            "type": "object",
+            "description": "Structured fields the channel supplied, which a routing rule reads as fields.<name>",
+            "title": "Fields"
+          },
+          "rawPayload": {
+            "type": "object",
+            "description": "What the channel actually sent, kept so a channel can be debugged without a second integration",
+            "title": "Raw Payload"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the channel delivered the message",
+            "title": "Received At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "received",
+              "routed",
+              "held",
+              "failed",
+              "rejected"
+            ],
+            "description": "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel)",
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the message is held, failed or rejected. Empty on a routed message",
+            "title": "Reason"
+          },
+          "ruleName": {
+            "type": "string",
+            "description": "The routing rule that matched",
+            "title": "Rule"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The case type the rule names",
+            "title": "Target Case Type"
+          },
+          "targetRef": {
+            "type": "string",
+            "description": "The object the owning app opened for this message",
+            "title": "Target Reference"
+          },
+          "replies": {
+            "type": "array",
+            "description": "Every reply attempt, sent or not: an attempt nobody can see failing is an attempt everybody assumes arrived",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "sent, failed, or unsupported by this channel",
+                  "title": "Status"
+                },
+                "channelId": {
+                  "type": "string",
+                  "description": "The channel the reply was meant for",
+                  "title": "Channel"
+                },
+                "reference": {
+                  "type": "string",
+                  "description": "The channel's own id for the sent reply",
+                  "title": "Reference"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "Why it failed, or why the channel cannot reply",
+                  "title": "Detail"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "What was sent",
+                  "title": "Text"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the attempt was made",
+                  "title": "At"
+                }
+              }
+            },
+            "title": "Replies"
+          }
+        }
+      },
+      "intake_routing_rule": {
+        "slug": "intake_routing_rule",
+        "title": "Intake Routing Rule",
+        "icon": "SignDirection",
+        "version": "1.0.0",
+        "summary": "Maps a channel and an optional condition onto the case type a message opens",
+        "description": "An Intake Routing Rule is the configuration that makes routing changeable without a release: a channel, an optional condition over the normalised message, the case type to open, and the mapping from message to target fields. A mapping naming a field the case type does not have is refused when the rule is saved, not at every submission afterwards. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
+        "required": [
+          "name",
+          "channelId",
+          "targetSchema"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "What this rule is called on screen and on the messages it routed",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Why this rule exists",
+            "title": "Description"
+          },
+          "channelId": {
+            "type": "string",
+            "description": "The channel this rule applies to",
+            "title": "Channel"
+          },
+          "condition": {
+            "type": "object",
+            "description": "Optional condition over the normalised message. A rule with no condition matches every message on its channel",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "A source expression: text, channelId, externalId, location, receivedAt, correspondent.<key> or fields.<key>",
+                "title": "Field"
+              },
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "equals",
+                  "contains",
+                  "exists",
+                  "in"
+                ],
+                "description": "How to compare",
+                "title": "Operator"
+              },
+              "value": {
+                "type": "string",
+                "description": "What to compare against",
+                "title": "Value"
+              }
+            },
+            "title": "Condition"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The case type a matching message opens. Integriq owns no case type and checks this one exists when the rule is saved",
+            "title": "Target Case Type"
+          },
+          "fieldMapping": {
+            "type": "object",
+            "description": "Target field to source expression. Every target field must exist on the case type",
+            "title": "Field Mapping"
+          },
+          "locationField": {
+            "type": "string",
+            "description": "The target's location field, written only when the message carries a location",
+            "title": "Location Field"
+          },
+          "order": {
+            "type": "integer",
+            "description": "Evaluation order on the channel; the first matching rule wins",
+            "title": "Order"
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "description": "Whether this rule is evaluated",
+            "title": "Enabled"
+          }
+        }
       },
       "iwmo_ijw_message": {
         "x-wire-standard": "iWMO / iJW (iStandaarden) — berichttype and kenmerk are the standard's own field names. MUST NOT be internationalised.",

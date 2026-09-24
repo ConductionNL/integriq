@@ -6,6 +6,7 @@
 			:manifest="manifest"
 			:customComponents="customComponents"
 			:registry="registry"
+			:formatters="formatters"
 			:pageTypes="pageTypes"
 			appId="integriq"
 			:translate="translateForApp"
@@ -55,6 +56,15 @@ export default {
 		},
 
 		pageTypes: {
+			type: Object,
+			default: () => ({}),
+		},
+
+		/**
+		 * Cell-formatter registry: formatter id to `(value, row, property) => string`.
+		 * Resolves `pages[].config.columns[].formatter` ids (see src/formatters.js).
+		 */
+		formatters: {
 			type: Object,
 			default: () => ({}),
 		},

@@ -97,6 +97,15 @@ class RegisterDescriptorTest extends TestCase {
 		'EventSubscription' => 'event_subscription',
 		'Job' => 'job',
 		'Mapping' => 'mapping',
+		'Message' => 'mail_message',
+		'IntakeMessage' => 'intake_message',
+		'IntakeRoutingRule' => 'intake_routing_rule',
+		'OutboundMessage' => 'outbound_message',
+		'SenderIdentity' => 'sender_identity',
+		'RecipientOptOut' => 'recipient_opt_out',
+		'RecipientKey' => 'recipient_key',
+		'MappingVersion' => 'mapping_version',
+		'Verdict' => 'verdict',
 		'Rule' => 'rule',
 		'Synchronization' => 'synchronization',
 		'SynchronizationContract' => 'synchronization_contract',
@@ -155,6 +164,13 @@ class RegisterDescriptorTest extends TestCase {
 		// SyncItemDeadLetterService and SyncDeadLetterController both address it
 		// by that slug, so the capture path was inert in production.
 		'SyncItemDeadLetter' => 'sync_item_dead_letter',
+		// 🔴 AND AGAIN, WITH THE DIGITAL POST RECORD. `digitalPostMessage`
+		// shipped in components.schemas and in neither this list nor
+		// register.openconnector.schemas[], the same shape as the dead letter
+		// above. DigitalPostService::SCHEMA addresses it by that slug and its
+		// write is wrapped in a catch that logs a warning, so every record of
+		// what was posted was dropped without anything erroring.
+		'DigitalPostMessage' => 'digitalPostMessage',
 	];
 
 	/**

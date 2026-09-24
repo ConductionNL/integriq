@@ -59,11 +59,44 @@ class RenderBoundarySimulatingObjectService extends OrObjectService {
 	public array $stored = [];
 
 	/**
+	 * The organisation stamped on every entity this double returns.
+	 *
+	 * `getOrganisation()` is a magic method via `Entity::__call`, so callers that
+	 * resolve through the broker need it set on the returned entity rather than
+	 * mocked (see #1015).
+	 *
+	 * @var string
+	 */
+	public string $organisation = 'org-1';
+
+	/**
 	 * Constructor — deliberately does not call the stub's constructor.
 	 */
 	public function __construct() {
 
 	}//end __construct()
+
+	/**
+	 * Every field the render boundary strips, across every migratable schema.
+	 *
+	 * `SECRET_FIELDS` alone is the `source` answer. Since the migration grew a
+	 * schema map (`MIGRATABLE`), a double that stripped only `source`'s fields
+	 * would let a `sender_identity` test pass while production stripped
+	 * `smimePrivateKey` — which is exactly the gap integriq#2104 review
+	 * 5264751700 blocker 1 found. The union keeps this double honest as the map
+	 * grows: add a schema to `MIGRATABLE` and its fields are stripped here too.
+	 *
+	 * @return array<int, string> The write-only field names, de-duplicated.
+	 */
+	public static function writeOnlyFields(): array {
+		$fields = InlineSecretMigrationPlanner::SECRET_FIELDS;
+		foreach (InlineSecretMigrationPlanner::MIGRATABLE as $definition) {
+			$fields = array_merge($fields, ($definition['fields'] ?? []));
+		}
+
+		return array_values(array_unique($fields));
+
+	}//end writeOnlyFields()
 
 	/**
 	 * Reproduce ObjectService::find() including the render boundary.
@@ -97,7 +130,7 @@ class RenderBoundarySimulatingObjectService extends OrObjectService {
 		if ($_render === true) {
 			// openregister#389/#429: the writeOnly strip is a HARD render-boundary
 			// rule. It is NOT gated on $_rbac and NOT gated on SystemOperationContext.
-			foreach (InlineSecretMigrationPlanner::SECRET_FIELDS as $writeOnlyField) {
+			foreach (self::writeOnlyFields() as $writeOnlyField) {
 				unset($data[$writeOnlyField]);
 			}
 		}
@@ -105,6 +138,8 @@ class RenderBoundarySimulatingObjectService extends OrObjectService {
 		$entity = new ObjectEntity();
 		$entity->setUuid((string)$id);
 		$entity->setObject($data);
+		// Positional arg: Entity::__call's setter uses $args[0].
+		$entity->setOrganisation($this->organisation);
 		return $entity;
 	}//end find()
 
@@ -123,7 +158,7 @@ class RenderBoundarySimulatingObjectService extends OrObjectService {
 			$entity = new ObjectEntity();
 			$entity->setUuid((string)$uuid);
 			// Identity listing goes through the render boundary too.
-			foreach (InlineSecretMigrationPlanner::SECRET_FIELDS as $writeOnlyField) {
+			foreach (self::writeOnlyFields() as $writeOnlyField) {
 				unset($data[$writeOnlyField]);
 			}
 

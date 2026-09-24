@@ -90,6 +90,19 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  *
+ * ExcessiveClassComplexity is suppressed rather than worked around. The class
+ * measured 48 before `migrateEverything()` and 50 after, and phpmd's fleet
+ * threshold fires at 50 — so the budget was already spent and any new method
+ * would have tripped it. The alternatives were all worse than saying so here:
+ * a `phpmd.baseline.xml` entry hides a NEW violation among 386 inherited ones,
+ * raising the threshold in `phpmd.xml` diverges this repo from the shared
+ * `conduction/hydra-gates` ruleset for one class, and moving the estate-wide
+ * driver into a class of its own breaks the symmetry with
+ * `InlineSecretMigrationPlanner::planEverything()`, which is what makes the
+ * dry-run/real-run pairing readable. Splitting this class is worth doing and is
+ * not worth doing inside a review-fix PR.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
  * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
  */
 class InlineSecretMigrationExecutor {
@@ -140,6 +153,20 @@ class InlineSecretMigrationExecutor {
 	private ?object $broker = null;
 
 	/**
+	 * The schema the current run is migrating.
+	 *
+	 * Run-scoped state rather than a tenth parameter threaded through
+	 * migrateSource → migrateField → mintVerifyNull → applyMigration.
+	 * mintVerifyNull already takes nine arguments; an extra one would trip
+	 * phpmd's parameter-list rule and would be passed unchanged the whole way
+	 * down. Set once at the top of a run, read only by readRawEntity() and
+	 * applyMigration(), and never mutated inside one.
+	 *
+	 * @var string
+	 */
+	private string $currentSchema = InlineSecretMigrationPlanner::SCHEMA;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OrObjectService $objectService The OpenRegister object service (raw reads + source saves).
@@ -172,42 +199,135 @@ class InlineSecretMigrationExecutor {
 	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	public function migrateAll(int $limit = 1000): array {
-		$broker = $this->assertBrokerCapable();
+		// Delegates to the generic run so the mint → verify → write → null loop
+		// exists once. The `source` key names are preserved because
+		// RemoveMigratedSourceSecretFields and the OCC command read them.
+		$run = $this->migrateSchema(schema: InlineSecretMigrationPlanner::SCHEMA, limit: $limit);
 
-		$prePlan = $this->planner->planAll(limit: $limit);
-
-		$sources = [];
-		$totals = [
-			'migrated' => 0,
-			'failed' => 0,
-			'blocked' => 0,
-			'skipped' => 0,
+		return [
+			'sources' => $run['objects'],
+			'totalSources' => $run['totalObjects'],
+			'migrated' => $run['migrated'],
+			'failed' => $run['failed'],
+			'blocked' => $run['blocked'],
+			'skipped' => $run['skipped'],
+			'postRun' => $run['postRun'],
 		];
 
-		foreach ((array)$prePlan['sources'] as $planned) {
+	}//end migrateAll()
+
+	/**
+	 * Perform a REAL run across EVERY migratable schema.
+	 *
+	 * The counterpart of {@see InlineSecretMigrationPlanner::planEverything()},
+	 * and the reason it exists: the dry-run planned every schema in `MIGRATABLE`
+	 * while the real run called {@see migrateAll()}, which is hardcoded to
+	 * `source`. `sender_identity` was therefore reported as `wouldMigrate: N` by
+	 * `--dry-run` and migrated 0 by the real run — a divergence an operator sees
+	 * as a migration that silently does nothing (integriq#2104 review
+	 * 5264751700, blocker 2).
+	 *
+	 * `migrateAll()` stays as the `source` entry point, and its `postRun.clean`
+	 * is still the SOURCE-only Phase D gate that
+	 * {@see \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields} reads —
+	 * folding another schema into that number would block source's property
+	 * removal on an unrelated schema's state. The per-schema runs are returned
+	 * separately for exactly that reason.
+	 *
+	 * @param integer $limit Maximum objects to inspect per schema.
+	 *
+	 * @return array{schemas: array<string,mixed>, migrated: int, failed: int,
+	 *         blocked: int, skipped: int} The per-schema runs and their totals.
+	 *         Deliberately NO `clean` key: `migrateSchema()` already returns one
+	 *         inside `postRun`, meaning the post-run RE-PLAN verdict (nothing
+	 *         pending AND nothing needing manual review). A second `clean` here
+	 *         would mean something narrower — no failures and no blocks, while a
+	 *         manual-review field counts as `skipped` — and nothing read it
+	 *         (integriq#2104 review 5266971176).
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function migrateEverything(int $limit = 1000): array {
+		$schemas  = [];
+		$migrated = 0;
+		$failed   = 0;
+		$blocked  = 0;
+		$skipped  = 0;
+
+		foreach (array_keys(InlineSecretMigrationPlanner::MIGRATABLE) as $schema) {
+			$run = $this->migrateSchema(schema: $schema, limit: $limit);
+			$schemas[$schema] = $run;
+			$migrated += (int)$run['migrated'];
+			$failed   += (int)$run['failed'];
+			$blocked  += (int)$run['blocked'];
+			$skipped  += (int)$run['skipped'];
+		}
+
+		return [
+			'schemas'  => $schemas,
+			'migrated' => $migrated,
+			'failed'   => $failed,
+			'blocked'  => $blocked,
+			'skipped'  => $skipped,
+		];
+
+	}//end migrateEverything()
+
+	/**
+	 * Migrate one schema's estate.
+	 *
+	 * The generic form of {@see migrateAll()}, which stays as the `source` entry
+	 * point because its `postRun.clean` is the SOURCE Phase D gate that
+	 * {@see \OCA\Integriq\Repair\RemoveMigratedSourceSecretFields} reads. Folding
+	 * another schema into that number would block source's property removal on an
+	 * unrelated schema's state.
+	 *
+	 * Every safety rule of migrateAll() applies unchanged: mint → verify
+	 * byte-for-byte → write the reference → null the inline value, per object per
+	 * field, with per-object isolation and no batch transaction.
+	 *
+	 * @param string $schema The schema slug to migrate.
+	 * @param int $limit Maximum objects to inspect.
+	 *
+	 * @return array{schema: string, objects: array<int, array<string, mixed>>, totalObjects: int,
+	 *     migrated: int, failed: int, blocked: int, skipped: int, postRun: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 */
+	public function migrateSchema(string $schema, int $limit = 1000): array {
+		$broker = $this->assertBrokerCapable();
+		$this->currentSchema = $schema;
+
+		$prePlan = $this->planner->planSchema(schema: $schema, limit: $limit);
+
+		$objects = [];
+		$totals = ['migrated' => 0, 'failed' => 0, 'blocked' => 0, 'skipped' => 0];
+
+		foreach ((array)$prePlan['objects'] as $planned) {
 			$uuid = (string)($planned['uuid'] ?? '');
 			$name = (string)($planned['name'] ?? $uuid);
 			if ($uuid === '') {
 				continue;
 			}
 
-			// Per-source isolation: a single source's failure must never abort the batch.
+			// Per-object isolation: one object's failure never aborts the batch.
 			$result = $this->migrateSource(broker: $broker, uuid: $uuid, name: $name);
 
-			$sources[] = $result['record'];
+			$objects[] = $result['record'];
 			$totals['migrated'] += $result['migrated'];
 			$totals['failed'] += $result['failed'];
 			$totals['blocked'] += $result['blocked'];
 			$totals['skipped'] += $result['skipped'];
 		}//end foreach
 
-		// Re-plan from FRESH raw reads so the Phase D gate reflects the true
-		// post-run state — a field we could not migrate keeps it closed.
-		$postPlan = $this->planner->planAll(limit: $limit);
+		// Re-plan from FRESH raw reads so the gate reflects the true post-run
+		// state — a field we could not migrate keeps it closed.
+		$postPlan = $this->planner->planSchema(schema: $schema, limit: $limit);
 
 		return [
-			'sources' => $sources,
-			'totalSources' => (int)$prePlan['totalSources'],
+			'schema' => $schema,
+			'objects' => $objects,
+			'totalObjects' => (int)$prePlan['totalObjects'],
 			'migrated' => $totals['migrated'],
 			'failed' => $totals['failed'],
 			'blocked' => $totals['blocked'],
@@ -218,7 +338,8 @@ class InlineSecretMigrationExecutor {
 				'manual' => (int)$postPlan['needsReview'],
 			],
 		];
-	}//end migrateAll()
+
+	}//end migrateSchema()
 
 	/**
 	 * Migrate one source. Reads the ENTITY raw (for organisation + owner, which
@@ -257,7 +378,7 @@ class InlineSecretMigrationExecutor {
 
 		// Re-classify from the fresh raw read: this is what makes the executor
 		// idempotent (a concurrently-migrated field now reads as a placeholder).
-		$freshPlan = $this->planner->planSource(uuid: $uuid, name: $name, rawData: $rawData);
+		$freshPlan = $this->planner->planSource(uuid: $uuid, name: $name, rawData: $rawData, schema: $this->currentSchema);
 
 		$working = $rawData;
 		$outcomes = [];
@@ -507,6 +628,25 @@ class InlineSecretMigrationExecutor {
 	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function applyMigration(array $data, string $field, string $credentialId): array {
+		// A schema may declare a SEPARATE, readable property to hold the
+		// reference instead of writing a placeholder over the secret in place.
+		// `sender_identity` does: the key becomes write-only while the reference
+		// stays readable, because a signing failure nobody can diagnose is how an
+		// operator ends up pasting the private key somewhere else.
+		$referenceField = $this->planner->referenceFieldFor(
+			schema: $this->currentSchema,
+			field: $field
+		);
+		if ($referenceField !== null) {
+			// The bare credential id, not a nested placeholder: the property is
+			// declared `type: string` and SenderIdentityService passes it straight
+			// to the broker's resolveInjectable().
+			$data[$referenceField] = $credentialId;
+			$data[$field] = null;
+
+			return $data;
+		}
+
 		$configuration = ($data['configuration'] ?? []);
 		if (is_array($configuration) === false) {
 			$configuration = [];
@@ -549,7 +689,7 @@ class InlineSecretMigrationExecutor {
 			$entity = $this->objectService->find(
 				id: $uuid,
 				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: InlineSecretMigrationPlanner::SCHEMA,
+				schema: $this->currentSchema,
 				_rbac: false,
 				_multitenancy: false,
 				_render: false
