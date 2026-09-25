@@ -1425,6 +1425,33 @@ class SynchronizationService
 	}
 
 	/**
+	 * Whether the OpenRegister ObjectService accepts `permanent` on deleteObject().
+	 *
+	 * OpenRegister 1.1.5 does not; 1.1.5-woo-1 and 2.x do. Read from the
+	 * signature instead of the version, so a backport that carries the
+	 * parameter under another version number is still recognised.
+	 *
+	 * @param object $objectService The OpenRegister ObjectService from the container.
+	 *
+	 * @return bool True when deleteObject() has a `permanent` parameter.
+	 */
+	private function objectServiceSupportsPermanentDelete(object $objectService): bool
+	{
+		try {
+			foreach ((new \ReflectionMethod($objectService, 'deleteObject'))->getParameters() as $parameter) {
+				if ($parameter->getName() === 'permanent') {
+					return true;
+				}
+			}
+		} catch (\ReflectionException) {
+			return false;
+		}
+
+		return false;
+
+	}//end objectServiceSupportsPermanentDelete()
+
+	/**
 	 * Updates or deletes a target object in the Open Register system.
 	 *
 	 * This method updates a target object associated with a synchronization contract
@@ -1495,7 +1522,22 @@ class SynchronizationService
 				$synchronizationContract->setTargetLastAction($synchronizationContract->getTargetId() ? 'update' : 'create');
 				break;
 			case 'delete':
-				$deleted = $objectService->deleteObject(uuid: $synchronizationContract->getTargetId());
+				// Hard delete, per team decision (WOO-557): this path only runs once
+				// the source object has already disappeared, so there is nothing left
+				// to recover a soft-deleted target FOR — a tombstoned row would just
+				// linger, holding the identifier, forever.
+				//
+				// `permanent` exists on OpenRegister since 1.1.5-woo-1 (and on 2.x).
+				// Against an older OpenRegister the named argument is a fatal
+				// "Unknown named parameter", so fall back to the soft delete there
+				// and say so in the log: a WOO environment runs ONE build per app,
+				// and the OpenRegister hotfix may land after this one.
+				if ($this->objectServiceSupportsPermanentDelete($objectService) === true) {
+					$deleted = $objectService->deleteObject(uuid: $synchronizationContract->getTargetId(), permanent: true);
+				} else {
+					$this->logger->warning('OpenRegister has no permanent delete; falling back to a soft delete for the synced target', ['targetId' => $synchronizationContract->getTargetId()]);
+					$deleted = $objectService->deleteObject(uuid: $synchronizationContract->getTargetId());
+				}
 				if ($deleted === false) {
 					$this->logger->warning('OpenRegister reported the object was not deleted', ['targetId' => $synchronizationContract->getTargetId()]);
 				}
