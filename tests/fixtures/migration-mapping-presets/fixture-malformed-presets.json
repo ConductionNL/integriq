@@ -1,0 +1,34 @@
+{
+  "$comment": "Malformed-input fixture for MigrationMappingPresetRegistryTest — exercises the constructor's defensive skip branches (a non-array row, and a row with no id) alongside one valid preset, so the registry's tolerance for a partially-malformed seed file is asserted rather than assumed.",
+  "presets": [
+    "not-an-array-row",
+    {
+      "sourceSystem": "Missing Id Vendor",
+      "description": "This row has no id and must be skipped.",
+      "mapping": {
+        "name": "missing-id",
+        "kind": "pupil",
+        "columns": {"Col": "field"},
+        "identifierColumn": "Col",
+        "version": 1
+      }
+    },
+    {
+      "id": "no-mapping-vendor",
+      "sourceSystem": "No Mapping Vendor",
+      "description": "This row has no mapping object and must be skipped."
+    },
+    {
+      "id": "valid-preset",
+      "sourceSystem": "Valid Vendor",
+      "description": "The one well-formed row.",
+      "mapping": {
+        "name": "valid-preset",
+        "kind": "pupil",
+        "columns": {"Col": "field"},
+        "identifierColumn": "Col",
+        "version": 1
+      }
+    }
+  ]
+}

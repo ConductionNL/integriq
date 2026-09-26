@@ -1,0 +1,77 @@
+{
+  "$comment": "Named-incumbent column-mapping presets for the migration-source-adapters engine (FileMigrationSource + ColumnMapping). Column names are representative -- no vendor in market-intelligence learniq round 1 published a raw pupil-export column-header sample for ParnasSys, ESIS, Magister or Somtoday. Correct against a real captured export once a design-partner school supplies one; the seam is this one file, not the engine (see openspec/changes/integriq-adapter-rostering-imports/specs/migration-mapping-presets/spec.md).",
+  "presets": [
+    {
+      "id": "parnassys-export",
+      "sourceSystem": "ParnasSys",
+      "description": "Preset column mapping for a ParnasSys pupil export.",
+      "mapping": {
+        "name": "parnassys-export",
+        "kind": "pupil",
+        "columns": {
+          "Leerlingnummer": "externalId",
+          "Achternaam": "lastName",
+          "Voorletters": "initials",
+          "Geboortedatum": "dateOfBirth",
+          "Groep": "groupLabel"
+        },
+        "identifierColumn": "Leerlingnummer",
+        "version": 1
+      }
+    },
+    {
+      "id": "esis-export",
+      "sourceSystem": "ESIS",
+      "description": "Preset column mapping for an ESIS pupil export.",
+      "mapping": {
+        "name": "esis-export",
+        "kind": "pupil",
+        "columns": {
+          "LeerlingNr": "externalId",
+          "Achternaam": "lastName",
+          "Voorletters": "initials",
+          "Geboortedatum": "dateOfBirth",
+          "Groepscode": "groupLabel"
+        },
+        "identifierColumn": "LeerlingNr",
+        "version": 1
+      }
+    },
+    {
+      "id": "magister-export",
+      "sourceSystem": "Magister",
+      "description": "Preset column mapping for a Magister pupil export.",
+      "mapping": {
+        "name": "magister-export",
+        "kind": "pupil",
+        "columns": {
+          "StamNr": "externalId",
+          "Achternaam": "lastName",
+          "Voorletters": "initials",
+          "Geboortedatum": "dateOfBirth",
+          "Klas": "groupLabel"
+        },
+        "identifierColumn": "StamNr",
+        "version": 1
+      }
+    },
+    {
+      "id": "somtoday-export",
+      "sourceSystem": "Somtoday",
+      "description": "Preset column mapping for a Somtoday pupil export.",
+      "mapping": {
+        "name": "somtoday-export",
+        "kind": "pupil",
+        "columns": {
+          "Leerlingnummer": "externalId",
+          "Achternaam": "lastName",
+          "Voorletters": "initials",
+          "Geboortedatum": "dateOfBirth",
+          "Stamgroep": "groupLabel"
+        },
+        "identifierColumn": "Leerlingnummer",
+        "version": 1
+      }
+    }
+  ]
+}
