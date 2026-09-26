@@ -290,8 +290,8 @@
 			"name": "Frank!Framework",
 			"vendor": "WeAreFrank!",
 			"columnAddedOn": "2026-09-26",
-			"evidenceGrade": "not-read",
-			"readHow": "wave 5 source read at v10.2.0 in progress on 2026-09-26: cells whose evidence starts 'source read at' come from it, the rest still rest on the earlier reading",
+			"evidenceGrade": "docs-only",
+			"readHow": "source read at v10.2.0 (github.com/frankframework/frankframework, shallow clone at the tag) on 2026-09-26: every row rated from the code with path:line evidence, configuration XML elements, the Frank!Console and its management API counted as surfaces; not driven, no lab",
 			"sources": {
 				"docs": "https://frank-manual.readthedocs.io/",
 				"sourceRepo": {
@@ -336,7 +336,10 @@
 					"tenders": "no tender in the intelligence database names the Frank!Framework or WeAreFrank! (search 2026-09-26)"
 				},
 				"issueTrackerNote": "the repo uses component labels (Larva, Ladybug, HTTP, JDBC) and 'Needs Triage', not a feature label"
-			}
+			},
+			"readOn": "2026-09-26",
+			"unknownReason": "not settled by the source read at v10.2.0; each unknown cell says why",
+			"version": "v10.2.0"
 		}
 	],
 	"areas": [
@@ -1590,7 +1593,7 @@
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Webhook/description.ts:78 authenticationProperty defaults to 'none', and :75 notes that inbound trigger URLs are public by design; packages/nodes-base/nodes/Webhook/Webhook.node.ts:237 still allows an IP allowlist; reached on: Webhook node 'Authentication: None'",
-				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/rest/ApiListener.java:120 authenticationMethod defaults to NONE, and core/src/main/java/org/frankframework/http/rest/ApiListenerServlet.java:269 skips the authorization check in that case; servlet access roles are set per servlet in security/src/main/java/org/frankframework/lifecycle/servlets/AuthenticationType.java:28 NONE; reached on: configuration XML ApiListener authenticationMethod=NONE; property servlet.ApiListenerServlet.authenticators"
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/rest/ApiListener.java:120 authenticationMethod defaults to NONE, and core/src/main/java/org/frankframework/http/rest/ApiListenerServlet.java:269 skips the authorization check in that case; servlet access roles are set per servlet in security/src/main/java/org/frankframework/lifecycle/servlets/AuthenticationType.java:28 NONE; reached on: configuration XML ApiListener authenticationMethod=NONE; property servlet.ApiListenerServlet.authenticator (security/src/main/java/org/frankframework/lifecycle/servlets/ServletConfiguration.java:144)"
 			}
 		},
 		{
@@ -1766,7 +1769,7 @@
 				"apisix": "docs-only: intelligence DB competitor_features id 3017 \"Authentication: JWT, key-auth, LDAP, OpenID Connect plugins\" (2026-03-28)",
 				"wso2": "docs-only: intelligence DB competitor_features id 11143 \"OAuth2/OIDC: Built-in OAuth2, JWT, and API key support\" (2026-04-06)",
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/token-exchange/token-exchange.config.ts:6 N8N_TOKEN_EXCHANGE_ENABLED and :24 N8N_TOKEN_EXCHANGE_TRUSTED_KEYS let POST /auth/oauth/token swap a JWT from an outside identity provider for an n8n token (subject_token at token-exchange.schemas.ts:137), licence-gated by LICENSE_FEATURES.TOKEN_EXCHANGE (token-exchange.module.ts:9); for a single webhook, jwtAuth (packages/nodes-base/nodes/Webhook/utils.ts:347) checks an IdP-signed token only against a pasted static key, no JWKS or issuer check; reached on: env N8N_TOKEN_EXCHANGE_* (enterprise licence), Webhook JWT Auth",
-				"frank": "source read at v10.2.0, not driven: security/src/main/java/org/frankframework/lifecycle/servlets/OAuth2Authenticator.java:84 logs callers in through an outside OpenID Connect provider and security/src/main/java/org/frankframework/lifecycle/servlets/BearerOnlyAuthenticator.java:67 accepts that provider's bearer tokens on a servlet; ApiListener JWT mode (ApiListener.java:581 jwksURL) validates the same tokens per endpoint; reached on: properties servlet.<name>.authenticators with type OAUTH2 or BEARER_ONLY; ApiListener jwksURL"
+				"frank": "source read at v10.2.0, not driven: security/src/main/java/org/frankframework/lifecycle/servlets/OAuth2Authenticator.java:84 logs callers in through an outside OpenID Connect provider and security/src/main/java/org/frankframework/lifecycle/servlets/BearerOnlyAuthenticator.java:67 accepts that provider's bearer tokens on a servlet; ApiListener JWT mode (ApiListener.java:581 jwksURL) validates the same tokens per endpoint; reached on: properties application.security.http.authenticators.<name>.type=OAUTH2 or BEARER_ONLY and servlet.<servlet>.authenticator; ApiListener jwksURL"
 			}
 		},
 		{
@@ -3711,12 +3714,16 @@
 			"siblingRows": [
 				"dossiq:12.22"
 			],
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Webhook/Webhook.node.ts:135 accepts a structured-mode CloudEvent as a JSON POST, with headers (binary mode ce-* headers) and body in the output for later nodes; there is no CloudEvents schema check (grep -rli specversion over packages/nodes-base finds nothing), acting on the event is a workflow; reached on: Webhook trigger",
+				"frank": "source read at v10.2.0, not driven: events arrive on generic listeners, core/src/main/java/org/frankframework/http/rest/ApiListener.java:100 for webhooks, messaging/src/main/java/org/frankframework/extensions/kafka/KafkaListener.java:69 and messaging/src/main/java/org/frankframework/messaging/amqp/AmqpListener.java:58 for brokers; nothing reads the CloudEvents envelope (grep -rliE 'cloudevent' over the tree finds nothing), so its attributes are parsed with JsonPath in the pipeline you write; reached on: configuration XML ApiListener/KafkaListener plus JsonPathPipe"
+			}
 		},
 		{
 			"id": "evt-subscribe",
@@ -3734,14 +3741,16 @@
 			"providerHow": "read-from-code",
 			"feature": "events-cloudevents",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "yes",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
-				"tyk": "docs-only: intelligence DB competitor_features id 3007 \"Webhook Events: Event-driven webhooks for API lifecycle events\" (2026-03-28)"
+				"tyk": "docs-only: intelligence DB competitor_features id 3007 \"Webhook Events: Event-driven webhooks for API lifecycle events\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/log-streaming.ee/log-streaming.controller.ts:58 POST /eventbus/destination lets an admin register a webhook destination (packages/cli/src/modules/log-streaming.ee/destinations/message-event-bus-destination-webhook.ee.ts) for n8n's own audit and workflow events, licence-gated (feat:logStreaming); an outside system cannot register itself, and record changes are not among the events; reached on: Settings > Log streaming (/settings/log-streaming), enterprise licence",
+				"frank": "source read at v10.2.0, not driven: no subscription registry: grep -rliE 'subscription|subscriber' over java finds only broker consumer settings (messaging/src/main/java/org/frankframework/messaging/amqp/AmqpListener.java:58); webhook targets are fixed HttpSender urls in configuration, an outside system cannot register one"
 			}
 		},
 		{
@@ -3763,12 +3772,16 @@
 			"siblingRows": [
 				"dossiq:Q6.20"
 			],
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Crypto/v2/CryptoV2.node.ts:131 'hmac' computes a signature a builder can put in a header of the outgoing HTTP Request; the log-streaming webhook destination (packages/cli/src/modules/log-streaming.ee/destinations/message-event-bus-destination-webhook.ee.ts:239) only sends static headers or a credential, no signature; reached on: Crypto node plus HTTP Request header",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/pipes/HashPipe.java:78 computes an HmacSHA256 signature over the message (algorithms listed at :67 to :69) that core/src/main/java/org/frankframework/http/AbstractHttpSender.java:560 headersParams sends as a header; core/src/main/java/org/frankframework/pipes/SignaturePipe.java:59 signs with a private key instead; reached on: configuration XML HashPipe algorithm=HmacSHA256 then HttpSender headersParams"
+			}
 		},
 		{
 			"id": "evt-unsigned-visible",
@@ -3787,12 +3800,16 @@
 			"providerHow": "read-from-code",
 			"feature": "webhook-signing",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: there is no signing setting on any outgoing delivery (see evt-sign), so nothing lists unsigned subscriptions; grep -rli 'unsigned' over packages/cli/src/modules/log-streaming.ee finds nothing",
+				"frank": "source read at v10.2.0, not driven: there are no subscriptions to list (see evt-subscribe), and no view reports which outgoing calls carry a signature; grep -rniE 'unsigned' over console java and ts finds no such report"
+			}
 		},
 		{
 			"id": "evt-filter",
@@ -3810,12 +3827,16 @@
 			"providerHow": "read-from-code",
 			"feature": "events-cloudevents",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/log-streaming.ee/destinations/message-event-bus-destination.ee.ts:39 subscribedEvents limits a log-streaming destination to chosen event names from GET /eventbus/eventnames (log-streaming.controller.ts:41); this filters n8n's own events by name only, and there are no record-change subscriptions to filter; reached on: Settings > Log streaming destination event picker, enterprise licence",
+				"frank": "source read at v10.2.0, not driven: filtering is done at the broker consumer, messaging/src/main/java/org/frankframework/jms/JMSFacade.java:894 setMessageSelector for JMS and topic choice on KafkaListener (messaging/src/main/java/org/frankframework/extensions/kafka/KafkaListener.java:69), or in the pipeline with core/src/main/java/org/frankframework/pipes/IfPipe.java:141; there is no subscriber-facing event filter; reached on: configuration XML JmsListener messageSelector, KafkaListener topics, IfPipe"
+			}
 		},
 		{
 			"id": "evt-retry",
@@ -3833,14 +3854,15 @@
 			"providerHow": "read-from-code",
 			"feature": "events-cloudevents",
 			"featureConfidence": "high",
-			"n8n": "yes",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 3039 \"Error Handling: Built-in error handling with retry and fallback paths\" (2026-03-28)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/core/src/execution-engine/workflow-execute.ts:1807 retryOnFail retries a delivery step up to 5 times (:1813) with a fixed waitBetweenTries of at most 5000 ms (:1814), not growing pauses; packages/cli/src/eventbus/message-event-bus/message-event-bus.ts:154 trySendingUnsent re-emits unsent log events; exponential backoff exists only for polling triggers (packages/cli/src/workflows/triggers/poll-backoff-policy.ts:110); reached on: node Settings 'Retry On Fail'",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/pipes/MessageSendingPipe.java:918 setMaxRetries retries a failed delivery and doubles the pause each time (:720, capped by retryMaxInterval at :243); core/src/main/java/org/frankframework/receivers/Receiver.java:2299 setMaxBackoffDelay applies exponential backoff to redelivered messages; reached on: configuration XML SenderPipe maxRetries retryMinInterval retryMaxInterval; Receiver maxBackoffDelay"
 			}
 		},
 		{
@@ -3859,12 +3881,16 @@
 			"providerHow": "read-from-code",
 			"feature": "dead-letter-replay",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/executions/executions.controller.ts:129 POST /executions/:id/retry lets a failed execution be re-run with one click from the Executions list, using its original input; there is no separate dead-letter queue of failed deliveries, a failed run is the unit; reached on: Executions list 'Retry' (with original or current workflow)",
+				"frank": "source read at v10.2.0, not driven: failed messages land in the receiver's error store (core/src/main/java/org/frankframework/receivers/Receiver.java:2066 setErrorStorage); console/backend/src/main/java/org/frankframework/console/controllers/TransactionalStorage.java:159 resends one with a click and :174 resends a selection; reached on: console page Adapter Status, receiver error store (Resend buttons)"
+			}
 		},
 		{
 			"id": "evt-broker",
@@ -3886,14 +3912,16 @@
 			"siblingRows": [
 				"dossiq:12.14"
 			],
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"mulesoft": "docs-only: intelligence DB competitor_features id 3064 \"MQ Messaging: Cloud messaging service for async communication\" (2026-03-28)"
+				"mulesoft": "docs-only: intelligence DB competitor_features id 3064 \"MQ Messaging: Cloud messaging service for async communication\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Kafka/Kafka.node.ts, packages/nodes-base/nodes/RabbitMQ/RabbitMQ.node.ts, packages/nodes-base/nodes/Amqp/Amqp.node.ts, packages/nodes-base/nodes/MQTT/Mqtt.node.ts and packages/nodes-base/nodes/Aws/SQS/AwsSqs.node.ts:19 publish messages, each with a matching trigger node to consume; reached on: workflow editor, Kafka, RabbitMQ, AMQP, MQTT and AWS SQS nodes",
+				"frank": "source read at v10.2.0, not driven: messaging/src/main/java/org/frankframework/extensions/kafka/KafkaSender.java:50 publishes to Kafka, messaging/src/main/java/org/frankframework/messaging/amqp/AmqpSender.java:71 to AMQP 1.0 brokers such as RabbitMQ (Qpid protonj2 client, messaging/pom.xml:53), messaging/src/main/java/org/frankframework/jms/JmsSender.java:75 to JMS and MqttSender to MQTT; reached on: configuration XML <KafkaSender topic=...>, <AmqpSender>, <JmsSender>"
 			}
 		},
 		{
@@ -3912,12 +3940,16 @@
 			"providerHow": "read-from-code",
 			"feature": "notificaties-api-connector",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox and 35 more Dutch terms (list and counts in _lane/r-n8n/nl-grep.txt) finds no real hit; the few matches are false positives such as 'stuff', 'fsck' and WooCommerce. A generic Webhook node could receive a ZGW notification POST, but nothing registers an abonnement with a Notificaties API or understands its payload",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'zgw|notificaties' over the whole tree, test data excluded, finds only a random-text file (test/src/main/configurations/MainConfig/CreateLargeFile/input_small.txt); no ZGW Notificaties client or API among the listeners and senders"
+			}
 		},
 		{
 			"id": "evt-zgw-publish",
@@ -3936,12 +3968,16 @@
 			"providerHow": "read-from-code",
 			"feature": "notificaties-api-connector",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox and 35 more Dutch terms (list and counts in _lane/r-n8n/nl-grep.txt) finds no real hit; the few matches are false positives such as 'stuff', 'fsck' and WooCommerce; there is no Notificaties API surface (kanalen, abonnementen) among the controllers in packages/cli/src/controllers or packages/cli/src/public-api/v1/handlers",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'zgw|notificaties' over the whole tree, test data excluded, finds only a random-text file (test/src/main/configurations/MainConfig/CreateLargeFile/input_small.txt); no ZGW Notificaties client or API among the listeners and senders; Frank offers no Notificaties API endpoint"
+			}
 		},
 		{
 			"id": "evt-no-loop",
@@ -3959,12 +3995,16 @@
 			"providerHow": "read-from-code",
 			"feature": "events-cloudevents",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'recursion|infinite loop|circular' over packages/cli/src/workflows, packages/core/src/execution-engine and packages/nodes-base/nodes/ExecuteWorkflow only finds import-order comments (packages/cli/src/workflows/workflow.service.ts:304); nothing marks an event n8n caused so its own write does not re-trigger the flow, the builder has to filter it out",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'maxDepth|stackoverflow|infinite|hop.?count' over core/src/main/java/org/frankframework/senders and core finds no loop guard for events; an adapter that publishes to a topic it also listens on (messaging/src/main/java/org/frankframework/extensions/kafka/KafkaListener.java:69) will keep triggering itself unless you add a check"
+			}
 		},
 		{
 			"id": "evt-nc-hub",
@@ -3982,12 +4022,16 @@
 			"providerHow": "read-from-code",
 			"feature": "nextcloud-event-triggers",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/NextCloud holds only the action node NextCloud.node.ts (file, folder and user resources at :83-91), no trigger, and grep -rli nextcloud over the other folders of packages/nodes-base/nodes finds nothing. Nextcloud events reach n8n only if a Nextcloud-side app posts them to a Webhook node",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'nextcloud' over the whole tree finds nothing; no Nextcloud event source among the listeners"
+			}
 		},
 		{
 			"id": "evt-pull",
@@ -4005,12 +4049,16 @@
 			"providerHow": "read-from-code",
 			"feature": "events-cloudevents",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: n8n has no event feed of its own that subscribers poll (no feed or cursor route among packages/cli/src/controllers or packages/cli/src/public-api/v1/handlers); a flow can publish into a queue with packages/nodes-base/nodes/RabbitMQ/RabbitMQ.node.ts or packages/nodes-base/nodes/Aws/SQS/AwsSqs.node.ts:19 and the subscriber pulls from that broker when ready; reached on: broker nodes, pull happens at the broker",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/jdbc/MessageStoreSender.java:76 queues events in a database store that a consumer drains at its own pace with core/src/main/java/org/frankframework/jdbc/MessageStoreListener.java:84, and Kafka or JMS consumers pull by nature; for an outside subscriber there is no event feed endpoint, you would expose the store through an ApiListener you build; reached on: configuration XML MessageStoreSender/MessageStoreListener; broker topics"
+			}
 		},
 		{
 			"id": "evt-async-apis",
@@ -4028,14 +4076,16 @@
 			"providerHow": "read-from-code",
 			"feature": "api-product-gateway",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
-				"mulesoft": "docs-only: intelligence DB competitor_features id 3064 \"MQ Messaging: Cloud messaging service for async communication\" (2026-03-28)"
+				"mulesoft": "docs-only: intelligence DB competitor_features id 3064 \"MQ Messaging: Cloud messaging service for async communication\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rli asyncapi over packages/cli/src and packages/nodes-base finds nothing; Kafka topics are reached as plain nodes (packages/nodes-base/nodes/Kafka/Kafka.node.ts) with no policy layer, and REST endpoints have no shared policy set to extend (see gw-ratelimit)",
+				"frank": "source read at v10.2.0, not driven: topics are only the target of a sender or listener (messaging/src/main/java/org/frankframework/extensions/kafka/KafkaSender.java:50); there is no catalogue or policy layer over them: grep -rliE 'asyncapi' over the tree finds nothing"
 			}
 		},
 		{
@@ -4054,14 +4104,15 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "high",
-			"n8n": "yes",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 3041 \"Execution History: Complete execution logs with replay capability\" (2026-03-28)"
+				"n8n": "source read at n8n@2.40.7, not driven: every webhook-triggered or scheduled run is stored as an execution (packages/cli/src/executions/executions.controller.ts:34, filter fields in packages/cli/src/executions/execution.service.ts:80-95) with each node's output, so inbound calls and outbound results can be looked up; there is no log of each HTTP call as such with request, status and duration, and saving successful or manual runs can be switched off per workflow; reached on: Executions list and execution detail view",
+				"frank": "source read at v10.2.0, not driven: ladybug/debugger/src/main/java/org/frankframework/ladybug/LadybugReportGenerator.java:84 records every inbound pipeline run and ladybug/debugger/src/main/java/org/frankframework/ladybug/IbisDebuggerAdvice.java:220 and :264 every outbound sender call; the Ladybug viewer itself is the org.wearefrank ladybug-backend dependency pinned at ladybug/pom.xml:22 and bundled in the release, embedded in the console at console/frontend/src/main/frontend/src/app/app.routes.ts:441; reached on: console page Ladybug (/testing/ladybug)"
 			}
 		},
 		{
@@ -4081,12 +4132,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/executions/execution.service.ts:83 status, :88 workflowId, :90 startedAfter and :91 startedBefore filters (plus metadata :89 and annotation tags :92, the latter two behind feat:advancedExecutionFilters) drive packages/frontend/editor-ui/src/features/execution/executions/components/ExecutionsFilter.vue; the workflow stands in for source or endpoint; reached on: Executions list filter panel; public API /api/v1/executions?status=&workflowId=",
+				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/TransactionalStorage.java:132 browses a message log or error store filtered by type, host, messageId, correlationId, label, comment and start and end date; Ladybug reports are also filterable in its viewer (the Ladybug viewer itself is the org.wearefrank ladybug-backend dependency pinned at ladybug/pom.xml:22 and bundled in the release, embedded in the console at console/frontend/src/main/frontend/src/app/app.routes.ts:441); reached on: console page Adapter Status, message log and error stores; Ladybug"
+			}
 		},
 		{
 			"id": "obs-trace",
@@ -4104,12 +4159,16 @@
 			"providerHow": "read-from-code",
 			"feature": "execution-trace",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/frontend/editor-ui/src/app/router.ts:374 /workflow/:id/executions/:executionId/:nodeId? shows one run node by node with input and output, and packages/frontend/editor-ui/src/features/execution/executions/components/ViewSubExecution.vue follows it into sub-workflows; packages/cli/src/modules/otel/execution-level-tracer.ts exports the same run as spans; reached on: execution detail view on the canvas; OpenTelemetry export",
+				"frank": "source read at v10.2.0, not driven: one Ladybug report holds a whole request across adapters, because nested calls through core/src/main/java/org/frankframework/senders/IbisLocalSender.java:115 and FrankSender run under the same correlation id and are captured by ladybug/debugger/src/main/java/org/frankframework/ladybug/IbisDebuggerAdvice.java:220; the Ladybug viewer itself is the org.wearefrank ladybug-backend dependency pinned at ladybug/pom.xml:22 and bundled in the release, embedded in the console at console/frontend/src/main/frontend/src/app/app.routes.ts:441; reached on: console page Ladybug"
+			}
 		},
 		{
 			"id": "obs-trace-replay",
@@ -4132,9 +4191,10 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 3041 \"Execution History: Complete execution logs with replay capability\" (2026-03-28)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/executions/executions.controller.ts:129 POST /executions/:id/retry reruns a run from the failed node with its original data, with loadWorkflow choosing the saved or current workflow (:139); packages/frontend/editor-ui/src/app/router.ts:336 'Debug in editor' loads the run's data into the editor to try again; reached on: Executions list 'Retry', execution view 'Debug in editor'",
+				"frank": "source read at v10.2.0, not driven: ladybug/rerunner/src/main/java/org/frankframework/ladybug/SpringBusRerunner.java:55 rerun sends the report's original input to the same adapter again and records a new report to compare; reached on: console page Ladybug (Rerun button)"
 			}
 		},
 		{
@@ -4158,12 +4218,16 @@
 				"dossiq:6.11"
 			],
 			"sourceNote": "dossiq cluster 27",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/executions/executions.controller.ts:129 POST /executions/:id/retry restarts a failed run at the failed node with the input it had, so the failed HTTP Request is sent again with its original content; the unit is the execution, not a single call record; reached on: Executions list 'Retry with original workflow'",
+				"frank": "source read at v10.2.0, not driven: a failed message is resent from the receiver's error store (console/backend/src/main/java/org/frankframework/console/controllers/TransactionalStorage.java:159) or rerun from its Ladybug report (ladybug/rerunner/src/main/java/org/frankframework/ladybug/SpringBusRerunner.java:55), which repeats the outbound call with the original content, but always by replaying the whole pipeline, not one outbound call on its own; reached on: console pages Adapter Status error store (Resend) and Ladybug (Rerun)"
+			}
 		},
 		{
 			"id": "obs-verdict",
@@ -4182,12 +4246,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/workflow/src/credential-domain-restrictions.ts:155 assertUrlAllowed stops a call to a domain the credential does not allow with 'Domain not allowed: ... Only the following domains are allowed' (:164), and packages/@n8n/config/src/configs/ssrf-protection.config.ts:91 N8N_SSRF_PROTECTION_ENABLED with blocked ranges (:102) makes packages/@n8n/backend-network/src/http/outbound-http.ts refuse private targets; the reason shows as the node error in the execution; reached on: execution detail, failed node error message",
+				"frank": "source read at v10.2.0, not driven: nothing holds outbound calls back on a policy, so there is no verdict to show: grep -rniE 'verdict|policy|egress' over core main code finds no outbound gate; a refused call only shows as an exception in the Ladybug report"
+			}
 		},
 		{
 			"id": "obs-dashboard",
@@ -4205,14 +4273,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "yes",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"apisix": "docs-only: intelligence DB competitor_features id 3021 \"Control Plane: Dashboard for visual API management and monitoring\" (2026-03-28)"
+				"apisix": "docs-only: intelligence DB competitor_features id 3021 \"Control Plane: Dashboard for visual API management and monitoring\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/insights/insights.controller.ts:24 /insights/summary (executions, failures, failure rate, run time) is free, while the charts over time :64 /insights/by-time and :42 /by-workflow carry @Licensed('feat:insights:viewDashboard') (:66, :44); reached on: Overview page insights banner; Insights dashboard with an enterprise or business licence",
+				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/Adapters.java:188 returns per-adapter statistics including hourly message counts, drawn as charts at console/frontend/src/main/frontend/src/app/views/adapterstatistics/adapterstatistics.component.html:29; error counts show on the status page, and metrics can go to Grafana through the Prometheus export; reached on: console page Adapter Statistics (/:configuration/adapter/:name/statistics)"
 			}
 		},
 		{
@@ -4231,12 +4301,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: the workflow list shows each workflow's published state and the Executions list its failed runs (packages/cli/src/executions/execution.service.ts:83 status filter); packages/cli/src/modules/insights/insights.controller.ts:42 /insights/by-workflow ranks failure rate per workflow but is licence-gated (:44); there is no single integration health page; reached on: Workflows list, Executions list, Insights by-workflow table (licensed)",
+				"frank": "source read at v10.2.0, not driven: the console status page lists every configuration, adapter, receiver and sender with its state and error counts, fed by core/src/main/java/org/frankframework/management/bus/endpoints/HealthCheck.java:48 and core/src/main/java/org/frankframework/management/bus/endpoints/AdapterStatus.java:82; reached on: console page Adapter Status (/status)"
+			}
 		},
 		{
 			"id": "obs-metrics",
@@ -4255,14 +4329,16 @@
 			"providerHow": "read-from-code",
 			"feature": "prometheus-metrics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "yes",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"apisix": "docs-only: intelligence DB competitor_features id 3019 \"Observability: Built-in Prometheus, Zipkin, SkyWalking integration\" (2026-03-28)"
+				"apisix": "docs-only: intelligence DB competitor_features id 3019 \"Observability: Built-in Prometheus, Zipkin, SkyWalking integration\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/config/src/configs/endpoints.config.ts:8 N8N_METRICS turns on packages/cli/src/metrics/prometheus/prometheus.service.ts:116 GET /metrics, with workflow, node and credential type labels (:20-28) and execution, event bus and queue metric services in packages/cli/src/metrics/prometheus; reached on: env N8N_METRICS=true, scrape /metrics",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/metrics/PrometheusMeterServlet.java:40 serves Micrometer metrics at /metrics/prometheus (:100) when management.metrics.export.prometheus.enabled is set (:41); InfluxDB, StatsD and KairosDB registries sit next to it in core/src/main/java/org/frankframework/metrics; reached on: HTTP GET /metrics/prometheus; property management.metrics.export.prometheus.enabled=true"
 			}
 		},
 		{
@@ -4281,12 +4357,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/config/src/configs/endpoints.config.ts:230 health path '/healthz' and packages/cli/src/abstract-server.ts:146 /healthz/readiness (served at :157) report liveness and readiness; reached on: GET /healthz and /healthz/readiness",
+				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/ServerDetails.java:87 @PermitAll GET /server/health answers without login, computed by core/src/main/java/org/frankframework/management/bus/endpoints/HealthCheck.java:66 for the whole application; reached on: HTTP GET /iaf/api/server/health"
+			}
 		},
 		{
 			"id": "obs-otel",
@@ -4304,14 +4384,16 @@
 			"providerHow": "read-from-code",
 			"feature": "prometheus-metrics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "yes",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
-				"apisix": "docs-only: intelligence DB competitor_features id 3019 \"Observability: Built-in Prometheus, Zipkin, SkyWalking integration\" (2026-03-28)"
+				"apisix": "docs-only: intelligence DB competitor_features id 3019 \"Observability: Built-in Prometheus, Zipkin, SkyWalking integration\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/otel/otel.constants.ts:7 N8N_OTEL_ENABLED with exporter protocol, endpoint and headers (packages/cli/src/modules/otel/otel.config.ts:12-21) sends execution and node spans from packages/cli/src/modules/otel/execution-level-tracer.ts to an OTLP collector; only custom span attributes are licence-gated (otel-lifecycle-handler.ts:195); reached on: env N8N_OTEL_* , Settings OpenTelemetry (otel-settings.controller.ts)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'opentelemetry|otlp' over java, ts, xml and properties (pom files excluded) finds nothing; the metrics package core/src/main/java/org/frankframework/metrics offers Prometheus, InfluxDB, StatsD and KairosDB registries only, and traces stay in Ladybug"
 			}
 		},
 		{
@@ -4330,14 +4412,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"mulesoft": "docs-only: intelligence DB competitor_features id 3070 \"Monitoring: Application performance monitoring and alerting\" (2026-03-28)"
+				"mulesoft": "docs-only: intelligence DB competitor_features id 3070 \"Monitoring: Application performance monitoring and alerting\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/workflow/src/interfaces.ts:3991 errorWorkflow names a workflow that packages/nodes-base/nodes/ErrorTrigger starts on every failed production run, which then sends mail, Slack, Teams or any other message node; reached on: workflow settings 'Error workflow' plus an Error Trigger workflow",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/monitoring/Monitor.java:67 raises an alarm when a trigger's event count passes a threshold, and core/src/main/java/org/frankframework/monitoring/MonitorDestination.java:39 sends it through any sender, such as a MailSender; console/backend/src/main/java/org/frankframework/console/controllers/Monitors.java:72 and :131 add monitors and triggers from the console; reached on: console page Monitors (/monitors); configuration XML <Monitoring><Monitor><Trigger>"
 			}
 		},
 		{
@@ -4356,12 +4440,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/config/src/configs/executions.config.ts:106 EXECUTIONS_DATA_PRUNE, :110 EXECUTIONS_DATA_MAX_AGE (hours) and :117 EXECUTIONS_DATA_PRUNE_MAX_COUNT delete old executions automatically; insights have their own pruning task (packages/cli/src/modules/insights/insights-pruning.task.ts); reached on: env vars EXECUTIONS_DATA_*",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/jdbc/JdbcTransactionalStorage.java:785 setRetention (default 30 days at :122) sets an expiry on logged messages that core/src/main/java/org/frankframework/scheduler/job/CleanupDatabaseJob.java:64 deletes; core/src/main/java/org/frankframework/scheduler/job/CleanupFileSystemJob.java:31 cleans old files; reached on: configuration XML <MessageLog retention=...>; built-in cleanup jobs"
+			}
 		},
 		{
 			"id": "obs-analytics",
@@ -4380,16 +4468,18 @@
 			"providerHow": "read-from-code",
 			"feature": "api-product-gateway",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "yes",
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "yes",
-			"frank": "unknown",
+			"frank": "partial",
 			"evidence": {
 				"tyk": "docs-only: intelligence DB competitor_features id 3001 \"API Analytics: Real-time API analytics and usage reporting\" (2026-03-28)",
 				"mulesoft": "docs-only: intelligence DB competitor_features id 3066 \"API Analytics: Real-time API analytics and performance monitoring\" (2026-03-28)",
-				"wso2": "docs-only: intelligence DB competitor_features id 11145 \"Analytics: API usage analytics and dashboards\" (2026-04-06)"
+				"wso2": "docs-only: intelligence DB competitor_features id 11145 \"Analytics: API usage analytics and dashboards\" (2026-04-06)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/insights/insights.controller.ts:42 /insights/by-workflow gives runs, failures and time saved per workflow, licence-gated (:44); a workflow stands in for an endpoint, but there is no per-consumer figure because webhook callers are not identified (see acc-consumer); reached on: Insights dashboard (licensed)",
+				"frank": "source read at v10.2.0, not driven: usage is counted per adapter, receiver and pipe with hourly buckets (console/backend/src/main/java/org/frankframework/console/controllers/Adapters.java:188) and as Micrometer metrics (core/src/main/java/org/frankframework/metrics/PrometheusMeterServlet.java:40), so per endpoint works; there is no per-consumer breakdown because callers are not tracked as consumers; reached on: console page Adapter Statistics; /metrics/prometheus"
 			}
 		},
 		{
@@ -4408,12 +4498,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/redaction/redaction-policy.ts policies none, manual-only, non-manual and all clear whole execution items (FullItemRedactionStrategy in packages/cli/src/modules/redaction/executions/execution-redaction.service.ts:243), and packages/cli/src/modules/redaction/redaction-context-hook.ts:48 says unlicensed instances never redact (feat:dataRedaction); field-level masking of personal data is not wired in (:246-250). Per-workflow 'save execution data' off is the free fallback; reached on: workflow settings redaction policy (enterprise licence)",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/receivers/Receiver.java:2241 setHideRegex masks matching text in message logs and error stores, the log.hideRegex property (core/src/main/resources/AppConstants.properties:311) masks it in log files, and ladybug/debugger/src/main/java/org/frankframework/ladybug/transform/HideRegexMessageTransformer.java:37 masks it in Ladybug reports; reached on: configuration XML Receiver hideRegex; property log.hideRegex"
+			}
 		},
 		{
 			"id": "obs-reports",
@@ -4431,12 +4525,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/insights/insights.controller.ts:24 summary and licensed :64 by-time and :87 time-saved reports; packages/cli/src/commands/audit.ts produces a security audit report, not activity. No exportable activity report beyond these views; reached on: Insights page; CLI 'n8n audit'",
+				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/IbisstoreSummary.java:43 summarises stored messages per slot, type and date, and console/backend/src/main/java/org/frankframework/console/controllers/Adapters.java:188 gives per-adapter statistics reports; reached on: console pages Ibisstore Summary (/ibisstore-summary) and Adapter Statistics"
+			}
 		},
 		{
 			"id": "obs-connection-board",
@@ -4459,12 +4557,16 @@
 				"decidiq:plt-14",
 				"stackiq:conn-integration-registry"
 			],
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: same surfaces as obs-health-page: the Workflows list with published state, the Executions list filtered on error (packages/cli/src/executions/execution.service.ts:83) and the licensed per-workflow failure table (packages/cli/src/modules/insights/insights.controller.ts:42); credentials carry no working or failing state (packages/@n8n/db/src/entities/credentials-entity.ts), so there is no admin board of which integrations work; reached on: Workflows and Executions lists, Insights (licensed)",
+				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/ConnectionOverview.java:37 lists every listener and sender connection with its destination, and the status page shows per adapter and receiver whether it runs or is in error (core/src/main/java/org/frankframework/management/bus/endpoints/HealthCheck.java:61); reached on: console pages Connection Overview (/connections) and Adapter Status (/status)"
+			}
 		},
 		{
 			"id": "nl-zgw-zaken",
@@ -4483,12 +4585,16 @@
 			"providerHow": "read-from-code",
 			"feature": "source-management",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, haalcentraal, brp, kvk, pdok and 38 more Dutch terms finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) with a JWT Auth credential (packages/nodes-base/credentials/JwtAuth.credentials.ts:63) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE over java, xml, xsd, ts, properties and json outside test folders for 'zgw|zaken ?api|zrc', 'documenten ?api|drc|enkelvoudiginformatieobject', 'catalogi|zaaktype' and 'besluiten|besluittype' finds 0 files each; the only ZDS/zaak material is XSD test data (core/src/test/resources/Validation/Circular/zds/ontvangAsynchroon_CreeerZaak_input_example.xml); a ZGW API could only be called as a plain HttpSender with your own mappings"
+			}
 		},
 		{
 			"id": "nl-zgw-documenten",
@@ -4507,12 +4613,16 @@
 			"providerHow": "read-from-code",
 			"feature": "source-management",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, haalcentraal, brp, kvk, pdok and 38 more Dutch terms finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) with a JWT Auth credential (packages/nodes-base/credentials/JwtAuth.credentials.ts:63) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE over java, xml, xsd, ts, properties and json outside test folders for 'zgw|zaken ?api|zrc', 'documenten ?api|drc|enkelvoudiginformatieobject', 'catalogi|zaaktype' and 'besluiten|besluittype' finds 0 files each; the only ZDS/zaak material is XSD test data (core/src/test/resources/Validation/Circular/zds/ontvangAsynchroon_CreeerZaak_input_example.xml); documents go to DMS systems over CMIS (cmis/src/main/java/org/frankframework/extensions/cmis/CmisSender.java:201), which is not the ZGW Documenten API"
+			}
 		},
 		{
 			"id": "nl-zgw-catalogi",
@@ -4534,12 +4644,16 @@
 			"siblingRows": [
 				"opencatalogi:svc-import"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, haalcentraal, brp, kvk, pdok and 38 more Dutch terms finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) with a JWT Auth credential (packages/nodes-base/credentials/JwtAuth.credentials.ts:63) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE over java, xml, xsd, ts, properties and json outside test folders for 'zgw|zaken ?api|zrc', 'documenten ?api|drc|enkelvoudiginformatieobject', 'catalogi|zaaktype' and 'besluiten|besluittype' finds 0 files each; the only ZDS/zaak material is XSD test data (core/src/test/resources/Validation/Circular/zds/ontvangAsynchroon_CreeerZaak_input_example.xml)"
+			}
 		},
 		{
 			"id": "nl-zgw-resync",
@@ -4561,12 +4675,16 @@
 			"siblingRows": [
 				"opencatalogi:svc-resync"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, haalcentraal, brp, kvk, pdok and 38 more Dutch terms finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); there is also no preview-and-accept step for a re-import, Compare Datasets (packages/nodes-base/nodes/CompareDatasets/CompareDatasets.node.ts:38) would have to be wired by hand",
+				"frank": "source read at v10.2.0, not driven: grep -rliE over java, xml, xsd, ts, properties and json outside test folders for 'zgw|zaken ?api|zrc', 'documenten ?api|drc|enkelvoudiginformatieobject', 'catalogi|zaaktype' and 'besluiten|besluittype' finds 0 files each; the only ZDS/zaak material is XSD test data (core/src/test/resources/Validation/Circular/zds/ontvangAsynchroon_CreeerZaak_input_example.xml); there is no case-type import to resynchronise"
+			}
 		},
 		{
 			"id": "nl-zgw-besluiten",
@@ -4585,12 +4703,16 @@
 			"providerHow": "read-from-code",
 			"feature": "source-management",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, haalcentraal, brp, kvk, pdok and 38 more Dutch terms finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) with a JWT Auth credential (packages/nodes-base/credentials/JwtAuth.credentials.ts:63) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE over java, xml, xsd, ts, properties and json outside test folders for 'zgw|zaken ?api|zrc', 'documenten ?api|drc|enkelvoudiginformatieobject', 'catalogi|zaaktype' and 'besluiten|besluittype' finds 0 files each; the only ZDS/zaak material is XSD test data (core/src/test/resources/Validation/Circular/zds/ontvangAsynchroon_CreeerZaak_input_example.xml)"
+			}
 		},
 		{
 			"id": "nl-zgw-versions",
@@ -4608,12 +4730,16 @@
 			"providerHow": "read-from-code",
 			"feature": "zgw-version-translation",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); no ZGW API version translation layer exists, any version mapping would be hand-built Edit Fields steps",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'zgw|zaken ?api|zrc' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; with no ZGW support there is no translation between its versions"
+			}
 		},
 		{
 			"id": "nl-objecten",
@@ -4635,12 +4761,16 @@
 			"siblingRows": [
 				"dossiq:12.3"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); serving an Objecten API would mean hand-building every route as Webhook workflows (packages/nodes-base/nodes/Webhook/Webhook.node.ts:135), none ship",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'objecttypen|objecten ?api' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; Frank serves no Objecten or Objecttypen API"
+			}
 		},
 		{
 			"id": "nl-stuf-zkn",
@@ -4661,12 +4791,16 @@
 			"siblingRows": [
 				"opencatalogi:int-stuf"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); StUF is SOAP and there is no SOAP node either (see src-soap)",
+				"frank": "source read at v10.2.0, not driven: grep -rniE 'stuf' over java, xml, xsd, ts and properties outside test folders finds one hit, the word 'stuff' in a comment at commons/src/main/java/org/frankframework/util/PropertyLoader.java:282; no StUF module, envelope pipe or schema set ships in v10.2.0; a StUF-ZKN exchange would be a hand-built SOAP adapter (core/src/main/java/org/frankframework/http/WebServiceSender.java:45 with your own StUF XSDs)"
+			}
 		},
 		{
 			"id": "nl-stuf-bg",
@@ -4685,12 +4819,16 @@
 			"providerHow": "read-from-code",
 			"feature": "stuf-adapter",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); StUF is SOAP and there is no SOAP node either (see src-soap)",
+				"frank": "source read at v10.2.0, not driven: grep -rniE 'stuf' over java, xml, xsd, ts and properties outside test folders finds one hit, the word 'stuff' in a comment at commons/src/main/java/org/frankframework/util/PropertyLoader.java:282; no StUF module, envelope pipe or schema set ships in v10.2.0; the same generic SOAP route applies"
+			}
 		},
 		{
 			"id": "nl-dso",
@@ -4709,12 +4847,16 @@
 			"providerHow": "read-from-code",
 			"feature": "dso-omgevingsloket",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'omgevingsloket|\\bdso\\b|omgevingswet' over the whole tree finds 0 files; no Omgevingsloket or DSO connector among the listeners and senders"
+			}
 		},
 		{
 			"id": "nl-dso-pki",
@@ -4732,12 +4874,16 @@
 			"providerHow": "read-from-code",
 			"feature": "dso-omgevingsloket",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); client certificates can be stored generically (packages/nodes-base/credentials/HttpSslAuth.credentials.ts:8) but nothing checks signed DSO messages",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'omgevingsloket|\\bdso\\b|omgevingswet' over the whole tree finds 0 files, so nothing DSO-specific; generically, certificates are configured as keystores and truststores (core/src/main/java/org/frankframework/http/AbstractHttpSession.java:989 and :994), their expiry shows in the console (core/src/main/java/org/frankframework/management/bus/endpoints/AdapterStatus.java:185), and core/src/main/java/org/frankframework/pipes/SignaturePipe.java:84 VERIFY checks a signature; reached on: configuration XML keystore/truststore attributes, <SignaturePipe action=VERIFY>; console Adapter Status certificate info"
+			}
 		},
 		{
 			"id": "nl-digikoppeling",
@@ -4756,12 +4902,16 @@
 			"providerHow": "read-from-code",
 			"feature": "digikoppeling-adapter",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); no ebMS or WUS profile support, and no SOAP node (see src-soap)",
+				"frank": "source read at v10.2.0, not driven: no Digikoppeling module: grep -rliE 'ebms|digikoppeling|osb' finds only ebMS XSD test data (core/src/test/resources/Validation/EB-XML/xsd/ebms.wsdl) and no WS-Addressing support (grep -rniE 'ws-?addressing|wsa:' over core main finds nothing); the WUS building blocks are partly there: SOAP (core/src/main/java/org/frankframework/http/WebServiceSender.java:45), mutual TLS (core/src/main/java/org/frankframework/http/AbstractHttpSession.java:989) and WS-Security signing with a UsernameToken (core/src/main/java/org/frankframework/soap/SoapWrapper.java:352); reached on: configuration XML WebServiceSender with keystore and SoapWrapperPipe wssAuthAlias"
+			}
 		},
 		{
 			"id": "nl-fsc",
@@ -4779,12 +4929,16 @@
 			"providerHow": "read-from-code",
 			"feature": "fsc-connectivity",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); no FSC contract or outway handling",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'fsc|federatieve|federated service' over java, xml, xsd, ts, properties and json outside test folders finds 0 files (the few 'fsc' substrings are in SFTP test helpers); no FSC outway or contract support"
+			}
 		},
 		{
 			"id": "nl-brp",
@@ -4802,12 +4956,16 @@
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'haal ?centraal|brp|basisregistratie' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no BRP connector"
+			}
 		},
 		{
 			"id": "nl-kvk",
@@ -4825,12 +4983,16 @@
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'kvk|kamer van koophandel|handelsregister' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no KvK connector"
+			}
 		},
 		{
 			"id": "nl-kvk-changes",
@@ -4848,12 +5010,16 @@
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); a Webhook node could receive pushed changes, but nothing subscribes at the KvK",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'kvk|kamer van koophandel|handelsregister' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no KvK change feed"
+			}
 		},
 		{
 			"id": "nl-pdok",
@@ -4873,12 +5039,16 @@
 			"providerHow": "read-from-code",
 			"feature": "pdok-adapter",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'pdok|bag|locatieserver' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no PDOK or BAG connector"
+			}
 		},
 		{
 			"id": "nl-berichtenbox",
@@ -4901,12 +5071,16 @@
 				"dossiq:6.6",
 				"dossiq:12.9"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'berichtenbox|mijnoverheid' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no Berichtenbox connector"
+			}
 		},
 		{
 			"id": "nl-digital-post-choice",
@@ -4924,12 +5098,16 @@
 			"providerHow": "read-from-code",
 			"feature": "source-management",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'berichtenbox|mijnoverheid' over java, xml, xsd, ts, properties and json outside test folders finds 0 files, and no other digital post provider ships; there is nothing to choose between"
+			}
 		},
 		{
 			"id": "nl-iwmo",
@@ -4948,12 +5126,16 @@
 			"providerHow": "read-from-code",
 			"feature": "iwmo-ijw-adapter",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); no iStandaarden message formats and no VECOZO connection",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'iwmo|ijw|vecozo' outside test folders finds only an unrelated employment XSD in the test webapp (test/src/main/configurations/MainConfig/EsbSoapValidator/GetEmployerDetails/xsd/common/EmploymentTypesV1.1.xsd); no iWmo or iJw message set"
+			}
 		},
 		{
 			"id": "nl-peppol",
@@ -4971,12 +5153,16 @@
 			"providerHow": "read-from-code",
 			"feature": "peppol-access-point-connector",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); no Peppol access point or UBL invoice node",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'peppol|ubl|e-?invoice|simplerinvoicing' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no Peppol access point or UBL support"
+			}
 		},
 		{
 			"id": "nl-ris",
@@ -4998,12 +5184,16 @@
 			"siblingRows": [
 				"opencatalogi:int-council"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'ibabs|notubiz' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no council information system connector"
+			}
 		},
 		{
 			"id": "nl-openformulieren",
@@ -5021,12 +5211,16 @@
 			"providerHow": "read-from-code",
 			"feature": "open-formulieren-intake",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); a generic Webhook node could receive a submission POST, but there is no Open Formulieren node or registration plugin",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'open.?formulieren' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; submissions could only arrive as a generic HTTP post on an ApiListener (core/src/main/java/org/frankframework/http/rest/ApiListener.java:100)"
+			}
 		},
 		{
 			"id": "nl-kiss",
@@ -5044,12 +5238,16 @@
 			"providerHow": "read-from-code",
 			"feature": "kiss-kcc-bridge",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'kiss' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no KISS connector"
+			}
 		},
 		{
 			"id": "nl-cti",
@@ -5071,12 +5269,16 @@
 			"siblingRows": [
 				"dossiq:6.13"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); grep -rliE 'telephon|pbx|cti' over packages/nodes-base/nodes only hits phone-number fields in CRM nodes, and packages/nodes-base/nodes/Twilio/TwilioTrigger.node.ts:55 only reports finished call summaries, so no node shows an incoming call from an exchange",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'cti|telephon' over java outside test folders finds only a telephoneNumber attribute in a doc example at core/src/main/java/org/frankframework/ldap/LdapSender.java:81 (the xml hits are sample XSDs in the test webapp under test/src/main/configurations); no telephone exchange connector"
+			}
 		},
 		{
 			"id": "nl-notifynl",
@@ -5095,12 +5297,16 @@
 			"providerHow": "read-from-code",
 			"feature": "notifynl-sms-channel",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) could call such an API, with no knowledge of the standard",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'notifynl|notify-nl|gov.uk notify' over the whole tree finds 0 files; mail goes out through core/src/main/java/org/frankframework/senders/MailSender.java:106 or SendGridSender, not NotifyNL"
+			}
 		},
 		{
 			"id": "nl-sector-gateways",
@@ -5119,12 +5325,16 @@
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'corv|ggk|wkpb' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no sector gateway connectors"
+			}
 		},
 		{
 			"id": "nl-woo-index",
@@ -5146,12 +5356,16 @@
 			"siblingRows": [
 				"decidiq:pub-05"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'woo|tooi' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no Woo index delivery"
+			}
 		},
 		{
 			"id": "nl-tooi",
@@ -5172,12 +5386,16 @@
 			"siblingRows": [
 				"decidiq:pub-13"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'woo|tooi' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no TOOI value lists"
+			}
 		},
 		{
 			"id": "nl-api-design-rules",
@@ -5195,12 +5413,16 @@
 			"providerHow": "read-from-code",
 			"feature": "api-product-gateway",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for zgw, zaken-api, notificaties, objecttypen, stuf, digikoppeling, fsc, haalcentraal, brp, kvk, pdok, bag, berichtenbox, mijnoverheid, iwmo, ijw, vecozo, peppol, ibabs, notubiz, openformulieren, kiss, notifynl, corv, ggk, wkpb, woo, tooi, omgevingsloket, dso, digid, eherkenning, eidas, bsn and pkioverheid finds no real hit (counts and false positives in _lane/r-n8n/nl-grep.txt); there is no API design linter at all (see acc-governance)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'spectral|api.?design.?rules|adr' over main java finds no API linter; the generated OpenAPI (core/src/main/java/org/frankframework/http/openapi/OpenApiGenerator.java:55) is never checked against the Dutch API design rules"
+			}
 		},
 		{
 			"id": "id-digid",
@@ -5222,12 +5444,16 @@
 			"siblingRows": [
 				"dossiq:12.8"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for digid, eherkenning, eidas, bsn and pkioverheid finds no hit (_lane/r-n8n/nl-grep.txt); n8n's own SSO (packages/cli/src/modules/sso-saml/sso-saml.module.ts:5, licence feat:saml) logs in n8n staff, it is no citizen login broker",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'digid' over the whole tree finds 0 files; Frank has no citizen login flow. The nearest thing is the Dutch bank-ID scheme iDIN through idin/src/main/java/org/frankframework/extensions/idin/IdinSender.java:76 (actions DIRECTORY, AUTHENTICATE, RESPONSE at :108), which is not DigiD"
+			}
 		},
 		{
 			"id": "id-eherkenning",
@@ -5249,12 +5475,16 @@
 			"siblingRows": [
 				"dossiq:12.8"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for digid, eherkenning, eidas, bsn and pkioverheid finds no hit (_lane/r-n8n/nl-grep.txt); same SAML note as id-digid",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'eherkenning' over the whole tree finds 0 files; no eHerkenning broker support"
+			}
 		},
 		{
 			"id": "id-eidas",
@@ -5273,12 +5503,16 @@
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for digid, eherkenning, eidas, bsn and pkioverheid finds no hit (_lane/r-n8n/nl-grep.txt)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'eidas' outside test folders finds only the substring in forceMessageIdAsCorrelationId (messaging/src/main/java/org/frankframework/jms/AbstractJmsListener.java:79); no eIDAS login"
+			}
 		},
 		{
 			"id": "id-envelope",
@@ -5297,12 +5531,16 @@
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, packages/nodes-base/credentials, packages/@n8n/nodes-langchain/nodes, packages/cli/src and the en.json locale for digid, eherkenning, eidas, bsn and pkioverheid finds no hit (_lane/r-n8n/nl-grep.txt); there is no pseudonym or identity hand-off token for other apps. The closest item, packages/cli/src/modules/token-exchange/token-exchange.config.ts:14 short-lived tokens, maps an outside identity to an n8n user, not to a pseudonym",
+				"frank": "source read at v10.2.0, not driven: no pseudonym or identity hand-off: grep -rniE 'pseudonym|bsn' over main code finds nothing; the principal travels only inside one pipeline session (core/src/main/java/org/frankframework/pipes/GetPrincipalPipe.java:43)"
+			}
 		},
 		{
 			"id": "id-eudi-issue",
@@ -5323,12 +5561,16 @@
 			"siblingRows": [
 				"learniq:cred-push-to-eudi-wallet"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'eudi|verifiable.?credential|openid4vc|oid4vci|walletprovider' over packages/nodes-base/nodes, packages/cli/src and packages/@n8n/nodes-langchain/nodes finds nothing",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'eudi|wallet|verifiable.?credential|openid4vc|sd-jwt' over java and ts finds nothing (the only 'mdoc' matches are substrings of 'IDocument' and 'DomDocument', e.g. sap/src/main/java/org/frankframework/extensions/sap/jco3/SapListenerImpl.java:213)"
+			}
 		},
 		{
 			"id": "id-eudi-revoke",
@@ -5349,12 +5591,16 @@
 			"siblingRows": [
 				"learniq:cred-wallet-revocation-follows"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'eudi|verifiable.?credential|openid4vc|oid4vci|walletprovider' over packages/nodes-base/nodes, packages/cli/src and packages/@n8n/nodes-langchain/nodes finds nothing; with no issuing there is no status list or revocation either",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'eudi|wallet|verifiable.?credential|openid4vc|sd-jwt' over java and ts finds nothing; no wallet credentials are issued, so none can be withdrawn"
+			}
 		},
 		{
 			"id": "id-eudi-keys",
@@ -5373,12 +5619,16 @@
 			"providerHow": "read-from-code",
 			"feature": "eudi-wallet-credential-issuance",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'eudi|verifiable.?credential|openid4vc|oid4vci|walletprovider' over packages/nodes-base/nodes, packages/cli/src and packages/@n8n/nodes-langchain/nodes finds nothing; n8n's key management (packages/cli/src/modules/encryption-key-manager) covers only its own credential encryption key",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'eudi|wallet|verifiable.?credential|openid4vc|sd-jwt' over java and ts finds nothing; signing keys exist only as generic keystores for JWT and message signing (core/src/main/java/org/frankframework/pipes/JwtPipe.java:65, core/src/main/java/org/frankframework/pipes/SignaturePipe.java:59), not for wallet issuance"
+			}
 		},
 		{
 			"id": "id-scim",
@@ -5396,12 +5646,16 @@
 			"providerHow": "read-from-code",
 			"feature": "user-management-and-login",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rli scim over packages/cli/src, packages/@n8n/api-types/src and the en.json locale finds only a comment at packages/cli/src/services/user.service.ts:352; n8n exposes no SCIM server and has no SCIM client node, and packages/nodes-base/nodes/NextCloud/NextCloud.node.ts user operations use the OCS API, not SCIM",
+				"frank": "source read at v10.2.0, not driven: grep -rniE 'scim' over the whole tree finds nothing; Frank has no SCIM client or server"
+			}
 		},
 		{
 			"id": "id-directory",
@@ -5420,12 +5674,16 @@
 			"feature": "user-management-and-login",
 			"featureConfidence": "medium",
 			"sourceNote": "dossiq cluster 33",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: a Schedule Trigger workflow can read users from packages/nodes-base/nodes/Ldap/Ldap.node.ts:81 search or packages/nodes-base/nodes/Microsoft/Entra/MicrosoftEntra.node.ts:57 user and write them with the NextCloud node's user create and update operations (packages/nodes-base/nodes/NextCloud/NextCloud.node.ts:215-239); the Nextcloud node has no group resource, so groups need raw OCS calls. n8n's own LDAP sync (packages/cli/src/modules/ldap.ee/ldap.service.ee.ts:370 scheduleSync) only fills n8n users and needs feat:ldap; reached on: hand-built workflow; Settings > LDAP (licensed) for n8n's own users",
+				"frank": "source read at v10.2.0, not driven: directories are read with core/src/main/java/org/frankframework/ldap/LdapSender.java:164 and core/src/main/java/org/frankframework/ldap/LdapFindGroupMembershipsPipe.java:61, and a scheduled job (core/src/main/java/org/frankframework/scheduler/AbstractJobDef.java:491) can run such an adapter, but writing users and groups into a target system is an adapter you build; there is no directory sync object; reached on: configuration XML scheduled adapter with LdapSender and a target sender"
+			}
 		},
 		{
 			"id": "id-group-map",
@@ -5443,12 +5701,16 @@
 			"providerHow": "read-from-code",
 			"feature": "user-management-and-login",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/provisioning.ee/role-mapping-rule.controller.ee.ts:28 /role-mapping-rule maps identity provider claims to n8n instance and project roles (packages/cli/src/modules/provisioning.ee/role-mapping-rule.validation.ts), licence-gated by feat:oidc, feat:saml or feat:ldap (provisioning.module.ts:7); mapping directory groups onto Nextcloud groups has no node support (NextCloud node has no group resource, see id-directory); reached on: Settings > SSO role mapping (licensed)",
+				"frank": "source read at v10.2.0, not driven: security/src/main/java/org/frankframework/lifecycle/servlets/AuthorityMapper.java:47 maps directory or OAuth groups from a role-mapping file onto Frank's console roles, used with security/src/main/java/org/frankframework/lifecycle/servlets/ActiveDirectoryAuthenticator.java:54; this maps groups to Frank's own roles, not to groups in another application; reached on: role-mapping properties file per authenticator"
+			}
 		},
 		{
 			"id": "id-lti-tool",
@@ -5470,12 +5732,16 @@
 			"siblingRows": [
 				"learniq:cont-embed-external-lti-tool"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'lti|lti 1.3|lti13|learning tools interop' (word match) over packages/nodes-base/nodes and packages/cli/src finds nothing",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'lti' as a word or 'lti 1.3' over java and ts finds nothing; no LTI support"
+			}
 		},
 		{
 			"id": "id-lti-grades",
@@ -5496,12 +5762,16 @@
 			"siblingRows": [
 				"learniq:cont-lti-grades-come-back"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: same search as id-lti-tool: no LTI support anywhere in packages/nodes-base/nodes or packages/cli/src, so no grade passback",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'lti' as a word or 'lti 1.3' over java and ts finds nothing; no LTI grade passback"
+			}
 		},
 		{
 			"id": "id-psd2",
@@ -5520,12 +5790,16 @@
 			"providerHow": "read-from-code",
 			"feature": "psd2-ais-bank-feed-connector",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'gocardless|nordigen|plaid|psd2|open banking' over packages/nodes-base/nodes finds only GoCardless as a payment-type label in packages/nodes-base/nodes/InvoiceNinja/PaymentDescription.ts; no bank account-information node or credential ships",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'psd2|xs2a' over java and ts finds nothing; no PSD2 account information connector"
+			}
 		},
 		{
 			"id": "id-portal-idp",
@@ -5543,12 +5817,16 @@
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: n8n has no citizen or customer portal; its identity provider settings (packages/cli/src/modules/sso-oidc/oidc.controller.ee.ts:31 /sso/oidc/config, packages/cli/src/modules/sso-saml) choose how n8n staff log in to n8n itself, one provider at a time",
+				"frank": "source read at v10.2.0, not driven: Frank has no portal; identity providers are only configured for its own servlets (security/src/main/java/org/frankframework/lifecycle/servlets/AuthenticationType.java:22 to :30), not offered to portal users"
+			}
 		},
 		{
 			"id": "id-admin-sso",
@@ -5567,14 +5845,15 @@
 			"providerHow": "read-from-code",
 			"feature": "user-management-and-login",
 			"featureConfidence": "medium",
-			"n8n": "yes",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 31101 \"RBAC & SSO (Enterprise): Role-based access, SSO/LDAP gated behind Enterprise.\" (2026-07-03)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/sso-saml/sso-saml.module.ts:5 (licenseFlag feat:saml) and packages/cli/src/modules/sso-oidc/sso-oidc.module.ts:5 (feat:oidc) plus packages/cli/src/modules/ldap.ee/ldap.module.ts:4 (feat:ldap) give single sign-on to the editor, all behind an Enterprise licence (LICENSE.md:6-10 for .ee files); reached on: Settings > SSO (/settings/sso), Settings > LDAP; enterprise licence",
+				"frank": "source read at v10.2.0, not driven: security/src/main/java/org/frankframework/lifecycle/servlets/OAuth2Authenticator.java:84 signs console users in through an organisation's OAuth2 or OpenID Connect provider, and security/src/main/java/org/frankframework/lifecycle/servlets/ActiveDirectoryAuthenticator.java:54 against Active Directory, with groups mapped to roles by AuthorityMapper.java:47; reached on: properties application.security.console.authentication.type=OAUTH2 (servlet authenticator settings)"
 			}
 		},
 		{
@@ -5597,12 +5876,16 @@
 			"siblingRows": [
 				"dossiq:1.5"
 			],
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/EmailReadImap/v2/EmailReadImapV2.node.ts:97 'format' resolved parses each new mail with attachments (packages/nodes-base/nodes/EmailReadImap/v2/utils.ts:38 simpleParser), and Gmail and Outlook triggers do the same; the next node creates the case record in whatever system holds cases (Data Table, Jira, a case API); reached on: Email Trigger (IMAP), Gmail Trigger, Microsoft Outlook Trigger",
+				"frank": "source read at v10.2.0, not driven: filesystem/src/main/java/org/frankframework/receivers/ExchangeMailListener.java:42 (Microsoft 365 through Graph) and filesystem/src/main/java/org/frankframework/receivers/ImapListener.java:27 pick up mail and start an adapter per message; turning it into a case means posting it to a case system with a sender you configure, Frank has no case object; reached on: configuration XML <ExchangeMailListener> or <ImapListener> in a Receiver"
+			}
 		},
 		{
 			"id": "msg-eml-import",
@@ -5624,12 +5907,16 @@
 			"siblingRows": [
 				"dossiq:6.10"
 			],
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'mailparser|simpleParser|msgreader' over packages/nodes-base/nodes finds the parser only inside the IMAP, Gmail and Outlook nodes (packages/nodes-base/nodes/EmailReadImap/v2/utils.ts:3); no node parses an uploaded .eml or Outlook .msg file, which leaves a Code node with an allowed external module (packages/@n8n/task-runner/src/config/js-runner-config.ts:8 NODE_FUNCTION_ALLOW_EXTERNAL); reached on: Code node with NODE_FUNCTION_ALLOW_EXTERNAL",
+				"frank": "source read at v10.2.0, not driven: aspose/src/main/java/org/frankframework/extensions/aspose/converters/MailConverter.java:71 to :74 read .eml (message/rfc822) and .msg (vnd.ms-outlook) files and convert them to PDF through aspose/src/main/java/org/frankframework/extensions/aspose/pipe/PdfPipe.java:53, which needs a paid Aspose licence; attaching the result to a case is a sender you add; reached on: configuration XML <PdfPipe action=CONVERT>"
+			}
 		},
 		{
 			"id": "msg-teams",
@@ -5651,12 +5938,16 @@
 			"siblingRows": [
 				"dossiq:1.9"
 			],
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Microsoft/Teams/MicrosoftTeamsTrigger.node.ts:121 'newChannelMessage' and :131 'newChatMessage' start a flow on a Teams message, whose next node opens the case in the target system; reached on: Microsoft Teams Trigger node with a Microsoft Teams OAuth2 credential",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'microsoft.?teams|teams' as a word over java and ts finds nothing; the Microsoft Graph client is used only for Exchange mail (filesystem/src/main/java/org/frankframework/filesystem/MsalClientAdapter.java)"
+			}
 		},
 		{
 			"id": "msg-form-intake",
@@ -5676,12 +5967,16 @@
 			"feature": "open-formulieren-intake",
 			"featureConfidence": "medium",
 			"sourceNote": "dossiq cluster 45",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: trigger nodes for outside form tools ship in the tree: packages/nodes-base/nodes/Typeform, JotForm, Wufoo, Formstack, FormIo and KoBoToolbox folders, plus n8n's own packages/nodes-base/nodes/Form trigger; reached on: workflow editor, form tool trigger nodes",
+				"frank": "source read at v10.2.0, not driven: an outside form tool can post submissions to a generic endpoint (core/src/main/java/org/frankframework/http/rest/ApiListener.java:100, multipart via :492 setMultipartBodyName), which your pipeline maps and forwards; there is no form-tool connector; reached on: configuration XML ApiListener with a mapping pipeline"
+			}
 		},
 		{
 			"id": "msg-public-space",
@@ -5701,12 +5996,16 @@
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
 			"sourceNote": "dossiq cluster 45",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'signalen|fixmystreet|meldingen openbare|public space' over packages/nodes-base/nodes finds nothing; no node for a public-space reporting system, only a generic Webhook could receive such reports",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'openbare.?ruimte|signalen|fixi|mor|meldingen' over java and ts finds only the word 'prefixing' in a doc comment (filesystem/src/main/java/org/frankframework/senders/LocalFileSystemSender.java:28); no public-space report intake"
+			}
 		},
 		{
 			"id": "msg-routing",
@@ -5725,12 +6024,16 @@
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Switch/V3/SwitchV3.node.ts:121 'rules' route each incoming message by its content to a per-team output, which posts to that team's channel, mailbox or queue; reached on: workflow editor, Switch node after an intake trigger",
+				"frank": "source read at v10.2.0, not driven: messages are routed by content with core/src/main/java/org/frankframework/pipes/SwitchPipe.java:64 to different senders or queues; routing to a team is only possible if each team is a destination you configure, Frank has no teams or assignment; reached on: configuration XML SwitchPipe with a forward per destination"
+			}
 		},
 		{
 			"id": "msg-reply-channel",
@@ -5749,12 +6052,16 @@
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: channel nodes carry reply operations, for example packages/nodes-base/nodes/Google/Gmail/v2/MessageDescription.ts:55 and ThreadDescription.ts:44 'reply', and Slack, Telegram, Teams and WhatsApp nodes send into the same chat or thread from the trigger's ids; the builder wires one reply step per channel; reached on: workflow editor, channel nodes' reply or send operations",
+				"frank": "source read at v10.2.0, not driven: request-reply listeners answer on the channel the message arrived on, messaging/src/main/java/org/frankframework/jms/AbstractJmsListener.java:417 setUseReplyTo for JMS and the HTTP response for ApiListener; replying later to a mail sender is a MailSender (core/src/main/java/org/frankframework/senders/MailSender.java:106) you wire yourself; reached on: configuration XML JmsListener useReplyTo; MailSender"
+			}
 		},
 		{
 			"id": "msg-shared-inbox",
@@ -5776,12 +6083,16 @@
 			"siblingRows": [
 				"dossiq:6.5"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: n8n has no inbox view: the editor routes in packages/frontend/editor-ui/src/app/router.ts:175-1157 hold workflows, executions, templates and settings only, and packages/@n8n/db/src/entities has no message or case entity to assign",
+				"frank": "source read at v10.2.0, not driven: no inbox or assignment feature: the console routes (console/frontend/src/main/frontend/src/app/app.routes.ts:73 to :450) hold no message inbox, and mail listeners (filesystem/src/main/java/org/frankframework/receivers/ExchangeMailListener.java:42) process mail automatically without a person assigning it"
+			}
 		},
 		{
 			"id": "msg-sms",
@@ -5800,12 +6111,16 @@
 			"providerHow": "read-from-code",
 			"feature": "notifynl-sms-channel",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Twilio/Twilio.node.ts:47 'sms' and packages/nodes-base/nodes/MessageBird/MessageBird.node.ts:43 'sms' with :65 'send' send text messages, alongside Vonage, Plivo, Sms77, Msg91 and Mocean nodes; there is no CM.com node (ls packages/nodes-base/nodes shows none), which would need HTTP Request; reached on: workflow editor, Twilio, MessageBird and other SMS nodes",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'twilio|messagebird|sms' over java and ts finds only a doc comment on splitting text into 160-character blocks (core/src/main/java/org/frankframework/pipes/TextSplitterPipe.java:31); no SMS provider sender"
+			}
 		},
 		{
 			"id": "msg-whatsapp",
@@ -5824,12 +6139,16 @@
 			"providerHow": "read-from-code",
 			"feature": "source-management",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/WhatsApp/MessagesDescription.ts:32 'send' posts through the WhatsApp Business Cloud API, with a WhatsApp trigger and send-and-wait support in the same folder; reached on: workflow editor, WhatsApp Business Cloud node",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'whatsapp' over java and ts finds nothing; no WhatsApp Business sender"
+			}
 		},
 		{
 			"id": "msg-sender-identity",
@@ -5849,12 +6168,16 @@
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
 			"sourceNote": "dossiq cluster 61",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'dkim|spf|dmarc' over packages/nodes-base/nodes and credentials finds only packages/nodes-base/nodes/Mandrill/Mandrill.node.ts:352, a signing-domain field passed to Mandrill; n8n itself checks no sender identity or alignment, SMTP and provider nodes send as whatever the account allows",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'dkim|spf|dmarc' over java finds nothing; core/src/main/java/org/frankframework/senders/MailSender.java:142 only sets a bounce address and the from address comes from the message, so signing and alignment are left to the SMTP server or SendGrid"
+			}
 		},
 		{
 			"id": "msg-opt-out",
@@ -5873,12 +6196,16 @@
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'unsubscribe|opt.?out' over packages/nodes-base/nodes hits only marketing tool nodes (for example packages/nodes-base/nodes/Sendy/SubscriberDescription.ts, ActiveCampaign, Vero) that manage their own lists; the plain Send Email node (packages/nodes-base/nodes/EmailSend/v2/send.operation.ts) keeps no opt-out list and adds no unsubscribe link, only an optional n8n attribution line; reached on: marketing tool nodes; nothing in n8n itself",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'unsubscribe|opt.?out' over java finds nothing; no suppression list or unsubscribe link handling in core/src/main/java/org/frankframework/senders/AbstractMailSender.java"
+			}
 		},
 		{
 			"id": "msg-one-off",
@@ -5900,12 +6227,16 @@
 			"siblingRows": [
 				"dossiq:6.23"
 			],
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: recipients are just node parameters (packages/nodes-base/nodes/EmailSend/v2/send.operation.ts) that can be expressions, so a message can take an extra address, but there is no standing recipient list per message type to add to or suppress from; reached on: send node parameters",
+				"frank": "source read at v10.2.0, not driven: recipients are part of each mail message (core/src/main/java/org/frankframework/senders/MailSender.java:61 recipients block, or parameters), so a single message can carry an extra recipient; there is no standing recipient list to suppress one from; reached on: configuration XML MailSender input with a recipients element per message"
+			}
 		},
 		{
 			"id": "msg-outbound-log",
@@ -5927,12 +6258,16 @@
 			"siblingRows": [
 				"dossiq:6.27"
 			],
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: each send node's output in the execution (packages/cli/src/executions/executions.controller.ts:89) holds the provider's accept response per item; delivery outcomes such as bounces or reads are not collected unless a provider trigger or webhook is wired back, and there is no per-recipient outbound log view; reached on: execution detail per send node",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/pipes/MessageSendingPipe.java:811 setMessageLog logs every outgoing message and Ladybug records the sender result, but there is no per-recipient delivery outcome or bounce reason (grep -rliE 'bounce' finds only the bounce address setting at core/src/main/java/org/frankframework/senders/MailSender.java:142); reached on: configuration XML MessageLog on the mail SenderPipe; Ladybug"
+			}
 		},
 		{
 			"id": "msg-last-contact",
@@ -5954,12 +6289,16 @@
 			"siblingRows": [
 				"dossiq:6.24"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'lastContact|last contacted' over packages/nodes-base/nodes and packages/cli/src hits only CRM vendor fields (Emelia, Hubspot); n8n keeps no contact history of its own and no delivery tracking (see msg-outbound-log), so it cannot say when a person was last reached",
+				"frank": "source read at v10.2.0, not driven: Frank keeps no contact history per person: grep -rniE 'last.?contact|contact.?moment' over main java finds nothing; message logs are per adapter (core/src/main/java/org/frankframework/pipes/MessageSendingPipe.java:811), not per applicant"
+			}
 		},
 		{
 			"id": "msg-hold-queue",
@@ -5978,12 +6317,16 @@
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: an If check (packages/nodes-base/nodes/If/V2) can send a failing message to packages/nodes-base/nodes/Wait/Wait.node.ts:90 or a send-and-wait approval (packages/nodes-base/utils/sendAndWait/utils.ts:88) before the send step, so it is held until someone answers; held messages appear only as waiting executions, not in a review queue; reached on: workflow built with If plus Wait or send-and-wait; Executions list status 'waiting'",
+				"frank": "source read at v10.2.0, not driven: a message that fails a check goes to the error store, and core/src/main/java/org/frankframework/core/ProcessState.java:31 HOLD lets an operator park it there; console/backend/src/main/java/org/frankframework/console/controllers/TransactionalStorage.java:188 moves messages between Error and Hold and :159 resends after review; reached on: console page Adapter Status, receiver error and hold stores"
+			}
 		},
 		{
 			"id": "msg-no-reply",
@@ -6002,12 +6345,16 @@
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/EmailReadImap/v2/EmailReadImapV2.node.ts:97 reads the no-reply mailbox like any other, and the flow can auto-answer with packages/nodes-base/nodes/EmailSend/v2/send.operation.ts or route the reply on with packages/nodes-base/nodes/Switch/V3/SwitchV3.node.ts:121; reached on: Email Trigger (IMAP) on the no-reply mailbox",
+				"frank": "source read at v10.2.0, not driven: no handling for replies to a no-reply address: a mailbox can be read with filesystem/src/main/java/org/frankframework/receivers/ImapListener.java:27, but grep -rniE 'no-?reply' over main java finds no feature that recognises or routes such replies"
+			}
 		},
 		{
 			"id": "msg-payment",
@@ -6029,12 +6376,16 @@
 			"siblingRows": [
 				"learniq:gov-charge-for-a-course"
 			],
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Stripe/Stripe.node.ts:73 'charge' resource creates and reads charges; PayPal, Paddle, Chargebee and Wise nodes ship as well. No Mollie or iDEAL-specific node (ls packages/nodes-base/nodes shows none); reached on: workflow editor, Stripe and other payment nodes",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'mollie|stripe|adyen|payment|ideal' over java finds only the word 'Ideal' in two comments (management-gateway/src/main/java/org/frankframework/management/bus/message/RequestMessageBuilder.java); no payment provider connector"
+			}
 		},
 		{
 			"id": "msg-docgen",
@@ -6056,12 +6407,16 @@
 			"siblingRows": [
 				"dossiq:12.11"
 			],
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/ApiTemplateIo/ApiTemplateIo.node.ts:57 'pdf' and :72 'create' generate documents through APITemplate.io, and Google Docs and Bannerbear nodes exist; grep -rliE 'smartdocuments|xential' over the tree finds nothing (_lane/r-n8n/nl-grep.txt); reached on: workflow editor, APITemplate.io node",
+				"frank": "source read at v10.2.0, not driven: no SmartDocuments or Xential connector (grep -rliE 'smartdocuments|xential' finds nothing); documents are generated in Frank itself with aspose/src/main/java/org/frankframework/extensions/aspose/pipe/PdfPipe.java:53, which converts and combines into PDF under a paid Aspose licence, or with XSLT to text or XML; reached on: configuration XML <PdfPipe>"
+			}
 		},
 		{
 			"id": "msg-notes-sync",
@@ -6083,12 +6438,16 @@
 			"siblingRows": [
 				"dossiq:6.14"
 			],
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: no node for an outside case register ships (see nl-zgw-zaken), so keeping notes in step means a hand-built pair of workflows with HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) and change detection (see sync-twoway); reached on: hand-built workflows",
+				"frank": "source read at v10.2.0, not driven: Frank has no notes object and no case register connector: grep -rliE 'zgw|zaken ?api|zrc' outside test folders finds 0 files, and nothing keeps notes in step with another system"
+			}
 		},
 		{
 			"id": "msg-esign",
@@ -6110,12 +6469,16 @@
 			"siblingRows": [
 				"decidiq:min-05"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'docusign|signnow|yousign|validsign|adobe sign|dropbox sign|hellosign|qualified electronic' over packages/nodes-base/nodes finds only an unrelated Wufoo trigger field and an AWS SNS signature check; no e-signature node ships",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'validsign|signicat|qualified.?signature|pades|xades' over java finds nothing (the 'esign' hits are 'design' and 'eSign' words in comments, e.g. core/src/main/java/org/frankframework/pgp/Verify.java); core/src/main/java/org/frankframework/pipes/SignaturePipe.java:59 makes raw signatures, not qualified electronic signatures on documents"
+			}
 		},
 		{
 			"id": "plt-export",
@@ -6134,14 +6497,16 @@
 			"providerHow": "read-from-code",
 			"feature": "configuration-export-import",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"mulesoft": "docs-only: intelligence DB competitor_features id 3065 \"Runtime Manager: Deploy and manage integration apps across environments\" (2026-03-28)"
+				"mulesoft": "docs-only: intelligence DB competitor_features id 3065 \"Runtime Manager: Deploy and manage integration apps across environments\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/public-api/v1/openapi.yml:148 POST /n8n-packages/export writes projects, folders, workflows, credential references, data tables and variables into one .n8np package (packages/cli/src/modules/n8n-packages/CLAUDE.md:3); packages/cli/src/commands/export/entities.ts:47 exports all entities from the CLI; reached on: public API /api/v1/n8n-packages/export; CLI 'n8n export:entities', 'n8n export:workflow , all'",
+				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/ServerDetails.java:72 GET /server/configurations/download downloads all loaded configurations as one archive, and console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:240 downloads one configuration version; reached on: console page Configurations (download); GET /iaf/api/server/configurations/download"
 			}
 		},
 		{
@@ -6161,12 +6526,16 @@
 			"providerHow": "read-from-code",
 			"feature": "configuration-export-import",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/api-types/src/dto/packages/import-package-request.dto.ts:93 import takes conflict policies (workflowConflictPolicy, projectConflictPolicy, variableConflictPolicy) but no dry-run or preview field; a preview of incoming changes exists only in git mode, packages/cli/src/modules/source-control.ee/source-control.controller.ee.ts:252 /get-status before :226 /pull-workfolder, licence feat:sourceControl; reached on: Source control pull dialog (enterprise licence)",
+				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:199 uploads a configuration and with activate_config=false (:201) stores it as an inactive version that can be downloaded and checked before :176 activates it; there is no diff or change preview; reached on: console page Manage Configurations, upload (/configurations/upload)"
+			}
 		},
 		{
 			"id": "plt-environments",
@@ -6185,15 +6554,16 @@
 			"providerHow": "read-from-code",
 			"feature": "environments-and-promotion",
 			"featureConfidence": "high",
-			"n8n": "yes",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 31102 \"Git version control (Enterprise): Environments + git-backed workflow versioning in EE.\" (2026-07-03)",
-				"mulesoft": "docs-only: intelligence DB competitor_features id 3065 \"Runtime Manager: Deploy and manage integration apps across environments\" (2026-03-28)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/source-control.ee/source-control.module.ts:7 (licenseFlag feat:sourceControl) pushes and pulls workflows through a git branch per environment, and packages/cli/src/modules/promotions.ee/promotions.module.ts:9 (feat:gitConnections) promotes changes; both are .ee code needing an Enterprise licence (LICENSE.md:6-10). Without it, only manual export and import; reached on: Settings > Environments (/settings/environments, packages/frontend/editor-ui/src/app/router.ts:971); enterprise licence",
+				"mulesoft": "docs-only: intelligence DB competitor_features id 3065 \"Runtime Manager: Deploy and manage integration apps across environments\" (2026-03-28)",
+				"frank": "source read at v10.2.0, not driven: core/src/main/resources/AppConstants.properties:12 loads StageSpecifics_${dtap.stage}.properties and DeploymentSpecifics.properties on top of the configuration, so the same configuration archive moves from test to production with per-environment values; the upload and activate routes (console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:199 and :176) put it on the next environment; reached on: property dtap.stage; StageSpecifics_<stage>.properties; console Manage Configurations upload"
 			}
 		},
 		{
@@ -6213,14 +6583,15 @@
 			"providerHow": "read-from-code",
 			"feature": "environments-and-promotion",
 			"featureConfidence": "low",
-			"n8n": "yes",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 31102 \"Git version control (Enterprise): Environments + git-backed workflow versioning in EE.\" (2026-07-03)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/source-control.ee/source-control.controller.ee.ts:30 /source-control with :196 push-workfolder and :226 pull-workfolder keeps workflows, credential stubs, variables and tags in a git repository, licence-gated by feat:sourceControl (source-control.module.ts:7); unlicensed users can only script 'n8n export:workflow' into git themselves; reached on: Settings > Environments, push and pull buttons (enterprise licence)",
+				"frank": "source read at v10.2.0, not driven: the whole setup is plain files (configuration XML, stylesheets, properties such as core/src/main/resources/AppConstants.properties:12) loaded from a directory or jar by core/src/main/java/org/frankframework/configuration/classloaders/DirectoryClassLoader.java, so it lives in a git repository as is; Frank has no built-in git client (grep -rliE 'jgit' finds nothing); reached on: configuration directory in your own git repository"
 			}
 		},
 		{
@@ -6245,10 +6616,11 @@
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 3045 \"Community Nodes: Community-contributed custom integration nodes\" (2026-03-28)",
-				"mulesoft": "docs-only: intelligence DB competitor_features id 3061 \"Anypoint Exchange: Marketplace for reusable APIs, connectors, and templates\" (2026-03-28)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/community-packages/community-packages.controller.ts:7 /community-packages POST (:11) installs node packages from the npm registry (packages/cli/src/modules/community-packages/community-packages.config.ts:15 N8N_COMMUNITY_PACKAGES_REGISTRY), with verified packages browsable in the node panel (:27 N8N_VERIFIED_PACKAGES_ENABLED); the packages themselves are third-party and not in the tree; reached on: Settings > Community nodes (/settings/community-nodes), nodes panel",
+				"mulesoft": "docs-only: intelligence DB competitor_features id 3061 \"Anypoint Exchange: Marketplace for reusable APIs, connectors, and templates\" (2026-03-28)",
+				"frank": "source read at v10.2.0, not driven: no connector store: core/src/main/java/org/frankframework/components/plugins/PluginLoader.java:44 loads plugin jars from a local plugins.directory, and grep -rliE 'marketplace|plugin.?store' over java and ts finds no catalogue to install from"
 			}
 		},
 		{
@@ -6271,12 +6643,16 @@
 			"siblingRows": [
 				"stackiq:conn-integration-registry"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: n8n has no notion of other applications declaring their outside connections: grep for declared connection registries finds only packages/cli/src/modules/mcp-registry (a catalogue of MCP servers turned into nodes, mcp-registry-node-loader.ts) and packages/cli/src/modules/quick-connect (preset credential offers, quick-connect.config.ts:12), neither collects what other apps declare",
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/management/bus/endpoints/ConnectionOverview.java:46 collects every listener and sender connection declared across all loaded configurations into one list, shown by console/backend/src/main/java/org/frankframework/console/controllers/ConnectionOverview.java:37; it covers Frank's own configurations, not connections declared by other applications; reached on: console page Connection Overview (/connections)"
+			}
 		},
 		{
 			"id": "plt-link-connection",
@@ -6295,12 +6671,16 @@
 			"providerHow": "read-from-code",
 			"feature": "source-management",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: with no registry of declared connections (see plt-app-connections) there is nothing to link to a credential; credentials are linked to nodes only (packages/@n8n/db/src/entities/credentials-entity.ts)",
+				"frank": "source read at v10.2.0, not driven: connections are fixed attributes on each sender in configuration XML (for example core/src/main/java/org/frankframework/http/AbstractHttpSender.java:523 url); there is no declared-connection object that can be linked to a configured source, and the Connection Overview (core/src/main/java/org/frankframework/management/bus/endpoints/ConnectionOverview.java:46) is read-only"
+			}
 		},
 		{
 			"id": "plt-setup",
@@ -6319,12 +6699,16 @@
 			"providerHow": "read-from-code",
 			"feature": "openconnector-app-manifest",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/controllers/owner.controller.ts:25 POST /owner/setup backs the first-run owner page at packages/frontend/editor-ui/src/app/router.ts:568 /setup, and packages/frontend/editor-ui/src/features/setupPanel guides filling missing credentials when a workflow or template is opened (:242 /templates/:id/setup); reached on: /setup on first start, workflow setup panel",
+				"frank": "source read at v10.2.0, not driven: no setup wizard: the console routes (console/frontend/src/main/frontend/src/app/app.routes.ts:56 login to :450) have no onboarding or first-run page; getting started is documented in QUICK_START.md, outside the product"
+			}
 		},
 		{
 			"id": "plt-self-host",
@@ -6348,9 +6732,10 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 3044 \"Self-hosted: Full self-hosted deployment with Docker or npm\" (2026-03-28)"
+				"n8n": "source read at n8n@2.40.7, not driven: docker/images/n8n in the repo builds the self-hosted image and packages/cli/src/commands/start.ts starts the server; LICENSE.md:32-33 Sustainable Use License allows use 'only for your own internal business purposes or for non-commercial or personal use', and .ee features need a licence key (LICENSE.md:6-10); reached on: docker image or 'n8n start'",
+				"frank": "source read at v10.2.0, not driven: the release ships as a WAR, an EAR and a bootable runner (bootable-runner/src/main/java/org/frankframework/runner/FrankApplication.java:83) with Docker images for Tomcat, WildFly and JBoss (docker/Tomcat, docker/WildFly), all under the Apache License 2.0 (LICENSE:2 and :3); reached on: your own servers or containers; docker/tomcat.yml"
 			}
 		},
 		{
@@ -6370,12 +6755,16 @@
 			"providerHow": "read-from-code",
 			"feature": "repair-and-app-boot",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/config/src/configs/database.config.ts:140 dbTypeSchema allows only 'sqlite' and 'postgresdb' for DB_TYPE (:163); migrations exist only under packages/@n8n/db/src/migrations/sqlite and postgresdb, MySQL and MariaDB are no longer supported; reached on: env DB_TYPE",
+				"frank": "source read at v10.2.0, not driven: dbms/src/main/java/org/frankframework/dbms/Dbms.java:39 POSTGRESQL and :37 MYSQL (plus MariaDB :38, Oracle, MS SQL, DB2 and H2) are supported for Frank's own tables; SQLite is not among them; reached on: property jdbc datasource configuration (resources.yml / context.xml)"
+			}
 		},
 		{
 			"id": "plt-roles",
@@ -6394,14 +6783,15 @@
 			"providerHow": "read-from-code",
 			"feature": "action-authorization",
 			"featureConfidence": "high",
-			"n8n": "yes",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 31101 \"RBAC & SSO (Enterprise): Role-based access, SSO/LDAP gated behind Enterprise.\" (2026-07-03)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/permissions/src/roles/role-maps.ee.ts:37-40 defines owner, admin, member and chat user roles, but inviting an admin needs feat:advancedPermissions (packages/cli/src/services/user.service.ts:544), changing a role too (packages/cli/src/controllers/users.controller.ts:197), project roles need feat:projectRole:* and custom roles feat:customRoles (packages/cli/src/controllers/role.controller.ts:145); unlicensed, only owner and member; reached on: Settings > Users, Settings > Roles (licensed tiers)",
+				"frank": "source read at v10.2.0, not driven: commons/src/main/java/org/frankframework/lifecycle/DynamicRegistration.java:43 defines the roles IbisWebService, IbisObserver, IbisDataAdmin, IbisAdmin and IbisTester, and every console route checks them, e.g. console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:80 @RolesAllowed; reached on: authenticator role mapping per user or group"
 			}
 		},
 		{
@@ -6422,12 +6812,16 @@
 			"providerHow": "read-from-code",
 			"feature": "action-authorization",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/controllers/role.controller.ts:145 create, :165 update and :188 delete custom roles with chosen scopes such as workflow:execute or credential:share (resources and operations in packages/@n8n/permissions/src/constants.ee.ts), shown at packages/frontend/editor-ui/src/app/router.ts:846 /settings/roles; all behind @Licensed(feat:customRoles); reached on: Settings > Roles (enterprise licence)",
+				"frank": "source read at v10.2.0, not driven: which role may do what is fixed in code by @RolesAllowed on every console route (e.g. console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:80 and :148); the Security Items page (core/src/main/java/org/frankframework/management/bus/endpoints/SecurityItems.java:70) shows the roles, and an administrator only chooses which users or groups get which role (security/src/main/java/org/frankframework/lifecycle/servlets/AuthorityMapper.java:47), not which actions a role has; reached on: console page Security Items; role-mapping file"
+			}
 		},
 		{
 			"id": "plt-audit-trail",
@@ -6446,12 +6840,16 @@
 			"providerHow": "read-from-code",
 			"feature": "openconnector-or-adoption",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/workflows/workflow-history/workflow-history.controller.ts:22 lists each saved version of a workflow with its author and :39 shows one, so workflow changes are traceable; credentials and other objects have no per-object history in the UI, packages/@n8n/db/src/entities/activity-event.ts:13 records workflow and credential activity but no controller serves it, and audit events leave the instance only through licensed log streaming (packages/cli/src/modules/log-streaming.ee/log-streaming.controller.ts:23); reached on: workflow History view; log streaming (licensed)",
+				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/filters/SecurityLogFilter.java:43 writes every POST, PUT and DELETE with the user to the SEC log, management-gateway/src/main/java/org/frankframework/management/bus/message/RequestMessageBuilder.java:129 logs each management request with its payload, and uploaded configurations record the uploading user (core/src/main/java/org/frankframework/management/bus/endpoints/ConfigManagement.java:178); this is a log file, not an audit trail per object; reached on: security log file (SEC logger); console Manage Configurations shows the uploader per version"
+			}
 		},
 		{
 			"id": "plt-admin-settings",
@@ -6470,12 +6868,16 @@
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: some defaults have settings pages (packages/cli/src/controllers/security-settings.controller.ts:12 /settings/security, the /settings/* routes in packages/frontend/editor-ui/src/app/router.ts:604-1110), but retention and most engine defaults are env vars only, for example packages/@n8n/config/src/configs/executions.config.ts:110 EXECUTIONS_DATA_MAX_AGE; reached on: Settings pages plus environment variables",
+				"frank": "source read at v10.2.0, not driven: the console shows all properties read-only (console/backend/src/main/java/org/frankframework/console/controllers/EnvironmentVariables.java:41) and lets an admin change log levels and log settings at runtime (console/backend/src/main/java/org/frankframework/console/controllers/Logging.java:76 and :115); defaults such as message retention are properties (core/src/main/java/org/frankframework/jdbc/JdbcTransactionalStorage.java:122) changed in files, not on a settings page; reached on: console pages Environment Variables and Logging settings; properties files"
+			}
 		},
 		{
 			"id": "plt-demo-data",
@@ -6494,12 +6896,16 @@
 			"providerHow": "read-from-code",
 			"feature": "openconnector-app-manifest",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/N8nTrainingCustomerDatastore/N8nTrainingCustomerDatastore.node.ts:54 'Customer Datastore (n8n training)' returns sample customer records, and packages/frontend/editor-ui/src/app/router.ts:438 /workflows/onboarding/:id opens example workflows from templates; reached on: node panel 'Customer Datastore (n8n training)', templates and onboarding workflows",
+				"frank": "source read at v10.2.0, not driven: the example module ships sample configurations (example/src/main/resources/ConfigurationHelloWorld.xml and siblings) as a separate example webapp you build and run; the console has no load-example-data action; reached on: example webapp (frank2example); not in the console"
+			}
 		},
 		{
 			"id": "plt-or-provider",
@@ -6518,12 +6924,16 @@
 			"providerHow": "read-from-code",
 			"feature": "synced-from-tab",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: OpenRegister is a Nextcloud app; grep -rli openregister over packages/cli/src and packages/nodes-base finds nothing, and n8n offers no provider interface for other apps to consume its nodes except its own MCP server (packages/cli/src/modules/mcp)",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'openregister|nextcloud' over the whole tree finds nothing; Frank offers no provider interface to other applications' integration layers"
+			}
 		},
 		{
 			"id": "plt-connector-sdk",
@@ -6542,14 +6952,16 @@
 			"providerHow": "read-from-code",
 			"feature": "saas-productivity-connectors",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
-				"mulesoft": "docs-only: intelligence DB competitor_features id 3067 \"Connector SDK: SDK for building custom connectors\" (2026-03-28)"
+				"mulesoft": "docs-only: intelligence DB competitor_features id 3067 \"Connector SDK: SDK for building custom connectors\" (2026-03-28)",
+				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/node-cli/src/commands has new, dev, build, lint and release commands to scaffold, run and publish a custom node package, with packages/@n8n/create-node as the starter and packages/@n8n/scan-community-package to check it; reached on: npm create @n8n/node, n8n-node CLI",
+				"frank": "source read at v10.2.0, not driven: connectors are Java classes implementing core/src/main/java/org/frankframework/core/ISender.java:33 or core/src/main/java/org/frankframework/core/IPipe.java:41, documented through the Frank!Doc doclet (FRANKDOC.md:1) and loadable as plugins by core/src/main/java/org/frankframework/components/plugins/PluginLoader.java:44 or with className; reached on: Java project against the frankframework-core artefact; plugins.directory or className in configuration XML"
 			}
 		},
 		{
@@ -6569,12 +6981,16 @@
 			"providerHow": "read-from-code",
 			"feature": "openconnector-storage-migration",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/commands holds execute.ts, execute-batch.ts, export/ (workflow, credentials, entities, nodes), import/ (workflow, credentials, entities), list/workflow.ts, publish/workflow.ts, unpublish/workflow.ts, update/workflow.ts, audit.ts, license/ and user-management/ commands; reached on: 'n8n <command>' in the container or host",
+				"frank": "source read at v10.2.0, not driven: there is no management CLI: the only main entry points start the application (core/src/main/java/org/frankframework/runner/StartIbis.java:30, bootable-runner/src/main/java/org/frankframework/runner/FrankApplication.java:83); management from a terminal goes through the HTTP management API, e.g. console/backend/src/main/java/org/frankframework/console/controllers/Adapters.java:91 PUT /adapters to start or stop adapters with curl; reached on: HTTP management API /iaf/api/* (scriptable), no dedicated CLI"
+			}
 		},
 		{
 			"id": "plt-ai-tools",
@@ -6598,9 +7014,10 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 3043 \"AI Agents: Built-in AI agent nodes with LLM tool calling\" (2026-03-28)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/mcp/mcp.controller.ts:37 /mcp-server with :117 POST /http serves an MCP server whose tools (packages/cli/src/modules/mcp/tools, for example execute-workflow.tool.ts and search-executions.tool.ts) let an AI assistant run and inspect workflows; packages/@n8n/nodes-langchain/nodes/mcp/McpTrigger exposes a single workflow's tools; reached on: Settings > MCP access, /mcp-server/http endpoint, MCP Server Trigger node",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'mcp|model context protocol|openai|llm' over java and ts finds nothing; Frank exposes no tool interface for AI assistants"
 			}
 		},
 		{
@@ -6620,12 +7037,16 @@
 			"providerHow": "read-from-code",
 			"feature": "dashboard-http-datasource",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "partial",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: a Webhook workflow (packages/nodes-base/nodes/Webhook/Webhook.node.ts:135) can serve JSON that another app's widget reads, and nodes such as Grafana or Metabase exist in packages/nodes-base/nodes, but n8n offers no widget feed contract or dashboard provider API; reached on: hand-built webhook endpoint",
+				"frank": "source read at v10.2.0, not driven: Frank has no widgets for other applications, but monitoring dashboards can read its metrics from core/src/main/java/org/frankframework/metrics/PrometheusMeterServlet.java:40 (/metrics/prometheus) or its statistics from console/backend/src/main/java/org/frankframework/console/controllers/Adapters.java:188; grep -rliE 'widget' over java and ts outside test folders finds 0 files; reached on: /metrics/prometheus for Grafana and similar"
+			}
 		},
 		{
 			"id": "plt-leaf-integrations",
@@ -6644,12 +7065,16 @@
 			"providerHow": "read-from-code",
 			"feature": "synced-from-tab",
 			"featureConfidence": "high",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: n8n cannot place its links or logs on records in other apps: it has no embeddable record panel (grep -rli 'embed' over packages/cli/src/controllers finds nothing for records; packages/cli/src/modules/token-exchange/controllers/embed-auth.controller.ts:20 /auth/embed only logs a user into the n8n editor)",
+				"frank": "source read at v10.2.0, not driven: Frank has no plug-in panel for other applications' records: grep -rliE 'nextcloud|widget' over java and ts outside test folders finds 0 files; its logs and links are only visible in its own console (console/frontend/src/main/frontend/src/app/app.routes.ts)"
+			}
 		},
 		{
 			"id": "con-tenders",
@@ -6670,12 +7095,16 @@
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE for tenderned and endoflife over packages/nodes-base/nodes, credentials, packages/@n8n/nodes-langchain/nodes and packages/cli/src finds nothing (_lane/r-n8n/nl-grep.txt); no TED or TenderNed node among the 308 folders in packages/nodes-base/nodes",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'tenderned|ted.europa|tenders' over java and ts outside test folders finds 0 files; no tender connector"
+			}
 		},
 		{
 			"id": "con-eol",
@@ -6697,12 +7126,16 @@
 			"siblingRows": [
 				"stackiq:life-eol-feed"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE for tenderned and endoflife over packages/nodes-base/nodes, credentials, packages/@n8n/nodes-langchain/nodes and packages/cli/src finds nothing (_lane/r-n8n/nl-grep.txt); no endoflife.date node, only a hand-built HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) could read the feed",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'endoflife|end-of-life' over java and ts outside test folders finds 0 files; no end-of-life feed connector"
+			}
 		},
 		{
 			"id": "con-opencorporates",
@@ -6722,12 +7155,16 @@
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, credentials, packages/@n8n/nodes-langchain/nodes and packages/cli/src finds nothing for opencorporates (_lane/r-n8n/nl-grep.txt); company lookups ship only for other providers (packages/nodes-base/nodes/Clearbit, Brandfetch, Uplead), not OpenCorporates",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'opencorporates' over java and ts outside test folders finds 0 files; no OpenCorporates connector"
+			}
 		},
 		{
 			"id": "con-xwiki",
@@ -6747,12 +7184,16 @@
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE over packages/nodes-base/nodes, credentials, packages/@n8n/nodes-langchain/nodes and packages/cli/src finds nothing for xwiki (_lane/r-n8n/nl-grep.txt); wiki nodes exist for Confluence and Notion (packages/nodes-base/nodes/Confluence, Notion) only",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'xwiki' over java and ts outside test folders finds 0 files; no XWiki connector"
+			}
 		},
 		{
 			"id": "con-nc-marketplace",
@@ -6772,12 +7213,16 @@
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'apps.nextcloud.com|appstore' over packages/nodes-base/nodes finds nothing; packages/nodes-base/nodes/NextCloud/NextCloud.node.ts covers files, folders and users of one instance, not the app store",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'apps.nextcloud|nextcloud' over java and ts outside test folders finds 0 files; no Nextcloud app store connector"
+			}
 		},
 		{
 			"id": "con-dpg",
@@ -6797,12 +7242,16 @@
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'digitalpublicgoods|dpg' and 'digital public goods' over packages/nodes-base/nodes find nothing",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'digital ?public ?goods|dpg' over java and ts outside test folders finds 0 files; no Digital Public Goods registry connector"
+			}
 		},
 		{
 			"id": "con-sharepoint",
@@ -6824,12 +7273,16 @@
 			"siblingRows": [
 				"opencatalogi:int-sharepoint"
 			],
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Microsoft/SharePoint/v2/actions/file/index.ts:23 'download' takes files from a SharePoint site (with list and item resources in the same node), using packages/nodes-base/credentials/MicrosoftSharePointOAuth2Api.credentials.ts; reached on: workflow editor, Microsoft SharePoint node",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'sharepoint' over java and ts outside test folders finds 0 files; the only document-system connector is generic CMIS (cmis/src/main/java/org/frankframework/extensions/cmis/CmisSender.java:201), and the Microsoft Graph client is used for Exchange mail only (filesystem/src/main/java/org/frankframework/filesystem/MsalClientAdapter.java)"
+			}
 		},
 		{
 			"id": "con-timetable",
@@ -6851,12 +7304,16 @@
 			"siblingRows": [
 				"learniq:att-import-a-timetable"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'untis|zermelo|magister|somtoday|timetable|rooster' over packages/nodes-base/nodes finds nothing; no school scheduling node ships",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'untis|timetable|rooster' over java and ts outside test folders finds 0 files; no scheduling-software connector"
+			}
 		},
 		{
 			"id": "con-absence-report",
@@ -6878,12 +7335,16 @@
 			"siblingRows": [
 				"learniq:att-report-absence-to-authority"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'duo|verzuim|leerplicht|absence report' (word match) over packages/nodes-base/nodes finds nothing; no node reports absence to an education authority",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'verzuim|leerplicht|duo' over java and ts outside test folders finds 0 files; no absence reporting connector"
+			}
 		},
 		{
 			"id": "con-push-register",
@@ -6905,12 +7366,16 @@
 			"siblingRows": [
 				"learniq:gov-push-data-to-another-system"
 			],
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "yes",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: records can be pushed to other systems through any of the write operations in the 443 nodes registered in packages/nodes-base/package.json:449 onwards, or HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79); no node targets a Dutch national register (grep for brp, kvk, bag, haalcentraal finds nothing, _lane/r-n8n/nl-grep.txt); reached on: workflow editor, any write node or HTTP Request",
+				"frank": "source read at v10.2.0, not driven: records are pushed to any outside system with core/src/main/java/org/frankframework/http/HttpSender.java:64 (REST), core/src/main/java/org/frankframework/http/WebServiceSender.java:45 (SOAP) or core/src/main/java/org/frankframework/jdbc/FixedQuerySender.java:72 (database), with mapping and retries in the same pipeline; no national register ships a dedicated connector; reached on: configuration XML adapter with a mapping pipe and HttpSender/WebServiceSender"
+			}
 		},
 		{
 			"id": "con-library-size",
@@ -6935,10 +7400,11 @@
 			"apisix": "unknown",
 			"mulesoft": "yes",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "partial",
 			"evidence": {
-				"n8n": "docs-only: intelligence DB competitor_features id 3036 \"400+ Integrations: Pre-built connectors for popular SaaS and databases\" (2026-03-28)",
-				"mulesoft": "docs-only: intelligence DB competitor_features id 3061 \"Anypoint Exchange: Marketplace for reusable APIs, connectors, and templates\" (2026-03-28)"
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/package.json registers 443 node files (from :449) and 411 credential types across 308 node folders, plus 20 LangChain node groups in packages/@n8n/nodes-langchain/nodes, covering CRM, ERP, mail, chat, storage and database software; reached on: node panel in the workflow editor",
+				"mulesoft": "docs-only: intelligence DB competitor_features id 3061 \"Anypoint Exchange: Marketplace for reusable APIs, connectors, and templates\" (2026-03-28)",
+				"frank": "source read at v10.2.0, not driven: about 99 listener and sender classes ship (find over src/main for *Sender.java and *Listener.java, abstract classes excluded), but they are protocol and technology connectors (HTTP, SOAP, JDBC, JMS, Kafka, SFTP, mail, S3); ready-made business-software connectors are few: SAP (sap/src/main/java/org/frankframework/extensions/sap/SapSender.java:23), Exchange, SendGrid (core/src/main/java/org/frankframework/senders/SendGridSender.java:61), Akamai (akamai/src/main/java/org/frankframework/extensions/akamai/NetStorageSender.java:70), CMIS, iDIN and Tibco; reached on: configuration XML elements listed in the Frank!Doc"
 			}
 		},
 		{
@@ -6961,12 +7427,16 @@
 			"siblingRows": [
 				"decidiq:min-12"
 			],
-			"n8n": "unknown",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/DeepL/DeepL.node.ts:63 'translate' and :45 'language' resource, plus packages/nodes-base/nodes/Google/Translate and packages/nodes-base/nodes/LingvaNex nodes; reached on: workflow editor, DeepL, Google Translate and LingvaNex nodes",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'deepl|translation.?service|google.?translate' over java and ts finds nothing (the 'translat' hits are SQL dialect translators such as dbms/src/main/java/org/frankframework/dbms/ISqlTranslator.java); no translation service connector"
+			}
 		},
 		{
 			"id": "con-sbb",
@@ -6988,12 +7458,16 @@
 			"siblingRows": [
 				"learniq:wpl-check-the-company-is-approved"
 			],
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'sbb|samenwerkingsorganisatie beroepsonderwijs|leerbedrijf' (word match) over packages/nodes-base/nodes finds nothing; no SBB register node",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'sbb|leerbedrijf' over java and ts outside test folders finds 0 files; no SBB connector"
+			}
 		},
 		{
 			"id": "con-software-catalogue",
@@ -7012,12 +7486,16 @@
 			"providerHow": "read-from-code",
 			"feature": "software-catalogus-events",
 			"featureConfidence": "medium",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown"
+			"frank": "no",
+			"evidence": {
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'software ?catalog|softwarecatalogus|publiccode' over packages/nodes-base/nodes finds nothing; no software catalogue node",
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'softwarecatalog|software.?catalog' over java and ts outside test folders finds 0 files; no software catalogue connector"
+			}
 		},
 		{
 			"id": "sync-distribution",
@@ -7043,14 +7521,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: one adapter can read changes from the central store (core/src/main/java/org/frankframework/jdbc/JdbcTableListener.java:52) and fan them out to every consumer at once with core/src/main/java/org/frankframework/senders/ParallelSenders.java:54 or through a publish-subscribe topic (messaging/src/main/java/org/frankframework/jms/JmsSender.java:75, messaging/src/main/java/org/frankframework/extensions/kafka/KafkaSender.java:50), each consumer with its own mapping; reached on: configuration XML adapter with a listener on the source and ParallelSenders or a JMS/Kafka topic"
 			}
 		},
 		{
@@ -7077,14 +7555,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'navigator|ztc|zaaktype' over java, xml, xsd, ts and properties outside test folders finds only the browser navigator object in console TypeScript (console/frontend/src/main/frontend/src/app/services/misc.service.ts); no i-Navigator or case type catalogue connector"
 			}
 		},
 		{
@@ -7111,14 +7589,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'pinkroccade|iburgerzaken|centric|\\bgws\\b|nedgraphics|civision|cipers' over java, xml, ts and properties outside test folders finds nothing; the shipped business connectors are SAP (sap/src/main/java/org/frankframework/extensions/sap/SapSender.java:23), Exchange, SendGrid, CMIS, Akamai, iDIN and Tibco"
 			}
 		},
 		{
@@ -7145,14 +7623,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: the framework is Apache 2.0 (LICENSE:2 and :3), and anyone can write a connector against core/src/main/java/org/frankframework/core/ISender.java:33 or core/src/main/java/org/frankframework/core/IPipe.java:41 and ship it as a plugin loaded by core/src/main/java/org/frankframework/components/plugins/PluginLoader.java:44, without the supplier; reached on: plugins.directory or className in configuration XML"
 			}
 		},
 		{
@@ -7179,14 +7657,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: Frank is the message bus itself and carries no business data store: its only tables are message logs and error stores (core/src/main/java/org/frankframework/jdbc/JdbcTransactionalStorage.java:785 with retention), and a distribution flow is just another adapter; modules are separate artefacts (bundle-minimal versus bundle-full, messaging, filesystem, ladybug listed as separate modules in pom.xml:1615 to :1621); reached on: deployment choice of bundle and modules"
 			}
 		},
 		{
@@ -7213,14 +7691,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "partial",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: service bus flows are the core (JMS, Kafka, AMQP listeners and senders in messaging/src/main/java) and REST endpoints are published with core/src/main/java/org/frankframework/http/rest/ApiListener.java:100 including JWT checks and OpenAPI; gateway policies such as rate limiting and consumer keys are missing (see gw-ratelimit, acc-apikey); reached on: configuration XML ApiListener and bus listeners in one instance"
 			}
 		},
 		{
@@ -7254,7 +7732,7 @@
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "not checked: whether WeAreFrank! offers Frank as a hosted service with supplier maintenance is a commercial matter the source cannot answer; the repository only holds the self-hosted framework (publiccode.yml:28 softwareType standalone/backend)"
 			}
 		},
 		{
@@ -7281,14 +7759,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: per adapter and receiver the console counts received, processed and error messages (console/backend/src/main/java/org/frankframework/console/controllers/Adapters.java:188), and core/src/main/java/org/frankframework/monitoring/Trigger.java:229 setThreshold with :235 setPeriod raises an alarm through core/src/main/java/org/frankframework/monitoring/Monitor.java:67 when the count passes a threshold; reached on: console pages Adapter Status, Adapter Statistics and Monitors"
 			}
 		},
 		{
@@ -7315,14 +7793,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/rest/ApiListener.java:581 setJwksURL points at the issuer's JWKS address, and core/src/main/java/org/frankframework/http/rest/ApiListenerServlet.java:491 validates each bearer JWT against those keys through core/src/main/java/org/frankframework/jwt/JwtValidator.java:47; reached on: configuration XML ApiListener authenticationMethod=JWT jwksURL=..."
 			}
 		},
 		{
@@ -7349,14 +7827,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: credentials can live outside Frank in Delinea Secret Server (credentialProvider/src/main/java/org/frankframework/credentialprovider/delinea/DelineaCredentialFactory.java:86), Kubernetes secrets (kubernetes/src/main/java/org/frankframework/credentialprovider/KubernetesCredentialFactory.java:70), an Ansible vault or the WildFly credential store; HashiCorp Vault itself has no factory (grep -rliE 'hashicorp' finds nothing); reached on: property credentialFactory.class"
 			}
 		},
 		{
@@ -7383,14 +7861,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/rest/ApiListener.java:452 setAuthenticationMethod takes exactly one value of the enum at :163 (NONE, COOKIE, HEADER, AUTHROLE, JWT), and a servlet gets one authenticator (security/src/main/java/org/frankframework/lifecycle/servlets/ServletConfiguration.java:144); there is no either-or of methods on one endpoint"
 			}
 		},
 		{
@@ -7417,14 +7895,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: there are no consumer subscriptions (grep -rliE 'subscription' over java finds only broker consumer settings, e.g. messaging/src/main/java/org/frankframework/messaging/amqp/AmqpListener.java:58), so nothing can expire"
 			}
 		},
 		{
@@ -7451,14 +7929,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: Frank keeps no list of consumers or subscriptions to notify (grep -rliE 'subscription|subscriber' over java finds only broker consumer settings); API changes are configuration reloads (console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:151) that tell nobody outside"
 			}
 		},
 		{
@@ -7485,14 +7963,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: a recorded Ladybug report is turned into a Larva test scenario by ladybug/debugger/src/main/java/org/frankframework/ladybug/larva/ConvertToLarvaAction.java:64, and larva/src/main/java/org/frankframework/larva/ScenarioRunner.java:48 replays scenarios with expected output comparison; Ladybug reports can also be kept in its test tab and rerun (ladybug/rerunner/src/main/java/org/frankframework/ladybug/SpringBusRerunner.java:55); reached on: console pages Ladybug and Larva (/testing/larva)"
 			}
 		},
 		{
@@ -7519,14 +7997,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "yes",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/scheduler/AbstractJobDef.java:491 setCronExpression is passed to Quartz cronSchedule (core/src/main/java/org/frankframework/scheduler/SchedulerHelper.java:128), whose cron syntax supports MON-FRI, the nearest working day (W) and the last day of the month (L); reached on: configuration XML Job cronExpression=\"0 0 7 ? * MON-FRI\"; console Add Schedule"
 			}
 		},
 		{
@@ -7560,7 +8038,7 @@
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "not checked: whether a hosted Frank runs in the EU without US cloud providers is a commercial and operational matter the source cannot answer; the tree holds only the self-hosted framework (publiccode.yml:28)"
 			}
 		},
 		{
@@ -7587,14 +8065,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: endpoints and targets are written in configuration XML (core/src/main/java/org/frankframework/http/rest/ApiListener.java:394 uriPattern, core/src/main/java/org/frankframework/http/AbstractHttpSender.java:523 url); the console only lists them (console/backend/src/main/java/org/frankframework/console/controllers/Webservices.java:50) and has no editor among its routes (console/frontend/src/main/frontend/src/app/app.routes.ts:73 to :450)"
 			}
 		},
 		{
@@ -7621,14 +8099,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'openai|llm|anthropic|ollama|bedrock|chatgpt' over java and ts finds nothing; no AI provider routing or fallback"
 			}
 		},
 		{
@@ -7655,14 +8133,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'openai|llm|token.?quota' over java and ts finds nothing, and there is no per-consumer limiting at all (see gw-ratelimit)"
 			}
 		},
 		{
@@ -7689,14 +8167,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'openai|llm|prompt|moderation|guardrail' over java finds no AI content check; the nearest is generic validation with core/src/main/java/org/frankframework/pipes/JsonValidator.java:50"
 			}
 		},
 		{
@@ -7723,14 +8201,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: grep -rliE 'mcp|model context protocol' over java and ts finds nothing; no MCP proxying"
 			}
 		},
 		{
@@ -7757,14 +8235,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/authentication/SamlAssertionOauth.java:57 uses the saml2-bearer grant with an assertion Frank builds from its own configured nameId, and the other authenticators use client credentials or password grants; grep -rniE 'token-exchange|8693' over core main finds nothing, so a caller's token is never exchanged"
 			}
 		},
 		{
@@ -7791,14 +8269,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: Frank issues no consumer secrets (see acc-secret-reveal-once); ApiListener JWT mode follows key rotation at the issuer through its JWKS (core/src/main/java/org/frankframework/http/rest/ApiListener.java:581), but there is no pair of client secrets per consumer"
 			}
 		},
 		{
@@ -7825,14 +8303,14 @@
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
-			"frank": "unknown",
+			"frank": "no",
 			"evidence": {
 				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
 				"wso2": "not checked: demand row added 2026-09-26, after this column was last read",
-				"frank": "not checked: demand row added 2026-09-26, after this column was last read"
+				"frank": "source read at v10.2.0, not driven: there is no AI step to evaluate (grep -rliE 'openai|llm|anthropic' over java and ts finds nothing); Larva scenarios (larva/src/main/java/org/frankframework/larva/ScenarioRunner.java:48) compare output exactly and do not score answers"
 			}
 		}
 	],
