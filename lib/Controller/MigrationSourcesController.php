@@ -23,6 +23,7 @@ namespace OCA\Integriq\Controller;
 use InvalidArgumentException;
 use OCA\Integriq\Migration\ColumnMapping;
 use OCA\Integriq\Migration\ColumnMappingValidator;
+use OCA\Integriq\Migration\MigrationMappingPresetRegistry;
 use OCA\Integriq\Migration\MigrationPreviewReader;
 use OCA\Integriq\Migration\MigrationSourceRegistry;
 use OCA\Integriq\Migration\UnknownMigrationSourceException;
@@ -62,6 +63,10 @@ class MigrationSourcesController extends Controller {
 	 * @param ColumnMappingValidator $validator The column mapping validator.
 	 * @param IUserSession $userSession Who is asking.
 	 * @param ActionAuthService $actionAuth Whether they may.
+	 * @param MigrationMappingPresetRegistry $presetRegistry The seeded
+	 *                                                       named-incumbent
+	 *                                                       column-mapping
+	 *                                                       presets.
 	 */
 	public function __construct(
 		string $appName,
@@ -71,6 +76,7 @@ class MigrationSourcesController extends Controller {
 		private readonly ColumnMappingValidator $validator,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
+		private readonly MigrationMappingPresetRegistry $presetRegistry,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -90,6 +96,29 @@ class MigrationSourcesController extends Controller {
 	public function index(): JSONResponse {
 		return new JSONResponse(['results' => $this->registry->describeAll()]);
 	}//end index()
+
+	/**
+	 * Every seeded named-incumbent column-mapping preset (ParnasSys,
+	 * ESIS, Magister, Somtoday), for an operator to pick as a
+	 * starting `ColumnMapping` instead of hand-authoring one.
+	 *
+	 * @return JSONResponse The preset inventory.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/migration-mapping-presets/spec.md#requirement-an-operator-can-list-presets-over-the-existing-migration-sources-http-surface-req-002
+	 *
+	 * @no-admin-idor-exempt Pure computation over static seed data. It reads
+	 *   no per-caller storage and names no object: the four presets are
+	 *   the same for every caller. There is no object here to scope to a
+	 *   caller.
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function presets(): JSONResponse {
+		return new JSONResponse(['results' => $this->presetRegistry->describeAll()]);
+	}//end presets()
 
 	/**
 	 * The read-only pass: counts, a sample and whether the read was complete.

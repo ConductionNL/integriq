@@ -42,6 +42,62 @@
       "isEnabled": false,
       "documentation": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/ui/",
       "reference": "pdok.feature_flag"
+    },
+    {
+      "id": "roster-zermelo",
+      "name": "Zermelo",
+      "description": "Zermelo Roostermakers — REST/JSON rooster-API, token authenticatie.",
+      "category": "onderwijs",
+      "subCategory": "rostering-import",
+      "adapterClass": "OCA\\Integriq\\Sources\\Roster\\RosterImportSourceAdapter",
+      "location": "https://docs.zportal.nl/",
+      "type": "rest-token",
+      "auth": "token",
+      "isEnabled": false,
+      "documentation": "https://docs.zportal.nl/docs/",
+      "reference": "roster.import.feature_flag"
+    },
+    {
+      "id": "roster-untis-oneroster",
+      "name": "Untis (OneRoster)",
+      "description": "Untis/WebUntis — roosterimport via de OneRoster API.",
+      "category": "onderwijs",
+      "subCategory": "rostering-import",
+      "adapterClass": "OCA\\Integriq\\Sources\\Roster\\RosterImportSourceAdapter",
+      "location": "https://developer.untis.com/",
+      "type": "oneroster",
+      "auth": "oauth2",
+      "isEnabled": false,
+      "documentation": "https://help.untis.at/hc/en-150/articles/360008456699-WebUntis-Release-Notes",
+      "reference": "roster.import.feature_flag"
+    },
+    {
+      "id": "roster-xedule",
+      "name": "Xedule",
+      "description": "Xedule (Visma) — REST API plus de OAuth2 Xedule Connect laag.",
+      "category": "onderwijs",
+      "subCategory": "rostering-import",
+      "adapterClass": "OCA\\Integriq\\Sources\\Roster\\RosterImportSourceAdapter",
+      "location": "https://developer.connect.xedule.nl/",
+      "type": "rest-oauth2",
+      "auth": "oauth2",
+      "isEnabled": false,
+      "documentation": "https://xedule.nl/modules",
+      "reference": "roster.import.feature_flag"
+    },
+    {
+      "id": "roster-timeedit",
+      "name": "TimeEdit",
+      "description": "TimeEdit — Scheduling REST API voor roosterimport.",
+      "category": "onderwijs",
+      "subCategory": "rostering-import",
+      "adapterClass": "OCA\\Integriq\\Sources\\Roster\\RosterImportSourceAdapter",
+      "location": "https://developer.timeedit.com/",
+      "type": "rest-token",
+      "auth": "token",
+      "isEnabled": false,
+      "documentation": "https://developer.timeedit.com/changelog",
+      "reference": "roster.import.feature_flag"
     }
   ]
 }

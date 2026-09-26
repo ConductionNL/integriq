@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\MigrationSourcesController;
 use OCA\Integriq\Migration\ColumnMappingValidator;
+use OCA\Integriq\Migration\MigrationMappingPresetRegistry;
 use OCA\Integriq\Migration\MigrationPreviewReader;
 use OCA\Integriq\Migration\MigrationSourceAdapterInterface;
 use OCA\Integriq\Migration\MigrationSourceRegistry;
@@ -85,7 +86,8 @@ class MigrationSourcesControllerTest extends TestCase {
 			new MigrationPreviewReader($registry),
 			new ColumnMappingValidator(),
 			$session,
-			$actionAuth
+			$actionAuth,
+			new MigrationMappingPresetRegistry()
 		);
 	}//end controller()
 
