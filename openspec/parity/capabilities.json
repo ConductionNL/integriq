@@ -5845,13 +5845,19 @@
 			"area": "connectors",
 			"name": "Pull public tenders from TenderNed and European tender portals.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "All eight portals ship as seeded source + mapping + synchronization + weekly job fragments: lib/Settings/register.d/tenderned-connector.json:8 (source), :82 (sync), :101 (targetId spectr/tender), :117 (job interval); boamp-france-connector.json:8/:59/:79; germany-bund-connector.json:8/:55/:74; latvia-iub-connector.json:8/:62/:76; sweden-avropa-connector.json:8/:59/:73; austria-datagvat-connector.json:8/:64/:79; greece-diavgeia-connector.json:8/:55/:73; australia-austender-connector.json:8/:63/:77. Fragments are merged and imported by lib/Repair/InitializeRegister.php:136-178 and turned into Store cards by lib/Service/CatalogRegistryService.php:319-386. grep for a spectr register definition in lib/Settings = 0 hits.",
+				"portalsFound": "tenderned, boamp-france, germany-bund, latvia-iub, sweden-avropa, austria-opentender, greece-diavgeia, australia-austender (8 of 8)"
 			},
+			"reachedOn": "/store (catalog_item source-template cards, instantiate via POST /api/catalog/items/{id}/instantiate) and /sources, /synchronizations",
+			"note": "Every named portal exists as a working keyless HTTP source with a live-verified mapping, but every synchronization targets spectr/tender, a register integriq does not ship, so out of the box the enabled weekly jobs have nowhere to write unless the Specter register is installed. Germany ports only the govdata CKAN path and TenderNed carries a documented 0-based pagination offset bug that skips page 2.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5864,13 +5870,18 @@
 			"area": "connectors",
 			"name": "Fill in end-of-support dates from the public end-of-life feed.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Settings/register.d/endoflife-date-source.json:6-69 (eol_product and eol_cycle schemas in the integriq register), :150 (endoflife-date source, https://endoflife.date/api, auth none); lib/Settings/register.d/endoflife-date-source-cycles.json:49,113,177,241,305,369,433,497 (eight synchronizations targeting integriq/eol_cycle with daily jobs); tests/Integration/EndoflifeDateLiveSyncTest.php:58; tests/Unit/Service/EndoflifeDateSyncTest.php"
 			},
+			"reachedOn": "/sources and /synchronizations (the endoflife-date source and its eight syncs); no integriq page lists eol_cycle itself",
+			"note": "Integriq pulls endoflife.date cycles for eight fixed products (php, nodejs, python, postgresql, mysql, nextcloud, wordpress, laravel) into its own eol_cycle schema daily. Writing those dates onto a software record is the consuming app's job (stackiq), and adding a ninth product needs a new mapping, sync and job per product.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "endoflife-date-source",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"stackiq:life-eol-feed"
 			],
@@ -5886,13 +5897,18 @@
 			"area": "connectors",
 			"name": "Look up companies abroad through OpenCorporates.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/openregister",
+				"evidence": "lib/Settings/register.d/opencorporates-source.json:8 (source seed, location https://api.opencorporates.com/v0.4, auth apikey), :20 (configuration.mock true with a canned /companies/search body); lib/Service/CatalogRegistryService.php:91 (Store category 'Company data'). The lookup logic lives in openregister lib/Service/Integration/Providers/OpenCorporatesProvider.php. grep -i opencorporates in integriq lib/src outside the catalog service = 0 hits."
 			},
-			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"reachedOn": "/store (source-template:opencorporates card) and /sources; the company search itself is reached through the OpenRegister integration leaf",
+			"note": "Integriq only ships the source template, and it ships in mock mode, so every lookup returns a canned Conduction B.V. result until an admin adds an API token and removes the mock flag. The actual company search belongs to OpenRegister's OpenCorporatesProvider.",
+			"provider": "openregister (OpenCorporatesProvider leaf) over an integriq source",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5905,13 +5921,18 @@
 			"area": "connectors",
 			"name": "Read pages from an XWiki.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/openregister",
+				"evidence": "lib/Settings/register.d/xwiki-source.json:8 (source seed, location http://xwiki:8080/xwiki placeholder), :21 (isEnabled false); lib/Service/CatalogRegistryService.php:92 (Store category 'Document / CMS'). Page reading lives in openregister lib/Service/Integration/Providers/XwikiProvider.php. grep -i xwiki in integriq lib/src outside the catalog service = 0 hits."
 			},
-			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"reachedOn": "/store (source-template:xwiki card) and /sources; page reading is reached through the OpenRegister xWiki integration leaf",
+			"note": "Integriq ships a dormant source pointing at a dev-stack hostname; an admin must set the real URL and auth and enable it. Reading pages is OpenRegister's XwikiProvider, integriq has no xWiki-specific code.",
+			"provider": "openregister (XwikiProvider leaf) over an integriq source",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5924,13 +5945,18 @@
 			"area": "connectors",
 			"name": "Read apps from the Nextcloud app store.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Settings/register.d/nextcloud-marketplace-connector.json:8 (source nextcloud-appstore, https://apps.nextcloud.com/api/v1, auth none), :63 (sync, endpoint /apps.json, resultsPosition _root), :77 (targetId spectr/marketplaceApp), :93 (weekly job); tests/Unit/Settings/Wave0GatheringConnectorRegisterFragmentTest.php:54"
 			},
+			"reachedOn": "/store (source-template:nextcloud-appstore card) and /sources, /synchronizations",
+			"note": "The source and mapping read the whole App Store catalog in one keyless call, but the sync writes to spectr/marketplaceApp, a register integriq does not ship, so it only lands anywhere on an instance that has the Specter register.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5943,13 +5969,18 @@
 			"area": "connectors",
 			"name": "Read the Digital Public Goods registry.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Settings/register.d/dpg-registry-connector.json:8 (source dpg-registry, https://raw.githubusercontent.com/DPGAlliance/dpg-api/main/docs/dpgs, auth none), :55 (sync, endpoint /index.json), :69 (targetId spectr/marketplaceApp), :85 (weekly job); tests/Unit/Settings/Wave0GatheringConnectorRegisterFragmentTest.php:55"
 			},
+			"reachedOn": "/store (source-template:dpg-registry card) and /sources, /synchronizations",
+			"note": "Reads the DPG Alliance's GitHub-hosted index.json (the old api.digitalpublicgoods.net is dead), but like the other Specter feeds it writes to spectr/marketplaceApp, which integriq does not ship.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5962,13 +5993,18 @@
 			"area": "connectors",
 			"name": "Take documents from SharePoint.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php:153-197 (listDocuments/fetchDocument via Microsoft Graph drive API through the credential broker), :252 (IntegrationProvider list() needs a siteId filter); registered at lib/AppInfo/Application.php:1473; Store card via lib/Service/CatalogRegistryService.php:112. Importable template configurations/sharepoint-woo/sources/sharepoint.json and configurations/sharepoint-woo/synchronizations/sharepoint-publications.json. grep listDocuments/fetchDocument outside the adapter = 0 callers."
 			},
+			"reachedOn": "/store (adapter:sharepoint-online card, always-available) and the configuration import UI for the sharepoint-woo template; nothing in integriq's own UI calls listDocuments with a siteId",
+			"note": "A real Graph adapter exists and fetches documents into Nextcloud Files, but it only runs when OpenRegister's integration surface calls list() with a siteId and a brokered credential; the hand-off to the document app is explicitly deferred. The sharepoint-woo configuration is a separate import template with an empty location that the admin must fill in.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "document-cms-connectors",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"opencatalogi:int-sharepoint"
 			],
@@ -5984,13 +6020,18 @@
 			"area": "connectors",
 			"name": "Import a timetable from scheduling software.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "grep -rniE 'timetable|rooster|untis|zermelo' lib src configurations = 0 relevant hits (3 false positives on 'countIs' in lib/Migration/MigrationPreviewReader.php)"
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "No source template, mapping or adapter for any scheduling package ships; a timetable import would have to be built by hand with the generic sync engine.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"learniq:att-import-a-timetable"
 			],
@@ -6006,13 +6047,18 @@
 			"area": "connectors",
 			"name": "Report persistent absence onward to the authority.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "grep -rniwE 'verzuim|absence|absent|DUO|leerplicht|BRON' lib src configurations = 0 relevant hits (only 'absent' in docblocks about missing apps, e.g. lib/Capabilities.php:10)"
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "There is no DUO or verzuimregister target template; only the generic outbound sync (see con-push-register) could be configured for it by hand.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"learniq:att-report-absence-to-authority"
 			],
@@ -6028,13 +6074,18 @@
 			"area": "connectors",
 			"name": "Push records to a national register or another system.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Service/SynchronizationService.php:5694-5696 (updateTarget case 'api' calls writeObjectToTarget), :8067-8200 (writeObjectToTarget POSTs new objects, PUTs updates, DELETEs removals against the target source, with updateEndpoint/deleteEndpoint/idPosition knobs), :4688 (register/schema to api path); lib/EventListener/ObjectUpdatedEventListener.php:66 (object events trigger handleObjectEventSynchronization); src/views/Synchronization/syncDraft.js:48-52 (target type 'API' offered in the editor); example configurations/woo-elastic/synchronizations/publication-to-elastic.json (register/schema to api)"
 			},
+			"reachedOn": "/synchronizations/:id (SynchronizationDetailPage, target type API)",
+			"note": "Outbound push to any HTTP system is real and generic, triggered by object create/update events or runs. No pre-configured national register target ships, so pushing to a specific register still means configuring the source, mapping and endpoints yourself.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "synchronization-engine",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"learniq:gov-push-data-to-another-system"
 			],
@@ -6050,13 +6101,19 @@
 			"area": "connectors",
 			"name": "Pick from hundreds of ready-made connectors for common business software.",
 			"source": "competitor-derived",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Counted: 25 seeded source objects across 24 files in lib/Settings/register.d/ (python enumeration of components.objects with schema source); 6 static descriptors at lib/Service/CatalogRegistryService.php:215-303; 4 integriq adapters registered in the IntegrationRegistry (find lib/Service/Adapter -name '*Adapter.php' = 4); 8 more source files under configurations/*/sources/ that the Store does not list. Store collection: lib/Service/CatalogRegistryService.php:145-161, materialised by lib/Repair/MaterializeCatalogItems.php:46.",
+				"catalogCount": "about 35 catalog_item cards (25 source templates + 6 static + 4 adapters), about 43 connectors counting configuration templates"
 			},
+			"reachedOn": "/store",
+			"note": "The Store holds roughly 35 entries, not hundreds, and that count is padded: two environment placeholder sources (environment-local-source, environment-acceptance-source) become connector cards, and SmartDocuments and Xential each appear twice (adapter and source template). About ten of the real ones are Specter feeds that write to a register integriq does not ship.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "high",
 			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -6073,13 +6130,18 @@
 			"area": "connectors",
 			"name": "Translate a text through an outside translation service.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "grep -rniE 'deepl|libretranslate|translation service|translation api|ITranslationManager|TranslationProvider|google translate' lib src = 0 relevant hits (only 'deeply' and LtiDeepLinking matches); lib/Service/ZgwVersionTranslationService.php translates ZGW API versions, not text"
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "No translation service template or adapter exists; the ZGW 'translate' code is API version translation and does not count.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"decidiq:min-12"
 			],
@@ -6095,13 +6157,18 @@
 			"area": "connectors",
 			"name": "Check that a company is an approved training company before a placement starts.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "grep -rniE '\\bSBB\\b|leerbedrijf|s-bb\\.nl|erkend' lib src configurations = 0 hits"
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "No SBB leerbedrijven source or check exists in integriq.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"learniq:wpl-check-the-company-is-approved"
 			],
@@ -6117,13 +6184,18 @@
 			"area": "connectors",
 			"name": "Read software from a software catalogue.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Service/SoftwareCatalogueService.php:112-186 extendModel reads a local vng-gemma model object in OpenRegister and writes extendview objects (called only from the custom-connections rule at lib/Service/RuleService.php:414); :584-725 every organisation/contact lifecycle handler is a TODO that only logs (e.g. :586 'TODO: Implement email sending logic'). No HTTP call to any software catalogue anywhere in the class."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "The hint was wrong: SoftwareCatalogueService is a VNG Softwarecatalogus helper that extends GEMMA ArchiMate views inside OpenRegister, plus stubbed lifecycle hooks, and it never reads software from a catalogue. No source template for a software catalogue ships either.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "software-catalogus-events",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
