@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RodRetour>
+  <stuurgegevens>
+    <kenmerk>seed-kenmerk-003</kenmerk>
+    <signaalcode>7</signaalcode>
+    <tijdstipBericht>2026-09-25T10:05:00+02:00</tijdstipBericht>
+  </stuurgegevens>
+  <body>
+    <omschrijving>Leerling niet bekend bij DUO</omschrijving>
+  </body>
+</RodRetour>
