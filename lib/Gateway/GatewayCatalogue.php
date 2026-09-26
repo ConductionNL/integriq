@@ -54,6 +54,14 @@ final class GatewayCatalogue {
 				'transport' => 'https',
 			],
 			[
+				'id' => 'rod',
+				'label' => 'DUO ROD',
+				'standard' => 'ROD (Register Onderwijsdeelnemers) via Edukoppeling',
+				'claimLevel' => GatewayDescriptor::CLAIM_PLANNED,
+				'claimEvidence' => 'Envelope build and translation validated against fixtures; no certificate, no koppelvlak connection (M3(c)).',
+				'jurisdiction' => 'NL',
+			],
+			[
 				'id' => 'stuf-zkn',
 				'label' => 'StUF-ZKN 3.10',
 				'standard' => 'StUF-ZKN 3.10',

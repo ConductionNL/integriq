@@ -11453,6 +11453,74 @@
         "translatedAt": "2026-03-03T09:00:00+00:00",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-1-1"
+        },
+        "direction": "outbound",
+        "berichtsoort": "inschrijving",
+        "status": "sent",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "signaalcode": "Voorbeeld Signaalcode 1",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 1",
+        "bsnHash": "Voorbeeld Bsnhash 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-2-2"
+        },
+        "direction": "inbound",
+        "berichtsoort": "uitschrijving",
+        "status": "failed",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "signaalcode": "Voorbeeld Signaalcode 2",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 2",
+        "bsnHash": "Voorbeeld Bsnhash 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-3-3"
+        },
+        "direction": "outbound",
+        "berichtsoort": "verblijfsgegevens",
+        "status": "pending",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "signaalcode": "Voorbeeld Signaalcode 3",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 3",
+        "bsnHash": "Voorbeeld Bsnhash 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-4-4"
+        },
+        "direction": "inbound",
+        "berichtsoort": "schooladvies",
+        "status": "acknowledged",
+        "ref": "Voorbeeld Ref 4",
+        "kenmerk": "Voorbeeld Kenmerk 4",
+        "signaalcode": "Voorbeeld Signaalcode 4",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 4",
+        "bsnHash": "Voorbeeld Bsnhash 4",
+        "error": "Voorbeeld Error 4",
+        "syncedAt": "2026-03-04T09:00:00+00:00"
       }
     ]
   }

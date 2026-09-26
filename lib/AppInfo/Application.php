@@ -109,6 +109,9 @@ use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\LogDigitalPostProvider;
 use OCA\Integriq\Service\DigitalPost\PostexProvider;
+use OCA\Integriq\Service\Rod\LogRodProvider;
+use OCA\Integriq\Service\Rod\RodEdukoppelingClient;
+use OCA\Integriq\Service\Rod\RodProviderRegistry;
 use OCA\Integriq\Gateway\GatewayRegistry;
 use OCA\Integriq\Gateway\GatewayTransport;
 use OCA\Integriq\Gateway\SourceGatewayTransport;
@@ -505,6 +508,21 @@ class Application extends App implements IBootstrap {
 						$c->get(BerichtenboxProvider::class),
 						$c->get(PostexProvider::class),
 						$c->get(LogDigitalPostProvider::class),
+					]
+				);
+			}
+		);
+
+		// The ROD (DUO Register Onderwijsdeelnemers) provider bindings. `log`
+		// is registered last for the same reason as the digital post bindings
+		// above: a real binding always wins its own id.
+		$context->registerService(
+			RodProviderRegistry::class,
+			static function ($c): RodProviderRegistry {
+				return new RodProviderRegistry(
+					providers: [
+						$c->get(RodEdukoppelingClient::class),
+						$c->get(LogRodProvider::class),
 					]
 				);
 			}
