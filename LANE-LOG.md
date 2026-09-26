@@ -194,6 +194,15 @@ App id (`appinfo/info.xml`): `integriq`
   — every `@spec` tag this change adds was already verified manually via
   `phpcs`'s own spec-coverage sniff during the diff-scoped pass, so this is
   not a gap in what was checked, only in which tool checked it.
+- **Committed and pushed**: `738b46cf` on `feat/integriq-adapter-rod`, 40
+  files, +4708/-0. **PR**: https://github.com/ConductionNL/integriq/pull/2176
+  (base `development`). **opsx-verify**: headless (no plan.json for this
+  lane), posted as PR comment
+  https://github.com/ConductionNL/integriq/pull/2176#issuecomment-5845824326
+  — Completeness 17/17 tasks, Correctness 6/6 requirements + all 17
+  scenarios covered, Coherence matches contract.md exactly, no
+  CRITICAL/WARNING issues. Not archived (archival happens post-merge).
+  **Change 1/4 DONE.**
 
 ## Change 2/4: integriq-adapter-verzuimloket — not started
 
