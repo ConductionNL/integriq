@@ -520,7 +520,78 @@ noted explicitly in the proposal rather than assumed.
 
 ## Follow-up: back-porting the l10n + gate-101 fixes to #2176/#2181/#2182
 
-Per the coordinator's instruction, the same two fixes (schema-l10n
-catalogue keys, gate-101 demo objects) still need applying to PR #2176
-(rod), #2181 (verzuimloket) and #2182 (oso) — commit and push to each of
-those branches directly, no new PR. Status tracked below as each is done.
+Per the coordinator's instruction, applied the same two fixes to all
+three earlier PRs — commit and push to each existing branch directly, no
+new PR. All three done, in this order (re-checked out each branch in
+this same clone sequentially, `git status --short` clean before editing
+each, per the two-agents-in-one-checkout rule — this clone was mine
+alone throughout, the split into fresh `iq-adapters-c`/`-d` lanes having
+already been reversed):
+
+### #2176 (rod) — commit `f97a1c907`
+- `check:schema-l10n`: 13 uncovered `rod_message` strings (title/description
+  pairs for `kenmerk`, `berichtsoort`, `status`, `bsnHash`, `signaalcode`,
+  `signaalOmschrijving`, `ref`, `direction`, plus the schema title). Added
+  to `l10n/en.json`/`l10n/nl.json`, `npm run l10n:build`. Verified: 0
+  uncovered, exit 0.
+- gate-101: `rod_message` had 0 demo objects. Generated 4 (covering all 4
+  `berichtsoort` enum values: inschrijving/uitschrijving/
+  verblijfsgegevens/schooladvies) via `generate_mock_register.py`'s own
+  `_object_for()`, spliced additively into `integriq_mock_register.json`.
+  Caught and fixed the same one-line `contentMode` enum reformatting
+  artefact as on the uwlr-eduv branch (the `json.dump` round-trip
+  expanding one pre-existing compact array — not schema-specific, this
+  recurs on every branch since it's the same file). Verified with a
+  delta base: `checked 68 schema(s)`, exit 0.
+- PR comment posted: https://github.com/ConductionNL/integriq/pull/2176#issuecomment-5846655280
+
+### #2181 (verzuimloket) — commit `102f00203`
+- `check:schema-l10n`: 13 uncovered `verzuim_message` strings (same shape
+  as rod's, `meldingType` in place of `berichtsoort`). Verified: 0
+  uncovered, exit 0.
+- gate-101: 3 demo objects added, covering all 3 `meldingType` values
+  (eerste-melding/herhaalmelding/langdurig-relatief-verzuim). Same
+  `contentMode` reformatting artefact caught and fixed. Verified:
+  `checked 68 schema(s)`, exit 0.
+- PR comment posted: https://github.com/ConductionNL/integriq/pull/2181#issuecomment-5846655451
+
+### #2182 (oso) — commit `63d1ddfae`
+- `check:schema-l10n`: 10 uncovered `oso_message` strings, matching the
+  coordinator's original report exactly. Verified: 0 uncovered, exit 0.
+- gate-101: 3 demo objects added, covering both `direction` values
+  (export/import) and 3 `status` values. Same `contentMode` artefact
+  caught and fixed. Verified: `checked 68 schema(s)`, exit 0.
+- PR comment posted: https://github.com/ConductionNL/integriq/pull/2182#issuecomment-5846655655
+
+All three: `vendor/bin/phpunit --filter "<AdapterName>|RegisterDescriptorTest|SchemaAuthorizationRatchetTest"`
+re-run green after the fixes, `git status --short` showed exactly the 5
+expected files touched (`l10n/en.js`, `l10n/en.json`, `l10n/nl.js`,
+`l10n/nl.json`, `lib/Settings/integriq_mock_register.json`) before each
+commit.
+
+**Lesson for the next lane**: `composer check:strict` alone is not
+sufficient pre-push verification for a new OR schema. Two more checks
+are needed, both invisible without a delta base: `node
+scripts/check-schema-l10n.js` (an npm ratchet, not part of
+`check:strict`), and `echo lib/Settings/<app>_register.json | python3
+.../generate_mock_register.py . --check --only-changed` for gate-101 (it
+SKIPS silently, not passes, when hydra-gates runs with no `--base` — every
+local run in this lane had none, so this gap was invisible until CI's
+actual PR-diff run caught it). Run both standalone before every push
+that adds or changes a schema. If gate-101 fails, prefer splicing 3-4
+hand-picked `_object_for()` objects into the existing mock register file
+over `--keep`/full regenerate — the latter can silently drop the file's
+`components.schemas` block entirely, a much larger and out-of-scope
+blast radius.
+
+## All four changes: final status
+
+| # | Change | Branch | PR | Verdict |
+|---|---|---|---|---|
+| 1 | integriq-adapter-rod | `feat/integriq-adapter-rod` | #2176 | check:strict + hydra gates green (gate-53 only pre-existing); l10n + gate-101 fixed |
+| 2 | integriq-adapter-verzuimloket | `feat/integriq-adapter-verzuimloket` | #2181 | check:strict + hydra gates green (gate-53 only pre-existing); l10n + gate-101 fixed |
+| 3 | integriq-adapter-oso | `feat/integriq-adapter-oso` | #2182 | check:strict + hydra gates green (gate-53 only pre-existing); l10n + gate-101 fixed |
+| 4 | integriq-adapter-uwlr-eduv | `feat/integriq-adapter-uwlr-eduv` | #2183 | check:strict + hydra gates green (gate-53 only pre-existing); l10n + gate-101 built in from the start |
+
+All four `opsx-verify`'d headlessly with 0 CRITICAL/WARNING/SUGGESTION
+issues, verdicts posted as PR comments. Lane task list complete.
