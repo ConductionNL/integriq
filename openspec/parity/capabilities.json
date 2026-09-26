@@ -20,11 +20,11 @@
 			"key": "n8n",
 			"name": "n8n",
 			"vendor": "n8n GmbH",
-			"readOn": "2026-07-03",
+			"readOn": "2026-09-26",
 			"columnAddedOn": "2026-09-26",
-			"evidenceGrade": "docs-only",
-			"readHow": "wave 5 source read at n8n@2.40.7 in progress on 2026-09-26: cells whose evidence starts 'source read at' come from it, the rest still rest on the earlier reading",
-			"unknownReason": "not among the 22 one-line n8n features in the intelligence DB (captured 2026-03-28 and 2026-07-03), the only research there is; nobody has driven n8n for this row",
+			"evidenceGrade": "driven",
+			"readHow": "source read at n8n@2.40.7 (github.com/n8n-io/n8n, shallow clone at the tag) on 2026-09-26, every row rated from the code with path:line; seven rows the code could not settle (src-auth-oauth, src-stream, sync-progress, map-test, acc-run-as-user, obs-verdict, plt-import-preview) were then driven on a lab instance of the same version, community edition with no licence, and their cells say so; the other cells are source reads, not driven. Licence-gated features are rated partial with the licence flag named",
+			"unknownReason": "not settled by the source read at n8n@2.40.7; each unknown cell says why",
 			"sources": {
 				"docs": "https://docs.n8n.io/",
 				"sourceRepo": {
@@ -66,7 +66,8 @@
 					"tenders": "no TenderNed or other tender in the intelligence database names n8n (word-boundary search over tender names and descriptions, 2026-09-26)"
 				},
 				"issueTrackerNote": "GitHub issues are for bugs; feature requests are redirected to the community forum"
-			}
+			},
+			"version": "n8n@2.40.7"
 		},
 		{
 			"key": "tyk",
@@ -514,7 +515,7 @@
 				"tyk": "docs-only: intelligence DB competitor_features id 3000 \"API Gateway: Lightweight API gateway written in Go\" (2026-03-28)",
 				"apisix": "docs-only: intelligence DB competitor_features id 3012 \"API Gateway: Cloud-native API gateway with dynamic routing\" (2026-03-28)",
 				"mulesoft": "docs-only: intelligence DB competitor_features id 3059 \"API Gateway: Enterprise API gateway with policy enforcement\" (2026-03-28)",
-				"wso2": "docs-only: intelligence DB competitor_features id 11140 \"API Gateway: High-performance API gateway with rate limiting\" (2026-04-06)",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:14259 the API model carries an endpointConfig with production and sandbox URLs; apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:887 the publisher Endpoints page labels \"Production Endpoint\"; product-apim/all-in-one-apim/modules/distribution/resources/operation_policies/definitions/addHeader_v3.j2:1 the shipped addHeader operation policy sets a fixed header on the backend call; reached on: publisher portal, API > Endpoints and API > Policies (addHeader); publisher REST PUT /apis/{apiId}",
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79 the HTTP Request node takes a URL, :284 'Send Headers' sets headers per node; packages/nodes-base/credentials/HttpMultipleHeadersAuth.credentials.ts and packages/workflow/src/credential-domain-restrictions.ts:17 let a stored credential carry headers and pin the allowed domains, so a base address plus default headers is reusable across nodes; reached on: workflow editor, HTTP Request node plus a credential in the Credentials page",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/HttpSender.java:64 HttpSender element calls any REST/HTTP endpoint; core/src/main/java/org/frankframework/http/AbstractHttpSender.java:523 setUrl and :560 setHeadersParams turn parameters into default request headers; reached on: configuration XML: <HttpSender url=... headersParams=...> inside a SenderPipe"
 			}
@@ -540,11 +541,12 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
-			"wso2": "unknown",
+			"wso2": "yes",
 			"frank": "yes",
 			"evidence": {
 				"mulesoft": "docs-only: intelligence DB competitor_features id 3063 \"Flow Designer: Visual flow designer for integration logic\" (2026-03-28)",
 				"n8n": "source read at n8n@2.40.7, not driven: grep -rli soap over packages/nodes-base/nodes only finds AWS helper files, there is no SOAP or WSDL node among the 308 node folders; a SOAP call can be hand-built with packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79 (raw XML body) and the packages/nodes-base/nodes/Xml node to parse the envelope; reached on: workflow editor, HTTP Request node with a raw XML body plus the XML node",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:5378 /apis/import-wsdl creates an API from a WSDL; apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:205 \"Pass Through\" option in the WSDL create flow; product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/other/SoapToRestTestCase.java:84 and product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/other/WSDLImportTestCase.java:69 test SOAP pass-through and SOAP to REST APIs; product-apim/all-in-one-apim/modules/distribution/resources/api_templates/soap_to_rest_in_seq_template.xml ships the generated mapping; reached on: publisher portal, Create API > Import WSDL; publisher REST POST /apis/import-wsdl",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/WebServiceSender.java:45 WebServiceSender wraps the message in a SOAP envelope and posts it with a soapAction; core/src/main/java/org/frankframework/pipes/WsdlXmlValidator.java validates against the partner WSDL; reached on: configuration XML: <WebServiceSender url=... soapAction=...>"
 			}
 		},
@@ -569,10 +571,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "yes",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/credentials/HttpBasicAuth.credentials.ts, HttpHeaderAuth.credentials.ts, HttpQueryAuth.credentials.ts and HttpDigestAuth.credentials.ts define basic, header (API key), query and digest auth; the HTTP Request node selects them as generic credential types; reached on: Credentials page, HTTP Request node 'Authentication' field",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:954 endpoint security type \"API Key\" and apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:955 \"Basic Auth\", apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:960 \"Digest Auth\"; carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1.common/src/main/java/org/wso2/carbon/apimgt/rest/api/publisher/v1/common/mappings/APIMappingUtil.java:2703 maps basic endpoint security; product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/api/lifecycle/AddEndPointSecurityPerTypeTestCase.java:166 tests endpoint security per environment; reached on: publisher portal, API > Endpoints > Endpoint security",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/AbstractHttpSession.java:749 setAuthAlias, :754 setUsername, :775 setPassword give basic or NTLM credentials; API keys go out as a header through AbstractHttpSender.java:560 setHeadersParams; reached on: configuration XML attributes authAlias/username/password/headersParams on HttpSender"
 			}
 		},
@@ -593,14 +596,15 @@
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
 			"featureConfidence": "medium",
-			"n8n": "yes",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "yes",
 			"frank": "yes",
 			"evidence": {
-				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/credentials/OAuth2Api.credentials.ts defines the generic OAuth2 credential; packages/core/src/execution-engine/node-execution-context/utils/request-helpers/oauth.ts:151 refreshOrFetchToken refreshes the token (token.refresh at :225) and writes it back, triggered when the source answers with the expired-token status rather than on a timer ahead of expiry; reached on: Credentials page, OAuth2 credential with the 'Connect my account' flow at packages/cli/src/controllers/oauth",
+				"n8n": "source read at n8n@2.40.7 and driven on lab-integriq-n8n (image docker.n8n.io/n8nio/n8n:2.40.7, community edition) on 2026-09-26: a client-credentials OAuth2 credential against a mock token endpoint issuing expires_in=3 was used, and the same token was sent again 3 s and 8 s later (no refresh ahead of expiry); with a resource that answers 401 for tokens older than 3 s, n8n fetched a new token and the retried call succeeded (4 token-endpoint executions). Code: packages/core/src/execution-engine/node-execution-context/utils/request-helpers/oauth.ts:151 refreshOrFetchToken runs on the expired-token status (credential field tokenExpiredStatusCode); reached on: HTTP Request node with a generic OAuth2 credential",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:975 endpoint security \"OAuth 2.0\" with apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:976 client credentials and apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:977 password grants; carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway/mediators/oauth/OAuthTokenGenerator.java:68 checks validTill and at :73 uses the refresh token or fetches a new token before the cached one expires; product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/api/lifecycle/AddEndPointSecurityPerTypeTestCase.java:365 tests client-credentials endpoint security; reached on: publisher portal, API > Endpoints > Endpoint security > OAuth 2.0",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/AbstractHttpSession.java:784 setTokenEndpoint, :805 setClientId, :814 setScope, :828 setOauthAuthenticationMethod; core/src/main/java/org/frankframework/http/authentication/AbstractOauthAuthenticator.java:112 refreshAccessToken refreshes the token half way to expiry (:124); reached on: configuration XML attributes tokenEndpoint/clientAuthAlias/scope on HttpSender"
 			}
 		},
@@ -625,11 +629,12 @@
 			"tyk": "unknown",
 			"apisix": "yes",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "yes",
 			"frank": "yes",
 			"evidence": {
 				"apisix": "docs-only: intelligence DB competitor_features id 3017 \"Authentication: JWT, key-auth, LDAP, OpenID Connect plugins\" (2026-03-28)",
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/credentials/JwtAuth.credentials.ts:63 'JWT Auth' credential with key type, secret or private key (:88, :102) and algorithm (:130); used as a generic auth type by the HTTP Request node, plus packages/nodes-base/nodes/Jwt node to sign custom tokens; reached on: Credentials page, HTTP Request node generic credential 'JWT Auth'",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/deployment.toml:133 [apim.jwt] block (enable, header, signing_algorithm, claims) and carbon-apimgt/features/apimgt/org.wso2.carbon.apimgt.core.feature/src/main/resources/conf_templates/templates/repository/conf/api-manager.xml.j2:42 EnableJWTGeneration; product-apim/all-in-one-apim/modules/distribution/resources/operation_policies/specifications/backEndJWT_v1.json:4 a \"Backend JWT\" policy with encoding and header settings; the gateway signs a JWT with caller claims and sends it to the backend; reached on: deployment.toml [apim.jwt]; publisher API > Policies (backEndJWT policy spec)",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/pipes/JwtPipe.java:65 JwtPipe builds and signs a JWT from parameters and an authAlias secret, which HttpSender sends as a header via AbstractHttpSender.java:560 headersParams; core/src/main/java/org/frankframework/http/AbstractHttpSession.java:257 PRIVATE_KEY_JWT client assertion for OAuth token requests; reached on: configuration XML: <JwtPipe> before a <SenderPipe><HttpSender headersParams=...>, or oauthAuthenticationMethod=PRIVATE_KEY_JWT"
 			}
 		},
@@ -654,12 +659,13 @@
 			"tyk": "yes",
 			"apisix": "yes",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "yes",
 			"frank": "yes",
 			"evidence": {
 				"tyk": "docs-only: intelligence DB competitor_features id 3011 \"mTLS Support: Mutual TLS for service-to-service authentication\" (2026-03-28)",
 				"apisix": "docs-only: intelligence DB competitor_features id 3023 \"mTLS Support: End-to-end mTLS with certificate management\" (2026-03-28)",
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/credentials/HttpSslAuth.credentials.ts:8 'SSL Certificates' credential with CA (:16), client certificate (:26), private key (:35) and passphrase (:44); packages/nodes-base/nodes/HttpRequest/V3/Description.ts:163 'SSL Certificates' toggle attaches it to a call. Any PKIoverheid certificate can be pasted, nothing PKIoverheid specific; reached on: HTTP Request node 'SSL Certificates' option with an SSL Certificates credential",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: product-apim/all-in-one-apim/modules/distribution/product/src/main/resources/conf/default.json:131 transport.passthru_https.sender.key_store.* is the client keystore the gateway presents to backends; product-apim/all-in-one-apim/modules/distribution/product/src/main/resources/conf/default.json:138 sender.ssl_profile.file_path points at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/sslprofiles.xml:2 customSSLProfiles for per-backend keystores; apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:917 \"Add Certificate\" uploads backend trust certificates per endpoint; reached on: deployment.toml [transport.passthru_https.sender] and sslprofiles.xml; publisher API > Endpoints > Certificates",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/http/AbstractHttpSession.java:989 setKeystoreConfiguration and :994 setTruststoreConfiguration; core/src/main/java/org/frankframework/encryption/HasKeystore.java:79 setKeystore presents a client certificate (any PKI, PKIoverheid included) on the TLS handshake; reached on: configuration XML attributes keystore/keystoreAuthAlias/truststore on HttpSender and WebServiceSender"
 			}
 		},
@@ -683,10 +689,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "partial",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/credentials/credentials.controller.ts:147 POST /credentials/test runs the credential type's test request; packages/frontend/editor-ui/src/features/credentials/components/CredentialEdit/CredentialEdit.vue:265 testCredential shows the success or error banner with the source's message; a node's 'Execute step' also shows the raw answer in the output panel; reached on: Credentials page, 'Retry'/test on save of a credential; workflow editor 'Execute step'",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1008 \"Check endpoint status\" button on the endpoint form calls carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:5605 /apis/validate-endpoint, whose response schema at carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:17696 returns only statusCode, statusMessage and error; the backend body is not shown; reached on: publisher portal, API > Endpoints > Check endpoint status; publisher REST POST /apis/validate-endpoint",
 				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/TestPipeline.java:62 POST /test-pipeline runs an adapter pipeline on a message you paste and shows the result, and console/backend/src/main/java/org/frankframework/console/controllers/ConnectionOverview.java:37 lists configured connections; there is no per-sender test-connection button, you test by running the adapter that holds the sender; reached on: console page Test a PipeLine (/test-pipeline) and Connection Overview (/connections)"
 			}
 		},
@@ -711,11 +718,12 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
-			"wso2": "unknown",
+			"wso2": "partial",
 			"frank": "partial",
 			"evidence": {
 				"mulesoft": "docs-only: intelligence DB competitor_features id 3070 \"Monitoring: Application performance monitoring and alerting\" (2026-03-28)",
 				"n8n": "source read at n8n@2.40.7, not driven: grep -rli circuit over packages/cli/src finds packages/cli/src/utils/circuit-breaker.ts:14 used only by packages/cli/src/modules/log-streaming.ee/destinations/message-event-bus-destination.ee.ts; nodes and credentials have no breaker, calls to a failing source keep going until the workflow is deactivated by hand",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: product-apim/all-in-one-apim/modules/distribution/resources/api_templates/endpoint_template.xml:80 renders suspendOnFailure with errorCodes, initialDuration and maximumDuration and :76 markForSuspension; apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:859 \"Retries Before Suspension\" and apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:844 \"Endpoint Timeout State\" in Advanced Configurations. The endpoint is suspended automatically and comes back automatically when the suspension period ends; grep over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json and apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json for \"suspend\" finds no manual reactivate action; reached on: publisher portal, API > Endpoints > Advanced Configurations",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/receivers/Receiver.java:2089 setOnError with CLOSE (acted on at :1951) stops the receiver on a processing error, and console/backend/src/main/java/org/frankframework/console/controllers/Adapters.java:143 PUT .../receivers/{receiver} starts it again by hand; this breaks at the receiver, not per outbound source, and no circuit-breaker class exists (grep -riE 'circuit.?breaker' over main code finds nothing); reached on: configuration XML Receiver onError=close; console Adapter Status start/stop receiver"
 			}
 		},
@@ -740,10 +748,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "partial",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/HttpRequest/V3/Description.ts:729 'Batching' option with 'Items per Batch' (:745) and 'Batch Interval (ms)' (:757) spaces calls out; packages/core/src/execution-engine/workflow-execute.ts:1807 retryOnFail with waitBetweenTries capped at 5000 ms (:1814); there is no per-source limit shared across workflows and no automatic backoff on 429; reached on: HTTP Request node options, node Settings 'Retry On Fail'",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:458 \"Backend Throughput\" and apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:459 \"Maximum Throughput\" set a backend TPS cap; carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1.common/src/main/java/org/wso2/carbon/apimgt/rest/api/publisher/v1/common/TemplateBuilderUtil.java:298 passes productionMaxCount to the ThrottleHandler added at carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1.common/src/main/java/org/wso2/carbon/apimgt/rest/api/publisher/v1/common/TemplateBuilderUtil.java:348; calls over the cap are throttled out with an error rather than queued and spaced; reached on: publisher portal, API > Runtime Configurations > Backend Throughput",
 				"frank": "source read at v10.2.0, not driven: no outbound rate limiter: grep -riE 'ratelimit|rate.?limit|throttl' over main code finds only a Spring concurrency setting in core/src/main/java/org/frankframework/senders/ParallelSenders.java:153; calls can be spaced by hand with core/src/main/java/org/frankframework/pipes/DelayPipe.java:35 and concurrency capped with Receiver.java:2097 setNumThreads; reached on: configuration XML <DelayPipe delayTime=...> and Receiver numThreads"
 			}
 		},
@@ -767,10 +776,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "no",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/HttpRequest/V3/Description.ts:983 'Pagination' option with 'Pagination Mode' (:999, next URL in response or update a parameter) and 'Pagination Complete When' (:1119); reached on: HTTP Request node option 'Pagination'",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -rli \"paginat|nextLink|next_page\" over carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway, product-apim/all-in-one-apim/modules/distribution/resources/operation_policies and product-apim/all-in-one-apim/modules/distribution/resources/api_templates finds nothing; the gateway proxies single requests and has no step that follows a source's pages",
 				"frank": "source read at v10.2.0, not driven: no automatic pagination: grep -riE 'pagina|nextPage' over main code finds only internal paging of the Exchange and Delinea clients (credentialProvider/src/main/java/org/frankframework/credentialprovider/delinea/DelineaClient.java:72); a user can build a loop in the pipeline with forwards back to an earlier SenderPipe or core/src/main/java/org/frankframework/pipes/ForPipe.java:62; reached on: configuration XML pipeline loop you build yourself"
 			}
 		},
@@ -795,10 +805,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "yes",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/credentials/credentials.service.ts:888 decrypt redacts by default and :1312 redact blanks every property typed as password (:1370); packages/cli/src/credentials/credentials.controller.ts:117 GET returns the redacted copy, and unredact (:1509) merges stored values on save. A workflow editor can still route the value through a node, so it is write-only in the UI and API, not against a workflow author; reached on: Credentials page and REST /rest/credentials/:id",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1.common/src/main/java/org/wso2/carbon/apimgt/rest/api/publisher/v1/common/mappings/APIMappingUtil.java:2706 returns the endpoint password only when the tenant config ExposeEndpointPassword is true and otherwise blanks it at :2709; carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1.common/src/main/java/org/wso2/carbon/apimgt/rest/api/publisher/v1/common/mappings/APIMappingUtil.java:2745 defaults that check to false; carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/APIConstants.java:139 names the key; reached on: publisher REST GET /apis/{apiId} and publisher portal endpoint form (password comes back empty); admin portal Advanced tenant config ExposeEndpointPassword",
 				"frank": "source read at v10.2.0, not driven: secrets are not entered in Frank but kept in a credential provider (credentialProvider/src/main/java/org/frankframework/credentialprovider/FileSystemCredentialFactory.java:45 and siblings) referenced by authAlias; the console Security Items view masks them, core/src/main/java/org/frankframework/management/bus/endpoints/SecurityItems.java:235 replaces the password with asterisks; reached on: console page Security Items (/security-items); credential provider files or vault outside Frank"
 			}
 		},
@@ -823,10 +834,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "partial",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/core/src/encryption/cipher.ts:48 encrypt with aes-256-cbc under the instance encryption key (:186), with an aes-256-gcm variant (:10); packages/cli/src/modules/encryption-key-manager adds key management and the /settings/encryption-keys page (packages/frontend/editor-ui/src/app/router.ts:1034); reached on: automatic on credential save; N8N_ENCRYPTION_KEY env var; Settings > Encryption keys",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1.common/src/main/java/org/wso2/carbon/apimgt/rest/api/publisher/v1/common/mappings/PublisherCommonUtils.java:711 encrypts the OAuth client secret and :1271 the API key value with CryptoUtil before storing; the basic auth password is written as a plain registry attribute at carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.persistence/src/main/java/org/wso2/carbon/apimgt/persistence/utils/RegistryPersistenceUtil.java:156, and only reaches the gateway through secure vault when carbon-apimgt/features/apimgt/org.wso2.carbon.apimgt.core.feature/src/main/resources/conf_templates/templates/repository/conf/api-manager.xml.j2:12 EnableSecureVault is on (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1.common/src/main/java/org/wso2/carbon/apimgt/rest/api/publisher/v1/common/TemplateBuilderUtil.java:1559); reached on: publisher portal endpoint security; deployment.toml [apim] enable_secure_vault",
 				"frank": "source read at v10.2.0, not driven: credentialProvider/src/main/java/org/frankframework/credentialprovider/AnsibleVaultCredentialFactory.java:53 reads an encrypted Ansible vault, credentialProvider/src/main/java/org/frankframework/credentialprovider/delinea/DelineaCredentialFactory.java:86 Delinea secret server, credentialProvider/src/main/java/org/frankframework/credentialprovider/WildFlyCredentialFactory.java:48 WildFly credential store, kubernetes/src/main/java/org/frankframework/credentialprovider/KubernetesCredentialFactory.java:70 Kubernetes secrets; reached on: property credentialFactory.class in credentials configuration; authAlias on each element"
 			}
 		},
@@ -851,10 +863,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "no",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/db/src/entities/credentials-entity.ts:12 credentials are standalone entities referenced by id from any node; packages/cli/src/credentials/credentials.controller.ts:480 PUT /:credentialId/share and :577 transfer let one credential serve several workflows and projects; reached on: Credentials page, node credential picker",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: endpoint security is stored per API inside endpointConfig (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:14259, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1.common/src/main/java/org/wso2/carbon/apimgt/rest/api/publisher/v1/common/mappings/APIMappingUtil.java:2703); grep -n -i \"vault|credential store|shared credential\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json and apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json finds no reusable named credential; secure vault aliases in deployment.toml cover server config, not per-API endpoint secrets",
 				"frank": "source read at v10.2.0, not driven: every sender takes an authAlias that names one entry in the credential provider, core/src/main/java/org/frankframework/http/AbstractHttpSession.java:749 setAuthAlias, resolved through credentialProvider/src/main/java/org/frankframework/credentialprovider/CredentialFactory.java; core/src/main/java/org/frankframework/management/bus/endpoints/SecurityItems.java:205 collects every authAlias used across configurations, showing one alias shared by many elements; reached on: configuration XML attribute authAlias; console page Security Items lists where each alias is used"
 			}
 		},
@@ -878,10 +891,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "partial",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/executions/executions.controller.ts:34 GET /executions and :89 GET /executions/:id return each workflow run with per-node run data holding startTime and executionTime (packages/workflow/src/interfaces.ts:3562, :3571) and the node output; the answer's status and headers are kept only when the HTTP Request option 'Include Response Headers and Status' is on (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:924); the outgoing request itself is not logged per call; reached on: workflow Executions tab (/workflow/:id/executions), public API /api/v1/executions",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.devops/src/main/resources/devops-api.yaml:29 /tenant-logs/{tenant}/apis/ sets a per-API log level OFF, BASIC, STANDARD or FULL; carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway/handlers/LogUtils.java:202 applies FULL, and carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway/handlers/logging/APILogHandler.java:159 writes the payload into the log line. The output goes to the gateway log file; no portal page lists calls per backend; reached on: devops REST API /api/am/devops/v0/tenant-logs/{tenant}/apis/{apiId}; gateway log files",
 				"frank": "source read at v10.2.0, not driven: ladybug/debugger/src/main/java/org/frankframework/ladybug/IbisDebuggerAdvice.java:220 records senderInput and :264 senderOutput for every sender call into a Ladybug report with timestamps per checkpoint; core/src/main/java/org/frankframework/pipes/MessageSendingPipe.java:811 setMessageLog keeps a persistent log of sent messages; reached on: console page Ladybug (/testing/ladybug); configuration XML <MessageLog> under a SenderPipe"
 			}
 		},
@@ -906,10 +920,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "no",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:536 responseFormat 'file' returns the body as binary; packages/nodes-base/nodes/NextCloud/NextCloud.node.ts:143 'Upload' operation writes that binary into Nextcloud Files (binaryPropertyName at :926); reached on: workflow built from HTTP Request (or FTP, S3, etc.) plus the Nextcloud node",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -rn \"Nextcloud\" over carbon-apimgt/components finds nothing; API Manager proxies calls and has no step that downloads a file and stores it in a file system or document store",
 				"frank": "source read at v10.2.0, not driven: files are fetched with filesystem/src/main/java/org/frankframework/filesystem/FileSystemActor.java:134 actions (read, download, list) over local, SFTP, FTP, Samba, S3, Exchange and CMIS, and written to any of those; there is no Nextcloud Files target (grep -riE 'nextcloud|webdav' over the tree finds nothing), so reaching Nextcloud means an HttpSender call you build yourself; reached on: configuration XML <SftpFileSystemSender action=download>, <LocalFileSystemSender action=write>"
 			}
 		},
@@ -929,14 +944,15 @@
 			"providerHow": "read-from-code",
 			"feature": "http-call-engine",
 			"featureConfidence": "medium",
-			"n8n": "partial",
+			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "yes",
 			"frank": "yes",
 			"evidence": {
-				"n8n": "source read at n8n@2.40.7, not driven: packages/core/src/binary-data/binary-data.config.ts:27 N8N_DEFAULT_BINARY_DATA_MODE moves binaries out of memory to filesystem, S3 or database storage and packages/core/src/execution-engine/node-execution-context/utils/binary-helper-functions.ts:47 getBinaryStream reads them as a stream; but packages/nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:537 fetches a file response with encoding null into a buffer first, so a pass-through is not end to end streaming; reached on: env N8N_DEFAULT_BINARY_DATA_MODE, HTTP Request node file response",
+				"n8n": "source read at n8n@2.40.7 and driven on lab-integriq-n8n (image docker.n8n.io/n8nio/n8n:2.40.7, community edition) on 2026-09-26: a 105 MB download through an HTTP Request node with response format file landed in filesystem-v2 binary storage while the n8n process RSS stayed between 326 and 341 MB over 85 samples at 100 ms across the 5.7 s transfer. Code: packages/nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:536-539 sets useStream=true for a file response; packages/core/src/binary-data/binary-data.config.ts:27 binary mode; reached on: HTTP Request node, Response Format: File",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: product-apim/all-in-one-apim/modules/distribution/product/src/main/resources/conf/default.json:101 enables transport.passthru_http (and :105 passthru_https) as the gateway listener; the Synapse pass-through transport streams bodies unless a content-aware policy reads them, and product-apim/all-in-one-apim/modules/distribution/resources/operation_policies/specifications/disableChunking_v1.json:3 is the opt-in policy that changes the streaming behaviour; reached on: deployment.toml [transport.passthru_http]; default gateway behaviour",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/stream/Message.java:91 MESSAGE_MAX_IN_MEMORY_DEFAULT (5 MB) keeps larger messages on disk as streams between pipes, and core/src/main/java/org/frankframework/pipes/StreamPipe.java:65 plus the filesystem senders pass streams through without loading them; reached on: automatic for every message; property message.max.memory.size"
 			}
 		},
@@ -961,11 +977,12 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "yes",
-			"wso2": "unknown",
+			"wso2": "no",
 			"frank": "yes",
 			"evidence": {
 				"mulesoft": "docs-only: intelligence DB competitor_features id 3061 \"Anypoint Exchange: Marketplace for reusable APIs, connectors, and templates\" (2026-03-28)",
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Ftp/Ftp.node.ts:166 'protocol' parameter chooses ftp or sftp (ssh2-sftp-client imported at :20) with list, download, upload, rename, delete operations; packages/nodes-base/nodes/Ssh node adds SSH commands; reached on: workflow editor, FTP node",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -rli \"sftp\" over carbon-apimgt/components and product-apim/all-in-one-apim/modules/distribution finds only the diagnostics tool log uploader at product-apim/all-in-one-apim/modules/distribution/product/src/main/resources/conf/templates/diagnostics-tool/conf/config.toml.j2:81; no SFTP or FTP transport is exposed for APIs (VFS/file transports belong to WSO2 Micro Integrator)",
 				"frank": "source read at v10.2.0, not driven: filesystem/src/main/java/org/frankframework/senders/SftpFileSystemSender.java:23 and filesystem/src/main/java/org/frankframework/senders/FtpFileSystemSender.java:23 read, write, move and delete files on a partner server; filesystem/src/main/java/org/frankframework/receivers/SftpFileSystemListener.java:28 picks up new files; reached on: configuration XML <SftpFileSystemSender>, <FtpFileSystemSender>, <SftpFileSystemListener>"
 			}
 		},
@@ -989,10 +1006,11 @@
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
-			"wso2": "unknown",
+			"wso2": "partial",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Postgres/v2/actions/database/Database.resource.ts:28 executeQuery and :34 insert; the tree also ships MySql, Microsoft/Sql, Oracle/Sql, MongoDb, Redis, Snowflake, CrateDb, QuestDb, TimescaleDb, Supabase and Elastic nodes; reached on: workflow editor, database nodes with a database credential",
+				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -rn -i \"dblookup|dbreport|jdbc endpoint\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json and product-apim/all-in-one-apim/modules/distribution/resources/operation_policies/specifications finds no database endpoint type; the publisher endpoint types are HTTP, address, AWS Lambda, sequence backend and AI providers (apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:867, apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:865). carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:616 /apis/{apiId}/sequence-backend lets a publisher upload a hand-written Synapse sequence as the backend, which is the only route to a database (Synapse db mediators); data services proper are a Micro Integrator feature; reached on: publisher portal, API > Endpoints > Upload Sequence Backend (custom Synapse XML)",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/jdbc/FixedQuerySender.java:72 runs SELECT/UPDATE/INSERT or stored procedures against any JDBC datasource, core/src/main/java/org/frankframework/jdbc/JdbcTableListener.java:52 polls a table as a source; core/src/main/java/org/frankframework/mongodb/MongoDbSender.java:90 does the same for MongoDB; reached on: configuration XML <FixedQuerySender datasourceName=...>, <JdbcTableListener>; console page Execute JDBC Query"
 			}
 		},
@@ -1881,7 +1899,7 @@
 			"wso2": "unknown",
 			"frank": "partial",
 			"evidence": {
-				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Webhook/Webhook.node.ts:247 with authentication 'n8nOAuth2' the bearer token is resolved to an n8n user and establishTriggerIdentity (:262) makes the run happen as that user with their private credentials merged; packages/cli/src/webhooks/webhook-helpers.ts:940 blocks the run when that user lacks access. The user is the caller who consented, not a fixed service user set per consumer; reached on: Webhook node 'Authentication: n8n User Auth (OAuth2)'",
+				"n8n": "source read at n8n@2.40.7 and driven on lab-integriq-n8n (image docker.n8n.io/n8nio/n8n:2.40.7, community edition) on 2026-09-26: a Webhook node with authentication n8nOAuth2 activates on community edition and answers 401 with WWW-Authenticate Bearer realm=\"n8n Webhook\" and resource_metadata pointing at /.well-known/oauth-protected-resource/webhook/<path>, and error=\"invalid_token\" for a bad token; the consent and token half of the flow was not driven. Code: packages/nodes-base/nodes/Webhook/Webhook.node.ts:247-262 establishTriggerIdentity runs the execution as the resolved user; reached on: Webhook node, Authentication: n8n user auth (OAuth2)",
 				"frank": "source read at v10.2.0, not driven: the caller's own authenticated principal travels into the pipeline, core/src/main/java/org/frankframework/pipes/GetPrincipalPipe.java:43 reads it and core/src/main/java/org/frankframework/pipes/IsUserInRolePipe.java:54 checks its roles, and ApiListener JWT sets a security handler from the token (core/src/main/java/org/frankframework/http/rest/ApiListenerServlet.java:491); there is no mapping of a consumer onto a fixed named user whose rights then apply; reached on: configuration XML GetPrincipalPipe / IsUserInRolePipe in the pipeline"
 			}
 		},
@@ -2247,7 +2265,7 @@
 			"wso2": "unknown",
 			"frank": "partial",
 			"evidence": {
-				"n8n": "source read at n8n@2.40.7, not driven: packages/frontend/editor-ui/src/app/composables/usePinnedData.ts:22 pins a sample input on a node; 'Execute step' runs the mapping on it and the output panel shows the result, with inline expression previews in the parameter panel, all before the workflow is saved or published; reached on: workflow editor node details view, pin data plus 'Execute step'",
+				"n8n": "source read at n8n@2.40.7 and driven on lab-integriq-n8n (image docker.n8n.io/n8nio/n8n:2.40.7, community edition) on 2026-09-26: a Set node mapping (full name joined, date converted from dd-MM-yyyy to ISO) ran on two pinned sample items through POST /rest/workflows/:id/run with destinationNode Map, the call the editor's Execute step makes, and returned the mapped items while the workflow stayed unpublished (active false). Code: packages/frontend/editor-ui/src/app/composables/usePinnedData.ts:22; packages/@n8n/api-types/src/dto/workflows/manual-run.dto.ts:30-44; reached on: workflow editor, pin data on a node, Execute step",
 				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/TestPipeline.java:62 runs a loaded adapter on a sample message and shows the output, and larva/src/main/java/org/frankframework/pipes/LarvaPipe.java:55 runs scenario tests; both need the mapping already deployed in a configuration, there is no try-before-save of one mapping; reached on: console page Test a PipeLine (/test-pipeline) and Larva (/testing/larva)"
 			}
 		},
@@ -2806,7 +2824,7 @@
 			"wso2": "unknown",
 			"frank": "partial",
 			"evidence": {
-				"n8n": "source read at n8n@2.40.7, not driven: the canvas shows live per-node item counts while a manual run executes and packages/cli/src/executions/executions.controller.ts:89 returns per-node run data afterwards; there is no created, updated or skipped tally unless the builder counts it (the Data Table upsert output does not split them); reached on: workflow editor during a run, Executions view",
+				"n8n": "source read at n8n@2.40.7 and driven on lab-integriq-n8n (image docker.n8n.io/n8nio/n8n:2.40.7, community edition) on 2026-09-26: a manual run returned per-node item counts only (Trigger 2 items, Map 2 items in execution 25 resultData.runData); there is no created, updated or skipped tally. Code: packages/cli/src/executions/executions.controller.ts:89; reached on: canvas item counts during a run; executions list",
 				"frank": "source read at v10.2.0, not driven: the Adapter Status page counts messages received, processed and in error per adapter and receiver, and console/backend/src/main/java/org/frankframework/console/controllers/Adapters.java:188 gives per-pipe statistics with durations; there is no created, updated or skipped split for one run, which you would have to log yourself; reached on: console pages Adapter Status (/status) and Adapter Statistics"
 			}
 		},
@@ -4253,7 +4271,7 @@
 			"wso2": "unknown",
 			"frank": "no",
 			"evidence": {
-				"n8n": "source read at n8n@2.40.7, not driven: packages/workflow/src/credential-domain-restrictions.ts:155 assertUrlAllowed stops a call to a domain the credential does not allow with 'Domain not allowed: ... Only the following domains are allowed' (:164), and packages/@n8n/config/src/configs/ssrf-protection.config.ts:91 N8N_SSRF_PROTECTION_ENABLED with blocked ranges (:102) makes packages/@n8n/backend-network/src/http/outbound-http.ts refuse private targets; the reason shows as the node error in the execution; reached on: execution detail, failed node error message",
+				"n8n": "source read at n8n@2.40.7 and driven on lab-integriq-n8n (image docker.n8n.io/n8nio/n8n:2.40.7, community edition) on 2026-09-26: a credential restricted to example.org refused a call to localhost with 'Domain not allowed: This credential is restricted from accessing localhost:5678. Only the following domains are allowed: example.org'; with N8N_SSRF_PROTECTION_ENABLED=true (off by default) calls to 169.254.169.254 and 127.0.0.1 failed with 'The request was blocked because it resolves to a restricted IP address' and 'The target <ip> is not allowed. This is a security measure to prevent Server-Side Request Forgery (SSRF)', shown on the failed execution. Code: packages/workflow/src/credential-domain-restrictions.ts:155-164; packages/@n8n/config/src/configs/ssrf-protection.config.ts:91-102; reached on: execution error on the failing HTTP Request node",
 				"frank": "source read at v10.2.0, not driven: nothing holds outbound calls back on a policy, so there is no verdict to show: grep -rniE 'verdict|policy|egress' over core main code finds no outbound gate; a refused call only shows as an exception in the Ladybug report"
 			}
 		},
@@ -6533,7 +6551,7 @@
 			"wso2": "unknown",
 			"frank": "partial",
 			"evidence": {
-				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/api-types/src/dto/packages/import-package-request.dto.ts:93 import takes conflict policies (workflowConflictPolicy, projectConflictPolicy, variableConflictPolicy) but no dry-run or preview field; a preview of incoming changes exists only in git mode, packages/cli/src/modules/source-control.ee/source-control.controller.ee.ts:252 /get-status before :226 /pull-workfolder, licence feat:sourceControl; reached on: Source control pull dialog (enterprise licence)",
+				"n8n": "source read at n8n@2.40.7 and driven on lab-integriq-n8n (image docker.n8n.io/n8nio/n8n:2.40.7, community edition) on 2026-09-26: on community edition the source-control routes are not mounted at all (GET /rest/source-control/get-status and /preferences answer 'Cannot GET'), so the only preview of incoming changes, git pull status, needs an enterprise licence; the import package API takes conflict policies without a dry run. Code: packages/cli/src/modules/source-control.ee/source-control.controller.ee.ts:252; packages/@n8n/api-types/src/dto/packages/import-package-request.dto.ts:93; reached on: licence-gated Source control settings page; not reachable on community edition",
 				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:199 uploads a configuration and with activate_config=false (:201) stores it as an inactive version that can be downloaded and checked before :176 activates it; there is no diff or change preview; reached on: console page Manage Configurations, upload (/configurations/upload)"
 			}
 		},
@@ -8332,14 +8350,14 @@
 			"providerHow": "read-from-code",
 			"feature": "demand-changelog",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "partial",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
 			"frank": "yes",
 			"evidence": {
-				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rlE \"from 'ajv'|jsonschema|json-schema-validator\" over packages/nodes-base/nodes and packages/@n8n/nodes-langchain/nodes finds no validator node, and grep for xsd over node files finds only unrelated hits; JSON Schema is used only to parse AI output (packages/@n8n/nodes-langchain/nodes/output_parser/OutputParserStructured/OutputParserStructured.node.ts:76 schemaTypeField). Incoming messages can be checked field by field with typed If or Filter conditions (packages/nodes-base/nodes/Filter/V2/FilterV2.node.ts:39) or in a Code node, not against a declared XSD, JSON Schema or OpenAPI document; reached on: If or Filter node checks, Code node",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
@@ -8366,14 +8384,14 @@
 			"providerHow": "read-from-code",
 			"feature": "demand-changelog",
 			"featureConfidence": "low",
-			"n8n": "unknown",
+			"n8n": "no",
 			"tyk": "unknown",
 			"apisix": "unknown",
 			"mulesoft": "unknown",
 			"wso2": "unknown",
 			"frank": "partial",
 			"evidence": {
-				"n8n": "not checked: demand row added 2026-09-26, after this column was last read",
+				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'ws-security|wssecurity|wsse|xml-?crypto|xmldsig' over packages/nodes-base/nodes finds nothing; there is no SOAP node (see src-soap) and the XML node (packages/nodes-base/nodes/Xml/Xml.node.ts) only converts between XML and JSON",
 				"tyk": "not checked: demand row added 2026-09-26, after this column was last read",
 				"apisix": "not checked: demand row added 2026-09-26, after this column was last read",
 				"mulesoft": "not checked: demand row added 2026-09-26, after this column was last read",
