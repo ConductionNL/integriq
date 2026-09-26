@@ -4982,13 +4982,18 @@
 			"area": "messaging",
 			"name": "Take mail from a mailbox and turn it into a case.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:75 mailIntake#import and :76 mailIntake#poll -> lib/Controller/MailIntakeController.php:108 import() and :180 poll() (both #[NoAdminRequired] + ActionAuthService, seeded admin-only in lib/actions.seed.json:27,37) -> lib/Service/Mail/MailboxSourceHandler.php poll() with real IMAP/Graph transports (lib/Service/Mail/Transport/ImapMailboxTransport.php:86, GraphMailboxTransport.php:99) -> lib/Service/Mail/MailIntakeService.php:135 intake() saves a mail_message and dispatches MessageReceivedEvent (:162); it never creates a case itself. NO frontend caller: grep -rn 'mail-intake|MailIntake|mailbox' src/ = 0 hits outside the manifest fragment comment; NO background job in appinfo/info.xml:103-150 calls MailboxSourceHandler (grep MailboxSourceHandler lib = only the controller). src/manifest.d/mail-intake.json MailMessages page (/messages/mail, logs type) only displays mail_message rows."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "The intake engine is complete but nothing ever runs it: no poll job, no poll button, no import upload, so the MailMessages page stays empty. Case creation is delegated to whichever app listens for MessageReceivedEvent; no listener was found in the local procest checkout, so the case half is unverified.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"dossiq:1.5"
 			],
@@ -5004,13 +5009,18 @@
 			"area": "messaging",
 			"name": "Import a .msg or .eml file into a case.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:75 mailIntake#import -> lib/Controller/MailIntakeController.php:108 import() reads the uploaded 'file', parses it with lib/Service/Mail/MessageParser.php (EmlParser.php 363 lines, MsgParser.php 317 lines + CompoundFileReader.php for OLE .msg) and hands it to MailIntakeService.php:135 intake(). NO frontend caller: grep -rn 'mail-intake' src/ = 0 hits, not in frontend-api-paths.txt; no upload control on the MailMessages logs page (src/manifest.d/mail-intake.json)."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Real .eml and .msg parsing exists behind a session-gated admin route, but no page has an upload button, so a user cannot import a file. The result is a mail_message, not a case; linking to a case depends on a sibling app handling MessageReceivedEvent.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"dossiq:6.10"
 			],
@@ -5026,13 +5036,18 @@
 			"area": "messaging",
 			"name": "Open a case from a Teams message.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Intake/Adapter/TeamsChannelAdapter.php (542 lines, CHANNEL_ID 'teams' :53, receive() :143, reply() :217 posting to Bot Framework hosts allowlisted at :76) is registered in lib/AppInfo/Application.php:453-461 IntakeChannelRegistry. Inbound machine route appinfo/routes.php:84 intakeChannels#inbound -> lib/Controller/IntakeChannelsController.php:125 inbound() (PublicPage, webhook signature verified) -> lib/Intake/IntakeRoutingService.php:123 route() stores intake_message and dispatches IntakeMessageRoutedEvent (:147); with no matching rule the message is held (:433). Rules can only be saved via routes.php:94-95 intakeChannels#saveRule, which has no frontend caller (not in frontend-api-paths.txt)."
 			},
+			"reachedOn": "machine route: POST /api/intake/channels/teams/inbound; held messages show on IntakeMessages page (/messages/intake)",
+			"note": "The hint is right: the Teams adapter and the teams-messages-open-cases change exist. A Teams message lands in the intake inbox, but it only opens a case if a routing rule exists (no page can create one) and a sibling app listens for IntakeMessageRoutedEvent.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "saas-productivity-connectors",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"dossiq:1.9"
 			],
@@ -5048,13 +5063,18 @@
 			"area": "messaging",
 			"name": "Take submissions from an outside form tool in as intake.",
 			"source": "dossiq-round4",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Two paths. (1) lib/Intake/Adapter/FormSubmissionAdapter.php CHANNEL_ID 'form-submission' (:48), receive() :88, registered at lib/AppInfo/Application.php:458, reached by machine route appinfo/routes.php:84 intakeChannels#inbound -> IntakeChannelsController.php:125 -> IntakeRoutingService.php:123 route(), shown on IntakeMessages page. (2) Open Formulieren bridge appinfo/routes.php:231 openFormulieren#inbound (HMAC-gated) -> lib/Service/OpenFormulierenIntakeService.php, shown on FormSubmissions page (/messages/form-submissions, logs, schema openformulieren_submission); its handoff route routes.php:233 has no frontend caller (not in frontend-api-paths.txt)."
 			},
+			"reachedOn": "machine route: POST /api/intake/channels/form-submission/inbound and POST /api/open-formulieren/submissions; results on IntakeMessages and FormSubmissions pages",
+			"note": "Submissions do come in and are visible, so the intake half works. Turning one into a case needs a routing rule that no page can create, or the Open Formulieren handoff that no button calls.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "open-formulieren-intake",
+			"featureConfidence": "medium",
 			"sourceNote": "dossiq cluster 45",
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -5068,13 +5088,18 @@
 			"area": "messaging",
 			"name": "Take reports about the public space in as intake.",
 			"source": "dossiq-round4",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Intake/Adapter/PublicSpaceReportAdapter.php CHANNEL_ID 'public-space-report' (:48), receive() :85 with location() :152 and media() :179, reply() refuses by design (:134); registered at lib/AppInfo/Application.php:460. Reached by machine route appinfo/routes.php:84 intakeChannels#inbound -> lib/Controller/IntakeChannelsController.php:125 -> lib/Intake/IntakeRoutingService.php:123 route(); result on IntakeMessages page (src/manifest.d/intake-channels.json)."
 			},
+			"reachedOn": "machine route: POST /api/intake/channels/public-space-report/inbound; result on IntakeMessages page (/messages/intake)",
+			"note": "A signed report is received and stored as intake. Without a routing rule, which no page can create, every report sits held in the intake inbox rather than opening a case.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"sourceNote": "dossiq cluster 45",
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -5088,13 +5113,18 @@
 			"area": "messaging",
 			"name": "Route incoming messages to the right team with routing rules.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Engine: lib/Intake/IntakeRoutingService.php:123 route() matches enabled rules per channel ordered by 'order' and dispatches IntakeMessageRoutedEvent (:147), else hold() (:433); validateRule() checks target fields. Config: appinfo/routes.php:94-95 intakeChannels#saveRule -> lib/Controller/IntakeChannelsController.php:212 saveRule() (ActionAuthService 'intake.rules'). NO frontend caller for /api/intake/routing-rules (not in frontend-api-paths.txt, grep 'routing-rules' src/*.vue/*.js = 0). IntakeRoutingRules page (/intake/routing-rules) is type logs, read-only columns only (src/manifest.d/intake-channels.json). Rules exist only in lib/Settings/integriq_mock_register.json:8892-8932 mock data."
 			},
+			"reachedOn": "IntakeRoutingRules page (/intake/routing-rules) shows rules read-only; nothing reaches saveRule",
+			"note": "Routing runs automatically on every inbound message, but staff cannot create or edit a rule from any page, so on a real install every message is held. The rules page is a list, not an editor.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5107,13 +5137,18 @@
 			"area": "messaging",
 			"name": "Reply to a sender through the channel the message came in on.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:96 intakeChannels#reply -> lib/Controller/IntakeChannelsController.php:265 reply() (ActionAuthService 'intake.reply') -> lib/Intake/IntakeReplyService.php:67 reply() -> adapter reply(): TeamsChannelAdapter.php:217 (Bot Framework POST, mock short-circuit :231) and MessagingChannelAdapter.php:151 (POST to replyEndpoint :175, mock returns MOCK-REPLY :166); form and public-space adapters refuse. NO frontend caller: '/api/intake/messages/{id}/reply' absent from frontend-api-paths.txt; IntakeMessages logs page declares no action."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Channel-aware reply code is real for Teams and the generic messaging channel, but no page has a reply button, and it is a staff action with no other caller.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5126,13 +5161,18 @@
 			"area": "messaging",
 			"name": "Keep one inbox for the whole organisation and assign a message to a case.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "IntakeMessages page (/messages/intake, logs, schema intake_message) in src/manifest.d/intake-channels.json lists every channel's messages with status/rule/reason columns, fed by lib/Intake/IntakeRoutingService.php:123 route() via machine route appinfo/routes.php:84. Mail lands on a separate MailMessages page (src/manifest.d/mail-intake.json). No assign action: no route assigns an intake_message to a case (grep -n 'assign' appinfo/routes.php in intake block = 0), and the logs page declares no actions."
 			},
+			"reachedOn": "IntakeMessages page (/messages/intake), read-only",
+			"note": "One read-only inbox across the non-mail channels exists, and mail sits on a second page. Staff cannot assign a held message to a case from it; assignment only happens automatically via a routing rule.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"dossiq:6.5"
 			],
@@ -5148,13 +5188,18 @@
 			"area": "messaging",
 			"name": "Send text messages through a provider such as CM.com, MessageBird or Twilio.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:165 notifyNl#send -> lib/Controller/NotifyNlController.php:97 send() (ActionAuthService 'sms.send') -> lib/Service/SmsDispatchService.php:136 sendMessage() -> lib/Service/Sms/RestNotifyNlProvider.php (Guzzle, https://api.notifynl.nl) or LogSmsProvider; writes sms_message shown on SmsMessages page (src/manifest.json:2933, /messages/sms, logs). Status callback routes.php inbound NotifyNlController.php:208. CM.com/MessageBird/Twilio: lib/Settings/register.d/cmcom-sms-source.json, messagebird-sms-source.json, twilio-sms-source.json are seeded generic source objects with configuration.mock:true, and their $comment says the send leaf is OpenRegister's MessageDispatchProvider and pipelinq's SmsAdapter, not integriq code. NO frontend caller for /api/notifynl/messages (not in frontend-api-paths.txt); sendMessage has no other internal caller (grep 'sendMessage(' lib = only NotifyNlController:135)."
 			},
+			"reachedOn": "machine route: POST /api/notifynl/messages (session plus sms.send action, meant for sibling apps); SmsMessages page (/messages/sms) shows results",
+			"note": "Integriq itself sends SMS only through NotifyNL, via a route no integriq page calls. CM.com, MessageBird and Twilio are just seeded source configs in mock mode that another app's dispatcher uses.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "notifynl-sms-channel",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5167,13 +5212,18 @@
 			"area": "messaging",
 			"name": "Send WhatsApp messages through the WhatsApp Business API.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/pipelinq",
+				"evidence": "lib/Settings/register.d/whatsapp-cloud-api-source.json and whatsapp-bsp-source.json seed source objects with configuration.mock:true (:22); their $comment names OpenRegister MessageDispatchProvider and pipelinq WhatsAppAdapter as the sender, 'this source is a pure transport'. No WhatsApp send code in integriq (grep -rli whatsapp lib/*.php = 0 outside CatalogRegistryService). lib/Intake/Adapter/MessagingChannelAdapter.php:52 'messaging' channel only receives and replies via a generic replyEndpoint (:175), with no WhatsApp-specific logic."
 			},
-			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"reachedOn": "Sources page (/sources) shows the seeded whatsapp sources; no send action in integriq",
+			"note": "Integriq only supplies two WhatsApp source configs, shipped in mock mode, and the generic HTTP engine. Template gating, session windows and the actual send live in pipelinq and OpenRegister.",
+			"provider": "pipelinq",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5186,13 +5236,18 @@
 			"area": "messaging",
 			"name": "Send mail from a checked sender identity with SPF, DKIM and DMARC alignment.",
 			"source": "dossiq-round4",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:117 senderIdentity#index and :118 #checkAlignment -> lib/Controller/SenderIdentityController.php:113 index(), :152 checkAlignment() -> lib/Outbound/Identity/DomainAlignmentChecker.php:77 check() over lib/Outbound/Identity/SystemDnsResolver.php. SenderIdentities page (/outbound/identities, logs) lists sender_identity rows (seeded at lib/Settings/integriq_seed_data.json:578-601). NO frontend caller for /api/outbound/identities or /alignment (not in frontend-api-paths.txt). The send path lib/Outbound/Identity/MessageComposer.php and OutboundSecurityService.php have zero callers (grep -rlw MessageComposer lib = 0 outside its own file)."
 			},
+			"reachedOn": "SenderIdentities page (/outbound/identities), read-only; the alignment check is reached by nothing",
+			"note": "Staff can see the identities but cannot run the SPF, DKIM and DMARC check from any page, and integriq has no code path that sends mail from an identity. Sending is Nextcloud Mail's job by design.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"sourceNote": "dossiq cluster 61",
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -5206,13 +5261,18 @@
 			"area": "messaging",
 			"name": "Respect recipients who opted out and give every message an unsubscribe link.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Public route appinfo/routes.php:120 senderIdentity#unsubscribe -> lib/Controller/SenderIdentityController.php:225 unsubscribe() verifies the token (lib/Outbound/Identity/UnsubscribeTokenService.php:92) and writes an opt-out via lib/Outbound/Identity/OptOutRegistry.php add() (:137); RecipientOptOuts page (/outbound/opt-outs, logs) lists them. BUT OptOutRegistry::decide() (:104) has no caller (grep '->decide(' lib = only an unrelated CloudEventListener guard), and UnsubscribeTokenService::linkFor() (:125) is only called from MessageComposer.php:81, which itself has zero callers."
 			},
+			"reachedOn": "public route GET /unsubscribe/{token}; RecipientOptOuts page (/outbound/opt-outs)",
+			"note": "The unsubscribe landing works and opt-outs are visible, but no integriq send path consults the registry or mints the link, so no message actually carries an unsubscribe link from integriq.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5225,13 +5285,18 @@
 			"area": "messaging",
 			"name": "Add a one-off recipient to a single message or suppress a standing one.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Service/Recipients/RecipientResolver.php refusals() :69, resolve() :134, preview() :215 exist, with RecipientDecision.php and RecipientRefusedException.php. Zero callers: grep -rlw RecipientResolver lib = 0 files outside its own. No route (grep -n 'recipient' appinfo/routes.php = 0 matching routes) and no page."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "The one-off-and-suppressed-recipients change is still under openspec/changes and its resolver is dead code with no caller, route or page.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"dossiq:6.23"
 			],
@@ -5247,13 +5312,18 @@
 			"area": "messaging",
 			"name": "See the delivery outcome per recipient for every outgoing message, with a reason.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "OutboundMessages page (/messages/outbound, logs, schema outbound_message) in src/manifest.d/outbound-message-log.json lists status/channel/retryCount. appinfo/routes.php:103-106 outboundLog#body/#retry/#forward -> lib/Controller/OutboundLogController.php:109,137,179, none in frontend-api-paths.txt and the page declares no row actions although its $comment promises the body 'behind its own action'. Writer: lib/Outbound/MessageRecorder.php:134 start() is only called by lib/Outbound/ForwardService.php:86, so integriq never records an original outgoing message itself."
 			},
+			"reachedOn": "OutboundMessages page (/messages/outbound), read-only",
+			"note": "The per-recipient log page exists, but inside integriq only a forward ever creates a row, so the page is empty unless a sibling app writes outbound_message objects. Body, retry and forward have no buttons.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "logs-and-statistics",
+			"featureConfidence": "medium",
 			"siblingRows": [
 				"dossiq:6.27"
 			],
@@ -5269,13 +5339,18 @@
 			"area": "messaging",
 			"name": "See when an applicant was last actually reached.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:107 outboundLog#lastContact -> lib/Controller/OutboundLogController.php:229 lastContact() -> lib/Outbound/LastContactQuery.php lastContact() scans outbound_message recipients with status sent. Not in frontend-api-paths.txt; no page shows it. lastContact() checks only for a session user, no ActionAuthService call and no per-subject check."
 			},
+			"reachedOn": "machine route: GET /api/outbound/last-contact (session, meant for a sibling app such as dossiq); no integriq page",
+			"note": "The query is real but reads outbound_message, which integriq itself only writes on a forward, so it will answer 'not contacted' unless a sibling app writes the log. Live-defect candidate: any logged-in user can ask about any subject and recipient.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "logs-and-statistics",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"dossiq:6.24"
 			],
@@ -5291,13 +5366,18 @@
 			"area": "messaging",
 			"name": "Hold back an outgoing message that fails a check until someone looks at it.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Outbound/Identity/HoldQueue.php hold() :91, isWithdrawable() :120, withdraw() :146, release() :182. hold() has zero callers (grep '->hold(' lib = 0), so nothing is ever held. withdraw() is reached only from appinfo/routes.php:119 senderIdentity#withdraw -> SenderIdentityController.php:186, which has no frontend caller (not in frontend-api-paths.txt). No page lists held messages."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "The hold window can be withdrawn by route, but no send path ever puts a message on hold, and there is no screen for a held message.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5310,13 +5390,18 @@
 			"area": "messaging",
 			"name": "Handle replies that arrive at a no-reply address.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Outbound/Identity/NoReplyHandler.php handle() :79 exists. Zero callers: grep -rlw NoReplyHandler lib = 0 files outside its own; no route, no listener, no job."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Dead code: a no-reply identity is seeded (integriq_seed_data.json:601) but nothing hands an incoming reply to the handler.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -5329,13 +5414,18 @@
 			"area": "messaging",
 			"name": "Charge for something and take the payment through a payment provider.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:157 payments#create -> lib/Controller/PaymentsController.php:92 create() (session plus ActionAuthService 'payments.create') -> lib/Service/PaymentIntentService.php resolveProvider() :368 picks lib/Service/Payment/MolliePaymentProvider.php:89 createPayment() (https://api.mollie.com/v2) or LogPaymentProvider (the default). Webhook routes.php:158 -> PaymentsController.php:141 webhook() (PublicPage, re-derives status from the provider). No frontend caller (not in frontend-api-paths.txt), no payment page in manifest-pages.txt, and no caller in local learniq/shillinq checkouts (grep 'api/payments' = 0); the routes.php:150-155 comment says the shillinq binding is a follow-up change not built here."
 			},
+			"reachedOn": "machine route: POST /api/payments (server-to-server) and POST /api/payments/webhook (provider callback)",
+			"note": "Mollie payment creation and a verified webhook are real, but the provider defaults to the log stub. No sibling caller was found and integriq has no page to review a charge.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "live-payment-providers",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"learniq:gov-charge-for-a-course"
 			],
@@ -5351,13 +5441,18 @@
 			"area": "messaging",
 			"name": "Generate documents through an outside service such as SmartDocuments or Xential.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Render: lib/AppInfo/Application.php:281 registers DocumentRenderRequestedEvent -> lib/EventListener/DocumentRenderRequestedListener.php:71 handle() -> lib/Service/DocumentGeneration/DocumentGenerationService.php:119 requestRender(), polled by lib/BackgroundJob/DocumentGenerationStatusJob.php (appinfo/info.xml:129); providers SmartDocumentsProvider.php and XentialProvider.php extend AbstractRestDocumentGenerationProvider.php over BrokeredCallService (:61). Seeded sources ship mockMode:true (lib/Settings/register.d/document-generation-vendor-adapter.json:106). appinfo/routes.php:311-312 documentGeneration#templates/#activate (AuthorizedAdminSetting) have no frontend caller (not in frontend-api-paths.txt)."
 			},
+			"reachedOn": "machine path: DocumentRenderRequestedEvent dispatched by filinq; template listing and activation reached by nothing",
+			"note": "The vendor adapter is real and event-driven, but the vendor sources ship in mock mode and there is no page to list templates or activate a source. The filinq emitter could not be checked locally.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "document-cms-connectors",
+			"featureConfidence": "medium",
 			"siblingRows": [
 				"dossiq:12.11"
 			],
@@ -5373,13 +5468,18 @@
 			"area": "messaging",
 			"name": "Keep notes in step with an outside case register.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "grep -rniE 'notes?[ _-]?sync|sync(ing)? notes|NoteSync|notitie' lib src openspec = 1 file, openspec/parity/capabilities.json (the parity row itself). No class, route, schema or change."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Nothing in integriq keeps notes in step with an outside case register. The generic synchronization engine could in theory be configured for it, but there is no notes-specific code.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "synchronization-engine",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"dossiq:6.14"
 			],
@@ -5395,13 +5495,18 @@
 			"area": "messaging",
 			"name": "Have an approved document signed with a qualified electronic signature.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "grep -rniE 'SigningAdapter|QualifiedSignature|e-?signature|ValidSign|DocuSign|Signicat|qualified (electronic )?signature|gekwalificeerde|ondertekening|Zynyo|Evidos' lib src openspec = 0 code hits (only openspec/parity/capabilities.json and an unrelated Signicat IdP mention in openspec/changes/portal-idp-broker-config/proposal.md:31). Signature code present is webhook HMAC, DSO PKIoverheid verification and WS-Security (lib/Adapters/Digikoppeling/WsSecuritySigner.php), none of which sign documents."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "The hint's signing adapter does not exist in integriq; there is no qualified electronic signature integration.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "integration-leaves",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"decidiq:min-05"
 			],
