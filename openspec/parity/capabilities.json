@@ -3872,13 +3872,18 @@
 			"area": "nl-standards",
 			"name": "Work with cases in an outside case system through the ZGW Zaken API.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Settings/configurations/zgw-zaken.json (source.isEnabled=false, target.register/schema empty, chosenBy operator); openspec/changes/zgw-connectors-for-dossiq/tasks.md Task 1 'Implement' unchecked and Task 2 names lib/Service/ConfigurationSetInstaller.php, which does not exist anywhere in lib/. Generic import (lib/Service/ConfigurationService.php:1037 importConfiguration()) requires an OAS-shaped {components:{sources,mappings,...}} payload, a different shape than this descriptor, so it cannot even be imported through the existing generic pipeline."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Only a package descriptor and an openspec proposal exist; the installer that would bind it to an operator-chosen register/schema was never built.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -3891,13 +3896,18 @@
 			"area": "nl-standards",
 			"name": "Store and fetch documents in an outside system through the ZGW Documenten API.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Settings/configurations/zgw-documenten.json (source.isEnabled=false); same missing lib/Service/ConfigurationSetInstaller.php as zgw-zaken (openspec/changes/zgw-connectors-for-dossiq/tasks.md)."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Same unbuilt packaged-connector pattern as nl-zgw-zaken.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -3910,13 +3920,18 @@
 			"area": "nl-standards",
 			"name": "Import case types from an outside ZGW Catalogi API.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Settings/configurations/zgw-catalogi.json (source.isEnabled=false); no ConfigurationSetInstaller exists (see nl-zgw-zaken)."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Sibling row names opencatalogi:svc-import as provider; integriq's own package for consuming an outside ZGW Catalogi API is an unbuilt descriptor only, so if this is delivered anywhere it is not here.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"opencatalogi:svc-import"
 			],
@@ -3932,13 +3947,18 @@
 			"area": "nl-standards",
 			"name": "Preview and accept the changes when case types are synchronised again from their source.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "grep for a catalogi-specific resync/diff-preview found nothing; the generic mapping preview (appinfo/routes.php mappings#test -> src/components/mapping/MappingResultPanel.vue:503) is schema-agnostic and not wired to a catalogi connector, which itself does not exist (see nl-zgw-catalogi)."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Depends entirely on the unbuilt zgw-catalogi connector; there is no catalogi-specific resync preview/accept flow.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"opencatalogi:svc-resync"
 			],
@@ -3954,13 +3974,18 @@
 			"area": "nl-standards",
 			"name": "Record decisions in an outside system through the ZGW Besluiten API.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Settings/configurations/zgw-besluiten.json (source.isEnabled=false); no ConfigurationSetInstaller exists (see nl-zgw-zaken)."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Same unbuilt packaged-connector pattern as nl-zgw-zaken.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -3973,13 +3998,17 @@
 			"area": "nl-standards",
 			"name": "Translate between ZGW API versions so older and newer systems can still talk.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:223 zgwVersionTranslate#translate -> lib/Controller/ZgwVersionTranslateController.php:100 translate() -> lib/Service/ZgwVersionTranslationService.php; manifest page ZgwTranslations (src/manifest.json:2949-2954, route /messages/zgw-translations, schema integriq zgw_version_translation_log) renders the log generically."
 			},
+			"reachedOn": "machine route: POST /api/zgw-translate (authenticated NC-session call from sibling apps on a different ZGW version); results viewable at /messages/zgw-translations",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "zgw-version-translation",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -3992,13 +4021,18 @@
 			"area": "nl-standards",
 			"name": "Serve register records through the Objecten and Objecttypen APIs.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:607-616 ten objectenApi# routes (objecttypes, objecttype, objecttypeVersion, objects, search, createObject, object, replaceObject, updateObject, deleteObject) -> lib/Controller/ObjectenApiController.php (methods at lines 101-380), gated by ObjectenTokenService per routes.php comment."
 			},
+			"reachedOn": "machine route: GET/POST /api/v2/objects and /api/v2/objecttypes (external suppliers presenting 'Authorization: Token <key>', no Nextcloud session)",
+			"note": "Sibling row lists dossiq:12.3 as provider, but the Objecten/Objecttypen API is actually served by integriq's own ObjectenApiController, not dossiq.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "object-service-shim",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"dossiq:12.3"
 			],
@@ -4014,13 +4048,17 @@
 			"area": "nl-standards",
 			"name": "Exchange cases and documents with an older case system over StUF-ZKN.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:204-205 stufZkn#inbound/outbound -> lib/Controller/StufZknController.php:121 inbound(), :171 outbound(); lib/Service/StufZkn/StufZknClient.php implements StufZknProviderInterface as a real SOAP/Digikoppeling-transport binding alongside lib/Service/StufZkn/LogStufZknProvider.php (mock default); manifest page StufMessages (src/manifest.json:2909-2914, /messages/stuf, schema stuf_message)."
 			},
+			"reachedOn": "machine route: POST /api/stuf-zkn/inbound (legacy case system SOAP push) and /api/stuf-zkn/kennisgevingen (outbound push from sibling apps); viewable at /messages/stuf",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "stuf-zkn-bridge",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"opencatalogi:int-stuf"
 			],
@@ -4036,13 +4074,18 @@
 			"area": "nl-standards",
 			"name": "Look up persons and addresses over StUF-BG.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Service/StUFBGService.php:101 handleNpsLv01(), :169 handleAdrLv01(), :223 parseNpsLa01Response() fully implement StUF-BG SOAP parsing, but `grep -rn StUFBGService lib/ appinfo/` finds zero callers anywhere outside the class itself; there is no route in appinfo/routes.php and no controller references it. Its only other reference is tests/Unit/Service/StUFBGServiceTest.php."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "A fully-implemented service with no route, no controller and no caller: code exists but the capability is not wired to anything.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "stuf-adapter",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4055,13 +4098,18 @@
 			"area": "nl-standards",
 			"name": "Receive permit applications from the Omgevingsloket.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:38 dSO#receiveRequest -> lib/Controller/DSOController.php:132 receiveRequest() (machine webhook with real PKI/HMAC signature verification per routes.php comment); routes.php:47-50 dSO#listVerzoeken/status/handoff/postOutbound -> DSOController.php:221,250,290,353. A repo-wide search of src/ finds zero calls to /api/dso/verzoeken anywhere, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue -- no verzoeken review page."
 			},
+			"reachedOn": "machine route: POST /api/dso/stam/verzoeken (Omgevingsloket STAM push); the staff review/handoff surface (list, status, handoff) has no page reaching it",
+			"note": "Live-defect candidate: an operator has no way to see or hand off a received Omgevingsloket application anywhere in the UI, even though the backend read/handoff/outbound surface is fully built.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "dso-omgevingsloket",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4074,13 +4122,17 @@
 			"area": "nl-standards",
 			"name": "Set up the Omgevingsloket certificates and check signed messages.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:623-624 dsoPkiSettings#getConfig/setConfig -> lib/Controller/DsoPkiSettingsController.php:71 getConfig(), :114 setConfig(); src/views/admin/DsoPkiSettings.vue:164,188 axios calls to /apps/integriq/api/admin/dso-pki-config."
 			},
+			"reachedOn": "Beheer > Integriq admin settings, DSO PKI section (DsoPkiSettings.vue)",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "dso-omgevingsloket",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4093,13 +4145,18 @@
 			"area": "nl-standards",
 			"name": "Exchange messages over Digikoppeling.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Adapters/Digikoppeling/{DigikoppelingAdapter,Ebms2ReliableMessagingService,WsSecuritySigner,WusProfileService,PkiOverheidCredentialResolver,GroteBerichtenReference}.php are used by lib/Service/StufZkn/StufZknClient.php, lib/Adapters/Berichtenbox/BerichtenboxClient.php and lib/Gateway/DigikoppelingBrokerResolver.php; lib/Service/CatalogRegistryService.php:232 lists it as a static Catalog descriptor ('adapter:digikoppeling'). No dedicated route or page of its own exists anywhere in appinfo/routes.php or src/."
 			},
+			"reachedOn": "used internally as the transport for StUF-ZKN outbound and Berichtenbox send; listed for information on the /store Catalog page",
+			"note": "Works only as a transport dependency consumed by other capabilities (StUF-ZKN, Berichtenbox), not as a directly callable feature of its own.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "digikoppeling-adapter",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4112,13 +4169,17 @@
 			"area": "nl-standards",
 			"name": "Call services through FSC, the federated service connectivity standard.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:214-215 fsc#listServices/call -> lib/Controller/FscController.php:92 listServices(), :114 call() -> lib/Service/FscCallService.php; manifest page FscCalls (src/manifest.json:2941-2946, /messages/fsc, schema fsc_call)."
 			},
+			"reachedOn": "machine route: POST /api/fsc/call (authenticated NC-session call from sibling apps reaching another organisation's published service); logged at /messages/fsc",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "fsc-connectivity",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4131,13 +4192,17 @@
 			"area": "nl-standards",
 			"name": "Look up a person in the BRP through Haal Centraal.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/PropertySource/Provider/BrpPropertySource.php:36 const ID='brp', :73 suggest(), :111 resolve() implements PropertySourceProviderInterface, reached via appinfo/routes.php:521-522 propertySource#suggest/{provider}, #resolve/{provider}; lib/Settings/register.d/brp-haalcentraal-source.json seed source is surfaced on /store via lib/Service/CatalogRegistryService.php collectFromSeedFragments()."
 			},
+			"reachedOn": "GET /api/property-sources/brp/suggest|resolve, called by any OpenRegister field declaring x-openregister-property-source: brp; the BRP source template is installable from /store",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4150,13 +4215,17 @@
 			"area": "nl-standards",
 			"name": "Look up a company in the KvK trade register.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/PropertySource/Provider/KvkPropertySource.php:36-ish const ID='kvk', :73 suggest(), :111 resolve() implements PropertySourceProviderInterface, reached via appinfo/routes.php:521-522 propertySource#suggest/{provider}, #resolve/{provider}; lib/Settings/register.d/kvk-source.json seed source surfaced on /store."
 			},
+			"reachedOn": "GET /api/property-sources/kvk/suggest|resolve, called by any OpenRegister field declaring x-openregister-property-source: kvk; the KvK source template is installable from /store",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4169,13 +4238,17 @@
 			"area": "nl-standards",
 			"name": "Receive changes to companies you follow from the KvK.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Service/Registry/KvkMutatieProvider.php:47 registryId(), :71 subscribe(), :94 unsubscribe(), :107 pollChanges() extends AbstractSourceSubscriptionProvider; lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered in appinfo/info.xml:143 as a TimedJob and calls postChanges() (line 117) to persist polled changes."
 			},
+			"reachedOn": "background job RegistrySubscriptionPollJob (cron) polls subscribed KvK mutatieservice sources and posts changes",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4188,13 +4261,18 @@
 			"area": "nl-standards",
 			"name": "Look up addresses and locations through PDOK.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:478-481 pdok#suggestAction/lookupAction/freeAction/reverseAction -> lib/Controller/PdokController.php:78,107,153,183 -> lib/Connectors/PdokConnector.php:142,157,174,192 (real implementation, with normalize()/writeThrough() at 394/564). A case-insensitive grep of src/ for 'pdok' returns zero matches anywhere in integriq's own frontend; the only mention is the Catalog descriptor at lib/Service/CatalogRegistryService.php:218 ('adapter:pdok')."
 			},
+			"reachedOn": "nothing reaches it from within integriq's own frontend; the /store Catalog page only lists it informationally",
+			"note": "Backend fully implemented and tested; likely meant to be consumed by sibling apps' address-lookup fields, but nothing in this app's own pages calls it, and frontend-api-paths.txt confirms no /api/pdok/* call exists.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "pdok-adapter",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4207,13 +4285,18 @@
 			"area": "nl-standards",
 			"name": "Send digital post to a citizen's Berichtenbox.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Adapters/Berichtenbox/BerichtenboxClient.php is a real Digikoppeling-transport binding for DigitalPostProviderInterface, alongside lib/Service/DigitalPost/LogDigitalPostProvider.php (mock, default while logius.berichtenbox.feature_flag is unset, per lib/Service/CatalogRegistryService.php:245-259); lib/EventListener/DigitalPostSendRequestedListener.php listens for a case app's typed send-requested event and calls lib/Service/DigitalPost/DigitalPostService.php -> DigitalPostProviderRegistry; the provider is picked in appinfo/routes.php:94 digitalPostProviders#providers -> src/modals/v2/SourceFormFields.vue:628."
 			},
+			"reachedOn": "event: a case app (e.g. dossiq) dispatches its send-requested event -> DigitalPostSendRequestedListener -> DigitalPostService -> Berichtenbox binding; the provider is chosen in the source form (SourceFormFields.vue:628)",
+			"note": "Ships mock by default; a real send needs the feature flag plus two credentials (Logius BBK OAuth client + PKIoverheid certificate), and the code deliberately refuses rather than fake-sending once the flag is on without them.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"dossiq:6.6",
 				"dossiq:12.9"
@@ -4230,13 +4313,17 @@
 			"area": "nl-standards",
 			"name": "Choose which digital post provider delivers a letter.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:94 digitalPostProviders#providers -> lib/Controller/DigitalPostProvidersController.php -> lib/Service/DigitalPost/DigitalPostProviderRegistry.php; src/modals/v2/SourceFormFields.vue:628 axios.get('/apps/integriq/api/digital-post/providers')."
 			},
+			"reachedOn": "source creation/edit form, digital post provider dropdown (SourceFormFields.vue:628)",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "source-management",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4249,13 +4336,18 @@
 			"area": "nl-standards",
 			"name": "Exchange iWmo and iJw messages with care providers.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:192-193 iwmoIjw#createMessage/inbound -> lib/Controller/IwmoIjwController.php; `grep -rln 'implements IwmoIjwProviderInterface' lib/` finds only lib/Service/IwmoIjw/LogIwmoIjwProvider.php, no Rest/real binding; manifest page IwmoMessages (src/manifest.json:2925-2930, /messages/iwmo, schema iwmo_ijw_message)."
 			},
+			"reachedOn": "machine route: POST /api/iwmo-ijw/berichten (sibling apps' social-domain case modules); viewable at /messages/iwmo",
+			"note": "Only a Log/mock outbound provider ships; there is no real StUF iWmo/iJw network binding, so outbound delivery is always simulated today.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "iwmo-ijw-adapter",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4268,13 +4360,17 @@
 			"area": "nl-standards",
 			"name": "Send and receive e-invoices over Peppol.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Service/Peppol/RestPeppolAccessPointProvider.php is a real binding for PeppolAccessPointProviderInterface, alongside LogPeppolAccessPointProvider.php (mock); appinfo/routes.php:56,59 peppol#participants/inbound -> lib/Controller/PeppolController.php; manifest page PeppolTransmissions (src/manifest.json:2917-2922, /messages/peppol, schema peppol_transmission)."
 			},
+			"reachedOn": "machine route: GET /api/peppol/participants/{peppolId} (production binding for shillinq's participant lookup) and POST /api/peppol/inbound (signed AP delivery callback); viewable at /messages/peppol",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "peppol-access-point-connector",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4287,13 +4383,18 @@
 			"area": "nl-standards",
 			"name": "Take council documents from iBabs or Notubiz.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/BackgroundJob/RISPollJob.php:110 pollIBabs() calls the real lib/Service/IBabsConnectorService.php; :225-231 pollNotuBiz() only logs 'RISPollJob: NotuBiz poll — besluit retrieval not yet implemented for NotuBiz' and returns without calling lib/Service/NotuBizConnectorService.php's poll path; manifest page RisSyncRecords (src/manifest.json:2957-2962, /messages/ris, schema ris_sync_record)."
 			},
+			"reachedOn": "background job RISPollJob polls iBabs sources on a schedule; NotuBiz sources are accepted in configuration but never actually polled",
+			"note": "Concrete, explicitly logged gap: iBabs besluit retrieval works, NotuBiz does not, even though both are named as supported sources.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "ibabs-notubiz-connector",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"opencatalogi:int-council"
 			],
@@ -4309,13 +4410,17 @@
 			"area": "nl-standards",
 			"name": "Receive form submissions from Open Formulieren.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:231-233 openFormulieren#inbound/status/handoff -> lib/Controller/OpenFormulierenController.php -> lib/Service/OpenFormulierenIntakeService.php; manifest page FormSubmissions (src/manifest.json:2965-2970, /messages/form-submissions, schema openformulieren_submission)."
 			},
+			"reachedOn": "machine route: POST /api/open-formulieren/submissions (signed webhook); viewable at /messages/form-submissions",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "open-formulieren-intake",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4328,13 +4433,17 @@
 			"area": "nl-standards",
 			"name": "Connect the KISS customer contact workplace.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:179 kiss#createCustomerContact -> lib/Controller/KissController.php -> lib/Service/KissSyncService.php:127 injects the real lib/Service/Kiss/KlantinteractiesClient.php REST binding alongside lib/Service/Kiss/LogKlantinteractiesProvider.php (mock), resolved per-configuration at KissSyncService.php:384 resolveProvider(); lib/BackgroundJob/KissPullJob.php is the cron-driven pull side."
 			},
+			"reachedOn": "machine route: POST /api/kiss/klantcontacten (sibling apps' own contact-moment services, e.g. procest); pull side via KissPullJob cron",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "kiss-kcc-bridge",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4347,13 +4456,18 @@
 			"area": "nl-standards",
 			"name": "Show an incoming phone call from the telephone exchange next to the caller's details.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:89 cti#events -> lib/Controller/CtiController.php:92 events() -> lib/Service/Kiss/CtiEventIntake.php:161 handle() verifies, deduplicates and dispatches a typed lib/Event/CallEvent via IEventDispatcher; lib/Service/Kiss/WebhookCtiProvider.php is a real binding alongside LogCtiProvider.php (mock)."
 			},
+			"reachedOn": "machine route: POST /api/cti/{sourceId}/events (PBX webhook, #[PublicPage]) -> dispatches CallEvent for a consuming app (e.g. dossiq) to show next to the caller's details",
+			"note": "Integriq delivers the event; the 'next to the caller's details' display itself lives in the consuming case app (matches sibling row dossiq:6.13), not in integriq's own UI.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "kiss-kcc-bridge",
+			"featureConfidence": "medium",
 			"siblingRows": [
 				"dossiq:6.13"
 			],
@@ -4369,13 +4483,18 @@
 			"area": "nl-standards",
 			"name": "Send text and mail notifications through NotifyNL.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "partial",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:165-167 notifyNl#send/status/inbound -> lib/Controller/NotifyNlController.php:97 send(), :165 status(), :208 inbound() -> lib/Service/SmsDispatchService.php (SCHEMA_MESSAGE='sms_message' at line 79) using the real lib/Service/Sms/RestNotifyNlProvider.php binding; manifest page SmsMessages (src/manifest.json:2933-2938, /messages/sms). No code anywhere ties NotifyNL to mail sending; lib/Service/Mail/* only implements inbound mail intake (MailIntakeService), unrelated to outbound notification."
 			},
+			"reachedOn": "machine route: POST /api/notifynl/messages (SMS only); viewable at /messages/sms",
+			"note": "The row asks for text and mail notifications through NotifyNL; only the SMS channel is implemented. The MailMessages page is unrelated inbound mail intake, not outbound NotifyNL mail.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "notifynl-sms-channel",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4388,13 +4507,18 @@
 			"area": "nl-standards",
 			"name": "Deliver messages through the sector gateways CORV, GGK and WKPB.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Gateway/Adapter/{CorvGateway,GgkGateway,WkpbGateway}.php only implement id()/schemas() (metadata, no send/deliver method) and are referenced only by tests/Unit/Gateway/StatutoryGatewayAdapterTest.php -- zero production callers; appinfo/routes.php:543-548 gateways#index/overview/exportOverview/testBinding/bridges/revokeBridge -> lib/Controller/GatewaysController.php, but a repo-wide search of src/ finds no page or component calling /api/gateways anywhere, and the only 'Gateway' string in src/manifest.json (line 217-218) is the unrelated ApiProducts 'Gateway' menu grouping."
 			},
+			"reachedOn": "nothing reaches it: no frontend page, and the CORV/GGK/WKPB adapter classes have no production caller at all",
+			"note": "Only a read-only registry/catalogue of which laws this instance claims to reach is built, and even that has no page; actual message delivery through CORV/GGK/WKPB is metadata-only scaffolding.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4407,13 +4531,18 @@
 			"area": "nl-standards",
 			"name": "Deliver publications to the national Woo index.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Gateway/Adapter/PublicationGateway.php:57 publish(), :80 validate() are real methods, but `grep -rln PublicationGateway lib/ tests/` shows the only caller anywhere is tests/Unit/Gateway/StatutoryGatewayAdapterTest.php; no route, background job or listener invokes it."
 			},
+			"reachedOn": "nothing reaches it",
+			"note": "Sibling row names decidiq:pub-05; integriq's own PublicationGateway is unwired scaffolding with a real method body but no production caller, so if this capability is delivered anywhere it is not from integriq today.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"decidiq:pub-05"
 			],
@@ -4429,13 +4558,17 @@
 			"area": "nl-standards",
 			"name": "Tag publications with the TOOI value lists for theme and organisation.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "`grep -rli tooi lib/ src/` returns no matches anywhere in the repository."
 			},
+			"reachedOn": "nothing reaches it; no matching code found",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "connector-catalog",
+			"featureConfidence": "low",
 			"siblingRows": [
 				"decidiq:pub-13"
 			],
@@ -4451,13 +4584,17 @@
 			"area": "nl-standards",
 			"name": "Check that published APIs follow the Dutch API design rules.",
 			"source": "competitor-derived",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
 				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"owner": "ConductionNL/integriq",
+				"evidence": "Searches for 'design.rules', 'adr.linter', 'apidesignrules' and filenames matching designrule/adrlint across the whole repository return no matches."
 			},
+			"reachedOn": "nothing reaches it; no matching code found",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "api-product-gateway",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4470,13 +4607,18 @@
 			"area": "identity",
 			"name": "Let citizens log in with DigiD through a broker.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Auth/Idp/GovernmentIdpAdapterInterface.php:60 beginAuthentication(), :75 readAssertion() -- `grep -rln beginAuthentication lib/` shows no caller anywhere except lib/AppInfo/Application.php's DI binding. lib/Auth/Idp/LogGovernmentIdpAdapter.php:43 is the only class implementing the interface (spec: openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-dormant-seam-adapters-ship-config-flag-gated-and-inert). No route in appinfo/routes.php starts or completes a DigiD authentication; the only related route is idpBroker#exchange (line 333), which only redeems a code -- see id-envelope for why that never succeeds either."
 			},
+			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete a DigiD authentication",
+			"note": "The spec calls this a deliberately dormant seam, but even the wiring around it (issuing the code the exchange step redeems) has no caller -- see id-envelope for the specific dead path.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "authentication-twig",
+			"featureConfidence": "medium",
 			"siblingRows": [
 				"dossiq:12.8"
 			],
@@ -4492,13 +4634,18 @@
 			"area": "identity",
 			"name": "Let companies log in with eHerkenning.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Same GovernmentIdpAdapterInterface as id-digid; lib/Auth/Idp/TrustLevelMapper.php:73 const PROVIDER_EHERKENNING exists and maps trust levels, but the adapter it would classify is never invoked (LogGovernmentIdpAdapter is the only implementation, called from nowhere but DI)."
 			},
+			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete an eHerkenning authentication",
+			"note": "Same dormant/unwired seam as id-digid.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "authentication-twig",
+			"featureConfidence": "medium",
 			"siblingRows": [
 				"dossiq:12.8"
 			],
@@ -4514,13 +4661,18 @@
 			"area": "identity",
 			"name": "Accept a European eIDAS login.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Same GovernmentIdpAdapterInterface as id-digid/id-eherkenning; lib/Auth/Idp/TrustLevelMapper.php:80 const PROVIDER_EIDAS exists, but the adapter is never invoked."
 			},
+			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete an eIDAS authentication",
+			"note": "Same dormant/unwired seam as id-digid.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "authentication-twig",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4533,13 +4685,18 @@
 			"area": "identity",
 			"name": "Pass a logged-in person on to another app as a short-lived pseudonym without handing over the BSN.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Auth/Idp/EnvelopeExchangeService.php:67 issueCode() has zero callers anywhere in lib/ (`grep -rln issueCode lib/` only matches its own declaration); lib/Auth/Idp/SubjectPseudonymService.php:74 fromPolymorphic(), :108 pseudonymFor() are also never called outside their own file. Only :96 redeemCode() is reachable, via appinfo/routes.php:333 idpBroker#exchange -> lib/Controller/IdpBrokerController.php:84 exchange()."
 			},
+			"reachedOn": "machine route POST /api/idp/envelope/exchange exists, but nothing in the repository ever issues a code for it to redeem",
+			"note": "Live-defect candidate: a consuming app calling exchange today would always get a 401, because issueCode() and the BSN-pseudonymisation step are never invoked by any controller, listener or job in this codebase.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "authentication-twig",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4552,13 +4709,17 @@
 			"area": "identity",
 			"name": "Put a certificate into someone's European digital identity wallet.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:283 eudiWallet#createOffer, :277 resolveOffer, :278 token, :279 credential -> lib/Controller/EudiWalletController.php:295 createOffer(), :367 resolveOffer(), :394 token(), :419 credential() -> lib/Service/EudiCredentialOfferService.php."
 			},
+			"reachedOn": "machine route: POST /api/eudi/credential-offers (consumer-gated, e.g. learniq requests an offer), then the citizen's wallet completes the OpenID4VCI token/credential exchange over the public routes",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "eudi-wallet-credential-issuance",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"learniq:cred-push-to-eudi-wallet"
 			],
@@ -4574,13 +4735,17 @@
 			"area": "identity",
 			"name": "Make a withdrawal reach the copy in the wallet too.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:284 eudiWallet#revoke -> lib/Controller/EudiWalletController.php:334 revoke() -> lib/Service/EudiCredentialOfferService.php:787 revoke(), which at line 810 calls $this->statusListService->revokeIndex() (lib/Service/EudiStatusListService.php:188), the same status list the wallet reads via appinfo/routes.php:280 eudiWallet#statusList -> EudiWalletController.php:451 statusList()."
 			},
+			"reachedOn": "machine route: POST /api/eudi/credential-offers/{id}/revoke flips the bit in the status list the wallet checks at GET /api/eudi/status-lists/{id}",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "eudi-wallet-credential-issuance",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"learniq:cred-wallet-revocation-follows"
 			],
@@ -4596,13 +4761,18 @@
 			"area": "identity",
 			"name": "Manage the signing keys used to issue wallet credentials.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:286-288 eudiIssuerKeyAdmin#status/generateKey/rotateKey -> lib/Controller/EudiIssuerKeyAdminController.php. A case-insensitive grep of src/ for 'eudi' returns zero matches, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue."
 			},
+			"reachedOn": "nothing reaches it: no admin page calls /api/admin/eudi/keys",
+			"note": "Staff key-rotation capability with no page, the same shape as the nl-dso finding.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "eudi-wallet-credential-issuance",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4615,13 +4785,17 @@
 			"area": "identity",
 			"name": "Create and update Nextcloud users and groups from another system over SCIM.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:140-148 (9 routes: listUsers, createUser, getUser, updateUser x2, deleteUser, listGroups, updateGroup x2) -> lib/Controller/ScimController.php: listUsers:123, getUser:150, createUser:175, updateUser:215, deleteUser:258, listGroups:299, updateGroup:326 -> lib/Directory/ScimProvisioningService.php."
 			},
+			"reachedOn": "machine route: a SCIM 2.0 client (identity system) calls /api/scim/v2/Users|Groups with its own credential, no Nextcloud session",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "user-management-and-login",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4634,13 +4808,17 @@
 			"area": "identity",
 			"name": "Synchronise users and groups from a company directory on a schedule.",
 			"source": "dossiq-round4",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:67-69 directorySync#connections/run/runs -> lib/Controller/DirectorySyncController.php -> lib/Directory/DirectorySyncService.php; manifest page DirectoryRuns (/directory-runs, schema synchronization_log); src/manifest.json:976-984 Sources index row actions 'preview-directory-run'/'run-directory-sync' -> previewDirectorySyncHandler/runDirectorySyncHandler (src/registry.js:65-66) -> src/modals/Directory/DirectoryRunModal.vue:164 axios.post to /api/directory/connections/{id}/run."
 			},
+			"reachedOn": "Sources index page, row action 'Run directory sync' on a directory-type source -> DirectoryRunModal.vue:164; results at /directory-runs",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "user-management-and-login",
+			"featureConfidence": "medium",
 			"sourceNote": "dossiq cluster 33",
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -4654,13 +4832,17 @@
 			"area": "identity",
 			"name": "Map directory groups to Nextcloud groups.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "lib/Directory/GroupMappingResolver.php is injected into lib/Directory/DirectorySyncService.php:95 and lib/Directory/ScimProvisioningService.php:172, both of which are reachable (see id-directory, id-scim)."
 			},
+			"reachedOn": "internal to directory sync (id-directory) and SCIM provisioning (id-scim); no separate UI, it resolves the mapping declared on the connection",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "user-management-and-login",
+			"featureConfidence": "medium",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4673,13 +4855,18 @@
 			"area": "identity",
 			"name": "Embed an external tool in a lesson over LTI 1.3.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:244-267 has 13 lti# route entries -> lib/Controller/LtiController.php, backed by lib/Service/Lti/* implementing LTI 1.3 OIDC third-party login + resource launch (Platform role)."
 			},
+			"reachedOn": "machine route: an external LMS Tool performs the OIDC login at GET/POST /api/lti/{deployment}/login then POST .../launch",
+			"note": "The admin approve/suspend/key-management routes on the same controller (lines 259-266) have no page in src/views/admin (only ActionAuthMatrix, AdminSettings, DsoPkiSettings exist there) -- a smaller version of the same backend-no-page gap as nl-dso and id-eudi-keys, though the core embed/launch flow itself does not need a page since it is protocol-driven from the LMS.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "lti-platform",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"learniq:cont-embed-external-lti-tool"
 			],
@@ -4695,13 +4882,17 @@
 			"area": "identity",
 			"name": "Let an external tool send its grade back.",
 			"source": "sibling-matrix",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:248 lti#agsScore -> lib/Controller/LtiController.php:295 agsScore() -> lib/Service/Lti/LtiAgsService.php:282 receiveScore()."
 			},
+			"reachedOn": "machine route: POST /api/lti/{deployment}/ags/lineitems/{lineItemId}/scores (external Tool posts a grade back over LTI AGS)",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "lti-platform",
+			"featureConfidence": "high",
 			"siblingRows": [
 				"learniq:cont-lti-grades-come-back"
 			],
@@ -4717,13 +4908,18 @@
 			"area": "identity",
 			"name": "Read bank transactions through a PSD2 connection.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "appinfo/routes.php:296-298 psd2#connect/callback/discoverAccounts -> lib/Controller/Psd2Controller.php -> lib/Service/Psd2/RestPsd2AggregatorProvider.php (real) / LogPsd2AggregatorProvider.php (mock). Grep of src/ (manifest.json, registry.js, all .vue/.js) for 'psd2', 'Psd2', 'bankfeed', 'Bankfeed' returns zero matches, and frontend-api-paths.txt lists no /api/psd2/* call."
 			},
+			"reachedOn": "nothing reaches it: no page or row action initiates /api/psd2/connect",
+			"note": "Backend (including the real aggregator binding) is built and the redirect-based SCA consent flow is implemented, but no UI anywhere starts it.",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "psd2-ais-bank-feed-connector",
+			"featureConfidence": "high",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4736,13 +4932,17 @@
 			"area": "identity",
 			"name": "Set up which identity providers a portal offers for login.",
 			"source": "own-code",
-			"integriq": "unknown",
+			"integriq": "no",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/changes/portal-idp-broker-config/proposal.md states 'Status: blocked -- do not start design/tasks artifacts until Open Decisions D1-D5 are recorded'; `find . -iname '*PortalIdp*'` outside openspec/ returns nothing in lib/ or src/."
 			},
+			"reachedOn": "nothing reaches it; the change is explicitly blocked and unimplemented",
 			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"providerHow": "read-from-code",
+			"feature": "authentication-twig",
+			"featureConfidence": "low",
 			"n8n": "unknown",
 			"tyk": "unknown",
 			"apisix": "unknown",
@@ -4755,13 +4955,18 @@
 			"area": "identity",
 			"name": "Log in to the integration admin with your organisation's single sign-on.",
 			"source": "competitor-derived",
-			"integriq": "unknown",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "not read yet: reader pack pending"
+				"state": "built",
+				"owner": "nextcloud/server",
+				"evidence": "Integriq's own routes (e.g. appinfo/routes.php:584-585 user#login/logout) and its admin settings page (src/main.js:178 registers /settings/admin/integriq) sit entirely behind Nextcloud's own session/auth middleware; no integriq-specific login bypass or custom auth guard was found anywhere in lib/Controller/ or lib/AppInfo/Application.php."
 			},
-			"provider": "integriq",
-			"providerHow": "not-read-yet",
+			"reachedOn": "the standard Nextcloud login page/SSO redirect (user_oidc/user_saml, if enabled), then Beheer > Integriq at /settings/admin/integriq",
+			"note": "This is platform behaviour inherited from Nextcloud, not integriq-specific code; not independently verified beyond confirming no custom bypass exists.",
+			"provider": "nextcloud",
+			"providerHow": "read-from-code",
+			"feature": "user-management-and-login",
+			"featureConfidence": "medium",
 			"n8n": "yes",
 			"tyk": "unknown",
 			"apisix": "unknown",
