@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OsoOverstapdossier>
+  <stuurgegevens>
+    <afzenderBrin></afzenderBrin>
+  </stuurgegevens>
+  <body>
+    <leerlingEckId>eck-id-seed-002</leerlingEckId>
+  </body>
+</OsoOverstapdossier>

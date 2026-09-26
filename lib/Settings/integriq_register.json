@@ -68,7 +68,8 @@
           "verdict",
           "synchronization_log",
           "zgw_version_translation_log",
-          "digitalPostMessage"
+          "digitalPostMessage",
+          "oso_message"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -5972,6 +5973,78 @@
             "format": "date-time",
             "description": "OR-managed update timestamp",
             "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "oso_message": {
+        "x-wire-standard": "OSO (Overstapservice Onderwijs, Kennisnet) — kenmerk and signaalcode are the standard's own field names. MUST NOT be internationalised.",
+        "slug": "oso_message",
+        "title": "OSO Message",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound OSO overstapdossier export, one inbound overstapdossier import, or one export acknowledgement/retour, produced by the integriq-adapter-oso connector",
+        "description": "An OSO Message tracks one outbound export dispatch, one inbound import receipt, or one export acknowledgement/retour: never merged into a single mutable row. Import records feed OsoDossierReceivedEvent for learniq's oso-inbound-contract listener; integriq never writes learniq's OsoImportDossier directly. See openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md.",
+        "required": [
+          "direction",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "export",
+              "import"
+            ],
+            "description": "Whether this record is an outbound export (or its retour) or an inbound import",
+            "title": "Direction"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "pending",
+              "received",
+              "acknowledged",
+              "rejected"
+            ],
+            "description": "Export: sent, failed or pending, later acknowledged or rejected via retour. Import: received",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The provider-returned reference for an OUTBOUND export; null on import records",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The correlation id for an export or its retour; null on a fresh import record",
+            "title": "Kenmerk"
+          },
+          "sourceSchoolBrin": {
+            "type": "string",
+            "description": "The sending school's BRIN on an INBOUND import; null on export records",
+            "title": "Source School BRIN"
+          },
+          "learnerEckId": {
+            "type": "string",
+            "description": "The pupil's pseudonymous ECK iD, on either direction",
+            "title": "Learner ECK iD"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail; null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
+            "title": "Synced At"
           }
         },
         "x-openregister-seed": [],
