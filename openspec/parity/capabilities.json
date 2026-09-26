@@ -204,6 +204,11 @@
 			"kind": "app"
 		},
 		{
+			"key": "pipelinq",
+			"name": "Pipelinq",
+			"kind": "app"
+		},
+		{
 			"key": "libresign",
 			"name": "LibreSign",
 			"kind": "platform"
