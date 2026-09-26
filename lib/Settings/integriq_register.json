@@ -68,7 +68,8 @@
           "verdict",
           "synchronization_log",
           "zgw_version_translation_log",
-          "digitalPostMessage"
+          "digitalPostMessage",
+          "uwlr_eduv_message"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -6573,6 +6574,89 @@
             "format": "date-time",
             "description": "OR-managed update timestamp",
             "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "uwlr_eduv_message": {
+        "x-wire-standard": "UWLR / Edu-V / Basispoort / Entree content SSO (Kennisnet) — target/subtype are the connector's own discriminators, not the standards' wire field names (see design.md Open Questions: the real per-target wire shapes are not yet documented in the corpus).",
+        "slug": "uwlr_eduv_message",
+        "title": "UWLR/Edu-V Message",
+        "icon": "CloudSyncOutline",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound UWLR, Edu-V, Basispoort or Entree-content export/sync send, or one inbound acknowledgement, produced by the integriq-adapter-uwlr-eduv connector",
+        "description": "A UWLR/Edu-V Message tracks one outbound send (uwlr pupil/group/teacher export, edu-v onderwijsdeelnemers/onderwijsgroepen/onderwijsmedewerkers export, basispoort or entree-content sync) or one inbound acknowledgement/retour, tagged by target and (where applicable) subtype. See openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md.",
+        "required": [
+          "target",
+          "direction",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "enum": [
+              "uwlr",
+              "edu-v",
+              "basispoort",
+              "entree-content"
+            ],
+            "description": "Which of the four connection families this record belongs to",
+            "title": "Target"
+          },
+          "subtype": {
+            "type": "string",
+            "description": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.",
+            "title": "Subtype"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "export",
+              "sync"
+            ],
+            "description": "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync",
+            "title": "Direction"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "pending",
+              "acknowledged",
+              "rejected"
+            ],
+            "description": "Outbound send/sync outcome, or the acknowledgement outcome for a retour record",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The transport-assigned reference (e.g. MOCK-UWLREDUV-<n> for the log provider); null on a retour-only record",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The caller-supplied correlation id, echoed back by the acknowledgement leg",
+            "title": "Kenmerk"
+          },
+          "eckId": {
+            "type": "string",
+            "description": "The pseudonymous pupil ECK iD this record concerns, when applicable",
+            "title": "ECK iD"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail; null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp this send/sync/acknowledgement was recorded",
+            "title": "Synced At"
           }
         },
         "x-openregister-seed": [],

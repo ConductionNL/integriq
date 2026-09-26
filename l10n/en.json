@@ -2548,7 +2548,19 @@
         "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.": "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.",
         "Keeps related events together, when the broker honours it.": "Keeps related events together, when the broker honours it.",
         "A label for your own reference. The delivery action decides where an event actually goes.": "A label for your own reference. The delivery action decides where an event actually goes.",
-        "How a matched event is delivered. Leave it empty to post to the sink above.": "How a matched event is delivered. Leave it empty to post to the sink above."
+        "How a matched event is delivered. Leave it empty to post to the sink above.": "How a matched event is delivered. Leave it empty to post to the sink above.",
+        "ECK iD": "ECK iD",
+        "Kenmerk": "Kenmerk",
+        "Outbound send/sync outcome, or the acknowledgement outcome for a retour record": "Outbound send/sync outcome, or the acknowledgement outcome for a retour record",
+        "Subtype": "Subtype",
+        "The caller-supplied correlation id, echoed back by the acknowledgement leg": "The caller-supplied correlation id, echoed back by the acknowledgement leg",
+        "The pseudonymous pupil ECK iD this record concerns, when applicable": "The pseudonymous pupil ECK iD this record concerns, when applicable",
+        "The transport-assigned reference (e.g. MOCK-UWLREDUV-<n> for the log provider); null on a retour-only record": "The transport-assigned reference (e.g. MOCK-UWLREDUV-<n> for the log provider); null on a retour-only record",
+        "Timestamp this send/sync/acknowledgement was recorded": "Timestamp this send/sync/acknowledgement was recorded",
+        "UWLR/Edu-V Message": "UWLR/Edu-V Message",
+        "Which of the four connection families this record belongs to": "Which of the four connection families this record belongs to",
+        "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync": "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync",
+        "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content."
     },
     "plurals": {}
 }

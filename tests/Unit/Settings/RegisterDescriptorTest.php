@@ -84,7 +84,8 @@ class RegisterDescriptorTest extends TestCase {
 	 * openspec/changes/archive/2026-07-15-notificaties-api-subscriber, bringing the count to 35.
 	 *
 	 * Was 35 — `stuf_message` added by openspec/changes/stuf-zkn-bridge,
-	 * bringing the count to 36.
+	 * bringing the count to 36. Was 49 — `uwlr_eduv_message` added by
+	 * openspec/changes/integriq-adapter-uwlr-eduv, bringing the count to 50.
 	 *
 	 * @var array<string, string>
 	 */
@@ -171,6 +172,9 @@ class RegisterDescriptorTest extends TestCase {
 		// write is wrapped in a catch that logs a warning, so every record of
 		// what was posted was dropped without anything erroring.
 		'DigitalPostMessage' => 'digitalPostMessage',
+		// UWLR/Edu-V/Basispoort/Entree-content adapter — added by
+		// integriq-adapter-uwlr-eduv spec.
+		'UwlrEduVMessage' => 'uwlr_eduv_message',
 	];
 
 	/**

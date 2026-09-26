@@ -158,6 +158,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'synchronization_contract_log',
 		'synchronization_log',
 		'synchronization_run',
+		'uwlr_eduv_message',
 		'zgw_version_translation_log',
 	];
 

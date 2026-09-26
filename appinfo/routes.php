@@ -192,6 +192,19 @@ return [
 		['name' => 'iwmoIjw#createMessage', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
 
+		// UWLR / Edu-V / Basispoort / Entree-content adapter (openspec/changes/
+		// integriq-adapter-uwlr-eduv). Each of the four sends is an
+		// authenticated NC-session call (learniq's own `uwlr`/`edu-v`/
+		// `basispoort`/`entree-content` DataExchangeJobs) — mirrors
+		// iwmoIjw#createMessage. The shared acknowledgement/retour receiver is
+		// gated by webhook signature (HMAC), not an NC session; see
+		// UwlrEduVController::retour().
+		['name' => 'uwlrEduV#uwlr', 'url' => '/api/uwlr-eduv/uwlr', 'verb' => 'POST'],
+		['name' => 'uwlrEduV#eduV', 'url' => '/api/uwlr-eduv/edu-v', 'verb' => 'POST'],
+		['name' => 'uwlrEduV#basispoort', 'url' => '/api/uwlr-eduv/basispoort', 'verb' => 'POST'],
+		['name' => 'uwlrEduV#entreeContent', 'url' => '/api/uwlr-eduv/entree-content', 'verb' => 'POST'],
+		['name' => 'uwlrEduV#retour', 'url' => '/api/uwlr-eduv/retour', 'verb' => 'POST'],
+
 		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
 		// stuf-zkn-bridge) — the legacy Dutch municipal SOAP/XML message
 		// standard, letting a municipality adopt procest without ripping out
