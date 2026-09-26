@@ -11453,6 +11453,51 @@
         "translatedAt": "2026-03-03T09:00:00+00:00",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-1-1"
+        },
+        "direction": "export",
+        "status": "sent",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 1",
+        "learnerEckId": "Voorbeeld Learnereckid 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-2-2"
+        },
+        "direction": "import",
+        "status": "failed",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 2",
+        "learnerEckId": "Voorbeeld Learnereckid 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-3-3"
+        },
+        "direction": "export",
+        "status": "pending",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 3",
+        "learnerEckId": "Voorbeeld Learnereckid 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
       }
     ]
   }
