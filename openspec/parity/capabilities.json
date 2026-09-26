@@ -67,7 +67,8 @@
 				},
 				"issueTrackerNote": "GitHub issues are for bugs; feature requests are redirected to the community forum"
 			},
-			"version": "n8n@2.40.7"
+			"version": "n8n@2.40.7",
+			"readVersion": "n8n@2.40.7"
 		},
 		{
 			"key": "tyk",
@@ -75,7 +76,7 @@
 			"vendor": "Tyk Technologies",
 			"readOn": "2026-09-26",
 			"columnAddedOn": "2026-09-26",
-			"evidenceGrade": "docs-only",
+			"evidenceGrade": "source-read",
 			"readHow": "source read at v5.15.0 (github.com/TykTechnologies/tyk, shallow clone at the tag; released 2026-09-01 per the release notes while the GitHub latest label still points at v5.14.0) on 2026-09-26: every row rated from the code with path:line, the Gateway API and API definition keys counted as surfaces; not driven, no lab. The Tyk Dashboard, Developer Portal, Sync and MDCB are closed and not in the tree, so capabilities that live only there read unknown. A cell resting only on code under ee/ (commercial Enterprise Edition licence) reads partial with the licence named, as licence-gated n8n features do",
 			"unknownReason": "not settled by the source read at v5.15.0; each unknown cell says why",
 			"sources": {
@@ -124,7 +125,9 @@
 					"tenders": "no tender in the intelligence database names Tyk (word-boundary search; the substring matches were the Polish place name Tykocin)"
 				}
 			},
-			"version": "v5.15.0"
+			"version": "v5.15.0",
+			"readVersion": "v5.15.0",
+			"evidenceGradeBefore": "docs-only"
 		},
 		{
 			"key": "apisix",
@@ -132,7 +135,7 @@
 			"vendor": "Apache Software Foundation",
 			"readOn": "2026-09-26",
 			"columnAddedOn": "2026-09-26",
-			"evidenceGrade": "docs-only",
+			"evidenceGrade": "source-read",
 			"readHow": "source read at 3.18.0 (github.com/apache/apisix, shallow clone at the tag) on 2026-09-26: every row rated from the code with path:line, the Admin API, config.yaml and plugin schemas counted as surfaces; the embedded dashboard at /ui/ is built from the separate apisix-dashboard repo and was not in the tree; not driven, no lab",
 			"unknownReason": "not settled by the source read at 3.18.0; each unknown cell says why",
 			"sources": {
@@ -178,7 +181,9 @@
 					"tenders": "no tender in the intelligence database names APISIX (search 2026-09-26)"
 				}
 			},
-			"version": "3.18.0"
+			"version": "3.18.0",
+			"readVersion": "3.18.0",
+			"evidenceGradeBefore": "docs-only"
 		},
 		{
 			"key": "mulesoft",
@@ -238,7 +243,7 @@
 			"vendor": "WSO2",
 			"readOn": "2026-09-26",
 			"columnAddedOn": "2026-09-26",
-			"evidenceGrade": "docs-only",
+			"evidenceGrade": "source-read",
 			"readHow": "source read at product-apim v4.7.0 with the carbon-apimgt v9.33.122 backend and apim-apps v9.3.194 portals it pins, on 2026-09-26: every row rated from the code with path:line; not driven, no lab. The column means WSO2 API Manager (publisher, developer portal, admin portal, gateway, key manager, traffic manager). WSO2 Micro Integrator is a separate product and was not read, so synchronisation, flow, job and Dutch-standard rows read no for API Manager with the search named; a reviewer who wants the WSO2 platform as a whole needs a second column for Micro Integrator",
 			"unknownReason": "not settled by the source read at v4.7.0; each unknown cell says why",
 			"sources": {
@@ -288,14 +293,16 @@
 				},
 				"columnScope": "WSO2 API Manager as a product (publisher, developer portal, admin portal, gateway, key manager, traffic manager); WSO2 Micro Integrator is a separate product and is not this column"
 			},
-			"version": "product-apim v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194)"
+			"version": "product-apim v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194)",
+			"readVersion": "product-apim v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194)",
+			"evidenceGradeBefore": "docs-only"
 		},
 		{
 			"key": "frank",
 			"name": "Frank!Framework",
 			"vendor": "WeAreFrank!",
 			"columnAddedOn": "2026-09-26",
-			"evidenceGrade": "docs-only",
+			"evidenceGrade": "source-read",
 			"readHow": "source read at v10.2.0 (github.com/frankframework/frankframework, shallow clone at the tag) on 2026-09-26: every row rated from the code with path:line evidence, configuration XML elements, the Frank!Console and its management API counted as surfaces; not driven, no lab",
 			"sources": {
 				"docs": "https://frank-manual.readthedocs.io/",
@@ -344,7 +351,9 @@
 			},
 			"readOn": "2026-09-26",
 			"unknownReason": "not settled by the source read at v10.2.0; each unknown cell says why",
-			"version": "v10.2.0"
+			"version": "v10.2.0",
+			"readVersion": "v10.2.0",
+			"evidenceGradeBefore": "docs-only"
 		}
 	],
 	"areas": [
