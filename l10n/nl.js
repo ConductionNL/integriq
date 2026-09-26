@@ -1209,7 +1209,20 @@ OC.L10N.register(
         "The provider's reason, when the status is failed. Empty otherwise": "De reden van de aanbieder wanneer de status failed is. Anders leeg",
         "The recipient identity the provider addresses, for example a BSN for Berichtenbox": "De identiteit van de ontvanger die de aanbieder aanspreekt, bijvoorbeeld een BSN voor de Berichtenbox",
         "Where the document is held. The letter carries a reference, not a copy": "Waar het document wordt bewaard. De brief bevat een verwijzing, geen kopie",
-        "True when the binding that handled this letter sends nothing, so a delivered status can never be read as a letter that arrived": "Waar wanneer de koppeling die deze brief afhandelde niets verstuurt, zodat een delivered-status nooit gelezen kan worden als een brief die is aangekomen"
+        "True when the binding that handled this letter sends nothing, so a delivered status can never be read as a letter that arrived": "Waar wanneer de koppeling die deze brief afhandelde niets verstuurt, zodat een delivered-status nooit gelezen kan worden als een brief die is aangekomen",
+        "Kenmerk": "Kenmerk",
+        "Melding Kind": "Meldingsoort",
+        "Outbound: sent, failed or pending. Inbound: acknowledged or rejected, derived from the DUO signaalcode": "Uitgaand: sent, failed of pending. Inkomend: acknowledged of rejected, afgeleid van de DUO-signaalcode",
+        "SHA-256 hash of the pupil BSN sent on the wire for an outbound send; the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)": "SHA-256-hash van het BSN van de leerling dat is verstuurd bij een uitgaande verzending; het ruwe BSN wordt hier NOOIT opgeslagen (AVG-hygiëne, conform AvgBsnPolicyRule)",
+        "Signaalcode": "Signaalcode",
+        "Signal Description": "Signaalomschrijving",
+        "The DUO signaalcode on an INBOUND acknowledgement/retour (0 means accepted); null on outbound records": "De DUO-signaalcode op een INKOMENDE bevestiging/retour (0 betekent geaccepteerd); null bij uitgaande records",
+        "The DUO signal description, when supplied; null on outbound records or when DUO supplies none": "De DUO-signaalomschrijving, indien opgegeven; null bij uitgaande records of wanneer DUO er geen opgeeft",
+        "The Verzuimloket melding kind this record carries": "De Verzuimloket-meldingsoort die dit record bevat",
+        "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg": "Het correlatie-id: opgegeven door de aanroeper bij een uitgaande verzending, teruggegeven door DUO op het retourdeel",
+        "The provider-returned reference for this OUTBOUND message; null on inbound records": "De door de aanbieder teruggegeven referentie voor dit UITGAANDE bericht; null bij inkomende records",
+        "Verzuimloket Message": "Verzuimloket-bericht",
+        "Whether this record is an outbound melding send or an inbound acknowledgement/retour": "Of dit record een uitgaande meldingverzending is of een inkomende bevestiging/retour"
     },
     "nplurals=2; plural=(n != 1);"
 )
