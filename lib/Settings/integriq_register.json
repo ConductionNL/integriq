@@ -68,7 +68,8 @@
           "verdict",
           "synchronization_log",
           "zgw_version_translation_log",
-          "digitalPostMessage"
+          "digitalPostMessage",
+          "verzuim_message"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -5972,6 +5973,93 @@
             "format": "date-time",
             "description": "OR-managed update timestamp",
             "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "verzuim_message": {
+        "x-wire-standard": "DUO Verzuimloket (VSV-M2M) via Edukoppeling — meldingType, kenmerk and signaalcode are the standard's own field names. MUST NOT be internationalised.",
+        "slug": "verzuim_message",
+        "title": "Verzuimloket Message",
+        "icon": "SchoolOutline",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound DUO Verzuimloket melding send or one inbound acknowledgement/retour, produced by the integriq-adapter-verzuimloket connector",
+        "description": "A Verzuimloket Message tracks either one outbound meldingType dispatch (eerste-melding, herhaalmelding or langdurig-relatief-verzuim, translated and sent to DUO) or one inbound acknowledgement/retour (accepted or rejected, with the DUO signaalcode) received back: never merged into a single mutable row. See openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md.",
+        "required": [
+          "direction",
+          "meldingType",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "inbound"
+            ],
+            "description": "Whether this record is an outbound melding send or an inbound acknowledgement/retour",
+            "title": "Direction"
+          },
+          "meldingType": {
+            "type": "string",
+            "enum": [
+              "eerste-melding",
+              "herhaalmelding",
+              "langdurig-relatief-verzuim"
+            ],
+            "description": "The Verzuimloket melding kind this record carries",
+            "title": "Melding Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "pending",
+              "acknowledged",
+              "rejected"
+            ],
+            "description": "Outbound: sent, failed or pending. Inbound: acknowledged or rejected, derived from the DUO signaalcode",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The provider-returned reference for this OUTBOUND message; null on inbound records",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg",
+            "title": "Kenmerk"
+          },
+          "signaalcode": {
+            "type": "string",
+            "description": "The DUO signaalcode on an INBOUND acknowledgement/retour (0 means accepted); null on outbound records",
+            "title": "Signaalcode"
+          },
+          "signaalOmschrijving": {
+            "type": "string",
+            "description": "The DUO signal description, when supplied; null on outbound records or when DUO supplies none",
+            "title": "Signal Description"
+          },
+          "bsnHash": {
+            "type": "string",
+            "description": "SHA-256 hash of the pupil BSN sent on the wire for an outbound send; the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)",
+            "title": "BSN Hash"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail (outbound) or unresolved-kenmerk detail (inbound); null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
+            "title": "Synced At"
           }
         },
         "x-openregister-seed": [],

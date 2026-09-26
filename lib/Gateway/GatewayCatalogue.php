@@ -54,6 +54,14 @@ final class GatewayCatalogue {
 				'transport' => 'https',
 			],
 			[
+				'id' => 'verzuimloket',
+				'label' => 'DUO Verzuimloket',
+				'standard' => 'Verzuimloket (VSV-M2M) via Edukoppeling',
+				'claimLevel' => GatewayDescriptor::CLAIM_PLANNED,
+				'claimEvidence' => 'Envelope build and translation validated against fixtures; no certificate, no koppelvlak connection (M3(c)).',
+				'jurisdiction' => 'NL',
+			],
+			[
 				'id' => 'stuf-zkn',
 				'label' => 'StUF-ZKN 3.10',
 				'standard' => 'StUF-ZKN 3.10',

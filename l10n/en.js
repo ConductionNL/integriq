@@ -2549,7 +2549,20 @@ OC.L10N.register(
         "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.": "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.",
         "Keeps related events together, when the broker honours it.": "Keeps related events together, when the broker honours it.",
         "A label for your own reference. The delivery action decides where an event actually goes.": "A label for your own reference. The delivery action decides where an event actually goes.",
-        "How a matched event is delivered. Leave it empty to post to the sink above.": "How a matched event is delivered. Leave it empty to post to the sink above."
+        "How a matched event is delivered. Leave it empty to post to the sink above.": "How a matched event is delivered. Leave it empty to post to the sink above.",
+        "Kenmerk": "Kenmerk",
+        "Melding Kind": "Melding Kind",
+        "Outbound: sent, failed or pending. Inbound: acknowledged or rejected, derived from the DUO signaalcode": "Outbound: sent, failed or pending. Inbound: acknowledged or rejected, derived from the DUO signaalcode",
+        "SHA-256 hash of the pupil BSN sent on the wire for an outbound send; the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)": "SHA-256 hash of the pupil BSN sent on the wire for an outbound send; the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)",
+        "Signaalcode": "Signaalcode",
+        "Signal Description": "Signal Description",
+        "The DUO signaalcode on an INBOUND acknowledgement/retour (0 means accepted); null on outbound records": "The DUO signaalcode on an INBOUND acknowledgement/retour (0 means accepted); null on outbound records",
+        "The DUO signal description, when supplied; null on outbound records or when DUO supplies none": "The DUO signal description, when supplied; null on outbound records or when DUO supplies none",
+        "The Verzuimloket melding kind this record carries": "The Verzuimloket melding kind this record carries",
+        "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg": "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg",
+        "The provider-returned reference for this OUTBOUND message; null on inbound records": "The provider-returned reference for this OUTBOUND message; null on inbound records",
+        "Verzuimloket Message": "Verzuimloket Message",
+        "Whether this record is an outbound melding send or an inbound acknowledgement/retour": "Whether this record is an outbound melding send or an inbound acknowledgement/retour"
     },
     "nplurals=2; plural=(n != 1);"
 )

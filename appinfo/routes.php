@@ -192,6 +192,15 @@ return [
 		['name' => 'iwmoIjw#createMessage', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
 
+		// DUO Verzuimloket (VSV-M2M) adapter (openspec/changes/
+		// integriq-adapter-verzuimloket). Push is an authenticated NC-session
+		// call (learniq's own `leerplicht` DataExchangeJob) — mirrors
+		// iwmoIjw#createMessage. The inbound acknowledgement/retour receiver is
+		// gated by webhook signature (HMAC), not an NC session; see
+		// VerzuimloketController::retour().
+		['name' => 'verzuimloket#berichten', 'url' => '/api/verzuimloket/berichten', 'verb' => 'POST'],
+		['name' => 'verzuimloket#retour', 'url' => '/api/verzuimloket/retour', 'verb' => 'POST'],
+
 		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
 		// stuf-zkn-bridge) — the legacy Dutch municipal SOAP/XML message
 		// standard, letting a municipality adopt procest without ripping out
