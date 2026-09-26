@@ -42,6 +42,34 @@
       "isEnabled": false,
       "documentation": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/ui/",
       "reference": "pdok.feature_flag"
+    },
+    {
+      "id": "swv-kindkans",
+      "name": "Kindkans",
+      "description": "Kindkans (Gouwe Academie / Driestar Educatief) — SWV support-request en TLV hand-off via OSO SWV.",
+      "category": "onderwijs",
+      "subCategory": "swv-handoff",
+      "adapterClass": "OCA\\Integriq\\Sources\\Swv\\SwvHandoffSourceAdapter",
+      "location": "https://www.kindkans.nl/",
+      "type": "oso-swv",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://www.kindkans.nl/downloads",
+      "reference": "swv.handoff.feature_flag"
+    },
+    {
+      "id": "swv-ldos",
+      "name": "LDOS",
+      "description": "LDOS (Triple W ICT) — SWV support-request en TLV hand-off via OSO SWV import/export.",
+      "category": "onderwijs",
+      "subCategory": "swv-handoff",
+      "adapterClass": "OCA\\Integriq\\Sources\\Swv\\SwvHandoffSourceAdapter",
+      "location": "https://www.ldos.nl/",
+      "type": "oso-swv",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://www.ldos.nl/Handleiding/Handleiding_PO_LDOS.pdf",
+      "reference": "swv.handoff.feature_flag"
     }
   ]
 }
