@@ -1,0 +1,27 @@
+{
+  "$comment": "ADR-037 register fragment (integriq-adapter-psp). Seeds a dormant, mock-mode payment source for the iDEAL/ouderbijdrage use case (school fees, PO/VO), against the already-shipped live-payment-providers capability (PaymentProviderInterface / LogPaymentProvider / MolliePaymentProvider / PaymentsController). MOCK MODE: configuration.provider is 'log', so PaymentIntentService::resolveProvider() routes every call through the deterministic LogPaymentProvider -- no network call, no secret, and the checkout/status flow is demonstrably functional end-to-end WITHOUT a PSP contract. To go live: instantiate this template, set configuration.provider to 'mollie' and configuration.authentication.credentialRef to a real Mollie API key held by the OpenRegister credential broker (MolliePaymentProvider fails closed without one -- no embedded-secret fallback exists).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "ideal-ouderbijdrage"
+        },
+        "name": "iDEAL ouderbijdrage",
+        "description": "Payment-request template for school-fee (ouderbijdrage) iDEAL betaalverzoeken, behind integriq's provider-neutral payment stack. Ships dormant/mock: instantiate and flip configuration.provider to 'mollie' with a broker-held credentialRef to go live.",
+        "type": "payment",
+        "location": "https://api.mollie.com/v2",
+        "auth": "none",
+        "configuration": {
+          "provider": "log",
+          "method": "ideal",
+          "mockStatuses": {}
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
