@@ -4266,14 +4266,15 @@
 			"area": "nl-standards",
 			"name": "Look up addresses and locations through PDOK.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:478-481 pdok#suggestAction/lookupAction/freeAction/reverseAction -> lib/Controller/PdokController.php:78,107,153,183 -> lib/Connectors/PdokConnector.php:142,157,174,192 (real implementation, with normalize()/writeThrough() at 394/564). A case-insensitive grep of src/ for 'pdok' returns zero matches anywhere in integriq's own frontend; the only mention is the Catalog descriptor at lib/Service/CatalogRegistryService.php:218 ('adapter:pdok')."
+				"evidence": "appinfo/routes.php:478-481 pdok#suggestAction/lookupAction/freeAction/reverseAction -> lib/Controller/PdokController.php:78,107,153,183 -> lib/Connectors/PdokConnector.php:142,157,174,192 (real implementation, with normalize()/writeThrough() at 394/564). A case-insensitive grep of src/ for 'pdok' returns zero matches anywhere in integriq's own frontend; the only mention is the Catalog descriptor at lib/Service/CatalogRegistryService.php:218 ('adapter:pdok'). Reached cross-app (added 2026-09-26): dossiq src/services/pdokService.js:72 builds /apps/{integriq}/api/pdok and calls suggest, lookup, free and reverse (:141, :175, :198, :221); dossiq src/components/map/AddressSearch.vue:53,80 calls suggest() and is hosted by src/components/map/LocationPicker.vue.",
+				"readOn": "2026-09-26"
 			},
-			"reachedOn": "nothing reaches it from within integriq's own frontend; the /store Catalog page only lists it informationally",
-			"note": "Backend fully implemented and tested; likely meant to be consumed by sibling apps' address-lookup fields, but nothing in this app's own pages calls it, and frontend-api-paths.txt confirms no /api/pdok/* call exists.",
+			"reachedOn": "dossiq's address search (AddressSearch.vue inside LocationPicker.vue) calls /api/pdok/*; integriq's own frontend does not",
+			"note": "Re-rated no to yes on 2026-09-26: 'no page reaches it' was wrong, dossiq's frontend calls the PDOK routes.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "pdok-adapter",
