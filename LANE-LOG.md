@@ -283,6 +283,14 @@ assumption, not fabricated learniq schema.
   WARNINGs (gate-18 notification-dialect, gate-19 e2e-coverage — none of
   the 32 missing-@e2e scenarios are this change's; all 13 scenarios in
   `specs/verzuimloket-adapter/spec.md` carry `@e2e exclude`).
+- **Committed and pushed**: `7071d696` on
+  `feat/integriq-adapter-verzuimloket`, 40 files, +4458/-1. **PR**:
+  https://github.com/ConductionNL/integriq/pull/2181 (base `development`).
+  **opsx-verify**: headless, posted as PR comment
+  https://github.com/ConductionNL/integriq/pull/2181#issuecomment-5846020992
+  — Completeness 17/17 tasks, Correctness 6/6 requirements + all 13
+  scenarios covered, Coherence matches contract.md exactly, no
+  CRITICAL/WARNING issues. Not archived. **Change 2/4 DONE.**
 
 ## Change 3/4: integriq-adapter-oso — not started
 
