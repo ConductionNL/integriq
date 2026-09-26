@@ -11453,6 +11453,70 @@
         "translatedAt": "2026-03-03T09:00:00+00:00",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-1-1"
+        },
+        "target": "uwlr",
+        "direction": "export",
+        "status": "sent",
+        "subtype": "Voorbeeld Subtype 1",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "eckId": "Voorbeeld Eckid 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-2-2"
+        },
+        "target": "edu-v",
+        "direction": "sync",
+        "status": "failed",
+        "subtype": "Voorbeeld Subtype 2",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "eckId": "Voorbeeld Eckid 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-3-3"
+        },
+        "target": "basispoort",
+        "direction": "export",
+        "status": "pending",
+        "subtype": "Voorbeeld Subtype 3",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "eckId": "Voorbeeld Eckid 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-4-4"
+        },
+        "target": "entree-content",
+        "direction": "sync",
+        "status": "acknowledged",
+        "subtype": "Voorbeeld Subtype 4",
+        "ref": "Voorbeeld Ref 4",
+        "kenmerk": "Voorbeeld Kenmerk 4",
+        "eckId": "Voorbeeld Eckid 4",
+        "error": "Voorbeeld Error 4",
+        "syncedAt": "2026-03-04T09:00:00+00:00"
       }
     ]
   }

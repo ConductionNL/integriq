@@ -122,6 +122,14 @@ final class GatewayCatalogue {
 				'jurisdiction' => 'NL',
 				'transport' => 'https',
 			],
+			[
+				'id' => 'uwlr-eduv',
+				'label' => 'UWLR / Edu-V / Basispoort',
+				'standard' => 'UWLR, Edu-V, Basispoort and Entree content SSO (Kennisnet)',
+				'claimLevel' => GatewayDescriptor::CLAIM_PLANNED,
+				'claimEvidence' => 'Envelope build validated against fixtures for all four targets; no certificate, no keurmerk, no aansluiting (M3(c)).',
+				'jurisdiction' => 'NL',
+			],
 		];
 	}//end entries()
 }//end class
