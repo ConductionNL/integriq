@@ -76,7 +76,7 @@
 			"readOn": "2026-03-28",
 			"columnAddedOn": "2026-09-26",
 			"evidenceGrade": "docs-only",
-			"readHow": "intelligence DB competitor id 203: 12 one-line features captured 2026-03-28; the 24 GitHub enhancement issues and 60 release-note lines were not used as ratings; no research file exists",
+			"readHow": "wave 5 source read at v5.15.0 in progress on 2026-09-26: cells whose evidence starts 'source read at' come from it, the rest still rest on the earlier reading",
 			"unknownReason": "not among the 12 one-line Tyk features captured 2026-03-28, the only research there is; nobody has driven Tyk",
 			"sources": {
 				"docs": "https://tyk.io/docs/",
@@ -6530,13 +6530,14 @@
 			"featureConfidence": "low",
 			"sourceNote": "dossiq cluster 45",
 			"n8n": "no",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'signalen|fixmystreet|meldingen openbare|public space' over packages/nodes-base/nodes finds nothing; no node for a public-space reporting system, only a generic Webhook could receive such reports",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); there is no intake object or case model; reports could only arrive as proxied calls (apidef/oas/server.go:196)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'openbare.?ruimte|signalen|fixi|mor|meldingen' over java and ts finds only the word 'prefixing' in a doc comment (filesystem/src/main/java/org/frankframework/senders/LocalFileSystemSender.java:28); no public-space report intake"
@@ -6560,13 +6561,14 @@
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Switch/V3/SwitchV3.node.ts:121 'rules' route each incoming message by its content to a per-team output, which posts to that team's channel, mailbox or queue; reached on: workflow editor, Switch node after an intake trigger",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); routing rules exist for HTTP requests (apidef/oas/url_rewrite.go:86 triggers) but there are no messages, teams or inboxes to route to",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: messages are routed by content with core/src/main/java/org/frankframework/pipes/SwitchPipe.java:64 to different senders or queues; routing to a team is only possible if each team is a destination you configure, Frank has no teams or assignment; reached on: configuration XML SwitchPipe with a forward per destination"
@@ -6590,13 +6592,14 @@
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: channel nodes carry reply operations, for example packages/nodes-base/nodes/Google/Gmail/v2/MessageDescription.ts:55 and ThreadDescription.ts:44 'reply', and Slack, Telegram, Teams and WhatsApp nodes send into the same chat or thread from the trigger's ids; the builder wires one reply step per channel; reached on: workflow editor, channel nodes' reply or send operations",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); the gateway keeps no sender or channel state; it answers each HTTP call on its own connection (gateway/reverse_proxy.go:1575)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: request-reply listeners answer on the channel the message arrived on, messaging/src/main/java/org/frankframework/jms/AbstractJmsListener.java:417 setUseReplyTo for JMS and the HTTP response for ApiListener; replying later to a mail sender is a MailSender (core/src/main/java/org/frankframework/senders/MailSender.java:106) you wire yourself; reached on: configuration XML JmsListener useReplyTo; MailSender"
@@ -6623,13 +6626,14 @@
 				"dossiq:6.5"
 			],
 			"n8n": "no",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: n8n has no inbox view: the editor routes in packages/frontend/editor-ui/src/app/router.ts:175-1157 hold workflows, executions, templates and settings only, and packages/@n8n/db/src/entities has no message or case entity to assign",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); there is no inbox or case model (gateway/server.go:923-986 lists every admin resource)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: no inbox or assignment feature: the console routes (console/frontend/src/main/frontend/src/app/app.routes.ts:73 to :450) hold no message inbox, and mail listeners (filesystem/src/main/java/org/frankframework/receivers/ExchangeMailListener.java:42) process mail automatically without a person assigning it"
@@ -6653,13 +6657,14 @@
 			"feature": "notifynl-sms-channel",
 			"featureConfidence": "high",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Twilio/Twilio.node.ts:47 'sms' and packages/nodes-base/nodes/MessageBird/MessageBird.node.ts:43 'sms' with :65 'send' send text messages, alongside Vonage, Plivo, Sms77, Msg91 and Mocean nodes; there is no CM.com node (ls packages/nodes-base/nodes shows none), which would need HTTP Request; reached on: workflow editor, Twilio, MessageBird and other SMS nodes",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); the only outbound notifications are event webhooks (gateway/event_handler_webhooks.go:267); no SMS provider connector exists",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405); grep -rliE \"cm\\.com|messagebird|twilio|whatsapp\" over carbon-apimgt/components, product-apim/all-in-one-apim/modules/distribution and the portal locale files finds nothing (tally in _lane/r-wso2/grep-misc.txt)",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'twilio|messagebird|sms' over java and ts finds only a doc comment on splitting text into 160-character blocks (core/src/main/java/org/frankframework/pipes/TextSplitterPipe.java:31); no SMS provider sender"
@@ -6683,13 +6688,14 @@
 			"feature": "source-management",
 			"featureConfidence": "low",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/WhatsApp/MessagesDescription.ts:32 'send' posts through the WhatsApp Business Cloud API, with a WhatsApp trigger and send-and-wait support in the same folder; reached on: workflow editor, WhatsApp Business Cloud node",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); the only outbound notifications are event webhooks (gateway/event_handler_webhooks.go:267); no WhatsApp Business connector exists",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405); grep -rliE \"cm\\.com|messagebird|twilio|whatsapp\" over carbon-apimgt/components, product-apim/all-in-one-apim/modules/distribution and the portal locale files finds nothing (tally in _lane/r-wso2/grep-misc.txt)",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'whatsapp' over java and ts finds nothing; no WhatsApp Business sender"
@@ -6714,13 +6720,14 @@
 			"featureConfidence": "low",
 			"sourceNote": "dossiq cluster 61",
 			"n8n": "no",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'dkim|spf|dmarc' over packages/nodes-base/nodes and credentials finds only packages/nodes-base/nodes/Mandrill/Mandrill.node.ts:352, a signing-domain field passed to Mandrill; n8n itself checks no sender identity or alignment, SMTP and provider nodes send as whatever the account allows",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); the gateway sends no mail, so it has no sender identity or DKIM signing",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405); SPF, DKIM and DMARC are not configured anywhere in the product (grep -rliE \"dkim|dmarc\" over product-apim/all-in-one-apim/modules/distribution finds nothing)",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'dkim|spf|dmarc' over java finds nothing; core/src/main/java/org/frankframework/senders/MailSender.java:142 only sets a bounce address and the from address comes from the message, so signing and alignment are left to the SMTP server or SendGrid"
@@ -6744,13 +6751,14 @@
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'unsubscribe|opt.?out' over packages/nodes-base/nodes hits only marketing tool nodes (for example packages/nodes-base/nodes/Sendy/SubscriberDescription.ts, ActiveCampaign, Vero) that manage their own lists; the plain Send Email node (packages/nodes-base/nodes/EmailSend/v2/send.operation.ts) keeps no opt-out list and adds no unsubscribe link, only an optional n8n attribution line; reached on: marketing tool nodes; nothing in n8n itself",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); there are no recipients or messages; the only outbound notifications are operator configured event webhooks (apidef/oas/event.go:120)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'unsubscribe|opt.?out' over java finds nothing; no suppression list or unsubscribe link handling in core/src/main/java/org/frankframework/senders/AbstractMailSender.java"
@@ -6777,13 +6785,14 @@
 				"dossiq:6.23"
 			],
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: recipients are just node parameters (packages/nodes-base/nodes/EmailSend/v2/send.operation.ts) that can be expressions, so a message can take an extra address, but there is no standing recipient list per message type to add to or suppress from; reached on: send node parameters",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); there are no messages with recipients; event webhooks have one fixed url each (apidef/oas/event.go:124)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: recipients are part of each mail message (core/src/main/java/org/frankframework/senders/MailSender.java:61 recipients block, or parameters), so a single message can carry an extra recipient; there is no standing recipient list to suppress one from; reached on: configuration XML MailSender input with a recipients element per message"
@@ -6810,13 +6819,14 @@
 				"dossiq:6.27"
 			],
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: each send node's output in the execution (packages/cli/src/executions/executions.controller.ts:89) holds the provider's accept response per item; delivery outcomes such as bounces or reads are not collected unless a provider trigger or webhook is wired back, and there is no per-recipient outbound log view; reached on: execution detail per send node",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); event webhook outcomes are only written to the gateway log (gateway/event_handler_webhooks.go:320-340); there are no messages or recipients to report on",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/pipes/MessageSendingPipe.java:811 setMessageLog logs every outgoing message and Ladybug records the sender result, but there is no per-recipient delivery outcome or bounce reason (grep -rliE 'bounce' finds only the bounce address setting at core/src/main/java/org/frankframework/senders/MailSender.java:142); reached on: configuration XML MessageLog on the mail SenderPipe; Ladybug"
@@ -6843,13 +6853,14 @@
 				"dossiq:6.24"
 			],
 			"n8n": "no",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'lastContact|last contacted' over packages/nodes-base/nodes and packages/cli/src hits only CRM vendor fields (Emelia, Hubspot); n8n keeps no contact history of its own and no delivery tracking (see msg-outbound-log), so it cannot say when a person was last reached",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); the gateway keeps no applicant or contact records (gateway/server.go:923-986)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: Frank keeps no contact history per person: grep -rniE 'last.?contact|contact.?moment' over main java finds nothing; message logs are per adapter (core/src/main/java/org/frankframework/pipes/MessageSendingPipe.java:811), not per applicant"
@@ -6873,13 +6884,14 @@
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: an If check (packages/nodes-base/nodes/If/V2) can send a failing message to packages/nodes-base/nodes/Wait/Wait.node.ts:90 or a send-and-wait approval (packages/nodes-base/utils/sendAndWait/utils.ts:88) before the send step, so it is held until someone answers; held messages appear only as waiting executions, not in a review queue; reached on: workflow built with If plus Wait or send-and-wait; Executions list status 'waiting'",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); there is no outgoing message queue; event webhooks are sent at once or dropped (gateway/event_handler_webhooks.go:320)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: a message that fails a check goes to the error store, and core/src/main/java/org/frankframework/core/ProcessState.java:31 HOLD lets an operator park it there; console/backend/src/main/java/org/frankframework/console/controllers/TransactionalStorage.java:188 moves messages between Error and Hold and :159 resends after review; reached on: console page Adapter Status, receiver error and hold stores"
@@ -6903,13 +6915,14 @@
 			"feature": "integration-leaves",
 			"featureConfidence": "low",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/EmailReadImap/v2/EmailReadImapV2.node.ts:97 reads the no-reply mailbox like any other, and the flow can auto-answer with packages/nodes-base/nodes/EmailSend/v2/send.operation.ts or route the reply on with packages/nodes-base/nodes/Switch/V3/SwitchV3.node.ts:121; reached on: Email Trigger (IMAP) on the no-reply mailbox",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); the gateway has no mail address to receive replies on",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: no handling for replies to a no-reply address: a mailbox can be read with filesystem/src/main/java/org/frankframework/receivers/ImapListener.java:27, but grep -rniE 'no-?reply' over main java finds no feature that recognises or routes such replies"
@@ -6936,13 +6949,14 @@
 				"learniq:gov-charge-for-a-course"
 			],
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/Stripe/Stripe.node.ts:73 'charge' resource creates and reads charges; PayPal, Paddle, Chargebee and Wise nodes ship as well. No Mollie or iDEAL-specific node (ls packages/nodes-base/nodes shows none); reached on: workflow editor, Stripe and other payment nodes",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); there is no payment provider connector; a payment API could only be proxied as a plain upstream (apidef/oas/upstream.go:17)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405); API monetisation (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:5977) only bills API usage through a plug-in whose in-tree implementation is a no-op (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/monetization/DefaultMonetizationImpl.java:37), and grep -rliE \"mollie|adyen|stripe\" finds only a reference in carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/APIProviderImpl.java",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'mollie|stripe|adyen|payment|ideal' over java finds only the word 'Ideal' in two comments (management-gateway/src/main/java/org/frankframework/management/bus/message/RequestMessageBuilder.java); no payment provider connector"
@@ -6969,13 +6983,14 @@
 				"dossiq:12.11"
 			],
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/nodes-base/nodes/ApiTemplateIo/ApiTemplateIo.node.ts:57 'pdf' and :72 'create' generate documents through APITemplate.io, and Google Docs and Bannerbear nodes exist; grep -rliE 'smartdocuments|xential' over the tree finds nothing (_lane/r-n8n/nl-grep.txt); reached on: workflow editor, APITemplate.io node",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); there is no document generation connector; such a service could only be proxied as a plain upstream (apidef/oas/upstream.go:17)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405); grep -rliE \"xential|smartdocuments\" finds nothing",
 				"frank": "source read at v10.2.0, not driven: no SmartDocuments or Xential connector (grep -rliE 'smartdocuments|xential' finds nothing); documents are generated in Frank itself with aspose/src/main/java/org/frankframework/extensions/aspose/pipe/PdfPipe.java:53, which converts and combines into PDF under a paid Aspose licence, or with XSLT to text or XML; reached on: configuration XML <PdfPipe>"
@@ -7002,13 +7017,14 @@
 				"dossiq:6.14"
 			],
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: no node for an outside case register ships (see nl-zgw-zaken), so keeping notes in step means a hand-built pair of workflows with HTTP Request (packages/nodes-base/nodes/HttpRequest/V3/Description.ts:79) and change detection (see sync-twoway); reached on: hand-built workflows",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); the gateway holds no notes or case register to keep in step (gateway/server.go:923-986)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405)",
 				"frank": "source read at v10.2.0, not driven: Frank has no notes object and no case register connector: grep -rliE 'zgw|zaken ?api|zrc' outside test folders finds 0 files, and nothing keeps notes in step with another system"
@@ -7035,13 +7051,14 @@
 				"decidiq:min-05"
 			],
 			"n8n": "no",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: grep -rliE 'docusign|signnow|yousign|validsign|adobe sign|dropbox sign|hellosign|qualified electronic' over packages/nodes-base/nodes finds only an unrelated Wufoo trigger field and an AWS SNS signature check; no e-signature node ships",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'smtp|imap|mailbox|teams|sms|whatsapp|twilio|messagebird|dkim|dmarc|unsubscribe|payment|mollie|stripe|smartdocuments|xential|docusign' over the Go sources finds nothing but substrings and comments (recorded in _lane/r-tyk/nl-grep.txt); there is no signing service connector; the only signing is HTTP request signing toward upstreams (gateway/mw_request_signing.go:31), which is not a qualified electronic signature on documents",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'smtp|imap|mailbox|sms|whatsapp|twilio|messagebird|dkim|dmarc|payment|stripe|mollie|smartdocuments|xential' over apisix/ finds nothing; APISIX proxies HTTP and L4 traffic and has no messaging channel of its own",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no intake, case or outbound messaging features: its REST APIs manage APIs, applications, subscriptions and policies (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:2585, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117), the only mail it sends is the new-version notice to subscribers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/notification/NewAPIVersionEmailNotifier.java:48, via the mailto sender at product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:600), and the mailto receiver is commented out (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/axis2.xml:405); grep -rliE \"\\besign|docusign|signicat\" finds nothing",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'validsign|signicat|qualified.?signature|pades|xades' over java finds nothing (the 'esign' hits are 'design' and 'eSign' words in comments, e.g. core/src/main/java/org/frankframework/pgp/Verify.java); core/src/main/java/org/frankframework/pipes/SignaturePipe.java:59 makes raw signatures, not qualified electronic signatures on documents"
@@ -7065,7 +7082,7 @@
 			"feature": "configuration-export-import",
 			"featureConfidence": "high",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "partial",
 			"apisix": "yes",
 			"mulesoft": "yes",
 			"wso2": "partial",
@@ -7073,6 +7090,7 @@
 			"evidence": {
 				"mulesoft": "docs-only: intelligence DB competitor_features id 3065 \"Runtime Manager: Deploy and manage integration apps across environments\" (2026-03-28)",
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/public-api/v1/openapi.yml:148 POST /n8n-packages/export writes projects, folders, workflows, credential references, data tables and variables into one .n8np package (packages/cli/src/modules/n8n-packages/CLAUDE.md:3); packages/cli/src/commands/export/entities.ts:47 exports all entities from the CLI; reached on: public API /api/v1/n8n-packages/export; CLI 'n8n export:entities', 'n8n export:workflow , all'",
+				"tyk": "source read at v5.15.0, not driven: gateway/server.go:932 GET /tyk/apis and :934 GET /tyk/apis/oas return every API definition in one JSON answer and :957 GET /tyk/policies every policy, and in file mode the whole setup already sits in files (config/config.go:1006 app_path, :137 policy_path; the tree ships apps/ and policies/policies.json); there is no single export of APIs, policies, keys and certificates together (Tyk Sync, which does that, is not in this repo); reached on: Gateway API GET /tyk/apis, /tyk/apis/oas, /tyk/policies; config app_path and policy_path",
 				"apisix": "source read at 3.18.0, not driven: apisix/admin/init.lua:518 GET /apisix/admin/configs returns the whole configuration (apisix/admin/standalone.lua:177 get) in API driven standalone mode; in file driven standalone mode the whole setup is conf/apisix.yaml (docs/en/latest/deployment-modes.md:129); reached on: Admin API GET /apisix/admin/configs (standalone mode) or conf/apisix.yaml",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:7076 /apis/export and carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:10200 /api-products/export export one API or product as a zip; carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:1181 /throttling/policies/export, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:12577 /operation-policies/export and carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:3971 /applications/export cover other object types one at a time; product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/other/APIImportExportTestCase.java:100. There is no single export of the whole setup; the apictl CLI that drives these endpoints in CI lives in the separate wso2/product-apim-tooling repository, not in these three trees; reached on: publisher REST /apis/export (and apictl export)",
 				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/ServerDetails.java:72 GET /server/configurations/download downloads all loaded configurations as one archive, and console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:240 downloads one configuration version; reached on: console page Configurations (download); GET /iaf/api/server/configurations/download"
@@ -7096,13 +7114,14 @@
 			"feature": "configuration-export-import",
 			"featureConfidence": "high",
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "partial",
 			"mulesoft": "unknown",
 			"wso2": "partial",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7 and driven on lab-integriq-n8n (image docker.n8n.io/n8nio/n8n:2.40.7, community edition) on 2026-09-26: on community edition the source-control routes are not mounted at all (GET /rest/source-control/get-status and /preferences answer 'Cannot GET'), so the only preview of incoming changes, git pull status, needs an enterprise licence; the import package API takes conflict policies without a dry run. Code: packages/cli/src/modules/source-control.ee/source-control.controller.ee.ts:252; packages/@n8n/api-types/src/dto/packages/import-package-request.dto.ts:93; reached on: licence-gated Source control settings page; not reachable on community edition",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'dry.?run|preview' over gateway/api.go finds only POST /tyk/keys/preview (:2339), which previews a key with its policies applied; API writes are validated against the schema (gateway/api.go:3240 validateOAS) and applied straight away, with no diff of what will change",
 				"apisix": "source read at 3.18.0, not driven: apisix/admin/init.lua:482 POST /apisix/admin/configs/validate checks a full configuration before it is applied (apisix/admin/config_validate.lua:21), in etcd and standalone mode; it returns errors only, not a list of changes; reached on: Admin API POST /apisix/admin/configs/validate",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:7219 dryRun on /apis/import \"is used to validate the API without importing it\", but the response schema carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:18848 ImportAPIResponse carries only id and revision, so there is validation without a list of what would change; reached on: publisher REST POST /apis/import?dryRun=true",
 				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:199 uploads a configuration and with activate_config=false (:201) stores it as an inactive version that can be downloaded and checked before :176 activates it; there is no diff or change preview; reached on: console page Manage Configurations, upload (/configurations/upload)"
@@ -7126,7 +7145,7 @@
 			"feature": "environments-and-promotion",
 			"featureConfidence": "high",
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "partial",
 			"apisix": "no",
 			"mulesoft": "yes",
 			"wso2": "yes",
@@ -7134,6 +7153,7 @@
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/source-control.ee/source-control.module.ts:7 (licenseFlag feat:sourceControl) pushes and pulls workflows through a git branch per environment, and packages/cli/src/modules/promotions.ee/promotions.module.ts:9 (feat:gitConnections) promotes changes; both are .ee code needing an Enterprise licence (LICENSE.md:6-10). Without it, only manual export and import; reached on: Settings > Environments (/settings/environments, packages/frontend/editor-ui/src/app/router.ts:971); enterprise licence",
 				"mulesoft": "docs-only: intelligence DB competitor_features id 3065 \"Runtime Manager: Deploy and manage integration apps across environments\" (2026-03-28)",
+				"tyk": "source read at v5.15.0, not driven: in file mode the whole setup is plain JSON under config/config.go:1006 app_path and :137 policy_path, so it can be copied from a test to a production gateway, and config/config.go:148-152 segment tags decide which gateways load which APIs; promotion tooling (Tyk Sync, the Dashboard, MDCB) is not in this repo; reached on: config app_path, policy_path, db_app_conf_options.tags",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'promot|environment' over apisix/admin finds only a production warning at apisix/admin/init.lua:577; moving a setup between clusters is export and import by the operator (or the separate ADC tool, not in this tree)",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:2100 /environments defines gateway environments and carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:1945 deploy-revision deploys a revision per environment; APIs move between installations with carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:7076 export and carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:7183 import (preserving revisions, tested in product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/other/APIImportExportTestCase.java:100); every API carries separate production and sandbox endpoints (apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:887, apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:891); reached on: admin portal, Gateways; publisher API > Deployments; export and import between instances",
 				"frank": "source read at v10.2.0, not driven: core/src/main/resources/AppConstants.properties:12 loads StageSpecifics_${dtap.stage}.properties and DeploymentSpecifics.properties on top of the configuration, so the same configuration archive moves from test to production with per-environment values; the upload and activate routes (console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:199 and :176) put it on the next environment; reached on: property dtap.stage; StageSpecifics_<stage>.properties; console Manage Configurations upload"
@@ -7157,13 +7177,14 @@
 			"feature": "environments-and-promotion",
 			"featureConfidence": "low",
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "partial",
 			"apisix": "partial",
 			"mulesoft": "unknown",
 			"wso2": "partial",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/source-control.ee/source-control.controller.ee.ts:30 /source-control with :196 push-workfolder and :226 pull-workfolder keeps workflows, credential stubs, variables and tags in a git repository, licence-gated by feat:sourceControl (source-control.module.ts:7); unlicensed users can only script 'n8n export:workflow' into git themselves; reached on: Settings > Environments, push and pull buttons (enterprise licence)",
+				"tyk": "source read at v5.15.0, not driven: the gateway loads API definitions and policies from files (config/config.go:1006 app_path, :137 policy_path) that can live in a git repository and be reloaded with GET /tyk/reload (gateway/server.go:924); there is no git integration in the tree, GitOps is done by the separate Tyk Sync or Tyk Operator; reached on: config app_path and policy_path plus /tyk/reload",
 				"apisix": "source read at 3.18.0, not driven: file driven standalone mode reloads conf/apisix.yaml every second (docs/en/latest/deployment-modes.md:129, config_provider yaml at conf/config.yaml.example:765), so the file can live in git and be deployed from it; APISIX has no git integration itself; reached on: conf/apisix.yaml in standalone mode",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API definitions export as files (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:7076) that can be kept in git, but grep for \"git\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json and apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json finds only the \"GitHub URL\" social link (apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:614), no git integration; the apictl CLI that drives these endpoints in CI lives in the separate wso2/product-apim-tooling repository, not in these three trees; reached on: none in product; external apictl vcs",
 				"frank": "source read at v10.2.0, not driven: the whole setup is plain files (configuration XML, stylesheets, properties such as core/src/main/resources/AppConstants.properties:12) loaded from a directory or jar by core/src/main/java/org/frankframework/configuration/classloaders/DirectoryClassLoader.java, so it lives in a git repository as is; Frank has no built-in git client (grep -rliE 'jgit' finds nothing); reached on: configuration directory in your own git repository"
@@ -7187,7 +7208,7 @@
 			"feature": "connector-catalog",
 			"featureConfidence": "high",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "yes",
 			"wso2": "no",
@@ -7195,6 +7216,7 @@
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/modules/community-packages/community-packages.controller.ts:7 /community-packages POST (:11) installs node packages from the npm registry (packages/cli/src/modules/community-packages/community-packages.config.ts:15 N8N_COMMUNITY_PACKAGES_REGISTRY), with verified packages browsable in the node panel (:27 N8N_VERIFIED_PACKAGES_ENABLED); the packages themselves are third-party and not in the tree; reached on: Settings > Community nodes (/settings/community-nodes), nodes panel",
 				"mulesoft": "docs-only: intelligence DB competitor_features id 3061 \"Anypoint Exchange: Marketplace for reusable APIs, connectors, and templates\" (2026-03-28)",
+				"tyk": "source read at v5.15.0, not driven: middleware ships in the binary (gateway/api_loader.go:407-691) and custom plugins arrive as bundles from a URL the operator sets (gateway/coprocess_bundle.go, config bundle_base_url); grep -rniE 'marketplace|plugin.?store' over gateway/ and cli/ finds no connector store",
 				"apisix": "source read at 3.18.0, not driven: plugins ship in the tree (apisix/plugins, 141 entries) and are enabled in the config.yaml plugins list (conf/config.yaml.example:520); grep -rniE 'marketplace|hub|install' over apisix/admin finds no store",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:6947 /apis/{apiId}/external-stores publishes APIs out to other API stores, the opposite direction; grep -n -i \"marketplace|connector store|install connector\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json and apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json finds nothing",
 				"frank": "source read at v10.2.0, not driven: no connector store: core/src/main/java/org/frankframework/components/plugins/PluginLoader.java:44 loads plugin jars from a local plugins.directory, and grep -rliE 'marketplace|plugin.?store' over java and ts finds no catalogue to install from"
@@ -7221,13 +7243,14 @@
 				"stackiq:conn-integration-registry"
 			],
 			"n8n": "no",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: n8n has no notion of other applications declaring their outside connections: grep for declared connection registries finds only packages/cli/src/modules/mcp-registry (a catalogue of MCP servers turned into nodes, mcp-registry-node-loader.ts) and packages/cli/src/modules/quick-connect (preset credential offers, quick-connect.config.ts:12), neither collects what other apps declare",
+				"tyk": "source read at v5.15.0, not driven: grep -rniE 'nextcloud|webdav' over the tree finds nothing; the Gateway API (gateway/server.go:923-986) has no registry of connections declared by other applications",
 				"apisix": "source read at 3.18.0, not driven: grep -rli nextcloud over apisix/ finds nothing; no app registry",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -rn \"Nextcloud\" over carbon-apimgt/components finds nothing, and there is no registry where other applications declare their outside connections; the service catalog (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.service.catalog/src/main/resources/service-catalog-api.yaml:102 /services) lists backend services, not app-declared connections",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/management/bus/endpoints/ConnectionOverview.java:46 collects every listener and sender connection declared across all loaded configurations into one list, shown by console/backend/src/main/java/org/frankframework/console/controllers/ConnectionOverview.java:37; it covers Frank's own configurations, not connections declared by other applications; reached on: console page Connection Overview (/connections)"
@@ -7251,13 +7274,14 @@
 			"feature": "source-management",
 			"featureConfidence": "medium",
 			"n8n": "no",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "no",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: with no registry of declared connections (see plt-app-connections) there is nothing to link to a credential; credentials are linked to nodes only (packages/@n8n/db/src/entities/credentials-entity.ts)",
+				"tyk": "source read at v5.15.0, not driven: there are no declared app connections to link (gateway/server.go:923-986); grep -rniE 'nextcloud' over the tree finds nothing",
 				"apisix": "source read at 3.18.0, not driven: grep -rli nextcloud over apisix/ finds nothing",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: see plt-app-connections: there are no app-declared connections; the nearest link is creating an API from a service catalog entry (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:2120 /apis/import-service, apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1010 \"Select a service from the service list\")",
 				"frank": "source read at v10.2.0, not driven: connections are fixed attributes on each sender in configuration XML (for example core/src/main/java/org/frankframework/http/AbstractHttpSender.java:523 url); there is no declared-connection object that can be linked to a configured source, and the Connection Overview (core/src/main/java/org/frankframework/management/bus/endpoints/ConnectionOverview.java:46) is read-only"
@@ -7281,13 +7305,14 @@
 			"feature": "openconnector-app-manifest",
 			"featureConfidence": "medium",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "partial",
 			"frank": "no",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/controllers/owner.controller.ts:25 POST /owner/setup backs the first-run owner page at packages/frontend/editor-ui/src/app/router.ts:568 /setup, and packages/frontend/editor-ui/src/features/setupPanel guides filling missing credentials when a workflow or template is opened (:242 /templates/:id/setup); reached on: /setup on first start, workflow setup panel",
+				"tyk": "source read at v5.15.0, not driven: the gateway starts from a JSON config file (tyk.conf.example at the root, keys in config/config.go) with no guided setup; cli/cli.go:72 start and :90 lint are the only operator commands besides import, bundle, plugin and version",
 				"apisix": "source read at 3.18.0, not driven: apisix/cli/ops.lua:300 only prints help when the admin key is missing; there is no guided first setup in the tree (the embedded /ui/ is built from apisix-dashboard, not here)",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:2008 \"Let's get started!\" and apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:2020 \"Deploy Sample API\" guide a first API when the listing is empty; there is no wizard for installing or configuring the platform itself, which is done by editing product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/deployment.toml; reached on: publisher portal, empty API listing",
 				"frank": "source read at v10.2.0, not driven: no setup wizard: the console routes (console/frontend/src/main/frontend/src/app/app.routes.ts:56 login to :450) have no onboarding or first-run page; getting started is documented in QUICK_START.md, outside the product"
@@ -7311,13 +7336,14 @@
 			"feature": "repair-and-app-boot",
 			"featureConfidence": "low",
 			"n8n": "yes",
-			"tyk": "unknown",
+			"tyk": "yes",
 			"apisix": "yes",
 			"mulesoft": "unknown",
 			"wso2": "yes",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: docker/images/n8n in the repo builds the self-hosted image and packages/cli/src/commands/start.ts starts the server; LICENSE.md:32-33 Sustainable Use License allows use 'only for your own internal business purposes or for non-commercial or personal use', and .ee features need a licence key (LICENSE.md:6-10); reached on: docker image or 'n8n start'",
+				"tyk": "source read at v5.15.0, not driven: LICENSE.md:1-4 puts everything outside ee/ under MPL-2.0, with ee/ under the commercial terms of ee/LICENSE-EE.md; the root Dockerfile, docker-compose.yml and main.go build and run the gateway on your own servers (cli/cli.go:72 start); reached on: tyk binary or Docker image run by the operator",
 				"apisix": "source read at 3.18.0, not driven: LICENSE is Apache-2.0; bin/apisix with apisix/cli/ops.lua:1158 start, stop, reload runs it on your own servers; docker/ holds images; reached on: apisix CLI, docker images",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: product-apim/LICENSE:1 Apache License 2.0; the distribution is assembled from product-apim/all-in-one-apim/modules/distribution/product and configured through product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/deployment.toml; reached on: self-hosted distribution, deployment.toml",
 				"frank": "source read at v10.2.0, not driven: the release ships as a WAR, an EAR and a bootable runner (bootable-runner/src/main/java/org/frankframework/runner/FrankApplication.java:83) with Docker images for Tomcat, WildFly and JBoss (docker/Tomcat, docker/WildFly), all under the Apache License 2.0 (LICENSE:2 and :3); reached on: your own servers or containers; docker/tomcat.yml"
@@ -7341,13 +7367,14 @@
 			"feature": "repair-and-app-boot",
 			"featureConfidence": "low",
 			"n8n": "partial",
-			"tyk": "unknown",
+			"tyk": "no",
 			"apisix": "no",
 			"mulesoft": "unknown",
 			"wso2": "yes",
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/config/src/configs/database.config.ts:140 dbTypeSchema allows only 'sqlite' and 'postgresdb' for DB_TYPE (:163); migrations exist only under packages/@n8n/db/src/migrations/sqlite and postgresdb, MySQL and MariaDB are no longer supported; reached on: env DB_TYPE",
+				"tyk": "source read at v5.15.0, not driven: config/config.go:155-157 storage.type must be redis, and the gateway keeps keys, sessions and analytics in Redis; API definitions and policies come from files, the closed Dashboard or MDCB (config/config.go:106-108 policy source service, rpc, file); grep for postgres or sqlite drivers in go.mod finds them only as indirect Bento dependencies (go.mod:411, :436)",
 				"apisix": "source read at 3.18.0, not driven: configuration lives in etcd (conf/config.yaml.example:762 config_provider etcd) or a yaml file; grep -rniE 'postgres|sqlite' over apisix/ finds nothing",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/features/apimgt/org.wso2.carbon.apimgt.core.feature/src/main/resources/sql/ ships postgresql.sql, mysql.sql, mssql.sql, oracle.sql, db2.sql and h2.sql; product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/deployment.toml:16 [database.apim_db] type defaults to h2. SQLite is not among them; reached on: deployment.toml [database.apim_db] and [database.shared_db]",
 				"frank": "source read at v10.2.0, not driven: dbms/src/main/java/org/frankframework/dbms/Dbms.java:39 POSTGRESQL and :37 MYSQL (plus MariaDB :38, Oracle, MS SQL, DB2 and H2) are supported for Frank's own tables; SQLite is not among them; reached on: property jdbc datasource configuration (resources.yml / context.xml)"
@@ -7378,6 +7405,7 @@
 			"frank": "yes",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/@n8n/permissions/src/roles/role-maps.ee.ts:37-40 defines owner, admin, member and chat user roles, but inviting an admin needs feat:advancedPermissions (packages/cli/src/services/user.service.ts:544), changing a role too (packages/cli/src/controllers/users.controller.ts:197), project roles need feat:projectRole:* and custom roles feat:customRoles (packages/cli/src/controllers/role.controller.ts:145); unlicensed, only owner and member; reached on: Settings > Users, Settings > Roles (licensed tiers)",
+				"tyk": "not checked: user roles and permissions live in the closed Tyk Dashboard; the open Gateway API has one shared secret with full rights (gateway/server.go:995 checkIsAPIOwner), so this repo shows no roles",
 				"apisix": "source read at 3.18.0, not driven: apisix/admin/init.lua:53 viewer_methods and :112 give a viewer key read only access, next to the admin role (conf/config.yaml.example:778); only these two fixed roles exist; reached on: config.yaml deployment.admin.admin_key roles",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:3436 /system-scopes/{scopeName} ties portal scopes to roles (Internal/creator, Internal/publisher, Internal/subscriber, admin); product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/other/PublisherAccessControlTestCase.java and product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/restapi/admin/APISystemScopesTestCase.java test role-based access to publisher actions; reached on: admin portal, Settings > Scope Assignments",
 				"frank": "source read at v10.2.0, not driven: commons/src/main/java/org/frankframework/lifecycle/DynamicRegistration.java:43 defines the roles IbisWebService, IbisObserver, IbisDataAdmin, IbisAdmin and IbisTester, and every console route checks them, e.g. console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:80 @RolesAllowed; reached on: authenticator role mapping per user or group"
@@ -7409,6 +7437,7 @@
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/controllers/role.controller.ts:145 create, :165 update and :188 delete custom roles with chosen scopes such as workflow:execute or credential:share (resources and operations in packages/@n8n/permissions/src/constants.ee.ts), shown at packages/frontend/editor-ui/src/app/router.ts:846 /settings/roles; all behind @Licensed(feat:customRoles); reached on: Settings > Roles (enterprise licence)",
+				"tyk": "not checked: a permission matrix would live in the closed Tyk Dashboard's RBAC; the Gateway API in this repo checks only the shared secret (gateway/server.go:995)",
 				"apisix": "source read at 3.18.0, not driven: roles are hard coded as admin and viewer at apisix/admin/init.lua:53 and :112; no configurable permission matrix",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:3473 /system-scopes lists every portal scope with its roles and carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:3436 updates one; the admin portal renders it as a permission tree (apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json:989 \"Manage admin alerts\", apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json:1016 \"Retrieve bot detection data\" and further PERMISSION_TREE entries); reached on: admin portal, Settings > Scope Assignments (permission tree)",
 				"frank": "source read at v10.2.0, not driven: which role may do what is fixed in code by @RolesAllowed on every console route (e.g. console/backend/src/main/java/org/frankframework/console/controllers/Configurations.java:80 and :148); the Security Items page (core/src/main/java/org/frankframework/management/bus/endpoints/SecurityItems.java:70) shows the roles, and an administrator only chooses which users or groups get which role (security/src/main/java/org/frankframework/lifecycle/servlets/AuthorityMapper.java:47), not which actions a role has; reached on: console page Security Items; role-mapping file"
@@ -7439,6 +7468,7 @@
 			"frank": "partial",
 			"evidence": {
 				"n8n": "source read at n8n@2.40.7, not driven: packages/cli/src/workflows/workflow-history/workflow-history.controller.ts:22 lists each saved version of a workflow with its author and :39 shows one, so workflow changes are traceable; credentials and other objects have no per-object history in the UI, packages/@n8n/db/src/entities/activity-event.ts:13 records workflow and credential activity but no controller serves it, and audit events leave the instance only through licensed log streaming (packages/cli/src/modules/log-streaming.ee/log-streaming.controller.ts:23); reached on: workflow History view; log streaming (licensed)",
+				"tyk": "not checked: an audit log of configuration changes would live in the closed Tyk Dashboard; grep -rniE 'audit' over gateway/ finds no change log, and Gateway API writes (gateway/api.go:1578 polHandler, :1838 keyHandler) only emit key events such as TokenCreated (internal/event/event.go:42)",
 				"apisix": "source read at 3.18.0, not driven: grep -rniE 'audit' over apisix/ only hits apisix/plugins/ai-lakera-guard.lua:123; objects carry create_time and update_time, no change history",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/APIProviderImpl.java:623 calls APIUtil.logAuditMessage on API create with name, context, version and provider, written to the audit log appender (product-apim/all-in-one-apim/modules/distribution/product/src/main/conf/log4j2.properties:40 AUDIT_LOGFILE); API revisions (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:1704) and lifecycle history (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:1566) record changes per API, but there is no per-object change view with field diffs; reached on: audit.log file; publisher API > Lifecycle history and Revisions",
 				"frank": "source read at v10.2.0, not driven: console/backend/src/main/java/org/frankframework/console/filters/SecurityLogFilter.java:43 writes every POST, PUT and DELETE with the user to the SEC log, management-gateway/src/main/java/org/frankframework/management/bus/message/RequestMessageBuilder.java:129 logs each management request with its payload, and uploaded configurations record the uploading user (core/src/main/java/org/frankframework/management/bus/endpoints/ConfigManagement.java:178); this is a log file, not an audit trail per object; reached on: security log file (SEC logger); console Manage Configurations shows the uploader per version"
