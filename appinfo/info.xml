@@ -121,6 +121,7 @@
 		<job>OCA\Integriq\BackgroundJob\KissPullJob</job>
 		<job>OCA\Integriq\BackgroundJob\ApprovalTimeoutSweepJob</job>
 		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\OsoRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\StufZknRetryJob</job>
 		<!-- document-generation-vendor-adapter: every five minutes, ask the
 		     vendor again about a render it has not settled. This is what keeps

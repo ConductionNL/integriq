@@ -2549,7 +2549,17 @@ OC.L10N.register(
         "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.": "How the event travels. Structured sends the whole event. Binary sends the data, with the attributes in headers.",
         "Keeps related events together, when the broker honours it.": "Keeps related events together, when the broker honours it.",
         "A label for your own reference. The delivery action decides where an event actually goes.": "A label for your own reference. The delivery action decides where an event actually goes.",
-        "How a matched event is delivered. Leave it empty to post to the sink above.": "How a matched event is delivered. Leave it empty to post to the sink above."
+        "How a matched event is delivered. Leave it empty to post to the sink above.": "How a matched event is delivered. Leave it empty to post to the sink above.",
+        "Export: sent, failed or pending, later acknowledged or rejected via retour. Import: received": "Export: sent, failed or pending, later acknowledged or rejected via retour. Import: received",
+        "Kenmerk": "Kenmerk",
+        "Learner ECK iD": "Learner ECK iD",
+        "OSO Message": "OSO Message",
+        "Source School BRIN": "Source School BRIN",
+        "The correlation id for an export or its retour; null on a fresh import record": "The correlation id for an export or its retour; null on a fresh import record",
+        "The provider-returned reference for an OUTBOUND export; null on import records": "The provider-returned reference for an OUTBOUND export; null on import records",
+        "The pupil's pseudonymous ECK iD, on either direction": "The pupil's pseudonymous ECK iD, on either direction",
+        "The sending school's BRIN on an INBOUND import; null on export records": "The sending school's BRIN on an INBOUND import; null on export records",
+        "Whether this record is an outbound export (or its retour) or an inbound import": "Whether this record is an outbound export (or its retour) or an inbound import"
     },
     "nplurals=2; plural=(n != 1);"
 )

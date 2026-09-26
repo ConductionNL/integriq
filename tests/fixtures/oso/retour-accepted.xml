@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OsoRetour>
+  <stuurgegevens>
+    <kenmerk>seed-oso-kenmerk-001</kenmerk>
+    <signaalcode>0</signaalcode>
+  </stuurgegevens>
+  <body>
+    <omschrijving>Verwerkt</omschrijving>
+  </body>
+</OsoRetour>

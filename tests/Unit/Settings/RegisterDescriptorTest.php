@@ -86,6 +86,9 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 35 — `stuf_message` added by openspec/changes/stuf-zkn-bridge,
 	 * bringing the count to 36.
 	 *
+	 * Was 49 — `oso_message` added by openspec/changes/integriq-adapter-oso,
+	 * bringing the count to 50.
+	 *
 	 * @var array<string, string>
 	 */
 	private const SCHEMA_SLUGS = [
@@ -143,6 +146,8 @@ class RegisterDescriptorTest extends TestCase {
 		'OpenFormulierenSubmission' => 'openformulieren_submission',
 		// iWMO/iJW (StUF iStandaarden Wmo/Jeugdwet) bridge — added by iwmo-ijw-adapter spec.
 		'IwmoIjwMessage' => 'iwmo_ijw_message',
+		// OSO (Overstapservice Onderwijs) adapter — added by integriq-adapter-oso spec.
+		'OsoMessage' => 'oso_message',
 		// FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.
 		'FscService' => 'fsc_service',
 		'FscCall' => 'fsc_call',

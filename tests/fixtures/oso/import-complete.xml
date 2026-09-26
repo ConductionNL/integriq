@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OsoOverstapdossier>
+  <stuurgegevens>
+    <afzenderBrin>12AB</afzenderBrin>
+    <tijdstipBericht>2026-09-25T09:00:00+02:00</tijdstipBericht>
+  </stuurgegevens>
+  <body>
+    <leerlingEckId>eck-id-seed-001</leerlingEckId>
+    <voornamen>Fatima</voornamen>
+    <achternaam>El Amrani</achternaam>
+    <geboortedatum>2015-04-12</geboortedatum>
+    <categories>
+      <category>
+        <name>basisgegevens</name>
+        <included>true</included>
+        <data>{}</data>
+      </category>
+      <category>
+        <name>onderwijskundig-rapport</name>
+        <included>false</included>
+        <data>{}</data>
+      </category>
+    </categories>
+    <attachmentRefs>
+      <ref>nc:files/oso/onderwijskundig-rapport.pdf</ref>
+    </attachmentRefs>
+  </body>
+</OsoOverstapdossier>

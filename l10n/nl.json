@@ -1208,7 +1208,17 @@
         "The provider's reason, when the status is failed. Empty otherwise": "De reden van de aanbieder wanneer de status failed is. Anders leeg",
         "The recipient identity the provider addresses, for example a BSN for Berichtenbox": "De identiteit van de ontvanger die de aanbieder aanspreekt, bijvoorbeeld een BSN voor de Berichtenbox",
         "Where the document is held. The letter carries a reference, not a copy": "Waar het document wordt bewaard. De brief bevat een verwijzing, geen kopie",
-        "True when the binding that handled this letter sends nothing, so a delivered status can never be read as a letter that arrived": "Waar wanneer de koppeling die deze brief afhandelde niets verstuurt, zodat een delivered-status nooit gelezen kan worden als een brief die is aangekomen"
+        "True when the binding that handled this letter sends nothing, so a delivered status can never be read as a letter that arrived": "Waar wanneer de koppeling die deze brief afhandelde niets verstuurt, zodat een delivered-status nooit gelezen kan worden als een brief die is aangekomen",
+        "Export: sent, failed or pending, later acknowledged or rejected via retour. Import: received": "Export: sent, failed of pending, later acknowledged of rejected via retour. Import: received",
+        "Kenmerk": "Kenmerk",
+        "Learner ECK iD": "ECK-iD van de leerling",
+        "OSO Message": "OSO-bericht",
+        "Source School BRIN": "BRIN van de bronschool",
+        "The correlation id for an export or its retour; null on a fresh import record": "Het correlatie-id voor een export of het retour ervan; null bij een nieuw importrecord",
+        "The provider-returned reference for an OUTBOUND export; null on import records": "De door de aanbieder teruggegeven referentie voor een UITGAANDE export; null bij importrecords",
+        "The pupil's pseudonymous ECK iD, on either direction": "Het pseudonieme ECK-iD van de leerling, in beide richtingen",
+        "The sending school's BRIN on an INBOUND import; null on export records": "Het BRIN van de verzendende school bij een INKOMENDE import; null bij exportrecords",
+        "Whether this record is an outbound export (or its retour) or an inbound import": "Of dit record een uitgaande export (of het retour ervan) of een inkomende import is"
     },
     "plurals": {}
 }

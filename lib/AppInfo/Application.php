@@ -109,6 +109,9 @@ use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\LogDigitalPostProvider;
 use OCA\Integriq\Service\DigitalPost\PostexProvider;
+use OCA\Integriq\Service\Oso\LogOsoProvider;
+use OCA\Integriq\Service\Oso\OsoKennisnetClient;
+use OCA\Integriq\Service\Oso\OsoProviderRegistry;
 use OCA\Integriq\Gateway\GatewayRegistry;
 use OCA\Integriq\Gateway\GatewayTransport;
 use OCA\Integriq\Gateway\SourceGatewayTransport;
@@ -505,6 +508,20 @@ class Application extends App implements IBootstrap {
 						$c->get(BerichtenboxProvider::class),
 						$c->get(PostexProvider::class),
 						$c->get(LogDigitalPostProvider::class),
+					]
+				);
+			}
+		);
+
+		// The OSO export provider bindings. `log` is registered last for the
+		// same reason as the digital post bindings above.
+		$context->registerService(
+			OsoProviderRegistry::class,
+			static function ($c): OsoProviderRegistry {
+				return new OsoProviderRegistry(
+					providers: [
+						$c->get(OsoKennisnetClient::class),
+						$c->get(LogOsoProvider::class),
 					]
 				);
 			}

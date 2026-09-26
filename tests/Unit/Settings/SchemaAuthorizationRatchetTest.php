@@ -146,6 +146,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'notificaties_abonnement',
 		'openformulieren_form_mapping',
 		'openformulieren_submission',
+		'oso_message',
 		'payment_intent',
 		'peppol_transmission',
 		'promotion_audit',
