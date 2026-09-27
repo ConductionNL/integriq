@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "integriq demo data",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Demo data covering every schema this app supplies, offered as the first step of the app's setup walkthrough. Generated from the schemas themselves, so every object satisfies the schema that will validate it."
   },
   "x-openregister": {
