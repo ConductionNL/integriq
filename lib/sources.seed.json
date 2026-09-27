@@ -42,6 +42,62 @@
       "isEnabled": false,
       "documentation": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/ui/",
       "reference": "pdok.feature_flag"
+    },
+    {
+      "id": "lvs-cito-dult",
+      "name": "Cito Leerling in Beeld (DULT)",
+      "description": "Cito B.V. Leerling in Beeld LVS — doorstroomtoets en methode-onafhankelijke toetsresultaten via DULT-verwerking.",
+      "category": "onderwijs",
+      "subCategory": "lvs-result-import",
+      "adapterClass": "OCA\\Integriq\\Sources\\Lvs\\UwlrResultImportSourceAdapter",
+      "location": "https://cito.nl/onderwijs/primair-onderwijs/leerling-in-beeld-leerlingvolgsysteem/",
+      "type": "uwlr",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://cito.nl/onderwijs/primair-onderwijs/leerling-in-beeld-leerlingvolgsysteem/veelgestelde-vragen/",
+      "reference": "lvs.import.feature_flag"
+    },
+    {
+      "id": "lvs-iep",
+      "name": "IEP LVS (Bureau ICE)",
+      "description": "Bureau ICE IEP leerlingvolgsysteem — UWLR-shaped resultatenkoppeling naar de LAS.",
+      "category": "onderwijs",
+      "subCategory": "lvs-result-import",
+      "adapterClass": "OCA\\Integriq\\Sources\\Lvs\\UwlrResultImportSourceAdapter",
+      "location": "https://www.bureau-ice.nl/basisonderwijs/iep-leerlingvolgsysteem/",
+      "type": "uwlr",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://handleiding.toets.nl/koppeling-las-parnassys-en-esis-1395",
+      "reference": "lvs.import.feature_flag"
+    },
+    {
+      "id": "lvs-boom",
+      "name": "Boom LVS (Boom Testcentrum)",
+      "description": "Boom uitgevers Amsterdam — Boom LVS, UWLR-koppeling naar ParnasSys, Esis, Focus PO, Volglijn, Schoolkr8, Magister.",
+      "category": "onderwijs",
+      "subCategory": "lvs-result-import",
+      "adapterClass": "OCA\\Integriq\\Sources\\Lvs\\UwlrResultImportSourceAdapter",
+      "location": "https://www.boom.nl/primair-onderwijs/boom-lvs/alles-over-het-boom-lvs",
+      "type": "uwlr",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://www.boom.nl/primair-onderwijs/boom-lvs/veelgestelde-vragen-boom-lvs",
+      "reference": "lvs.import.feature_flag"
+    },
+    {
+      "id": "lvs-dia",
+      "name": "Dia LVS (Diataal)",
+      "description": "Diataal B.V. Dia LVS en Dia Doorstroomtoets — koppeling naar ParnasSys en Esis (PO) en Somtoday/Magister (VO).",
+      "category": "onderwijs",
+      "subCategory": "lvs-result-import",
+      "adapterClass": "OCA\\Integriq\\Sources\\Lvs\\UwlrResultImportSourceAdapter",
+      "location": "https://www.dia.nl/basisonderwijs",
+      "type": "uwlr",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://www.dia.nl/veelgestelde-vragen",
+      "reference": "lvs.import.feature_flag"
     }
   ]
 }
