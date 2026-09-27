@@ -36,7 +36,10 @@ one new Twig function behind an allowlist.
   adds `renderedOutput` to its answer; the preview pane of
   `src/views/wrappers/MappingDetailPage.vue` shows it read-only when the output
   format is not JSON.
-- Lookup: `lib/Twig/MappingExtension.php:79` registers `lookup`;
+- Lookup: `lib/Twig/MappingExtension.php:79` registers `lookup` for
+  integriq's own engine, and `lib/Listener/MappingFunctionRegistrationListener.php:68`
+  contributes it to OpenRegister's engine next to the three functions it
+  already contributes, so a mapping behaves the same in both;
   `lib/Twig/MappingRuntime.php:73` gains OpenRegister's object service and a
   lookup allowlist. The allowlist is administered like the expression-source
   allowlist: `lib/Expression/EnvironmentAllowlist.php` for storage and audit,
@@ -84,9 +87,11 @@ step; picking the first match silently would make a code translation depend on
 insertion order. Results are cached per mapping run, so a thousand items with
 the same code make one query.
 
-The alternative was to reinstate `callSource` with a host allowlist. Rejected:
-the row asks for a register lookup, and an outbound call from a template is the
-SSRF path that was closed on purpose.
+The alternative was to use `callSource` with a host allowlist. Rejected: the
+row asks for a register lookup, and an outbound call from a template is the
+SSRF path the note at `lib/Twig/MappingExtension.php:66` closed in integriq's
+engine. That the listener still contributes `callSource` to OpenRegister's
+engine is recorded in the proposal and left to its own change.
 
 ## Declarative versus imperative
 

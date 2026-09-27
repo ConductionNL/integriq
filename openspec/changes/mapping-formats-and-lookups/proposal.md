@@ -89,8 +89,12 @@ This change covers three rows: `integriq:map-csv`, `integriq:map-lookup` and
 - Mapping Twig functions are listed at `lib/Twig/MappingExtension.php:79`:
   `generateUuid`, `executeMapping`, `getFileContents`, `getFiles`,
   `getTargetIdByOriginId`, `getOriginIdByTargetId`. None reads a register.
-  The note at `:66` explains why `callSource` was removed: an outbound call
-  from a template is an SSRF path.
+  The note at `:66` explains why `callSource` was removed from integriq's own
+  mapping engine (`lib/Service/MappingService.php:119`): an outbound call from
+  a template is an SSRF path. The same function is still contributed to
+  OpenRegister's mapping engine by
+  `lib/Listener/MappingFunctionRegistrationListener.php:68`, so the two engines
+  disagree about it.
 
 ## What this change builds
 
@@ -113,6 +117,8 @@ This change covers three rows: `integriq:map-csv`, `integriq:map-lookup` and
 
 - XSD-driven typed XML output, the `Json2XmlValidator` shape. Validation
   against a declared XSD is `mapping-message-schema-validation`.
-- Lookups against an external API from inside a mapping. `callSource` stays
-  removed.
+- Lookups against an external API from inside a mapping.
+- Settling whether `callSource` belongs in OpenRegister's engine when it was
+  removed from integriq's. This change records the disagreement and does not
+  widen it: `lookup` makes no outbound call in either engine.
 - Spreadsheet formats such as XLSX.

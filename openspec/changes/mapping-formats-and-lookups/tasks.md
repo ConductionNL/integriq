@@ -43,7 +43,7 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
 
 ### Task 5: The lookup function and its allowlist
 - **spec_ref**: openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
-- **files**: `lib/Twig/MappingExtension.php`, `lib/Twig/MappingRuntime.php`, `lib/Twig/LookupAllowlist.php`, `lib/Controller/MappingLookupController.php`, `appinfo/routes.php`, the admin settings section
+- **files**: `lib/Twig/MappingExtension.php`, `lib/Listener/MappingFunctionRegistrationListener.php`, `lib/Twig/MappingRuntime.php`, `lib/Twig/LookupAllowlist.php`, `lib/Controller/MappingLookupController.php`, `appinfo/routes.php`, the admin settings section
 - **acceptance_criteria**:
   - GIVEN an allowed schema with one match WHEN `lookup` runs THEN the field value is returned
   - GIVEN a schema off the allowlist WHEN `lookup` runs THEN the mapping fails naming the schema and ObjectService is not called
