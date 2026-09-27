@@ -32,11 +32,27 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "int-sharepoint",
+		"matrix": "opencatalogi",
+		"decision": "build",
+		"reason": "no and none, two competitors yes. Same SharePoint adapter as integriq:con-sharepoint. Signals: 2 competitors rate yes (xxllnc, iprox), no demand row.",
+		"change": "connectors-sharepoint-publication-intake",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "int-stuf",
 		"matrix": "opencatalogi",
 		"decision": "defer",
 		"reason": "partial, built, no demand, and no competitor rates yes.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "lc-source-destroyed",
+		"matrix": "opencatalogi",
+		"decision": "build",
+		"reason": "partial and built with a tender demand row for the missing half: files and metadata are purged, not soft deleted, when the source destroys the document, and a destruction notice triggers it without waiting for the next full run. Signals: 1 competitor rate yes (ckan), demand: tender https://www.tenderned.nl/aankondigingen/overzicht/407973.",
+		"change": "synchronisation-source-destruction-purge",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -304,11 +320,35 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "con-backoffice",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none with a tender demand row (Gemeente Stein). Signals: no competitor rates yes, demand: tender https://www.tenderned.nl/aankondigingen/overzicht/226100.",
+		"change": "connectors-catalogue-expansion",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "con-dpg",
 		"matrix": "integriq",
 		"decision": "defer",
 		"reason": "no competitor rates yes and no demand row.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-inavigator",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none with a tender demand row (Gemeente Stein). Signals: no competitor rates yes, demand: tender https://www.tenderned.nl/aankondigingen/overzicht/226100.",
+		"change": "connectors-inavigator-case-types",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-library-size",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "rated no with two competitors yes: the Store holds about 35 entries, not hundreds. Signals: 2 competitors rate yes (n8n, mulesoft), no demand row.",
+		"change": "connectors-catalogue-expansion",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -325,6 +365,14 @@
 		"decision": "defer",
 		"reason": "no competitor rates yes and no demand row.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-sharepoint",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two competitors yes. The missing half is routing SharePoint documents into a publication from integriq's own screens; today the adapter runs only when OpenRegister's integration surface calls it. Signals: 2 competitors rate yes (n8n, mulesoft), no demand row.",
+		"change": "connectors-sharepoint-publication-intake",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -568,6 +616,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "msg-form-intake",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Rides with dossiq:1.9, which meets the bar: its whole missing half is the same screen or service messaging-intake-routing-rules specifies. On its own: 1 competitor rate yes (n8n), no demand row.",
+		"change": "messaging-intake-routing-rules",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "msg-hold-queue",
 		"matrix": "integriq",
 		"decision": "existing",
@@ -632,11 +688,35 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "msg-payment",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two competitors yes. The missing half is a screen to review a charge and to activate a live provider; today the provider defaults to the log stub. Signals: 2 competitors rate yes (n8n, mulesoft), no demand row.",
+		"change": "messaging-payments-review",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-public-space",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Rides with dossiq:1.9, which meets the bar: its whole missing half is the same screen or service messaging-intake-routing-rules specifies. On its own: no competitor rates yes, no demand row.",
+		"change": "messaging-intake-routing-rules",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "msg-reply-channel",
 		"matrix": "integriq",
 		"decision": "defer",
 		"reason": "single competitor (n8n), no demand. The reply code is built; the missing half is a reply button.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-routing",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Rides with dossiq:1.9, which meets the bar: its whole missing half is the same screen or service messaging-intake-routing-rules specifies. On its own: 1 competitor rate yes (n8n), no demand row.",
+		"change": "messaging-intake-routing-rules",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -653,6 +733,22 @@
 		"decision": "defer",
 		"reason": "partial, built, no demand, and no competitor rates yes.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-sms",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two competitors yes. The missing half is sending through CM.com, MessageBird or Twilio; only NotifyNL is wired. Signals: 2 competitors rate yes (n8n, mulesoft), no demand row.",
+		"change": "messaging-sms-providers-and-notifynl-mail",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-teams",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Rides with dossiq:1.9, which meets the bar: its whole missing half is the same screen or service messaging-intake-routing-rules specifies. On its own: 1 competitor rate yes (n8n), no demand row.",
+		"change": "messaging-intake-routing-rules",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -688,6 +784,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "nl-notifynl",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Rides with integriq:msg-sms, which meets the bar: its whole missing half is the same screen or service messaging-sms-providers-and-notifynl-mail specifies. On its own: no competitor rates yes, no demand row.",
+		"change": "messaging-sms-providers-and-notifynl-mail",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "nl-ris",
 		"matrix": "integriq",
 		"decision": "defer",
@@ -717,6 +821,14 @@
 		"decision": "existing",
 		"reason": "The zgw-catalogi set is in this change; the row cited no change directory, corrected.",
 		"change": "zgw-connectors-for-dossiq",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-zgw-resync",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Rides with integriq:con-inavigator, which meets the bar: its whole missing half is the same screen or service connectors-inavigator-case-types specifies. On its own: no competitor rates yes, no demand row.",
+		"change": "connectors-inavigator-case-types",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -773,6 +885,14 @@
 		"decision": "build",
 		"reason": "partial and built, two competitors yes. The missing half is occ commands to list, run and test sources, synchronisations and jobs. Signals: 2 competitors rate yes (n8n, mulesoft), no demand row.",
 		"change": "platform-integrations-as-code",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-connector-sdk",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two or more competitors yes. The missing half is a documented extension point and guide, so a third party does not edit Application.php. Signals: 5 competitors rate yes (n8n, tyk, apisix, mulesoft, frank), no demand row.",
+		"change": "platform-connector-extension-kit",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -904,6 +1024,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "1.9",
+		"matrix": "dossiq",
+		"decision": "build",
+		"reason": "no, two competitors yes. teams-messages-open-cases ships the Teams adapter, but a message only opens a case through a routing rule no page can create. Outlook mail reaches intake through a shared mailbox (GraphMailboxTransport and the mail import route), but there is no action inside Outlook itself. Signals: 2 competitors rate yes (opencase, zaaksysteem), no demand row.",
+		"change": "messaging-intake-routing-rules",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "12.11",
 		"matrix": "dossiq",
 		"decision": "existing",
@@ -976,6 +1104,54 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "att-import-a-timetable",
+		"matrix": "learniq",
+		"decision": "build",
+		"reason": "Rides with planninq:sib-learniq-att-import-a-timetable, which meets the bar: its whole missing half is the same screen or service connectors-data-exchange-dispatch specifies. On its own: no competitor rates yes, no demand row.",
+		"change": "connectors-data-exchange-dispatch",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "att-report-absence-to-authority",
+		"matrix": "learniq",
+		"decision": "build",
+		"reason": "Rides with learniq:gov-push-data-to-another-system, which meets the bar: its whole missing half is the same screen or service connectors-data-exchange-dispatch specifies. On its own: no competitor rates yes, no demand row.",
+		"change": "connectors-data-exchange-dispatch",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "cont-embed-external-lti-tool",
+		"matrix": "learniq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. The archived lti-13-platform change shipped the adapter, but learniq launches through api/lti/deployments/{id}/launch and integriq serves /api/lti/{deployment}/launch, so no tool opens. Re-read once; the matrix is right, so this is a build. Signals: 5 competitors rate yes (moodle, moodle-workplace, ilias, totara, chamilo), no demand row.",
+		"change": "connectors-lti-platform-launch",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "cont-lti-grades-come-back",
+		"matrix": "learniq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Grades only come back from a tool that opened, which the launch contract gap prevents. Signals: 4 competitors rate yes (moodle, moodle-workplace, totara, chamilo), no demand row.",
+		"change": "connectors-lti-platform-launch",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "cont-outside-provider-catalogue",
+		"matrix": "learniq",
+		"decision": "build",
+		"reason": "no and none with a tender demand row plus two competitors yes. Signals: 2 competitors rate yes (totara, ispring-learn), demand: tender https://www.tenderned.nl/aankondigingen/overzicht/411287.",
+		"change": "connectors-course-marketplace",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gov-push-data-to-another-system",
+		"matrix": "learniq",
+		"decision": "build",
+		"reason": "no and none, two competitors yes. Learniq's data-exchange job calls api/sources/{target}/run on integriq, which integriq does not serve, so every run fails. The ROD, Verzuimloket, OSO and UWLR adapters have routes of their own in their own payload shapes; the rostering, SWV and LVS adapters have no caller at all. Signals: 2 competitors rate yes (totara, ispring-learn), no demand row.",
+		"change": "connectors-data-exchange-dispatch",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "wpl-check-the-company-is-approved",
 		"matrix": "learniq",
 		"decision": "defer",
@@ -1024,6 +1200,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "int-saas-connectors",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Ready-made connectors are integriq sources. Signals: 3 competitors rate yes (budibase, mendix, power-apps), no demand row.",
+		"change": "connectors-catalogue-expansion",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "adm-connections-panel",
 		"matrix": "versioniq",
 		"decision": "existing",
@@ -1037,6 +1221,22 @@
 		"decision": "existing",
 		"reason": "Same registry; the missing rows are versioniq's declarations.",
 		"change": "connection-registry",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "sib-learniq-att-import-a-timetable",
+		"matrix": "planninq",
+		"decision": "build",
+		"reason": "no and none, two competitors yes. The roster adapter exists (integriq-adapter-rostering-imports) but learniq's import calls api/sources/timetable-import/run, which integriq does not serve. Signals: 2 competitors rate yes (untis, timeedit), no demand row.",
+		"change": "connectors-data-exchange-dispatch",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "tt-hr-sync",
+		"matrix": "planninq",
+		"decision": "build",
+		"reason": "no and none with a tender demand row (Scholengroep Pontes). Signals: no competitor rates yes, demand: tender https://www.tenderned.nl/aankondigingen/overzicht/328706.",
+		"change": "connectors-hr-staff-sync",
 		"decidedOn": "2026-09-27"
 	}
 ]

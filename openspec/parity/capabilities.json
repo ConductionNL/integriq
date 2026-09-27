@@ -5199,9 +5199,9 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep for a catalogi-specific resync/diff-preview found nothing; the generic mapping preview (appinfo/routes.php mappings#test -> src/components/mapping/MappingResultPanel.vue:503) is schema-agnostic and not wired to a catalogi connector, which itself does not exist (see nl-zgw-catalogi)."
+				"evidence": "grep for a catalogi-specific resync/diff-preview found nothing; the generic mapping preview (appinfo/routes.php mappings#test -> src/components/mapping/MappingResultPanel.vue:503) is schema-agnostic and not wired to a catalogi connector, which itself does not exist (see nl-zgw-catalogi). Specified in openspec/changes/connectors-inavigator-case-types/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Depends entirely on the unbuilt zgw-catalogi connector; there is no catalogi-specific resync preview/accept flow.",
@@ -5912,9 +5912,9 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:165-167 notifyNl#send/status/inbound -> lib/Controller/NotifyNlController.php:97 send(), :165 status(), :208 inbound() -> lib/Service/SmsDispatchService.php (SCHEMA_MESSAGE='sms_message' at line 79) using the real lib/Service/Sms/RestNotifyNlProvider.php binding; manifest page SmsMessages (src/manifest.json:2933-2938, /messages/sms). No code anywhere ties NotifyNL to mail sending; lib/Service/Mail/* only implements inbound mail intake (MailIntakeService), unrelated to outbound notification."
+				"evidence": "appinfo/routes.php:165-167 notifyNl#send/status/inbound -> lib/Controller/NotifyNlController.php:97 send(), :165 status(), :208 inbound() -> lib/Service/SmsDispatchService.php (SCHEMA_MESSAGE='sms_message' at line 79) using the real lib/Service/Sms/RestNotifyNlProvider.php binding; manifest page SmsMessages (src/manifest.json:2933-2938, /messages/sms). No code anywhere ties NotifyNL to mail sending; lib/Service/Mail/* only implements inbound mail intake (MailIntakeService), unrelated to outbound notification. Specified in openspec/changes/messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "machine route: POST /api/notifynl/messages (SMS only); viewable at /messages/sms",
 			"note": "The row asks for text and mail notifications through NotifyNL; only the SMS channel is implemented. The MailMessages page is unrelated inbound mail intake, not outbound NotifyNL mail.",
@@ -6638,9 +6638,9 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Intake/Adapter/TeamsChannelAdapter.php (542 lines, CHANNEL_ID 'teams' :53, receive() :143, reply() :217 posting to Bot Framework hosts allowlisted at :76) is registered in lib/AppInfo/Application.php:453-461 IntakeChannelRegistry. Inbound machine route appinfo/routes.php:84 intakeChannels#inbound -> lib/Controller/IntakeChannelsController.php:125 inbound() (PublicPage, webhook signature verified) -> lib/Intake/IntakeRoutingService.php:123 route() stores intake_message and dispatches IntakeMessageRoutedEvent (:147); with no matching rule the message is held (:433). Rules can only be saved via routes.php:94-95 intakeChannels#saveRule, which has no frontend caller (not in frontend-api-paths.txt)."
+				"evidence": "lib/Intake/Adapter/TeamsChannelAdapter.php (542 lines, CHANNEL_ID 'teams' :53, receive() :143, reply() :217 posting to Bot Framework hosts allowlisted at :76) is registered in lib/AppInfo/Application.php:453-461 IntakeChannelRegistry. Inbound machine route appinfo/routes.php:84 intakeChannels#inbound -> lib/Controller/IntakeChannelsController.php:125 inbound() (PublicPage, webhook signature verified) -> lib/Intake/IntakeRoutingService.php:123 route() stores intake_message and dispatches IntakeMessageRoutedEvent (:147); with no matching rule the message is held (:433). Rules can only be saved via routes.php:94-95 intakeChannels#saveRule, which has no frontend caller (not in frontend-api-paths.txt). Specified in openspec/changes/messaging-intake-routing-rules/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "machine route: POST /api/intake/channels/teams/inbound; held messages show on IntakeMessages page (/messages/intake)",
 			"note": "The hint is right: the Teams adapter and the teams-messages-open-cases change exist. A Teams message lands in the intake inbox, but it only opens a case if a routing rule exists (no page can create one) and a sibling app listens for IntakeMessageRoutedEvent.",
@@ -6673,9 +6673,9 @@
 			"source": "dossiq-round4",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Two paths. (1) lib/Intake/Adapter/FormSubmissionAdapter.php CHANNEL_ID 'form-submission' (:48), receive() :88, registered at lib/AppInfo/Application.php:458, reached by machine route appinfo/routes.php:84 intakeChannels#inbound -> IntakeChannelsController.php:125 -> IntakeRoutingService.php:123 route(), shown on IntakeMessages page. (2) Open Formulieren bridge appinfo/routes.php:231 openFormulieren#inbound (HMAC-gated) -> lib/Service/OpenFormulierenIntakeService.php, shown on FormSubmissions page (/messages/form-submissions, logs, schema openformulieren_submission); its handoff route routes.php:233 has no frontend caller (not in frontend-api-paths.txt)."
+				"evidence": "Two paths. (1) lib/Intake/Adapter/FormSubmissionAdapter.php CHANNEL_ID 'form-submission' (:48), receive() :88, registered at lib/AppInfo/Application.php:458, reached by machine route appinfo/routes.php:84 intakeChannels#inbound -> IntakeChannelsController.php:125 -> IntakeRoutingService.php:123 route(), shown on IntakeMessages page. (2) Open Formulieren bridge appinfo/routes.php:231 openFormulieren#inbound (HMAC-gated) -> lib/Service/OpenFormulierenIntakeService.php, shown on FormSubmissions page (/messages/form-submissions, logs, schema openformulieren_submission); its handoff route routes.php:233 has no frontend caller (not in frontend-api-paths.txt). Specified in openspec/changes/messaging-intake-routing-rules/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "machine route: POST /api/intake/channels/form-submission/inbound and POST /api/open-formulieren/submissions; results on IntakeMessages and FormSubmissions pages",
 			"note": "Submissions do come in and are visible, so the intake half works. Turning one into a case needs a routing rule that no page can create, or the Open Formulieren handoff that no button calls.",
@@ -6706,9 +6706,9 @@
 			"source": "dossiq-round4",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Intake/Adapter/PublicSpaceReportAdapter.php CHANNEL_ID 'public-space-report' (:48), receive() :85 with location() :152 and media() :179, reply() refuses by design (:134); registered at lib/AppInfo/Application.php:460. Reached by machine route appinfo/routes.php:84 intakeChannels#inbound -> lib/Controller/IntakeChannelsController.php:125 -> lib/Intake/IntakeRoutingService.php:123 route(); result on IntakeMessages page (src/manifest.d/intake-channels.json)."
+				"evidence": "lib/Intake/Adapter/PublicSpaceReportAdapter.php CHANNEL_ID 'public-space-report' (:48), receive() :85 with location() :152 and media() :179, reply() refuses by design (:134); registered at lib/AppInfo/Application.php:460. Reached by machine route appinfo/routes.php:84 intakeChannels#inbound -> lib/Controller/IntakeChannelsController.php:125 -> lib/Intake/IntakeRoutingService.php:123 route(); result on IntakeMessages page (src/manifest.d/intake-channels.json). Specified in openspec/changes/messaging-intake-routing-rules/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "machine route: POST /api/intake/channels/public-space-report/inbound; result on IntakeMessages page (/messages/intake)",
 			"note": "A signed report is received and stored as intake. Without a routing rule, which no page can create, every report sits held in the intake inbox rather than opening a case.",
@@ -6739,9 +6739,9 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Engine: lib/Intake/IntakeRoutingService.php:123 route() matches enabled rules per channel ordered by 'order' and dispatches IntakeMessageRoutedEvent (:147), else hold() (:433); validateRule() checks target fields. Config: appinfo/routes.php:94-95 intakeChannels#saveRule -> lib/Controller/IntakeChannelsController.php:212 saveRule() (ActionAuthService 'intake.rules'). NO frontend caller for /api/intake/routing-rules (not in frontend-api-paths.txt, grep 'routing-rules' src/*.vue/*.js = 0). IntakeRoutingRules page (/intake/routing-rules) is type logs, read-only columns only (src/manifest.d/intake-channels.json). Rules exist only in lib/Settings/integriq_mock_register.json:8892-8932 mock data."
+				"evidence": "Engine: lib/Intake/IntakeRoutingService.php:123 route() matches enabled rules per channel ordered by 'order' and dispatches IntakeMessageRoutedEvent (:147), else hold() (:433); validateRule() checks target fields. Config: appinfo/routes.php:94-95 intakeChannels#saveRule -> lib/Controller/IntakeChannelsController.php:212 saveRule() (ActionAuthService 'intake.rules'). NO frontend caller for /api/intake/routing-rules (not in frontend-api-paths.txt, grep 'routing-rules' src/*.vue/*.js = 0). IntakeRoutingRules page (/intake/routing-rules) is type logs, read-only columns only (src/manifest.d/intake-channels.json). Rules exist only in lib/Settings/integriq_mock_register.json:8892-8932 mock data. Specified in openspec/changes/messaging-intake-routing-rules/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "IntakeRoutingRules page (/intake/routing-rules) shows rules read-only; nothing reaches saveRule",
 			"note": "Routing runs automatically on every inbound message, but staff cannot create or edit a rule from any page, so on a real install every message is held. The rules page is a list, not an editor.",
@@ -6838,9 +6838,9 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:165 notifyNl#send -> lib/Controller/NotifyNlController.php:97 send() (ActionAuthService 'sms.send') -> lib/Service/SmsDispatchService.php:136 sendMessage() -> lib/Service/Sms/RestNotifyNlProvider.php (Guzzle, https://api.notifynl.nl) or LogSmsProvider; writes sms_message shown on SmsMessages page (src/manifest.json:2933, /messages/sms, logs). Status callback routes.php inbound NotifyNlController.php:208. CM.com/MessageBird/Twilio: lib/Settings/register.d/cmcom-sms-source.json, messagebird-sms-source.json, twilio-sms-source.json are seeded generic source objects with configuration.mock:true, and their $comment says the send leaf is OpenRegister's MessageDispatchProvider and pipelinq's SmsAdapter, not integriq code. NO frontend caller for /api/notifynl/messages (not in frontend-api-paths.txt); sendMessage has no other internal caller (grep 'sendMessage(' lib = only NotifyNlController:135)."
+				"evidence": "appinfo/routes.php:165 notifyNl#send -> lib/Controller/NotifyNlController.php:97 send() (ActionAuthService 'sms.send') -> lib/Service/SmsDispatchService.php:136 sendMessage() -> lib/Service/Sms/RestNotifyNlProvider.php (Guzzle, https://api.notifynl.nl) or LogSmsProvider; writes sms_message shown on SmsMessages page (src/manifest.json:2933, /messages/sms, logs). Status callback routes.php inbound NotifyNlController.php:208. CM.com/MessageBird/Twilio: lib/Settings/register.d/cmcom-sms-source.json, messagebird-sms-source.json, twilio-sms-source.json are seeded generic source objects with configuration.mock:true, and their $comment says the send leaf is OpenRegister's MessageDispatchProvider and pipelinq's SmsAdapter, not integriq code. NO frontend caller for /api/notifynl/messages (not in frontend-api-paths.txt); sendMessage has no other internal caller (grep 'sendMessage(' lib = only NotifyNlController:135). Specified in openspec/changes/messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "machine route: POST /api/notifynl/messages (session plus sms.send action, meant for sibling apps); SmsMessages page (/messages/sms) shows results",
 			"note": "Integriq itself sends SMS only through NotifyNL, via a route no integriq page calls. CM.com, MessageBird and Twilio are just seeded source configs in mock mode that another app's dispatcher uses.",
@@ -7136,9 +7136,9 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:157 payments#create -> lib/Controller/PaymentsController.php:92 create() (session plus ActionAuthService 'payments.create') -> lib/Service/PaymentIntentService.php resolveProvider() :368 picks lib/Service/Payment/MolliePaymentProvider.php:89 createPayment() (https://api.mollie.com/v2) or LogPaymentProvider (the default). Webhook routes.php:158 -> PaymentsController.php:141 webhook() (PublicPage, re-derives status from the provider). No frontend caller (not in frontend-api-paths.txt), no payment page in manifest-pages.txt, and no caller in local learniq/shillinq checkouts (grep 'api/payments' = 0); the routes.php:150-155 comment says the shillinq binding is a follow-up change not built here."
+				"evidence": "appinfo/routes.php:157 payments#create -> lib/Controller/PaymentsController.php:92 create() (session plus ActionAuthService 'payments.create') -> lib/Service/PaymentIntentService.php resolveProvider() :368 picks lib/Service/Payment/MolliePaymentProvider.php:89 createPayment() (https://api.mollie.com/v2) or LogPaymentProvider (the default). Webhook routes.php:158 -> PaymentsController.php:141 webhook() (PublicPage, re-derives status from the provider). No frontend caller (not in frontend-api-paths.txt), no payment page in manifest-pages.txt, and no caller in local learniq/shillinq checkouts (grep 'api/payments' = 0); the routes.php:150-155 comment says the shillinq binding is a follow-up change not built here. Specified in openspec/changes/messaging-payments-review/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "machine route: POST /api/payments (server-to-server) and POST /api/payments/webhook (provider callback)",
 			"note": "Mollie payment creation and a verified webhook are real, but the provider defaults to the log stub. No sibling caller was found and integriq has no page to review a charge.",
@@ -7792,9 +7792,9 @@
 			"source": "competitor-derived",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Adapter/AbstractCategoryAdapterProvider.php:56 abstract base (getCapabilities abstract :87, brokeredRequest credential scaffolding) with four reference adapters under lib/Service/Adapter/{Saas,DocumentCms,EndpointWorkspace,DataInfra}; registration is hard-coded in lib/AppInfo/Application.php:1471-1475; docs/developers contains only README.md, developers.md, dashboard-http-datasource.md, styleguide.md (grep -rli 'adapter|provider' docs/developers: 0 hits)"
+				"evidence": "lib/Service/Adapter/AbstractCategoryAdapterProvider.php:56 abstract base (getCapabilities abstract :87, brokeredRequest credential scaffolding) with four reference adapters under lib/Service/Adapter/{Saas,DocumentCms,EndpointWorkspace,DataInfra}; registration is hard-coded in lib/AppInfo/Application.php:1471-1475; docs/developers contains only README.md, developers.md, dashboard-http-datasource.md, styleguide.md (grep -rli 'adapter|provider' docs/developers: 0 hits). Specified in openspec/changes/platform-connector-extension-kit/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "There is an internal base class with a good docblock, but no published guide, generator or extension point; a third party would have to edit integriq's Application.php or implement OpenRegister's IntegrationProvider in their own app. The practical build-your-own path is declarative sources, mappings and configuration templates.",
@@ -8153,9 +8153,9 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php:153-197 (listDocuments/fetchDocument via Microsoft Graph drive API through the credential broker), :252 (IntegrationProvider list() needs a siteId filter); registered at lib/AppInfo/Application.php:1473; Store card via lib/Service/CatalogRegistryService.php:112. Importable template configurations/sharepoint-woo/sources/sharepoint.json and configurations/sharepoint-woo/synchronizations/sharepoint-publications.json. grep listDocuments/fetchDocument outside the adapter = 0 callers."
+				"evidence": "lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php:153-197 (listDocuments/fetchDocument via Microsoft Graph drive API through the credential broker), :252 (IntegrationProvider list() needs a siteId filter); registered at lib/AppInfo/Application.php:1473; Store card via lib/Service/CatalogRegistryService.php:112. Importable template configurations/sharepoint-woo/sources/sharepoint.json and configurations/sharepoint-woo/synchronizations/sharepoint-publications.json. grep listDocuments/fetchDocument outside the adapter = 0 callers. Specified in openspec/changes/connectors-sharepoint-publication-intake/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "/store (adapter:sharepoint-online card, always-available) and the configuration import UI for the sharepoint-woo template; nothing in integriq's own UI calls listDocuments with a siteId",
 			"note": "A real Graph adapter exists and fetches documents into Nextcloud Files, but it only runs when OpenRegister's integration surface calls list() with a siteId and a brokered credential; the hand-off to the document app is explicitly deferred. The sharepoint-woo configuration is a separate import template with an empty location that the admin must fill in.",
@@ -8293,9 +8293,9 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Counted: 25 seeded source objects across 24 files in lib/Settings/register.d/ (python enumeration of components.objects with schema source); 6 static descriptors at lib/Service/CatalogRegistryService.php:215-303; 4 integriq adapters registered in the IntegrationRegistry (find lib/Service/Adapter -name '*Adapter.php' = 4); 8 more source files under configurations/*/sources/ that the Store does not list. Store collection: lib/Service/CatalogRegistryService.php:145-161, materialised by lib/Repair/MaterializeCatalogItems.php:46.",
+				"evidence": "Counted: 25 seeded source objects across 24 files in lib/Settings/register.d/ (python enumeration of components.objects with schema source); 6 static descriptors at lib/Service/CatalogRegistryService.php:215-303; 4 integriq adapters registered in the IntegrationRegistry (find lib/Service/Adapter -name '*Adapter.php' = 4); 8 more source files under configurations/*/sources/ that the Store does not list. Store collection: lib/Service/CatalogRegistryService.php:145-161, materialised by lib/Repair/MaterializeCatalogItems.php:46. Specified in openspec/changes/connectors-catalogue-expansion/ (OpenSpec pass 2026-09-27).",
 				"catalogCount": "about 35 catalog_item cards (25 source templates + 6 static + 4 adapters), about 43 connectors counting configuration templates"
 			},
 			"reachedOn": "/store",
@@ -8464,9 +8464,9 @@
 			"originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/226100",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -ri 'navigator' over lib/ and src/ finds only src/modals/Subscription/SubscriptionSigningModal.vue (browser navigator API), no i-Navigator source, mapping or configuration under lib/Settings/"
+				"evidence": "grep -ri 'navigator' over lib/ and src/ finds only src/modals/Subscription/SubscriptionSigningModal.vue (browser navigator API), no i-Navigator source, mapping or configuration under lib/Settings/. Specified in openspec/changes/connectors-inavigator-case-types/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Gemeente Stein requirements 166838 and 166851: i-Navigator content must be importable into the ZTC with unlimited case attributes.",
@@ -8498,9 +8498,9 @@
 			"originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/226100",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -riE 'iburgerzaken|pinkroccade|centric|\\bgws\\b|nedgraphics|civision' over lib/ src/ appinfo/ finds nothing; none of the 25 seeded sources in lib/Settings/register.d/ is one of these systems (row con-library-size)"
+				"evidence": "grep -riE 'iburgerzaken|pinkroccade|centric|\\bgws\\b|nedgraphics|civision' over lib/ src/ appinfo/ finds nothing; none of the 25 seeded sources in lib/Settings/register.d/ is one of these systems (row con-library-size). Specified in openspec/changes/connectors-catalogue-expansion/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Gemeente Stein requirements 166859 and 186343 list Alfresco, CIR, GWS, LBA, iBurgerzaken, Civision Samenleving, iObjecten BAG, Cipers, NedGeo, NedGlobe, NedOmgeving, Stratech, Simsuite and SmartDocuments. Integriq: A buyer can still configure these as plain REST or SOAP sources; no ready-made connector exists.",
