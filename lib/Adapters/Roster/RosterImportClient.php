@@ -10,9 +10,10 @@
  * (REST API). Concrete subclasses:
  *
  *   - {@see RosterImportClientMock} — deterministic mock; default.
- *     Returns a canned lesson batch so downstream mapping (learniq's
- *     rostering-import job) can be developed and tested without ever
- *     contacting a scheduling system.
+ *     Returns a canned lesson batch per source, in that vendor's own field
+ *     names, so the rostering mapping presets that turn it into planninq
+ *     timetable sessions can be developed and tested without ever
+ *     contacting a scheduling system (rostering-adapter-targets-planninq).
  *   - A live HTTP binding is intentionally NOT built in this change
  *     — see `openspec/changes/integriq-adapter-rostering-imports/proposal.md`
  *     "Out of Scope". Each system requires its own institution-level
@@ -42,7 +43,7 @@ namespace OCA\Integriq\Adapters\Roster;
  * self-identifier so the structured logger can record which binding
  * actually handled the call.
  *
- * @spec openspec/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
+ * @spec openspec/changes/integriq-adapter-rostering-imports/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
  */
 abstract class RosterImportClient {
 	/**
@@ -51,7 +52,7 @@ abstract class RosterImportClient {
 	 *
 	 * @return string `mock` or `https`.
 	 *
-	 * @spec openspec/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
+	 * @spec openspec/changes/integriq-adapter-rostering-imports/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
 	 */
 	abstract public function flavour(): string;
 
@@ -63,13 +64,15 @@ abstract class RosterImportClient {
 	 *                         `roster-timeedit` (the Source row id, see
 	 *                         `lib/sources.seed.json`).
 	 *
-	 * @return array<int,array<string,mixed>> Lesson records — each
-	 *                                        carrying `subject`,
-	 *                                        `startsAt`, `endsAt`,
-	 *                                        `room`, `teacherReference`,
-	 *                                        `groupReference`.
+	 * @return array<int,array<string,mixed>> Lesson records in the
+	 *                                        source's OWN field names
+	 *                                        (a Zermelo appointment, an
+	 *                                        Untis period, ...). The
+	 *                                        source's preset in
+	 *                                        `lib/roster-mapping-presets.seed.json`
+	 *                                        maps them onto planninq.
 	 *
-	 * @spec openspec/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
+	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
 	 */
 	abstract public function fetchLessons(string $systemId): array;
 }//end class
