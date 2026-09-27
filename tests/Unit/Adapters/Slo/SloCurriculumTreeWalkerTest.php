@@ -250,6 +250,25 @@ class SloCurriculumTreeWalkerTest extends TestCase {
 	/**
 	 * @return void
 	 */
+	public function testTheNodeLimitStopsARunawayGraph(): void {
+		$children = array_map(
+			static fn (int $i): array => ['uuid' => 'c' . $i, 'title' => 't' . $i],
+			range(1, SloCurriculumTreeWalker::MAX_NODES + 1)
+		);
+
+		$this->expectException(SloCurriculumException::class);
+		$this->expectExceptionMessage('more than 25000 nodes');
+		$this->walker()->walk(
+			[['uuid' => 'root', 'title' => 'root', 'C' => $children]],
+			['levels' => ['C'], 'leafTypes' => [], 'leafNiveauFilter' => [], 'fields' => []],
+			new SloCurriculumClientMock(),
+			false
+		);
+	}//end testTheNodeLimitStopsARunawayGraph()
+
+	/**
+	 * @return void
+	 */
 	public function testDepthGuardStopsARunawayTree(): void {
 		$node = ['@type' => 'N', 'uuid' => 'n17', 'title' => 'deepest'];
 		for ($level = 16; $level >= 0; $level--) {

@@ -87,7 +87,7 @@ ADR-005 makes Source, Synchronization and SynchronizationContract the shape of e
 `lib/sources.seed.json` has no PHP reader (documented in `register.d/environments-and-promotion.json`; `git grep sources.seed.json lib` finds only comments). Register.d fragments are imported by OpenRegister on install and listed by `CatalogRegistryService`, so that is where a dormant source becomes real and visible. No row is added to the orphaned file.
 
 ### D9: The live client goes through `CallService` and the seeded source
-`SloCurriculumClientHttp` finds the `slo-curriculum` source through OpenRegister's object service and calls `CallService::call()` with an `Accept` header per request (`application/jsontag` for `/tree/`). Credentials, rate limits, call logs and the circuit breaker are integriq's usual machinery. The operator sets the registered e-mail as `username` and the API key as `password` (write-only), or a credential broker `credentialRef`. DI binds the mock unless `slo.curriculum.feature_flag` is `1` or `true`, the same switch shape as `pdok.feature_flag`.
+`SloCurriculumClientHttp` finds the `slo-curriculum` source through OpenRegister's object service and calls `CallService::call()` with an `Accept` header per request (`application/jsontag` for `/tree/`). Credentials, rate limits, call logs and the circuit breaker are integriq's usual machinery. The operator sets the registered e-mail as `username` and the API key as `password` (write-only), or a credential broker `credentialRef`. The call passes `logBody: true`, because `CallService` otherwise drops a successful response body from the call log it returns; SLO's data is public, so logging it is harmless. DI binds the mock unless `slo.curriculum.feature_flag` is `1` or `true`, the same switch shape as `pdok.feature_flag`.
 
 ### D10: Attribution travels with every framework
 CC BY 4.0 requires credit, a licence link and a note of changes. `configuration.attribution.text` holds one Dutch sentence with all three. It is appended to each framework's `description`, returned in every import result, and the framework's `sourceRef` links the SLO root. The seeded source description repeats it.
@@ -120,7 +120,7 @@ No lifecycle, aggregation, calculation or notification is added.
 - No endpoint, no route, no user input reaches a URL: paths are built from profile data and SLO uuids.
 - The API key is a credential: it is never seeded, never logged, and lives on the source's write-only `password` or in the credential broker. The browser token in SLO's JavaScript is not used (discovery finding 1).
 - No personal data: SLO's curriculum is public reference data. The fixture and the fragment contain no names, e-mail addresses or identifiers of people; a test asserts it.
-- Logs carry counts, the set key, the root uuid and the client flavour only.
+- Logs carry counts, the set key, the root uuid, the client flavour and the live flag's state only.
 - JSONTag parsing never evaluates anything; malformed input throws `SloCurriculumException`.
 
 ## File structure

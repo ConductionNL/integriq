@@ -77,7 +77,7 @@
 - Browser: N/A, no UI
 
 ## Documentation (company-wide ADR-010)
-- N/A for user docs: no user-facing surface until the learniq write step lands. design.md records how to go live.
+- Operator page `docs/administrators/sources/slo-curriculum.md`: what ships, how to go live, what an import produces, attribution, limits. No end-user surface until the learniq write step lands.
 
 ## i18n (company-wide hydra ADR-007)
 - N/A: no UI strings. Goal texts and scale labels are Dutch data values.

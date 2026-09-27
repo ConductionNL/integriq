@@ -138,7 +138,7 @@ The system MUST list a set's roots through its profile's discovery route, send `
 - THEN the result contains "Examenprogramma Tekenen vwo" with its SLO uuid
 
 ### Requirement: No personal data and no secrets (REQ-009)
-The fragment, the recorded fixture and every log entry MUST contain no personal data and no credential. Log entries MUST carry only the set key, the root uuid, counts and the client flavour.
+The fragment, the recorded fixture and every log entry MUST contain no personal data and no credential. Log entries MUST carry only the set key, the root uuid, counts, the client flavour and whether the live flag is on.
 
 #### Scenario: The fixture holds no e-mail address or token
 - GIVEN the recorded fixture and the fragment
