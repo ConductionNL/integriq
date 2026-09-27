@@ -536,6 +536,10 @@ return [
 		['name' => 'migrationSources#index', 'url' => '/api/migration-sources', 'verb' => 'GET'],
 		['name' => 'migrationSources#preview', 'url' => '/api/migration-sources/preview', 'verb' => 'POST'],
 		['name' => 'migrationSources#validateMapping', 'url' => '/api/migration-sources/column-mapping/validate', 'verb' => 'POST'],
+		// integriq-adapter-rostering-imports: named-incumbent (ParnasSys, ESIS,
+		// Magister, Somtoday) column-mapping presets for the same read-only
+		// engine, so an operator picks a preset instead of authoring one.
+		['name' => 'migrationSources#presets', 'url' => '/api/migration-sources/column-mapping/presets', 'verb' => 'GET'],
 
 		// statutory-gateways-and-frameworks: which laws this instance reaches,
 		// how far it claims to meet each one, where every endpoint sits, and
