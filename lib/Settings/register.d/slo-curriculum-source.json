@@ -1,0 +1,464 @@
+{
+  "$comment": "ADR-037 register fragment (slo-kerndoelen-import). Seeds the DORMANT `slo-curriculum` source for the SLO curriculum REST API (opendata.slo.nl, CC BY 4.0) plus the two integriq mapping presets that name learniq's CompetencyFramework and Competency fields (lane contract CONTRACT-competency-fields.md, 2026-09-27). Read at runtime by OCA\\Integriq\\Adapters\\Slo\\SloCurriculumPresetRegistry (set profiles, attribution, proficiency scale, year table) and imported by OpenRegister on install like every register.d fragment. DORMANT: isEnabled false and no credential. SLO requires a registered e-mail + API key as HTTP Basic for every JSON call (probed 2026-09-27: 401 without one). To go live: register at https://opendata.slo.nl/curriculum/2021/api/v1/register/, set `username` (the e-mail) and `password` (the key, write-only) or configuration.authentication.credentialRef, enable the source, and set app config integriq/slo.curriculum.feature_flag to 1. yearNiveaus: SLO niveau uuid -> learniq applicableYears labels, built from slonl/curriculum-basis@2026.7 data/niveaus.json (SLO uuids are immutable). Not added to lib/sources.seed.json: that file has no PHP reader (see environments-and-promotion.json). See openspec/changes/slo-kerndoelen-import/design.md.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "slo-curriculum"
+        },
+        "name": "SLO curriculum (open data)",
+        "description": "Kerndoelen, examenprogramma's, leerdoelenkaarten en doelen uit de SLO curriculumdatabase, als doelenboom voor Learniq. Staat uit tot je een SLO API-sleutel invult. Bron: SLO, nationaal expertisecentrum curriculumontwikkeling (opendata.slo.nl). Licentie: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/deed.nl). Overgenomen via Integriq; de boomstructuur is omgezet naar het competentiemodel van Learniq.",
+        "type": "api",
+        "location": "https://opendata.slo.nl/curriculum/api/v1",
+        "auth": "basic",
+        "documentation": "https://opendata.slo.nl/curriculum/api/",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "frameworkMapping": "slo-curriculum-framework-mapping",
+          "competencyMapping": "slo-curriculum-competency-mapping",
+          "attribution": {
+            "publisher": "SLO, nationaal expertisecentrum curriculumontwikkeling",
+            "dataset": "SLO curriculumdatabase",
+            "sourceUrl": "https://opendata.slo.nl/",
+            "licence": "CC BY 4.0",
+            "licenceUrl": "https://creativecommons.org/licenses/by/4.0/deed.nl",
+            "text": "Bron: SLO, nationaal expertisecentrum curriculumontwikkeling (opendata.slo.nl). Licentie: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/deed.nl). Overgenomen via Integriq; de boomstructuur is omgezet naar het competentiemodel van Learniq."
+          },
+          "proficiencyLevels": [
+            {
+              "levelId": "introduce",
+              "label": "Kennismaken",
+              "order": 1
+            },
+            {
+              "levelId": "practise",
+              "label": "Oefenen",
+              "order": 2
+            },
+            {
+              "levelId": "master",
+              "label": "Beheersen",
+              "order": 3
+            }
+          ],
+          "sets": {
+            "fo-kerndoelen": {
+              "label": "Kerndoelen funderend onderwijs",
+              "sourceAuthority": "slo-kerndoelen",
+              "level": null,
+              "edition": null,
+              "editionFrom": "status",
+              "framework": "perRoot",
+              "discover": {
+                "path": "fo_kerndoelen/",
+                "query": {}
+              },
+              "levels": [
+                "FoDomein",
+                "FoSubdomein",
+                "FoKernzin",
+                "FoDoelzin"
+              ],
+              "leafTypes": [
+                "FoDoelzin"
+              ],
+              "leafNiveauFilter": [],
+              "subjectFrom": "root",
+              "namePrefix": "",
+              "fields": {
+                "FoKernzin": {
+                  "code": [
+                    "title"
+                  ],
+                  "title": [
+                    "description",
+                    "title"
+                  ],
+                  "description": []
+                },
+                "FoDoelzin": {
+                  "code": [
+                    "title"
+                  ],
+                  "title": [
+                    "description",
+                    "title"
+                  ],
+                  "description": []
+                }
+              }
+            },
+            "fo-examenprogramma": {
+              "label": "Examenprogramma funderend onderwijs",
+              "sourceAuthority": "slo-eindtermen",
+              "level": "vo",
+              "edition": null,
+              "editionFrom": "status",
+              "framework": "perRoot",
+              "discover": {
+                "path": "fo_examenprogrammas/",
+                "query": {}
+              },
+              "levels": [
+                "FoDomein",
+                "FoSubdomein",
+                "FoKernzin",
+                "FoDoelzin"
+              ],
+              "leafTypes": [
+                "FoDoelzin"
+              ],
+              "leafNiveauFilter": [],
+              "subjectFrom": "root",
+              "namePrefix": "",
+              "fields": {
+                "FoKernzin": {
+                  "code": [
+                    "title"
+                  ],
+                  "title": [
+                    "description",
+                    "title"
+                  ],
+                  "description": []
+                },
+                "FoDoelzin": {
+                  "code": [
+                    "title"
+                  ],
+                  "title": [
+                    "description",
+                    "title"
+                  ],
+                  "description": []
+                }
+              }
+            },
+            "kerndoelen-2006-po": {
+              "label": "Kerndoelen primair onderwijs (2006)",
+              "sourceAuthority": "slo-kerndoelen",
+              "level": "po",
+              "edition": "2006",
+              "editionFrom": null,
+              "framework": "aggregate",
+              "discover": {
+                "path": "kerndoel_vakleergebied/",
+                "query": {
+                  "perPage": 1000
+                }
+              },
+              "levels": [
+                "KerndoelDomein",
+                "Kerndoel"
+              ],
+              "leafTypes": [
+                "Kerndoel"
+              ],
+              "leafNiveauFilter": [
+                "512e4729-03a4-43a2-95ba-758071d1b725"
+              ],
+              "subjectFrom": "node",
+              "namePrefix": "",
+              "fields": {
+                "Kerndoel": {
+                  "code": [
+                    "prefix",
+                    "title"
+                  ],
+                  "title": [
+                    "kerndoelLabel",
+                    "title"
+                  ],
+                  "description": [
+                    "title"
+                  ]
+                }
+              }
+            },
+            "kerndoelen-2006-onderbouw-vo": {
+              "label": "Kerndoelen onderbouw voortgezet onderwijs (2006)",
+              "sourceAuthority": "slo-kerndoelen",
+              "level": "vo",
+              "edition": "2006",
+              "editionFrom": null,
+              "framework": "aggregate",
+              "discover": {
+                "path": "kerndoel_vakleergebied/",
+                "query": {
+                  "perPage": 1000
+                }
+              },
+              "levels": [
+                "KerndoelDomein",
+                "Kerndoel"
+              ],
+              "leafTypes": [
+                "Kerndoel"
+              ],
+              "leafNiveauFilter": [
+                "35715b0c-ad0c-46ab-ab1a-1387bb046486"
+              ],
+              "subjectFrom": "node",
+              "namePrefix": "",
+              "fields": {
+                "Kerndoel": {
+                  "code": [
+                    "prefix",
+                    "title"
+                  ],
+                  "title": [
+                    "kerndoelLabel",
+                    "title"
+                  ],
+                  "description": [
+                    "title"
+                  ]
+                }
+              }
+            },
+            "examenprogramma": {
+              "label": "Examenprogramma",
+              "sourceAuthority": "slo-eindtermen",
+              "level": "vo",
+              "edition": null,
+              "editionFrom": "versie",
+              "framework": "perRoot",
+              "discover": {
+                "path": "examenprogramma",
+                "query": {
+                  "perPage": 1000
+                }
+              },
+              "levels": [
+                "ExamenprogrammaDomein",
+                "ExamenprogrammaSubdomein",
+                "ExamenprogrammaEindterm"
+              ],
+              "leafTypes": [
+                "ExamenprogrammaEindterm"
+              ],
+              "leafNiveauFilter": [],
+              "subjectFrom": "root",
+              "namePrefix": "",
+              "fields": {}
+            },
+            "leerdoelenkaarten": {
+              "label": "Leerdoelenkaart",
+              "sourceAuthority": "other",
+              "level": null,
+              "edition": null,
+              "editionFrom": null,
+              "framework": "perRoot",
+              "discover": {
+                "path": "ldk_vakleergebied/",
+                "query": {
+                  "perPage": 1000
+                }
+              },
+              "levels": [
+                "LdkVakkern",
+                "LdkVaksubkern",
+                "LdkVakinhoud",
+                "Doelniveau"
+              ],
+              "leafTypes": [
+                "Doelniveau"
+              ],
+              "leafNiveauFilter": [],
+              "subjectFrom": "root",
+              "namePrefix": "Leerdoelenkaart ",
+              "fields": {
+                "Doelniveau": {
+                  "code": [
+                    "prefix",
+                    "Doel.0.title"
+                  ],
+                  "title": [
+                    "Doel.0.title",
+                    "title"
+                  ],
+                  "description": [
+                    "Doel.0.description"
+                  ]
+                }
+              }
+            }
+          },
+          "yearNiveaus": {
+            "82ca4442-246c-44b3-a562-7b101793feb4": [
+              "groep 1"
+            ],
+            "c007e4dd-a3d4-4f33-902d-778e3bbeeddb": [
+              "groep 2"
+            ],
+            "25a2f4f4-cf91-4b16-94bc-6d9e6fad88f4": [
+              "groep 3"
+            ],
+            "5c072b3f-7f58-40ee-9799-27981f0a6b2b": [
+              "groep 4"
+            ],
+            "bc213214-b83d-4673-b9c1-8fdaa63d6d56": [
+              "groep 5"
+            ],
+            "abfb190f-e814-46f5-a9cc-ebd53f04018e": [
+              "groep 6"
+            ],
+            "a4813bb6-cf63-4594-af56-6afb321723d8": [
+              "groep 7"
+            ],
+            "95138558-9f65-4888-8ea3-8acce5eea273": [
+              "groep 8"
+            ],
+            "e222c093-f0c6-4895-9dfb-c08eafb27aef": [
+              "groep 1",
+              "groep 2"
+            ],
+            "e0d54104-4bbc-4e6a-9c53-114f0af56027": [
+              "groep 3",
+              "groep 4"
+            ],
+            "a719649f-03ca-48cf-b689-252b109de32c": [
+              "groep 5",
+              "groep 6"
+            ],
+            "457f3ac7-522b-41f4-b2c7-6f4c2d891faf": [
+              "groep 7",
+              "groep 8"
+            ],
+            "8da0ce4d-daab-40ea-93f7-bb6e8e1a31c3": [
+              "leerjaar 1"
+            ],
+            "3a49d130-5ce7-465d-80c9-5fcd2bd70c05": [
+              "leerjaar 2"
+            ],
+            "8550fb8a-20ac-489f-83eb-d7f4e8a2401f": [
+              "leerjaar 3"
+            ],
+            "151c4de1-e462-468c-bf9a-8c7234c59d64": [
+              "leerjaar 4"
+            ],
+            "75a00adb-870c-4f05-be63-41411c48324a": [
+              "leerjaar 1"
+            ],
+            "8d46380e-9d6b-4c62-a1a6-5f7c06e1f79d": [
+              "leerjaar 2"
+            ],
+            "49af771b-6d9e-4d8f-bcaf-ac9cc9ee753e": [
+              "leerjaar 3"
+            ],
+            "ee1eada7-7866-45e6-b1d8-b7062a8fe08a": [
+              "leerjaar 4"
+            ],
+            "12e85a55-b3ae-4e7f-a2a0-d645f4c573bf": [
+              "leerjaar 1"
+            ],
+            "30ce6ff5-d654-4a97-a6d4-9c8936f87ca6": [
+              "leerjaar 2"
+            ],
+            "f61c889e-4731-4321-802d-c7e86081499c": [
+              "leerjaar 3"
+            ],
+            "e72dacdd-968b-40ac-ad2c-8bd14c24e89f": [
+              "leerjaar 4"
+            ],
+            "54edd410-2315-4eb3-a573-0e1cd59184fd": [
+              "leerjaar 1"
+            ],
+            "90a5a228-e8de-473d-84cc-a915bf6107dd": [
+              "leerjaar 2"
+            ],
+            "e51e6137-05d4-45ca-aed0-6e91551257d4": [
+              "leerjaar 3"
+            ],
+            "84f30df0-f194-435e-98c8-c4559756ec24": [
+              "leerjaar 4"
+            ],
+            "78f5cabe-6649-4dc3-84bf-36d82c6c2d31": [
+              "leerjaar 1"
+            ],
+            "eaa0c07f-193e-4be5-8dc6-a00bbfc7a446": [
+              "leerjaar 2"
+            ],
+            "af3ecd88-a654-4458-9c5b-1e1f7d09f463": [
+              "leerjaar 3"
+            ],
+            "70af3752-c6ad-43d9-aa0c-9ff099931f8a": [
+              "leerjaar 4"
+            ],
+            "cb61531d-61eb-4412-a52f-ca065ca37e39": [
+              "leerjaar 5"
+            ],
+            "ac188375-0a1a-4984-ac80-14d04a086a19": [
+              "leerjaar 1"
+            ],
+            "17da6976-2f1b-4214-a471-168f469d7e04": [
+              "leerjaar 2"
+            ],
+            "b924d4ad-65a1-41dc-b704-c7786eb4aec0": [
+              "leerjaar 3"
+            ],
+            "e2026706-0829-4a4c-b726-9409b6f407e1": [
+              "leerjaar 4"
+            ],
+            "f2513775-3d54-423b-803b-15e06a8c89a8": [
+              "leerjaar 5"
+            ],
+            "85d15c83-e2b4-4359-8475-a355591aaa1a": [
+              "leerjaar 6"
+            ]
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "slo-curriculum-framework-mapping"
+        },
+        "name": "SLO curriculum framework mapping",
+        "description": "Maps one normalised SLO set onto a learniq CompetencyFramework. Keys are learniq field names, values name a field of the normalised framework record (copied); anything else is a literal.",
+        "mapping": {
+          "name": "name",
+          "sourceAuthority": "sourceAuthority",
+          "sourceRef": "sourceRef",
+          "edition": "edition",
+          "level": "level",
+          "description": "description",
+          "proficiencyLevels": "proficiencyLevels",
+          "tenant_id": "tenantId"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "slo-curriculum-competency-mapping"
+        },
+        "name": "SLO curriculum competency mapping",
+        "description": "Maps one normalised SLO node onto a learniq Competency. applicableYears and subjectId follow learniq competency-year-scope (CONTRACT-competency-fields.md). Values name a field of the normalised node record.",
+        "mapping": {
+          "frameworkId": "frameworkId",
+          "parentId": "parentId",
+          "code": "code",
+          "title": "title",
+          "description": "description",
+          "order": "order",
+          "applicableYears": "applicableYears",
+          "subjectId": "subjectId",
+          "tenant_id": "tenantId"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

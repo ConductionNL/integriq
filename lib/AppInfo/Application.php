@@ -40,6 +40,9 @@ use OCA\Integriq\Adapters\Pdok\PdokWfsClientMock;
 use OCA\Integriq\Adapters\Pdok\PdokWmsClient;
 use OCA\Integriq\Adapters\Pdok\PdokWmsClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokWmsClientMock;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
 use OCA\Integriq\Capabilities;
 use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
@@ -134,6 +137,7 @@ use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
 use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
+use OCA\Integriq\Sources\Slo\SloCurriculumSourceAdapter;
 use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
@@ -390,6 +394,22 @@ class Application extends App implements IBootstrap {
 				}
 
 				return $c->get(PdokGeocodingClientMock::class);
+			}
+		);
+
+		// Dormant SLO curriculum adapter (slo-kerndoelen-import, lib/Sources/Slo/).
+		// The abstract `SloCurriculumClient` resolves to the recorded-fixture
+		// mock until `slo.curriculum.feature_flag` is '1' or 'true'; then to
+		// the live client, which calls SLO through CallService with the
+		// seeded `slo-curriculum` source (that source also stays disabled
+		// until an operator enters SLO's API key).
+		$context->registerService(
+			SloCurriculumClient::class,
+			static function ($c) {
+				$live = ['1' => SloCurriculumClientHttp::class, 'true' => SloCurriculumClientHttp::class];
+				$raw = strtolower($c->get('OCP\IAppConfig')->getValueString('integriq', SloCurriculumSourceAdapter::FLAG_KEY, '0'));
+
+				return $c->get($live[$raw] ?? SloCurriculumClientMock::class);
 			}
 		);
 

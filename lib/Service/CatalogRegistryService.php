@@ -97,6 +97,8 @@ class CatalogRegistryService {
 		'whatsapp-cloud-api' => 'Messaging',
 		'smartdocuments' => 'Document generation',
 		'xential' => 'Document generation',
+		// SLO curriculum open data (slo-kerndoelen-import): kerndoelen, examenprogramma's.
+		'slo-curriculum' => 'Education data',
 	];
 
 	/**
