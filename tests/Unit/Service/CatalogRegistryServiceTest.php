@@ -130,6 +130,9 @@ class CatalogRegistryServiceTest extends TestCase {
 		// ideal-ouderbijdrage-source: dormant/mock payment source template —
 		// @spec openspec/specs/psp-source-template/spec.md#requirement-a-seeded-mock-mode-ideal-payment-source-template-is-discoverable-in-the-catalog-req-001
 		$this->assertContains('source-template:ideal-ouderbijdrage', $slugs);
+		// slo-kerndoelen-import: dormant SLO curriculum source template:
+		// @spec openspec/specs/slo-curriculum-import/spec.md#requirement-a-dormant-slo-source-template-carries-the-set-profiles-and-the-attribution-req-001
+		$this->assertContains('source-template:slo-curriculum', $slugs);
 
 		// No duplicates — slugs are the upsert keys.
 		$this->assertSame(count($slugs), count(array_unique($slugs)));
