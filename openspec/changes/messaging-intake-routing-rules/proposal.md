@@ -123,3 +123,7 @@ dossiq builds nothing new for this change. Its two listeners already answer
 both events. What dossiq must keep true is that a case type an administrator
 picks in the rule editor is one `IntakeMessageRoutedListener` accepts
 (`isForACase()`, dossiq `lib/Listener/IntakeMessageRoutedListener.php:104`).
+
+## Open question
+
+The Outlook task pane (item 4 above) reverses a line in `teams-messages-open-cases`, whose proposal left "an Outlook add-in or an Office task pane" out because "it needs a product decision before it needs a spec". The reason to specify it now is `dossiq:1.9`: opencase's Outlook task pane is one of the two competitor cells. Whether the pane is built is Ruben's product decision. Items 1, 2, 3 and 5 do not depend on the answer; if the answer is no, the pane's task is closed with that reason.

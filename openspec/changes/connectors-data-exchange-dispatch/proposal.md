@@ -31,8 +31,11 @@ This change covers four rows, all from sibling matrices.
     "The REST API provides access to most iSpring LMS functions"; webhooks
     at https://ispringhelpdocs.com/ispring-learn/webhook-62863671.html.
   The decision: "Learniq's data-exchange job calls api/sources/{target}/run
-  on integriq, which integriq does not serve, so every run fails; the
-  adapters that landed on 2026-09-27 have no trigger."
+  on integriq, which integriq does not serve, so every run fails. The ROD,
+  Verzuimloket, OSO and UWLR adapters have routes of their own in their own
+  payload shapes; the rostering, SWV and LVS adapters have no caller at
+  all." (Corrected after this change's code reading; the first wording said
+  no adapter had a trigger.)
 - `planninq:sib-learniq-att-import-a-timetable`, "Import a timetable from
   your scheduling software". Two competitors rate it yes:
   - untis: https://untisroostersoftware.eu/webuntis-home/ and
