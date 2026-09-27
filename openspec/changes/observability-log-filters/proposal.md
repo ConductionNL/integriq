@@ -57,9 +57,11 @@ This change covers one row: `integriq:obs-filter-logs`.
   page-level filter, so each shows every call, inbound and outbound.
 - `app-shell-and-logs-ui` REQ-SHELLUI-003 forbids an integriq-owned log index
   component: the log pages are rendered by `@conduction/nextcloud-vue`'s
-  `CnLogsPage`. The version integriq locks, 2.39.0 (`package-lock.json`),
-  renders no filter bar in `CnLogsPage`, while the same library ships
-  `CnFilterBar` and `CnDateRangePicker`.
+  `CnLogsPage`. The version integriq locked when this was read, 2.39.0
+  (`package-lock.json`), renders no filter bar in `CnLogsPage`, and neither
+  does 2.57.1, which #2201 moved integriq to (its template holds only the
+  page header, the loading and empty states and the data table). The same
+  library ships `CnFilterBar` and `CnDateRangePicker`.
 
 ## What this change builds
 
