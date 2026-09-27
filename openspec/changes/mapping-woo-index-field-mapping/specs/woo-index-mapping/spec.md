@@ -38,8 +38,8 @@ and MUST NOT set an output.
 
 A mapping MUST carry `callableBy`, a list of app ids, empty by default.
 Integriq MUST refuse a `MappingExecutionRequestedEvent` from an app not on the
-list with code `not-allowed`, and MUST NOT run the mapping. Only an
-administrator MUST be able to change `callableBy`.
+list with code `not-allowed`, and MUST NOT run the mapping. Changing
+`callableBy` MUST need the same right as changing the mapping's rules.
 
 #### Scenario: a mapping written for a synchronization is not callable
 - GIVEN the seeded mapping `lowercase-keys` with no `callableBy`

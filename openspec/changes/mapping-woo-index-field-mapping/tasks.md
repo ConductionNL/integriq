@@ -17,7 +17,7 @@ Kind: code. Sibling matrix row `opencatalogi:woo-metadata-map`, integriq's half.
 - **files**: `lib/Settings/register.d/mapping-woo-index-field-mapping.json`, `lib/EventListener/MappingExecutionRequestedListener.php`, `src/views/wrappers/MappingDetailPage.vue`
 - **acceptance_criteria**:
   - GIVEN a mapping without `callableBy` WHEN a sibling dispatches it THEN it is refused with `not-allowed`
-  - GIVEN a non-administrator WHEN they try to change `callableBy` THEN the change is refused
+  - GIVEN a user without the right to update the mapping WHEN they try to change `callableBy` THEN the change is refused like any other edit of the mapping
 - [ ] Implement
 - [ ] Test (PHPUnit on the listener; `node tests/validate-register.js`)
 

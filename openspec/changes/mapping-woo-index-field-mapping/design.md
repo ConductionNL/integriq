@@ -22,8 +22,8 @@ administrator edits them on `/mappings`.
   mapping `woo-index-publication` through `x-openregister-seed`.
 - Page: none new. The seeded mapping appears on the existing `Mappings` and
   `MappingDetail` pages (`src/manifest.json`, page ids `Mappings` and
-  `MappingDetail`); the detail page shows `callableBy` as a read-only list for
-  anyone but an administrator.
+  `MappingDetail`); the detail page shows `callableBy` next to the rules and
+  saves it with them.
 
 ## D1. A typed event, not a route or a shared service
 
@@ -87,6 +87,11 @@ mappings (`lib/Settings/integriq_seed_data.json:268`). The existing mappings
 get no `callableBy`, so no app can dispatch them.
 
 ## Risks
+
+- `callableBy` is only as protected as the mapping itself. The `mapping`
+  schema carries no `authorization` block today and falls back to
+  OpenRegister's default, so who may edit a mapping, and so its `callableBy`,
+  is set by `platform-action-rights-coverage` (`object.mapping.update`).
 
 - A sitemap with many publications dispatches one event per publication. The
   listener caches the resolved mapping for the request, so the cost is the
