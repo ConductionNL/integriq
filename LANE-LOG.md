@@ -375,23 +375,223 @@ learniq's own `DataMappingProfile`-driven listener to materialise into
   modulo the two known pre-existing fleet-wide findings (gate-53, and the
   advisory gate-18/gate-19 warnings shared by every app in scope).
 
-## Change 4/4: integriq-adapter-uwlr-eduv — not started
+## Change 4/4: integriq-adapter-uwlr-eduv
 
-Grounded against `lq-contracts`'s `uwlr-eduv-basispoort-contract` (openspec
-artifacts present on disk in that lane, branch `feat/uwlr-eduv-basispoort-contract`,
-not yet implemented/committed there as of this read — content may still
-move). Four job targets: `uwlr` (pupil/group/teacher export carrying eckId;
-generic results-back import seed deliberately reuses `LvsResult` from
-`lvs-import-contract` rather than a second results schema), `edu-v` (three
-separate qualified-data-service export seeds: Onderwijsdeelnemers,
-Onderwijsgroepen, Onderwijsmedewerkers — Edu-V certifies per data service,
-not once per connection), `basispoort` (`direction: sync`, PO-only, SSO +
-pupil/group/staff export), `entree-content` (`direction: sync`, VO content-SSO
-hand-off — explicitly NOT the same concern as the separate, also-unbuilt
-`entree-surfconext-sso-contract`, which is learniq's own federated LOGIN
-boundary). Two learniq-side dependencies remain open/unbuilt as of this
-read: `uwlr-eduv-basispoort-contract` itself (artifacts exist, not
-implemented) and `entree-surfconext-sso-contract` (not started anywhere
-visible). Will design integriq's adapter against the four targets above and
-document both dependencies as open in the proposal, per the same pattern
-used for ROD's DUO-certificate gate.
+**Correction on re-check**: both learniq-side dependencies are further
+along than the earlier note above said. `uwlr-eduv-basispoort-contract` is
+committed (`1c437d6` on `feat/uwlr-eduv-basispoort-contract`, learniq PR
+#914 open) and `entree-surfconext-sso-contract` is also committed with
+learniq PR #925 open — neither is "not started". Read both, read-only, via
+`git ls-tree`/`git show <remote-branch>:<path>` against `lq-contracts`'s
+checkout without touching its working tree or checking out its branch (the
+two-agents-in-one-checkout rule), since that lane had since moved on to
+`feat/data-mapping-profile-presets`.
+
+Grounded against `uwlr-eduv-basispoort-contract`'s
+`openspec/changes/uwlr-eduv-basispoort-contract/specs/data-exchange/spec.md`:
+four job targets — `uwlr` (pupil/group/teacher export carrying `eckId`;
+the generic results-back import direction deliberately reuses `LvsResult`
+from `lvs-import-contract` rather than a second results schema, and is
+explicitly out of THIS change's scope — it belongs to the separate,
+not-yet-built `integriq-adapter-lvs-imports`), `edu-v` (three separate
+qualified-data-service export seeds: Onderwijsdeelnemers, Onderwijsgroepen,
+Onderwijsmedewerkers — Edu-V certifies per data service, not once per
+connection), `basispoort` (`direction: sync`, PO-only, SSO + pupil/group/
+staff export), `entree-content` (`direction: sync`, VO content-SSO
+hand-off — explicitly NOT the same concern as `entree-surfconext-sso-contract`,
+which is learniq's own federated LOGIN boundary, confirmed by reading that
+contract's own spec too). `M3-integrations.md` row I4/I6 and
+`decisions.md` D3 ground the motivation; `recon/legal-po-2026-09-25.md`
+names no statutory deadline for this family (unlike ROD/Verzuimloket) —
+noted explicitly in the proposal rather than assumed.
+
+- **OpenSpec**: `openspec/changes/integriq-adapter-uwlr-eduv/` — proposal,
+  contract, design, migration, specs/uwlr-eduv-adapter/spec.md (REQ-001
+  through REQ-009), test-plan (13 TCs), tasks (10 tasks, 21 checkboxes, all
+  `[x]`). `openspec validate integriq-adapter-uwlr-eduv --strict` = PASS
+  (exit 0).
+- **Implemented**: one shared `UwlrEduVProviderInterface`/`Registry`/
+  `LogUwlrEduVProvider`/`UwlrEduVKennisnetClient` (provider id
+  `uwlr-eduv`, reuses the shared Digikoppeling transport — same
+  fail-closed `PkiOverheidCredentialResolver` gap as the other three
+  adapters), four target-specific translators
+  (`UwlrExportEnvelopeTranslator` — 3 subtypes, `EduVExportEnvelopeTranslator`
+  — 3 qualified data services each naming its own `targetSchema`,
+  `BasispoortSyncTranslator`, `EntreeContentSyncTranslator` — all with the
+  literal-leak guard), one shared `UwlrEduVAcknowledgementTranslator` +
+  `UwlrEduVAcknowledgementReceivedEvent` (a deliberately generic ack shape,
+  flagged in design.md "Open Questions" since none of the four targets'
+  real wire acknowledgement formats are documented in the corpus —
+  production traffic for all four is separately blocked on certification
+  anyway), `UwlrEduVService` (send/sync/receiveReturn/retryFailed
+  orchestration across all four targets, one `uwlr_eduv_message` schema
+  with a `target`+`subtype` discriminator), `UwlrEduVController` (5
+  routes: `uwlr`/`eduV`/`basispoort`/`entreeContent` NoAdminRequired +
+  shared `retour` PublicPage+HMAC via a `handleSignedInbound()` helper,
+  mirroring OSO's pattern), `UwlrEduVRetryJob`, `UwlrEduVAdapter` catalogue
+  card (icon `CloudSyncOutline`, pre-verified registered in `src/icons.js`
+  before writing the schema, distinct from `SchoolOutline`/`SwapHorizontal`
+  used by the other three adapters).
+- `GatewayCatalogue::entries()` kept at 99 lines (no `'transport'` key on
+  the new entry, per the ROD phpmd lesson).
+- Diff-scoped verification: `php -l` clean on all 31 touched/added files;
+  `phpunit --filter UwlrEduV` 48 tests/108 assertions green on the first
+  run; the two ratchet tests (`RegisterDescriptorTest`/
+  `SchemaAuthorizationRatchetTest`) green too (61 tests/576 assertions).
+- **phpcs false-alarm caught and corrected**: running
+  `vendor/bin/phpcs --standard=phpcs.xml <explicit test file paths>`
+  reported 60+ "named parameters" errors across my new test files —
+  including against a copy of `feat/integriq-adapter-oso`'s OWN
+  `OsoControllerTest.php`, proving it wasn't something I did wrong.
+  Root cause: `phpcs.xml` declares `<file>lib</file>`, so the REAL gate
+  (`composer phpcs`, invoked with no path argument) only ever scans
+  `lib/` — passing `tests/...` paths explicitly on the command line
+  overrides that scope and scans files the gate never touches. Re-ran
+  with the gate's own invocation (`vendor/bin/phpcs --standard=phpcs.xml`,
+  no args) — 0 errors across the whole `lib/` tree, 209 files, only the
+  same 670 pre-existing warnings. Documented here so the next lane doesn't
+  re-discover this the hard way.
+- **Two real phpmd findings, fixed**: `UwlrEduVController` hit
+  `CouplingBetweenObjects` (13 dependencies) — added the same
+  `@SuppressWarnings` used by `OsoService`. `UwlrEduVService`'s
+  `$entreeContentTranslator` property (23 chars) hit `LongVariable` (limit
+  20) — renamed to `$entreeTranslator` via two sed passes (first pass
+  `\$entreeContentTranslator` missed the `->entreeContentTranslator`
+  property-access form, exactly the same miss documented for
+  `RodService` in change 1 — caught immediately via `grep -n` showing the
+  leftover, fixed with a second anchored pass, verified `php -l` and the
+  full `UwlrEduV` test filter still green afterward).
+- `composer check:strict` (via `with-slot.sh`): **ALL CHECKS PASSED** (exit
+  0) — `check:no-legacy-types`/`check:routes`/`lint`/`phpcs`/`phpmd`/
+  `psalm`/`phpstan` all clean, `test:all` 3888 tests/13308 assertions/0
+  failures/0 errors.
+- Hydra gates (whole-tree, no `--base`): 75/93 declared gates ran, 1
+  failure (`gate-53`, same pre-existing fleet-wide crash), `gate-60
+  icon-vocabulary` PASS, 2 advisory WARNINGs (fleet-wide, none belonging
+  to this change).
+- **Coordinator update mid-run**: a split message briefly reassigned oso
+  and uwlr-eduv to fresh lanes `iq-adapters-c`/`iq-adapters-d`; caught it,
+  stopped the in-flight `check:strict` cleanly (verified the PIDs
+  belonged to this lane's own dir before considering a kill, per the
+  pkill-by-name lesson), then a follow-up message reversed it (both PRs
+  #2181/#2182 already existed before the split reached me; the fresh
+  uwlr lane was stood down) — resumed the same background run rather
+  than restarting it, no work lost.
+- **Second coordinator update**: a review of PR #2182 found two CI gaps
+  local runs never surface without a delta base — `check:schema-l10n`
+  (12 new schema strings with no catalogue key) and hydra gate-101
+  `demo-data-coverage` (new schema has 0 demo objects, needs 3). Root
+  cause for why local verification missed both: `check:schema-l10n` is a
+  ratchet gated on `npm run` (never part of `composer check:strict`), and
+  gate-101 explicitly SKIPS (not passes) with no `--base` — every hydra
+  run in this lane so far had no base, so gate-101 always read NOT
+  APPLICABLE, never FAIL. Fixed on THIS branch from the start (applying
+  to rod/verzuimloket/oso next, per the coordinator's instruction):
+  - `check:schema-l10n`: added 12 catalogue keys to `l10n/en.json` (identity)
+    and `l10n/nl.json` (Dutch), ran `npm run l10n:build`. Re-verified:
+    `node scripts/check-schema-l10n.js` — 0 uncovered, exit 0.
+  - gate-101: ran hydra-gates' own `generate_mock_register.py . --keep`
+    first — it dropped the pre-existing `components.schemas` block
+    entirely (11459 -> 4940 lines), an unrelated and much larger blast
+    radius than this PR should carry, so discarded. Instead imported the
+    script's own `_object_for()` function directly, generated 4 valid
+    objects (covering all 4 `target` enum values) for `uwlr_eduv_message`
+    only, and spliced them into the existing `integriq_mock_register.json`
+    via a targeted JSON edit — caught one incidental reformatting diff
+    (one `enum` array expanded from one line to four by the `json.dump`
+    round-trip) via `diff` against a pre-change backup, fixed it back to
+    the original compact form, confirmed the final diff was purely
+    additive (64 insertions, 0 deletions). Re-verified standalone WITH a
+    delta base this time: `echo lib/Settings/integriq_register.json |
+    python3 .../generate_mock_register.py . --check --only-changed` ->
+    `checked 68 schema(s)`, exit 0.
+- Committed `8e629f312` on `feat/integriq-adapter-uwlr-eduv` (cut from
+  `origin/development`). 49 files, 5399 insertions, 6 deletions (the
+  deletions are the l10n/mock-register fixes above). `.tmp/` and
+  `LANE-LOG.md` explicitly excluded from the commit.
+- Pushed and opened **PR #2183** against `development`
+  (https://github.com/ConductionNL/integriq/pull/2183).
+- `opsx-verify` run headlessly: 21/21 tasks complete, 9/9 requirements
+  have implementation evidence, contract.md's 5 endpoints match
+  `routes.php` exactly, 0 CRITICAL/WARNING/SUGGESTION issues. Verdict
+  posted as a PR comment
+  (https://github.com/ConductionNL/integriq/pull/2183#issuecomment-5846528112).
+- **Status: DONE.** Branch `feat/integriq-adapter-uwlr-eduv`, PR #2183.
+
+## Follow-up: back-porting the l10n + gate-101 fixes to #2176/#2181/#2182
+
+Per the coordinator's instruction, applied the same two fixes to all
+three earlier PRs — commit and push to each existing branch directly, no
+new PR. All three done, in this order (re-checked out each branch in
+this same clone sequentially, `git status --short` clean before editing
+each, per the two-agents-in-one-checkout rule — this clone was mine
+alone throughout, the split into fresh `iq-adapters-c`/`-d` lanes having
+already been reversed):
+
+### #2176 (rod) — commit `f97a1c907`
+- `check:schema-l10n`: 13 uncovered `rod_message` strings (title/description
+  pairs for `kenmerk`, `berichtsoort`, `status`, `bsnHash`, `signaalcode`,
+  `signaalOmschrijving`, `ref`, `direction`, plus the schema title). Added
+  to `l10n/en.json`/`l10n/nl.json`, `npm run l10n:build`. Verified: 0
+  uncovered, exit 0.
+- gate-101: `rod_message` had 0 demo objects. Generated 4 (covering all 4
+  `berichtsoort` enum values: inschrijving/uitschrijving/
+  verblijfsgegevens/schooladvies) via `generate_mock_register.py`'s own
+  `_object_for()`, spliced additively into `integriq_mock_register.json`.
+  Caught and fixed the same one-line `contentMode` enum reformatting
+  artefact as on the uwlr-eduv branch (the `json.dump` round-trip
+  expanding one pre-existing compact array — not schema-specific, this
+  recurs on every branch since it's the same file). Verified with a
+  delta base: `checked 68 schema(s)`, exit 0.
+- PR comment posted: https://github.com/ConductionNL/integriq/pull/2176#issuecomment-5846655280
+
+### #2181 (verzuimloket) — commit `102f00203`
+- `check:schema-l10n`: 13 uncovered `verzuim_message` strings (same shape
+  as rod's, `meldingType` in place of `berichtsoort`). Verified: 0
+  uncovered, exit 0.
+- gate-101: 3 demo objects added, covering all 3 `meldingType` values
+  (eerste-melding/herhaalmelding/langdurig-relatief-verzuim). Same
+  `contentMode` reformatting artefact caught and fixed. Verified:
+  `checked 68 schema(s)`, exit 0.
+- PR comment posted: https://github.com/ConductionNL/integriq/pull/2181#issuecomment-5846655451
+
+### #2182 (oso) — commit `63d1ddfae`
+- `check:schema-l10n`: 10 uncovered `oso_message` strings, matching the
+  coordinator's original report exactly. Verified: 0 uncovered, exit 0.
+- gate-101: 3 demo objects added, covering both `direction` values
+  (export/import) and 3 `status` values. Same `contentMode` artefact
+  caught and fixed. Verified: `checked 68 schema(s)`, exit 0.
+- PR comment posted: https://github.com/ConductionNL/integriq/pull/2182#issuecomment-5846655655
+
+All three: `vendor/bin/phpunit --filter "<AdapterName>|RegisterDescriptorTest|SchemaAuthorizationRatchetTest"`
+re-run green after the fixes, `git status --short` showed exactly the 5
+expected files touched (`l10n/en.js`, `l10n/en.json`, `l10n/nl.js`,
+`l10n/nl.json`, `lib/Settings/integriq_mock_register.json`) before each
+commit.
+
+**Lesson for the next lane**: `composer check:strict` alone is not
+sufficient pre-push verification for a new OR schema. Two more checks
+are needed, both invisible without a delta base: `node
+scripts/check-schema-l10n.js` (an npm ratchet, not part of
+`check:strict`), and `echo lib/Settings/<app>_register.json | python3
+.../generate_mock_register.py . --check --only-changed` for gate-101 (it
+SKIPS silently, not passes, when hydra-gates runs with no `--base` — every
+local run in this lane had none, so this gap was invisible until CI's
+actual PR-diff run caught it). Run both standalone before every push
+that adds or changes a schema. If gate-101 fails, prefer splicing 3-4
+hand-picked `_object_for()` objects into the existing mock register file
+over `--keep`/full regenerate — the latter can silently drop the file's
+`components.schemas` block entirely, a much larger and out-of-scope
+blast radius.
+
+## All four changes: final status
+
+| # | Change | Branch | PR | Verdict |
+|---|---|---|---|---|
+| 1 | integriq-adapter-rod | `feat/integriq-adapter-rod` | #2176 | check:strict + hydra gates green (gate-53 only pre-existing); l10n + gate-101 fixed |
+| 2 | integriq-adapter-verzuimloket | `feat/integriq-adapter-verzuimloket` | #2181 | check:strict + hydra gates green (gate-53 only pre-existing); l10n + gate-101 fixed |
+| 3 | integriq-adapter-oso | `feat/integriq-adapter-oso` | #2182 | check:strict + hydra gates green (gate-53 only pre-existing); l10n + gate-101 fixed |
+| 4 | integriq-adapter-uwlr-eduv | `feat/integriq-adapter-uwlr-eduv` | #2183 | check:strict + hydra gates green (gate-53 only pre-existing); l10n + gate-101 built in from the start |
+
+All four `opsx-verify`'d headlessly with 0 CRITICAL/WARNING/SUGGESTION
+issues, verdicts posted as PR comments. Lane task list complete.

@@ -1234,7 +1234,18 @@
         "The provider-returned reference for an OUTBOUND export; null on import records": "De door de aanbieder teruggegeven referentie voor een UITGAANDE export; null bij importrecords",
         "The pupil's pseudonymous ECK iD, on either direction": "Het pseudonieme ECK-iD van de leerling, in beide richtingen",
         "The sending school's BRIN on an INBOUND import; null on export records": "Het BRIN van de verzendende school bij een INKOMENDE import; null bij exportrecords",
-        "Whether this record is an outbound export (or its retour) or an inbound import": "Of dit record een uitgaande export (of het retour ervan) of een inkomende import is"
+        "Whether this record is an outbound export (or its retour) or an inbound import": "Of dit record een uitgaande export (of het retour ervan) of een inkomende import is",
+        "ECK iD": "ECK-iD",
+        "Outbound send/sync outcome, or the acknowledgement outcome for a retour record": "Uitkomst van de uitgaande verzending/synchronisatie, of de bevestigingsuitkomst voor een retourbericht",
+        "Subtype": "Subtype",
+        "The caller-supplied correlation id, echoed back by the acknowledgement leg": "Het door de aanroeper opgegeven correlatie-id, teruggegeven door het bevestigingsdeel",
+        "The pseudonymous pupil ECK iD this record concerns, when applicable": "Het pseudonieme ECK-iD van de leerling waar dit record over gaat, indien van toepassing",
+        "The transport-assigned reference (e.g. MOCK-UWLREDUV-<n> for the log provider); null on a retour-only record": "De door het transport toegekende referentie (bijvoorbeeld MOCK-UWLREDUV-<n> voor de log-provider); null bij een record dat alleen een retour is",
+        "Timestamp this send/sync/acknowledgement was recorded": "Tijdstip waarop deze verzending/synchronisatie/bevestiging is vastgelegd",
+        "UWLR/Edu-V Message": "UWLR/Edu-V-bericht",
+        "Which of the four connection families this record belongs to": "Tot welke van de vier koppelingsfamilies dit record behoort",
+        "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync": "uwlr/edu-v zijn export (eenrichtingsverzending); basispoort/entree-content zijn sync",
+        "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null voor basispoort/entree-content."
     },
     "plurals": {}
 }

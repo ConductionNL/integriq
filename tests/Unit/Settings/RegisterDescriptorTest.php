@@ -95,6 +95,9 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 51 — `oso_message` added by openspec/changes/integriq-adapter-oso,
 	 * bringing the count to 52.
 	 *
+	 * Was 52 — `uwlr_eduv_message` added by openspec/changes/integriq-adapter-uwlr-eduv,
+	 * bringing the count to 53.
+	 *
 	 * @var array<string, string>
 	 */
 	private const SCHEMA_SLUGS = [
@@ -186,6 +189,9 @@ class RegisterDescriptorTest extends TestCase {
 		// write is wrapped in a catch that logs a warning, so every record of
 		// what was posted was dropped without anything erroring.
 		'DigitalPostMessage' => 'digitalPostMessage',
+		// UWLR/Edu-V/Basispoort/Entree-content adapter — added by
+		// integriq-adapter-uwlr-eduv spec.
+		'UwlrEduVMessage' => 'uwlr_eduv_message',
 	];
 
 	/**

@@ -118,6 +118,9 @@ use OCA\Integriq\Service\Verzuimloket\VerzuimloketProviderRegistry;
 use OCA\Integriq\Service\Oso\LogOsoProvider;
 use OCA\Integriq\Service\Oso\OsoKennisnetClient;
 use OCA\Integriq\Service\Oso\OsoProviderRegistry;
+use OCA\Integriq\Service\UwlrEduV\LogUwlrEduVProvider;
+use OCA\Integriq\Service\UwlrEduV\UwlrEduVKennisnetClient;
+use OCA\Integriq\Service\UwlrEduV\UwlrEduVProviderRegistry;
 use OCA\Integriq\Gateway\GatewayRegistry;
 use OCA\Integriq\Gateway\GatewayTransport;
 use OCA\Integriq\Gateway\SourceGatewayTransport;
@@ -557,6 +560,21 @@ class Application extends App implements IBootstrap {
 					providers: [
 						$c->get(OsoKennisnetClient::class),
 						$c->get(LogOsoProvider::class),
+					]
+				);
+			}
+		);
+
+		// The UWLR/Edu-V/Basispoort/Entree-content export provider bindings.
+		// `log` is registered last for the same reason as the digital post
+		// bindings above.
+		$context->registerService(
+			UwlrEduVProviderRegistry::class,
+			static function ($c): UwlrEduVProviderRegistry {
+				return new UwlrEduVProviderRegistry(
+					providers: [
+						$c->get(UwlrEduVKennisnetClient::class),
+						$c->get(LogUwlrEduVProvider::class),
 					]
 				);
 			}
