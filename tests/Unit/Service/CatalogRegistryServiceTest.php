@@ -127,6 +127,9 @@ class CatalogRegistryServiceTest extends TestCase {
 		// endoflife-date-source: seeded enabled/credential-free (unlike the
 		// dormant presets above) — @spec openspec/specs/endoflife-date-source/spec.md#requirement-the-preset-is-automatically-visible-on-the-catalog-page
 		$this->assertContains('source-template:endoflife-date', $slugs);
+		// ideal-ouderbijdrage-source: dormant/mock payment source template —
+		// @spec openspec/specs/psp-source-template/spec.md#requirement-a-seeded-mock-mode-ideal-payment-source-template-is-discoverable-in-the-catalog-req-001
+		$this->assertContains('source-template:ideal-ouderbijdrage', $slugs);
 
 		// No duplicates — slugs are the upsert keys.
 		$this->assertSame(count($slugs), count(array_unique($slugs)));

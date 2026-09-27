@@ -146,10 +146,12 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'notificaties_abonnement',
 		'openformulieren_form_mapping',
 		'openformulieren_submission',
+		'oso_message',
 		'payment_intent',
 		'peppol_transmission',
 		'promotion_audit',
 		'ris_sync_record',
+		'rod_message',
 		'sms_message',
 		'stuf_message',
 		'sync_item_dead_letter',
@@ -159,6 +161,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'synchronization_log',
 		'synchronization_run',
 		'uwlr_eduv_message',
+		'verzuim_message',
 		'zgw_version_translation_log',
 	];
 

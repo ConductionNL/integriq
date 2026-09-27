@@ -192,6 +192,32 @@ return [
 		['name' => 'iwmoIjw#createMessage', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
 
+		// DUO ROD (Register Onderwijsdeelnemers) adapter
+		// (openspec/changes/integriq-adapter-rod). Push is an authenticated
+		// NC-session call (learniq's own `bron-rod` DataExchangeJob) — mirrors
+		// iwmoIjw#createMessage. The inbound acknowledgement/retour receiver is
+		// gated by webhook signature (HMAC), not an NC session; see
+		// RodController::retour().
+		['name' => 'rod#berichten', 'url' => '/api/rod/berichten', 'verb' => 'POST'],
+		['name' => 'rod#retour', 'url' => '/api/rod/retour', 'verb' => 'POST'],
+		// DUO Verzuimloket (VSV-M2M) adapter (openspec/changes/
+		// integriq-adapter-verzuimloket). Push is an authenticated NC-session
+		// call (learniq's own `leerplicht` DataExchangeJob) — mirrors
+		// iwmoIjw#createMessage. The inbound acknowledgement/retour receiver is
+		// gated by webhook signature (HMAC), not an NC session; see
+		// VerzuimloketController::retour().
+		['name' => 'verzuimloket#berichten', 'url' => '/api/verzuimloket/berichten', 'verb' => 'POST'],
+		['name' => 'verzuimloket#retour', 'url' => '/api/verzuimloket/retour', 'verb' => 'POST'],
+		// OSO (Overstapservice Onderwijs, Kennisnet) adapter (openspec/changes/
+		// integriq-adapter-oso). Export is an authenticated NC-session call
+		// (learniq's own `oso` DataExchangeJob, already parent-review-gated on
+		// learniq's side) — mirrors iwmoIjw#createMessage. The inbound import
+		// receiver (Kennisnet delivering an overstapdossier) and the export
+		// acknowledgement/retour receiver are both gated by webhook signature
+		// (HMAC), not an NC session; see OsoController.
+		['name' => 'oso#export', 'url' => '/api/oso/export', 'verb' => 'POST'],
+		['name' => 'oso#import', 'url' => '/api/oso/import', 'verb' => 'POST'],
+		['name' => 'oso#retour', 'url' => '/api/oso/retour', 'verb' => 'POST'],
 		// UWLR / Edu-V / Basispoort / Entree-content adapter (openspec/changes/
 		// integriq-adapter-uwlr-eduv). Each of the four sends is an
 		// authenticated NC-session call (learniq's own `uwlr`/`edu-v`/
@@ -549,6 +575,10 @@ return [
 		['name' => 'migrationSources#index', 'url' => '/api/migration-sources', 'verb' => 'GET'],
 		['name' => 'migrationSources#preview', 'url' => '/api/migration-sources/preview', 'verb' => 'POST'],
 		['name' => 'migrationSources#validateMapping', 'url' => '/api/migration-sources/column-mapping/validate', 'verb' => 'POST'],
+		// integriq-adapter-rostering-imports: named-incumbent (ParnasSys, ESIS,
+		// Magister, Somtoday) column-mapping presets for the same read-only
+		// engine, so an operator picks a preset instead of authoring one.
+		['name' => 'migrationSources#presets', 'url' => '/api/migration-sources/column-mapping/presets', 'verb' => 'GET'],
 
 		// statutory-gateways-and-frameworks: which laws this instance reaches,
 		// how far it claims to meet each one, where every endpoint sits, and
