@@ -12,13 +12,13 @@ Kind: code. Size M. Row `integriq:gw-federated`.
 - [ ] Implement
 - [ ] Test (Playwright)
 
-### Task 2: SigV4 as a source authentication type
+### Task 2: The Amazon connector waits for the broker's aws-sigv4 scheme
 - **spec_ref**: `openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-each-vendor-is-read-on-a-schedule-req-fedg-002`
-- **files**: `lib/Service/Auth/AwsSigV4Signer.php`, `lib/Service/Adapter/DataInfra/S3Adapter.php`, `lib/Service/CallService.php`
+- **files**: `lib/Settings/register.d/aws-apigateway-discovery.json`, `lib/Service/SynchronizationService.php` (the refusal before a call), the inventory page status
 - **acceptance_criteria**:
-  - GIVEN the AWS SigV4 test suite vectors WHEN signed THEN each signature matches, and S3Adapter's tests pass unchanged
+  - GIVEN a broker without aws-sigv4 WHEN the Amazon synchronization runs THEN it makes no call, logs that the broker cannot sign yet, and the inventory shows the connector as waiting on OpenRegister
 - [ ] Implement
-- [ ] Test (PHPUnit with the published AWS test vectors)
+- [ ] Test (PHPUnit on the refusal; the OpenRegister follow-up for authScheme aws-sigv4 named in the PR)
 
 ### Task 3: Kong, Azure and AWS discovery fragments
 - **spec_ref**: `openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-each-vendor-is-read-on-a-schedule-req-fedg-002`

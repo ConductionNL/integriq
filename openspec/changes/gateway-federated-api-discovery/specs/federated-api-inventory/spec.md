@@ -23,7 +23,7 @@ Integriq MUST keep an inventory of APIs found on other gateways, each with its g
 
 ### Requirement: Each vendor is read on a schedule (REQ-FEDG-002)
 
-Integriq MUST ship dormant discovery connectors for Kong, Azure API Management and Amazon API Gateway that read the vendor's API list and each API's OpenAPI export daily, using the source's brokered credential and, for Amazon, AWS Signature Version 4. An API no longer found MUST be marked no longer seen rather than deleted.
+Integriq MUST ship dormant discovery connectors for Kong, Azure API Management and Amazon API Gateway that read the vendor's API list and each API's OpenAPI export daily, using the source's brokered credential. The Amazon connector MUST ask the credential broker to sign with AWS Signature Version 4 and MUST make no call while the broker cannot, saying so on the inventory page. An API no longer found MUST be marked no longer seen rather than deleted.
 
 #### Scenario: a retired API stays visible as retired
 - GIVEN an API discovered on Kong yesterday
@@ -40,3 +40,9 @@ For a discovered API with an OpenAPI description, integriq MUST offer to start t
 - WHEN the administrator chooses bring behind integriq on its row
 - THEN the import preview opens listing that API's operations
 - e2e: `tests/e2e/api-inventory.spec.ts`
+
+#### Scenario: the Amazon connector says what it waits for
+- GIVEN a credential broker that cannot sign AWS Signature Version 4
+- WHEN the Amazon discovery runs
+- THEN no request is sent, and the inventory page shows the Amazon connector as waiting on OpenRegister
+- @e2e exclude covered by PHPUnit on the refusal

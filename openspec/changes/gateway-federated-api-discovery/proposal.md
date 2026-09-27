@@ -22,16 +22,20 @@ The matrix evidence for integriq: a search for kong, apigee, AWS API Gateway and
 ## What integriq already has
 
 - Connector fragments in `lib/Settings/register.d/` ship a source, a mapping, a synchronization and a job together (for example `tenderned-connector.json`), and the synchronization engine pages, maps and upserts.
-- AWS Signature Version 4 signing exists in `lib/Service/Adapter/DataInfra/S3Adapter.php`.
+- No AWS Signature Version 4 signing. `lib/Service/Adapter/DataInfra/S3Adapter.php:38-55` records why: OpenRegister's `CredentialBrokerService::injectAuth()` injects one templated header and cannot compute a SigV4 signature, and it names a broker `authScheme: 'aws-sigv4'` as the fix.
 - Source credentials go through OpenRegister's credential broker as `credentialRef` (`migrate-inline-secrets-to-broker`).
 - `gateway-openapi-import-and-publish` imports a vendor's OpenAPI document into a source and endpoints.
 
 ## What this change builds
 
 1. An `external_api` schema: gateway, vendor, name, version, base URL, stage or environment, the gateway's own id, the OpenAPI description when available, and last seen.
-2. Three connector fragments, each dormant until an administrator adds a credential: Kong Admin API (services and routes), Azure API Management (APIs and their exported OpenAPI), Amazon API Gateway (REST and HTTP APIs, with an OpenAPI export per stage).
+2. Three connector fragments, each dormant until an administrator adds a credential: Kong Admin API (services and routes), Azure API Management (APIs and their exported OpenAPI), Amazon API Gateway (REST and HTTP APIs, with an OpenAPI export per stage). The Amazon connector needs SigV4, see below.
 3. An API inventory page listing integriq's own products and the discovered APIs together, filterable by gateway, with a link to the source gateway.
 4. "Bring behind integriq": for a discovered API with an OpenAPI description, start the import of `gateway-openapi-import-and-publish` from it.
+
+## The half OpenRegister carries
+
+Amazon API Gateway only answers SigV4-signed requests. Under ADR-064 the secret stays in OpenRegister's credential broker, so the signature has to be computed there: a broker `authScheme` of `aws-sigv4`, as `S3Adapter.php:51` already proposes. Integriq ships the Amazon connector pointing at that scheme and dormant; it runs once OpenRegister offers the scheme. Kong (an admin token header) and Azure (OAuth 2.0 client credentials) work with what the broker does today.
 
 ## Out of scope
 
