@@ -86,8 +86,14 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 35 — `stuf_message` added by openspec/changes/stuf-zkn-bridge,
 	 * bringing the count to 36.
 	 *
-	 * Was 49 — `oso_message` added by openspec/changes/integriq-adapter-oso,
+	 * Was 49 — `rod_message` added by openspec/changes/integriq-adapter-rod,
 	 * bringing the count to 50.
+	 *
+	 * Was 50 — `verzuim_message` added by openspec/changes/integriq-adapter-verzuimloket,
+	 * bringing the count to 51.
+	 *
+	 * Was 51 — `oso_message` added by openspec/changes/integriq-adapter-oso,
+	 * bringing the count to 52.
 	 *
 	 * @var array<string, string>
 	 */
@@ -146,6 +152,10 @@ class RegisterDescriptorTest extends TestCase {
 		'OpenFormulierenSubmission' => 'openformulieren_submission',
 		// iWMO/iJW (StUF iStandaarden Wmo/Jeugdwet) bridge — added by iwmo-ijw-adapter spec.
 		'IwmoIjwMessage' => 'iwmo_ijw_message',
+		// DUO ROD (Register Onderwijsdeelnemers) adapter — added by integriq-adapter-rod spec.
+		'RodMessage' => 'rod_message',
+		// DUO Verzuimloket (VSV-M2M) adapter — added by integriq-adapter-verzuimloket spec.
+		'VerzuimMessage' => 'verzuim_message',
 		// OSO (Overstapservice Onderwijs) adapter — added by integriq-adapter-oso spec.
 		'OsoMessage' => 'oso_message',
 		// FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.

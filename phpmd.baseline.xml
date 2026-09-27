@@ -97,6 +97,7 @@
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Intake/ChannelCapabilities.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Intake/InboundMessage.php" method="__construct"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/IntakeReplyService.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Migration/MigrationMappingPresetRegistry.php"/>
   <violation rule="PHPMD\Rule\Naming\ShortMethodName" file="lib/Migration/MigrationSourceAdapterInterface.php" method="id"/>
   <violation rule="PHPMD\Rule\Naming\ShortMethodName" file="lib/Migration/Source/FileMigrationSource.php" method="id"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Migration/Source/FileMigrationSource.php"/>

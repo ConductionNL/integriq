@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VerzuimloketRetour>
+  <stuurgegevens>
+    <kenmerk>seed-verzuim-kenmerk-001</kenmerk>
+    <signaalcode>0</signaalcode>
+    <tijdstipBericht>2026-09-25T10:00:00+02:00</tijdstipBericht>
+  </stuurgegevens>
+  <body>
+    <omschrijving>Verwerkt</omschrijving>
+  </body>
+</VerzuimloketRetour>

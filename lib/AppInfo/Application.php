@@ -109,6 +109,12 @@ use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\LogDigitalPostProvider;
 use OCA\Integriq\Service\DigitalPost\PostexProvider;
+use OCA\Integriq\Service\Rod\LogRodProvider;
+use OCA\Integriq\Service\Rod\RodEdukoppelingClient;
+use OCA\Integriq\Service\Rod\RodProviderRegistry;
+use OCA\Integriq\Service\Verzuimloket\LogVerzuimloketProvider;
+use OCA\Integriq\Service\Verzuimloket\VerzuimloketEdukoppelingClient;
+use OCA\Integriq\Service\Verzuimloket\VerzuimloketProviderRegistry;
 use OCA\Integriq\Service\Oso\LogOsoProvider;
 use OCA\Integriq\Service\Oso\OsoKennisnetClient;
 use OCA\Integriq\Service\Oso\OsoProviderRegistry;
@@ -508,6 +514,35 @@ class Application extends App implements IBootstrap {
 						$c->get(BerichtenboxProvider::class),
 						$c->get(PostexProvider::class),
 						$c->get(LogDigitalPostProvider::class),
+					]
+				);
+			}
+		);
+
+		// The ROD (DUO Register Onderwijsdeelnemers) provider bindings. `log`
+		// is registered last for the same reason as the digital post bindings
+		// above: a real binding always wins its own id.
+		$context->registerService(
+			RodProviderRegistry::class,
+			static function ($c): RodProviderRegistry {
+				return new RodProviderRegistry(
+					providers: [
+						$c->get(RodEdukoppelingClient::class),
+						$c->get(LogRodProvider::class),
+					]
+				);
+			}
+		);
+
+		// The Verzuimloket (DUO VSV-M2M) provider bindings. `log` is registered
+		// last for the same reason as the digital post bindings above.
+		$context->registerService(
+			VerzuimloketProviderRegistry::class,
+			static function ($c): VerzuimloketProviderRegistry {
+				return new VerzuimloketProviderRegistry(
+					providers: [
+						$c->get(VerzuimloketEdukoppelingClient::class),
+						$c->get(LogVerzuimloketProvider::class),
 					]
 				);
 			}

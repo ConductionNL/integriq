@@ -1,0 +1,22 @@
+{
+  "$comment": "Representative rostering-import lesson batch. Field names are drawn from the vendor-stated API surfaces in market-intelligence round 1 (Zermelo REST/JSON resources per docs.zportal.nl; Untis WebUntis OneRoster API per developer.untis.com; Xedule REST API + Xedule Connect OAuth2 per the SURF DPIA 8 July 2025; TimeEdit REST API per developer.timeedit.com). This is NOT a payload captured live -- no system in learniq round 1 offered a credential-free sandbox.",
+  "systemId": "roster-zermelo",
+  "lessons": [
+    {
+      "subject": "Wiskunde",
+      "startsAt": "2026-09-28T09:00:00+02:00",
+      "endsAt": "2026-09-28T09:50:00+02:00",
+      "room": "A1.12",
+      "teacherReference": "docent-mock-0001",
+      "groupReference": "klas-mock-3a"
+    },
+    {
+      "subject": "Nederlands",
+      "startsAt": "2026-09-28T10:00:00+02:00",
+      "endsAt": "2026-09-28T10:50:00+02:00",
+      "room": "B2.04",
+      "teacherReference": "docent-mock-0002",
+      "groupReference": "klas-mock-3a"
+    }
+  ]
+}

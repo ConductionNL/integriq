@@ -121,6 +121,8 @@
 		<job>OCA\Integriq\BackgroundJob\KissPullJob</job>
 		<job>OCA\Integriq\BackgroundJob\ApprovalTimeoutSweepJob</job>
 		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\RodRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\VerzuimloketRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\OsoRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\StufZknRetryJob</job>
 		<!-- document-generation-vendor-adapter: every five minutes, ask the

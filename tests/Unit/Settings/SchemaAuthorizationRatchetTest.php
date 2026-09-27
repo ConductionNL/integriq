@@ -151,6 +151,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'peppol_transmission',
 		'promotion_audit',
 		'ris_sync_record',
+		'rod_message',
 		'sms_message',
 		'stuf_message',
 		'sync_item_dead_letter',
@@ -159,6 +160,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'synchronization_contract_log',
 		'synchronization_log',
 		'synchronization_run',
+		'verzuim_message',
 		'zgw_version_translation_log',
 	];
 
