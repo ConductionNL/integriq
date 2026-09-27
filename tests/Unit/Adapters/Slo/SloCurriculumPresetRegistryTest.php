@@ -97,6 +97,13 @@ class SloCurriculumPresetRegistryTest extends TestCase {
 		$this->assertSame([], $registry->yearNiveaus());
 		$this->assertSame([], $registry->source());
 
+		try {
+			$registry->set('fo-kerndoelen');
+			$this->fail('No sets are seeded.');
+		} catch (UnknownSloCurriculumSetException $exception) {
+			$this->assertStringContainsString('(none)', $exception->getMessage());
+		}
+
 		$this->expectException(SloCurriculumException::class);
 		$registry->competencyMapping();
 	}//end testMissingFragmentIsEmptyAndMappingThrows()

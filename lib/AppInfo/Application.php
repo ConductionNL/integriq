@@ -406,13 +406,10 @@ class Application extends App implements IBootstrap {
 		$context->registerService(
 			SloCurriculumClient::class,
 			static function ($c) {
-				$config = $c->get('OCP\IAppConfig');
-				$raw = $config->getValueString('integriq', SloCurriculumSourceAdapter::FLAG_KEY, '0');
-				if ($raw === '1' || strtolower($raw) === 'true') {
-					return $c->get(SloCurriculumClientHttp::class);
-				}
+				$live = ['1' => SloCurriculumClientHttp::class, 'true' => SloCurriculumClientHttp::class];
+				$raw = strtolower($c->get('OCP\IAppConfig')->getValueString('integriq', SloCurriculumSourceAdapter::FLAG_KEY, '0'));
 
-				return $c->get(SloCurriculumClientMock::class);
+				return $c->get($live[$raw] ?? SloCurriculumClientMock::class);
 			}
 		);
 

@@ -41,8 +41,6 @@ use OCA\Integriq\Exception\SloCurriculumException;
  * Flattens SLO curriculum trees into parent-first node lists.
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-the-tree-walk-follows-the-set-profile-req-005
- *
- * @SuppressWarnings(PHPMD.TooManyMethods)
  */
 final class SloCurriculumTreeWalker {
 	/**
@@ -64,15 +62,6 @@ final class SloCurriculumTreeWalker {
 	 * Keys a bare reference carries; anything else means the entity has content.
 	 */
 	private const REFERENCE_KEYS = ['@id', '@type', '@link', '@references', '@context', 'uuid', 'id', 'deprecated'];
-
-	/**
-	 * Default field paths when a profile names none for a type.
-	 */
-	private const DEFAULT_FIELDS = [
-		'code' => ['prefix', 'title'],
-		'title' => ['title'],
-		'description' => ['description'],
-	];
 
 	/**
 	 * Objects of the current run keyed by id, from every document read.
@@ -113,9 +102,11 @@ final class SloCurriculumTreeWalker {
 	 * Constructor.
 	 *
 	 * @param JsonTagReader $reader Reads JSONTag and JSON bodies.
+	 * @param SloCurriculumNodeReader $nodes Reads the facts of one entity.
 	 */
 	public function __construct(
 		private readonly JsonTagReader $reader,
+		private readonly SloCurriculumNodeReader $nodes,
 	) {
 	}//end __construct()
 
@@ -165,6 +156,19 @@ final class SloCurriculumTreeWalker {
 	}//end fetchJson()
 
 	/**
+	 * Identity and headline facts of one entity (links resolved within it).
+	 *
+	 * @param array<string,mixed> $entity An SLO entity.
+	 *
+	 * @return array{uuid:string,type:string,title:string,status:string|null,versie:string|null,subjectKeys:array<int,string>}
+	 *
+	 * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-one-framework-per-set-and-root-with-stable-ids-and-attribution-req-007
+	 */
+	public function describeEntity(array $entity): array {
+		return $this->nodes->describe(entity: $entity, index: $this->reader->indexById(document: $entity));
+	}//end describeEntity()
+
+	/**
 	 * Walk roots with a profile.
 	 *
 	 * @param array<int,array<string,mixed>> $roots Root entities (from fetchTree()).
@@ -181,6 +185,37 @@ final class SloCurriculumTreeWalker {
 	 * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-the-tree-walk-follows-the-set-profile-req-005
 	 */
 	public function walk(array $roots, array $profile, SloCurriculumClient $client, bool $rootsAreNodes): array {
+		$this->start(roots: $roots, profile: $profile, client: $client);
+
+		$nodes = [];
+		$order = 0;
+		foreach ($roots as $root) {
+			foreach ($this->walkRoot(root: $root, rootsAreNodes: $rootsAreNodes) as $record) {
+				if ($record['parentSloUuid'] === null) {
+					$record['order'] = $order;
+					$order++;
+				}
+
+				$nodes[] = $record;
+			}
+		}
+
+		$this->stats['nodes'] = count($nodes);
+		$this->client = null;
+
+		return ['nodes' => $nodes, 'stats' => $this->stats];
+	}//end walk()
+
+	/**
+	 * Reset the run state.
+	 *
+	 * @param array<int,array<string,mixed>> $roots Root entities.
+	 * @param array<string,mixed> $profile The set profile.
+	 * @param SloCurriculumClient $client The client.
+	 *
+	 * @return void
+	 */
+	private function start(array $roots, array $profile, SloCurriculumClient $client): void {
 		$this->index = [];
 		$this->visited = [];
 		$this->profile = $profile;
@@ -200,71 +235,7 @@ final class SloCurriculumTreeWalker {
 		foreach ($roots as $root) {
 			$this->index += $this->reader->indexById(document: $root);
 		}
-
-		$nodes = [];
-		$order = 0;
-		foreach ($roots as $root) {
-			$records = $this->walkRoot(root: $root, rootsAreNodes: $rootsAreNodes);
-			foreach ($records as $record) {
-				if ($record['parentSloUuid'] === null) {
-					$record['order'] = $order;
-					$order++;
-				}
-
-				$nodes[] = $record;
-			}
-		}
-
-		$this->stats['nodes'] = count($nodes);
-		$this->client = null;
-
-		return ['nodes' => $nodes, 'stats' => $this->stats];
-	}//end walk()
-
-	/**
-	 * Identity and headline facts of one entity.
-	 *
-	 * @param array<string,mixed> $entity An SLO entity.
-	 *
-	 * @return array{uuid:string,type:string,title:string,status:string|null,versie:string|null,subjectKeys:array<int,string>}
-	 *
-	 * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-one-framework-per-set-and-root-with-stable-ids-and-attribution-req-007
-	 */
-	public function describeEntity(array $entity): array {
-		return [
-			'uuid' => self::uuidOf(entity: $entity),
-			'type' => (string)($entity['@type'] ?? ''),
-			'title' => trim((string)($entity['title'] ?? '')),
-			'status' => self::optionalString(value: ($entity['status'] ?? null)),
-			'versie' => self::optionalString(value: ($entity['versie'] ?? null)),
-			'subjectKeys' => $this->subjectKeys(entity: $entity),
-		];
-	}//end describeEntity()
-
-	/**
-	 * The SLO uuid of an entity: `uuid`, else `id`, else the tail of `@id`.
-	 *
-	 * @param array<string,mixed> $entity An SLO entity or reference.
-	 *
-	 * @return string The uuid, or '' when there is none.
-	 *
-	 * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-the-tree-walk-follows-the-set-profile-req-005
-	 */
-	public static function uuidOf(array $entity): string {
-		foreach (['uuid', 'id'] as $key) {
-			if (is_string($entity[$key] ?? null) === true && $entity[$key] !== '') {
-				return JsonTagReader::lastSegment(value: $entity[$key]);
-			}
-		}
-
-		foreach (['@id', '@link'] as $key) {
-			if (is_string($entity[$key] ?? null) === true && $entity[$key] !== '') {
-				return JsonTagReader::lastSegment(value: $entity[$key]);
-			}
-		}
-
-		return '';
-	}//end uuidOf()
+	}//end start()
 
 	/**
 	 * Records for one root.
@@ -279,10 +250,8 @@ final class SloCurriculumTreeWalker {
 			return $this->visit(value: $root, parentUuid: null, depth: 0);
 		}
 
-		$rootUuid = self::uuidOf(entity: $root);
-		if ($rootUuid !== '') {
-			$this->visited[$rootUuid] = true;
-		}
+		// An empty uuid is harmless here: admit() rejects it before this map is read.
+		$this->visited[$this->nodes->uuidOf(entity: $root)] = true;
 
 		return $this->visitChildren(entity: $root, parentUuid: null, depth: 1);
 	}//end walkRoot()
@@ -303,19 +272,60 @@ final class SloCurriculumTreeWalker {
 			throw new SloCurriculumException(message: sprintf('The SLO tree is deeper than %d levels; the walk stopped.', self::MAX_DEPTH));
 		}
 
+		$entity = $this->admit(value: $value);
+		if ($entity === null) {
+			return [];
+		}
+
+		$type = (string)($entity['@type'] ?? '');
+		$record = $this->nodes->record(
+			entity: $entity,
+			context: [
+				'uuid' => $this->nodes->uuidOf(entity: $entity),
+				'type' => $type,
+				'parentUuid' => $parentUuid,
+				'isLeaf' => in_array($type, (array)($this->profile['leafTypes'] ?? []), true),
+				'fields' => (array)($this->profile['fields'] ?? []),
+			],
+			index: $this->index
+		);
+
+		if ($record['isLeaf'] === true) {
+			return $this->keepLeaf(record: $record);
+		}
+
+		$children = $this->visitChildren(entity: $entity, parentUuid: $record['sloUuid'], depth: ($depth + 1));
+		if ($children === [] && $this->niveauFilter() !== []) {
+			$this->stats['prunedBranches']++;
+			return [];
+		}
+
+		return array_merge([$record], $children);
+	}//end visit()
+
+	/**
+	 * Materialise an entity and decide whether it enters the walk, counting why not.
+	 *
+	 * @param mixed $value An entity, a link or a bare reference.
+	 *
+	 * @return array<string,mixed>|null The entity, marked visited; null when it is skipped.
+	 *
+	 * @throws SloCurriculumException When the node limit is reached.
+	 */
+	private function admit(mixed $value): ?array {
 		$entity = $this->materialise(value: $value);
 		$uuid = '';
 		if ($entity !== null) {
-			$uuid = self::uuidOf(entity: $entity);
+			$uuid = $this->nodes->uuidOf(entity: $entity);
 		}
 
 		if ($entity === null || $uuid === '') {
 			$this->stats['malformed']++;
-			return [];
+			return null;
 		}
 
 		if ($this->skip(entity: $entity, uuid: $uuid) === true) {
-			return [];
+			return null;
 		}
 
 		$this->visited[$uuid] = true;
@@ -323,29 +333,35 @@ final class SloCurriculumTreeWalker {
 			throw new SloCurriculumException(message: sprintf('The SLO tree has more than %d nodes; the walk stopped.', self::MAX_NODES));
 		}
 
-		$type = (string)($entity['@type'] ?? '');
-		$isLeaf = in_array($type, (array)($this->profile['leafTypes'] ?? []), true);
-		$record = $this->buildRecord(entity: $entity, type: $type, uuid: $uuid, parentUuid: $parentUuid, isLeaf: $isLeaf);
-		$filter = array_values((array)($this->profile['leafNiveauFilter'] ?? []));
+		return $entity;
+	}//end admit()
 
-		if ($isLeaf === true) {
-			if ($filter !== [] && array_intersect(array_column($record['niveaus'], 'uuid'), $filter) === []) {
-				$this->stats['filteredByNiveau']++;
-				return [];
-			}
-
-			$this->stats['leaves']++;
-			return [$record];
-		}
-
-		$children = $this->visitChildren(entity: $entity, parentUuid: $uuid, depth: ($depth + 1));
-		if ($filter !== [] && $children === []) {
-			$this->stats['prunedBranches']++;
+	/**
+	 * A leaf's records: itself, unless the niveau filter drops it.
+	 *
+	 * @param array<string,mixed> $record The leaf's record.
+	 *
+	 * @return array<int,array<string,mixed>> [record] or [].
+	 */
+	private function keepLeaf(array $record): array {
+		$filter = $this->niveauFilter();
+		if ($filter !== [] && array_intersect(array_column($record['niveaus'], 'uuid'), $filter) === []) {
+			$this->stats['filteredByNiveau']++;
 			return [];
 		}
 
-		return array_merge([$record], $children);
-	}//end visit()
+		$this->stats['leaves']++;
+		return [$record];
+	}//end keepLeaf()
+
+	/**
+	 * The profile's niveau filter.
+	 *
+	 * @return array<int,string> SLO niveau uuids; empty for no filter.
+	 */
+	private function niveauFilter(): array {
+		return array_values(array_map('strval', (array)($this->profile['leafNiveauFilter'] ?? [])));
+	}//end niveauFilter()
 
 	/**
 	 * Records for the children of one entity, in profile key order.
@@ -361,16 +377,7 @@ final class SloCurriculumTreeWalker {
 		$order = 0;
 
 		foreach ((array)($this->profile['levels'] ?? []) as $key) {
-			$children = ($entity[(string)$key] ?? null);
-			if (is_array($children) === false) {
-				continue;
-			}
-
-			if (array_is_list($children) === false) {
-				$children = [$children];
-			}
-
-			foreach ($children as $child) {
+			foreach ($this->nodes->listOf(value: ($entity[(string)$key] ?? null)) as $child) {
 				$subtree = $this->visit(value: $child, parentUuid: $parentUuid, depth: $depth);
 				if ($subtree === []) {
 					continue;
@@ -378,11 +385,9 @@ final class SloCurriculumTreeWalker {
 
 				$subtree[0]['order'] = $order;
 				$order++;
-				foreach ($subtree as $record) {
-					$records[] = $record;
-				}
+				array_push($records, ...$subtree);
 			}
-		}//end foreach
+		}
 
 		return $records;
 	}//end visitChildren()
@@ -433,24 +438,25 @@ final class SloCurriculumTreeWalker {
 			return $value;
 		}
 
-		$uuid = self::uuidOf(entity: $value);
+		$uuid = $this->nodes->uuidOf(entity: $value);
 		if ($uuid === '' || $this->client === null) {
 			return $value;
 		}
 
-		return $this->expand(uuid: $uuid);
+		return $this->expand(client: $this->client, uuid: $uuid);
 	}//end materialise()
 
 	/**
 	 * Fetch one entity through `/uuid/{id}` and add it to the run's index.
 	 *
+	 * @param SloCurriculumClient $client The client.
 	 * @param string $uuid The SLO uuid.
 	 *
 	 * @return array<string,mixed> The entity.
 	 *
 	 * @throws SloCurriculumException When the limit is reached or the answer is not an object.
 	 */
-	private function expand(string $uuid): array {
+	private function expand(SloCurriculumClient $client, string $uuid): array {
 		$this->stats['expansions']++;
 		if ($this->stats['expansions'] > self::MAX_EXPANSIONS) {
 			throw new SloCurriculumException(
@@ -458,11 +464,7 @@ final class SloCurriculumTreeWalker {
 			);
 		}
 
-		if ($this->client === null) {
-			throw new SloCurriculumException(message: sprintf('No SLO client is available to look up %s.', $uuid));
-		}
-
-		$entity = $this->fetchJson(client: $this->client, path: 'uuid/' . rawurlencode($uuid));
+		$entity = $this->fetchJson(client: $client, path: 'uuid/' . rawurlencode($uuid));
 		if (array_is_list($entity) === true) {
 			throw new SloCurriculumException(message: sprintf('SLO answered uuid/%s with a list instead of one entity.', $uuid));
 		}
@@ -471,180 +473,4 @@ final class SloCurriculumTreeWalker {
 
 		return $entity;
 	}//end expand()
-
-	/**
-	 * Build the normalised record of one node.
-	 *
-	 * @param array<string,mixed> $entity The entity.
-	 * @param string $type Its SLO type.
-	 * @param string $uuid Its SLO uuid.
-	 * @param string|null $parentUuid The parent node's SLO uuid.
-	 * @param bool $isLeaf Whether its type is a leaf type.
-	 *
-	 * @return array<string,mixed> The record.
-	 */
-	private function buildRecord(array $entity, string $type, string $uuid, ?string $parentUuid, bool $isLeaf): array {
-		$fields = array_replace(self::DEFAULT_FIELDS, (array)($this->profile['fields'][$type] ?? []));
-		$code = $this->firstText(entity: $entity, paths: (array)$fields['code']);
-		$title = $this->firstText(entity: $entity, paths: (array)$fields['title']);
-		$description = $this->firstText(entity: $entity, paths: (array)$fields['description']);
-
-		if ($title === '') {
-			$title = $code;
-		}
-
-		if ($code === '') {
-			$code = $title;
-		}
-
-		if ($code === '') {
-			$code = $uuid;
-			$title = $uuid;
-		}
-
-		if ($description === '') {
-			$description = null;
-		}
-
-		return [
-			'sloUuid' => $uuid,
-			'sloType' => $type,
-			'code' => $code,
-			'title' => $title,
-			'description' => $description,
-			'parentSloUuid' => $parentUuid,
-			'order' => 0,
-			'isLeaf' => $isLeaf,
-			'niveaus' => $this->niveaus(entity: $entity),
-			'subjectKeys' => $this->subjectKeys(entity: $entity),
-		];
-	}//end buildRecord()
-
-	/**
-	 * The first non-empty text among dot paths into the entity.
-	 *
-	 * @param array<string,mixed> $entity The entity.
-	 * @param array<int,mixed> $paths Candidate paths, such as `title` or `Doel.0.title`.
-	 *
-	 * @return string The trimmed text, or ''.
-	 */
-	private function firstText(array $entity, array $paths): string {
-		foreach ($paths as $path) {
-			$value = $this->valueAt(entity: $entity, path: (string)$path);
-			if (is_int($value) === true || is_float($value) === true) {
-				return (string)$value;
-			}
-
-			if (is_string($value) === true && trim($value) !== '') {
-				return trim($value);
-			}
-		}
-
-		return '';
-	}//end firstText()
-
-	/**
-	 * Read a dot path, resolving links on the way.
-	 *
-	 * @param array<string,mixed> $entity The entity.
-	 * @param string $path The dot path.
-	 *
-	 * @return mixed The value, or null when the path does not exist.
-	 */
-	private function valueAt(array $entity, string $path): mixed {
-		$current = $entity;
-		foreach (explode('.', $path) as $segment) {
-			$current = $this->reader->resolve(value: $current, index: $this->index);
-			if (is_array($current) === false || array_key_exists($segment, $current) === false) {
-				return null;
-			}
-
-			$current = $current[$segment];
-		}
-
-		return $this->reader->resolve(value: $current, index: $this->index);
-	}//end valueAt()
-
-	/**
-	 * The SLO niveaus an entity is tagged with.
-	 *
-	 * @param array<string,mixed> $entity The entity.
-	 *
-	 * @return array<int,array{uuid:string,title:string|null}> Niveaus.
-	 */
-	private function niveaus(array $entity): array {
-		$raw = ($entity['Niveau'] ?? $entity['NiveauIndex'] ?? []);
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		if (array_is_list($raw) === false) {
-			$raw = [$raw];
-		}
-
-		$niveaus = [];
-		foreach ($raw as $item) {
-			$niveau = $this->reader->resolve(value: $item, index: $this->index);
-			if (is_array($niveau) === false) {
-				continue;
-			}
-
-			$uuid = self::uuidOf(entity: $niveau);
-			if ($uuid === '') {
-				continue;
-			}
-
-			$niveaus[] = ['uuid' => $uuid, 'title' => self::optionalString(value: ($niveau['title'] ?? null))];
-		}
-
-		return $niveaus;
-	}//end niveaus()
-
-	/**
-	 * Keys a caller's subject map can use for this entity: its vakleergebied's
-	 * uuid and lower-cased title, then its own.
-	 *
-	 * @param array<string,mixed> $entity The entity.
-	 *
-	 * @return array<int,string> Keys, most specific first.
-	 */
-	private function subjectKeys(array $entity): array {
-		$keys = [];
-		$subject = ($entity['Vakleergebied'] ?? null);
-		if (is_array($subject) === true && array_is_list($subject) === true) {
-			$subject = ($subject[0] ?? null);
-		}
-
-		$subject = $this->reader->resolve(value: $subject, index: $this->index);
-		foreach ([$subject, $entity] as $candidate) {
-			if (is_array($candidate) === false) {
-				continue;
-			}
-
-			$keys[] = self::uuidOf(entity: $candidate);
-			$keys[] = mb_strtolower(trim((string)($candidate['title'] ?? '')));
-		}
-
-		return array_values(array_unique(array_filter($keys, static fn (string $key): bool => $key !== '')));
-	}//end subjectKeys()
-
-	/**
-	 * A non-empty trimmed string, or null.
-	 *
-	 * @param mixed $value Any value.
-	 *
-	 * @return string|null The string, or null.
-	 */
-	private static function optionalString(mixed $value): ?string {
-		if (is_string($value) === false && is_int($value) === false) {
-			return null;
-		}
-
-		$text = trim((string)$value);
-		if ($text === '') {
-			return null;
-		}
-
-		return $text;
-	}//end optionalString()
 }//end class

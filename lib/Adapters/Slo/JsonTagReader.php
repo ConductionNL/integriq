@@ -93,73 +93,15 @@ final class JsonTagReader {
 	 * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-jsontag-responses-are-read-into-linked-arrays-req-004
 	 */
 	public function toJson(string $text): string {
-		$out = '';
+		$state = ['out' => '', 'header' => '', 'comma' => false, 'closeLink' => false];
 		$length = strlen($text);
 		$position = 0;
-		$closeLinkAfterString = false;
-		$pendingHeader = '';
-		$needComma = false;
 
 		while ($position < $length) {
-			$char = $text[$position];
+			$position = $this->step(text: $text, position: $position, state: $state);
+		}
 
-			// Whitespace never changes state.
-			if ($char === ' ' || $char === "\t" || $char === "\r" || $char === "\n") {
-				$out .= $char;
-				$position++;
-				continue;
-			}
-
-			// The first member after an injected `@type`/`@id` needs a comma,
-			// unless the object is empty.
-			if ($needComma === true) {
-				if ($char !== '}') {
-					$out .= ',';
-				}
-
-				$needComma = false;
-			}
-
-			if ($char === '"') {
-				$pendingHeader = '';
-				$end = $this->findStringEnd(text: $text, start: $position);
-				$out .= substr($text, $position, ($end - $position + 1));
-				$position = ($end + 1);
-				if ($closeLinkAfterString === true) {
-					$out .= '}';
-					$closeLinkAfterString = false;
-				}
-
-				continue;
-			}
-
-			if ($char === '<') {
-				$position = $this->consumeTag(
-					text: $text,
-					position: $position,
-					out: $out,
-					pendingHeader: $pendingHeader,
-					closeLinkAfterString: $closeLinkAfterString
-				);
-				continue;
-			}
-
-			if ($char === '{' && $pendingHeader !== '') {
-				$out .= '{' . $pendingHeader;
-				$pendingHeader = '';
-				$needComma = true;
-				$position++;
-				continue;
-			}
-
-			// Any other structural text: copy the whole run at once.
-			$run = max(1, strcspn($text, self::RUN_STOPS, $position));
-			$pendingHeader = '';
-			$out .= substr($text, $position, $run);
-			$position += $run;
-		}//end while
-
-		return $out;
+		return $state['out'];
 	}//end toJson()
 
 	/**
@@ -188,7 +130,7 @@ final class JsonTagReader {
 			$id = ($value['@id'] ?? null);
 			if (is_string($id) === true && $id !== '') {
 				$index[$id] ??= $value;
-				$tail = self::lastSegment(value: $id);
+				$tail = $this->lastSegment(value: $id);
 				if ($tail !== '') {
 					$index[$tail] ??= $value;
 				}
@@ -224,7 +166,7 @@ final class JsonTagReader {
 			return $index[$link];
 		}
 
-		return ($index[self::lastSegment(value: $link)] ?? $value);
+		return ($index[$this->lastSegment(value: $link)] ?? $value);
 	}//end resolve()
 
 	/**
@@ -236,7 +178,7 @@ final class JsonTagReader {
 	 *
 	 * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-jsontag-responses-are-read-into-linked-arrays-req-004
 	 */
-	public static function lastSegment(string $value): string {
+	public function lastSegment(string $value): string {
 		$slash = strrpos($value, '/');
 		if ($slash === false) {
 			return $value;
@@ -246,19 +188,91 @@ final class JsonTagReader {
 	}//end lastSegment()
 
 	/**
+	 * Handle the character at $position and return the next position.
+	 *
+	 * @param string $text The body.
+	 * @param int $position Current offset.
+	 * @param array{out:string,header:string,comma:bool,closeLink:bool} $state The rewrite state.
+	 *
+	 * @return int The next offset.
+	 *
+	 * @throws SloCurriculumException When an annotation or a string is not closed.
+	 */
+	private function step(string $text, int $position, array &$state): int {
+		$char = $text[$position];
+
+		// Whitespace never changes state.
+		if (ctype_space($char) === true) {
+			$state['out'] .= $char;
+			return ($position + 1);
+		}
+
+		// The first member after an injected `@type`/`@id` needs a comma,
+		// unless the object is empty.
+		if ($state['comma'] === true && $char !== '}') {
+			$state['out'] .= ',';
+		}
+
+		$state['comma'] = false;
+
+		if ($char === '"') {
+			return $this->copyString(text: $text, position: $position, state: $state);
+		}
+
+		if ($char === '<') {
+			return $this->consumeTag(text: $text, position: $position, state: $state);
+		}
+
+		if ($char === '{' && $state['header'] !== '') {
+			$state['out'] .= '{' . $state['header'];
+			$state['header'] = '';
+			$state['comma'] = true;
+			return ($position + 1);
+		}
+
+		// Any other structural text: copy the whole run at once.
+		$run = max(1, strcspn($text, self::RUN_STOPS, $position));
+		$state['header'] = '';
+		$state['out'] .= substr($text, $position, $run);
+
+		return ($position + $run);
+	}//end step()
+
+	/**
+	 * Copy one string literal verbatim, closing an open link after it.
+	 *
+	 * @param string $text The body.
+	 * @param int $position Offset of the opening quote.
+	 * @param array{out:string,header:string,comma:bool,closeLink:bool} $state The rewrite state.
+	 *
+	 * @return int The offset after the closing quote.
+	 *
+	 * @throws SloCurriculumException When the string never closes.
+	 */
+	private function copyString(string $text, int $position, array &$state): int {
+		$end = $this->findStringEnd(text: $text, start: $position);
+		$state['header'] = '';
+		$state['out'] .= substr($text, $position, ($end - $position + 1));
+		if ($state['closeLink'] === true) {
+			$state['out'] .= '}';
+			$state['closeLink'] = false;
+		}
+
+		return ($end + 1);
+	}//end copyString()
+
+	/**
 	 * Consume one annotation starting at `<` and apply its effect.
 	 *
 	 * @param string $text The body.
 	 * @param int $position Offset of the `<`.
-	 * @param string $out The JSON built so far (appended to for a link).
-	 * @param string $pendingHeader Set to the `@type`/`@id` members for an object annotation.
-	 * @param bool $closeLinkAfterString Set when a link value opens.
+	 * @param array{out:string,header:string,comma:bool,closeLink:bool} $state The rewrite state.
 	 *
 	 * @return int The offset after the closing `>`.
 	 *
 	 * @throws SloCurriculumException When the annotation is not closed.
 	 */
-	private function consumeTag(string $text, int $position, string &$out, string &$pendingHeader, bool &$closeLinkAfterString): int {
+	private function consumeTag(string $text, int $position, array &$state): int {
 		$end = strpos($text, '>', $position);
 		if ($end === false) {
 			throw new SloCurriculumException(
@@ -269,12 +283,12 @@ final class JsonTagReader {
 		$tag = $this->parseTag(body: substr($text, ($position + 1), ($end - $position - 1)));
 
 		if ($tag['name'] === 'link') {
-			$out .= '{"@link":';
-			$closeLinkAfterString = true;
+			$state['out'] .= '{"@link":';
+			$state['closeLink'] = true;
 		}
 
 		if ($tag['name'] === 'object') {
-			$pendingHeader = $this->objectHeader(attributes: $tag['attributes']);
+			$state['header'] = $this->objectHeader(attributes: $tag['attributes']);
 		}
 
 		return ($end + 1);

@@ -101,20 +101,7 @@ final class SloCurriculumPresetRegistry {
 		}
 
 		foreach ($objects as $object) {
-			if (is_array($object) === false) {
-				continue;
-			}
-
-			$schema = (string)($object['@self']['schema'] ?? '');
-			$slug = (string)($object['@self']['slug'] ?? '');
-			if ($schema === 'source' && $slug === self::SOURCE_SLUG) {
-				$this->source = $object;
-				continue;
-			}
-
-			if ($schema === 'mapping' && $slug !== '' && is_array($object['mapping'] ?? null) === true) {
-				$this->mappings[$slug] = $object;
-			}
+			$this->absorb(object: $object);
 		}
 	}//end __construct()
 
@@ -299,6 +286,30 @@ final class SloCurriculumPresetRegistry {
 
 		return $years;
 	}//end yearNiveaus()
+
+	/**
+	 * Keep one fragment object when it is the SLO source or a mapping preset.
+	 *
+	 * @param mixed $object One entry of `components.objects`.
+	 *
+	 * @return void
+	 */
+	private function absorb(mixed $object): void {
+		if (is_array($object) === false) {
+			return;
+		}
+
+		$schema = (string)($object['@self']['schema'] ?? '');
+		$slug = (string)($object['@self']['slug'] ?? '');
+		if ($schema === 'source' && $slug === self::SOURCE_SLUG) {
+			$this->source = $object;
+			return;
+		}
+
+		if ($schema === 'mapping' && $slug !== '' && is_array($object['mapping'] ?? null) === true) {
+			$this->mappings[$slug] = $object;
+		}
+	}//end absorb()
 
 	/**
 	 * The seeded source's configuration member.

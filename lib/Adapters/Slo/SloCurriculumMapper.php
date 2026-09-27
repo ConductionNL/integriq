@@ -35,7 +35,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Adapters\Slo;
 
 use Adbar\Dot;
-use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Uid\Factory\UuidFactory;
 
 /**
  * Maps normalised SLO records onto learniq records with stable ids.
@@ -289,6 +289,6 @@ final class SloCurriculumMapper {
 	 * @return string An RFC 4122 UUID.
 	 */
 	private function uuid(string $name): string {
-		return Uuid::v5(Uuid::fromString(self::UUID_NAMESPACE), $name)->toRfc4122();
+		return (new UuidFactory())->nameBased(self::UUID_NAMESPACE)->create($name)->toRfc4122();
 	}//end uuid()
 }//end class

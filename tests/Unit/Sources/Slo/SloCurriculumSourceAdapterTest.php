@@ -24,6 +24,7 @@ use OCA\Integriq\Adapters\Slo\JsonTagReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
 use OCA\Integriq\Adapters\Slo\SloCurriculumMapper;
+use OCA\Integriq\Adapters\Slo\SloCurriculumNodeReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
 use OCA\Integriq\Adapters\Slo\SloYearAllocator;
@@ -62,7 +63,7 @@ class SloCurriculumSourceAdapterTest extends TestCase {
 			$logger ?? $this->createMock(LoggerInterface::class),
 			$client ?? new SloCurriculumClientMock(),
 			new SloCurriculumPresetRegistry(),
-			new SloCurriculumTreeWalker(new JsonTagReader()),
+			new SloCurriculumTreeWalker(new JsonTagReader(), new SloCurriculumNodeReader(new JsonTagReader())),
 			new SloCurriculumMapper(new SloYearAllocator())
 		);
 	}//end adapter()
@@ -131,6 +132,16 @@ class SloCurriculumSourceAdapterTest extends TestCase {
 
 		$this->assertSame(['a', 'c'], array_column($roots, 'uuid'));
 	}//end testDiscoveryFollowsPagesWithPerPageAndSkipsDeprecated()
+
+	/**
+	 * @return void
+	 */
+	public function testAnEnvelopeWithoutAListYieldsNoRoots(): void {
+		$client = $this->createMock(SloCurriculumClient::class);
+		$client->method('fetch')->willReturn('{"data":{"uuid":"a"},"count":"many"}');
+
+		$this->assertSame([], $this->adapter($client)->discoverRoots('examenprogramma'));
+	}//end testAnEnvelopeWithoutAListYieldsNoRoots()
 
 	/**
 	 * @return void

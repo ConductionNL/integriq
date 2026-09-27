@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Adapters\Slo;
 use OCA\Integriq\Adapters\Slo\JsonTagReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
+use OCA\Integriq\Adapters\Slo\SloCurriculumNodeReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
 use OCA\Integriq\Exception\SloCurriculumException;
@@ -39,7 +40,7 @@ class SloCurriculumTreeWalkerTest extends TestCase {
 	 * @return SloCurriculumTreeWalker
 	 */
 	private function walker(): SloCurriculumTreeWalker {
-		return new SloCurriculumTreeWalker(new JsonTagReader());
+		return new SloCurriculumTreeWalker(new JsonTagReader(), new SloCurriculumNodeReader(new JsonTagReader()));
 	}//end walker()
 
 	/**
@@ -213,6 +214,42 @@ class SloCurriculumTreeWalkerTest extends TestCase {
 	/**
 	 * @return void
 	 */
+	public function testAnExpansionAnsweredWithAListThrows(): void {
+		$client = $this->createMock(SloCurriculumClient::class);
+		$client->method('fetch')->willReturn('[{"uuid":"d1"}]');
+
+		$this->expectException(SloCurriculumException::class);
+		$this->walker()->walk(
+			[['uuid' => 'root', 'title' => 'root', 'D' => [['uuid' => 'd1']]]],
+			['levels' => ['D'], 'leafTypes' => [], 'leafNiveauFilter' => [], 'fields' => []],
+			$client,
+			false
+		);
+	}//end testAnExpansionAnsweredWithAListThrows()
+
+	/**
+	 * @return void
+	 */
+	public function testTheExpansionLimitStopsTheWalk(): void {
+		$client = $this->createMock(SloCurriculumClient::class);
+		$client->method('fetch')->willReturnCallback(
+			static fn (string $path): string => '{"uuid":"' . substr($path, 5) . '","title":"t"}'
+		);
+		$children = array_map(static fn (int $i): array => ['uuid' => 'c' . $i], range(1, SloCurriculumTreeWalker::MAX_EXPANSIONS + 1));
+
+		$this->expectException(SloCurriculumException::class);
+		$this->expectExceptionMessage('separate lookup');
+		$this->walker()->walk(
+			[['uuid' => 'root', 'title' => 'root', 'C' => $children]],
+			['levels' => ['C'], 'leafTypes' => [], 'leafNiveauFilter' => [], 'fields' => []],
+			$client,
+			false
+		);
+	}//end testTheExpansionLimitStopsTheWalk()
+
+	/**
+	 * @return void
+	 */
 	public function testDepthGuardStopsARunawayTree(): void {
 		$node = ['@type' => 'N', 'uuid' => 'n17', 'title' => 'deepest'];
 		for ($level = 16; $level >= 0; $level--) {
@@ -237,8 +274,8 @@ class SloCurriculumTreeWalkerTest extends TestCase {
 		$this->assertSame('2020', $info['versie']);
 		$this->assertNull($info['status']);
 		$this->assertSame(['v1', 'tekenen', 'x1'], $info['subjectKeys']);
-		$this->assertSame('', SloCurriculumTreeWalker::uuidOf([]));
-		$this->assertSame('z', SloCurriculumTreeWalker::uuidOf(['@link' => '/uuid/z']));
+		$this->assertSame('', (new SloCurriculumNodeReader(new JsonTagReader()))->uuidOf([]));
+		$this->assertSame('z', (new SloCurriculumNodeReader(new JsonTagReader()))->uuidOf(['@link' => '/uuid/z']));
 	}//end testDescribeEntityAndUuidOf()
 
 	/**

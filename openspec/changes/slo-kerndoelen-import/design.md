@@ -111,7 +111,7 @@ No lifecycle, aggregation, calculation or notification is added.
 
 ## Nextcloud integration
 - Controllers: none.
-- Services: `SloCurriculumSourceAdapter`, `SloCurriculumPresetRegistry`, `SloCurriculumTreeWalker`, `SloCurriculumMapper`, `SloYearAllocator`, `JsonTagReader`; clients `SloCurriculumClientMock`, `SloCurriculumClientHttp` behind abstract `SloCurriculumClient`.
+- Services: `SloCurriculumSourceAdapter`, `SloCurriculumPresetRegistry`, `SloCurriculumTreeWalker`, `SloCurriculumNodeReader`, `SloCurriculumMapper`, `SloYearAllocator`, `JsonTagReader`; clients `SloCurriculumClientMock`, `SloCurriculumClientHttp` behind abstract `SloCurriculumClient`.
 - DI: one `registerService(SloCurriculumClient::class, ...)` in `Application::register()`; everything else autowires.
 - Config: `IAppConfig` key `integriq` / `slo.curriculum.feature_flag` (default `0`).
 - OpenRegister: `OCA\OpenRegister\Service\ObjectService::findAll()` to resolve the seeded source (live flavour only).
@@ -131,7 +131,8 @@ lib/
     SloCurriculumClientMock.php        dormant default, serves the recorded fixture
     SloCurriculumClientHttp.php        live, CallService + seeded source
     JsonTagReader.php
-    SloCurriculumTreeWalker.php
+    SloCurriculumTreeWalker.php         traversal only
+    SloCurriculumNodeReader.php         code, title, description, niveaus, subject keys of one entity
     SloYearAllocator.php
     SloCurriculumMapper.php
     SloCurriculumPresetRegistry.php
@@ -147,6 +148,7 @@ tests/Unit/
   Sources/Slo/SloCurriculumSourceAdapterTest.php
   Settings/SloCurriculumSourceTemplateTest.php
   Service/CatalogRegistryServiceTest.php (+ one assertion)
+  AppInfo/ApplicationBindsSloCurriculumClientTest.php (the DI binding runs)
 ```
 
 ## Seed data

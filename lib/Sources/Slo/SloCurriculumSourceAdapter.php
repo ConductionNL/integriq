@@ -44,7 +44,6 @@ use OCA\Integriq\Exception\SloCurriculumException;
 use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Dormant facade: discover SLO roots, import one framework.
@@ -182,7 +181,7 @@ final class SloCurriculumSourceAdapter {
 	 * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-one-framework-per-set-and-root-with-stable-ids-and-attribution-req-007
 	 */
 	public function importFramework(string $setKey, string $tenantId, ?string $rootUuid = null, array $subjectCourseIds = []): array {
-		if (Uuid::isValid($tenantId) === false) {
+		if ($this->isUuid(value: $tenantId) === false) {
 			throw new InvalidArgumentException(sprintf('The tenant id "%s" is not a UUID.', $tenantId));
 		}
 
@@ -373,6 +372,18 @@ final class SloCurriculumSourceAdapter {
 	}//end edition()
 
 	/**
+	 * Whether a value is an RFC 4122 UUID (the format learniq's `tenant_id`
+	 * and Course ids use).
+	 *
+	 * @param string $value The value.
+	 *
+	 * @return bool True for a UUID.
+	 */
+	private function isUuid(string $value): bool {
+		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+	}//end isUuid()
+
+	/**
 	 * Normalise and validate the caller's subject map.
 	 *
 	 * @param array<string,string> $subjectCourseIds Vakleergebied uuid or title => Course uuid.
@@ -384,7 +395,7 @@ final class SloCurriculumSourceAdapter {
 	private function normaliseSubjects(array $subjectCourseIds): array {
 		$subjects = [];
 		foreach ($subjectCourseIds as $key => $courseId) {
-			if (is_string($courseId) === false || Uuid::isValid($courseId) === false) {
+			if (is_string($courseId) === false || $this->isUuid(value: $courseId) === false) {
 				throw new InvalidArgumentException(
 					sprintf('The subject map value for "%s" is not a learniq Course UUID.', (string)$key)
 				);

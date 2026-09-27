@@ -140,7 +140,7 @@ class JsonTagReaderTest extends TestCase {
 	 * @return void
 	 */
 	public function testLastSegment(): void {
-		$this->assertSame('abc', JsonTagReader::lastSegment('/uuid/abc'));
-		$this->assertSame('abc', JsonTagReader::lastSegment('abc'));
+		$this->assertSame('abc', (new JsonTagReader())->lastSegment('/uuid/abc'));
+		$this->assertSame('abc', (new JsonTagReader())->lastSegment('abc'));
 	}//end testLastSegment()
 }//end class
