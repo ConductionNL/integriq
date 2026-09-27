@@ -204,7 +204,14 @@ App id (`appinfo/info.xml`): `integriq`
   CRITICAL/WARNING issues. Not archived (archival happens post-merge).
   **Change 1/4 DONE.**
 
-## Change 2/4: integriq-adapter-verzuimloket — not started
+## Change 2/4: integriq-adapter-verzuimloket
+
+- **Note**: this branch (`feat/integriq-adapter-verzuimloket`, cut fresh
+  from `origin/development`) has no `LANE-LOG.md` of its own — restored
+  from the committed copy on `feat/integriq-adapter-rod` (`git show
+  feat/integriq-adapter-rod:LANE-LOG.md`) since `development` does not have
+  it yet either. Each lane branch will carry its own copy until the ROD PR
+  merges.
 
 Grounded so far (from `apps-extra/openconnector` corpus reads plus a
 read-only peek at sibling lane `lq-lanes/lq-contracts`'s learniq checkout,
@@ -225,6 +232,65 @@ mandatory Leerplichtwet art. 21a report. learniq does NOT yet model LRV
 `meldingType` so DUO's real melding vocabulary can be expressed even though
 only the 16-uur trigger fires in learniq today; noting this as a documented
 assumption, not fabricated learniq schema.
+
+- **Implemented**: mirrors `integriq-adapter-rod`'s exact shape —
+  `VerzuimloketProviderInterface`/`Registry`/`LogVerzuimloketProvider`/
+  `VerzuimloketEdukoppelingClient` (reuses `DigikoppelingAdapter`'s WUS
+  transport, same M3(c) certificate gate as ROD),
+  `VerzuimloketEnvelopeTranslator` (three meldingType kinds:
+  eerste-melding, herhaalmelding, langdurig-relatief-verzuim; optional
+  `breachingRecords`/`interventions` JSON-encoded when present),
+  `VerzuimloketAcknowledgementTranslator` +
+  `VerzuimloketAcknowledgementReceivedEvent`, `VerzuimloketService`
+  (send/retour/retry, BSN SHA-256-hashed at rest), `VerzuimloketController`
+  (`POST /api/verzuimloket/berichten`, `POST /api/verzuimloket/retour`),
+  `VerzuimloketRetryJob`, `VerzuimloketAdapter` catalogue card.
+- Shared files (additive, diff-checked): `integriq_register.json`
+  (+89/-1 — `verzuim_message` schema, learned from ROD's mistake to insert
+  via anchored `Edit` text surgery, never a JSON re-dump), `routes.php`
+  (+8), `info.xml` (+1), `Application.php` (+3 imports, +12 lines),
+  `GatewayCatalogue.php` (+7 lines — kept `entries()` at 99 lines from the
+  start by omitting `'transport'`, per the ROD phpmd lesson, so no
+  phpmd finding this time), `RegisterDescriptorTest.php` and
+  `SchemaAuthorizationRatchetTest.php` (ratchet lists, learned from ROD's
+  full-suite discovery that these two ALSO need every new schema slug).
+- Tests: 8 new test files, 40 tests/90 assertions, all green.
+- `php -l`/`phpcs`/`phpstan` on all touched files: clean (0 errors, same 1
+  pre-existing inherited phpcs warning as ROD on `GatewayCatalogue::entries()`'s
+  own docblock). `phpmd` verified with an isolated `HOME` from the start
+  (learned from ROD) — both configs exit 0 on the whole `lib/` tree.
+- `composer check:strict`: **ALL CHECKS PASSED** (exit 0) on the first full
+  run — `check:no-legacy-types`/`check:routes`/`lint`/`phpcs`/`phpmd`/
+  `psalm`/`phpstan` all clean, `test:all` 3880 tests/13287 assertions/0
+  failures/0 errors. No repeat of ROD's pdepend-cache/phpmd false-positive
+  or the deprecation-count confusion — both were correctly identified as
+  ROD-run artifacts, not a `composer test:all` property (isolated `phpmd`
+  and 3 independent `composer test:all` reruns already proved this before
+  this change started).
+- **Hydra gates**: first run found 2 failures — `gate-53
+  effective-manifest-crossref` (the same pre-existing Node.js ESM/CommonJS
+  tooling crash as ROD's PR, unrelated) and a genuinely NEW one, `gate-60
+  icon-vocabulary`: `AccountAlertOutline` (my choice for `verzuim_message`)
+  is not registered in `src/icons.js` (ADR-077 rule 3 — an unregistered
+  icon renders with NO icon at all, not a fallback). Fixed by switching to
+  `SchoolOutline`, already registered and already used by
+  `integriq-adapter-rod`'s `rod_message` for visual consistency across the
+  DUO-adapter family. Verified directly with the gate's own checker
+  (`check_icon_vocabulary.py`): 0 failures, 2 pre-existing unrelated `Cloud`
+  vs `SourceBranch` Tier-B warnings on the `source` concept. Re-ran the
+  full hydra gates: back to 1 failure (gate-53 only), matching ROD's PR
+  exactly. 75 of 93 declared gates ran (14 not applicable), 2 advisory
+  WARNINGs (gate-18 notification-dialect, gate-19 e2e-coverage — none of
+  the 32 missing-@e2e scenarios are this change's; all 13 scenarios in
+  `specs/verzuimloket-adapter/spec.md` carry `@e2e exclude`).
+- **Committed and pushed**: `7071d696` on
+  `feat/integriq-adapter-verzuimloket`, 40 files, +4458/-1. **PR**:
+  https://github.com/ConductionNL/integriq/pull/2181 (base `development`).
+  **opsx-verify**: headless, posted as PR comment
+  https://github.com/ConductionNL/integriq/pull/2181#issuecomment-5846020992
+  — Completeness 17/17 tasks, Correctness 6/6 requirements + all 13
+  scenarios covered, Coherence matches contract.md exactly, no
+  CRITICAL/WARNING issues. Not archived. **Change 2/4 DONE.**
 
 ## Change 3/4: integriq-adapter-oso — not started
 

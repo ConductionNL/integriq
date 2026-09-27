@@ -2561,7 +2561,11 @@
         "The ROD berichtsoort this record carries": "The ROD berichtsoort this record carries",
         "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg": "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg",
         "The provider-returned reference for this OUTBOUND message; null on inbound records": "The provider-returned reference for this OUTBOUND message; null on inbound records",
-        "Whether this record is an outbound bericht send or an inbound acknowledgement/retour": "Whether this record is an outbound bericht send or an inbound acknowledgement/retour"
+        "Whether this record is an outbound bericht send or an inbound acknowledgement/retour": "Whether this record is an outbound bericht send or an inbound acknowledgement/retour",
+        "Melding Kind": "Melding Kind",
+        "The Verzuimloket melding kind this record carries": "The Verzuimloket melding kind this record carries",
+        "Verzuimloket Message": "Verzuimloket Message",
+        "Whether this record is an outbound melding send or an inbound acknowledgement/retour": "Whether this record is an outbound melding send or an inbound acknowledgement/retour"
     },
     "plurals": {}
 }

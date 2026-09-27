@@ -1221,7 +1221,11 @@
         "The ROD berichtsoort this record carries": "De ROD-berichtsoort die dit record bevat",
         "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg": "Het correlatie-id: opgegeven door de aanroeper bij een uitgaande verzending, teruggegeven door DUO op het retourdeel",
         "The provider-returned reference for this OUTBOUND message; null on inbound records": "De door de aanbieder teruggegeven referentie voor dit UITGAANDE bericht; null bij inkomende records",
-        "Whether this record is an outbound bericht send or an inbound acknowledgement/retour": "Of dit record een uitgaande berichtverzending is of een inkomende bevestiging/retour"
+        "Whether this record is an outbound bericht send or an inbound acknowledgement/retour": "Of dit record een uitgaande berichtverzending is of een inkomende bevestiging/retour",
+        "Melding Kind": "Meldingsoort",
+        "The Verzuimloket melding kind this record carries": "De Verzuimloket-meldingsoort die dit record bevat",
+        "Verzuimloket Message": "Verzuimloket-bericht",
+        "Whether this record is an outbound melding send or an inbound acknowledgement/retour": "Of dit record een uitgaande meldingverzending is of een inkomende bevestiging/retour"
     },
     "plurals": {}
 }
