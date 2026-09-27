@@ -125,7 +125,9 @@
 					"exchangeJob": {
 						"type": "string",
 						"format": "uuid",
-						"description": "Uuid of the exchange job whose run rejected this record. Set only on exchange rejections.",
+						"$ref": "#/components/schemas/job",
+						"x-openregister-onDelete": "SET NULL",
+						"description": "Uuid of the exchange job whose run rejected this record (many-to-one; onDelete=SET NULL keeps the rejection for audit). Set only on exchange rejections.",
 						"title": "Exchange Job"
 					},
 					"ownerApp": {

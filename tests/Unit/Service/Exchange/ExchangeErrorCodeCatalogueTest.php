@@ -50,7 +50,8 @@ class ExchangeErrorCodeCatalogueTest extends TestCase {
 
 				$entity = new ObjectEntity();
 				$entity->setObject(['mapping' => $rowsBySlug[$slug]]);
-				return ['results' => [$entity], 'total' => 1];
+				// OpenRegister's findAll answers with a flat list.
+				return [$entity];
 			}
 		);
 

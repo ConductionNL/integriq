@@ -90,7 +90,8 @@ class ExchangeJobServiceTest extends TestCase {
 					}
 				}
 
-				return ['results' => $matches, 'total' => count($matches)];
+				// OpenRegister's findAll answers with a flat list.
+				return $matches;
 			}
 		);
 

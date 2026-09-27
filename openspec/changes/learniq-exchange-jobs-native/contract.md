@@ -189,7 +189,7 @@ are never part of the HTTP answer.
 
 ## Integriq endpoints (the read model)
 
-All return JSON; list endpoints return `{results: [...], total: n}`. Auth: Nextcloud session
+All return JSON; list endpoints return `{results: [...], total: n}`, where `total` is the number of rows in that response (OpenRegister gives no overall count). Auth: Nextcloud session
 plus the named ADR-023 action (default `admin`, configurable in Admin settings > Integriq >
 Action authorization).
 

@@ -160,7 +160,7 @@ class ExchangeErrorCodeCatalogue {
 			return null;
 		}
 
-		foreach (($matches['results'] ?? []) as $row) {
+		foreach (($matches['results'] ?? $matches) as $row) {
 			$mapping = ($row->getObject()['mapping'] ?? null);
 			if (is_array($mapping) === true) {
 				return $mapping;

@@ -33,6 +33,11 @@ use OCP\EventDispatcher\Event;
  * ADR-041. Upserts by slug; the slug must start with `<ownerApp>-` so one app
  * cannot overwrite another app's or integriq's own mappings.
  *
+ * The boolean constructor argument is data, the mapping schema's own
+ * `passThrough` field, not a behaviour switch.
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ *
  * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
  */
 class ExchangeMappingRequestedEvent extends Event {
@@ -168,10 +173,10 @@ class ExchangeMappingRequestedEvent extends Event {
 	 *
 	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
 	 */
-	public function getPassThrough(): bool {
+	public function isPassThrough(): bool {
 		return $this->passThrough;
 
-	}//end getPassThrough()
+	}//end isPassThrough()
 
 	/**
 	 * The stored mapping's id.

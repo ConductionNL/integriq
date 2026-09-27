@@ -192,7 +192,7 @@ class ExchangeJobService {
 			'mapping' => $event->getMapping(),
 			'cast' => $event->getCast(),
 			'unset' => $event->getUnset(),
-			'passThrough' => $event->getPassThrough(),
+			'passThrough' => $event->isPassThrough(),
 			'version' => '1.0.0',
 		];
 
@@ -328,7 +328,7 @@ class ExchangeJobService {
 			_multitenancy: false
 		);
 
-		foreach (($matches['results'] ?? []) as $row) {
+		foreach (($matches['results'] ?? $matches) as $row) {
 			if ($row instanceof ObjectEntity) {
 				return $row;
 			}
@@ -484,7 +484,7 @@ class ExchangeJobService {
 			_multitenancy: false
 		);
 
-		foreach (($matches['results'] ?? []) as $row) {
+		foreach (($matches['results'] ?? $matches) as $row) {
 			if ($row instanceof ObjectEntity) {
 				return $row;
 			}

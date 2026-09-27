@@ -337,6 +337,9 @@ class ExchangeReadModel {
 	/**
 	 * A bounded OpenRegister read.
 	 *
+	 * OpenRegister's findAll returns a flat list of entities; the `results`
+	 * key is read too so a wrapped answer works the same.
+	 *
 	 * @param array<string, mixed> $filters The filters.
 	 * @param int                  $limit   Page size.
 	 * @param int                  $offset  Page offset.
@@ -355,13 +358,15 @@ class ExchangeReadModel {
 		);
 
 		$results = [];
-		foreach (($matches['results'] ?? []) as $row) {
+		foreach (($matches['results'] ?? $matches) as $row) {
 			if ($row instanceof ObjectEntity) {
 				$results[] = $row;
 			}
 		}
 
-		return ['results' => $results, 'total' => (int)($matches['total'] ?? count($results))];
+		// `total` is the number of rows in this page: OpenRegister's findAll
+		// returns a plain list with no overall count.
+		return ['results' => $results, 'total' => count($results)];
 
 	}//end find()
 }//end class
