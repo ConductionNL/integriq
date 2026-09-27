@@ -14,8 +14,8 @@ Every source in integriq calls out with one shared credential. An app built in b
 Row `buildiq:int-per-user-oauth` (rated no, built none) from buildiq's capability matrix, owned by integriq, decided `build` in the OpenSpec pass of 2026-09-27: a featureRequest demand row plus two competitors yes. Integriq owns the source credential, so the per-user token is integriq's half.
 
 - featureRequest https://github.com/appsmithorg/appsmith/issues/3313 (Appsmith, open).
-- Mendix https://docs.mendix.com/appstore/modules/oidc/ "API consumption: when the app calls other APIs" with the user's own token.
-- Power Apps https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/add-manage-connections, connections made per user.
+- Mendix https://docs.mendix.com/appstore/modules/oidc/ "API consumption: when the app calls other services on behalf of the end user, it can use the access token obtained via the OIDC SSO module".
+- Power Apps https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/add-manage-connections "connections are created per user with their own credentials, so a connector calls the service as the" signed-in user.
 
 The buildiq matrix evidence: "Connections use shared credentials kept in the vault; no per-user sign-in for a connector" in the page editor.
 
