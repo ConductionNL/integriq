@@ -1226,7 +1226,16 @@ OC.L10N.register(
         "Melding Kind": "Meldingsoort",
         "The Verzuimloket melding kind this record carries": "De Verzuimloket-meldingsoort die dit record bevat",
         "Verzuimloket Message": "Verzuimloket-bericht",
-        "Whether this record is an outbound melding send or an inbound acknowledgement/retour": "Of dit record een uitgaande meldingverzending is of een inkomende bevestiging/retour"
+        "Whether this record is an outbound melding send or an inbound acknowledgement/retour": "Of dit record een uitgaande meldingverzending is of een inkomende bevestiging/retour",
+        "Export: sent, failed or pending, later acknowledged or rejected via retour. Import: received": "Export: sent, failed of pending, later acknowledged of rejected via retour. Import: received",
+        "Learner ECK iD": "ECK-iD van de leerling",
+        "OSO Message": "OSO-bericht",
+        "Source School BRIN": "BRIN van de bronschool",
+        "The correlation id for an export or its retour; null on a fresh import record": "Het correlatie-id voor een export of het retour ervan; null bij een nieuw importrecord",
+        "The provider-returned reference for an OUTBOUND export; null on import records": "De door de aanbieder teruggegeven referentie voor een UITGAANDE export; null bij importrecords",
+        "The pupil's pseudonymous ECK iD, on either direction": "Het pseudonieme ECK-iD van de leerling, in beide richtingen",
+        "The sending school's BRIN on an INBOUND import; null on export records": "Het BRIN van de verzendende school bij een INKOMENDE import; null bij exportrecords",
+        "Whether this record is an outbound export (or its retour) or an inbound import": "Of dit record een uitgaande export (of het retour ervan) of een inkomende import is"
     },
     "nplurals=2; plural=(n != 1);"
 )

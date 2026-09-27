@@ -71,6 +71,14 @@ final class GatewayCatalogue {
 			'jurisdiction' => 'NL',
 		],
 		[
+			'id' => 'oso',
+			'label' => 'OSO',
+			'standard' => 'Overstapservice Onderwijs (Kennisnet)',
+			'claimLevel' => GatewayDescriptor::CLAIM_PLANNED,
+			'claimEvidence' => 'Export and import envelope build/parse validated against fixtures; no certificate, no aansluiting (M3(c)).',
+			'jurisdiction' => 'NL',
+		],
+		[
 			'id' => 'stuf-zkn',
 			'label' => 'StUF-ZKN 3.10',
 			'standard' => 'StUF-ZKN 3.10',

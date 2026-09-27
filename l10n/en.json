@@ -2565,7 +2565,16 @@
         "Melding Kind": "Melding Kind",
         "The Verzuimloket melding kind this record carries": "The Verzuimloket melding kind this record carries",
         "Verzuimloket Message": "Verzuimloket Message",
-        "Whether this record is an outbound melding send or an inbound acknowledgement/retour": "Whether this record is an outbound melding send or an inbound acknowledgement/retour"
+        "Whether this record is an outbound melding send or an inbound acknowledgement/retour": "Whether this record is an outbound melding send or an inbound acknowledgement/retour",
+        "Export: sent, failed or pending, later acknowledged or rejected via retour. Import: received": "Export: sent, failed or pending, later acknowledged or rejected via retour. Import: received",
+        "Learner ECK iD": "Learner ECK iD",
+        "OSO Message": "OSO Message",
+        "Source School BRIN": "Source School BRIN",
+        "The correlation id for an export or its retour; null on a fresh import record": "The correlation id for an export or its retour; null on a fresh import record",
+        "The provider-returned reference for an OUTBOUND export; null on import records": "The provider-returned reference for an OUTBOUND export; null on import records",
+        "The pupil's pseudonymous ECK iD, on either direction": "The pupil's pseudonymous ECK iD, on either direction",
+        "The sending school's BRIN on an INBOUND import; null on export records": "The sending school's BRIN on an INBOUND import; null on export records",
+        "Whether this record is an outbound export (or its retour) or an inbound import": "Whether this record is an outbound export (or its retour) or an inbound import"
     },
     "plurals": {}
 }

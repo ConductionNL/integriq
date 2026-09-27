@@ -292,7 +292,7 @@ assumption, not fabricated learniq schema.
   scenarios covered, Coherence matches contract.md exactly, no
   CRITICAL/WARNING issues. Not archived. **Change 2/4 DONE.**
 
-## Change 3/4: integriq-adapter-oso — not started
+## Change 3/4: integriq-adapter-oso
 
 Grounded against `lq-contracts`'s `oso-inbound-contract` (committed there at
 `78b8ddb` on branch `feat/oso-inbound-contract`, verified all-green per its
@@ -311,6 +311,69 @@ XML and dispatches an `OsoDossierReceivedEvent` (mirrors
 `RodAcknowledgementReceivedEvent`) carrying the raw field set above for
 learniq's own `DataMappingProfile`-driven listener to materialise into
 `OsoImportDossier` — integriq never writes learniq's schema directly, per D3.
+
+- **Implemented**: `OsoProviderInterface`/`Registry`/`LogOsoProvider`/
+  `OsoKennisnetClient` (export leg only — reuses the shared Digikoppeling
+  transport; import is Kennisnet-initiated, no provider dispatch on that
+  leg), `OsoExportEnvelopeTranslator` (categories transmitted as-is,
+  `included: false` never omitted — REQ-006 data-minimisation
+  pass-through), `OsoImportTranslator` (output field names match
+  `OsoImportDossier` verbatim: `sourceSchoolBrin`, `learnerEckId`,
+  `categories`, `draftProfile`, `attachmentRefs`), `OsoAcknowledgementTranslator`,
+  `OsoDossierReceivedEvent` + `OsoAcknowledgementReceivedEvent`,
+  `OsoService` (export/import/retour/retry orchestration), `OsoController`
+  (`POST /api/oso/export`, `/import`, `/retour`), `OsoRetryJob`,
+  `OsoAdapter` catalogue card.
+- Icon chosen and verified registered BEFORE committing this time (learned
+  from verzuimloket's gate-60 finding): `SwapHorizontal` (already in
+  `src/icons.js`), confirmed via `check_icon_vocabulary.py` directly — 0
+  failures before ever running the full hydra gates.
+- `GatewayCatalogue::entries()` kept at 99 lines from the start (omitted
+  `'transport'` on the new `oso` entry, per the ROD phpmd lesson).
+- Diff-scoped verification: `php -l` clean (all files); `phpunit --filter
+  Oso` 64 tests/150 assertions green; `phpcs` 0 errors (fixed 10 new
+  `@spec`-missing warnings across `OsoAcknowledgementTranslator` and both
+  event classes with a scripted regex insert — read back and diff-verified
+  per the scripted-edit rule, count matched exactly 5+4 getters); `phpstan`
+  no errors; `phpmd` (both configs, isolated `HOME` from the start) exit 0
+  on the whole `lib/` tree.
+- `composer check:strict` (`TMPDIR=$PWD/.tmp COMPOSER_PROCESS_TIMEOUT=0`, via
+  `with-slot.sh`): **ALL CHECKS PASSED** (exit 0) on the first full run —
+  `check:no-legacy-types`/`check:routes`/`lint`/`phpcs`/`phpmd`/`psalm`/
+  `phpstan` all clean, `test:all` 3882 tests/13300 assertions/0 failures/0
+  errors (1 deprecation, 2 skipped, both pre-existing).
+- Hydra gates (whole-tree, via `with-slot.sh`, no `--base`): 75/93 declared
+  gates ran (14 not applicable, no delta base), 1 failure, 2 advisory
+  WARNINGs. `gate-53 effective-manifest-crossref`: FAIL — same pre-existing
+  fleet-wide Node.js ESM/CommonJS crash confirmed unrelated in changes 1 and
+  2's PRs, unchanged here. `gate-60 icon-vocabulary`: PASS (pre-verification
+  paid off — no fix cycle needed this time, unlike verzuimloket).
+  `gate-18 notification-dialect`: WARNING, 1 imperative-dispatch site
+  (advisory). `gate-19 e2e-coverage`: WARNING, 32 fleet-wide scenarios
+  missing `@e2e` (advisory, `.github#477`); none belong to this change — all
+  12 scenarios in `specs/oso-adapter/spec.md` carry `@e2e exclude`.
+- `openspec/changes/integriq-adapter-oso/tasks.md`: all 17 checkboxes marked
+  `[x]`.
+- Committed `b3e250df` on `feat/integriq-adapter-oso` (cut from
+  `origin/development`, which by commit time already included PR #2178's
+  cross-lane parity corrections — no conflict, clean rebase-free history).
+  43 files, 4515 insertions. `.tmp/` and `LANE-LOG.md` explicitly excluded
+  from the commit (verified via `git diff --cached --name-only`).
+- Pushed and opened **PR #2182** against `development`
+  (https://github.com/ConductionNL/integriq/pull/2182), body written via the
+  `.pr-body.md`-in-lane-dir workaround (scratchpad path silently failed
+  `--body-file` again, same as changes 1/2).
+- `opsx-verify` run headlessly (no plan.json/tracking issue for this
+  lane-created change, so no GitHub sync step applied): 17/17 tasks
+  complete, 6/6 requirements have implementation evidence and test-plan.md
+  TC coverage confirmed by grep against the test files, contract.md's 3
+  endpoints match `routes.php` exactly, 0 CRITICAL/WARNING/SUGGESTION
+  issues. Verdict posted as a PR comment
+  (https://github.com/ConductionNL/integriq/pull/2182#issuecomment-5846220951).
+  Not archived — outside this lane's task scope.
+- **Status: DONE.** Branch `feat/integriq-adapter-oso`, PR #2182, all green
+  modulo the two known pre-existing fleet-wide findings (gate-53, and the
+  advisory gate-18/gate-19 warnings shared by every app in scope).
 
 ## Change 4/4: integriq-adapter-uwlr-eduv — not started
 

@@ -92,6 +92,9 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 50 — `verzuim_message` added by openspec/changes/integriq-adapter-verzuimloket,
 	 * bringing the count to 51.
 	 *
+	 * Was 51 — `oso_message` added by openspec/changes/integriq-adapter-oso,
+	 * bringing the count to 52.
+	 *
 	 * @var array<string, string>
 	 */
 	private const SCHEMA_SLUGS = [
@@ -153,6 +156,8 @@ class RegisterDescriptorTest extends TestCase {
 		'RodMessage' => 'rod_message',
 		// DUO Verzuimloket (VSV-M2M) adapter — added by integriq-adapter-verzuimloket spec.
 		'VerzuimMessage' => 'verzuim_message',
+		// OSO (Overstapservice Onderwijs) adapter — added by integriq-adapter-oso spec.
+		'OsoMessage' => 'oso_message',
 		// FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.
 		'FscService' => 'fsc_service',
 		'FscCall' => 'fsc_call',

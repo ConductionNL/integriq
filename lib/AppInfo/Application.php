@@ -115,6 +115,9 @@ use OCA\Integriq\Service\Rod\RodProviderRegistry;
 use OCA\Integriq\Service\Verzuimloket\LogVerzuimloketProvider;
 use OCA\Integriq\Service\Verzuimloket\VerzuimloketEdukoppelingClient;
 use OCA\Integriq\Service\Verzuimloket\VerzuimloketProviderRegistry;
+use OCA\Integriq\Service\Oso\LogOsoProvider;
+use OCA\Integriq\Service\Oso\OsoKennisnetClient;
+use OCA\Integriq\Service\Oso\OsoProviderRegistry;
 use OCA\Integriq\Gateway\GatewayRegistry;
 use OCA\Integriq\Gateway\GatewayTransport;
 use OCA\Integriq\Gateway\SourceGatewayTransport;
@@ -540,6 +543,20 @@ class Application extends App implements IBootstrap {
 					providers: [
 						$c->get(VerzuimloketEdukoppelingClient::class),
 						$c->get(LogVerzuimloketProvider::class),
+					]
+				);
+			}
+		);
+
+		// The OSO export provider bindings. `log` is registered last for the
+		// same reason as the digital post bindings above.
+		$context->registerService(
+			OsoProviderRegistry::class,
+			static function ($c): OsoProviderRegistry {
+				return new OsoProviderRegistry(
+					providers: [
+						$c->get(OsoKennisnetClient::class),
+						$c->get(LogOsoProvider::class),
 					]
 				);
 			}

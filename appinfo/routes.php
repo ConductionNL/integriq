@@ -208,6 +208,16 @@ return [
 		// VerzuimloketController::retour().
 		['name' => 'verzuimloket#berichten', 'url' => '/api/verzuimloket/berichten', 'verb' => 'POST'],
 		['name' => 'verzuimloket#retour', 'url' => '/api/verzuimloket/retour', 'verb' => 'POST'],
+		// OSO (Overstapservice Onderwijs, Kennisnet) adapter (openspec/changes/
+		// integriq-adapter-oso). Export is an authenticated NC-session call
+		// (learniq's own `oso` DataExchangeJob, already parent-review-gated on
+		// learniq's side) — mirrors iwmoIjw#createMessage. The inbound import
+		// receiver (Kennisnet delivering an overstapdossier) and the export
+		// acknowledgement/retour receiver are both gated by webhook signature
+		// (HMAC), not an NC session; see OsoController.
+		['name' => 'oso#export', 'url' => '/api/oso/export', 'verb' => 'POST'],
+		['name' => 'oso#import', 'url' => '/api/oso/import', 'verb' => 'POST'],
+		['name' => 'oso#retour', 'url' => '/api/oso/retour', 'verb' => 'POST'],
 
 		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
 		// stuf-zkn-bridge) — the legacy Dutch municipal SOAP/XML message
