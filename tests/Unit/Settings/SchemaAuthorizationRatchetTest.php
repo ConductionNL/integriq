@@ -150,6 +150,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'peppol_transmission',
 		'promotion_audit',
 		'ris_sync_record',
+		'rod_message',
 		'sms_message',
 		'stuf_message',
 		'sync_item_dead_letter',
