@@ -1,0 +1,898 @@
+[
+	{
+		"row": "fed-harvest-removed",
+		"matrix": "opencatalogi",
+		"decision": "existing",
+		"reason": "Its disappearancePolicy (delete, markEnded, keepAndFlag) is exactly the choice the row asks for.",
+		"change": "records-owned-by-an-external-source",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-council",
+		"matrix": "opencatalogi",
+		"decision": "defer",
+		"reason": "single competitor (decos), no demand; the NotuBiz poll gap is row integriq:nl-ris.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-import-failure-alert",
+		"matrix": "opencatalogi",
+		"decision": "existing",
+		"reason": "The sync-failed rule on synchronization_log covers a failed import, since opencatalogi imports only through an integriq synchronisation. The row is specified in opencatalogi's matrix without naming the change.",
+		"change": "integriq-notifications",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-stuf",
+		"matrix": "opencatalogi",
+		"decision": "defer",
+		"reason": "partial, built, no demand, and no competitor rates yes.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "svc-import",
+		"matrix": "opencatalogi",
+		"decision": "existing",
+		"reason": "The missing half is the transport to the outside catalogue, which the zgw-catalogi set in this change carries.",
+		"change": "zgw-connectors-for-dossiq",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "svc-resync",
+		"matrix": "opencatalogi",
+		"decision": "defer",
+		"reason": "partial, built, no demand. The preview and accept code is opencatalogi's own ServiceCatalogueController, so the missing screen is opencatalogi's, not integriq's.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-a2a-gateway",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand: one competitor (mulesoft) and its own changelog are the only signal.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-ai-token-quota",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-034 decision 2: model token budgets follow the LLM call path, which is Hermiq's.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-change-notice",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built with a featureRequest demand row for the missing half: a notice to subscribed consumers when an API changes or is retired, beyond the Deprecation and Sunset headers. Signals: no competitor rates yes, demand: featureRequest https://github.com/wso2/api-manager/issues/2928.",
+		"change": "access-developer-portal-and-subscriptions",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-devportal",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 2 competitors rate yes (mulesoft, wso2), no demand row.",
+		"change": "access-developer-portal-and-subscriptions",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-governance",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 2 competitors rate yes (mulesoft, wso2), no demand row.",
+		"change": "gateway-api-design-rules-check",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-jwks",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, and the missing half matters per the addendum. The missing half is checking a gateway consumer's JWT against its issuer's JWKS address; today only LTI tools resolve keys from JWKS. Signals: 5 competitors rate yes (tyk, apisix, mulesoft, wso2, frank), demand: featureRequest https://github.com/apache/apisix/issues/12791.",
+		"change": "access-oauth-and-token-validation",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-mcp-gateway",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. ADR-063 makes OpenRegister the registry for the fleet's own MCP tools; an outside MCP server behind the gateway is gateway traffic, so it stays integriq's. Signals: 4 competitors rate yes (tyk, apisix, mulesoft, wso2), demand: changelog https://tyk.io/docs/developer-support/release-notes/gateway.",
+		"change": "gateway-mcp-proxy",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-mcp-tool-filter",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "single competitor (tyk) plus its changelog; for Hermiq agents ADR-063 decision 6 already filters tools per agent.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-monetise",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row; outside the core area.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-mtls-in",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 4 competitors rate yes (tyk, apisix, mulesoft, wso2), no demand row.",
+		"change": "access-consumer-credentials",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-multi-auth",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, a featureRequest demand row plus competitors yes. Signals: 3 competitors rate yes (tyk, apisix, wso2), demand: featureRequest https://github.com/TykTechnologies/tyk/issues/2623.",
+		"change": "access-consumer-credentials",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-oauth-server",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 3 competitors rate yes (tyk, mulesoft, wso2), no demand row.",
+		"change": "access-oauth-and-token-validation",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-oidc",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 5 competitors rate yes (tyk, apisix, mulesoft, wso2, frank), no demand row.",
+		"change": "access-oauth-and-token-validation",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-protected-resource-metadata",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 4 competitors rate yes (n8n, tyk, mulesoft, wso2), demand: changelog https://tyk.io/docs/developer-support/release-notes/gateway.",
+		"change": "access-oauth-and-token-validation",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-scopes",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two or more competitors yes. The missing half is a scopes list on the consumer that limits it to named endpoints and actions, instead of per-rule key allowlists. Signals: 5 competitors rate yes (tyk, apisix, mulesoft, wso2, frank), no demand row.",
+		"change": "access-oauth-and-token-validation",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-secret-reveal-once",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Rides with integriq:acc-secret-rotation, which meets the bar: its whole missing half is the same screen or service access-consumer-credentials specifies. On its own: 1 competitor rate yes (wso2), no demand row.",
+		"change": "access-consumer-credentials",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-secret-rotation",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 2 competitors rate yes (apisix, wso2), demand: changelog https://apim.docs.wso2.com/en/latest/get-started/about-this-release/.",
+		"change": "access-consumer-credentials",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-self-service-keys",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 2 competitors rate yes (mulesoft, wso2), no demand row.",
+		"change": "access-developer-portal-and-subscriptions",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-subscription-expiry",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built with a featureRequest demand row for the missing half: an end date on a subscription after which access stops. Signals: 1 competitor rate yes (tyk), demand: featureRequest https://github.com/wso2/api-manager/issues/1513.",
+		"change": "access-developer-portal-and-subscriptions",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "acc-token-exchange",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "single competitor (mulesoft) plus a changelog; outside the core area.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "auto-ai-builder",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-034 and ADR-065: drafting a flow from plain words is Hermiq writing into OpenRegister's flow engine and nc-vue's canvas.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "auto-ai-evaluation",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-034: evaluating an AI step is Hermiq's, since it owns the model call.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "auto-ai-step",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-065 decision 1 (OpenRegister is the only home for a flow engine) with ADR-034 (Hermiq owns the LLM call): an AI step is an OpenRegister flow node calling Hermiq.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "auto-code",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-065 decision 1: OpenRegister is the only home for a flow engine, and integriq's own flow schema is being retired (retire-integriq-flow-schema). A code step is an OpenRegister node type.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "auto-compensate",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-065 decision 1: compensation across flow steps is flow-engine semantics, OpenRegister's.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "auto-error-path",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-065 decision 1: fallback paths are flow-engine semantics, OpenRegister's.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "auto-templates",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-065 decisions 1 and 2: the template picker belongs to OpenRegister's engine and nc-vue's canvas.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-absence-report",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The DUO Verzuimloket adapter landed dormant on 2026-09-27 (#2181), after the matrix was read; matrix corrected to building.",
+		"change": "integriq-adapter-verzuimloket",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-dpg",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-nc-marketplace",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-sbb",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-software-catalogue",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-tenders",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-timetable",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The roster adapter for Zermelo, Untis, Xedule and TimeEdit landed dormant on 2026-09-27 (#2166), after the matrix was read; matrix corrected to building.",
+		"change": "integriq-adapter-rostering-imports",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "con-translate",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "single competitor (n8n), no demand.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "evt-receive",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand: one competitor (n8n).",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "evt-zgw-publish",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row; outside the core area.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-ai-cache",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-034 decision 2: the LLM call path is Hermiq's, so caching model answers belongs there.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-ai-guard",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-034 decision 2: prompt and answer guarding sits on Hermiq's LLM call path.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-ai-proxy",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-034 decision 2 and its consequence \"No fragmentation of the AI stack\": LLM provider selection lives in Hermiq, so a second provider router in the gateway is decided against.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-cache",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 5 competitors rate yes (tyk, apisix, mulesoft, wso2, frank), no demand row.",
+		"change": "gateway-response-cache-and-problem-errors",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-canary",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 3 competitors rate yes (tyk, apisix, mulesoft), no demand row.",
+		"change": "gateway-upstream-routing",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-content-route",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 5 competitors rate yes (n8n, tyk, apisix, mulesoft, frank), no demand row.",
+		"change": "gateway-upstream-routing",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-federated",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 2 competitors rate yes (mulesoft, wso2), demand: changelog https://apim.docs.wso2.com/en/4.6.0/get-started/about-this-release/.",
+		"change": "gateway-federated-api-discovery",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-graphql",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 4 competitors rate yes (tyk, apisix, mulesoft, wso2), no demand row.",
+		"change": "gateway-graphql-and-streaming-protocols",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-loadbalance",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 3 competitors rate yes (tyk, apisix, wso2), no demand row.",
+		"change": "gateway-upstream-routing",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-openapi-import",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 3 competitors rate yes (tyk, mulesoft, wso2), no demand row.",
+		"change": "gateway-openapi-import-and-publish",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-openapi-publish",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 3 competitors rate yes (mulesoft, wso2, frank), no demand row.",
+		"change": "gateway-openapi-import-and-publish",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-problem-json",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway); no competitor rates yes, the core area rule carries it. Signals: no competitor rates yes, no demand row.",
+		"change": "gateway-response-cache-and-problem-errors",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "gw-protocols",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (gateway), two or more competitors yes. Signals: 3 competitors rate yes (tyk, apisix, wso2), no demand row.",
+		"change": "gateway-graphql-and-streaming-protocols",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "id-eudi-keys",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "Task 5 specifies the EUDI status list and its issuer key surface, the screen this row lacks.",
+		"change": "adapter-configuration-screens",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "id-psd2",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row. adapter-configuration-screens adds a bankfeed_connection page, not the connect action this row lacks.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-docgen",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "Task 5 specifies the source page and template list. Its tick does not hold up: no file under src/ calls documentGeneration#templates or #activate.",
+		"change": "document-generation-vendor-adapter",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-eml-import",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row. The import endpoint is specified and built by mail-intake-creates-cases; the missing half is an upload control, which nothing asks for.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-esign",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-hold-queue",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "Its spec requires the hold window; the tick does not hold up, hold() has no caller.",
+		"change": "outbound-sender-identity-and-deliverability",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-last-contact",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The change specifies the last-contact read over the outbound log.",
+		"change": "outbound-communication-log",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-mail-intake",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "Its spec runs the mailbox poll as a background job. The tick does not hold up: nothing schedules a poll.",
+		"change": "mail-intake-creates-cases",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-no-reply",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "Its spec requires no-reply handling; NoReplyHandler has no caller.",
+		"change": "outbound-sender-identity-and-deliverability",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-notes-sync",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-one-off",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The open change (0 of 19 tasks) specifies the one-off and suppressed recipient.",
+		"change": "one-off-and-suppressed-recipients",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-opt-out",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "Its spec requires the unsubscribe link and the opt-out check on send.",
+		"change": "outbound-sender-identity-and-deliverability",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-outbound-log",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The change specifies the per-recipient log and its writers.",
+		"change": "outbound-communication-log",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-reply-channel",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "single competitor (n8n), no demand. The reply code is built; the missing half is a reply button.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-sender-identity",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "Its spec requires the SPF, DKIM and DMARC alignment check.",
+		"change": "outbound-sender-identity-and-deliverability",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "msg-shared-inbox",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand, and no competitor rates yes.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-api-design-rules",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Rides with integriq:acc-governance, which meets the bar: its whole missing half is the same screen or service gateway-api-design-rules-check specifies. On its own: no competitor rates yes, no demand row.",
+		"change": "gateway-api-design-rules-check",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-digikoppeling",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand, and no competitor rates yes.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-dso",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand, and no competitor rates yes.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-iwmo",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand, and no competitor rates yes.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-ris",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand, and no competitor rates yes.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-tooi",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-zgw-besluiten",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The zgw-besluiten set is in this change; the row cited no change directory, corrected.",
+		"change": "zgw-connectors-for-dossiq",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "nl-zgw-catalogi",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The zgw-catalogi set is in this change; the row cited no change directory, corrected.",
+		"change": "zgw-connectors-for-dossiq",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "obs-alerts",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "Re-read: the call-failed, job-error, sync-failed and delivery-retries-exhausted declarations are in lib/Settings/integriq_register.json, so the evidence that nothing notifies was wrong; matrix corrected to building, rating kept no under the fleet rule that a declaration alone is no.",
+		"change": "integriq-notifications",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-eu-hosting",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Where a hosted version runs is a commercial fact, not code in this repo.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-leaf-integrations",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand, and no competitor rates yes.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-modular-delivery",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "The missing half is running the bus without OpenRegister, which openspec/config.yaml rules out (\"OpenRegister is a required runtime dependency; every entity is persisted as an OpenRegister object\") in line with ADR-070.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-or-provider",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The open change (0 of 7) specifies the provider registration.",
+		"change": "or-integration-provider",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-saas",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "A hosting offer with supplier maintenance is a commercial service, not code in this repo; the app itself runs self-hosted (row plt-self-host).",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-upgrade-report",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "single competitor (n8n) plus its changelog; no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "src-database",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (sources), two or more competitors yes. Signals: 3 competitors rate yes (n8n, mulesoft, frank), no demand row.",
+		"change": "sources-database-adapter",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "src-ratelimit-out",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "rated no in the core area (sources): the engine tracks a source's rate limit and refuses, where the row asks for calls to be spaced out under it. Signals: 1 competitor rate yes (apisix), no demand row.",
+		"change": "sources-outbound-rate-limit-pacing",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "src-secrets-manager",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-064 decision 2: OpenRegister is the credential broker with Doriath as custody leaf, and apps must not build their own; an outside secrets manager is another custody leaf behind CredentialStore, not integriq code.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "src-sftp",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none in the core area (sources), two or more competitors yes. Signals: 3 competitors rate yes (n8n, mulesoft, frank), no demand row.",
+		"change": "sources-sftp-adapter",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "src-ws-security",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "partial, built, no demand: one competitor (mulesoft) and a competitor changelog; signing exists on the WUS path, encryption is the missing half.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "sync-conflict",
+		"matrix": "integriq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row; outside the core area.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-connections-status",
+		"matrix": "launchpad",
+		"decision": "existing",
+		"reason": "The overview and status are integriq's app_connection objects; the partial rating reflects that the page needs integriq installed, which is the fleet contract, not a missing integriq half.",
+		"change": "connection-registry",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "conn-integration-registry",
+		"matrix": "stackiq",
+		"decision": "existing",
+		"reason": "Same as launchpad: with integriq installed the page works; the dependency is the fleet contract.",
+		"change": "connection-registry",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "12.11",
+		"matrix": "dossiq",
+		"decision": "existing",
+		"reason": "The missing half is the filinq engine and the dossiq binding, both named in the change's open cross-repo follow-ups.",
+		"change": "document-generation-vendor-adapter",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "12.14",
+		"matrix": "dossiq",
+		"decision": "existing",
+		"reason": "The broker transport is built by this change; the missing staff screen is integriq:evt-broker, specified in events-broker-subscription-screen.",
+		"change": "event-broker-transport",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "12.22",
+		"matrix": "dossiq",
+		"decision": "defer",
+		"reason": "single competitor (openzaak), no demand; same capability as integriq:evt-receive.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "12.3",
+		"matrix": "dossiq",
+		"decision": "existing",
+		"reason": "The change serves the Objecten and Objecttypen API from integriq.",
+		"change": "objecten-api-facade",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "12.8",
+		"matrix": "dossiq",
+		"decision": "existing",
+		"reason": "The broker half is built by this change; the live binding waits on portal-idp-broker-config, which is blocked on its open decisions.",
+		"change": "idp-broker-envelope-runtime",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "5.11",
+		"matrix": "dossiq",
+		"decision": "existing",
+		"reason": "The change registers BRP and KvK subscriptions at the source and posts changes back.",
+		"change": "registry-subscription-connector",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "6.13",
+		"matrix": "dossiq",
+		"decision": "existing",
+		"reason": "The change connects a phone system to the KCC panel.",
+		"change": "kcc-cti-adapter",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "6.14",
+		"matrix": "dossiq",
+		"decision": "defer",
+		"reason": "partial, built, no demand, and no competitor rates yes.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-kvk",
+		"matrix": "shillinq",
+		"decision": "existing",
+		"reason": "Its KvK resolver looks a company up and fills the fields. The row is specified in shillinq's matrix without naming the change.",
+		"change": "registry-backed-field-source",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "wpl-check-the-company-is-approved",
+		"matrix": "learniq",
+		"decision": "defer",
+		"reason": "no competitor rates yes and no demand row; same capability as integriq:con-sbb.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-connection-registry",
+		"matrix": "buildiq",
+		"decision": "defer",
+		"reason": "partial, built, no demand. The missing half, a built app's own connector bindings, has no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-dutch-registries",
+		"matrix": "buildiq",
+		"decision": "existing",
+		"reason": "Its BAG, BRP and KvK resolvers are the registry lookup; buildiq showing the result on a built page is buildiq's half.",
+		"change": "registry-backed-field-source",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-openapi-import",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "no and none, a featureRequest demand row plus competitors yes. Same OpenAPI import service as integriq:gw-openapi-import. Signals: 3 competitors rate yes (budibase, mendix, power-apps), demand: featureRequest https://github.com/appsmithorg/appsmith/issues/3920.",
+		"change": "gateway-openapi-import-and-publish",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-per-user-oauth",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "no and none, a featureRequest demand row plus competitors yes. Integriq owns the source credential, so the per-user token is integriq's half. Signals: 2 competitors rate yes (mendix, power-apps), demand: featureRequest https://github.com/appsmithorg/appsmith/issues/3313.",
+		"change": "sources-per-user-oauth",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "int-rest-connector",
+		"matrix": "buildiq",
+		"decision": "defer",
+		"reason": "partial and built on integriq's side (endpoints#handlePath serves the call). The missing half is buildiq's renderer: nextcloud-vue CnIndexPage ignores dataSource.connector. Not integriq's to build; the built.owner should read ConductionNL/buildiq.",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "adm-connections-panel",
+		"matrix": "versioniq",
+		"decision": "existing",
+		"reason": "The panel reads integriq's registry; the missing Codeberg and Forgejo rows are versioniq's own connection declarations.",
+		"change": "connection-registry",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "src-connection-status",
+		"matrix": "versioniq",
+		"decision": "existing",
+		"reason": "Same registry; the missing rows are versioniq's declarations.",
+		"change": "connection-registry",
+		"decidedOn": "2026-09-27"
+	}
+]
