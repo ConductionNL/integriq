@@ -8,6 +8,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "int-connector-monitor",
+		"matrix": "opencatalogi",
+		"decision": "build",
+		"reason": "partial and built with a tender demand row for the missing half: a per source, per day run summary and a one-click restart of a failed pull. Signals: 1 competitor rate yes (ckan), demand: tender https://www.tenderned.nl/aankondigingen/overzicht/407973.",
+		"change": "observability-connection-run-summary",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "int-council",
 		"matrix": "opencatalogi",
 		"decision": "defer",
@@ -45,6 +53,14 @@
 		"decision": "defer",
 		"reason": "partial, built, no demand. The preview and accept code is opencatalogi's own ServiceCatalogueController, so the missing screen is opencatalogi's, not integriq's.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "woo-metadata-map",
+		"matrix": "opencatalogi",
+		"decision": "build",
+		"reason": "partial and built with a tender demand row. Integriq's half is an editable, seeded mapping for the Woo-index fields that another app can run by slug; opencatalogi reading it in SitemapService is opencatalogi's half, named in the proposal. Signals: no competitor rates yes, demand: tender https://www.tenderned.nl/aankondigingen/overzicht/407973.",
+		"change": "mapping-woo-index-field-mapping",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -256,11 +272,27 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "auto-regression-tests",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built with a featureRequest demand row and two competitors yes for the missing half: recorded test cases replayed as a regression suite before a change goes live. Signals: 2 competitors rate yes (mulesoft, frank), demand: featureRequest https://community.n8n.io/t/254023.",
+		"change": "automation-integration-regression-tests",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "auto-templates",
 		"matrix": "integriq",
 		"decision": "decided-no",
 		"reason": "ADR-065 decisions 1 and 2: the template picker belongs to OpenRegister's engine and nc-vue's canvas.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "auto-working-days",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, a featureRequest demand row plus two competitors yes. Jobs stay integriq's under ADR-065, only flows move. Signals: 2 competitors rate yes (mulesoft, frank), demand: featureRequest https://community.n8n.io/t/228418.",
+		"change": "automation-job-calendar-schedules",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -325,6 +357,22 @@
 		"decision": "defer",
 		"reason": "single competitor (n8n), no demand.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "evt-async-apis",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 2 competitors rate yes (apisix, wso2), no demand row.",
+		"change": "events-async-api-products",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "evt-broker",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two or more competitors yes. The missing half is a staff screen to pick a broker action on a subscription; event-broker-transport shipped the transport only. Signals: 3 competitors rate yes (n8n, mulesoft, frank), no demand row.",
+		"change": "events-broker-subscription-screen",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -461,6 +509,38 @@
 		"decision": "defer",
 		"reason": "no competitor rates yes and no demand row. adapter-configuration-screens adds a bankfeed_connection page, not the connect action this row lacks.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "map-csv",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two or more competitors yes. The missing half is CSV parsing for an ordinary HTTP source and CSV output from a mapping. Signals: 3 competitors rate yes (n8n, mulesoft, frank), no demand row.",
+		"change": "mapping-formats-and-lookups",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "map-lookup",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. Signals: 2 competitors rate yes (n8n, mulesoft), no demand row.",
+		"change": "mapping-formats-and-lookups",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "map-message-validation",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two or more competitors yes. The missing half is validating every message against a declared XSD, JSON Schema or OpenAPI description and refusing it. Signals: 3 competitors rate yes (mulesoft, wso2, frank), demand: changelog https://github.com/frankframework/frankframework/pull/10459.",
+		"change": "mapping-message-schema-validation",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "map-xml",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two or more competitors yes. The missing half is JSON to XML output in the mapping editor, not only for fixed StUF shapes. Signals: 6 competitors rate yes (n8n, tyk, apisix, mulesoft, wso2, frank), no demand row.",
+		"change": "mapping-formats-and-lookups",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -648,11 +728,67 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "obs-filter-logs",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two or more competitors yes. The missing half is filter controls on the log pages; today filters arrive only as deep-link query parameters. Signals: 3 competitors rate yes (n8n, mulesoft, frank), no demand row.",
+		"change": "observability-log-filters",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "obs-otel",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two or more competitors yes. No ADR assigns trace export elsewhere. Signals: 5 competitors rate yes (n8n, tyk, apisix, mulesoft, wso2), no demand row.",
+		"change": "observability-opentelemetry-export",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "obs-threshold-counts",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built with a tender demand row for the missing half: a threshold warning per connection. Signals: 1 competitor rate yes (frank), demand: tender https://www.tenderned.nl/aankondigingen/overzicht/226100.",
+		"change": "observability-connection-run-summary",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-action-matrix",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two competitors yes. The missing half is listing every enforced action on the screen; about 25 actions enforced in code are not seeded, so they cannot be set. Signals: 2 competitors rate yes (mulesoft, wso2), no demand row.",
+		"change": "platform-action-rights-coverage",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-admin-settings",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two competitors yes. The missing half is app defaults such as log retention on the admin page. Signals: 2 competitors rate yes (mulesoft, wso2), no demand row.",
+		"change": "platform-admin-defaults",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-cli",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two competitors yes. The missing half is occ commands to list, run and test sources, synchronisations and jobs. Signals: 2 competitors rate yes (n8n, mulesoft), no demand row.",
+		"change": "platform-integrations-as-code",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "plt-eu-hosting",
 		"matrix": "integriq",
 		"decision": "decided-no",
 		"reason": "Where a hosted version runs is a commercial fact, not code in this repo.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-git",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "no and none, two competitors yes. Signals: 2 competitors rate yes (mulesoft, frank), no demand row.",
+		"change": "platform-integrations-as-code",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -677,6 +813,14 @@
 		"decision": "existing",
 		"reason": "The open change (0 of 7) specifies the provider registration.",
 		"change": "or-integration-provider",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "plt-roles",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "partial and built, two or more competitors yes. The missing half is rights over creating and editing sources, mappings and other objects, which are fixed today. Signals: 3 competitors rate yes (mulesoft, wso2, frank), no demand row.",
+		"change": "platform-action-rights-coverage",
 		"decidedOn": "2026-09-27"
 	},
 	{
