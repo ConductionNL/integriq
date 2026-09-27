@@ -2585,7 +2585,11 @@
         "UWLR/Edu-V Message": "UWLR/Edu-V Message",
         "Which of the four connection families this record belongs to": "Which of the four connection families this record belongs to",
         "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync": "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync",
-        "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content."
+        "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.",
+        "Exchange job not found": "Exchange job not found",
+        "Exchange rejection not found": "Exchange rejection not found",
+        "The ownerApp parameter is required": "The ownerApp parameter is required",
+        "A reason is required to waive a rejection": "A reason is required to waive a rejection"
     },
     "plurals": {}
 }
