@@ -8,7 +8,7 @@ Kind: code. Matrix row `integriq:auto-working-days`.
 - **acceptance_criteria**:
   - GIVEN the register is imported WHEN a job is saved with `schedule.type: calendar` and a weekday list THEN OpenRegister accepts it
   - GIVEN a calendar with an unknown `dayOfMonth` value WHEN it is saved THEN OpenRegister refuses it
-  - GIVEN the seed runs THEN `example-weekday-morning` exists and is disabled
+  - GIVEN a fresh install WHEN the seed runs THEN `example-weekday-morning` exists and is disabled
 - [ ] Implement
 - [ ] Test (`node tests/validate-register.js` and a PHPUnit import test)
 
