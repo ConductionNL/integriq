@@ -258,4 +258,28 @@ class SyncItemDeadLetterServiceTest extends TestCase {
 		$this->service->discardMessage(id: 'dl-4', actorUid: 'bob');
 	}//end testDiscardOnDiscardedEntryThrows()
 
+	/**
+	 * learniq-exchange-jobs-native REQ-006 — replaying an exchange rejection
+	 * resubmits it instead of re-running a synchronization it does not have.
+	 *
+	 * @return void
+	 */
+	public function testReplayOfAnExchangeRejectionResubmitsIt(): void {
+		$existing = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'failed', 'exchangeJob' => 'job-1'], 'dl-9');
+		$this->objectService->method('find')->willReturn($existing);
+
+		$replayed = new ObjectEntity();
+		$replayed->setUuid('dl-9');
+		$replayed->setObject(['status' => 'replayed', 'exchangeJob' => 'job-1']);
+		$resubmitter = $this->createMock(\OCA\Integriq\Service\Exchange\ExchangeRejectionService::class);
+		$resubmitter->expects($this->once())->method('resubmit')->with('dl-9', 'alice')
+			->willReturn(['rejection' => $replayed, 'rejectionId' => 'dl-9', 'jobId' => 'job-2']);
+		$this->container->method('get')->willReturn($resubmitter);
+
+		$result = $this->service->replayMessage(id: 'dl-9', actorUid: 'alice');
+
+		$this->assertSame('replayed', $result->getObject()['status']);
+		$this->assertCount(0, $this->saved, 'The synchronization replay path is not taken.');
+	}//end testReplayOfAnExchangeRejectionResubmitsIt()
+
 }//end class
