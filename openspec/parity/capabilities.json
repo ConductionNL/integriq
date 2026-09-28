@@ -4688,14 +4688,15 @@
 			"area": "observability",
 			"name": "Send a failed outbound call again with its original content.",
 			"source": "own-code",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-28-outbound-call-delivery-and-replay",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/Call/CallReplayService.php:1-46 implements dry-run, single and bulk replay, and hand-fire of a failed outbound call, per openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md REQ-OCD-002 ('a failed call is replayed from the screen singly and in bulk'). appinfo/routes.php:129-133 wires callLog#show/preview/replay(+bulk)/fire. Used only by lib/Controller/CallLogController.php; `grep -rln 'callLog|call-log|CallReplay|api/calls' src/` = 0 hits, so no frontend anywhere calls these routes. src/manifest.d/outbound-call-log.json (the fragment this change shipped) only adds the Verdicts page, not a call-replay screen; the SourceDetail page's call-log widget is explicitly read-only (src/manifest.json:1005 'call log is read-only (allowCreate:false) with a View-all to SourceLogs')."
+				"evidence": "src/manifest.json SourceLogs wires slots[\"row-actions\"] to src/components/callLog/CallLogRowActions.vue (Replay, opening src/modals/CallLog/CallReplayModal.vue: preview, mapping version choice, dry run, replay) and actionsComponent to src/components/callLog/CallLogActions.vue (Replay failed calls, src/modals/CallLog/CallBulkReplayModal.vue with per-call outcomes; Fire a call by hand, src/modals/CallLog/CallFireModal.vue), all calling appinfo/routes.php callLog#preview/#replay(+bulk)/#fire in lib/Controller/CallLogController.php over lib/Outbound/Call/CallReplayService.php. tests/vitest/callLogReplay.spec.js drives the real components; tests/Unit/Outbound/CallReplayServiceTest.php validates every write against the merged call_log schema. Built by change outbound-call-delivery-and-replay (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it: the routes exist but no page or modal calls them",
-			"note": "The spec's own requirement name says 'replayed from the screen', but no screen was built. This is a fully-tested backend capability with zero UI wiring.",
+			"reachedOn": "Sources > Logs: Replay on a row, and Replay failed calls or Fire a call by hand above the list",
+			"note": "The spec's own requirement name says 'replayed from the screen', but no screen was built. Built 2026-09-28: the screen replays one call with a preview and a dry run, replays the recent failed calls together with an outcome per call, and fires a call by hand. Replay is per outbound call record, not per whole run like n8n or Frank.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",

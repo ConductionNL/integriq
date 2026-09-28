@@ -25,7 +25,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * @spec openspec/specs/outbound-call-log/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 /**
  * Writes and updates outbound call records.
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
  */
 class CallRecorder {
 
@@ -264,7 +264,7 @@ class CallRecorder {
 	 *
 	 * @return string|null The source uuid, or null when the call has none.
 	 *
-	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
 	 */
 	private function sourceRef(array $call): ?string {
 		foreach ([($call['source'] ?? null), ($call['target'] ?? null)] as $candidate) {

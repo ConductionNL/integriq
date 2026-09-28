@@ -13,7 +13,7 @@
  * components against a mocked axios and assert the exact requests they send
  * to those routes and what they show of the answer.
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
  */
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'
 import { flushPromises, mount } from '@vue/test-utils'

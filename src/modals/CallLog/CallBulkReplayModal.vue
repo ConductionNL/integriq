@@ -10,7 +10,7 @@
   and replays the checked ones in one request. The answer is per item, so
   one partner still being down does not hide that the others went through.
 
-  @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+  @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 -->
 <template>
 	<NcModal
@@ -128,7 +128,7 @@ export default {
 			 *
 			 * @param {boolean} isOpen whether the modal is open
 			 * @return {void}
-			 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+			 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 			 */
 			handler(isOpen) {
 				if (isOpen) {
@@ -147,7 +147,7 @@ export default {
 		 * Load the recent failed calls, all of them selected.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		async load() {
 			this.loading = true
@@ -172,7 +172,7 @@ export default {
 		 * @param {string} id the call uuid
 		 * @param {boolean} checked whether it is now checked
 		 * @return {void}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		toggle(id, checked) {
 			this.selected = checked
@@ -185,7 +185,7 @@ export default {
 		 *
 		 * @param {object} call a call_log object
 		 * @return {string}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		labelOf(call) {
 			const target =
@@ -201,7 +201,7 @@ export default {
 		 *
 		 * @param {object} item a per-item outcome
 		 * @return {string}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		outcomeOf(item) {
 			return item.succeeded
@@ -215,7 +215,7 @@ export default {
 		 * Replay the checked calls and show each one's outcome.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		async replay() {
 			this.busy = true

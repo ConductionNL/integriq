@@ -10,7 +10,7 @@
   appends an attempt to the same record. Neither version is chosen silently:
   the recorded one is preselected, and the outcome names the one used.
 
-  @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+  @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 -->
 <template>
 	<NcModal
@@ -145,7 +145,7 @@ export default {
 		 * Whether there are two mapping versions to choose between.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-replay-names-the-mapping-version-it-ran-under-req-ocd-005
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-replay-names-the-mapping-version-it-ran-under-req-ocd-005
 		 */
 		versionChoice() {
 			return this.preview?.versions?.differ === true
@@ -155,7 +155,7 @@ export default {
 		 * The request a replay would send, for reading.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		prettyRequest() {
 			return JSON.stringify(this.preview?.request ?? {}, null, 2)
@@ -165,7 +165,7 @@ export default {
 		 * One sentence on what the last dry run or replay did.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		outcomeText() {
 			const item = this.outcome
@@ -202,7 +202,7 @@ export default {
 			 *
 			 * @param {boolean} isOpen whether the modal is open
 			 * @return {void}
-			 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+			 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 			 */
 			handler(isOpen) {
 				if (isOpen && this.callId) {
@@ -219,7 +219,7 @@ export default {
 		 * Fetch the preview and preselect the recorded mapping version.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-replay-names-the-mapping-version-it-ran-under-req-ocd-005
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-replay-names-the-mapping-version-it-ran-under-req-ocd-005
 		 */
 		async load() {
 			this.loading = true
@@ -243,7 +243,7 @@ export default {
 		 *
 		 * @param {boolean} dryRun show what would be sent instead of sending it
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		async run(dryRun) {
 			this.busy = true

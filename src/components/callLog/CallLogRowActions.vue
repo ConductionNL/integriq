@@ -8,7 +8,7 @@
   hands it the row. An inbound row has nothing to replay, so it gets no
   actions. Replaying opens CallReplayModal, which previews first.
 
-  @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+  @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 -->
 <template>
 	<div v-if="replayable" class="callLogRowActions">
@@ -62,7 +62,7 @@ export default {
 		 * The call record uuid.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		id() {
 			return callId(this.row)
@@ -72,7 +72,7 @@ export default {
 		 * Whether this row is an outbound call there is something to replay of.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		replayable() {
 			return this.id !== '' && this.row?.direction !== 'inbound'
@@ -86,7 +86,7 @@ export default {
 		 * Show the new attempt in the list.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		onReplayed() {
 			refreshLogPage(this)

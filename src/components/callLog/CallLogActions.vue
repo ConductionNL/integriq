@@ -8,7 +8,7 @@
   not about one row: replay the calls that failed, several at once with an
   outcome each, and fire a call by hand that has not happened yet.
 
-  @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+  @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 -->
 <template>
 	<div class="callLogActions">
@@ -66,7 +66,7 @@ export default {
 		 * Show what the replay or the hand-fired call added to the log.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 		 */
 		refresh() {
 			refreshLogPage(this)

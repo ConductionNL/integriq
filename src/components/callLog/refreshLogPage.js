@@ -6,7 +6,7 @@
 // `refresh()` for exactly this; the row-actions slot sits a few components
 // below it (inside the data table), so the parent chain is walked.
 //
-// @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+// @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 
 /**
  * Refresh the nearest log page above a component, if there is one.

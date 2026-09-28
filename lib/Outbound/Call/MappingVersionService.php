@@ -26,7 +26,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * @spec openspec/specs/outbound-call-log/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 /**
  * Snapshots and resolves mapping versions.
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-replay-names-the-mapping-version-it-ran-under-req-ocd-005
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-replay-names-the-mapping-version-it-ran-under-req-ocd-005
  */
 class MappingVersionService {
 

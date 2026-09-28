@@ -10,7 +10,7 @@
   A real call is recorded as hand-fired and names who fired it; to the
   receiver it is the same request a triggered call would send.
 
-  @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+  @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
 -->
 <template>
 	<NcModal
@@ -134,7 +134,7 @@ export default {
 		 * The body parsed as JSON, or undefined when it is empty or broken.
 		 *
 		 * @return {object|undefined}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
 		 */
 		parsedBody() {
 			if (this.body.trim() === '') {
@@ -151,7 +151,7 @@ export default {
 		 * Why the body cannot be sent, when it cannot.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
 		 */
 		bodyError() {
 			if (this.body.trim() !== '' && this.parsedBody === undefined) {
@@ -164,7 +164,7 @@ export default {
 		 * Whether there is enough to fire.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
 		 */
 		canFire() {
 			return this.selectedSource !== null && this.bodyError === ''
@@ -174,7 +174,7 @@ export default {
 		 * One sentence on what the last dry run or call did.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
 		 */
 		outcomeText() {
 			const item = this.outcome
@@ -210,7 +210,7 @@ export default {
 			 *
 			 * @param {boolean} isOpen whether the modal is open
 			 * @return {void}
-			 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+			 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
 			 */
 			handler(isOpen) {
 				if (isOpen) {
@@ -259,7 +259,7 @@ export default {
 		 *
 		 * @param {boolean} dryRun show what would be sent instead of sending it
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
 		 */
 		async fire(dryRun) {
 			if (!this.canFire) {

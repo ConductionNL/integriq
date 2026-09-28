@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-the-retry-schedule-is-configuration-per-connection-req-ocd-004
+ * Spec coverage: openspec/specs/outbound-call-log/spec.md#requirement-the-retry-schedule-is-configuration-per-connection-req-ocd-004
  *
  * One partner asks for six attempts over a day, another refuses more than
  * three. The schedule is therefore configuration on the connection, and the

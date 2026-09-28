@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * @spec openspec/specs/outbound-call-log/spec.md
  */
 
 declare(strict_types=1);
@@ -99,7 +99,7 @@ class RecordingDispatcher implements CallDispatcherInterface {
  * Tests that a call is a record, a replay is an attempt, and a dry run sends
  * nothing.
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
  */
 class CallReplayServiceTest extends TestCase {
 

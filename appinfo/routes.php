@@ -120,7 +120,7 @@ return [
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
 
 		// The outbound call log, its replay and the verdicts
-		// (openspec/changes/outbound-call-delivery-and-replay). Reading a call
+		// (openspec/changes/archive/2026-09-28-outbound-call-delivery-and-replay). Reading a call
 		// means reading the request and the response it carried, so it sits
 		// behind its own action (`call-log.read`) rather than the listing's.
 		// Replaying and hand-firing share one action (`call-log.replay`),

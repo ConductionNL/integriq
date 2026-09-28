@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * @spec openspec/specs/outbound-call-log/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Throwable;
 /**
  * Runs a blocking pre-check against an outside system.
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-blocking-pre-check-asks-an-outside-system-and-reports-the-answer-req-ocd-007
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-blocking-pre-check-asks-an-outside-system-and-reports-the-answer-req-ocd-007
  */
 class PreCheckService {
 

@@ -5,7 +5,7 @@
 // run) and firing by hand, over CallLogController. Listing is OpenRegister's
 // own objects endpoint, like the SourceLogs page itself.
 //
-// @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+// @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
