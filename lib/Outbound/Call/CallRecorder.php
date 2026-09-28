@@ -109,6 +109,8 @@ class CallRecorder {
 	 *                                  `firedBy`, `retryPolicy`, `mapping`, `mappingVersion`.
 	 *
 	 * @return ObjectEntity The record.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
 	 */
 	public function record(array $call): ObjectEntity {
 		$now = (new DateTimeImmutable())->format('c');
