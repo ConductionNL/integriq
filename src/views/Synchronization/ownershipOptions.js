@@ -22,10 +22,7 @@ export function ownershipModeOptions() {
 	return [
 		{
 			id: 'local',
-			label: t(
-				'integriq',
-				'Local: people may change the records here',
-			),
+			label: t('integriq', 'Local: people may change the records here'),
 		},
 		{
 			id: 'source',
