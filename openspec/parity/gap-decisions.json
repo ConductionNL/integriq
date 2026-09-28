@@ -1238,5 +1238,245 @@
 		"reason": "no and none with a tender demand row (Scholengroep Pontes). Signals: no competitor rates yes, demand: tender https://www.tenderned.nl/aankondigingen/overzicht/328706.",
 		"change": "connectors-hr-staff-sync",
 		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "bnk-psd2",
+		"matrix": "shillinq",
+		"decision": "existing",
+		"reason": "PSD2 bank feed, the half shillinq banking-connected-accounts asks for. The archived change built the aggregator seam, consent, account discovery and the scheduled pull, and BankfeedSyncService emits nl.conduction.bankfeed.transactions.synced with a batchUri (lib/Service/BankfeedSyncService.php:498-510), the event shillinq's new listener reads. Its open question is answered: the batch carries no closing balance, and shillinq's requirement works either way.",
+		"change": "2026-07-12-psd2-ais-bank-feed-connector",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "banking-fx-at-booking",
+		"matrix": "shillinq",
+		"decision": "build",
+		"reason": "Rates source (ECB seed), a half the merged shillinq change banking-fx-at-booking depends on (Cross-Project Dependencies: no ECB or exchange-rate source in integriq). shillinq row bnk-fx-rates, four competitors yes (exact-online, moneybird, twinfield, odoo). A source is integriq's core area. No integriq change covers it.",
+		"change": "sources-ecb-exchange-rates",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "tax-digipoort-filing",
+		"matrix": "shillinq",
+		"decision": "build",
+		"reason": "Digipoort/SBR connector, a half the merged shillinq change tax-digipoort-filing depends on and proposes the event contract for. shillinq rows tax-vat-file (five competitors yes) and tax-sbr (exact-online, snelstart yes), both with provider integriq. No Digipoort code or change exists in integriq.",
+		"change": "connectors-digipoort-sbr-filing",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "purchasing-order-dispatch-and-receipt",
+		"matrix": "shillinq",
+		"decision": "existing",
+		"reason": "Peppol half. shillinq consumes the participant lookup (REQ-001) and the outbound consumer (REQ-003) as specified, and says no change is needed. The outbound consumer only matches once the id comparison of integriq#1222 is fixed, which the new change peppol-readable-payloads-and-scoped-consumer covers.",
+		"change": "2026-07-12-peppol-access-point-connector",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "purchasing-order-dispatch-and-receipt",
+		"matrix": "shillinq",
+		"decision": "decided-no",
+		"reason": "Email half. Plain mail is not integriq's: integriq competitor-parity-2026-09 proposal, section 'The mail account is Nextcloud Mail's, so integriq opens nothing for it' (Ruben's answer to D12), and shillinq's own sales-invoice-sending design D1 sends mail through Nextcloud IMailer because SMTP is the instance's configuration, not a third-party API under ADR-067 or ADR-091. The premise does not hold either: integriq's CallService has no send() method, so shillinq's planned IntegriqPurchaseOrderMailer and its existing ConfirmationMailer would never send.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "platform-integration-catalogue",
+		"matrix": "shillinq",
+		"decision": "build",
+		"reason": "Bookkeeping catalogue items, a half the merged shillinq change platform-integration-catalogue depends on (its page lists no bookkeeping card until integriq has them). shillinq row plt-marketplace, four competitors yes. integriq's Peppol, PSD2, card feed and payment sandbox sources sit only in integriq_seed_data.json, which the catalogue does not read.",
+		"change": "platform-bookkeeping-catalogue-items",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "reporting-data-delivery",
+		"matrix": "shillinq",
+		"decision": "build",
+		"reason": "BI feed served from the app's feed declaration (ADR-091 decision 4), a half the merged shillinq change reporting-data-delivery depends on. shillinq row rep-bi-feed: tender demand https://www.tenderned.nl/aankondigingen/overzicht/416109 and five competitors yes. integriq has no reader for app-declared feeds; the objecten-api-facade declaration reader is objecttype-specific.",
+		"change": "gateway-declared-data-feeds",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "receivables-payment-links",
+		"matrix": "shillinq",
+		"decision": "build",
+		"reason": "Payment command event, a half the merged shillinq change receivables-payment-links depends on (its D1 dispatches a typed command because POST /api/payments needs a Nextcloud session). shillinq rows sal-pay-link (four competitors yes) and rec-payment-request (moneybird yes). No typed payment command exists in integriq.",
+		"change": "messaging-payment-command-settlements-and-point-of-sale",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "receivables-provider-payouts",
+		"matrix": "shillinq",
+		"decision": "build",
+		"reason": "Settlement event and point-of-sale payment, two halves the merged shillinq change receivables-provider-payouts depends on (its D1 and D5). shillinq rows rec-psp-payouts (exact-online, moneybird yes) and sal-tap-to-pay (moneybird, odoo yes). integriq has no settlement fetch, and MolliePaymentProvider refuses a payment without a checkout link.",
+		"change": "messaging-payment-command-settlements-and-point-of-sale",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "sales-webshop-orders",
+		"matrix": "shillinq",
+		"decision": "build",
+		"reason": "Web shop connector, a half the merged shillinq change sales-webshop-orders depends on (integriq writes WebshopOrder through its synchronization). shillinq row sal-webshop-sync, three competitors yes (moneybird, snelstart, odoo). No shop source exists in integriq.",
+		"change": "connectors-webshop-orders",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "sales-einvoice-exchange",
+		"matrix": "shillinq",
+		"decision": "build",
+		"reason": "Readable inbound Peppol payload and the Peppol consumer id fix (integriq#1222), two halves the merged shillinq change sales-einvoice-exchange depends on. The #1222 comment of 28 Sep confirms the consumer now rejects every event; the archived peppol-access-point-connector specifies the capability and the code does not deliver it, so it is treated as build. Rows shillinq sal-peppol-send (four competitors yes), sal-einvoice-rejection, pur-ubl-import.",
+		"change": "peppol-readable-payloads-and-scoped-consumer",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "expenses-travel-calculation",
+		"matrix": "humaniq",
+		"decision": "build",
+		"reason": "Route-distance source, a half the merged humaniq change expenses-travel-calculation depends on. humaniq row td-commute-allowance has tender demand (Delft Support E8, reiskostenberekening via routeplanner) and three competitors yes; exp-mileage three competitors yes. No route planner source or call path exists in integriq.",
+		"change": "sources-route-distance-and-rdw-lookup",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "people-register-prefill",
+		"matrix": "humaniq",
+		"decision": "build",
+		"reason": "RDW half: an RDW open data source and a call path a sibling can use without resolving integriq classes, which the merged humaniq change people-register-prefill depends on. humaniq row dm-plate-lookup: visma-raet and loket yes, AFAS roadmap.",
+		"change": "sources-route-distance-and-rdw-lookup",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "people-register-prefill",
+		"matrix": "humaniq",
+		"decision": "existing",
+		"reason": "BRP half: the brp-haalcentraal source template exists (lib/Settings/register.d/brp-haalcentraal-source.json). Its client certificate stays write-only on the source, because BrokeredCallService refuses a certificate next to a credentialRef (lib/Service/BrokeredCallService.php:752-755); humaniq never holds it either way.",
+		"change": "2026-07-15-seed-brp-haalcentraal-source",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "talent-training-and-lms",
+		"matrix": "humaniq",
+		"decision": "build",
+		"reason": "Studytube LMS source, people feed push and completions back as TrainingRecord, a half the merged humaniq change talent-training-and-lms depends on. humaniq row td-lms-sync: tender demand (Sudwest-Fryslan E17.1 and E17.2, koppeling met LMS zoals Studytube) and visma-raet yes. No LMS source exists in integriq.",
+		"change": "connectors-hr-data-exchange",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "payroll-external-bureau-handoff",
+		"matrix": "humaniq",
+		"decision": "build",
+		"reason": "Payroll bureau synchronisation (Loket.nl, Nmbrs or SFTP) with verzonden and ontvangen written back, a half the merged humaniq change payroll-external-bureau-handoff depends on. humaniq row pay-outsourced: visma-raet and personio yes. No bureau source exists, and no push writes its outcome back onto the source object.",
+		"change": "connectors-hr-data-exchange",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "hiring-multiposting",
+		"matrix": "humaniq",
+		"decision": "build",
+		"reason": "Job board sources and mappings (werk.nl, LinkedIn, Indeed), a half the merged humaniq change hiring-multiposting depends on. humaniq row hir-multiposting: visma-raet, hr2day and personio yes. The flow nodes resolve one source and one mapping per step (lib/Flow/SourceCallNode.php:413, ApplyMappingNode.php:310), so a per-board flow also needs a per-item reference.",
+		"change": "connectors-job-board-multiposting",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "platform-integrations-catalogue",
+		"matrix": "humaniq",
+		"decision": "existing",
+		"reason": "humaniq says no integriq change is needed: the connection registry, catalogue and link dialog it adopts are shipped by integriq's connection-registry change (36 of 36 tasks, ConnectionRegistryService, app_connection schema, connections#link).",
+		"change": "connection-registry",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "generate-store-in-case-system",
+		"matrix": "filinq",
+		"decision": "build",
+		"reason": "Push synchronisation on caseSystemDelivery creating a ZGW informatieobject or StUF-ZDS document, a half the merged filinq change generate-store-in-case-system depends on. Rows humaniq td-dms-link (tender demand, Delft Support E4 and E22) and filinq con-zgw (smartdocuments, decos-join yes). zgw-connectors-for-dossiq names zgw-documenten-push and object-to-zgw-document without defining them.",
+		"change": "connectors-case-system-document-delivery",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "zgw-document-bridge",
+		"matrix": "filinq",
+		"decision": "build",
+		"reason": "Write-back of the redacted derivative as a new informatieobject (REQ-DDZGW-005), a half the filinq change zgw-document-bridge depends on, on the same contract (ready_for_writeback to written_back or writeback_failed) as generate-store-in-case-system. No integriq code writes a push outcome back onto the source object.",
+		"change": "connectors-case-system-document-delivery",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "intake-base-registry-enrichment",
+		"matrix": "filinq",
+		"decision": "existing",
+		"reason": "filinq asks integriq to hold the kvk and brp-haalcentraal sources. Both exist: kvk-source.json from this archived change and brp-haalcentraal-source.json from 2026-07-15-seed-brp-haalcentraal-source.",
+		"change": "2026-07-15-seed-kvk-opencorporates-sources",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "inbound-documents-and-the-worklist",
+		"matrix": "filinq",
+		"decision": "decided-no",
+		"reason": "Sender authentication for mail intake is not integriq's: integriq intake-channels-beyond-mail proposal.md:108-109 records that the filters and sender authentication are dossiq's under D12, in dossiq's inbound-mail-filters. The InboundEmailJob the filinq change names is dossiq's (lib/BackgroundJob/InboundEmailJob.php in dossiq), so the premise in filinq is wrong.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "signin-integriq-broker-login",
+		"matrix": "portaliq",
+		"decision": "build",
+		"reason": "Start endpoint, callback and the portaliq consumer entry, halves the merged portaliq change signin-integriq-broker-login depends on. portaliq rows sig-digid (four competitors yes), sig-eherkenning and cmp-sig-eidas (three each). integriq routes only idpBroker#exchange, and issueCode() and beginAuthentication() have no caller.",
+		"change": "identity-broker-browser-login",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "signin-integriq-broker-login",
+		"matrix": "portaliq",
+		"decision": "defer",
+		"reason": "Vendor SAML Service Provider or OIDC Relying Party half: it cannot be specified before Open Decision D1 (broker vendor and contract), parked for Ruben in integriq openspec/changes/archive/2026-07-15-portal-idp-broker/proposal.md and still open in idp-broker-envelope-runtime tasks.md and portal-idp-broker-config. identity-broker-browser-login works against GovernmentIdpAdapterInterface, so the vendor binding drops in later.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "signin-eherkenning-branch",
+		"matrix": "portaliq",
+		"decision": "build",
+		"reason": "Branch claim in the envelope, a half the merged portaliq change signin-eherkenning-branch depends on. portaliq row dem-cl-eherkenning-branch: open-inwoner, nl-portal and xxllnc-pip yes. SubjectEnvelope::toClaims() carries no branch.",
+		"change": "identity-broker-browser-login",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "identity-registered-details",
+		"matrix": "portaliq",
+		"decision": "decided-no",
+		"reason": "BSN versus pseudonym is decided: integriq openspec/specs/digid-eherkenning-auth-adapter/spec.md, scenario 'DigiD login never exposes the BSN downstream' and requirement 'BSN pseudonymisation at the broker edge'. The integriq route yields a pseudonym for DigiD and the KvK number for eHerkenning, never a BSN.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "inbox-berichtenbox-channel",
+		"matrix": "portaliq",
+		"decision": "existing",
+		"reason": "The live binding portaliq waits on is Task 8 of this open change, blocked on Logius OAuth credentials, a PKIoverheid certificate and OpenRegister's CredentialBrokerService::issueSigningMaterial; DigitalPostSendRequestedEvent already matches portaliq's design.",
+		"change": "berichtenbox-digital-post-adapter",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "intake-pay-on-submit",
+		"matrix": "portaliq",
+		"decision": "existing",
+		"reason": "portaliq owes nothing to integriq unless payment_intent is unreadable by id; it is readable (no authorization block). Two notes for portaliq: its design names register openconnector, the register is integriq; and messaging-payments-review D5 will lock payment_intent to administrators and owners, so an RBAC-on read will then fail.",
+		"change": "2026-07-13-live-payment-providers",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "sharing-itsm-exchange",
+		"matrix": "stackiq",
+		"decision": "build",
+		"reason": "TOPdesk, ServiceNow and GLPI source templates and mapping presets, a half the merged stackiq change sharing-itsm-exchange depends on (its itsm connection names them as sourceTemplate). stackiq row share-itsm-integration: sap-leanix, bluedolphin, glpi and topdesk yes. No service desk template exists in integriq.",
+		"change": "connectors-service-desk-templates",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "woo-requests-gather-documents-from-sources",
+		"matrix": "dossiq",
+		"decision": "build",
+		"reason": "Microsoft Graph search for opencatalogi row wr-search-sources, a half the merged dossiq change woo-requests-gather-documents-from-sources depends on (its live path is blocked on it). Tender demand https://www.tenderned.nl/aankondigingen/overzicht/391449 and TenderNed 388421; no competitor rated yes. No search/query call exists in integriq.",
+		"change": "connectors-graph-document-search",
+		"decidedOn": "2026-09-28"
 	}
 ]
