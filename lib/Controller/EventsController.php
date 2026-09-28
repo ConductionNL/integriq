@@ -26,6 +26,7 @@ use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -644,28 +645,18 @@ class EventsController extends Controller {
 	}//end refuseUnsafeSink()
 
 	/**
-	 * Redact signing secret material from a subscription object for any read.
+	 * Redact every secret in a subscription's `protocolSettings` for any read.
+	 *
+	 * See {@see SubscriptionSecretMasker::mask()} for what is masked and why.
 	 *
 	 * @param array $subscription The subscription object array.
 	 *
 	 * @return array The same array with secret fields replaced by a marker.
 	 *
-	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 	 */
 	private function redactSubscription(array $subscription): array {
-		if (isset($subscription['protocolSettings']) === false || is_array($subscription['protocolSettings']) === false) {
-			return $subscription;
-		}
-
-		foreach (['signingSecret', 'previousSigningSecret'] as $key) {
-			if (isset($subscription['protocolSettings'][$key]) === true
-				&& $subscription['protocolSettings'][$key] !== ''
-			) {
-				$subscription['protocolSettings'][$key] = '**********';
-			}
-		}
-
-		return $subscription;
+		return (new SubscriptionSecretMasker())->mask(subscription: $subscription);
 	}//end redactSubscription()
 
 	/**
