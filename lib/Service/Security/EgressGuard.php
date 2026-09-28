@@ -156,6 +156,25 @@ class EgressGuard {
 			throw new EgressRefusedException(message: 'The host "' . $host . '" is a cloud metadata endpoint.');
 		}
 
+		$this->assertAddressesAllowed(host: $host, allowed: $allowed);
+	}//end assertAllowed()
+
+	/**
+	 * Refuse a host whose addresses fall in a refused range.
+	 *
+	 * A link-local or metadata address is always refused; a loopback, private
+	 * or reserved address only when the host is not on the allow list.
+	 *
+	 * @param string  $host    The lower-cased host, without IPv6 brackets.
+	 * @param boolean $allowed Whether the administrator allowed this host.
+	 *
+	 * @return void
+	 *
+	 * @throws EgressRefusedException When an address is refused.
+	 *
+	 * @spec openspec/changes/events-async-api-products/design.md
+	 */
+	private function assertAddressesAllowed(string $host, bool $allowed): void {
 		foreach ($this->addressesOf(host: $host) as $address) {
 			if ($this->inAnyRange(address: $address, ranges: self::ALWAYS_REFUSED_RANGES) === true) {
 				throw new EgressRefusedException(
@@ -170,7 +189,7 @@ class EgressGuard {
 				);
 			}
 		}
-	}//end assertAllowed()
+	}//end assertAddressesAllowed()
 
 	/**
 	 * Every IP address a host stands for: the host itself when it is a literal,
@@ -189,12 +208,20 @@ class EgressGuard {
 		}
 
 		$addresses = [];
-		$ipv4 = @gethostbynamel($host);
+		$ipv4 = gethostbynamel($host);
 		if (is_array($ipv4) === true) {
 			$addresses = $ipv4;
 		}
 
-		$ipv6 = @dns_get_record($host, DNS_AAAA);
+		// The dns_get_record() call warns on a failed lookup; that is not an
+		// error here, so the warning is swallowed for this one call.
+		set_error_handler(static fn (): bool => true);
+		try {
+			$ipv6 = dns_get_record($host, DNS_AAAA);
+		} finally {
+			restore_error_handler();
+		}
+
 		if (is_array($ipv6) === true) {
 			foreach ($ipv6 as $record) {
 				if (isset($record['ipv6']) === true) {
@@ -240,7 +267,11 @@ class EgressGuard {
 	 * @return boolean
 	 */
 	private function inAnyRange(string $address, array $ranges): bool {
-		$packed = @inet_pton($address);
+		if (filter_var($address, FILTER_VALIDATE_IP) === false) {
+			return false;
+		}
+
+		$packed = inet_pton($address);
 		if ($packed === false) {
 			return false;
 		}
