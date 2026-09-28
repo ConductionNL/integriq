@@ -174,7 +174,7 @@ class LtiKeyService {
 	 *
 	 * @param string $algorithm RS256 or PS256.
 	 *
-	 * @return array The new key entry (`kid`, `algorithm`, `publicJwk`, `privateKeySecret`, `status`, `rotatedAt`).
+	 * @return array The new key entry (`kid`, `algorithm`, `publicJwk`, `privateKeySecret`, `status`; no `rotatedAt` until rotated).
 	 *
 	 * @throws BadRequestException When the algorithm is not supported.
 	 */
@@ -211,7 +211,9 @@ class LtiKeyService {
 			// outbound calls) and this app's own signing consume unmodified.
 			'privateKeySecret' => $this->sealSecret(plainSecret: base64_encode($pem)),
 			'status' => 'active',
-			'rotatedAt' => null,
+			// No `rotatedAt` while active: the lti_tool/lti_platform schemas declare
+			// it as a date-time string ("unset while active") and refuse null
+			// (#2261). rotateKey() stamps it when the key is superseded.
 		];
 
 	}//end createKeyEntry()
