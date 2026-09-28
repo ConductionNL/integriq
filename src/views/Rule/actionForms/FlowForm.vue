@@ -56,7 +56,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001 */
 		selected() {
 			const idStr = String(this.id || '')
 			if (!idStr) return null
@@ -69,7 +69,7 @@ export default {
 		},
 	},
 
-	/** @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001 */
+	/** @spec openspec/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001 */
 	async mounted() {
 		this.loading = true
 		this.options = await fetchOpenRegisterCollection('flow')
@@ -83,7 +83,7 @@ export default {
 		 *
 		 * @param {{id: string, label: string}|null} option The picked flow.
 		 *
-		 * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+		 * @spec openspec/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
 		 */
 		onPick(option) {
 			this.$emit('update:id', option?.id ? String(option.id) : '')

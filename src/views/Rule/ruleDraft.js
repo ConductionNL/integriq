@@ -94,7 +94,7 @@ export const ACTION_TYPES = [
  * @param {object} draft The rule draft (top-level `type`, `configuration`).
  * @return {boolean} True when the draft is a flow rule without a flow id.
  *
- * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+ * @spec openspec/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
  */
 export function flowRuleMissingFlow(draft) {
 	if (draft?.type !== 'flow') return false

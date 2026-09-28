@@ -3869,15 +3869,15 @@
 			"area": "automation",
 			"name": "Start a flow when an outside system calls a webhook.",
 			"source": "competitor-derived",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
-				"change": "automation-endpoint-flow-trigger",
+				"state": "built",
+				"change": "2026-09-28-automation-endpoint-flow-trigger",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:120 endpoint rule type 'flow' triggers 'a real FlowRunnerService::run()'; src/views/Rule/ruleDraft.js:59-63: 'flow' also has a match arm but no authoring UI, so it is deliberately not offered in ACTION_TYPES (lines 65-81). Rules of that type are seeded only from configuration imports."
+				"evidence": "src/views/Rule/actionForms/FlowForm.vue picks a flow from OpenRegister's integriq/flow objects; ruleDraft.js ACTION_TYPES offers 'flow'; RuleActionConfig.vue and RuleEditorModal.vue write the id to configuration.flow, which EndpointService::processFlowRule() reads to run FlowRunnerService::run() with the request as input; flowRuleMissingFlow() holds Save back in the dialog and on the detail page for a flow rule with no flow. Tests: tests/vitest/endpointFlowRule.spec.js (6), EndpointServiceTest::testProcessFlowRuleRunsAndReturnsDataUnmodified, testProcessFlowRuleThrowsWithoutConfiguredFlow. Built by change automation-endpoint-flow-trigger (archived 2026-09-28)."
 			},
-			"reachedOn": "no UI: RuleDetailPage/RuleEditorModal cannot create or edit a rule with action type 'flow'; only a rule seeded from an imported configuration can carry one",
-			"note": "An inbound Endpoint call matching a pre-seeded 'flow' rule does start a flow (this is the closest thing to an inbound webhook trigger), but a staff member cannot configure this themselves.",
+			"reachedOn": "Rules > Create rule (or a rule's detail page): Type Flow shows a Flow picker; the rule on an endpoint makes the endpoint path the webhook a partner calls",
+			"note": "Built 2026-09-28: the flow action is offered in the rule editor. Before, only a rule seeded from an imported configuration could start a flow.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "flow-orchestration",

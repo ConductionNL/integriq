@@ -14,7 +14,7 @@
  * flows, picking one writes the bare id to `configuration.flow` (the key the
  * runtime reads), and the create dialog refuses a flow rule that names no flow.
  *
- * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+ * @spec openspec/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

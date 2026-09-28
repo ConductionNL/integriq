@@ -381,7 +381,7 @@ export default {
 		 *
 		 * @return {boolean} True when the draft is a flow rule without a flow.
 		 *
-		 * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+		 * @spec openspec/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
 		 */
 		missingFlow() {
 			return flowRuleMissingFlow(this.draft)

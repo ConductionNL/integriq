@@ -357,7 +357,7 @@ export default {
 		 *
 		 * @param {string} id The picked flow's id, or '' when cleared.
 		 *
-		 * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+		 * @spec openspec/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
 		 */
 		onFlowIdUpdate(id) {
 			const next = { ...(this.configuration || {}) }
