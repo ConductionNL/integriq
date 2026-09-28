@@ -148,36 +148,19 @@ class SourceRequestedListener implements IEventListener {
 	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
 	 */
 	public function baseUrlParts(SourceRequestedEvent $event): ?array {
-		$url = trim($event->getBaseUrl());
-		$parsed = parse_url($url);
+		$parsed = parse_url(trim($event->getBaseUrl()));
 		if (is_array($parsed) === false) {
-			$event->refuse(refusal: 'the base URL is not a URL');
+			$parsed = [];
+		}
+
+		$refusal = $this->refusalFor(parsed: $parsed);
+		if ($refusal !== null) {
+			$event->refuse(refusal: $refusal);
 			return null;
 		}
 
-		$scheme = strtolower((string)($parsed['scheme'] ?? ''));
-		$host = strtolower((string)($parsed['host'] ?? ''));
-		if (in_array($scheme, self::SCHEMES, true) === false || $host === '') {
-			$event->refuse(refusal: 'the base URL must be an http or https URL with a host');
-			return null;
-		}
-
-		if (isset($parsed['user']) === true || isset($parsed['pass']) === true) {
-			$event->refuse(refusal: 'the base URL may not carry a user name or password; credentials belong on the Source');
-			return null;
-		}
-
-		$path = (string)($parsed['path'] ?? '');
-		if (($path !== '' && $path !== '/') || isset($parsed['query']) === true || isset($parsed['fragment']) === true) {
-			$event->refuse(refusal: 'the base URL may not carry a path, query or fragment; those belong on the step');
-			return null;
-		}
-
-		if ($this->hostValidator->isValid($host) === false) {
-			$event->refuse(refusal: 'this instance does not allow calls to the host ' . $host);
-			return null;
-		}
-
+		$scheme = strtolower((string)$parsed['scheme']);
+		$host = strtolower((string)$parsed['host']);
 		$location = $scheme . '://' . $host;
 		$slugTail = $scheme . '-' . $host;
 		if (isset($parsed['port']) === true) {
@@ -189,6 +172,52 @@ class SourceRequestedListener implements IEventListener {
 
 		return [$location, $slug, $host];
 	}//end baseUrlParts()
+
+	/**
+	 * Why a parsed base URL is refused, or null when it is a bare http(s) base URL on an allowed host.
+	 *
+	 * @param array<string, mixed> $parsed The `parse_url()` result, or an empty array.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private function refusalFor(array $parsed): ?string {
+		$scheme = strtolower((string)($parsed['scheme'] ?? ''));
+		$host = strtolower((string)($parsed['host'] ?? ''));
+		if (in_array($scheme, self::SCHEMES, true) === false || $host === '') {
+			return 'the base URL must be an http or https URL with a host';
+		}
+
+		$extra = self::extraPartsRefusal(parsed: $parsed);
+		if ($extra !== null) {
+			return $extra;
+		}
+
+		if ($this->hostValidator->isValid($host) === false) {
+			return 'this instance does not allow calls to the host ' . $host;
+		}
+
+		return null;
+	}//end refusalFor()
+
+	/**
+	 * Why a base URL carrying more than scheme, host and port is refused, or null when it carries nothing more.
+	 *
+	 * @param array<string, mixed> $parsed The `parse_url()` result.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function extraPartsRefusal(array $parsed): ?string {
+		if (isset($parsed['user']) === true || isset($parsed['pass']) === true) {
+			return 'the base URL may not carry a user name or password; credentials belong on the Source';
+		}
+
+		$path = (string)($parsed['path'] ?? '');
+		if (($path !== '' && $path !== '/') || isset($parsed['query']) === true || isset($parsed['fragment']) === true) {
+			return 'the base URL may not carry a path, query or fragment; those belong on the step';
+		}
+
+		return null;
+	}//end extraPartsRefusal()
 
 	/**
 	 * The Source a request creates: enabled, no credentials, provenance in the description.
