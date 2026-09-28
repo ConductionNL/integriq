@@ -1,0 +1,78 @@
+{
+  "$comment": "Rostering mapping presets: one per rostering Source row in lib/sources.seed.json. Each maps a planninq timetable session field (planninq contract v1, change school-timetable-target) to the vendor field that feeds it. Vendor field names are representative, drawn from the vendor-stated API surfaces cited in integriq #2166 and from the learniq timetable-import presets they replace (docs.zportal.nl appointments; developer.untis.com WebUntis; Xedule Connect per the SURF DPIA of 8 July 2025; developer.timeedit.com). None was captured live. cohortId and teacherUserId are never read from a vendor: the target configuration fills them from groupReference and teacherReference (rostering-adapter-targets-planninq).",
+  "presets": [
+    {
+      "id": "roster-zermelo",
+      "sourceSystem": "Zermelo",
+      "target": "planninq.timetableSession",
+      "contractVersion": 1,
+      "description": "Zermelo appointments (docs.zportal.nl): times in Unix seconds, subjects, groups, teachers and locations as lists, a cancelled flag.",
+      "fields": {
+        "externalRef": {"from": "appointmentInstance"},
+        "subject": {"from": "subjects"},
+        "startsAt": {"from": "start", "transform": "datetime"},
+        "endsAt": {"from": "end", "transform": "datetime"},
+        "groupReference": {"from": "groups"},
+        "teacherReference": {"from": "teachers"},
+        "roomReference": {"from": "locations"},
+        "roomLabel": {"from": "locations"},
+        "status": {"from": "cancelled", "transform": "status", "cancelledValues": [true, 1, "1", "true"]}
+      }
+    },
+    {
+      "id": "roster-untis-oneroster",
+      "sourceSystem": "Untis",
+      "target": "planninq.timetableSession",
+      "contractVersion": 1,
+      "description": "WebUntis periods (developer.untis.com): ISO date and time fields, class, subject, teacher and room ids, a code that reads cancelled for a dropped lesson.",
+      "fields": {
+        "externalRef": {"from": "id"},
+        "subject": {"from": "faechId"},
+        "startsAt": {"from": "startDateTime", "transform": "datetime"},
+        "endsAt": {"from": "endDateTime", "transform": "datetime"},
+        "groupReference": {"from": "klasseId"},
+        "teacherReference": {"from": "lehrerId"},
+        "roomReference": {"from": "raumId"},
+        "roomLabel": {"from": "raumId"},
+        "status": {"from": "code", "transform": "status", "cancelledValues": ["cancelled"]}
+      }
+    },
+    {
+      "id": "roster-xedule",
+      "sourceSystem": "Xedule",
+      "target": "planninq.timetableSession",
+      "contractVersion": 1,
+      "description": "Xedule Connect events: start and end moments, group code, activity name, teacher code, location name and an event status.",
+      "fields": {
+        "externalRef": {"from": "eventId"},
+        "subject": {"from": "activityName"},
+        "title": {"from": "activityName"},
+        "startsAt": {"from": "startMoment", "transform": "datetime"},
+        "endsAt": {"from": "endMoment", "transform": "datetime"},
+        "groupReference": {"from": "groupCode"},
+        "teacherReference": {"from": "teacherCode"},
+        "roomReference": {"from": "locationName"},
+        "roomLabel": {"from": "locationName"},
+        "status": {"from": "status", "transform": "status", "cancelledValues": ["cancelled", "CANCELLED"]}
+      }
+    },
+    {
+      "id": "roster-timeedit",
+      "sourceSystem": "TimeEdit",
+      "target": "planninq.timetableSession",
+      "contractVersion": 1,
+      "description": "TimeEdit reservations (developer.timeedit.com): begin and end times, a resource group, an activity title, a staff id, a room name and a cancelled flag.",
+      "fields": {
+        "externalRef": {"from": "activityId"},
+        "subject": {"from": "activityTitle"},
+        "startsAt": {"from": "beginTime", "transform": "datetime"},
+        "endsAt": {"from": "endTime", "transform": "datetime"},
+        "groupReference": {"from": "resourceGroup"},
+        "teacherReference": {"from": "staffId"},
+        "roomReference": {"from": "roomName"},
+        "roomLabel": {"from": "roomName"},
+        "status": {"from": "cancelled", "transform": "status", "cancelledValues": [true, 1, "1", "true"]}
+      }
+    }
+  ]
+}

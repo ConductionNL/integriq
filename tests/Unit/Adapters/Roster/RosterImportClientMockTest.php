@@ -1,14 +1,21 @@
 <?php
 
 /**
- * Unit tests for the roster-import *ClientMock dormant implementation.
+ * Tests for the dormant roster-import mock client.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Adapters\Roster
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   EUPL-1.2
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @link https://www.integriq.nl
+ *
+ * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
  */
 
 declare(strict_types=1);
@@ -20,22 +27,24 @@ use OCA\Integriq\Adapters\Roster\RosterImportClientMock;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Lock the canned lesson batch for the dormant roster-import client,
- * against the recorded/representative fixture at
+ * Lock the canned vendor-shaped batches against the representative fixture at
  * tests/fixtures/roster/fixture-roster-batch.json.
  */
 class RosterImportClientMockTest extends TestCase {
 	/**
-	 * @return array<int,array<string,mixed>>
+	 * The fixture batches keyed by source.
+	 *
+	 * @return array<string,array<int,array<string,mixed>>>
 	 */
 	private function loadFixture(): array {
-		$path = __DIR__ . '/../../../fixtures/roster/fixture-roster-batch.json';
-		$decoded = json_decode((string)file_get_contents($path), true);
+		$decoded = json_decode((string)file_get_contents(__DIR__ . '/../../../fixtures/roster/fixture-roster-batch.json'), true);
 		$this->assertIsArray($decoded);
-		return $decoded['lessons'];
+		return $decoded['sources'];
 	}//end loadFixture()
 
 	/**
+	 * The mock is the abstract client's mock flavour.
+	 *
 	 * @return void
 	 */
 	public function testMockExtendsAbstractClient(): void {
@@ -46,45 +55,40 @@ class RosterImportClientMockTest extends TestCase {
 	}//end testMockExtendsAbstractClient()
 
 	/**
+	 * Every source's batch matches the fixture exactly.
+	 *
 	 * @return void
 	 */
-	public function testFetchLessonsReturnsTwoRecords(): void {
+	public function testEachSourceMatchesTheFixture(): void {
 		$mock = new RosterImportClientMock();
 
-		$this->assertCount(2, $mock->fetchLessons('roster-zermelo'));
-	}//end testFetchLessonsReturnsTwoRecords()
-
-	/**
-	 * @return void
-	 */
-	public function testFetchLessonsMatchesRecordedFixtureShape(): void {
-		$mock = new RosterImportClientMock();
-
-		$this->assertSame($this->loadFixture(), $mock->fetchLessons('roster-zermelo'));
-	}//end testFetchLessonsMatchesRecordedFixtureShape()
-
-	/**
-	 * @return void
-	 */
-	public function testFetchLessonsCarriesLessonFieldNames(): void {
-		$mock = new RosterImportClientMock();
-
-		foreach ($mock->fetchLessons('roster-xedule') as $lesson) {
-			$this->assertArrayHasKey('subject', $lesson);
-			$this->assertArrayHasKey('startsAt', $lesson);
-			$this->assertArrayHasKey('endsAt', $lesson);
-			$this->assertArrayHasKey('room', $lesson);
-			$this->assertArrayHasKey('teacherReference', $lesson);
-			$this->assertArrayHasKey('groupReference', $lesson);
+		foreach ($this->loadFixture() as $systemId => $batch) {
+			$this->assertSame($batch, $mock->fetchLessons($systemId), $systemId);
 		}
-	}//end testFetchLessonsCarriesLessonFieldNames()
+
+		$this->assertCount(4, $this->loadFixture());
+	}//end testEachSourceMatchesTheFixture()
 
 	/**
+	 * The sources speak different vendor dialects, so a preset is needed per source.
+	 *
 	 * @return void
 	 */
-	public function testFetchLessonsIsDeterministicRegardlessOfSystem(): void {
+	public function testSourcesUseTheirOwnFieldNames(): void {
 		$mock = new RosterImportClientMock();
 
-		$this->assertSame($mock->fetchLessons('roster-untis-oneroster'), $mock->fetchLessons('roster-timeedit'));
-	}//end testFetchLessonsIsDeterministicRegardlessOfSystem()
+		$this->assertArrayHasKey('appointmentInstance', $mock->fetchLessons('roster-zermelo')[0]);
+		$this->assertArrayHasKey('klasseId', $mock->fetchLessons('roster-untis-oneroster')[0]);
+		$this->assertArrayHasKey('groupCode', $mock->fetchLessons('roster-xedule')[0]);
+		$this->assertArrayHasKey('resourceGroup', $mock->fetchLessons('roster-timeedit')[0]);
+	}//end testSourcesUseTheirOwnFieldNames()
+
+	/**
+	 * An unknown source returns no lessons.
+	 *
+	 * @return void
+	 */
+	public function testUnknownSourceReturnsNothing(): void {
+		$this->assertSame([], (new RosterImportClientMock())->fetchLessons('roster-unknown'));
+	}//end testUnknownSourceReturnsNothing()
 }//end class

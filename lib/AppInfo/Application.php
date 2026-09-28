@@ -40,6 +40,8 @@ use OCA\Integriq\Adapters\Pdok\PdokWfsClientMock;
 use OCA\Integriq\Adapters\Pdok\PdokWmsClient;
 use OCA\Integriq\Adapters\Pdok\PdokWmsClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokWmsClientMock;
+use OCA\Integriq\Adapters\Roster\RosterImportClient;
+use OCA\Integriq\Adapters\Roster\RosterImportClientMock;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
@@ -54,6 +56,7 @@ use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
+use OCA\Integriq\Event\RosterImportRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
 use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
 use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
@@ -70,6 +73,7 @@ use OCA\Integriq\EventListener\NextcloudFormsEventListener;
 use OCA\Integriq\EventListener\NextcloudTablesEventListener;
 use OCA\Integriq\EventListener\ObjectCreatedEventListener;
 use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
+use OCA\Integriq\EventListener\RosterImportRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
@@ -312,6 +316,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ExchangeJobRequestedEvent::class, ExchangeJobRequestedListener::class);
 		$context->registerEventListener(ExchangeMappingRequestedEvent::class, ExchangeMappingRequestedListener::class);
 		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);
+		// Rostering into planninq (rostering-adapter-targets-planninq,
+		// decision D10): learniq's timetable-import job asks integriq to
+		// deliver a rostering source; the listener always answers on the
+		// event, delivered or failed with an error code.
+		$context->registerEventListener(
+			RosterImportRequestedEvent::class,
+			RosterImportRequestedListener::class
+		);
 		// Nextcloud-core-event triggers (nextcloud-event-hub). Each family
 		// normalizes its NC event into the SAME `event` CloudEvents envelope
 		// shape the OR-object pipeline above already uses, then hands off to
@@ -424,6 +436,19 @@ class Application extends App implements IBootstrap {
 				$raw = strtolower($c->get('OCP\IAppConfig')->getValueString('integriq', SloCurriculumSourceAdapter::FLAG_KEY, '0'));
 
 				return $c->get($live[$raw] ?? SloCurriculumClientMock::class);
+			}
+		);
+
+		// Dormant rostering adapter (rostering-adapter-targets-planninq). The
+		// abstract `RosterImportClient` had no binding, so the adapter could
+		// not be constructed on an instance at all. No live client exists
+		// yet (each rostering system needs its own institution onboarding,
+		// D9), so the binding is the mock whatever the feature flag says; a
+		// live binding adds the flag branch the way SloCurriculumClient does.
+		$context->registerService(
+			RosterImportClient::class,
+			static function ($c) {
+				return $c->get(RosterImportClientMock::class);
 			}
 		);
 

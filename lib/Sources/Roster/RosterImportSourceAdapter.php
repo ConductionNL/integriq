@@ -5,9 +5,11 @@
  *
  * Source-pattern facade over {@see \OCA\Integriq\Adapters\Roster\RosterImportClient}.
  * Ships dormant: every call routes through the mock subclass and is
- * logged at DEBUG so downstream consumers (learniq's rostering-import
- * `DataExchangeJob`) can develop and test against a stable surface
- * without contacting Zermelo, Untis, Xedule or TimeEdit.
+ * logged at DEBUG. The fetched vendor records are mapped onto planninq's
+ * timetable session shape (planninq contract v1) through the source's
+ * preset and target configuration, because planninq owns the timetable
+ * (decision D10, rostering-adapter-targets-planninq). It used to map onto
+ * learniq's rostering-import `DataExchangeJob` payload.
  *
  * Lives under `lib/Sources/Roster/` so it can be discovered by the
  * integriq Source registry. Four Source rows share this one class —
@@ -27,7 +29,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/specs/rostering-import/spec.md#requirement-source-adapter-maps-a-roster-batch-onto-the-rostering-import-job-payload-req-002
+ * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
  */
 
 declare(strict_types=1);
@@ -47,7 +49,7 @@ use Psr\Log\LoggerInterface;
  * operators can verify the wiring without contacting a scheduling
  * system.
  *
- * @spec openspec/specs/rostering-import/spec.md#requirement-source-adapter-maps-a-roster-batch-onto-the-rostering-import-job-payload-req-002
+ * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
@@ -71,14 +73,20 @@ final class RosterImportSourceAdapter {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $config App-config service (feature-flag check).
-	 * @param LoggerInterface $logger Structured logger.
-	 * @param RosterImportClient $rosterClient Resolved client (mock or http).
+	 * @param IAppConfig                  $config        App-config service (feature-flag check).
+	 * @param LoggerInterface             $logger        Structured logger.
+	 * @param RosterImportClient          $rosterClient  Resolved client (mock or http).
+	 * @param RosterMappingPresetRegistry $presets       Vendor-to-planninq presets.
+	 * @param RosterSessionMapper         $mapper        Applies a preset to one record.
+	 * @param RosterTargetConfiguration   $targetConfig  Code-to-id maps per source.
 	 */
 	public function __construct(
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
 		private readonly RosterImportClient $rosterClient,
+		private readonly RosterMappingPresetRegistry $presets,
+		private readonly RosterSessionMapper $mapper,
+		private readonly RosterTargetConfiguration $targetConfig,
 	) {
 	}//end __construct()
 
@@ -87,7 +95,7 @@ final class RosterImportSourceAdapter {
 	 *
 	 * @return bool True when `roster.import.feature_flag` is `1` / `true`.
 	 *
-	 * @spec openspec/specs/rostering-import/spec.md#requirement-source-adapter-maps-a-roster-batch-onto-the-rostering-import-job-payload-req-002
+	 * @spec openspec/changes/integriq-adapter-rostering-imports/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
 	 */
 	public function isActive(): bool {
 		$raw = $this->config->getValueString(self::APP_ID, self::FLAG_KEY, '0');
@@ -95,19 +103,33 @@ final class RosterImportSourceAdapter {
 	}//end isActive()
 
 	/**
-	 * Fetch and map a lesson batch for one system onto learniq's
-	 * rostering-import job payload field names.
+	 * The client flavour that answers (`mock` or `https`).
 	 *
-	 * @param string $systemId One of `roster-zermelo`,
-	 *                         `roster-untis-oneroster`,
-	 *                         `roster-xedule`, `roster-timeedit`.
+	 * @return string
 	 *
-	 * @return array<int,array<string,mixed>> Rostering-import-shaped
-	 *                                        records.
-	 *
-	 * @spec openspec/specs/rostering-import/spec.md#requirement-source-adapter-maps-a-roster-batch-onto-the-rostering-import-job-payload-req-002
+	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
-	public function importLessons(string $systemId): array {
+	public function flavour(): string {
+		return $this->rosterClient->flavour();
+	}//end flavour()
+
+	/**
+	 * Fetch one source's lessons and map them onto planninq timetable sessions.
+	 *
+	 * @param string              $systemId One of `roster-zermelo`,
+	 *                                      `roster-untis-oneroster`,
+	 *                                      `roster-xedule`, `roster-timeedit`.
+	 * @param array<string,mixed> $options  The delivery's `groupMap` and `teacherMap`, if any.
+	 *
+	 * @return array<int,array<string,string>> Planninq session rows (contract v1).
+	 *
+	 * @throws \InvalidArgumentException When the source has no preset.
+	 *
+	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+	 */
+	public function importLessons(string $systemId, array $options = []): array {
+		$preset = $this->presets->get(systemId: $systemId);
+		$target = $this->targetConfig->forSystem(systemId: $systemId, overrides: $options);
 		$batch = $this->rosterClient->fetchLessons($systemId);
 
 		$this->logger->debug(
@@ -115,40 +137,20 @@ final class RosterImportSourceAdapter {
 			[
 				'source' => $systemId,
 				'category' => self::SOURCE_CATEGORY,
+				'target' => $target['target'],
 				'recordCount' => count($batch),
 				'active' => $this->isActive(),
 				'flavour' => $this->rosterClient->flavour(),
 			]
 		);
 
-		return array_map(
-			fn (array $lesson): array => $this->toRosteringImportPayload(systemId: $systemId, lesson: $lesson),
-			$batch
-		);
-	}//end importLessons()
+		$sessions = [];
+		foreach ($batch as $record) {
+			if (is_array($record) === true) {
+				$sessions[] = $this->mapper->map(preset: $preset, record: $record, maps: $target);
+			}
+		}
 
-	/**
-	 * Map one lesson record onto the rostering-import job payload
-	 * field names.
-	 *
-	 * This is the single seam to update if learniq's rostering-import
-	 * payload shape changes before archive — see design.md
-	 * "Cross-Project Dependencies".
-	 *
-	 * @param string $systemId Rostering system Source row id.
-	 * @param array<string,mixed> $lesson One lesson record.
-	 *
-	 * @return array<string,mixed> Rostering-import-shaped record.
-	 */
-	private function toRosteringImportPayload(string $systemId, array $lesson): array {
-		return [
-			'systemId' => $systemId,
-			'subject' => (string)($lesson['subject'] ?? ''),
-			'startTime' => (string)($lesson['startsAt'] ?? ''),
-			'endTime' => (string)($lesson['endsAt'] ?? ''),
-			'roomLabel' => (string)($lesson['room'] ?? ''),
-			'teacherReference' => (string)($lesson['teacherReference'] ?? ''),
-			'groupReference' => (string)($lesson['groupReference'] ?? ''),
-		];
-	}//end toRosteringImportPayload()
+		return $sessions;
+	}//end importLessons()
 }//end class
