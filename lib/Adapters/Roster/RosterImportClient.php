@@ -15,7 +15,7 @@
  *     timetable sessions can be developed and tested without ever
  *     contacting a scheduling system (rostering-adapter-targets-planninq).
  *   - A live HTTP binding is intentionally NOT built in this change
- *     — see `openspec/changes/integriq-adapter-rostering-imports/proposal.md`
+ *     — see `openspec/changes/archive/2026-09-28-integriq-adapter-rostering-imports/proposal.md`
  *     "Out of Scope". Each system requires its own institution-level
  *     OAuth/API-key onboarding this change cannot complete.
  *
@@ -43,7 +43,7 @@ namespace OCA\Integriq\Adapters\Roster;
  * self-identifier so the structured logger can record which binding
  * actually handled the call.
  *
- * @spec openspec/changes/integriq-adapter-rostering-imports/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
+ * @spec openspec/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
  */
 abstract class RosterImportClient {
 	/**
@@ -52,7 +52,7 @@ abstract class RosterImportClient {
 	 *
 	 * @return string `mock` or `https`.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rostering-imports/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
+	 * @spec openspec/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
 	 */
 	abstract public function flavour(): string;
 
@@ -72,7 +72,7 @@ abstract class RosterImportClient {
 	 *                                        `lib/roster-mapping-presets.seed.json`
 	 *                                        maps them onto planninq.
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
 	 */
 	abstract public function fetchLessons(string $systemId): array;
 }//end class

@@ -8202,14 +8202,15 @@
 			"area": "connectors",
 			"name": "Import a timetable from scheduling software.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniE 'timetable|rooster|untis|zermelo' lib src configurations = 0 relevant hits (3 false positives on 'countIs' in lib/Migration/MigrationPreviewReader.php). Covered by openspec/changes/integriq-adapter-rostering-imports/ (13 of 14 tasks ticked; OpenSpec pass 2026-09-27): The roster adapter for Zermelo, Untis, Xedule and TimeEdit landed dormant on 2026-09-27 (#2166), after the matrix was read; matrix corrected to building."
+				"change": "2026-09-28-rostering-adapter-targets-planninq",
+				"evidence": "lib/EventListener/RosterImportRequestedListener.php (registered in lib/AppInfo/Application.php) -> lib/Sources/Roster/RosterDeliveryService.php deliver() -> RosterImportSourceAdapter importLessons() -> lib/Sources/Roster/PlanninqTimetableTarget.php deliver(), whose named arguments match planninq lib/Event/TimetableUpsertRequestedEvent.php; the learniq caller lib/Timetabling/PlanninqTimetableImport.php matches RosterImportRequestedEvent. RosterImportClient is bound to RosterImportClientMock whatever the flag (Application.php), because no live vendor client exists (design D9, per-institution onboarding). Built by changes integriq-adapter-rostering-imports and rostering-adapter-targets-planninq (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "No source template, mapping or adapter for any scheduling package ships; a timetable import would have to be built by hand with the generic sync engine.",
+			"reachedOn": "learniq timetable import job through RosterImportRequestedEvent, delivered into planninq through TimetableUpsertRequestedEvent; mock client only",
+			"note": "No source template, mapping or adapter for any scheduling package ships; a timetable import would have to be built by hand with the generic sync engine. Built 2026-09-28 as a dormant adapter: the chain learniq -> integriq -> planninq is wired end to end, but only the mock client exists, so the rating stays partial until a live Zermelo, Untis, Xedule or TimeEdit client is onboarded.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",

@@ -29,7 +29,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use Psr\Log\LoggerInterface;
  * operators can verify the wiring without contacting a scheduling
  * system.
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
@@ -95,7 +95,7 @@ final class RosterImportSourceAdapter {
 	 *
 	 * @return bool True when `roster.import.feature_flag` is `1` / `true`.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rostering-imports/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
+	 * @spec openspec/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
 	 */
 	public function isActive(): bool {
 		$raw = $this->config->getValueString(self::APP_ID, self::FLAG_KEY, '0');
@@ -107,7 +107,7 @@ final class RosterImportSourceAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
 	public function flavour(): string {
 		return $this->rosterClient->flavour();
@@ -125,7 +125,7 @@ final class RosterImportSourceAdapter {
 	 *
 	 * @throws \InvalidArgumentException When the source has no preset.
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
 	 */
 	public function importLessons(string $systemId, array $options = []): array {
 		$preset = $this->presets->get(systemId: $systemId);

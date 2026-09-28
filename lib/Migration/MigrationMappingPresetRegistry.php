@@ -25,7 +25,7 @@ namespace OCA\Integriq\Migration;
 /**
  * A preset is configuration for the existing `file` migration source,
  * not a second reading engine — see
- * `openspec/changes/integriq-adapter-rostering-imports/design.md`
+ * `openspec/changes/archive/2026-09-28-integriq-adapter-rostering-imports/design.md`
  * "Trade-offs". Presets are loaded once from
  * `lib/migration-mapping-presets.seed.json` and are immutable at
  * runtime; an operator who needs a different mapping authors one

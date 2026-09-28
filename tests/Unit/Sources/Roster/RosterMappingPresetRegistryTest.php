@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
  */
 
 declare(strict_types=1);
@@ -95,7 +95,7 @@ class RosterMappingPresetRegistryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
 	 */
 	public function testZermeloAppointmentBecomesAPlanninqSession(): void {
 		$preset = (new RosterMappingPresetRegistry())->get('roster-zermelo');
@@ -133,7 +133,7 @@ class RosterMappingPresetRegistryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
 	 */
 	public function testUntisPeriodKeepsItsOffsetAndStatus(): void {
 		$preset = (new RosterMappingPresetRegistry())->get('roster-untis-oneroster');

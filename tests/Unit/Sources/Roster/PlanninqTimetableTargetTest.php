@@ -16,7 +16,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
  */
 
 declare(strict_types=1);

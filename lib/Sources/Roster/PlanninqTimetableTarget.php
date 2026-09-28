@@ -23,7 +23,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 /**
  * Delivers timetable sessions into planninq.
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
  */
 class PlanninqTimetableTarget {
 	/**
@@ -60,7 +60,7 @@ class PlanninqTimetableTarget {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
 	 */
 	public function isAvailable(): bool {
 		return class_exists($this->eventClass) === true;
@@ -78,7 +78,7 @@ class PlanninqTimetableTarget {
 	 * @throws RosterDeliveryException `planninq-absent` when planninq is not installed or did not answer;
 	 *                                 `planninq-refused` when planninq refused the batch as a whole.
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-delivery-goes-to-planninq-through-planninqs-typed-event-req-004
 	 */
 	public function deliver(string $systemId, array $sessions, string $correlationId = ''): array {
 		if ($this->isAvailable() === false) {

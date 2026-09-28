@@ -42,7 +42,7 @@
 - [x] All tasks checked off
 - [x] `openspec validate` passes
 - [x] Manual testing against acceptance criteria (unit-level, mock client + registry only)
-- [ ] Code review against spec requirements (pending PR review)
+- [x] Code review against spec requirements (build-all pass 2026-09-28: the learniq caller `lib/Timetabling/PlanninqTimetableImport.php` and the planninq `TimetableUpsertRequestedEvent` constructor read at development match this side's named arguments)
 
 ## Tests (company-wide ADR-009)
 
