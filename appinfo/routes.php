@@ -230,6 +230,16 @@ return [
 		['name' => 'uwlrEduV#basispoort', 'url' => '/api/uwlr-eduv/basispoort', 'verb' => 'POST'],
 		['name' => 'uwlrEduV#entreeContent', 'url' => '/api/uwlr-eduv/entree-content', 'verb' => 'POST'],
 		['name' => 'uwlrEduV#retour', 'url' => '/api/uwlr-eduv/retour', 'verb' => 'POST'],
+		// Exchange jobs another app owns (learniq-exchange-jobs-native): the
+		// read model an app queries for its own jobs, and the two correction
+		// actions on a rejection. Each method checks its ADR-023 action
+		// (exchange.read / exchange.resubmit / exchange.waive).
+		['name' => 'exchange#jobs', 'url' => '/api/exchange/jobs', 'verb' => 'GET'],
+		['name' => 'exchange#job', 'url' => '/api/exchange/jobs/{id}', 'verb' => 'GET'],
+		['name' => 'exchange#rejections', 'url' => '/api/exchange/rejections', 'verb' => 'GET'],
+		['name' => 'exchange#targets', 'url' => '/api/exchange/targets', 'verb' => 'GET'],
+		['name' => 'exchange#resubmit', 'url' => '/api/exchange/rejections/{id}/resubmit', 'verb' => 'POST'],
+		['name' => 'exchange#waive', 'url' => '/api/exchange/rejections/{id}/waive', 'verb' => 'POST'],
 
 		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
 		// stuf-zkn-bridge) — the legacy Dutch municipal SOAP/XML message
