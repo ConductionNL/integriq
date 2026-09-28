@@ -201,6 +201,8 @@ class EgressGuard {
 	 * @param string $host The lower-cased host, without IPv6 brackets.
 	 *
 	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/events-async-api-products/design.md
 	 */
 	protected function addressesOf(string $host): array {
 		if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
