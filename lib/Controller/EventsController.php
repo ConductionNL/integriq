@@ -636,32 +636,49 @@ class EventsController extends Controller {
 		$registry = new SensitiveFieldRegistry();
 
 		foreach ($settings as $key => $value) {
-			if (in_array($key, self::SIGNING_SECRET_KEYS, true) === true) {
-				if ($value !== null && $value !== '') {
-					$settings[$key] = '**********';
-				}
+			$settings[$key] = $this->maskSetting(key: (string) $key, value: $value, registry: $registry);
+		}
 
-				continue;
-			}
-
-			if (in_array($key, self::NON_SECRET_SETTING_KEYS, true) === true) {
-				continue;
-			}
-
-			if (is_array($value) === true) {
-				$settings[$key] = $registry->redactArray(data: $value);
-				continue;
-			}
-
-			if ($value !== null && $value !== '' && $registry->isSensitiveName(name: (string)$key) === true) {
-				$settings[$key] = SensitiveFieldRegistry::PLACEHOLDER;
-			}
-		}//end foreach
 
 		$subscription['protocolSettings'] = $settings;
 
 		return $subscription;
 	}//end redactSubscription()
+
+	/**
+	 * Mask one top-level `protocolSettings` value for {@see redactSubscription()}.
+	 *
+	 * A signing secret becomes the `**********` marker, a known non-secret key is
+	 * returned as is, a nested array is masked through the registry at any depth,
+	 * and a scalar whose key looks secret becomes the registry placeholder.
+	 *
+	 * @param string                 $key      The setting key.
+	 * @param mixed                  $value    The stored value.
+	 * @param SensitiveFieldRegistry $registry The registry that knows secret-shaped names.
+	 *
+	 * @return mixed The value to serve.
+	 *
+	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+	 */
+	private function maskSetting(string $key, mixed $value, SensitiveFieldRegistry $registry): mixed {
+		if ($value === null || $value === '' || in_array($key, self::NON_SECRET_SETTING_KEYS, true) === true) {
+			return $value;
+		}
+
+		if (in_array($key, self::SIGNING_SECRET_KEYS, true) === true) {
+			return '**********';
+		}
+
+		if (is_array($value) === true) {
+			return $registry->redactArray(data: $value);
+		}
+
+		if ($registry->isSensitiveName(name: $key) === true) {
+			return SensitiveFieldRegistry::PLACEHOLDER;
+		}
+
+		return $value;
+	}//end maskSetting()
 
 	/**
 	 * List dead-lettered event messages (failed/abandoned by default).
