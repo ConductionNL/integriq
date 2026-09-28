@@ -1339,6 +1339,10 @@
       "route": "/sources/logs",
       "type": "logs",
       "title": "Source logs",
+      "actionsComponent": "CallLogActions",
+      "slots": {
+        "row-actions": "CallLogRowActions"
+      },
       "config": {
         "register": "integriq",
         "schema": "call_log",

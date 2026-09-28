@@ -33,6 +33,8 @@
 //   3. customComponents (this file) — escape hatch for handlers + future widgets
 
 import AutomationDeprecationNotice from './components/AutomationDeprecationNotice.vue'
+import CallLogActions from './components/callLog/CallLogActions.vue'
+import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
@@ -124,6 +126,13 @@ export default {
 	// detail pages import the same component directly rather than through
 	// this map, because they own their own template.
 	AutomationDeprecationNotice,
+
+	// The outbound call log (SourceLogs) acts on its calls: a per-row replay
+	// through `slots["row-actions"]`, and bulk replay plus firing by hand
+	// through `actionsComponent`. The API behind them is CallLogController.
+	// outbound-call-delivery-and-replay REQ-OCD-002 and REQ-OCD-003.
+	CallLogRowActions,
+	CallLogActions,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
