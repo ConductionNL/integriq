@@ -1478,5 +1478,109 @@
 		"reason": "Microsoft Graph search for opencatalogi row wr-search-sources, a half the merged dossiq change woo-requests-gather-documents-from-sources depends on (its live path is blocked on it). Tender demand https://www.tenderned.nl/aankondigingen/overzicht/391449 and TenderNed 388421; no competitor rated yes. No search/query call exists in integriq.",
 		"change": "connectors-graph-document-search",
 		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "acc-monetise",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor partial at most (apisix, wso2), no tender or request.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "sync-conflict",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand; it only matters once two-way sync (sync-twoway, building) writes back, and that change settles its own write-back rules.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "auto-compensate",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-065 decision 1: compensation across flow steps is flow-engine semantics, which OpenRegister owns; built.owner is ConductionNL/openregister.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "evt-zgw-publish",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes (mulesoft partial) and no demand row; integriq subscribes to and publishes through an outside Notificaties API, which covers the fleet today.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "nl-tooi",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row. decidiq pub-13 refused it and assigned it here; reversible when a Woo tender asks for TOOI tagging.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "msg-notes-sync",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row; the generic synchronization engine can keep notes in step when an administrator configures one.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "msg-esign",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row. filinq owns document signing (decidiq prefers docudesk-signing), and decidiq reaches an eidas-qes source through CallService without integriq code; note decidiq looks it up through Db\\SourceMapper, which integriq does not have, so its fallback path never resolves (a decidiq defect, not an integriq change).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "con-translate",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "decidiq min-12 (building) already calls OCA\\Integriq\\Service\\TranslationService::translate(), which does not exist, so every minutes translation falls back to the log adapter: a defect the sibling exposes. n8n rates yes.",
+		"change": "connectors-translation-service",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "con-sbb",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row; learniq wpl-check-the-company-is-approved is itself unbuilt.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "con-software-catalogue",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "acc-token-exchange",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor yes (mulesoft) plus a Tyk changelog, no tender or request, outside the core area.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "plt-upgrade-report",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor yes (n8n) plus its own changelog, no tender or request, outside the core area.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "acc-mcp-tool-filter",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor yes (tyk) plus its changelog, no tender or request; gateway-mcp-proxy lists it out of scope, and Hermiq agents are scoped by ADR-063 decision 6.",
+		"change": null,
+		"decidedOn": "2026-09-28"
 	}
 ]

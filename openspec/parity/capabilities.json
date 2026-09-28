@@ -2246,7 +2246,7 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniF 'monetiz|billing|pricing|price plan|invoice' across lib/ and src/ returns zero hits; the api_product schema (lib/Settings/register.d/api-product-gateway.json) tiers map only carries rateLimit/quota/requiresApproval, no price field."
 			},
@@ -2268,7 +2268,8 @@
 				"mulesoft": "not checked: the docs index (4,960 pages) has no page on monetising APIs or price plans; searching it for monetize, billing and price returns only Object Store v2 usage billing. No page states the absence either, so the row stays open.",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:5977 /apis/{apiId}/monetize and apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1251 \"Commercial Policies\" wire commercial subscription policies to a billing provider set at carbon-apimgt/features/apimgt/org.wso2.carbon.apimgt.core.feature/src/main/resources/conf_templates/templates/repository/conf/api-manager.xml.j2:1432 MonetizationImpl; the implementation in the tree, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/monetization/DefaultMonetizationImpl.java:37, is a no-op that returns true, so charging needs an external provider plug-in (the Stripe one is not in this tree: grep -rli \"stripe\" over carbon-apimgt/components finds nothing); reached on: publisher portal, API > Monetization; deployment.toml [apim.monetization] monetization_impl",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'monetiz|monetis|price.?plan|billing|invoice' over java, ts and html finds no charging feature; no consumer or product model exists (see acc-products)"
-			}
+			},
+			"note": "Decided no (build-all pass 2026-09-28): Single competitor partial at most (apisix, wso2), no tender or request."
 		},
 		{
 			"id": "acc-tenants",
@@ -3383,7 +3384,7 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniF 'conflict|lastwritewins|last-write-wins|mergestrategy' across lib/ returns zero hits. This is consistent with sync-twoway being unimplemented: since the engine never writes register changes back to a source, there is no scenario in which both sides can have changed the same record for the engine to reconcile."
 			},
@@ -3405,7 +3406,8 @@
 				"mulesoft": "docs read on 2026-09-26: https://anypoint.mulesoft.com/exchange/org.mule.templates/template-sfdc2sfdc-contact-bidirectional-sync/ (template home page, v2.1.4) 'the integration triggers an upsert (update or create depending the case) taking the last modification as the one that should be applied'. Conflicts are settled last change wins inside specific templates; there is no general conflict setting or review step.; reached on: Bidirectional sync templates from Exchange, edited in Studio",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -n -i \"synchroni|\\bsync\\b\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json, apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json and apim-apps/portals/devportal/src/main/webapp/site/public/locales/en.json finds no data synchronisation feature, and API Manager has no record store to synchronise into (its REST APIs at carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117 and carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:117 manage APIs, policies and applications only); scheduled data movement is a Micro Integrator task",
 				"frank": "source read at v10.2.0, not driven: grep -rniE 'conflict|merge.?strateg|last.?write' over core main code finds only a row-locking comment (core/src/main/java/org/frankframework/jdbc/JdbcListener.java:247) and a method-name note, no conflict handling for records; Frank passes messages and keeps no shared record state in which both sides could conflict"
-			}
+			},
+			"note": "Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand; it only matters once two-way sync (sync-twoway, building) writes back, and that change settles its own write-back rules."
 		},
 		{
 			"id": "sync-registry-subscription",
@@ -4020,7 +4022,7 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/openregister",
 				"evidence": "No compensation/saga/rollback-across-steps logic found: `grep -rn 'compensat\\|rollback\\|undo' openregister/lib/Service/Flow/` only turns up a per-object DB transaction rollback comment (Nodes/ObjectWriteNode.php) and unrelated version/delegation checks, none of it a cross-step undo. integriq's own FlowRunnerService has no compensating-step concept at all."
 			},
@@ -4043,7 +4045,7 @@
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no flow or job engine: the Policies page (apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1480 \"Request Flow\", apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1481 \"Response Flow\", apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1478 \"Fault Flow\") is a fixed per-operation list of policies, and grep -n -i \"schedul|cron\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json and apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json finds only the API discovery interval for federated gateways (apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json:544); orchestration and scheduled tasks are Micro Integrator features; grep -rli \"compensat|saga\" over carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway finds nothing",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/core/PipeLine.java:108 HasTransactionAttribute and the Receiver transactionAttribute (core/src/main/java/org/frankframework/receivers/Receiver.java:1028) roll back all XA resources (databases, JMS) when a later step fails; for non-transactional calls such as HTTP there is no compensation step, you model an undo path yourself with exception forwards; reached on: configuration XML transactionAttribute=Required on pipeline or receiver"
 			},
-			"note": "Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: compensation across flow steps is flow-engine semantics, OpenRegister's. Corrections round 9 (2026-09-28): built.state decided-no to none, deferred by openregister 28 Sep: the owner-moves pass recorded defer in openregister openspec/parity/gap-decisions.json (no competitor rates it yes, no demand row, and no OpenRegister change covers compensation across steps)."
+			"note": "Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: compensation across flow steps is flow-engine semantics, OpenRegister's. Corrections round 9 (2026-09-28): built.state decided-no to none, deferred by openregister 28 Sep: the owner-moves pass recorded defer in openregister openspec/parity/gap-decisions.json (no competitor rates it yes, no demand row, and no OpenRegister change covers compensation across steps). Decided no (build-all pass 2026-09-28): ADR-065 decision 1: compensation across flow steps is flow-engine semantics, which OpenRegister owns; built.owner is ConductionNL/openregister."
 		},
 		{
 			"id": "auto-migrate-jobs",
@@ -4406,12 +4408,12 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php's notificaties routes (321-325) are all self-directed: abonnementen CRUD registers INTEGRIQ as a subscriber against an external kanaal, and the callback route RECEIVES pushes integriq itself asked for. No route lets an outside ZGW system register its own abonnement with integriq, and no 'kanalen' listing endpoint exists (`grep -rin kanalen lib/Controller` = 0 hits outside comments). EventService.php:1416 'publish' action (kanaal reference) sends a CloudEvent onward to a kanaal integriq does not own, i.e. integriq acting as a client of someone else's API, not offering its own."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "The archived proposal's own title, 'notificaties-api-subscriber', names what was actually built: subscriber plus outbound-publish-as-a-client. Serving the ZGW Notificaties API standard for other systems to subscribe TO integriq was not part of that change and is not implemented elsewhere.",
+			"note": "The archived proposal's own title, 'notificaties-api-subscriber', names what was actually built: subscriber plus outbound-publish-as-a-client. Serving the ZGW Notificaties API standard for other systems to subscribe TO integriq was not part of that change and is not implemented elsewhere. Decided no (build-all pass 2026-09-28): No competitor rates yes (mulesoft partial) and no demand row; integriq subscribes to and publishes through an outside Notificaties API, which covers the fleet today.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "notificaties-api-connector",
@@ -6019,7 +6021,7 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "`grep -rli tooi lib/ src/` returns no matches anywhere in the repository."
 			},
@@ -6044,7 +6046,8 @@
 				"mulesoft": "not checked: Exchange search for tooi returns 0 public assets and the docs index has no TOOI page; tagging publications with TOOI value lists is outside anything the docs describe.",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -rliE over carbon-apimgt/components, product-apim/all-in-one-apim/modules/distribution and the apim-apps locale files for stuf, zgw, zaken, notificaties, haal.centraal, digikoppeling, ebms, fsc, omgevingsloket, dso, brp, kvk, pdok, berichtenbox, iwmo, peppol, ibabs, notubiz, open.formulieren, kiss, notifynl, digid, eherkenning, eidas, lti, psd2, xs2a, corv and pkioverheid finds 0 files each (tally kept in _lane/r-wso2/nl-grep.txt); the only hits, for bag, tooi and woo, are unrelated identifiers (JMSTaskManagerFactory.java, identity.xml, the gateway pom)",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'woo|tooi' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no TOOI value lists"
-			}
+			},
+			"note": "Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row. decidiq pub-13 refused it and assigned it here; reversible when a Woo tender asks for TOOI tagging."
 		},
 		{
 			"id": "nl-api-design-rules",
@@ -7217,12 +7220,12 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniE 'notes?[ _-]?sync|sync(ing)? notes|NoteSync|notitie' lib src openspec = 1 file, openspec/parity/capabilities.json (the parity row itself). No class, route, schema or change."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Nothing in integriq keeps notes in step with an outside case register. The generic synchronization engine could in theory be configured for it, but there is no notes-specific code.",
+			"note": "Nothing in integriq keeps notes in step with an outside case register. The generic synchronization engine could in theory be configured for it, but there is no notes-specific code. Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row; the generic synchronization engine can keep notes in step when an administrator configures one.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "synchronization-engine",
@@ -7252,12 +7255,12 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniE 'SigningAdapter|QualifiedSignature|e-?signature|ValidSign|DocuSign|Signicat|qualified (electronic )?signature|gekwalificeerde|ondertekening|Zynyo|Evidos' lib src openspec = 0 code hits (only openspec/parity/capabilities.json and an unrelated Signicat IdP mention in openspec/changes/portal-idp-broker-config/proposal.md:31). Signature code present is webhook HMAC, DSO PKIoverheid verification and WS-Security (lib/Adapters/Digikoppeling/WsSecuritySigner.php), none of which sign documents."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "The hint's signing adapter does not exist in integriq; there is no qualified electronic signature integration.",
+			"note": "The hint's signing adapter does not exist in integriq; there is no qualified electronic signature integration. Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row. filinq owns document signing (decidiq prefers docudesk-signing), and decidiq reaches an eidas-qes source through CallService without integriq code; note decidiq looks it up through Db\\SourceMapper, which integriq does not have, so its fallback path never resolves (a decidiq defect, not an integriq change).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
@@ -8337,9 +8340,9 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniE 'deepl|libretranslate|translation service|translation api|ITranslationManager|TranslationProvider|google translate' lib src = 0 relevant hits (only 'deeply' and LtiDeepLinking matches); lib/Service/ZgwVersionTranslationService.php translates ZGW API versions, not text"
+				"evidence": "grep -rniE 'deepl|libretranslate|translation service|translation api|ITranslationManager|TranslationProvider|google translate' lib src = 0 relevant hits (only 'deeply' and LtiDeepLinking matches); lib/Service/ZgwVersionTranslationService.php translates ZGW API versions, not text Specified in openspec/changes/connectors-translation-service/ (build-all pass 2026-09-28)."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "No translation service template or adapter exists; the ZGW 'translate' code is API version translation and does not count.",
@@ -8372,12 +8375,12 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniE '\\bSBB\\b|leerbedrijf|s-bb\\.nl|erkend' lib src configurations = 0 hits"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "No SBB leerbedrijven source or check exists in integriq.",
+			"note": "No SBB leerbedrijven source or check exists in integriq. Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row; learniq wpl-check-the-company-is-approved is itself unbuilt.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -8407,12 +8410,12 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SoftwareCatalogueService.php:112-186 extendModel reads a local vng-gemma model object in OpenRegister and writes extendview objects (called only from the custom-connections rule at lib/Service/RuleService.php:414); :584-725 every organisation/contact lifecycle handler is a TODO that only logs (e.g. :586 'TODO: Implement email sending logic'). No HTTP call to any software catalogue anywhere in the class."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "The hint was wrong: SoftwareCatalogueService is a VNG Softwarecatalogus helper that extends GEMMA ArchiMate views inside OpenRegister, plus stubbed lifecycle hooks, and it never reads software from a catalogue. No source template for a software catalogue ships either.",
+			"note": "The hint was wrong: SoftwareCatalogueService is a VNG Softwarecatalogus helper that extends GEMMA ArchiMate views inside OpenRegister, plus stubbed lifecycle hooks, and it never reads software from a catalogue. No source template for a software catalogue ships either. Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "software-catalogus-events",
@@ -9156,12 +9159,12 @@
 			"originUrl": "https://tyk.io/docs/developer-support/release-notes/gateway",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -i 'exchange' over lib/Service/CallService.php and lib/Service/BrokeredCallService.php finds only a docblock at BrokeredCallService.php:190; the proxy path lib/Service/EndpointService.php:2174-2266 forwards with the source's own credentials, it never exchanges the caller's token"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Tyk 5.14.0 (2026-07-07) RFC 8693 token exchange; 5.15.0 Entra on-behalf-of.",
+			"note": "Tyk 5.14.0 (2026-07-07) RFC 8693 token exchange; 5.15.0 Entra on-behalf-of. Decided no (build-all pass 2026-09-28): Single competitor yes (mulesoft) plus a Tyk changelog, no tender or request, outside the core area.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "demand-changelog",
@@ -9326,12 +9329,12 @@
 			"originUrl": "https://github.com/n8n-io/n8n/pull/20918",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -riE 'breaking.?change|upgrade.?report|preUpgrade' over lib/ finds only docblocks at lib/Capabilities.php:51 and lib/Flow/SynchronizationRunNode.php:121; migrations and repair steps run during the upgrade, nothing reports their impact beforehand"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "n8n 1.119.0 (2025-11-03) added a breaking-change audit rule engine and a migration report in the settings.",
+			"note": "n8n 1.119.0 (2025-11-03) added a breaking-change audit rule engine and a migration report in the settings. Decided no (build-all pass 2026-09-28): Single competitor yes (n8n) plus its own changelog, no tender or request, outside the core area.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "demand-changelog",
@@ -9496,12 +9499,12 @@
 			"originUrl": "https://tyk.io/docs/developer-support/release-notes/gateway",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Mcp does not exist and the gateway proxies HTTP endpoints only (lib/Service/EndpointService.php:2174-2266); grep -ri 'tools/list' over lib/ finds nothing (row acc-mcp-gateway)"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Tyk 5.14.0 (2026-07-07): the MCP proxy filters the tool, resource and prompt lists returned during capability discovery.",
+			"note": "Tyk 5.14.0 (2026-07-07): the MCP proxy filters the tool, resource and prompt lists returned during capability discovery. Decided no (build-all pass 2026-09-28): Single competitor yes (tyk) plus its changelog, no tender or request; gateway-mcp-proxy lists it out of scope, and Hermiq agents are scoped by ADR-063 decision 6.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "demand-changelog",
