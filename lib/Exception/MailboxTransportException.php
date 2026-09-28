@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use Exception;
 /**
  * Thrown when a mailbox cannot be polled.
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 class MailboxTransportException extends Exception {
 }//end class

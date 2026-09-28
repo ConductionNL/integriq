@@ -6581,14 +6581,15 @@
 			"area": "messaging",
 			"name": "Take mail from a mailbox and turn it into a case.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:75 mailIntake#import and :76 mailIntake#poll -> lib/Controller/MailIntakeController.php:108 import() and :180 poll() (both #[NoAdminRequired] + ActionAuthService, seeded admin-only in lib/actions.seed.json:27,37) -> lib/Service/Mail/MailboxSourceHandler.php poll() with real IMAP/Graph transports (lib/Service/Mail/Transport/ImapMailboxTransport.php:86, GraphMailboxTransport.php:99) -> lib/Service/Mail/MailIntakeService.php:135 intake() saves a mail_message and dispatches MessageReceivedEvent (:162); it never creates a case itself. NO frontend caller: grep -rn 'mail-intake|MailIntake|mailbox' src/ = 0 hits outside the manifest fragment comment; NO background job in appinfo/info.xml:103-150 calls MailboxSourceHandler (grep MailboxSourceHandler lib = only the controller). src/manifest.d/mail-intake.json MailMessages page (/messages/mail, logs type) only displays mail_message rows. Covered by openspec/changes/mail-intake-creates-cases/ (10 of 10 tasks ticked; OpenSpec pass 2026-09-27): Its spec runs the mailbox poll as a background job. The tick does not hold up: nothing schedules a poll."
+				"change": "2026-09-28-mail-intake-creates-cases",
+				"evidence": "lib/BackgroundJob/MailboxPollJob.php (appinfo/info.xml) calls lib/Service/Mail/MailboxSourceHandler.php:150 pollAll(), which polls every enabled mailbox source and hands each new message to MailIntakeService::intake(); intake dispatches MessageReceivedEvent, which dossiq lib/Listener/MessageReceivedListener.php answers (registered in dossiq CrossAppListenerRegistrar, accessors getMessage/getMessageUuid/getDetectedReference/setOutcome match integriq lib/Event/MessageReceivedEvent.php). tests/Unit/BackgroundJob/MailboxPollJobTest.php. Built by change mail-intake-creates-cases (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "The intake engine is complete but nothing ever runs it: no poll job, no poll button, no import upload, so the MailMessages page stays empty. Case creation is delegated to whichever app listens for MessageReceivedEvent; no listener was found in the local procest checkout, so the case half is unverified.",
+			"reachedOn": "every five minutes through MailboxPollJob for each enabled mailbox source, POST /api/mail-intake/poll/{id} and /api/mail-intake/import; the Mail intake page lists the messages; dossiq MessageReceivedListener links or creates the case",
+			"note": "The intake engine is complete but nothing ever runs it: no poll job, no poll button, no import upload, so the MailMessages page stays empty. Case creation is delegated to whichever app listens for MessageReceivedEvent; no listener was found in the local procest checkout, so the case half is unverified. Built 2026-09-28: the poll is now scheduled, and dossiq development has the listener that links or creates the case.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "source-management",

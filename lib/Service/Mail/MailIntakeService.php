@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-a-received-message-is-offered-to-the-owning-app-as-a-typed-event-req-mail-003
+ * @spec openspec/specs/mail-intake/spec.md#requirement-a-received-message-is-offered-to-the-owning-app-as-a-typed-event-req-mail-003
  */
 class MailIntakeService {
 
@@ -130,7 +130,7 @@ class MailIntakeService {
 	 *
 	 * @return ObjectEntity The stored `message` object.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function intake(string $sourceId, ParsedMessage $message, ?string $casePattern = null): ObjectEntity {
 		$existing = $this->findByMessageId(sourceId: $sourceId, messageId: $message->getMessageId());
@@ -187,7 +187,7 @@ class MailIntakeService {
 	 *
 	 * @return ObjectEntity|null The stored message, or null.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function findByMessageId(string $sourceId, string $messageId): ?ObjectEntity {
 		$matches = $this->objectService->findAll(

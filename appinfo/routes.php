@@ -68,7 +68,7 @@ return [
 		['name' => 'directorySync#run', 'url' => '/api/directory/connections/{id}/run', 'verb' => 'POST'],
 		['name' => 'directorySync#runs', 'url' => '/api/directory/runs', 'verb' => 'GET'],
 
-		// Mail intake (openspec/changes/mail-intake-creates-cases). Importing a
+		// Mail intake (openspec/changes/archive/2026-09-28-mail-intake-creates-cases). Importing a
 		// saved message and polling a mailbox both write `message` objects that
 		// other apps act on, so both sit behind the ADR-023 action matrix
 		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.

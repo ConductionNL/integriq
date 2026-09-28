@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
+ * @spec openspec/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
  */
 class MailboxSourceHandler {
 
@@ -76,7 +76,7 @@ class MailboxSourceHandler {
 	 *
 	 * @throws MailboxTransportException When the source is not a usable mailbox.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function poll(ObjectEntity $source): array {
 		$object = $source->getObject();
@@ -145,7 +145,7 @@ class MailboxSourceHandler {
 	 *
 	 * @return array{polled:int,failed:int,created:int} What the sweep did.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
 	 */
 	public function pollAll(): array {
 		$found = $this->objectService->findAll(
@@ -195,7 +195,7 @@ class MailboxSourceHandler {
 	 *
 	 * @throws MailboxTransportException When the protocol is unknown or unusable here.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function resolveTransport(array $configuration): MailboxTransportInterface {
 		if (($configuration['mock'] ?? false) === true) {

@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\Integriq\Service\Mail;
 /**
  * Detects a case reference in a message's subject and body.
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-a-received-message-is-offered-to-the-owning-app-as-a-typed-event-req-mail-003
+ * @spec openspec/specs/mail-intake/spec.md#requirement-a-received-message-is-offered-to-the-owning-app-as-a-typed-event-req-mail-003
  */
 class CaseReferenceDetector {
 
@@ -54,7 +54,7 @@ class CaseReferenceDetector {
 	 *
 	 * @return string|null The reference, or null when the message names none.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function detect(ParsedMessage $message, ?string $pattern = null): ?string {
 		$effective = $this->resolvePattern(pattern: $pattern);

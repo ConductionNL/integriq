@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests the HTTP surface, starting with who is refused.
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
+ * @spec openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
  */
 class MailIntakeControllerTest extends TestCase {
 

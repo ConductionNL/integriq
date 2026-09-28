@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Dispatches one `IntakeDocumentReceivedEvent` per attachment.
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-unassigned-attachments-go-to-the-document-intake-inbox-req-mail-004
+ * @spec openspec/specs/mail-intake/spec.md#requirement-unassigned-attachments-go-to-the-document-intake-inbox-req-mail-004
  */
 class IntakeDocumentDispatcher {
 
@@ -80,7 +80,7 @@ class IntakeDocumentDispatcher {
 	 *
 	 * @return bool True when the event was dispatched, false when nothing here can receive it.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function dispatch(array $payload): bool {
 		if ($this->isAvailable() === false) {

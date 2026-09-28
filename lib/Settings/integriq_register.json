@@ -3864,7 +3864,7 @@
         "icon": "EmailOutline",
         "version": "1.0.0",
         "summary": "One mail message integriq received, from a mailbox poll or an imported .eml/.msg file",
-        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md.",
+        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/specs/mail-intake/spec.md.",
         "required": [
           "sourceId",
           "messageId",
