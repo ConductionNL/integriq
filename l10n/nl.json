@@ -1245,7 +1245,8 @@
         "UWLR/Edu-V Message": "UWLR/Edu-V-bericht",
         "Which of the four connection families this record belongs to": "Tot welke van de vier koppelingsfamilies dit record behoort",
         "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync": "uwlr/edu-v zijn export (eenrichtingsverzending); basispoort/entree-content zijn sync",
-        "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null voor basispoort/entree-content."
+        "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null voor basispoort/entree-content.",
+        "The sink may not be called: %s": "De sink mag niet worden aangeroepen: %s"
     },
     "plurals": {}
 }
