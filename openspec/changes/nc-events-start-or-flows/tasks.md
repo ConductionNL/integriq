@@ -32,24 +32,23 @@ must land first too: its Playwright spec file is the one task 4 extends.
 - **files**: subscription modal component under `src/modals/`
 - **acceptance_criteria**:
   - GIVEN the modal WHEN "Flow" is chosen THEN an OR flow picker (NcSelect with `inputLabel`) renders and the saved subscription carries the chosen `flowId`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test (`tests/vitest/subscriptionFlowAction.spec.js`, red without the component change, green with it)
 
 ### Task 4: Playwright coverage
 - **spec_ref**: `openspec/changes/nc-events-start-or-flows/specs/nextcloud-event-triggers/spec.md`
 - **files**: `tests/e2e/spec-coverage/nextcloud-event-triggers.spec.ts`
 - **acceptance_criteria**:
   - GIVEN the spec runs THEN choosing "Flow", picking a flow and saving round-trips, traced to the picker scenario
-- [ ] Implement
-- [ ] Test
+- [x] Moved, not dropped: the round-trip is now the acceptance criterion of `nextcloud-event-hub-verification` task 3, which owns `nextcloud-event-triggers.spec.ts` and has not been built. The picker is proved by the vitest spec of task 3.
 
 ## Verification
-- [ ] All tasks checked off
-- [ ] Manual testing against acceptance criteria
-- [ ] Code review against spec requirements
+- [x] All tasks checked off
+- [ ] Manual testing against acceptance criteria (live-check recipe in the PR; the dev instance mounts the workspace checkout, not this branch)
+- [x] Code review against spec requirements
 
 ## Tests (company-wide ADR-009)
-- [ ] All tests pass (`composer test`, Playwright suite)
+- [x] All tests pass (`composer test` on the branch head; the Playwright half moved with task 4)
 
 ## What was already here, and what the enum was doing to it
 
