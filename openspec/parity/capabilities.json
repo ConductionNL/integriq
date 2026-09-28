@@ -3511,12 +3511,13 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "decided-no",
+				"state": "specified",
 				"owner": "ConductionNL/openregister",
+				"change": "ConductionNL/openregister openspec/changes/flow-code-step-in-a-sidecar",
 				"evidence": "lib/Service/FlowRunnerService.php:364-370 dispatchStep() match only accepts call/mapping/synchronization/event, default throws 'Unsupported flow step type'. Checked OpenRegister's node catalogue too (the graph engine integriq's canvas also uses): `grep -rn 'ScriptNode\\|CodeNode' openregister/lib/Service/Flow/` = 0 hits; no code/script node exists in either engine."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "No script/code step exists in either the legacy FlowRunnerService step loop or OpenRegister's graph node catalogue. Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: OpenRegister is the only home for a flow engine, and integriq's own flow schema is being retired (retire-integriq-flow-schema). A code step is an OpenRegister node type.",
+			"note": "No script/code step exists in either the legacy FlowRunnerService step loop or OpenRegister's graph node catalogue. Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: OpenRegister is the only home for a flow engine, and integriq's own flow schema is being retired (retire-integriq-flow-schema). A code step is an OpenRegister node type. Corrections round 9 (2026-09-28): built.state decided-no to specified. The owner-moves pass decided the row in OpenRegister, which carries it in the open change openspec/changes/flow-code-step-in-a-sidecar (openregister#4112, recorded in openregister openspec/parity/gap-decisions.json). The decided-no above stands for integriq itself: the capability is not integriq code.",
 			"provider": "openregister",
 			"providerHow": "read-from-adr",
 			"feature": "flow-orchestration",
@@ -3575,12 +3576,13 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "decided-no",
+				"state": "specified",
 				"owner": "ConductionNL/openregister",
+				"change": "ConductionNL/openregister openspec/changes/store-over-federated-config",
 				"evidence": "lib/Flow/FlowTemplate.php is a `{{dotted.path}}` placeholder-string renderer for a flow item's json, unrelated to starter/ready-made flows (see its docblock lines 3-25). Checked src/store/catalog.js and lib/Controller/CatalogController.php:152 instantiate() (connector-catalog): that action creates a SOURCE from a seeded template (openspec/specs/connector-catalog/spec.md scenario), not a flow. Checked nextcloud-vue's CnFlowsPage.vue/CnFlowEditorPage.vue for a template picker: none found."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "The hint (lib/Flow/FlowTemplate) was wrong: that class is a string-templating helper for node config, not a flow-starter-template feature. No ready-made flow template picker exists anywhere in the app or the shared canvas. Decided no (OpenSpec pass 2026-09-27): ADR-065 decisions 1 and 2: the template picker belongs to OpenRegister's engine and nc-vue's canvas.",
+			"note": "The hint (lib/Flow/FlowTemplate) was wrong: that class is a string-templating helper for node config, not a flow-starter-template feature. No ready-made flow template picker exists anywhere in the app or the shared canvas. Decided no (OpenSpec pass 2026-09-27): ADR-065 decisions 1 and 2: the template picker belongs to OpenRegister's engine and nc-vue's canvas. Corrections round 9 (2026-09-28): built.state decided-no to specified. The owner-moves pass decided the row in OpenRegister, which carries it in the open change openspec/changes/store-over-federated-config (openregister#4112, recorded in openregister openspec/parity/gap-decisions.json). The decided-no above stands for integriq itself: the capability is not integriq code.",
 			"provider": "openregister",
 			"providerHow": "read-from-adr",
 			"feature": "flow-orchestration",
@@ -3888,13 +3890,13 @@
 			"area": "automation",
 			"name": "Use an AI model as a step in a flow.",
 			"source": "competitor-derived",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "decided-no",
-				"owner": "ConductionNL/openregister",
-				"evidence": "lib/Service/FlowRunnerService.php:364-370 has no 'ai'/'llm' step type. `grep -rln 'AiNode\\|LlmNode\\|OpenAi\\|Anthropic' openregister/lib/Service/Flow/` = 0 hits, confirming the shared graph node catalogue integriq's canvas also uses has no AI node either."
+				"state": "built",
+				"owner": "ConductionNL/hermiq",
+				"evidence": "hermiq lib/Flow/HermiqAgentNode.php:102-104 is step type hermiq.agent-step and :235 execute() runs an agent turn for each item and puts the answer on it (with expectJson parsing, :391); hermiq lib/Flow/HermiqFlowNodeListener.php:73 registers it on OpenRegister's RegisterFlowNodesEvent, wired at hermiq lib/AppInfo/Application.php:156-161 (hermiq development 7cac4471b); openregister lib/Service/Flow/FlowNodeRegistry.php:574 dispatches that event to fill the node catalogue the flow canvas reads (openregister development 5cda2f04)."
 			},
-			"reachedOn": "nothing reaches it",
+			"reachedOn": "flow canvas node palette, Agent step (hermiq installed)",
 			"provider": "openregister",
 			"providerHow": "read-from-adr",
 			"feature": "flow-orchestration",
@@ -3913,7 +3915,7 @@
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: AI APIs proxy LLM providers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:12115 /llm-providers, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway/mediators/AIAPIMediator.java, product-apim/all-in-one-apim/modules/integration/tests-integration/tests-backend/src/test/java/org/wso2/am/integration/tests/aiapi/AIAPITestCase.java) and bundled policies call AI services in the request path (product-apim/all-in-one-apim/modules/features/product/org.wso2.am.policies.feature/pom.xml:36 onward: semantic cache, semantic routing, Azure content safety guardrail, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway/AzureContentSafetyGuardrailProviderServiceImpl.java); an AI call is a proxied API or a guardrail, not a step inside a multi-step flow; reached on: publisher portal, Create AI API; API > Policies (AI guardrails)",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'openai|llm|langchain|anthropic|ollama|bedrock|chatgpt|embedding' over java and ts finds nothing; no AI model step among the pipes and senders in core, messaging and filesystem (a model API could only be called as a plain HttpSender)"
 			},
-			"note": "Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1 (OpenRegister is the only home for a flow engine) with ADR-034 (Hermiq owns the LLM call): an AI step is an OpenRegister flow node calling Hermiq."
+			"note": "Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1 (OpenRegister is the only home for a flow engine) with ADR-034 (Hermiq owns the LLM call): an AI step is an OpenRegister flow node calling Hermiq. Corrections round 9 (2026-09-28): own rating no to partial, built.state decided-no to built, built.owner ConductionNL/openregister to ConductionNL/hermiq (owner-moves pass: openregister gap-decisions.json records the row existing under OpenRegister change or-flow-nodes, and hermiq contributes the node). Partial because the step runs an agent defined in Hermiq first (validateConfig() refuses a step without an agent, HermiqAgentNode.php:203-206) and exists only where hermiq is installed, while n8n, APISIX and MuleSoft call a chosen model from the step itself. built.evidence replaced because it was wrong at the tip; it read: \"lib/Service/FlowRunnerService.php:364-370 has no 'ai'/'llm' step type. `grep -rln 'AiNode\\|LlmNode\\|OpenAi\\|Anthropic' openregister/lib/Service/Flow/` = 0 hits, confirming the shared graph node catalogue integriq's canvas also uses has no AI node either.\""
 		},
 		{
 			"id": "auto-error-path",
@@ -3922,12 +3924,13 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "decided-no",
+				"state": "specified",
 				"owner": "ConductionNL/openregister",
+				"change": "ConductionNL/openregister openspec/changes/flow-error-branch-and-step-retry",
 				"evidence": "lib/Service/FlowRunnerService.php:330-341 onError only supports stop/continue/dead_letter (openspec/specs/flow-orchestration/spec.md:247-289 REQ-006); none of the three branches to a fallback path, and none retries automatically. openregister's FlowRunService::retry() (lib/Service/Flow/FlowRunService.php:818-835) only queues a brand-new run of the WHOLE flow from the start, manually, not a per-step fallback+retry."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "'dead_letter' just ends the run distinctly from 'stopped'; the DeadLetters page (src/views/Operations/DeadLettersPage.vue) only covers event and sync-item dead letters, not flow_run. Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: fallback paths are flow-engine semantics, OpenRegister's.",
+			"note": "'dead_letter' just ends the run distinctly from 'stopped'; the DeadLetters page (src/views/Operations/DeadLettersPage.vue) only covers event and sync-item dead letters, not flow_run. Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: fallback paths are flow-engine semantics, OpenRegister's. Corrections round 9 (2026-09-28): built.state decided-no to specified. The owner-moves pass decided the row in OpenRegister, which carries it in the open change openspec/changes/flow-error-branch-and-step-retry (openregister#4112, recorded in openregister openspec/parity/gap-decisions.json). The decided-no above stands for integriq itself: the capability is not integriq code.",
 			"provider": "openregister",
 			"providerHow": "read-from-adr",
 			"feature": "flow-orchestration",
@@ -4017,7 +4020,7 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "decided-no",
+				"state": "none",
 				"owner": "ConductionNL/openregister",
 				"evidence": "No compensation/saga/rollback-across-steps logic found: `grep -rn 'compensat\\|rollback\\|undo' openregister/lib/Service/Flow/` only turns up a per-object DB transaction rollback comment (Nodes/ObjectWriteNode.php) and unrelated version/delegation checks, none of it a cross-step undo. integriq's own FlowRunnerService has no compensating-step concept at all."
 			},
@@ -4040,7 +4043,7 @@
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no flow or job engine: the Policies page (apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1480 \"Request Flow\", apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1481 \"Response Flow\", apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1478 \"Fault Flow\") is a fixed per-operation list of policies, and grep -n -i \"schedul|cron\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json and apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json finds only the API discovery interval for federated gateways (apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json:544); orchestration and scheduled tasks are Micro Integrator features; grep -rli \"compensat|saga\" over carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway finds nothing",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/core/PipeLine.java:108 HasTransactionAttribute and the Receiver transactionAttribute (core/src/main/java/org/frankframework/receivers/Receiver.java:1028) roll back all XA resources (databases, JMS) when a later step fails; for non-transactional calls such as HTTP there is no compensation step, you model an undo path yourself with exception forwards; reached on: configuration XML transactionAttribute=Required on pipeline or receiver"
 			},
-			"note": "Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: compensation across flow steps is flow-engine semantics, OpenRegister's."
+			"note": "Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: compensation across flow steps is flow-engine semantics, OpenRegister's. Corrections round 9 (2026-09-28): built.state decided-no to none, deferred by openregister 28 Sep: the owner-moves pass recorded defer in openregister openspec/parity/gap-decisions.json (no competitor rates it yes, no demand row, and no OpenRegister change covers compensation across steps)."
 		},
 		{
 			"id": "auto-migrate-jobs",
@@ -5102,10 +5105,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
+				"change": "openspec/changes/zgw-connectors-for-dossiq",
 				"evidence": "lib/Settings/configurations/zgw-zaken.json (source.isEnabled=false, target.register/schema empty, chosenBy operator); openspec/changes/zgw-connectors-for-dossiq/tasks.md Task 1 'Implement' unchecked and Task 2 names lib/Service/ConfigurationSetInstaller.php, which does not exist anywhere in lib/. Generic import (lib/Service/ConfigurationService.php:1037 importConfiguration()) requires an OAS-shaped {components:{sources,mappings,...}} payload, a different shape than this descriptor, so it cannot even be imported through the existing generic pipeline."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Only a package descriptor and an openspec proposal exist; the installer that would bind it to an operator-chosen register/schema was never built.",
+			"note": "Only a package descriptor and an openspec proposal exist; the installer that would bind it to an operator-chosen register/schema was never built. Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/zgw-connectors-for-dossiq (open; its scope lists the zgw-zaken configuration set).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "source-management",
@@ -5134,10 +5138,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
+				"change": "openspec/changes/zgw-connectors-for-dossiq",
 				"evidence": "lib/Settings/configurations/zgw-documenten.json (source.isEnabled=false); same missing lib/Service/ConfigurationSetInstaller.php as zgw-zaken (openspec/changes/zgw-connectors-for-dossiq/tasks.md)."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Same unbuilt packaged-connector pattern as nl-zgw-zaken.",
+			"note": "Same unbuilt packaged-connector pattern as nl-zgw-zaken. Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/zgw-connectors-for-dossiq (open; its scope lists the zgw-documenten configuration set).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "source-management",
@@ -5648,14 +5653,15 @@
 			"area": "nl-standards",
 			"name": "Send digital post to a citizen's Berichtenbox.",
 			"source": "sibling-matrix",
-			"integriq": "yes",
+			"integriq": "no",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Adapters/Berichtenbox/BerichtenboxClient.php is a real Digikoppeling-transport binding for DigitalPostProviderInterface, alongside lib/Service/DigitalPost/LogDigitalPostProvider.php (mock, default while logius.berichtenbox.feature_flag is unset, per lib/Service/CatalogRegistryService.php:245-259); lib/EventListener/DigitalPostSendRequestedListener.php listens for a case app's typed send-requested event and calls lib/Service/DigitalPost/DigitalPostService.php -> DigitalPostProviderRegistry; the provider is picked in appinfo/routes.php:94 digitalPostProviders#providers -> src/modals/v2/SourceFormFields.vue:628."
+				"change": "openspec/changes/berichtenbox-digital-post-adapter",
+				"evidence": "lib/Service/DigitalPost/BerichtenboxProvider.php:156 calls BerichtenboxClient::dispatch(), and lib/AppInfo/Application.php:703-721 resolves that client to BerichtenboxClientMock (the result is marked simulated, BerichtenboxProvider.php:163) or, with logius.berichtenbox.feature_flag on, to lib/Adapters/Berichtenbox/BerichtenboxClientUnavailable.php, which always throws (:62-65). The live BerichtenboxClientHttp that lib/Adapters/Berichtenbox/BerichtenboxClient.php:14-17 names does not exist in lib/; it is Task 8 of the open change openspec/changes/berichtenbox-digital-post-adapter (tasks.md:54-63), blocked on Logius BBK credentials, a PKIoverheid certificate and OpenRegister issueSigningMaterial. The send path before the client is built: lib/EventListener/DigitalPostSendRequestedListener.php, lib/Service/DigitalPost/DigitalPostService.php, provider list at appinfo/routes.php:93."
 			},
 			"reachedOn": "event: a case app (e.g. dossiq) dispatches its send-requested event -> DigitalPostSendRequestedListener -> DigitalPostService -> Berichtenbox binding; the provider is chosen in the source form (SourceFormFields.vue:628)",
-			"note": "Ships mock by default; a real send needs the feature flag plus two credentials (Logius BBK OAuth client + PKIoverheid certificate), and the code deliberately refuses rather than fake-sending once the flag is on without them.",
+			"note": "Ships mock by default; a real send needs the feature flag plus two credentials (Logius BBK OAuth client + PKIoverheid certificate), and the code deliberately refuses rather than fake-sending once the flag is on without them. Corrections round 9 (2026-09-28): own rating yes to no and built.state built to specified (owner-moves lane: rated built but overstated). No letter can reach a Berichtenbox: the only bindings are the mock and a refusal, and the live client is the blocked Task 8 of openspec/changes/berichtenbox-digital-post-adapter. built.evidence replaced; it read: \"lib/Adapters/Berichtenbox/BerichtenboxClient.php is a real Digikoppeling-transport binding for DigitalPostProviderInterface, alongside lib/Service/DigitalPost/LogDigitalPostProvider.php (mock, default while logius.berichtenbox.feature_flag is unset, per lib/Service/CatalogRegistryService.php:245-259); lib/EventListener/DigitalPostSendRequestedListener.php listens for a case app's typed send-requested event and calls lib/Service/DigitalPost/DigitalPostService.php -> DigitalPostProviderRegistry; the provider is picked in appinfo/routes.php:94 digitalPostProviders#providers -> src/modals/v2/SourceFormFields.vue:628.\"",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -5747,13 +5753,15 @@
 			"area": "nl-standards",
 			"name": "Send and receive e-invoices over Peppol.",
 			"source": "own-code",
-			"integriq": "yes",
+			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Peppol/RestPeppolAccessPointProvider.php is a real binding for PeppolAccessPointProviderInterface, alongside LogPeppolAccessPointProvider.php (mock); appinfo/routes.php:56,59 peppol#participants/inbound -> lib/Controller/PeppolController.php; manifest page PeppolTransmissions (src/manifest.json:2917-2922, /messages/peppol, schema peppol_transmission)."
+				"change": "openspec/changes/peppol-readable-payloads-and-scoped-consumer",
+				"evidence": "lib/Service/Peppol/RestPeppolAccessPointProvider.php binds a REST access point next to the log mock, and participant lookup works (appinfo/routes.php:56 peppol#participants, lib/Controller/PeppolController.php:94-110). Sending does not: lib/Service/PeppolOutboundConsumer.php:113 and :118 compare the register and schema OpenRegister stores as ids with the slugs integriq and event, so every outbound.requested event is dropped (integriq#1222, comment of 28 Sep), and a transmission that did start would hand the access point the file reference instead of the UBL (lib/Service/PeppolTransmissionService.php:262, RestPeppolAccessPointProvider.php:116-120). Receiving is half: the signed callback (appinfo/routes.php:59, PeppolController.php:149) republishes the access point's own reference (PeppolTransmissionService.php:390-401), which the receiving app cannot open."
 			},
 			"reachedOn": "machine route: GET /api/peppol/participants/{peppolId} (production binding for shillinq's participant lookup) and POST /api/peppol/inbound (signed AP delivery callback); viewable at /messages/peppol",
+			"note": "Corrections round 9 (2026-09-28): own rating yes to partial and built.state built to specified (owner-moves lane: rated built but overstated). No e-invoice a sibling app hands over is sent today and an inbound one cannot be read; the open change openspec/changes/peppol-readable-payloads-and-scoped-consumer fixes both directions. built.evidence replaced; it read: \"lib/Service/Peppol/RestPeppolAccessPointProvider.php is a real binding for PeppolAccessPointProviderInterface, alongside LogPeppolAccessPointProvider.php (mock); appinfo/routes.php:56,59 peppol#participants/inbound -> lib/Controller/PeppolController.php; manifest page PeppolTransmissions (src/manifest.json:2917-2922, /messages/peppol, schema peppol_transmission).\"",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "peppol-access-point-connector",
@@ -6180,7 +6188,7 @@
 			"built": {
 				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Auth/Idp/EnvelopeExchangeService.php:67 issueCode() has zero callers anywhere in lib/ (`grep -rln issueCode lib/` only matches its own declaration); lib/Auth/Idp/SubjectPseudonymService.php:74 fromPolymorphic(), :108 pseudonymFor() are also never called outside their own file. Only :96 redeemCode() is reachable, via appinfo/routes.php:333 idpBroker#exchange -> lib/Controller/IdpBrokerController.php:84 exchange()."
+				"evidence": "lib/Auth/Idp/EnvelopeExchangeService.php:67 issueCode() has zero callers anywhere in lib/ (`grep -rln issueCode lib/` only matches its own declaration); lib/Auth/Idp/SubjectPseudonymService.php:74 fromPolymorphic(), :108 pseudonymFor() are also never called outside their own file. Only :96 redeemCode() is reachable, via appinfo/routes.php:372 idpBroker#exchange -> lib/Controller/IdpBrokerController.php:84 exchange()."
 			},
 			"reachedOn": "machine route POST /api/idp/envelope/exchange exists, but nothing in the repository ever issues a code for it to redeem",
 			"note": "Live-defect candidate: a consuming app calling exchange today would always get a 401, because issueCode() and the BSN-pseudonymisation step are never invoked by any controller, listener or job in this codebase.",
@@ -6404,12 +6412,13 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
+				"change": "openspec/changes/connectors-lti-platform-launch",
 				"evidence": "appinfo/routes.php:283-305 has 13 lti# route entries -> lib/Controller/LtiController.php; the OIDC login and launch routes (:283-285, LtiController.php:141-224) are the Tool role, where an external platform launches into Nextcloud. Corrections round 8 (2026-09-28), integriq#1508: the Platform-role launch that embeds an external tool, lib/Service/Lti/LtiLaunchService.php:419-473 initiatePlatformLaunch(), has no route and no caller at 966d645, and it skips the OIDC login redirect to the tool that openspec/specs/lti-platform/spec.md:226-234 (REQ-LTI-006) requires, so no external tool can be launched from a lesson."
 			},
-			"reachedOn": "machine route: an external LMS Tool performs the OIDC login at GET/POST /api/lti/{deployment}/login then POST .../launch",
-			"note": "The admin approve/suspend/key-management routes on the same controller (lines 259-266) have no page in src/views/admin (only ActionAuthMatrix, AdminSettings, DsoPkiSettings exist there), a smaller version of the same backend-no-page gap as nl-dso and id-eudi-keys, though the core embed/launch flow itself does not need a page since it is protocol-driven from the LMS. Own rating yes to no (corrections round 8, 2026-09-28): the routed LTI flow is the Tool role only, and the Platform-role launch that embeds an external tool has no route, no caller and no OIDC login step, integriq#1508. built.evidence replaced because it was factually wrong at the tip; it read: \"appinfo/routes.php:244-267 has 13 lti# route entries -> lib/Controller/LtiController.php, backed by lib/Service/Lti/* implementing LTI 1.3 OIDC third-party login + resource launch (Platform role).\" The routes had moved to :283-305, and the login and launch routes are the Tool role (LtiController.php:141).",
+			"reachedOn": "nothing reaches it: the Platform-role launch, lib/Service/Lti/LtiLaunchService.php:419-473 initiatePlatformLaunch(), has no route and no caller",
+			"note": "The admin approve/suspend/key-management routes on the same controller (lines 259-266) have no page in src/views/admin (only ActionAuthMatrix, AdminSettings, DsoPkiSettings exist there), a smaller version of the same backend-no-page gap as nl-dso and id-eudi-keys, though the core embed/launch flow itself does not need a page since it is protocol-driven from the LMS. Own rating yes to no (corrections round 8, 2026-09-28): the routed LTI flow is the Tool role only, and the Platform-role launch that embeds an external tool has no route, no caller and no OIDC login step, integriq#1508. built.evidence replaced because it was factually wrong at the tip; it read: \"appinfo/routes.php:244-267 has 13 lti# route entries -> lib/Controller/LtiController.php, backed by lib/Service/Lti/* implementing LTI 1.3 OIDC third-party login + resource launch (Platform role).\" The routes had moved to :283-305, and the login and launch routes are the Tool role (LtiController.php:141). Corrections round 9 (2026-09-28): built.state built to specified: the open change openspec/changes/connectors-lti-platform-launch builds the Platform-role launch this row rates. reachedOn corrected; it described the Tool role and read: \"machine route: an external LMS Tool performs the OIDC login at GET/POST /api/lti/{deployment}/login then POST .../launch\"",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "lti-platform",
@@ -6507,9 +6516,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
+				"change": "openspec/changes/portal-idp-broker-config",
 				"evidence": "openspec/changes/portal-idp-broker-config/proposal.md states 'Status: blocked, do not start design/tasks artifacts until Open Decisions D1-D5 are recorded'; `find . -iname '*PortalIdp*'` outside openspec/ returns nothing in lib/ or src/."
 			},
 			"reachedOn": "nothing reaches it; the change is explicitly blocked and unimplemented",
+			"note": "Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/portal-idp-broker-config, a blocked stub with a proposal only (proposal.md:6-9: blocked until Open Decisions D1 to D5 of the archived portal-idp-broker are recorded).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
@@ -8736,12 +8747,13 @@
 			"originUrl": "https://github.com/apache/apisix/issues/12755",
 			"integriq": "partial",
 			"built": {
-				"state": "decided-no",
+				"state": "specified",
 				"owner": "ConductionNL/openregister",
+				"change": "ConductionNL/openregister openspec/changes/credential-outside-vault-reference",
 				"evidence": "lib/Service/BrokeredCallService.php:98 and :442-494 resolve a credentialRef against OpenRegister's credential broker, so the secret is not stored on the source; grep -riE 'hashicorp|secretsmanager|keyvault' over lib/ finds nothing, so no outside secrets manager is supported"
 			},
 			"reachedOn": "/sources/:id edit form, 'Brokered credential (OpenRegister)' switch",
-			"note": "Open APISIX request for OCI Vault; Tyk 5.15.0 (2026-09-01) added AWS, Azure and GCP secret managers. Integriq: Credentials can live in the OpenRegister credential register, still inside Nextcloud; no connector to an outside vault. Decided no (OpenSpec pass 2026-09-27): ADR-064 decision 2: OpenRegister is the credential broker with Doriath as custody leaf, and apps must not build their own; an outside secrets manager is another custody leaf behind CredentialStore, not integriq code.",
+			"note": "Open APISIX request for OCI Vault; Tyk 5.15.0 (2026-09-01) added AWS, Azure and GCP secret managers. Integriq: Credentials can live in the OpenRegister credential register, still inside Nextcloud; no connector to an outside vault. Decided no (OpenSpec pass 2026-09-27): ADR-064 decision 2: OpenRegister is the credential broker with Doriath as custody leaf, and apps must not build their own; an outside secrets manager is another custody leaf behind CredentialStore, not integriq code. Corrections round 9 (2026-09-28): built.state decided-no to specified. The owner-moves pass decided the row in OpenRegister, which carries it in the open change openspec/changes/credential-outside-vault-reference (openregister#4112, recorded in openregister openspec/parity/gap-decisions.json). The decided-no above stands for integriq itself: the capability is not integriq code.",
 			"provider": "openregister",
 			"providerHow": "read-from-adr",
 			"feature": "demand-featurerequest",
