@@ -38,11 +38,11 @@ namespace OCA\OpenRegister\Db {
         class ObjectEntity
         {
             public function __construct(
-                private readonly ?string $deleted = null,
+                private readonly ?array $deleted = [],
             ) {
             }
 
-            public function getDeleted(): ?string
+            public function getDeleted(): ?array
             {
                 return $this->deleted;
             }
@@ -108,7 +108,7 @@ namespace OCA\OpenConnector\Tests\Unit\EventListener {
         {
             $this->assertSame(
                 ['delete'],
-                $this->mutationsFor(new ObjectEntity(null), new ObjectEntity('2026-09-04T09:52:52+00:00'))
+                $this->mutationsFor(new ObjectEntity([]), new ObjectEntity(['deletedAt' => '2026-09-04T09:52:52+00:00']))
             );
         }
 
@@ -116,20 +116,22 @@ namespace OCA\OpenConnector\Tests\Unit\EventListener {
         {
             $this->assertSame(
                 ['update'],
-                $this->mutationsFor(new ObjectEntity('2026-09-04T09:52:52+00:00'), new ObjectEntity('2026-09-04T09:52:52+00:00'))
+                $this->mutationsFor(new ObjectEntity(['deletedAt' => '2026-09-04T09:52:52+00:00']), new ObjectEntity(['deletedAt' => '2026-09-04T09:52:52+00:00']))
             );
         }
 
         public function testOrdinaryUpdateStaysAnUpdate(): void
         {
-            $this->assertSame(['update'], $this->mutationsFor(new ObjectEntity(null), new ObjectEntity(null)));
+            $this->assertSame(['update'], $this->mutationsFor(new ObjectEntity([]), new ObjectEntity([])));
         }
 
         public function testDeletedObjectWithoutOldStateReadsAsFreshDelete(): void
         {
-            // An OpenRegister that gives no old object cannot prove the object
-            // was already deleted, so the transition is taken at face value.
-            $this->assertSame(['delete'], $this->mutationsFor(null, new ObjectEntity('2026-09-04T09:52:52+00:00')));
+            // OpenRegister 1.1.5 never passes a null old object: when it cannot read
+            // the pre-change row, MagicMapper::update() substitutes the new entity as
+            // "old", which this listener reads as already deleted (→ 'update'). This
+            // branch is the defensive one: no old object at all is taken at face value.
+            $this->assertSame(['delete'], $this->mutationsFor(null, new ObjectEntity(['deletedAt' => '2026-09-04T09:52:52+00:00'])));
         }
 
         public function testUnrelatedEventIsIgnored(): void

@@ -1522,10 +1522,10 @@ class SynchronizationService
 				$synchronizationContract->setTargetLastAction($synchronizationContract->getTargetId() ? 'update' : 'create');
 				break;
 			case 'delete':
-				// Hard delete, per team decision (WOO-557): this path only runs once
-				// the source object has already disappeared, so there is nothing left
-				// to recover a soft-deleted target FOR — a tombstoned row would just
-				// linger, holding the identifier, forever.
+				// Hard delete, per team decision (WOO-557): by the time this runs the
+				// source is soft-deleted (event path) or gone from the fetched source
+				// (full-sync cleanup), and a restore never reuses this target — its
+				// targetId is cleared below — so a tombstoned row would just linger.
 				//
 				// `permanent` exists on OpenRegister since 1.1.5-woo-1 (and on 2.x).
 				// Against an older OpenRegister the named argument is a fatal
