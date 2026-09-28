@@ -35,6 +35,7 @@ use OCA\Integriq\Service\Mail\Transport\MockMailboxTransport;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Runs one mailbox source's synchronization.
@@ -133,6 +134,54 @@ class MailboxSourceHandler {
 		];
 
 	}//end poll()
+
+	/**
+	 * Poll every enabled mailbox source once.
+	 *
+	 * The scheduled half of REQ-MAIL-001: MailboxPollJob calls this. Sources
+	 * are read in system context, because `source` is admin-only and cron has
+	 * no user. One mailbox that fails (an unknown protocol, a server that does
+	 * not answer) is logged and skipped; the others are still polled.
+	 *
+	 * @return array{polled:int,failed:int,created:int} What the sweep did.
+	 *
+	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
+	 */
+	public function pollAll(): array {
+		$found = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => MailIntakeService::REGISTER,
+					'schema' => 'source',
+					'type' => MailIntakeService::SOURCE_TYPE,
+					'isEnabled' => true,
+				],
+			],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$summary = ['polled' => 0, 'failed' => 0, 'created' => 0];
+		foreach (($found['results'] ?? $found) as $source) {
+			if ($source instanceof ObjectEntity === false) {
+				continue;
+			}
+
+			try {
+				$result = $this->poll(source: $source);
+				$summary['polled']++;
+				$summary['created'] += $result['created'];
+			} catch (Throwable $exception) {
+				$summary['failed']++;
+				$this->logger->warning(
+					'Integriq: mailbox poll failed, the other mailboxes are still polled',
+					['sourceId' => (string)$source->getUuid(), 'exception' => $exception->getMessage()]
+				);
+			}
+		}
+
+		return $summary;
+	}//end pollAll()
 
 	/**
 	 * Pick the binding a mailbox configuration asks for.

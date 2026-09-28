@@ -7,6 +7,7 @@
 - **files**: `lib/Settings/integriq_register.json`, `lib/Service/Mail/MailboxSourceHandler.php`
 - [x] Implement
 - [x] Test (mock-mode fixture with three messages, idempotent re-poll)
+- [x] Schedule the poll (build-all pass 2026-09-28): the tick above did not hold, because nothing called `poll()` but the manual endpoint. `MailboxPollJob` (every five minutes, registered in `appinfo/info.xml`) calls `MailboxSourceHandler::pollAll()`, which polls every enabled mailbox source in system context and isolates a failing one. Test: `tests/Unit/BackgroundJob/MailboxPollJobTest.php`, red before the job existed.
 
 ### Task 2: Import endpoint for `.eml` and `.msg`
 - **spec_ref**: `openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002`

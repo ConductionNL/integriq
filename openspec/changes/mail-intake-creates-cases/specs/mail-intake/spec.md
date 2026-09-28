@@ -31,6 +31,12 @@ NOT create a second object for the same `messageId` on the same source.
 - THEN three `message` objects exist, each once
 - @e2e exclude synchronization runs as a background job; covered by PHPUnit on `MailboxSourceHandler`
 
+#### Scenario: Mail arrives without anyone pressing poll
+- GIVEN two enabled mailbox sources, one of which names a protocol integriq cannot use
+- WHEN the mailbox poll job runs (every five minutes)
+- THEN the usable mailbox's new messages become `message` objects, and the unusable one is logged and skipped without stopping the sweep
+- @e2e exclude background job; covered by PHPUnit `MailboxPollJobTest`
+
 ### Requirement: .eml and .msg files import into the same message shape (REQ-MAIL-002)
 
 `POST /api/mail-intake/import` MUST accept an `.eml` or `.msg` upload for a
