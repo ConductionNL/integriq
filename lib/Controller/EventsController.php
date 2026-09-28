@@ -21,9 +21,12 @@ namespace OCA\Integriq\Controller;
 
 use DateTime;
 use Exception;
+use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -69,6 +72,13 @@ class EventsController extends Controller {
 	private const NC_NATIVE_DOMAINS = ['files', 'calendar', 'tables', 'forms'];
 
 	/**
+	 * Refuses a sink that points into the instance's own network (integriq#2212).
+	 *
+	 * @var EgressGuard
+	 */
+	private readonly EgressGuard $egressGuard;
+
+	/**
 	 * Constructor for the EventsController.
 	 *
 	 * @param string $appName The name of the app.
@@ -79,6 +89,7 @@ class EventsController extends Controller {
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param WebhookSignatureService $signatureService Generates signing secrets.
+	 * @param EgressGuard|null $egressGuard Judges a subscription's sink; a guard without an allowlist when not injected.
 	 */
 	public function __construct(
 		$appName,
@@ -89,8 +100,10 @@ class EventsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly WebhookSignatureService $signatureService,
+		?EgressGuard $egressGuard = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
 	}//end __construct()
 
@@ -180,6 +193,11 @@ class EventsController extends Controller {
 		// caught and downgraded to a 400 by the generic Exception handler.
 		$this->requireNextcloudEventFamilyActions(user: $user, data: $data);
 
+		$refusal = $this->refuseUnsafeSink(data: $data);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		try {
 			// Create subscription.
 			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
@@ -226,6 +244,11 @@ class EventsController extends Controller {
 		// Layered per-family gate (REQ-005) — see subscribe() for the full
 		// rationale; deliberately outside the try/catch below.
 		$this->requireNextcloudEventFamilyActions(user: $user, data: $data);
+
+		$refusal = $this->refuseUnsafeSink(data: $data);
+		if ($refusal !== null) {
+			return $refusal;
+		}
 
 		try {
 			// Update subscription.
@@ -589,28 +612,51 @@ class EventsController extends Controller {
 	}//end requireNextcloudEventFamilyActions()
 
 	/**
-	 * Redact signing secret material from a subscription object for any read.
+	 * Refuse a subscription body whose sink the egress guard refuses.
+	 *
+	 * The delivery engine checks the sink again before every post, because a
+	 * subscription can also be written through the OpenRegister object API. This
+	 * check gives the caller of the subscribe route the answer at once, before
+	 * anything is saved (integriq#2212, hydra ADR-067 decision 3).
+	 *
+	 * @param array $data The subscription body as received.
+	 *
+	 * @return JSONResponse|null A 400 naming the refused rule, or null when the
+	 *                           body has no sink or its sink may be called.
+	 *
+	 * @spec openspec/changes/events-async-api-products/design.md
+	 */
+	private function refuseUnsafeSink(array $data): ?JSONResponse {
+		$sink = ($data['sink'] ?? null);
+		if (is_string($sink) === false || $sink === '') {
+			return null;
+		}
+
+		try {
+			$this->egressGuard->assertAllowed(url: $sink);
+		} catch (EgressRefusedException $exception) {
+			return new JSONResponse(
+				['error' => $this->l->t('The sink may not be called: %s', [$exception->getMessage()])],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return null;
+	}//end refuseUnsafeSink()
+
+	/**
+	 * Redact every secret in a subscription's `protocolSettings` for any read.
+	 *
+	 * See {@see SubscriptionSecretMasker::mask()} for what is masked and why.
 	 *
 	 * @param array $subscription The subscription object array.
 	 *
 	 * @return array The same array with secret fields replaced by a marker.
 	 *
-	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 	 */
 	private function redactSubscription(array $subscription): array {
-		if (isset($subscription['protocolSettings']) === false || is_array($subscription['protocolSettings']) === false) {
-			return $subscription;
-		}
-
-		foreach (['signingSecret', 'previousSigningSecret'] as $key) {
-			if (isset($subscription['protocolSettings'][$key]) === true
-				&& $subscription['protocolSettings'][$key] !== ''
-			) {
-				$subscription['protocolSettings'][$key] = '**********';
-			}
-		}
-
-		return $subscription;
+		return (new SubscriptionSecretMasker())->mask(subscription: $subscription);
 	}//end redactSubscription()
 
 	/**

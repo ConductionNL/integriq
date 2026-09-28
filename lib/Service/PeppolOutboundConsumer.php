@@ -6,7 +6,8 @@
  * Listens for `OCA\OpenRegister\Event\ObjectCreatedEvent` — the same
  * cross-app hook `ObjectCreatedEventListener`/`CloudEventListener` use — and
  * reacts when the created object is a `nl.conduction.peppol.outbound.requested`
- * CloudEvent (register `openconnector`, schema `event`). A producing app
+ * CloudEvent (register `integriq`, schema `event`, matched on the ids
+ * OpenRegister stamps through {@see ListenerSchemaResolver}). A producing app
  * (e.g. shillinq) emits that event by creating such an object through
  * OpenRegister's `ObjectService`, or through `EventService::emitCloudEvent()`,
  * both of which persist into the same register/schema and therefore fire the
@@ -45,13 +46,22 @@ use Throwable;
  */
 class PeppolOutboundConsumer implements IEventListener {
 	/**
+	 * Schema slug of integriq's CloudEvent storage.
+	 *
+	 * @var string
+	 */
+	private const EVENT_SCHEMA = 'event';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param PeppolTransmissionService $transmissionService Drives the transmission lifecycle.
+	 * @param ListenerSchemaResolver $schemaResolver Resolves the register and schema ids OpenRegister stamps back to slugs.
 	 * @param LoggerInterface $logger Logger for non-fatal dispatch failures.
 	 */
 	public function __construct(
 		private readonly PeppolTransmissionService $transmissionService,
+		private readonly ListenerSchemaResolver $schemaResolver,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -86,41 +96,36 @@ class PeppolOutboundConsumer implements IEventListener {
 	/**
 	 * Extract the CloudEvent data array when, and only when, the incoming NC
 	 * event is an `ObjectCreatedEvent` for a `nl.conduction.peppol.outbound.requested`
-	 * event object (register `openconnector`, schema `event`).
+	 * event object in integriq's own register and `event` schema.
 	 *
-	 * Split out of {@see handle()} to keep both methods under the cyclomatic/
-	 * NPath complexity thresholds — each guard is a single early return.
+	 * OpenRegister stamps the numeric register and schema ids on the object,
+	 * and `ObjectEntity` declares `getRegister()`/`getSchema()`, so comparing
+	 * them with the slugs `integriq` and `event` never matched and every
+	 * request was dropped (integriq#1222). {@see ListenerSchemaResolver} maps
+	 * the ids back to slugs, still accepts a slug as-is, and answers "not
+	 * ours" when it cannot resolve them, so the guard fails closed.
+	 *
+	 * The payload `type` is checked first: it is a plain array read, and it
+	 * keeps the id lookups off every other object write on the instance.
 	 *
 	 * @param Event $event The incoming NC event.
 	 *
 	 * @return array|null The matched event object's data array, or null when the event does not match.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-outbound-consumer-reacts-only-to-integriqs-own-event-schema-req-007
 	 */
 	private function extractOutboundRequestedPayload(Event $event): ?array {
 		if ($event instanceof ObjectCreatedEvent === false) {
 			return null;
 		}
 
-		if (method_exists($event, 'getObject') === false) {
-			return null;
-		}
-
 		$object = $event->getObject();
-		if ($object === null) {
-			return null;
-		}
-
-		if (method_exists($object, 'getRegister') === true
-			&& $object->getRegister() !== PeppolTransmissionService::REGISTER
-		) {
-			return null;
-		}
-
-		if (method_exists($object, 'getSchema') === true && $object->getSchema() !== 'event') {
-			return null;
-		}
-
 		$objectData = $object->getObject();
 		if (($objectData['type'] ?? null) !== PeppolTransmissionService::EVENT_TYPE_OUTBOUND_REQUESTED) {
+			return null;
+		}
+
+		if ($this->schemaResolver->matchesSchema(entity: $object, expectedSlug: self::EVENT_SCHEMA) === false) {
 			return null;
 		}
 

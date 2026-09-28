@@ -2587,6 +2587,7 @@ OC.L10N.register(
         "Which of the four connection families this record belongs to": "Which of the four connection families this record belongs to",
         "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync": "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync",
         "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.",
+        "The sink may not be called: %s": "The sink may not be called: %s",
         "Exchange job not found": "Exchange job not found",
         "Exchange rejection not found": "Exchange rejection not found",
         "The ownerApp parameter is required": "The ownerApp parameter is required",
