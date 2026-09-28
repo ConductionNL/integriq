@@ -67,8 +67,12 @@ use Throwable;
  * same resolution infrastructure (broker resolution, credentialName→id, owner
  * pinning) as the proxy path; keeping both here is what keeps that shared logic
  * DRY — at the cost of the class length, which is why it too is suppressed.
+ * The TLS client identity (cert / ssl_key) is resolved through that same
+ * injection path (integriq#2102), which takes the method count past 25 for
+ * the same reason.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  *
