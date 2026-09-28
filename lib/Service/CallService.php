@@ -747,14 +747,19 @@ class CallService {
 		string $statusMessage,
 		?\DateTime $expires,
 	): ObjectEntity {
+		$object = [
+			'source' => $source->getUuid(),
+			'statusCode' => $statusCode,
+			'statusMessage' => $statusMessage,
+			'created' => (new DateTime())->format('c'),
+		];
+		$formatted = $this->formatExpires(expires: $expires);
+		if ($formatted !== null) {
+			$object['expires'] = $formatted;
+		}
+
 		return $this->objectService->saveObject(
-			object: [
-				'source' => $source->getUuid(),
-				'statusCode' => $statusCode,
-				'statusMessage' => $statusMessage,
-				'created' => (new DateTime())->format('c'),
-				'expires' => $this->formatExpires(expires: $expires),
-			],
+			object: $object,
 			register: 'integriq',
 			schema: 'call_log'
 		);
@@ -1724,8 +1729,15 @@ class CallService {
 			'request' => $data['request'],
 			'response' => $responseData,
 			'created' => (new DateTime())->format('c'),
-			'expires' => $this->formatExpires(expires: $expiresChosen),
 		];
+
+		// A call kept for ever (retention 0) has no expiry. `expires` is a
+		// date-time string on call_log, and the register refuses a null in a
+		// string property, so the key is left out rather than written as null.
+		$formattedExpires = $this->formatExpires(expires: $expiresChosen);
+		if ($formattedExpires !== null) {
+			$callLogData['expires'] = $formattedExpires;
+		}
 
 		// Execution-trace REQ-011: repurpose the previously-dead
 		// call_log.sessionId field to carry the active trace's traceId, so
@@ -2795,6 +2807,11 @@ class CallService {
 
 		// Phase 7: Merge source-level configuration.
 		$config = $this->mergeSourceConfiguration(config: $config, sourceData: $sourceData);
+
+		// Phase 7-auth: the login the source declares on its own fields
+		// (auth basic or apikey). What configuration says still wins, and a
+		// broker source is left to the broker (sources-declared-basic-and-apikey-auth).
+		$config = (new SourceAuthApplier())->apply(sourceData: $sourceData, config: $config);
 
 		// Phase 7a: Resolve HTTP method; strip method-override keys from config.
 		//
