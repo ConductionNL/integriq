@@ -6402,14 +6402,14 @@
 			"area": "identity",
 			"name": "Embed an external tool in a lesson over LTI 1.3.",
 			"source": "sibling-matrix",
-			"integriq": "yes",
+			"integriq": "no",
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:244-267 has 13 lti# route entries -> lib/Controller/LtiController.php, backed by lib/Service/Lti/* implementing LTI 1.3 OIDC third-party login + resource launch (Platform role)."
+				"evidence": "appinfo/routes.php:283-305 has 13 lti# route entries -> lib/Controller/LtiController.php; the OIDC login and launch routes (:283-285, LtiController.php:141-224) are the Tool role, where an external platform launches into Nextcloud. Corrections round 8 (2026-09-28), integriq#1508: the Platform-role launch that embeds an external tool, lib/Service/Lti/LtiLaunchService.php:419-473 initiatePlatformLaunch(), has no route and no caller at 966d645, and it skips the OIDC login redirect to the tool that openspec/specs/lti-platform/spec.md:226-234 (REQ-LTI-006) requires, so no external tool can be launched from a lesson."
 			},
 			"reachedOn": "machine route: an external LMS Tool performs the OIDC login at GET/POST /api/lti/{deployment}/login then POST .../launch",
-			"note": "The admin approve/suspend/key-management routes on the same controller (lines 259-266) have no page in src/views/admin (only ActionAuthMatrix, AdminSettings, DsoPkiSettings exist there), a smaller version of the same backend-no-page gap as nl-dso and id-eudi-keys, though the core embed/launch flow itself does not need a page since it is protocol-driven from the LMS.",
+			"note": "The admin approve/suspend/key-management routes on the same controller (lines 259-266) have no page in src/views/admin (only ActionAuthMatrix, AdminSettings, DsoPkiSettings exist there), a smaller version of the same backend-no-page gap as nl-dso and id-eudi-keys, though the core embed/launch flow itself does not need a page since it is protocol-driven from the LMS. Own rating yes to no (corrections round 8, 2026-09-28): the routed LTI flow is the Tool role only, and the Platform-role launch that embeds an external tool has no route, no caller and no OIDC login step, integriq#1508. built.evidence replaced because it was factually wrong at the tip; it read: \"appinfo/routes.php:244-267 has 13 lti# route entries -> lib/Controller/LtiController.php, backed by lib/Service/Lti/* implementing LTI 1.3 OIDC third-party login + resource launch (Platform role).\" The routes had moved to :283-305, and the login and launch routes are the Tool role (LtiController.php:141).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "lti-platform",
