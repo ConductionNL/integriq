@@ -35,16 +35,20 @@ the import again.
 
 ## Give people access
 
-Three actions control the exchange screens. All three are for administrators only until you
-change them in Admin settings > Integriq > Action authorization.
+Three actions control the exchange screens. Change them in Admin settings > Integriq > Action
+authorization.
 
-| Action | Lets people |
-|---|---|
-| `exchange.read` | see exchange jobs and rejections, for example in learniq's status panel |
-| `exchange.resubmit` | resubmit a rejected record |
-| `exchange.waive` | waive a rejected record with a reason |
+| Action | Lets people | Default groups |
+|---|---|---|
+| `exchange.read` | see exchange jobs and rejections, for example in learniq's status panel | `admin`, `coordinators`, `compliance-officers` |
+| `exchange.resubmit` | resubmit a rejected record | `admin` |
+| `exchange.waive` | waive a rejected record with a reason | `admin` |
 
-To let learniq's coordinators see the status panel, add their group to `exchange.read`.
+Learniq's coordinators and compliance officers read the status panel by default.
+
+An upgrade gives `exchange.read` these three groups only when you never changed it. If it still
+held just `admin`, it now holds all three. Any other value you set stays as it is. To keep the
+panel for administrators only, set `exchange.read` back to `admin` after the upgrade.
 
 ## For developers
 

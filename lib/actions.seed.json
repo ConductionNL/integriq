@@ -65,7 +65,7 @@
     "configuration.import": ["admin"],
     "environment.manage": ["admin"],
     "environment.promote": ["admin"],
-    "exchange.read": ["admin"],
+    "exchange.read": ["admin", "coordinators", "compliance-officers"],
     "exchange.resubmit": ["admin"],
     "exchange.waive": ["admin"]
   }

@@ -50,8 +50,12 @@ use RuntimeException;
  * `CredentialBrokerService` (a broker capability that does not exist today)
  * or (b) a new broker `authScheme: 'aws-sigv4'` that computes the signature
  * from the stored secret before injecting it — both are broker-side changes
- * out of scope for an integriq-side adapter change. Tracked as a
- * follow-up, not implemented here.
+ * out of scope for an integriq-side adapter change. Tracked as
+ * integriq#2214; `gateway-federated-api-discovery` design D3 puts the
+ * signing in the broker (`authScheme: aws-sigv4`), not in integriq, because
+ * ADR-064 decision 3 keeps app-side injection for hosts that cannot be
+ * proxied, and AWS hosts can. The label says so, so an administrator does
+ * not configure this adapter for AWS S3 and meet a signature error.
  *
  * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
  */
@@ -93,7 +97,9 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function getLabel(): string {
-		return $this->l10n->t('S3-compatible object storage');
+		// Names the limit where an administrator chooses the adapter: AWS S3
+		// refuses every request that is not SigV4-signed (integriq#2214).
+		return $this->l10n->t('S3-compatible storage with an API key (not AWS S3)');
 	}//end getLabel()
 
 	/**

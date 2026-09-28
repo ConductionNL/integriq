@@ -1,5 +1,5 @@
 {
-	"$comment": "ADR-037 register fragment (learniq-exchange-jobs-native). Decision D7: another app's data exchange jobs ride on integriq's own schemas. Adds optional exchange tags to job (1.3.0) and exchange rejection fields to sync_item_dead_letter (1.1.0), and seeds 28 mapping rows: the 23 mappings learniq carried as DataMappingProfile seeds (slugs shared with learniq change data-exchange-to-integriq), the rejection status translation, and four error code catalogues. The catalogues are code tables read by ExchangeErrorCodeCatalogue, never executed by MappingService. No personal data is ever stored on a job or a dead letter: the owning app hands the allowed records over in its gate answer, in process. See openspec/changes/learniq-exchange-jobs-native/design.md.",
+	"$comment": "ADR-037 register fragment (learniq-exchange-jobs-native). Decision D7: another app's data exchange jobs ride on integriq's own schemas. Adds optional exchange tags to job (1.3.0) and exchange rejection fields to sync_item_dead_letter (1.1.0), and seeds 29 mapping rows: the 23 mappings learniq carried as DataMappingProfile seeds (slugs shared with learniq change data-exchange-to-integriq), the ROD school advice mapping (rod-adapter-bsn), the rejection status translation, and four error code catalogues. The catalogues are code tables read by ExchangeErrorCodeCatalogue, never executed by MappingService. No personal data is ever stored on a job or a dead letter: the owning app hands the allowed records over in its gate answer, in process. See openspec/changes/learniq-exchange-jobs-native/design.md.",
 	"components": {
 		"schemas": {
 			"job": {
@@ -200,11 +200,39 @@
 				"reference": "learniq-bron-rod-export-learner",
 				"mapping": {
 					"eckId": "eckId",
-					"bsn": "eckId",
+					"persoonsgebondenNummer": "persoonsgebondenNummer",
+					"persoonsgebondenNummerType": "persoonsgebondenNummerType",
 					"voornamen": "givenName",
 					"achternaam": "familyName",
 					"geboorteDatum": "{{ birthDate|date('Y-m-d') }}",
 					"brinNummer": "schoolId"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.1.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-bron-rod-export-schooladvies"
+				},
+				"name": "learniq: BRON/ROD school advice export",
+				"description": "Maps a learniq school-advies record onto DUO AanleverenAdviesVO_Request (contract DUO_PO_AdviesVO_V1, PvE ROD-PO 1.14.2 section 7.9.1). Target bron-rod, direction export, scope berichtsoort schooladvies. Keys are the output field, values the input field. advies2 is the definitive advice, after a heroverweging the reconsidered one.",
+				"reference": "learniq-bron-rod-export-schooladvies",
+				"mapping": {
+					"persoonsgebondenNummer": "persoonsgebondenNummer",
+					"persoonsgebondenNummerType": "persoonsgebondenNummerType",
+					"adviesvolgnummer": "adviesvolgnummer",
+					"onderwijsaanbieder": "onderwijsaanbieder",
+					"onderwijslocatie": "onderwijslocatie",
+					"vestigingscode": "vestigingscode",
+					"adviesjaar": "adviesjaar",
+					"advies1": "advies1",
+					"advies1Datum": "advies1Datum",
+					"advies2": "advies2",
+					"advies2Datum": "advies2Datum"
 				},
 				"unset": [],
 				"cast": {},

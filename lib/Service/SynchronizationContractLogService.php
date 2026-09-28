@@ -106,6 +106,8 @@ class SynchronizationContractLogService {
 	 * @param array $object The contract log data.
 	 *
 	 * @return array The (unpersisted) contract log array.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
 	 */
 	public function createFromArray(array $object): array {
 		// Auto-fill a stable uuid the engine can reference before persistence.
@@ -132,9 +134,10 @@ class SynchronizationContractLogService {
 			$object['synchronizationLogId'] = 'n.a.';
 		}
 
-		// Default expiry to +3 days unless the caller provided one.
+		// Default expiry to the contract log retention unless the caller
+		// provided one; the same default the settings read reports.
 		if (isset($object['expires']) === false) {
-			$object['expires'] = (new DateTime('+3 days'))->format('c');
+			$object['expires'] = (new DateTime('+' . intdiv(RetentionDefaults::SYNC_CONTRACT_LOG, 1000) . ' seconds'))->format('c');
 		}
 
 		return $object;

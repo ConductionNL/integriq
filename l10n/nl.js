@@ -1299,7 +1299,8 @@ OC.L10N.register(
         "Which kind of object in the owning app the rejected record is, such as learner-profile.": "Welk soort object in de eigenaar-app het afgewezen record is, zoals learner-profile.",
         "Why the exchange job failed as a whole, starting with its error code.": "Waarom de uitwisselingstaak als geheel mislukte, beginnend met de foutcode.",
         "Why this rejection was waived. Required when an exchange rejection is discarded.": "Waarom van deze afwijzing is afgezien. Verplicht wanneer een uitwisselingsafwijzing wordt afgesloten.",
-        "Run a data exchange": "Een gegevensuitwisseling uitvoeren"
+        "Run a data exchange": "Een gegevensuitwisseling uitvoeren",
+        "S3-compatible storage with an API key (not AWS S3)": "S3-compatibele opslag met een API-sleutel (niet AWS S3)"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -167,7 +167,9 @@ class ExchangeJobRunner {
 				try {
 					$recordData = $this->mappings->executeMapping(mapping: $mapping, input: $recordData);
 				} catch (Throwable $exception) {
-					$this->logger->info('[ExchangeJobRunner] mapping failed for a record of job ' . $jobId . ': ' . $exception->getMessage());
+					// The exception class only: a mapping error can quote its input,
+					// which may hold a persoonsgebonden nummer.
+					$this->logger->info('[ExchangeJobRunner] mapping failed for a record of job '.$jobId.': '.get_class($exception));
 					$rejected[] = $this->rejectionFor(record: $record, code: 'mapping-failed');
 					continue;
 				}
