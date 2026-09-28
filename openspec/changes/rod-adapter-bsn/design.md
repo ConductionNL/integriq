@@ -69,7 +69,7 @@ error can quote its input.
 ## Nextcloud Integration
 
 - Services: `RodEnvelopeTranslator`, `RodService`, `RodEdukoppelingClient`, `ExchangeJobService`,
-  `ExchangeJobRunner`, new `RodPersonalNumberRedactor` (no DI registration; default-constructed).
+  `ExchangeJobRunner`, new `RodPersonalNumberRedactor` and `RodAdviesVoBuilder` (no DI registration; default-constructed).
 - No new events, routes or controllers.
 
 ## Security Considerations
@@ -83,6 +83,7 @@ logger). Records are not stored by integriq (unchanged, D7).
 ```
 lib/Service/Rod/RodEnvelopeTranslator.php        (modified)
 lib/Service/Rod/RodPersonalNumberRedactor.php    (new)
+lib/Service/Rod/RodAdviesVoBuilder.php           (new: AanleverenAdviesVO_Request, kept apart so the translator stays under the class complexity limit)
 lib/Service/Rod/RodEdukoppelingClient.php        (modified: redact transport message)
 lib/Service/RodService.php                       (modified: redact, hash either type)
 lib/Service/Exchange/ExchangeJobService.php      (modified: default mapping)
