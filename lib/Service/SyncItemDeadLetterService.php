@@ -32,6 +32,7 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;
@@ -174,6 +175,16 @@ class SyncItemDeadLetterService {
 			throw new InvalidMessageStateException(
 				message: 'Cannot replay a sync item dead letter in state "' . $status . '"; only failed entries are replayable.'
 			);
+		}
+
+		// An exchange rejection has no synchronization to re-run: replaying it
+		// resubmits the record as a single-record exchange job
+		// (learniq-exchange-jobs-native design D6).
+		if (empty($data['exchangeJob']) === false) {
+			$resubmitter = $this->containerInterface->get(ExchangeRejectionService::class);
+			if ($resubmitter instanceof ExchangeRejectionService) {
+				return $resubmitter->resubmit(rejectionId: $entry->getUuid(), actor: $actorUid)['rejection'];
+			}
 		}
 
 		$nowIso = (new DateTime())->format('c');
