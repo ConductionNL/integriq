@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -90,7 +91,7 @@ class LtiKeyServiceTest extends TestCase {
 			}
 		);
 
-		return new LtiKeyService($objectService, new NullLogger());
+		return new LtiKeyService($objectService, new NullLogger(), new AesTestCrypto());
 	}//end makeService()
 
 	/**
@@ -350,4 +351,131 @@ class LtiKeyServiceTest extends TestCase {
 		$this->assertSame('suspended', $suspended['status']);
 
 	}//end testApproveAndSuspendWorkForLtiToolToo()
+
+	/**
+	 * The private half of a generated key is not a readable PEM at rest
+	 * (integriq#2213). Before the fix `privateKeySecret` held base64(PEM),
+	 * so a database dump carried every registration's signing key in clear.
+	 *
+	 * @return void
+	 */
+	public function testStoredPrivateKeyIsNotReadablePemAtRest(): void {
+		$service = $this->makeService();
+		$this->seedRegistration('plat-rest-1', 'lti_platform');
+
+		$service->generateKey('lti_platform', 'plat-rest-1', 'RS256');
+
+		$stored = (string)$this->registrations['plat-rest-1']['signingKeys'][0]['privateKeySecret'];
+		$this->assertNotSame('', $stored);
+		$this->assertStringNotContainsString('-----BEGIN', $stored, 'the stored key must not be a raw PEM');
+		$this->assertStringNotContainsString(
+			'-----BEGIN',
+			(string)base64_decode($stored),
+			'the stored key must not be a base64-encoded PEM'
+		);
+
+	}//end testStoredPrivateKeyIsNotReadablePemAtRest()
+
+	/**
+	 * The active key read back for signing still signs, and the signature
+	 * verifies against the key the registration publishes.
+	 *
+	 * @return void
+	 */
+	public function testActiveKeyEntryFromEncryptedStorageStillSigns(): void {
+		$service = $this->makeService();
+		$this->seedRegistration('tool-rest-1', 'lti_tool');
+		$generated = $service->generateKey('lti_tool', 'tool-rest-1', 'RS256');
+
+		$entry = $service->getActiveKeyEntry('lti_tool', 'tool-rest-1');
+		$this->assertNotNull($entry);
+		$this->assertSame($generated['kid'], $entry['kid']);
+
+		$this->assertSignsAndMatchesPublishedKey(
+			privateKeySecret: (string)$entry['privateKeySecret'],
+			publicJwk: $generated['publicJwk']
+		);
+
+	}//end testActiveKeyEntryFromEncryptedStorageStillSigns()
+
+	/**
+	 * A row written before encryption (plain base64 PEM) still signs, and the
+	 * next write through this service stores it encrypted.
+	 *
+	 * @return void
+	 */
+	public function testLegacyPlaintextKeyStillSignsAndIsEncryptedOnNextWrite(): void {
+		$resource = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+		openssl_pkey_export($resource, $pem);
+		$details = openssl_pkey_get_details($resource);
+		$legacySecret = base64_encode($pem);
+		$legacyJwk = ['kty' => 'RSA', 'n' => rtrim(strtr(base64_encode($details['rsa']['n']), '+/', '-_'), '=')];
+
+		$service = $this->makeService();
+		$this->seedRegistration(
+			'plat-legacy-1',
+			'lti_platform',
+			['signingKeys' => [['kid' => 'legacy-kid', 'algorithm' => 'RS256', 'publicJwk' => $legacyJwk, 'privateKeySecret' => $legacySecret, 'status' => 'active', 'rotatedAt' => null]]]
+		);
+
+		$entry = $service->getActiveKeyEntry('lti_platform', 'plat-legacy-1');
+		$this->assertNotNull($entry);
+		$this->assertSame($legacySecret, $entry['privateKeySecret'], 'a legacy row reads back unchanged');
+		$this->assertSignsAndMatchesPublishedKey(privateKeySecret: (string)$entry['privateKeySecret'], publicJwk: $legacyJwk);
+
+		// Rotation is the next write: the legacy key becomes `previous` and is sealed.
+		$service->rotateKey('lti_platform', 'plat-legacy-1');
+		foreach ($this->registrations['plat-legacy-1']['signingKeys'] as $stored) {
+			$this->assertStringNotContainsString('-----BEGIN', (string)base64_decode((string)$stored['privateKeySecret']));
+		}
+
+		$this->assertSame('previous', $this->registrations['plat-legacy-1']['signingKeys'][0]['status']);
+
+	}//end testLegacyPlaintextKeyStillSignsAndIsEncryptedOnNextWrite()
+
+	/**
+	 * A stored key that cannot be decrypted (the instance secret changed)
+	 * fails closed with a validation error, never an unsigned launch.
+	 *
+	 * @return void
+	 */
+	public function testUndecryptableKeyFailsClosed(): void {
+		$service = $this->makeService();
+		$this->seedRegistration('plat-bad-1', 'lti_platform');
+		$service->generateKey('lti_platform', 'plat-bad-1', 'RS256');
+
+		// Ciphertext whose HMAC does not verify, as after a changed instance secret.
+		$this->registrations['plat-bad-1']['signingKeys'][0]['privateKeySecret'] = LtiKeyService::ENCRYPTED_PREFIX . 'deadbeef|00|00|3';
+
+		$this->expectException(LtiValidationException::class);
+		$service->getActiveKeyEntry('lti_platform', 'plat-bad-1');
+
+	}//end testUndecryptableKeyFailsClosed()
+
+	/**
+	 * Sign with a stored base64(PEM) key and verify with its public half,
+	 * whose modulus must be the one the registration publishes.
+	 *
+	 * @param string $privateKeySecret The base64(PEM) private key as signing code receives it.
+	 * @param array  $publicJwk        The published public JWK.
+	 *
+	 * @return void
+	 */
+	private function assertSignsAndMatchesPublishedKey(string $privateKeySecret, array $publicJwk): void {
+		$pem = base64_decode($privateKeySecret, true);
+		$this->assertIsString($pem);
+		$privateKey = openssl_pkey_get_private($pem);
+		$this->assertNotFalse($privateKey, 'the key handed to signing code must parse as a private key');
+
+		$details = openssl_pkey_get_details($privateKey);
+		$this->assertSame(
+			$publicJwk['n'],
+			rtrim(strtr(base64_encode($details['rsa']['n']), '+/', '-_'), '='),
+			'the signing key must be the key the registration publishes'
+		);
+
+		$this->assertTrue(openssl_sign('launch', $signature, $privateKey, OPENSSL_ALGO_SHA256));
+		$this->assertSame(1, openssl_verify('launch', $signature, $details['key'], OPENSSL_ALGO_SHA256));
+
+	}//end assertSignsAndMatchesPublishedKey()
 }//end class
