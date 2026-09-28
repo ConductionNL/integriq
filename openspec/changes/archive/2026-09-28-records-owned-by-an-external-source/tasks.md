@@ -83,5 +83,5 @@
 
 ## Handover
 
-- [x] Hand dossiq its half (ConductionNL/dossiq#DOSSIQ_ISSUE): declare the ownership mode and the disappearance policy on the `brpPerson` and `kvkCompany` synchronisations in `lib/Settings/register.d/25-brp-kvk.json`, render the ownership state on the contact and the case party, and drop the delete action on a party dossiq does not own
+- [x] Hand dossiq its half (ConductionNL/dossiq#3187): declare the ownership mode and the disappearance policy on the `brpPerson` and `kvkCompany` synchronisations in `lib/Settings/register.d/25-brp-kvk.json`, render the ownership state on the contact and the case party, and drop the delete action on a party dossiq does not own
 - [x] Record the row 5.19 closure in `openspec/changes/competitor-parity-2026-09/proposal.md` when this change is archived

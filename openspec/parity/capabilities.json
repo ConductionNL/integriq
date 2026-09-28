@@ -573,6 +573,7 @@
 			"integriq": "partial",
 			"built": {
 				"state": "building",
+				"change": "sources-declared-basic-and-apikey-auth",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/integriq_register.json:157-213 declares source.auth ('apikey, basic, oauth, jwt, none'), authorizationHeader, username, password, apikey as generic schema fields the Source form renders and saves; grep -noE \"sourceData\\['[a-zA-Z_]+'\\]\" lib/Service/CallService.php (35 hits) shows CallService NEVER reads auth/authorizationHeader/apikey/username/password, only 'type','location','headers','configuration' and circuit/rate-limit fields are read (CallService.php mergeSourceConfiguration():835-856). An API key CAN be wired manually via the free-form 'headers' object with a Twig expression like {{ source.apikey }} (renderValue() context is ['source'=>$sourceData], CallService.php:318), but true HTTP Basic auth has no path: the call-Twig sandbox's allowedFilters (CallService.php:222) is only ['upper','lower','trim','default','escape','raw','replace'], no base64 filter, and nothing sets Guzzle's 'auth' tuple from username/password."
 			},
@@ -859,6 +860,7 @@
 			"integriq": "partial",
 			"built": {
 				"state": "building",
+				"change": "migrate-inline-secrets-to-broker",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Real ICrypto-at-rest encryption exists but only for specific bridge clients: lib/Service/Mtls/MtlsConfigResolver.php:83-165, lib/Service/Dso/DsoClient.php:81-184, lib/Service/StufZkn/StufZknClient.php, lib/Service/Fsc/FscDirectoryClient.php:89-183, lib/Service/Sms/RestNotifyNlProvider.php:65-177 all use OCP\\Security\\ICrypto to encrypt/decrypt their specific stored tokens/certs. For the general source, lib/Settings/integriq_register.json:185/195/205/210 explicitly document jwt/secret/password/apikey as 'Stored unencrypted at rest until field encryption ships' (ADR-007 pending), and register.d/99-source-secrets-writeonly.json's comment corrects an older claim that they were 'plaintext per ADR-007' as wrong."
 			},
@@ -1268,6 +1270,7 @@
 			"integriq": "partial",
 			"built": {
 				"state": "building",
+				"change": "gateway-endpoint-transform-and-plugins",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Incoming: lib/Service/EndpointService.php:1889-1892 handleSchemaRequest() applies endpointData['inputMapping'] via mappingService.executeMapping() to request parameters. Outgoing: no code path reads endpointData['outputMapping'] to transform a response, grep for [\\x27]outputMapping[\\x27] outside EndpointsController's isSimpleEndpoint() gate and ConfigurationService's export/import id<->slug translation returns nothing in EndpointService.php. A response CAN still be reshaped via a Rule of type 'mapping' run at timing='after' (processMappingRule/processMapping, EndpointService.php:3104-3141, applied to $data['body'] in dispatchAfterBeforeRules() around line 693-700), but that is the generic rule pipeline, not the dedicated outputMapping field."
 			},
@@ -1614,6 +1617,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "gateway-endpoint-transform-and-plugins",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:3905-3910 processJavaScriptRule() body: '// @todo: Here we need to implement the JavaScript execution logic. For now, just return the data unchanged.', a rule of type 'javascript' is a no-op stub. lib/Service/RuleService.php:191-212 processCustomRule() only recognises one hardcoded custom type, 'connectRelations' (processCustomConnectionsRule, line 410); any other value throws 'Unsupported custom rule type'."
 			},
@@ -2750,6 +2754,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "registry-backed-field-source",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Controller/PropertySourceController.php + appinfo/routes.php:520-523 (/api/property-sources/{provider}/suggest|resolve|resync) implement a full KVK/BRP/BAG live-lookup engine (lib/PropertySource/PropertySourceResolver.php), but grep of src/ for 'property-sources'/'propertySource' returns zero hits, no frontend page calls it. The only internal caller of PropertySourceResolver::resolve() is lib/Gateway/Adapter/WkpbGateway.php:99, and WkpbGateway itself is never instantiated anywhere (grep for 'WkpbGateway::class'/'new WkpbGateway' = 0 hits); lib/Gateway/GatewayCatalogue.php:117 lists 'wkpb' with claimLevel PLANNED, a descriptor, not a wired gateway."
 			},
@@ -2787,6 +2792,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "allowlisted-expression-sources",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Controller/ExpressionSourceController.php (index:87, add:112, remove:146) plus appinfo/routes.php:616-618 implement a full admin-only CRUD API for an environment-variable allowlist (lib/Expression/EnvironmentAllowlist.php, ExpressionValueSourceRegistry.php, EnvironmentValueSource.php). grep of src/ for 'expression-sources'/'EnvironmentAllowlist' returns zero hits (no admin settings page), and grep of lib/AppInfo/Application.php and lib/Listener/ for any wiring of ExpressionValueSourceRegistry into OpenRegister's expression evaluator also returns zero hits."
 			},
@@ -2911,9 +2917,9 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "synchronization.targetSourceMapping is declared in the schema and carried through configuration import/export (lib/Service/ConfigurationService.php:891-892, lib/Service/ConfigurationHandlers/SynchronizationHandler.php:159-162/280-283), but grep of lib/Service/SynchronizationService.php (the runtime engine) for 'targetSourceMapping' returns zero hits: nothing ever reads it to push a change back to the source. lib/Service/SynchronizationSemanticRefusals.php:95-97 states outright that 'the reverse (target->source) leg of a bidirectional sync has no decomposed steps.' The only real reverse-direction write found, NotuBizConnectorService::pushVergaderstuk() (lib/Service/NotuBizConnectorService.php:255-292), has zero callers anywhere in lib/."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): No competitor rates yes, no demand row, outside the core area (sources, gateway). Reversible. What exists: synchronization.targetSourceMapping is declared in the schema and carried through configuration import/export (lib/Service/ConfigurationService.php:891-892, lib/Service/ConfigurationHandlers/SynchronizationHandler.php:159-162/280-283), but grep of lib/Service/SynchronizationService.php (the runtime engine) for 'targetSourceMapping' returns zero hits: nothing ever reads it to push a change back to the source. lib/Service/SynchronizationSemanticRefusals.php:95-97 states outright that 'the reverse (target->source) leg of a bidirectional sync has no decomposed steps.' The only real reverse-direction write found, NotuBizConnectorService::pushVergaderstuk() (lib/Service/NotuBizConnectorService.php:255-292), has zero callers anywhere in lib/."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The overlay's own summary for synchronization-engine claims 'in both directions' (openspec/features.overlay.json), code reading contradicts that marketing claim for the generic Synchronization object. Live-check candidate: verify a target-side edit never reaches the source for any synchronization.",
@@ -3322,6 +3328,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "migration-source-adapters",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:536-538 migrationSources#index/preview/validateMapping; lib/Controller/MigrationSourcesController.php and adapters lib/Migration/Source/FileMigrationSource.php (real CSV parsing) and RedmineMigrationSource.php implement real logic. But grep -rn 'migration-sources|migrationSource' across src/ (case-insensitive) returns zero hits, and the synchronization editor's sourceType picker (src/views/Synchronization/syncDraft.js:48-52, TYPE_OPTIONS = api/register-schema/file, plus conditional nextcloud-table/nextcloud-form) offers no 'migration' option at all."
 			},
@@ -3865,6 +3872,7 @@
 			"integriq": "partial",
 			"built": {
 				"state": "building",
+				"change": "automation-endpoint-flow-trigger",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:120 endpoint rule type 'flow' triggers 'a real FlowRunnerService::run()'; src/views/Rule/ruleDraft.js:59-63: 'flow' also has a match arm but no authoring UI, so it is deliberately not offered in ACTION_TYPES (lines 65-81). Rules of that type are seeded only from configuration imports."
 			},
@@ -4056,9 +4064,9 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Command/SynchronizationToFlow.php, lib/Command/JobToFlow.php, lib/Command/RuleToFlow.php: all three occ commands render a generated flow document for review and explicitly 'WRITE NOTHING. It creates no flow, enables nothing' (see each file's docblock); none of the three has an --apply flag (`grep -n 'apply' lib/Command/{JobToFlow,RuleToFlow,SynchronizationToFlow}.php` = 0 hits)."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): No competitor rates yes, no demand row, outside the core area; the occ commands already render a flow for review. Reversible. What exists: lib/Command/SynchronizationToFlow.php, lib/Command/JobToFlow.php, lib/Command/RuleToFlow.php: all three occ commands render a generated flow document for review and explicitly 'WRITE NOTHING. It creates no flow, enables nothing' (see each file's docblock); none of the three has an --apply flag (`grep -n 'apply' lib/Command/{JobToFlow,RuleToFlow,SynchronizationToFlow}.php` = 0 hits)."
 			},
 			"reachedOn": "occ integriq:synchronization-to-flow / occ integriq:job-to-flow / occ integriq:rule-to-flow <id> (CLI only, no page)",
 			"note": "The generators (SynchronizationFlowGenerator, JobToFlowGenerator) produce a correct preview document, but there is no automatic conversion: nothing anywhere actually creates the migrated flow object, by CLI or UI.",
@@ -4220,6 +4228,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "signed-outbound-webhooks",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Subscriptions/SubscriptionSigningPolicy.php implements an 'unsigned with reason' policy (ATTEMPT_UNSIGNED constant, reason requirement at lines 105-141) with a full test suite (tests/Unit/Service/Subscriptions/SubscriptionSigningPolicyTest.php), but has ZERO production callers: `grep -rn SubscriptionSigningPolicy lib/ --include=*.php` outside its own file and the test only matches the class file itself, no controller or EventService reference. The Webhooks index columns (src/manifest.json:1999-2005: sink/protocol/style/status/updated) carry no signed/unsigned indicator."
 			},
@@ -4728,9 +4737,9 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/Call/PreCheckService.php:34-181 implements a blocking ask-before-acting call (allow/refuse/no-answer) but has ZERO callers: `grep -rln PreCheckService lib/ --include=*.php` outside its own file returns nothing. lib/Controller/VerdictController.php's verdict#inbound route (appinfo/routes.php:134) is an ASYNC, INBOUND webhook where an outside checker reports a verdict about an OBJECT independently, not a live gate on one specific outbound call. src/manifest.d/outbound-call-log.json Verdicts page (/verdicts) only lists these after-the-fact object verdicts."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): Single competitor yes (n8n), no demand row, outside the core area; PreCheckService stays dormant. Reversible. What exists: lib/Outbound/Call/PreCheckService.php:34-181 implements a blocking ask-before-acting call (allow/refuse/no-answer) but has ZERO callers: `grep -rln PreCheckService lib/ --include=*.php` outside its own file returns nothing. lib/Controller/VerdictController.php's verdict#inbound route (appinfo/routes.php:134) is an ASYNC, INBOUND webhook where an outside checker reports a verdict about an OBJECT independently, not a live gate on one specific outbound call. src/manifest.d/outbound-call-log.json Verdicts page (/verdicts) only lists these after-the-fact object verdicts."
 			},
 			"reachedOn": "nothing reaches it as a live gate; /verdicts shows unrelated after-the-fact object verdicts",
 			"note": "The hint's three pieces (Verdicts page, VerdictService, PreCheckService) do not connect: PreCheckService is the only piece that could hold a specific outbound call back before it went out, and it is never called from CallService or anywhere else. What is visible on the Verdicts page is a different thing: an outside system's async opinion about a record, unrelated to any one outbound call being blocked.",
@@ -5376,9 +5385,9 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/StUFBGService.php:101 handleNpsLv01(), :169 handleAdrLv01(), :223 parseNpsLa01Response() fully implement StUF-BG SOAP parsing, but `grep -rn StUFBGService lib/ appinfo/` finds zero callers anywhere outside the class itself; there is no route in appinfo/routes.php and no controller references it. Its only other reference is tests/Unit/Service/StUFBGServiceTest.php."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): No competitor rates yes, no demand row, outside the core area; persons and addresses are read through Haal Centraal BRP. Reversible. What exists: lib/Service/StUFBGService.php:101 handleNpsLv01(), :169 handleAdrLv01(), :223 parseNpsLa01Response() fully implement StUF-BG SOAP parsing, but `grep -rn StUFBGService lib/ appinfo/` finds zero callers anywhere outside the class itself; there is no route in appinfo/routes.php and no controller references it. Its only other reference is tests/Unit/Service/StUFBGServiceTest.php."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "A fully-implemented service with no route, no controller and no caller: code exists but the capability is not wired to anything.",
@@ -5958,6 +5967,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "statutory-gateways-and-frameworks",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Gateway/Adapter/{CorvGateway,GgkGateway,WkpbGateway}.php only implement id()/schemas() (metadata, no send/deliver method) and are referenced only by tests/Unit/Gateway/StatutoryGatewayAdapterTest.php, zero production callers; appinfo/routes.php:543-548 gateways#index/overview/exportOverview/testBinding/bridges/revokeBridge -> lib/Controller/GatewaysController.php, but a repo-wide search of src/ finds no page or component calling /api/gateways anywhere, and the only 'Gateway' string in src/manifest.json (line 217-218) is the unrelated ApiProducts 'Gateway' menu grouping."
 			},
@@ -5990,6 +6000,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "mapping-woo-index-field-mapping",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Gateway/Adapter/PublicationGateway.php:57 publish(), :80 validate() are real methods, but `grep -rln PublicationGateway lib/ tests/` shows the only caller anywhere is tests/Unit/Gateway/StatutoryGatewayAdapterTest.php; no route, background job or listener invokes it."
 			},
@@ -6091,6 +6102,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Auth/Idp/GovernmentIdpAdapterInterface.php:60 beginAuthentication(), :75 readAssertion(), `grep -rln beginAuthentication lib/` shows no caller anywhere except lib/AppInfo/Application.php's DI binding. lib/Auth/Idp/LogGovernmentIdpAdapter.php:43 is the only class implementing the interface (spec: openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-dormant-seam-adapters-ship-config-flag-gated-and-inert). No route in appinfo/routes.php starts or completes a DigiD authentication; the only related route is idpBroker#exchange (line 333), which only redeems a code, see id-envelope for why that never succeeds either."
 			},
@@ -6126,6 +6138,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Same GovernmentIdpAdapterInterface as id-digid; lib/Auth/Idp/TrustLevelMapper.php:73 const PROVIDER_EHERKENNING exists and maps trust levels, but the adapter it would classify is never invoked (LogGovernmentIdpAdapter is the only implementation, called from nowhere but DI)."
 			},
@@ -6160,9 +6173,9 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Same GovernmentIdpAdapterInterface as id-digid/id-eherkenning; lib/Auth/Idp/TrustLevelMapper.php:80 const PROVIDER_EIDAS exists, but the adapter is never invoked."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): No competitor rates yes, no demand row, outside the core area; the broker change covers DigiD and eHerkenning only. Reversible. What exists: Same GovernmentIdpAdapterInterface as id-digid/id-eherkenning; lib/Auth/Idp/TrustLevelMapper.php:80 const PROVIDER_EIDAS exists, but the adapter is never invoked."
 			},
 			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete an eIDAS authentication",
 			"note": "Same dormant/unwired seam as id-digid.",
@@ -6193,6 +6206,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Auth/Idp/EnvelopeExchangeService.php:67 issueCode() has zero callers anywhere in lib/ (`grep -rln issueCode lib/` only matches its own declaration); lib/Auth/Idp/SubjectPseudonymService.php:74 fromPolymorphic(), :108 pseudonymFor() are also never called outside their own file. Only :96 redeemCode() is reachable, via appinfo/routes.php:372 idpBroker#exchange -> lib/Controller/IdpBrokerController.php:84 exchange()."
 			},

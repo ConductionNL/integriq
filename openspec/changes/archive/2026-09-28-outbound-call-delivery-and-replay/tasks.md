@@ -51,7 +51,7 @@ for the shared replay and retention rules.
 
 ### Task 8: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, this change's row in `competitor-parity-2026-09`
-- [ ] Tell dossiq that `lib/BackgroundJob/StufRetryJob.php` becomes a caller of the policy rather than a policy of its own
-- [ ] Tell dossiq how to filter the call log to one case, and that a verdict and a pre-check answer are facts, not acts
+- [x] Tell dossiq that `lib/BackgroundJob/StufRetryJob.php` becomes a caller of the policy rather than a policy of its own (ConductionNL/dossiq#3186)
+- [x] Tell dossiq how to filter the call log to one case, and that a verdict and a pre-check answer are facts, not acts (ConductionNL/dossiq#3186)
 - [x] Record C-integrations-6 as answered by `synchronization-engine` and C-integrations-32 as belonging to the Nextcloud platform programme under D9
 - [x] Test (`tests/e2e/outbound-call-log.spec.ts`, `tests/e2e/outbound-call-retry-policy.spec.ts`, `openspec validate outbound-call-delivery-and-replay --type change --strict`)
