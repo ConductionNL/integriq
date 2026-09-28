@@ -270,7 +270,9 @@ final class RodPersonalNumberLeakTest extends TestCase {
 				$this->createMock(IAppConfig::class),
 				$this->createMock(LoggerInterface::class),
 				$this->createMock(SwvHandoffClient::class)
-			)
+			),
+			$this->createMock(\OCP\EventDispatcher\IEventDispatcher::class),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$outcome = $dispatcher->dispatch(

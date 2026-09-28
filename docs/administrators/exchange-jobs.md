@@ -24,6 +24,15 @@ Nothing is sent in any of those cases.
 Integriq never stores the records it sends. They go straight from the owning app to the
 adapter.
 
+## Imports
+
+Three imports come back to the owning app: LVS results, OSO dossiers and migration files.
+Integriq translates the received records and hands them to the app. The app answers how many it
+took and which it rejected, and why. Each rejected record becomes a dead letter.
+
+If the app does not answer, the job fails with `no-owner-answer`. Update the app, then request
+the import again.
+
 ## Give people access
 
 Three actions control the exchange screens. Change them in Admin settings > Integriq > Action
@@ -46,3 +55,5 @@ panel for administrators only, set `exchange.read` back to `admin` after the upg
 The interface, including the events an app raises and answers and the read endpoints under
 `/api/exchange/`, is in
 `openspec/changes/learniq-exchange-jobs-native/contract.md`.
+The import hand-off event, `ExchangeRecordsReceivedEvent`, is described in
+`openspec/changes/exchange-import-landing/design.md`.

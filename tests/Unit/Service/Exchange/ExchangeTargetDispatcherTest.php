@@ -92,7 +92,15 @@ class ExchangeTargetDispatcherTest extends TestCase {
 			$this->swvClient
 		);
 
-		$this->dispatcher = new ExchangeTargetDispatcher($this->rod, $this->verzuimloket, $this->oso, $this->uwlr, $swv);
+		$this->dispatcher = new ExchangeTargetDispatcher(
+			$this->rod,
+			$this->verzuimloket,
+			$this->oso,
+			$this->uwlr,
+			$swv,
+			$this->createMock(\OCP\EventDispatcher\IEventDispatcher::class),
+			$this->createMock(LoggerInterface::class)
+		);
 
 	}//end setUp()
 
@@ -234,15 +242,22 @@ class ExchangeTargetDispatcherTest extends TestCase {
 	}//end testAnSwvHandOffNeedsAReceiver()
 
 	/**
-	 * A target without an adapter, and an import direction, have no handler.
+	 * A target without an adapter has no handler; the three landed imports do.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-001-an-import-job-hands-its-records-to-the-owning-app
 	 */
 	public function testATargetWithoutAnAdapter(): void {
 		$this->assertFalse($this->dispatcher->supports('surfconext', 'sync'));
-		$this->assertFalse($this->dispatcher->supports('oso', 'import'));
+		$this->assertFalse($this->dispatcher->supports('uwlr', 'import'));
+		$this->assertSame('no-handler', $this->dispatcher->dispatch('j', 'hr', 'import', [], [])['refusal']);
+		foreach (['lvs-results', 'oso', 'migration-import'] as $target) {
+			$this->assertTrue($this->dispatcher->supports($target, 'import'), $target);
+		}
+
+		$this->assertSame(['export', 'import'], $this->dispatcher->handledDirections('oso'));
 		$this->assertTrue($this->dispatcher->supports('oso', 'export'));
-		$this->assertSame('no-handler', $this->dispatcher->dispatch('j', 'lvs-results', 'import', [], [])['refusal']);
 
 	}//end testATargetWithoutAnAdapter()
 }//end class

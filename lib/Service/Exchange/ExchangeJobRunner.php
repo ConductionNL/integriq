@@ -184,17 +184,20 @@ class ExchangeJobRunner {
 			target: $target,
 			direction: (string)$data['exchangeDirection'],
 			scope: $scope,
-			records: $mapped
+			records: $mapped,
+			ownerApp: (string)($data['ownerApp'] ?? ''),
+			ownerRef: (string)($data['ownerRef'] ?? '')
 		);
 		if ($outcome['refusal'] !== null) {
-			return $this->fail(job: $job, data: $data, code: $outcome['refusal'], detail: 'The target cannot run this job.');
+			return $this->fail(job: $job, data: $data, code: $outcome['refusal'], detail: $this->refusalDetail(code: $outcome['refusal']));
 		}
 
 		$rejected = array_merge($rejected, $outcome['rejected']);
 		$this->storeRejections(jobId: $jobId, target: $target, data: $data, rejected: $rejected);
 
 		$processed = count($records);
-		$accepted = count($outcome['accepted']);
+		// A landed import answers with a count; an export lists the accepted ids.
+		$accepted = ($outcome['acceptedCount'] ?? count($outcome['accepted']));
 		$status = ExchangeJobService::STATUS_PARTIAL;
 		if ($accepted === $processed) {
 			$status = ExchangeJobService::STATUS_SUCCEEDED;
@@ -211,6 +214,24 @@ class ExchangeJobRunner {
 		);
 
 	}//end dispatchRecords()
+
+	/**
+	 * The job error detail for a job-wide refusal.
+	 *
+	 * @param string $code The refusal code.
+	 *
+	 * @return string The detail.
+	 *
+	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-003-an-unanswered-import-ends-with-no-owner-answer
+	 */
+	private function refusalDetail(string $code): string {
+		if ($code === ExchangeTargetDispatcher::CODE_NO_OWNER_ANSWER) {
+			return 'The owning app did not take the received records.';
+		}
+
+		return 'The target cannot run this job.';
+
+	}//end refusalDetail()
 
 	/**
 	 * Keep only the records a resubmission asks for.
