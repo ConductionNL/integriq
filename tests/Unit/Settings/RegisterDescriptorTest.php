@@ -89,7 +89,7 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 49 — `rod_message` added by openspec/changes/integriq-adapter-rod,
 	 * bringing the count to 50.
 	 *
-	 * Was 50 — `verzuim_message` added by openspec/changes/integriq-adapter-verzuimloket,
+	 * Was 50 — `verzuim_message` added by openspec/changes/archive/2026-09-28-integriq-adapter-verzuimloket,
 	 * bringing the count to 51.
 	 *
 	 * Was 51 — `oso_message` added by openspec/changes/integriq-adapter-oso,

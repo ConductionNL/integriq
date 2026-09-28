@@ -29,7 +29,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 /**
  * meldingType + field payload -> Edukoppeling XML envelope.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
  */
 class VerzuimloketEnvelopeTranslator {
 
@@ -112,7 +112,7 @@ class VerzuimloketEnvelopeTranslator {
 	 *                                          missing/empty, or the rendered envelope still carries an
 	 *                                          unresolved template marker.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-a-complete-eerste-melding-translates-to-a-valid-envelope
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-a-complete-eerste-melding-translates-to-a-valid-envelope
 	 */
 	public function translate(string $meldingType, string $kenmerk, array $payload): string {
 		if (isset(self::REQUIRED_FIELDS[$meldingType]) === false) {
@@ -171,7 +171,7 @@ class VerzuimloketEnvelopeTranslator {
 	 *
 	 * @throws VerzuimloketTranslationException Naming the first missing/empty required field found.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
 	 */
 	private function assertRequiredFieldsPresent(array $payload, string $meldingType): void {
 		foreach (self::REQUIRED_FIELDS[$meldingType] as $field) {

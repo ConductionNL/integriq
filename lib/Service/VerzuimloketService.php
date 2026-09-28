@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
 class VerzuimloketService {
 
@@ -120,7 +120,7 @@ class VerzuimloketService {
 	 * @throws VerzuimloketTranslationException When a required field is missing/empty.
 	 * @throws VerzuimloketProviderException When no active source is configured, or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
 	 */
 	public function sendMelding(string $meldingType, string $kenmerk, array $payload): array {
 		$source = $this->resolveActiveSource();
@@ -183,7 +183,7 @@ class VerzuimloketService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	public function receiveReturn(string $rawXml): void {
 		try {
@@ -261,7 +261,7 @@ class VerzuimloketService {
 	 *
 	 * @return integer The number of rows successfully retried.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
 	 */
 	public function retryFailed(): int {
 		$matches = $this->objectService->findAll(
@@ -341,7 +341,7 @@ class VerzuimloketService {
 	 *
 	 * @return array<string, mixed> The record without null values.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
 	 */
 	private static function withoutNulls(array $record): array {
 		return array_filter($record, static fn ($value): bool => $value !== null);
@@ -354,7 +354,7 @@ class VerzuimloketService {
 	 *
 	 * @throws VerzuimloketProviderException When no active Verzuimloket source is configured.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	public function resolveActiveSource(): ObjectEntity {
 		$matches = $this->objectService->findAll(

@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
 class VerzuimloketController extends Controller {
 	/**
@@ -89,7 +89,7 @@ class VerzuimloketController extends Controller {
 	 *
 	 * @return JSONResponse `{ref, meldingType, status}` on success, or a 400/503/502 error envelope.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -146,7 +146,7 @@ class VerzuimloketController extends Controller {
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]

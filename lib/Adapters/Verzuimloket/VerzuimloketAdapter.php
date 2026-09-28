@@ -33,7 +33,7 @@ namespace OCA\Integriq\Adapters\Verzuimloket;
 /**
  * Catalogue descriptor for the DUO Verzuimloket adapter (ADR-017 Rule 1).
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  *
  * @SuppressWarnings(PHPMD.ShortMethodName)
  */
@@ -65,7 +65,7 @@ final class VerzuimloketAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md
 	 */
 	public function id(): string {
 		return self::ID;
@@ -76,7 +76,7 @@ final class VerzuimloketAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md
 	 */
 	public function label(): string {
 		return 'DUO Verzuimloket';
@@ -87,7 +87,7 @@ final class VerzuimloketAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md
 	 */
 	public function category(): string {
 		return 'government';
@@ -98,7 +98,7 @@ final class VerzuimloketAdapter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md
 	 */
 	public function addsTopLevelMenu(): bool {
 		return false;
@@ -109,7 +109,7 @@ final class VerzuimloketAdapter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md
 	 */
 	public function addsManagementRoute(): bool {
 		return false;
@@ -120,7 +120,7 @@ final class VerzuimloketAdapter {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function providers(): array {
 		return [self::PROVIDER_LOG, self::PROVIDER_EDUKOPPELING];
@@ -131,7 +131,7 @@ final class VerzuimloketAdapter {
 	 *
 	 * @return array<string, mixed> A JSON-schema fragment.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function configSchema(): array {
 		return [

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/tasks.md
+ * @spec openspec/changes/archive/2026-09-28-integriq-adapter-verzuimloket/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -26,7 +26,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the sandbox Verzuimloket provider.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
  */
 class LogVerzuimloketProviderTest extends TestCase {
 
@@ -73,7 +73,7 @@ class LogVerzuimloketProviderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
 	 */
 	public function testSendReturnsSyntheticRef(): void {
 		$ref = $this->provider->send([], 'eerste-melding', 'kenmerk-1', '<VerzuimloketMelding/>');

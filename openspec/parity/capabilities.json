@@ -8236,14 +8236,15 @@
 			"area": "connectors",
 			"name": "Report persistent absence onward to the authority.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniwE 'verzuim|absence|absent|DUO|leerplicht|BRON' lib src configurations = 0 relevant hits (only 'absent' in docblocks about missing apps, e.g. lib/Capabilities.php:10). Covered by openspec/changes/integriq-adapter-verzuimloket/ (17 of 17 tasks ticked; OpenSpec pass 2026-09-27): The DUO Verzuimloket adapter landed dormant on 2026-09-27 (#2181), after the matrix was read; matrix corrected to building."
+				"change": "2026-09-28-integriq-adapter-verzuimloket",
+				"evidence": "lib/Service/Exchange/ExchangeTargetDispatcher.php:315 calls lib/Service/VerzuimloketService.php:125 sendMelding(), which translates the melding, sends it through the log or Edukoppeling provider and keeps a verzuim_message record the register accepts (tests/Unit/Service/VerzuimloketServiceTest.php validates every record kind against the merged schema with opis); appinfo/routes.php verzuimloket#berichten and #retour; appinfo/info.xml VerzuimloketRetryJob. Ships dormant: the live Edukoppeling transport waits on a DUO certificate. Built by change integriq-adapter-verzuimloket (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "There is no DUO or verzuimregister target template; only the generic outbound sync (see con-push-register) could be configured for it by hand.",
+			"reachedOn": "learniq leerplicht DataExchangeJob through the exchange target dispatcher, and POST /api/verzuimloket/berichten; DUO retour at POST /api/verzuimloket/retour; hourly VerzuimloketRetryJob",
+			"note": "There is no DUO or verzuimregister target template; only the generic outbound sync (see con-push-register) could be configured for it by hand. Built 2026-09-28; the build-all pass found every audit record refused by the register (nulls in string properties) and fixed it. Rated partial until the Edukoppeling transport has a DUO certificate; the code path is complete.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",

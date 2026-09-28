@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/tasks.md
+ * @spec openspec/changes/archive/2026-09-28-integriq-adapter-verzuimloket/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -46,7 +46,7 @@ use ReflectionMethod;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
 class VerzuimloketServiceTest extends TestCase {
 

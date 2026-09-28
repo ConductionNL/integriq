@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/tasks.md
+ * @spec openspec/changes/archive/2026-09-28-integriq-adapter-verzuimloket/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -30,7 +30,7 @@ use RuntimeException;
 /**
  * Tests for the scheduled Verzuimloket outbound retry background job.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
  */
 class VerzuimloketRetryJobTest extends TestCase {
 

@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Exception;
 /**
  * Thrown on any Verzuimloket provider/transport or configuration failure.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
 class VerzuimloketProviderException extends Exception {
 }//end class
