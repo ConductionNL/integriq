@@ -141,7 +141,7 @@ class LtiAgsServiceTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturnCallback(fn () => new ArrayCache());
 
-		$keyService = new LtiKeyService($this->createMock(\OCA\OpenRegister\Service\ObjectService::class), new NullLogger());
+		$keyService = new LtiKeyService($this->createMock(\OCA\OpenRegister\Service\ObjectService::class), new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 
 		return new LtiLaunchService($resolver, $this->makeAuthorizationService(), $jwksResolver, $keyService, $cacheFactory, new NullLogger());
 	}//end makeLaunchService()
@@ -195,7 +195,7 @@ class LtiAgsServiceTest extends TestCase {
 		return new LtiAgsService(
 			$fixtures['resolver'],
 			$this->makeLaunchService($fixtures['resolver']),
-			new LtiKeyService($this->createMock(\OCA\OpenRegister\Service\ObjectService::class), new NullLogger()),
+			new LtiKeyService($this->createMock(\OCA\OpenRegister\Service\ObjectService::class), new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto()),
 			($authenticationService ?? $this->createMock(AuthenticationService::class)),
 			($callService ?? $this->createMock(CallService::class)),
 			($eventService ?? $this->createMock(EventService::class)),
@@ -450,7 +450,7 @@ class LtiAgsServiceTest extends TestCase {
 				return $entity;
 			}
 		);
-		$keyService = new LtiKeyService($objectService, new NullLogger());
+		$keyService = new LtiKeyService($objectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$keyService->generateKey('lti_platform', 'plat-1');
 
 		$capturedConfig = null;
@@ -529,7 +529,7 @@ class LtiAgsServiceTest extends TestCase {
 				return $entity;
 			}
 		);
-		$keyService = new LtiKeyService($objectService, new NullLogger());
+		$keyService = new LtiKeyService($objectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$keyService->generateKey('lti_platform', 'plat-1');
 
 		$authenticationService = $this->createMock(AuthenticationService::class);
