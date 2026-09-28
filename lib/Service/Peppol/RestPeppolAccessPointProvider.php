@@ -94,7 +94,7 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
 	 * @param array $sourceConfiguration The Peppol source's `configuration` object (`baseUrl`, `authentication.credentialRef`).
 	 * @param string $recipientPeppolId The recipient participant identifier, `scheme:identifier`.
 	 * @param string $documentType The UBL document type slug.
-	 * @param string $payload The UBL payload (or a reference to it).
+	 * @param string $payload The UBL document itself (XML).
 	 *
 	 * @return string The Access Point-assigned transmission id.
 	 *

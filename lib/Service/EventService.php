@@ -2658,7 +2658,12 @@ class EventService {
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
-			schema: 'event'
+			schema: 'event',
+			// System context: the `event` schema lets only administrators create
+			// an event through the object API (integriq#2224), and this is
+			// integriq's own write.
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		return $this->processEvent(event: $event);
@@ -2718,7 +2723,12 @@ class EventService {
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
-			schema: 'event'
+			schema: 'event',
+			// System context: the `event` schema lets only administrators create
+			// an event through the object API (integriq#2224), and this is
+			// integriq's own write.
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$messages = $this->processEvent(event: $event);
@@ -2769,7 +2779,12 @@ class EventService {
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
-			schema: 'event'
+			schema: 'event',
+			// System context: the `event` schema lets only administrators create
+			// an event through the object API (integriq#2224), and this is
+			// integriq's own write.
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		return $this->processEvent(event: $event);
@@ -2807,7 +2822,12 @@ class EventService {
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
-			schema: 'event'
+			schema: 'event',
+			// System context: the `event` schema lets only administrators create
+			// an event through the object API (integriq#2224), and this is
+			// integriq's own write.
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		return $this->processEvent(event: $event);
@@ -2851,7 +2871,12 @@ class EventService {
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
-			schema: 'event'
+			schema: 'event',
+			// System context: the `event` schema lets only administrators create
+			// an event through the object API (integriq#2224), and this is
+			// integriq's own write.
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		return $this->processEvent(event: $event);
@@ -2889,7 +2914,12 @@ class EventService {
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
 			register: 'integriq',
-			schema: 'event'
+			schema: 'event',
+			// System context: the `event` schema lets only administrators create
+			// an event through the object API (integriq#2224), and this is
+			// integriq's own write.
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		return $this->processEvent(event: $event);

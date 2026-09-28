@@ -59,7 +59,7 @@ interface PeppolAccessPointProviderInterface {
 	 * @param array $sourceConfiguration The Peppol source's `configuration` object.
 	 * @param string $recipientPeppolId The recipient participant identifier, `scheme:identifier`.
 	 * @param string $documentType The UBL document type slug (e.g. `ubl-invoice-2.1`).
-	 * @param string $payload The UBL payload (or a reference to it — see PeppolTransmissionService).
+	 * @param string $payload The UBL document itself (XML), read by PeppolTransmissionService from `payloadFileUri`.
 	 *
 	 * @return string The Access Point-assigned transmission id.
 	 *
