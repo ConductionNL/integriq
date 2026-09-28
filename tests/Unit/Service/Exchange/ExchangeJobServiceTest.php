@@ -149,6 +149,39 @@ class ExchangeJobServiceTest extends TestCase {
 	}//end testAnAppAsksIntegriqToCarryARodExport()
 
 	/**
+	 * A learniq ROD job without a mapping gets the row its berichtsoort needs,
+	 * an explicit slug wins, and another owner gets no default.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-default-mapping-for-a-schooladvies-job
+	 */
+	public function testARodJobWithoutAMappingGetsTheDefaultRow(): void {
+		$cases = [
+			['learniq', ['berichtsoort' => 'schooladvies'], null, 'learniq-bron-rod-export-schooladvies'],
+			['learniq', ['berichtsoort' => 'inschrijving'], null, 'learniq-bron-rod-export-learner'],
+			['learniq', [], null, 'learniq-bron-rod-export-learner'],
+			['learniq', ['berichtsoort' => 'schooladvies'], 'learniq-bron-rod-export-learner', 'learniq-bron-rod-export-learner'],
+			['dossiq', ['berichtsoort' => 'schooladvies'], null, null],
+		];
+		$this->rows['mapping'] = [$this->entity('m-1', ['slug' => 'learniq-bron-rod-export-learner'])];
+		foreach ($cases as $index => [$owner, $scope, $slug, $expected]) {
+			$event = new ExchangeJobRequestedEvent(
+				ownerApp: $owner,
+				target: 'bron-rod',
+				direction: 'export',
+				scope: $scope,
+				mappingSlug: $slug
+			);
+			$this->service->handleRequest(event: $event);
+
+			$job = $this->saved[$index]['object'];
+			$this->assertSame($expected, ($job['exchangeMapping'] ?? null), 'case '.$index);
+		}
+
+	}//end testARodJobWithoutAMappingGetsTheDefaultRow()
+
+	/**
 	 * An unknown target is refused and nothing is written.
 	 *
 	 * @return void

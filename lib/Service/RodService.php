@@ -39,6 +39,7 @@ use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
 use OCA\Integriq\Service\Rod\RodAcknowledgementTranslator;
 use OCA\Integriq\Service\Rod\RodEnvelopeTranslator;
+use OCA\Integriq\Service\Rod\RodPersonalNumberRedactor;
 use OCA\Integriq\Service\Rod\RodProviderRegistry;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -96,6 +97,7 @@ class RodService {
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
+	 * @param RodPersonalNumberRedactor $redactor Removes a persoonsgebonden nummer from messages.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -106,6 +108,7 @@ class RodService {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
+		private readonly RodPersonalNumberRedactor $redactor = new RodPersonalNumberRedactor(),
 	) {
 
 	}//end __construct()
@@ -135,6 +138,7 @@ class RodService {
 		// Translation failures never reach the transport and never get an
 		// audit record — no envelope exists yet to key one on (REQ-002).
 		$envelopeXml = $this->envelopeTranslator->translate(berichtsoort: $berichtsoort, kenmerk: $kenmerk, payload: $payload);
+		$number = $this->envelopeTranslator->personalNumber(payload: $payload)['value'];
 
 		$status = 'sent';
 		$error = null;
@@ -147,8 +151,10 @@ class RodService {
 				envelopeXml: $envelopeXml
 			);
 		} catch (RodProviderException $exception) {
+			// A provider or transport message can echo the request; the number
+			// must not reach the stored error, the log or the thrown message.
 			$status = 'failed';
-			$error = $exception->getMessage();
+			$error = $this->redactor->redact(text: $exception->getMessage(), number: $number);
 		}
 
 		$record = [
@@ -163,9 +169,9 @@ class RodService {
 			'syncedAt' => (new DateTime())->format('c'),
 		];
 
-		if (isset($payload['bsn']) === true) {
-			$record['bsnHash'] = hash('sha256', (string)$payload['bsn']);
-		}
+		// `bsnHash` keeps its name; it hashes the persoonsgebonden nummer of
+		// either type (burgerservicenummer or onderwijsnummer), never the raw value.
+		$record['bsnHash'] = hash('sha256', $number);
 
 		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
 
@@ -198,7 +204,7 @@ class RodService {
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				$this->l->t('ROD retour could not be translated; dropped'),
-				['exception' => $exception->getMessage()]
+				['exception' => $this->redactor->redact(text: $exception->getMessage())]
 			);
 			return;
 		}
@@ -289,7 +295,7 @@ class RodService {
 			} catch (Throwable $exception) {
 				$this->logger->warning(
 					$this->l->t('ROD retry failed for one message; skipped, sweep continues'),
-					['ref' => ($data['ref'] ?? null), 'exception' => $exception->getMessage()]
+					['ref' => ($data['ref'] ?? null), 'exception' => $this->redactor->redact(text: $exception->getMessage())]
 				);
 			}
 		}//end foreach

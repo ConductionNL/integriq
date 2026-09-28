@@ -24,9 +24,9 @@ use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogue;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Guards the job and dead letter tags and the 28 mapping seed rows.
+ * Guards the job and dead letter tags and the mapping seed rows.
  *
- * The 23 learniq slugs are a contract with learniq's change
+ * The learniq slugs are a contract with learniq's change
  * data-exchange-to-integriq: renaming one silently breaks that app's jobs.
  */
 class LearniqExchangeJobsFragmentTest extends TestCase {
@@ -60,6 +60,7 @@ class LearniqExchangeJobsFragmentTest extends TestCase {
 		'learniq-migration-import-esis',
 		'learniq-migration-import-magister',
 		'learniq-migration-import-somtoday',
+		'learniq-bron-rod-export-schooladvies',
 	];
 
 	/**
@@ -152,18 +153,46 @@ class LearniqExchangeJobsFragmentTest extends TestCase {
 	}//end testEveryLearniqMappingIsSeeded()
 
 	/**
-	 * The ROD mapping never reads the encrypted BSN, and renames onto DUO's fields.
+	 * The ROD learner mapping carries the persoonsgebonden nummer and its type,
+	 * never the ECK iD as a BSN, and never the encrypted BSN.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-the-learner-mapping-maps-the-number-not-the-eck-id
 	 */
 	public function testTheRodMappingNeverReadsTheEncryptedBsn(): void {
-		$rules = $this->objectsBySlug()['learniq-bron-rod-export-learner']['mapping'];
+		$row   = $this->objectsBySlug()['learniq-bron-rod-export-learner'];
+		$rules = $row['mapping'];
 
 		$this->assertSame('givenName', $rules['voornamen']);
-		$this->assertSame('eckId', $rules['bsn']);
+		$this->assertSame('persoonsgebondenNummer', $rules['persoonsgebondenNummer']);
+		$this->assertSame('persoonsgebondenNummerType', $rules['persoonsgebondenNummerType']);
+		$this->assertSame('eckId', $rules['eckId']);
+		$this->assertArrayNotHasKey('bsn', $rules);
 		$this->assertStringNotContainsString('bsnEncrypted', (string)json_encode($rules));
+		$this->assertSame('1.1.0', $row['version'], 'a changed seed row needs a version bump to re-import');
 
 	}//end testTheRodMappingNeverReadsTheEncryptedBsn()
+
+	/**
+	 * The ROD school advice mapping maps every AanleverenAdviesVO key onto itself.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-002-the-school-advice-is-sent-as-aanleverenadviesvo_request
+	 */
+	public function testTheRodSchoolAdviceMappingIsSeeded(): void {
+		$rules = $this->objectsBySlug()['learniq-bron-rod-export-schooladvies']['mapping'];
+
+		$keys = [
+			'persoonsgebondenNummer', 'persoonsgebondenNummerType', 'adviesvolgnummer', 'onderwijsaanbieder',
+			'onderwijslocatie', 'vestigingscode', 'adviesjaar', 'advies1', 'advies1Datum', 'advies2', 'advies2Datum',
+		];
+		foreach ($keys as $key) {
+			$this->assertSame($key, $rules[$key] ?? null, $key);
+		}
+
+	}//end testTheRodSchoolAdviceMappingIsSeeded()
 
 	/**
 	 * The vocabulary rows exist: the status translation and four code catalogues.
@@ -183,7 +212,8 @@ class LearniqExchangeJobsFragmentTest extends TestCase {
 
 		$this->assertSame('blocking', $rows['learniq-exchange-error-codes-bron-rod']['mapping']['BRON-102']['severity']);
 		$this->assertArrayHasKey('gate-app-absent', $rows['learniq-exchange-error-codes-integriq']['mapping']);
-		$this->assertCount(28, $rows);
+		// A floor: other changes append rows.
+		$this->assertGreaterThanOrEqual(29, count($rows));
 
 	}//end testTheVocabularyRowsAreSeeded()
 
