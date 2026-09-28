@@ -76,6 +76,7 @@
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatingEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectDeletingEvent"/>
                 <!-- registry-subscription-connector: OpenRegister dispatches this
                      from RegistrySubscriptionNotifier and this app listens for it
                      lazily through addServiceListener, so the class is touched only
