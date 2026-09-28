@@ -10,16 +10,16 @@ Kind: code. Size S. Half for decidiq `min-12` (matrix row `integriq:con-translat
 - **acceptance_criteria**:
   - GIVEN an enabled `deepl-translation` source WHEN `translate('Goedemorgen', 'nl', 'en')` runs THEN the service posts `{"text":["Goedemorgen"],"source_lang":"NL","target_lang":"EN"}` to `/translate` and returns the text DeepL answered
   - GIVEN an enabled `libretranslate` source WHEN the same call runs THEN it posts `q`, `source`, `target` and returns `translatedText`
-- [ ] Implement
-- [ ] Test (PHPUnit with the real `CallLog` entity as the call result)
+- [x] Implement
+- [x] Test (PHPUnit with the real `CallLog` entity as the call result)
 
 ### Task 2: No source, no fake answer
 - **spec_ref**: `openspec/changes/connectors-translation-service/specs/translation-service/spec.md#requirement-an-unconfigured-instance-says-so-req-trl-002`
 - **files**: `lib/Service/TranslationService.php`
 - **acceptance_criteria**:
   - GIVEN no enabled translation source WHEN `translate()` runs THEN `TranslationUnavailableException` is thrown and no call is made
-- [ ] Implement
-- [ ] Test (PHPUnit)
+- [x] Implement
+- [x] Test (PHPUnit)
 
 ### Task 3: Source templates
 - **spec_ref**: `openspec/changes/connectors-translation-service/specs/translation-service/spec.md#requirement-translation-providers-are-source-templates-req-trl-003`
