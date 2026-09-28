@@ -253,6 +253,10 @@
 			     install has no stored jobs and it is a no-op there. -->
 			<step>OCA\Integriq\Repair\MigrateStoredJobClasses</step>
 			<step>OCA\Integriq\Repair\InitializeActions</step>
+			<!-- D33: broadens exchange.read only on an instance that still has the
+			     untouched ["admin"] default. AFTER InitializeActions, so a fresh install
+			     is seeded first and this step then has nothing to do. Never throws. -->
+			<step>OCA\Integriq\Repair\BroadenExchangeReadDefault</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\FlagSourceSecretsWriteOnly</step>
 			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
@@ -432,6 +436,10 @@
 			     steps. -->
 			<step>OCA\Integriq\Repair\MigrateStoredJobClasses</step>
 			<step>OCA\Integriq\Repair\InitializeActions</step>
+			<!-- D33: broadens exchange.read only on an instance that still has the
+			     untouched ["admin"] default. AFTER InitializeActions, so a fresh install
+			     is seeded first and this step then has nothing to do. Never throws. -->
+			<step>OCA\Integriq\Repair\BroadenExchangeReadDefault</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
 			<!-- connection-registry D5: every enabled app's
