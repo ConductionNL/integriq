@@ -24,6 +24,7 @@ use Exception;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -67,6 +68,22 @@ class EventsController extends Controller {
 	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
 	 */
 	private const NC_NATIVE_DOMAINS = ['files', 'calendar', 'tables', 'forms'];
+
+	/**
+	 * The webhook signing secrets under `protocolSettings`, masked as `**********`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SIGNING_SECRET_KEYS = ['signingSecret', 'previousSigningSecret'];
+
+	/**
+	 * Keys under `protocolSettings` whose name looks secret but whose value is not.
+	 *
+	 * `secretRotatedAt` is the rotation timestamp that starts the grace window.
+	 *
+	 * @var array<int, string>
+	 */
+	private const NON_SECRET_SETTING_KEYS = ['secretRotatedAt'];
 
 	/**
 	 * Constructor for the EventsController.
@@ -589,26 +606,59 @@ class EventsController extends Controller {
 	}//end requireNextcloudEventFamilyActions()
 
 	/**
-	 * Redact signing secret material from a subscription object for any read.
+	 * Redact every secret in a subscription's `protocolSettings` for any read.
+	 *
+	 * `protocolSettings` is `writeOnly` on the `event_subscription` schema
+	 * (`register.d/99-event-subscription-secrets-writeonly.json`), but these
+	 * endpoints serve the entity's stored array, so this method is what keeps
+	 * the write-only contract on them. The signing secrets keep their
+	 * `**********` marker (the signing modal tests for its presence). Every other
+	 * secret-shaped key under `protocolSettings`, at any depth, is masked through
+	 * {@see SensitiveFieldRegistry}: a broker `password` or `token` under
+	 * `protocolSettings.broker` (read by the RabbitMQ and Kafka REST transports)
+	 * and an `Authorization` header under `protocolSettings.headers` (integriq#2211).
+	 * A `credentialRef` and the non-secret connection settings are left as they
+	 * are, so the form can still show the connection and that a secret is stored.
 	 *
 	 * @param array $subscription The subscription object array.
 	 *
 	 * @return array The same array with secret fields replaced by a marker.
 	 *
 	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 	 */
 	private function redactSubscription(array $subscription): array {
 		if (isset($subscription['protocolSettings']) === false || is_array($subscription['protocolSettings']) === false) {
 			return $subscription;
 		}
 
-		foreach (['signingSecret', 'previousSigningSecret'] as $key) {
-			if (isset($subscription['protocolSettings'][$key]) === true
-				&& $subscription['protocolSettings'][$key] !== ''
-			) {
-				$subscription['protocolSettings'][$key] = '**********';
+		$settings = $subscription['protocolSettings'];
+		$registry = new SensitiveFieldRegistry();
+
+		foreach ($settings as $key => $value) {
+			if (in_array($key, self::SIGNING_SECRET_KEYS, true) === true) {
+				if ($value !== null && $value !== '') {
+					$settings[$key] = '**********';
+				}
+
+				continue;
 			}
-		}
+
+			if (in_array($key, self::NON_SECRET_SETTING_KEYS, true) === true) {
+				continue;
+			}
+
+			if (is_array($value) === true) {
+				$settings[$key] = $registry->redactArray(data: $value);
+				continue;
+			}
+
+			if ($value !== null && $value !== '' && $registry->isSensitiveName(name: (string)$key) === true) {
+				$settings[$key] = SensitiveFieldRegistry::PLACEHOLDER;
+			}
+		}//end foreach
+
+		$subscription['protocolSettings'] = $settings;
 
 		return $subscription;
 	}//end redactSubscription()
