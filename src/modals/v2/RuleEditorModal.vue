@@ -52,8 +52,9 @@
 
   ## Scope: error is the only action type configured here
 
-  `type` can be set to any of the 17 authorable action types, but only `error`
-  gets its parameters on this screen. The other 16 have bespoke forms under
+  `type` can be set to any of the 18 authorable action types. `error` and
+  `flow` get their parameters on this screen (flow is a single picker, and a
+  flow rule without a flow is refused at save). The other 16 have bespoke forms under
   `views/Rule/actionForms/`, hosted by RuleActionConfig on the rule detail
   page, and cramming 16 conditional blocks back into a dialog is what made the
   1919-line legacy modal unmaintainable. Picking another type here creates a
@@ -291,10 +292,15 @@
 											'integriq',
 											'The error response is configured below.',
 										)
-									: t(
-											'integriq',
-											'Configure this type with the Open full editor row action.',
-										)
+									: isFlowType
+										? t(
+												'integriq',
+												'Pick the flow below. The endpoint path is the address a partner calls to start it.',
+											)
+										: t(
+												'integriq',
+												'Configure this type with the Open full editor row action.',
+											)
 							}}
 						</span>
 					</div>
@@ -358,6 +364,23 @@
 					{{ t('integriq', 'Include JSON Logic results in errors array') }}
 				</NcCheckboxRadioSwitch>
 			</section>
+
+			<!-- ── Flow: one picker, so it is configured here too ── -->
+			<section v-if="isFlowType" class="cn-rule-editor__section">
+				<header class="cn-rule-editor__section-header">
+					<PlayOutlineIcon :size="20" />
+					<h3>{{ t('integriq', 'Flow to start') }}</h3>
+				</header>
+				<FlowForm
+					:id="draft.configuration?.flow || ''"
+					:disabled="saving"
+					@update:id="onFlowIdUpdate" />
+				<span
+					v-if="flowError"
+					class="cn-rule-editor__helper cn-rule-editor__helper--error">
+					{{ flowError }}
+				</span>
+			</section>
 		</div>
 
 		<template #actions>
@@ -395,6 +418,7 @@ import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline
 import FilterOutlineIcon from 'vue-material-design-icons/FilterOutline.vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
+import FlowForm from '../../views/Rule/actionForms/FlowForm.vue'
 import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
 import {
 	ACTION_OPTIONS,
@@ -402,6 +426,7 @@ import {
 	DEFAULT_ERROR_CONFIG,
 	emptyRootGroup,
 	emptyRuleDraft,
+	flowRuleMissingFlow,
 	normaliseConditions,
 	serializeRuleConditions,
 	TIMING_OPTIONS,
@@ -432,6 +457,7 @@ export default {
 		NcTextArea,
 		NcTextField,
 		RuleConditionGroup,
+		FlowForm,
 		AlertCircleOutlineIcon,
 		CodeJsonIcon,
 		ContentSaveOutlineIcon,
@@ -566,6 +592,7 @@ export default {
 				&& !this.nameError
 				&& !!this.draft.action
 				&& !!this.draft.type
+				&& !this.flowError
 				&& !this.rawConditionsError
 				// No `confirm` means the host did not bind the slot scope, so
 				// there is nothing to save through.
@@ -643,6 +670,25 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		isErrorType() {
 			return this.draft?.type === 'error'
+		},
+
+		/** @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001 */
+		isFlowType() {
+			return this.draft?.type === 'flow'
+		},
+
+		/**
+		 * Why a flow rule cannot be saved yet: it names no flow, which the
+		 * runtime would refuse on the first call. Empty when it can.
+		 *
+		 * @return {string} The reason, or ''.
+		 *
+		 * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+		 */
+		flowError() {
+			return flowRuleMissingFlow(this.draft)
+				? this.t('integriq', 'Pick the flow this rule starts.')
+				: ''
 		},
 
 		/**
@@ -807,6 +853,25 @@ export default {
 				}
 			}
 			this.draft = { ...this.draft, type: option.id, configuration }
+		},
+
+		/**
+		 * Write the picked flow's id to `configuration.flow`, the key
+		 * `EndpointService::processFlowRule()` reads, keeping every sibling key.
+		 * A cleared pick drops the key.
+		 *
+		 * @param {string} id The picked flow id, or '' when cleared.
+		 *
+		 * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+		 */
+		onFlowIdUpdate(id) {
+			const configuration = { ...(this.draft.configuration || {}) }
+			if (id) {
+				configuration.flow = String(id)
+			} else {
+				delete configuration.flow
+			}
+			this.updateDraft('configuration', configuration)
 		},
 
 		/**

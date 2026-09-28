@@ -2694,7 +2694,11 @@ OC.L10N.register(
         "When the source stops sending a record": "When the source stops sending a record",
         "Who owns these records": "Who owns these records",
         "This record is maintained by \"%s\", so it cannot be deleted here. Override the refusal with a reason if it really has to go.": "This record is maintained by \"%s\", so it cannot be deleted here. Override the refusal with a reason if it really has to go.",
-        "An override of an ownership refusal requires a reason. Nothing was deleted.": "An override of an ownership refusal requires a reason. Nothing was deleted."
+        "An override of an ownership refusal requires a reason. Nothing was deleted.": "An override of an ownership refusal requires a reason. Nothing was deleted.",
+        "The flow gets the request as its input. If the flow run fails, the caller gets an error.": "The flow gets the request as its input. If the flow run fails, the caller gets an error.",
+        "Pick the flow below. The endpoint path is the address a partner calls to start it.": "Pick the flow below. The endpoint path is the address a partner calls to start it.",
+        "Flow to start": "Flow to start",
+        "Pick the flow this rule starts.": "Pick the flow this rule starts."
     },
     "nplurals=2; plural=(n != 1);"
 )

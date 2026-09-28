@@ -59,6 +59,9 @@
 				:id="configuration.mapping || ''"
 				@update:id="onMappingIdUpdate" />
 		</div>
+		<div v-else-if="actionType === 'flow'" class="rule-action-config__params">
+			<FlowForm :id="configuration.flow || ''" @update:id="onFlowIdUpdate" />
+		</div>
 		<div
 			v-else-if="actionType === 'javascript'"
 			class="rule-action-config__params">
@@ -118,6 +121,7 @@ import ExtendInputForm from './actionForms/ExtendInputForm.vue'
 import FetchFileForm from './actionForms/FetchFileForm.vue'
 import FilepartsCreateForm from './actionForms/FilepartsCreateForm.vue'
 import FilepartUploadForm from './actionForms/FilepartUploadForm.vue'
+import FlowForm from './actionForms/FlowForm.vue'
 import JavascriptForm from './actionForms/JavascriptForm.vue'
 import LockingForm from './actionForms/LockingForm.vue'
 import MappingForm from './actionForms/MappingForm.vue'
@@ -130,8 +134,8 @@ import { ACTION_TYPES } from './ruleDraft.js'
 
 /**
  * Map from action-type id to the component name to render. Forms that need to
- * read/write a different slot than `configuration[type]` (currently only
- * `mapping` and `javascript`) are special-cased in the template above.
+ * read/write a different slot than `configuration[type]` (currently
+ * `mapping`, `flow` and `javascript`) are special-cased in the template above.
  */
 const ACTION_FORM_MAP = {
 	synchronization: 'SynchronizationForm',
@@ -151,6 +155,7 @@ const ACTION_FORM_MAP = {
 	extend_external_input: 'ExtendExternalInputForm',
 	webhook_signature: 'WebhookSignatureForm',
 	approval: 'ApprovalForm',
+	flow: 'FlowForm',
 }
 
 let actionUidCounter = 0
@@ -177,6 +182,7 @@ export default {
 		ExtendExternalInputForm,
 		WebhookSignatureForm,
 		ApprovalForm,
+		FlowForm,
 	},
 
 	props: {
@@ -340,6 +346,25 @@ export default {
 				next.mapping = String(id)
 			} else {
 				delete next.mapping
+			}
+			this.$emit('update', next)
+		},
+
+		/**
+		 * Handle the `flow` action: like `mapping`, a bare id at
+		 * `configuration.flow`, the key `EndpointService::processFlowRule()`
+		 * reads. An empty pick drops the key so no blank reference is saved.
+		 *
+		 * @param {string} id The picked flow's id, or '' when cleared.
+		 *
+		 * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+		 */
+		onFlowIdUpdate(id) {
+			const next = { ...(this.configuration || {}) }
+			if (id) {
+				next.flow = String(id)
+			} else {
+				delete next.flow
 			}
 			this.$emit('update', next)
 		},

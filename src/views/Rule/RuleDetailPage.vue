@@ -65,7 +65,10 @@
 				</template>
 				{{ t('integriq', 'Discard') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="saving || !dirty" @click="onSave">
+			<NcButton
+				variant="primary"
+				:disabled="saving || !dirty || missingFlow"
+				@click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSave v-else :size="20" />
@@ -238,6 +241,7 @@ import { useObjectStore } from '../../store/objectStore.js'
 import {
 	ACTION_OPTIONS,
 	emptyRootGroup,
+	flowRuleMissingFlow,
 	normaliseConditions,
 	TIMING_OPTIONS,
 } from './ruleDraft.js'
@@ -369,6 +373,18 @@ export default {
 				this.timingOptions.find((option) => option.id === this.draft?.timing)
 				|| this.timingOptions[0]
 			)
+		},
+
+		/**
+		 * A flow rule that names no flow: the runtime refuses it, so Save is
+		 * held back until a flow is picked.
+		 *
+		 * @return {boolean} True when the draft is a flow rule without a flow.
+		 *
+		 * @spec openspec/changes/automation-endpoint-flow-trigger/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+		 */
+		missingFlow() {
+			return flowRuleMissingFlow(this.draft)
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -567,7 +583,7 @@ export default {
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async onSave() {
-			if (!this.draft || this.saving) return
+			if (!this.draft || this.saving || this.missingFlow) return
 			this.saving = true
 			this.error = null
 			try {

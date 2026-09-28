@@ -1353,7 +1353,11 @@ OC.L10N.register(
         "When the source stops sending a record": "Als de bron een record niet meer levert",
         "Who owns these records": "Wie is eigenaar van deze records",
         "This record is maintained by \"%s\", so it cannot be deleted here. Override the refusal with a reason if it really has to go.": "Dit record wordt bijgehouden door \"%s\", dus het kan hier niet worden verwijderd. Geef een reden op om de weigering te passeren als het echt weg moet.",
-        "An override of an ownership refusal requires a reason. Nothing was deleted.": "Wie een weigering op grond van eigenaarschap passeert, moet een reden geven. Er is niets verwijderd."
+        "An override of an ownership refusal requires a reason. Nothing was deleted.": "Wie een weigering op grond van eigenaarschap passeert, moet een reden geven. Er is niets verwijderd.",
+        "The flow gets the request as its input. If the flow run fails, the caller gets an error.": "De flow krijgt het verzoek als invoer. Als de flow mislukt, krijgt de aanroeper een foutmelding.",
+        "Pick the flow below. The endpoint path is the address a partner calls to start it.": "Kies hieronder de flow. Het pad van het endpoint is het adres dat een partner aanroept om hem te starten.",
+        "Flow to start": "Te starten flow",
+        "Pick the flow this rule starts.": "Kies de flow die deze regel start."
     },
     "nplurals=2; plural=(n != 1);"
 )
