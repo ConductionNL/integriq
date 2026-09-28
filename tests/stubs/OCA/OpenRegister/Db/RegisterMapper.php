@@ -18,9 +18,11 @@ namespace OCA\OpenRegister\Db;
 class RegisterMapper {
 	/**
 	 * Mirrors the real signature, which is `string|int $id` — registers are
-	 * looked up by slug as well as by id.
+	 * looked up by slug as well as by id. The `$_rbac` / `$_multitenancy` flags
+	 * mirror the real signature too, so a caller that passes them by name works
+	 * against the stub exactly as it does against OpenRegister.
 	 */
-	public function find(string|int $id): ?object {
+	public function find(string|int $id, bool $_rbac = true, bool $_multitenancy = true): ?object {
 		return null;
 	}
 
