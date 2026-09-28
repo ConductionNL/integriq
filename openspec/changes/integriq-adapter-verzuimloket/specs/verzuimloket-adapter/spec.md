@@ -143,6 +143,12 @@ per-message isolation.
 - THEN a `verzuim_message` record SHALL be persisted with `direction: outbound`, `status: sent`, and the provider-returned `ref`
 - @e2e exclude backend persistence — covered by PHPUnit
 
+#### Scenario: every record the adapter writes is one the register accepts
+- GIVEN a sent melding, a matched retour, a retour whose kenmerk matches nothing, and a retried melding
+- WHEN each record is handed to OpenRegister
+- THEN each SHALL validate against the `verzuim_message` schema: a value that is not there is left out rather than written as null, and a retour that matches nothing carries no `meldingType`
+- @e2e exclude backend persistence — covered by PHPUnit `VerzuimloketServiceTest::test*ValidatesAgainstRegisterSchema`
+
 #### Scenario: one failing retry does not abort the sweep
 - GIVEN two failed `verzuim_message` rows, one of which raises on retry
 - WHEN `retryFailed()` runs

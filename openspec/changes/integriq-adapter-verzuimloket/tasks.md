@@ -64,6 +64,10 @@
 - No PEM string and no raw BSN in any file this change adds
 - `composer check:strict` and the hydra gates run once before push (see PR body for exit codes)
 
+## Build-all pass (2026-09-28)
+
+- [x] Every `verzuim_message` record validates against the real register schema (opis, merged register). Red first: all four record kinds were refused, because `ref`, `signaalcode`, `signaalOmschrijving` and `error` were written as null into string properties and an unmatched retour wrote `meldingType: ''`. Fixed by leaving null keys out and dropping `meldingType` from `required`.
+
 ## Cross-repo follow-ups
 
 - Tell learniq that `VerzuimloketAcknowledgementReceivedEvent` is ready to

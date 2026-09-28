@@ -162,7 +162,7 @@ class VerzuimloketService {
 			$record['bsnHash'] = hash('sha256', (string)$payload['bsn']);
 		}
 
-		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$this->objectService->saveObject(object: self::withoutNulls(record: $record), register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
 
 		if ($status === 'failed') {
 			throw new VerzuimloketProviderException(message: (string)$error);
@@ -212,10 +212,17 @@ class VerzuimloketService {
 			$status = 'acknowledged';
 		}
 
+		// An unmatched kenmerk has no melding kind to record: the key is left
+		// out rather than written as '' (the schema's enum refuses '').
+		$recordKind = null;
+		if ($meldingType !== '') {
+			$recordKind = $meldingType;
+		}
+
 		$this->objectService->saveObject(
-			object: [
+			object: self::withoutNulls(record: [
 				'direction' => 'inbound',
-				'meldingType' => $meldingType,
+				'meldingType' => $recordKind,
 				'status' => $status,
 				'ref' => null,
 				'kenmerk' => $update['kenmerk'],
@@ -223,7 +230,7 @@ class VerzuimloketService {
 				'signaalOmschrijving' => $update['signaalOmschrijving'],
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
-			],
+			]),
 			register: self::REGISTER,
 			schema: self::SCHEMA_MESSAGE
 		);
@@ -315,13 +322,30 @@ class VerzuimloketService {
 		$data['syncedAt'] = (new DateTime())->format('c');
 
 		$this->objectService->saveObject(
-			object: $data,
+			object: self::withoutNulls(record: $data),
 			register: self::REGISTER,
 			schema: self::SCHEMA_MESSAGE,
 			uuid: $message->getUuid()
 		);
 
 	}//end retryOne()
+
+	/**
+	 * Drop the keys whose value is null before a record is saved.
+	 *
+	 * The `verzuim_message` string properties do not allow null, so OpenRegister
+	 * refuses a record that carries one (integriq#2261 was the same defect in the
+	 * LTI key store). An absent key reads the same as "none" to every reader here.
+	 *
+	 * @param array<string, mixed> $record The record as built.
+	 *
+	 * @return array<string, mixed> The record without null values.
+	 *
+	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+	 */
+	private static function withoutNulls(array $record): array {
+		return array_filter($record, static fn ($value): bool => $value !== null);
+	}//end withoutNulls()
 
 	/**
 	 * Resolve the single active Verzuimloket source (`type=verzuimloket`, `isEnabled=true`).
