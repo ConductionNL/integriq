@@ -52,6 +52,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'app_connection',
 		'consumer',
 		'digitalPostMessage',
+		'event',
 		'intake_message',
 		'intake_routing_rule',
 		'lti_platform',
@@ -80,9 +81,9 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * one assertion short of guarding what the PR documents (integriq#2104 review
 	 * 5266971176).
 	 *
-	 * The six closed schemas NOT listed here — app_connection, consumer,
-	 * lti_platform, lti_tool, rule, source — grant deliberately and are covered
-	 * by `CLOSED` only.
+	 * The seven closed schemas NOT listed here — app_connection, consumer,
+	 * event, lti_platform, lti_tool, rule, source — grant deliberately and are
+	 * covered by `CLOSED` only.
 	 *
 	 * @var array<int,string>
 	 */
@@ -129,7 +130,6 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'eudi_credential_offer',
 		'eudi_issuance_session',
 		'eudi_status_list',
-		'event',
 		'event_message',
 		'event_subscription',
 		'execution_trace',
@@ -346,4 +346,29 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		);
 
 	}//end testTheLockedDownSchemasStillDenyToEveryone()
+
+	/**
+	 * Only administrators may create an `event` through the object API.
+	 *
+	 * A created `nl.conduction.peppol.outbound.requested` event makes integriq
+	 * read the file its `payloadFileUri` names and send it to an access point,
+	 * so whoever may create an event may make integriq send any user's file
+	 * (integriq#2224). `create` is an empty list, which grants nobody but the
+	 * `admin` group (the owner bypass does not apply to a create). Reading,
+	 * updating and deleting stay open to signed-in accounts, as they were.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-access-point-receives-the-ubl-document-itself-req-008
+	 */
+	public function testOnlyAdministratorsMayCreateAnEvent(): void {
+		$block = (array)($this->schemas()['event']['authorization'] ?? []);
+
+		$this->assertArrayHasKey('create', $block, 'The event schema must declare who may create an event.');
+		$this->assertSame([], $block['create'], 'Only administrators may create an event through the object API.');
+		foreach (['read', 'update', 'delete'] as $action) {
+			$this->assertSame(['authenticated'], ($block[$action] ?? null), "`event.$action` must stay open to signed-in accounts.");
+		}
+
+	}//end testOnlyAdministratorsMayCreateAnEvent()
 }//end class

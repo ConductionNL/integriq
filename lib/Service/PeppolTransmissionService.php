@@ -36,6 +36,9 @@ use OCA\Integriq\Service\Peppol\PeppolAccessPointProviderInterface;
 use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\Files\File;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -116,6 +119,23 @@ class PeppolTransmissionService {
 	private const NO_RETRANSMIT_STATUSES = ['sent', 'delivered'];
 
 	/**
+	 * Prefix of a `payloadFileUri` that names a Nextcloud file by its file id (`nextcloud-file:<id>`).
+	 *
+	 * @var string
+	 */
+	public const PAYLOAD_FILE_ID_PREFIX = 'nextcloud-file:';
+
+	/**
+	 * An absolute path inside a user's Nextcloud Files (`/<userId>/files/...`).
+	 *
+	 * Both the reference and the node it resolves to must match, so a
+	 * reference cannot reach app data or another storage root.
+	 *
+	 * @var string
+	 */
+	private const USER_FILES_PATH = '#^/[^/]+/files/.+#';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService OR object service for source/transmission persistence.
@@ -124,6 +144,7 @@ class PeppolTransmissionService {
 	 * @param EventService $eventService Emits delivery-status / inbound-received CloudEvents.
 	 * @param IL10N $l The localization service (default status detail text).
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param IRootFolder $rootFolder Reads the UBL document `payloadFileUri` names in Nextcloud Files.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -132,6 +153,7 @@ class PeppolTransmissionService {
 		private readonly EventService $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private readonly IRootFolder $rootFolder,
 	) {
 
 	}//end __construct()
@@ -241,10 +263,18 @@ class PeppolTransmissionService {
 	/**
 	 * Attempt one AP submission for a `queued`/retryable `failed` transmission.
 	 *
+	 * The access point receives the UBL document itself, read from the file
+	 * `payloadFileUri` names (REQ-008). A reference that cannot be read fails
+	 * this attempt like any other submission error, so the transmission is
+	 * `failed` with a reason naming the reference and the retry budget and
+	 * dead-letter path apply.
+	 *
 	 * @param ObjectEntity $transmission The transmission to submit.
-	 * @param string $payloadFileUri Reference to the UBL payload (transported as-is — see design.md scope note).
+	 * @param string $payloadFileUri Reference to the UBL document in Nextcloud Files.
 	 *
 	 * @return ObjectEntity The updated transmission.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-access-point-receives-the-ubl-document-itself-req-008
 	 */
 	private function attemptSubmission(ObjectEntity $transmission, string $payloadFileUri): ObjectEntity {
 		$data = $transmission->getObject();
@@ -260,7 +290,7 @@ class PeppolTransmissionService {
 				sourceConfiguration: $configuration,
 				recipientPeppolId: (string)$data['recipientPeppolId'],
 				documentType: (string)$data['documentType'],
-				payload: $payloadFileUri
+				payload: $this->readPayload(payloadFileUri: $payloadFileUri)
 			);
 
 			$attempts[] = ['at' => (new DateTime())->format('c'), 'error' => null];
@@ -305,6 +335,68 @@ class PeppolTransmissionService {
 		}//end try
 
 	}//end attemptSubmission()
+
+	/**
+	 * Read the UBL document a `payloadFileUri` names in Nextcloud Files.
+	 *
+	 * Two forms are accepted: `nextcloud-file:<id>`, a file id, and an
+	 * absolute path in a user's files, `/<userId>/files/...`. Only a file
+	 * inside a user's `files/` tree is read.
+	 *
+	 * @param string $payloadFileUri The reference from the outbound request.
+	 *
+	 * @return string The document's content.
+	 *
+	 * @throws PeppolProviderException When the reference does not name a readable, non-empty file.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-access-point-receives-the-ubl-document-itself-req-008
+	 */
+	private function readPayload(string $payloadFileUri): string {
+		$content = null;
+		try {
+			$node = $this->resolvePayloadNode(payloadFileUri: $payloadFileUri);
+			if ($node instanceof File && preg_match(self::USER_FILES_PATH, $node->getPath()) === 1) {
+				$content = $node->getContent();
+			}
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				'[PeppolTransmissionService] could not read the UBL payload',
+				['payloadFileUri' => $payloadFileUri, 'exception' => $exception->getMessage()]
+			);
+		}
+
+		if (is_string($content) === false || $content === '') {
+			throw new PeppolProviderException(message: 'payload not readable: ' . $payloadFileUri);
+		}
+
+		return $content;
+	}//end readPayload()
+
+	/**
+	 * Resolve a `payloadFileUri` to the Nextcloud node it names.
+	 *
+	 * @param string $payloadFileUri The reference from the outbound request.
+	 *
+	 * @return Node|null The node, or null when the reference has neither accepted form.
+	 *
+	 * @throws \OCP\Files\NotFoundException When a path names nothing.
+	 */
+	private function resolvePayloadNode(string $payloadFileUri): ?Node {
+		if (str_starts_with($payloadFileUri, self::PAYLOAD_FILE_ID_PREFIX) === true) {
+			$fileId = substr($payloadFileUri, strlen(self::PAYLOAD_FILE_ID_PREFIX));
+			if (ctype_digit($fileId) === false) {
+				return null;
+			}
+
+			return $this->rootFolder->getFirstNodeById(id: (int)$fileId);
+		}
+
+		if (preg_match(self::USER_FILES_PATH, $payloadFileUri) === 1) {
+			return $this->rootFolder->get(path: $payloadFileUri);
+		}
+
+		return null;
+	}//end resolvePayloadNode()
 
 	/**
 	 * Apply a verified AP delivery callback (`delivered`/`rejected`) to its transmission.
