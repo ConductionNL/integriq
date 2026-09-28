@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/connectors-translation-service/specs/translation-service/spec.md#requirement-translation-providers-are-source-templates-req-trl-003
+ * @spec openspec/specs/translation-service/spec.md#requirement-translation-providers-are-source-templates-req-trl-003
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2

@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/connectors-translation-service/specs/translation-service/spec.md#requirement-a-sibling-app-can-translate-text-through-integriq-req-trl-001
+ * @spec openspec/specs/translation-service/spec.md#requirement-a-sibling-app-can-translate-text-through-integriq-req-trl-001
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Sends a text to the first enabled translation source and returns its answer.
  *
- * @spec openspec/changes/connectors-translation-service/specs/translation-service/spec.md#requirement-a-sibling-app-can-translate-text-through-integriq-req-trl-001
+ * @spec openspec/specs/translation-service/spec.md#requirement-a-sibling-app-can-translate-text-through-integriq-req-trl-001
  */
 class TranslationService {
 
@@ -75,8 +75,8 @@ class TranslationService {
 	 *
 	 * @throws TranslationUnavailableException When no translation source is enabled or it answers without a translation.
 	 *
-	 * @spec openspec/changes/connectors-translation-service/specs/translation-service/spec.md#requirement-a-sibling-app-can-translate-text-through-integriq-req-trl-001
-	 * @spec openspec/changes/connectors-translation-service/specs/translation-service/spec.md#requirement-an-unconfigured-instance-says-so-req-trl-002
+	 * @spec openspec/specs/translation-service/spec.md#requirement-a-sibling-app-can-translate-text-through-integriq-req-trl-001
+	 * @spec openspec/specs/translation-service/spec.md#requirement-an-unconfigured-instance-says-so-req-trl-002
 	 */
 	public function translate(string $text, string $sourceLocale, string $targetLocale): array {
 		$from = strtolower(trim($sourceLocale));

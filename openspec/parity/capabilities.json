@@ -8338,13 +8338,14 @@
 			"area": "connectors",
 			"name": "Translate a text through an outside translation service.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniE 'deepl|libretranslate|translation service|translation api|ITranslationManager|TranslationProvider|google translate' lib src = 0 relevant hits (only 'deeply' and LtiDeepLinking matches); lib/Service/ZgwVersionTranslationService.php translates ZGW API versions, not text Specified in openspec/changes/connectors-translation-service/ (build-all pass 2026-09-28)."
+				"change": "2026-09-28-connectors-translation-service",
+				"evidence": "lib/Service/TranslationService.php:81 translate() sends the text to the first enabled source of deepl-translation or libretranslate (lib/Settings/register.d/deepl-translation-source.json, libretranslate-source.json) and returns the answer in the shape decidiq LogTranslationAdapter reads; tests/Unit/Service/TranslationServiceTest.php, tests/Unit/Settings/TranslationSourceTemplatesTest.php. Built by change connectors-translation-service (build-all pass 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
+			"reachedOn": "sibling apps through OCA\\Integriq\\Service\\TranslationService::translate() (decidiq minutes translation); DeepL and LibreTranslate source templates in the catalogue under Language",
 			"note": "No translation service template or adapter exists; the ZGW 'translate' code is API version translation and does not count.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
