@@ -26,7 +26,7 @@ namespace OCA\Integriq\Service\Ownership;
  * carrying both the last run that saw it and the run that did not. Neither
  * deletes anything.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003
  */
 class DisappearanceApplier {
 	/**

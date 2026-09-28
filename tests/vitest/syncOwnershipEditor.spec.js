@@ -14,7 +14,7 @@
  * tests mount the real modal (its sub-editors stubbed) and assert what it writes and
  * that a refused policy never reaches the save.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'

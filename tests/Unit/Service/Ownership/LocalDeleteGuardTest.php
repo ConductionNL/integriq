@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  * REQ-SOR-005: a refusal that names the synchronisation, and an override that
  * is a written statement.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
  */
 class LocalDeleteGuardTest extends TestCase {
 	/**
@@ -51,7 +51,7 @@ class LocalDeleteGuardTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
 	 */
 	public function testTheRefusalsAreReadInTheHandlersLanguage(): void {
 		$catalogue = json_decode(

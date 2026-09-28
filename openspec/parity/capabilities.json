@@ -3224,14 +3224,15 @@
 			"area": "synchronisation",
 			"name": "Mark records as owned by an outside source so they cannot be changed here by mistake.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-28-records-owned-by-an-external-source",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/OwnershipController.php (show/destroy/validatePolicy) plus appinfo/routes.php:529-531 implement real ownership-state reads and a LocalDeleteGuard (lib/Service/Ownership/LocalDeleteGuard.php) that refuses deleting a source-owned record without a reason. But grep of src/ for 'ownership' (case-insensitive) returns zero hits: no page or component ever calls GET /api/ownership/{id} or DELETE /api/ownership/{id}. LocalDeleteGuard is only invoked from OwnershipController::destroy (line 157), nowhere else, so the generic OpenRegister object-delete path any index/detail page actually uses to delete a record is not guarded by it at all."
+				"evidence": "Declared: src/modals/v2/SynchronizationEditorModal.vue sets sourceConfig.ownershipMode and disappearancePolicy (src/views/Synchronization/ownershipOptions.js) and asks POST /api/ownership/validate-policy before saving (tests/vitest/syncOwnershipEditor.spec.js). Read: GET /api/ownership/{id} (lib/Controller/OwnershipController.php, RecordOwnershipService). Enforced: lib/EventListener/SourceOwnedDeleteGuardListener.php, registered on OpenRegister ObjectDeletingEvent in lib/AppInfo/Application.php, stops any delete of a source-owned record without the override OwnershipController::destroy writes, and lets the engine delete (SynchronizationService wraps its delete in whileTheEngineDeletes) (tests/Unit/EventListener/SourceOwnedDeleteGuardListenerTest.php, SynchronizationServiceTest::testTheEnginesDeletePassesTheSourceOwnedGuard). Built by change records-owned-by-an-external-source (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "The refusal logic (REQ-SOR-005) is real but unreachable from any UI action; a user deleting an owned record through the normal generic delete button on e.g. the Sources or Endpoints index page bypasses this guard entirely. Live-check candidate: delete a source-owned record via its index page and see whether the refusal fires.",
+			"reachedOn": "Synchronizations > edit: who owns these records, and what happens when the source stops sending one; any delete of a source-owned record is refused with the synchronisation named",
+			"note": "Built 2026-09-28. The refusal now runs on OpenRegister's own delete path, so the delete button on any page meets it; a delete with a stated reason goes through /api/ownership/{id}. Showing the ownership on a contact or case party is the consuming app's screen (dossiq). Rated partial: a local edit of a source-owned record is not refused, it is overwritten at the next run (design D4).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "synchronization-engine",

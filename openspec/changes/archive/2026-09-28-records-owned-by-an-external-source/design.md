@@ -46,6 +46,18 @@ the same way an unsigned webhook subscription without a reason is refused under
 `signed-outbound-webhooks`: the point of the field is that an auditor reads it a
 year later.
 
+Where the refusal runs (corrected 2026-09-28, build-all lane). It first ran only
+inside `DELETE /api/ownership/{id}`, and every page deletes through
+OpenRegister's own objects endpoint, so no ordinary delete ever met it. It now
+answers OpenRegister's stoppable `ObjectDeletingEvent`
+(`SourceOwnedDeleteGuardListener`), which every delete passes. Two deletes go
+through: one whose object carries the override `OwnershipController` wrote (the
+key is `ownershipDeleteOverride`, `LocalDeleteGuard::OVERRIDE_KEY`), and the
+synchronisation engine's own delete of a record the source dropped, which runs
+inside `SourceOwnedDeleteGuardListener::whileTheEngineDeletes()`, because that is
+the owner acting. A guard that cannot read the contracts lets the delete go and
+logs it, so it never blocks every delete on the instance.
+
 A local edit of a property the source owns is not refused. It is overwritten at
 the next run, which is the behaviour the hash diff already gives, and the record
 says the property is the source's so the person can see why their change did not

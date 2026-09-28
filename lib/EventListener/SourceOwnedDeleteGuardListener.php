@@ -18,7 +18,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Throwable;
  * synchronisation engine's own delete, because the source removing its record
  * is the owner acting, not somebody local.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
  *
  * @template-implements IEventListener<Event>
  */
@@ -81,7 +81,7 @@ class SourceOwnedDeleteGuardListener implements IEventListener {
 	 *
 	 * @return mixed What the delete returned.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
 	 */
 	public static function whileTheEngineDeletes(callable $delete): mixed {
 		self::$engineDeletes++;
@@ -100,7 +100,7 @@ class SourceOwnedDeleteGuardListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletingEvent) === false || self::$engineDeletes > 0) {

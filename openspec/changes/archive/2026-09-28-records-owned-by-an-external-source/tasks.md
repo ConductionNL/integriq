@@ -13,14 +13,14 @@
 - **files**: `lib/Service/Ownership/RecordOwnershipService.php` reads `sourceConfig.ownershipMode`
 - [x] Implement (read and validated; a mode the engine does not know reads `local` rather than claiming ownership integriq cannot substantiate)
 - [x] Test
-- [ ] The edit modal's input and its Dutch and English strings. The synchronisation is written through OpenRegister's objects API, so the field belongs with that screen's other sourceConfig inputs.
+- [x] The edit modal's input and its Dutch and English strings (`src/modals/v2/SynchronizationEditorModal.vue`, `src/views/Synchronization/ownershipOptions.js`, `tests/vitest/syncOwnershipEditor.spec.js`). The synchronisation is written through OpenRegister's objects API, so the field belongs with that screen's other sourceConfig inputs.
 
 ### Task 3: The disappearance policy, declared and refused when it is wrong
 - **spec_ref**: `openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002`
 - **files**: `lib/Service/Ownership/DisappearancePolicy.php`, `lib/Service/SynchronizationService.php`, `lib/Controller/OwnershipController.php`
 - [x] Implement (`delete` default, `markEnded`, `keepAndFlag`, refusal on an unknown value)
 - [x] Test
-- [~] The refusal at the moment of the save itself.
+- [x] The refusal at the moment of the save itself. Built 2026-09-28: the editor asks `validate-policy` before it saves and shows the refusal (`tests/vitest/syncOwnershipEditor.spec.js`).
   - MEASURED 2026-09-18, and the line above was STALE IN BOTH HALVES.
     `POST /api/ownership/validate-policy` EXISTS (route, controller method and
     `DisappearancePolicy::fromSourceConfig`), and the ENGINE already refuses on
@@ -60,7 +60,7 @@
 - **files**: `lib/Service/Ownership/LocalDeleteGuard.php`, `lib/Controller/OwnershipController.php`
 - [x] Implement (refusal naming the synchronisation, override with reason, user and timestamp, refusal on an empty reason)
 - [x] Test
-- [ ] Dutch and English strings for the refusal and the override dialog, with the screen that raises it.
+- [x] Dutch and English strings for the refusal and the override dialog, with the screen that raises it. Built 2026-09-28: the refusals are translated (`LocalDeleteGuardTest::testTheRefusalsAreReadInTheHandlersLanguage`), and every delete now meets them through OpenRegister's `ObjectDeletingEvent` (`SourceOwnedDeleteGuardListener`, design D4), so the screen that raises it is whichever page deletes. The override dialog belongs to the consuming app's screen (dossiq, handover below).
 
 ### Task 7: One read answers ownership for a consuming app
 - **spec_ref**: `openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-the-consuming-app-reads-ownership-through-one-contract-req-sor-006`
@@ -83,5 +83,5 @@
 
 ## Handover
 
-- [ ] Hand dossiq its half: declare the ownership mode and the disappearance policy on the `brpPerson` and `kvkCompany` synchronisations in `lib/Settings/register.d/25-brp-kvk.json`, render the ownership state on the contact and the case party, and drop the delete action on a party dossiq does not own
-- [ ] Record the row 5.19 closure in `openspec/changes/competitor-parity-2026-09/proposal.md` when this change is archived
+- [x] Hand dossiq its half (ConductionNL/dossiq#DOSSIQ_ISSUE): declare the ownership mode and the disappearance policy on the `brpPerson` and `kvkCompany` synchronisations in `lib/Settings/register.d/25-brp-kvk.json`, render the ownership state on the contact and the case party, and drop the delete action on a party dossiq does not own
+- [x] Record the row 5.19 closure in `openspec/changes/competitor-parity-2026-09/proposal.md` when this change is archived

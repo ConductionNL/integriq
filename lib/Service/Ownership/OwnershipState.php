@@ -25,7 +25,7 @@ namespace OCA\Integriq\Service\Ownership;
  * last-seen timestamp and the absence state. A consuming app reads this and
  * never a contract, a synchronisation or a source.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-the-consuming-app-reads-ownership-through-one-contract-req-sor-006
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-the-consuming-app-reads-ownership-through-one-contract-req-sor-006
  */
 final class OwnershipState {
 	/**
@@ -81,7 +81,7 @@ final class OwnershipState {
 	 *
 	 * @return self A local ownership state.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public static function local(): self {
 		return new self(self::MODE_LOCAL);
@@ -146,7 +146,7 @@ final class OwnershipState {
 	 *
 	 * @return array<string,mixed> Serialisable ownership state.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public function toArray(): array {
 		$lastSeen = 'known';

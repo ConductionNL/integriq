@@ -1409,7 +1409,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
 	 */
 	public function testTheEnginesDeletePassesTheSourceOwnedGuard(): void {
 		$this->stubSynchronizationAndSource(

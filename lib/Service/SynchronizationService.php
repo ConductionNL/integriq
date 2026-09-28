@@ -4158,7 +4158,7 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003
 	 */
 	private function applyDisappearancePolicy(
 		string $policy,

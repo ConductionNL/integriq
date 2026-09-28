@@ -29,7 +29,7 @@ use OCP\IL10N;
  * reason, a user and a timestamp, recorded on the object and readable
  * afterwards.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
  */
 class LocalDeleteGuard {
 	/**
@@ -60,7 +60,7 @@ class LocalDeleteGuard {
 	 *
 	 * @throws InvalidArgumentException When the delete is refused.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public function guard(OwnershipState $ownership, ?string $reason = null, ?string $userId = null): ?array {
 		if ($ownership->isSourceOwned() === false) {
@@ -96,7 +96,7 @@ class LocalDeleteGuard {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public function refusalMessage(OwnershipState $ownership): string {
 		$name = ($ownership->getSynchronizationName() ?? $ownership->getSynchronizationId() ?? 'an external synchronisation');

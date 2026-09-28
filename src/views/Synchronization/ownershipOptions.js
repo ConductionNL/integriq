@@ -7,7 +7,7 @@
 // `ownershipMode` through RecordOwnershipService, `disappearancePolicy`
 // through DisappearancePolicy. The ids are those classes' constants.
 //
-// @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+// @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
 
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'

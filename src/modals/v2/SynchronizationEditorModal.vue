@@ -718,7 +718,7 @@ export default {
 		 * The ownership mode options (REQ-SOR-001).
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
 		 */
 		ownershipModeOptions() {
 			return ownershipModeOptions()
@@ -728,7 +728,7 @@ export default {
 		 * The declared ownership mode, `local` when none is declared.
 		 *
 		 * @return {{id: string, label: string}}
-		 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
 		 */
 		selectedOwnershipMode() {
 			const options = this.ownershipModeOptions
@@ -740,7 +740,7 @@ export default {
 		 * The disappearance policy options (REQ-SOR-002).
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
 		 */
 		disappearancePolicyOptions() {
 			return disappearancePolicyOptions()
@@ -752,7 +752,7 @@ export default {
 		 * sees the typo instead of a policy that is not in force.
 		 *
 		 * @return {{id: string, label: string}}
-		 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
 		 */
 		selectedDisappearancePolicy() {
 			const options = this.disappearancePolicyOptions
