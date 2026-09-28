@@ -9,7 +9,9 @@
  * name. The tests load this copy so the dispatch runs against the REAL
  * constructor and getters: a parameter planninq renames fails these tests
  * instead of failing silently on an instance. Refresh it by copying the
- * file again when planninq bumps CONTRACT_VERSION; do not edit it by hand.
+ * file again when planninq bumps CONTRACT_VERSION. The code is identical;
+ * the only edit is that planninq's `@spec` tags read `planninq-spec:` here,
+ * because those anchors live in the planninq repository, not this one.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -43,7 +45,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+ * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
  */
 
 declare(strict_types=1);
@@ -55,7 +57,7 @@ use OCP\EventDispatcher\Event;
 /**
  * A request to upsert one batch of timetable sessions from one source.
  *
- * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+ * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
  */
 class TimetableUpsertRequestedEvent extends Event {
 
@@ -97,7 +99,7 @@ class TimetableUpsertRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+	 * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
 	 */
 	public function getSourceApp(): string {
 		return $this->sourceApp;
@@ -108,7 +110,7 @@ class TimetableUpsertRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+	 * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
 	 */
 	public function getSourceSystem(): string {
 		return $this->sourceSystem;
@@ -119,7 +121,7 @@ class TimetableUpsertRequestedEvent extends Event {
 	 *
 	 * @return array<int,mixed>
 	 *
-	 * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+	 * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
 	 */
 	public function getSessions(): array {
 		return $this->sessions;
@@ -130,7 +132,7 @@ class TimetableUpsertRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+	 * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
 	 */
 	public function getCorrelationId(): string {
 		return $this->correlationId;
@@ -143,7 +145,7 @@ class TimetableUpsertRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+	 * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
 	 */
 	public function setResult(array $result): void {
 		$this->result = $result;
@@ -154,7 +156,7 @@ class TimetableUpsertRequestedEvent extends Event {
 	 *
 	 * @return array<string,mixed>|null
 	 *
-	 * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+	 * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
 	 */
 	public function getResult(): ?array {
 		return $this->result;
@@ -165,7 +167,7 @@ class TimetableUpsertRequestedEvent extends Event {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
+	 * planninq-spec: openspec/changes/school-timetable-target/specs/school-timetable/spec.md#requirement-another-app-delivers-a-batch-through-a-typed-event-req-004
 	 */
 	public function isHandled(): bool {
 		return $this->result !== null;
