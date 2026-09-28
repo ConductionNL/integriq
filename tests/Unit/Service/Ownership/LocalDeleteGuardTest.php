@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Ownership;
 use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
 use OCA\Integriq\Service\Ownership\OwnershipState;
+use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -42,6 +43,39 @@ class LocalDeleteGuardTest extends TestCase {
 	private function owned(string $mode = OwnershipState::MODE_SOURCE): OwnershipState {
 		return new OwnershipState($mode, 'brp-haalcentraal', '999993653', null, true, false, null, 'sync-1', 'BRP personen');
 	}//end owned()
+
+	/**
+	 * A Dutch handler reads the refusal and the empty-reason refusal in Dutch,
+	 * from the catalogue the app ships (the translator is the real IL10N
+	 * contract, answering from l10n/nl.json).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 */
+	public function testTheRefusalsAreReadInTheHandlersLanguage(): void {
+		$catalogue = json_decode(
+			(string)file_get_contents(dirname(__DIR__, 4) . '/l10n/nl.json'),
+			true,
+			flags: JSON_THROW_ON_ERROR
+		)['translations'];
+		$l = $this->createMock(IL10N::class);
+		$l->method('t')->willReturnCallback(
+			static fn (string $text, array $parameters = []): string => vsprintf(($catalogue[$text] ?? $text), $parameters)
+		);
+		$guard = new LocalDeleteGuard($l);
+
+		$refusal = $guard->refusalMessage($this->owned());
+		$this->assertStringContainsString('BRP personen', $refusal);
+		$this->assertStringNotContainsString('cannot be deleted', $refusal, 'the refusal is in Dutch');
+
+		try {
+			$guard->guard($this->owned(), '  ', 'behandelaar1');
+			$this->fail('An empty reason must be refused.');
+		} catch (InvalidArgumentException $e) {
+			$this->assertStringNotContainsString('requires a reason', $e->getMessage(), 'the empty-reason refusal is in Dutch');
+		}
+	}//end testTheRefusalsAreReadInTheHandlersLanguage()
 
 	/**
 	 * A handler cannot quietly remove a BRP person, and the refusal names the

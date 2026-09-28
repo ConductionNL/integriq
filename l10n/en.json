@@ -2694,7 +2694,9 @@
         "The source: the records are read-only here": "The source: the records are read-only here",
         "This disappearance policy is not one the engine knows.": "This disappearance policy is not one the engine knows.",
         "When the source stops sending a record": "When the source stops sending a record",
-        "Who owns these records": "Who owns these records"
+        "Who owns these records": "Who owns these records",
+        "This record is maintained by \"%s\", so it cannot be deleted here. Override the refusal with a reason if it really has to go.": "This record is maintained by \"%s\", so it cannot be deleted here. Override the refusal with a reason if it really has to go.",
+        "An override of an ownership refusal requires a reason. Nothing was deleted.": "An override of an ownership refusal requires a reason. Nothing was deleted."
     },
     "plurals": {}
 }

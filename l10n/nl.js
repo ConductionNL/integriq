@@ -1351,7 +1351,9 @@ OC.L10N.register(
         "The source: the records are read-only here": "De bron: de records zijn hier alleen-lezen",
         "This disappearance policy is not one the engine knows.": "Dit verdwijnbeleid kent de synchronisatie niet.",
         "When the source stops sending a record": "Als de bron een record niet meer levert",
-        "Who owns these records": "Wie is eigenaar van deze records"
+        "Who owns these records": "Wie is eigenaar van deze records",
+        "This record is maintained by \"%s\", so it cannot be deleted here. Override the refusal with a reason if it really has to go.": "Dit record wordt bijgehouden door \"%s\", dus het kan hier niet worden verwijderd. Geef een reden op om de weigering te passeren als het echt weg moet.",
+        "An override of an ownership refusal requires a reason. Nothing was deleted.": "Wie een weigering op grond van eigenaarschap passeert, moet een reden geven. Er is niets verwijderd."
     },
     "nplurals=2; plural=(n != 1);"
 )

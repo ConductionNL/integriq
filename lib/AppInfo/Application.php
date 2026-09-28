@@ -79,6 +79,7 @@ use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
 use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\EventListener\RosterImportRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
+use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
@@ -161,6 +162,7 @@ use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\Tables\Event\RowAddedEvent;
@@ -276,6 +278,10 @@ class Application extends App implements IBootstrap {
 		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ObjectUpdatedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
+		// REQ-SOR-005 (records-owned-by-an-external-source): every delete passes
+		// OpenRegister's stoppable ObjectDeletingEvent, so the refusal of a
+		// source-owned record holds whichever page or app deletes it.
+		$dispatcher->addServiceListener(eventName: ObjectDeletingEvent::class, className: SourceOwnedDeleteGuardListener::class);
 		// Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
 		// CloudEvents (register `openconnector` — the OpenRegister register slug,
 		// frozen across the app-id rename; schema event) created by any app.

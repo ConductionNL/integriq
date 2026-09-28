@@ -1401,6 +1401,62 @@ HTML;
 	}//end testGetAllObjectsFromSourceNextcloudTableMissingTableIdThrows()
 
 	/**
+	 * The engine deleting a target the source dropped passes the source-owned
+	 * delete guard, while the same delete made by anybody else is stopped
+	 * (records-owned-by-an-external-source REQ-SOR-005). The object service's
+	 * deleteObject() dispatches OpenRegister's real ObjectDeletingEvent to the
+	 * real listener, as OpenRegister does.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 */
+	public function testTheEnginesDeletePassesTheSourceOwnedGuard(): void {
+		$this->stubSynchronizationAndSource(
+			syncBody: ['uuid' => 'sync-uuid-brp', 'targetType' => 'register/schema', 'targetId' => 'personen/persoon'],
+			sourceBody: ['uuid' => 'source-uuid-brp', 'location' => 'https://brp.example.test']
+		);
+
+		$ownership = $this->getMockBuilder(\OCA\Integriq\Service\Ownership\RecordOwnershipService::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['forObject'])
+			->getMock();
+		$ownership->method('forObject')->willReturn(
+			new \OCA\Integriq\Service\Ownership\OwnershipState('source', 'source-uuid-brp', '999993653', null, true, false, null, 'sync-uuid-brp', 'BRP personen')
+		);
+		$listener = new \OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener(
+			$ownership,
+			new \OCA\Integriq\Service\Ownership\LocalDeleteGuard(),
+			new \Psr\Log\NullLogger()
+		);
+
+		$stopped = [];
+		$this->orObjectService->method('deleteObject')->willReturnCallback(
+			function (string $uuid) use ($listener, &$stopped): bool {
+				$entity = new \OCA\OpenRegister\Db\ObjectEntity();
+				$entity->setUuid($uuid);
+				$entity->setObject(['naam' => 'Jansen']);
+				$event = new \OCA\OpenRegister\Event\ObjectDeletingEvent($entity);
+				$listener->handle($event);
+				$stopped[] = $event->isPropagationStopped();
+
+				return $event->isPropagationStopped() === false;
+			}
+		);
+
+		$targetObject = [];
+		$this->service->updateTarget(
+			synchronizationContract: ['synchronizationId' => 'sync-uuid-brp', 'originId' => '999993653', 'targetId' => 'person-uuid-1'],
+			targetObject: $targetObject,
+			action: 'delete'
+		);
+		$this->orObjectService->deleteObject('person-uuid-1');
+
+		$this->assertSame([false, true], $stopped, 'the engine delete passes; the same delete from elsewhere is stopped');
+
+	}//end testTheEnginesDeletePassesTheSourceOwnedGuard()
+
+	/**
 	 * `updateTarget()` for `targetType: nextcloud-table` with no existing
 	 * contract `targetId` creates a row and records the returned row id as
 	 * the contract's `targetId` (tables-bridge REQ-001).

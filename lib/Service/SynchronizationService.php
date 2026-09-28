@@ -35,6 +35,7 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\Utils;
 use JWadhams\JsonLogic;
+use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
 use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
@@ -4955,7 +4956,12 @@ class SynchronizationService {
 				break;
 			case 'delete':
 				if (empty($synchronizationContract['targetId'] ?? null) === false) {
-					$objectService->deleteObject(uuid: (string)$synchronizationContract['targetId']);
+					// The source removing its record is the owner acting, so the
+					// source-owned delete guard lets this one through.
+					$targetId = (string)$synchronizationContract['targetId'];
+					SourceOwnedDeleteGuardListener::whileTheEngineDeletes(
+						delete: static fn () => $objectService->deleteObject(uuid: $targetId)
+					);
 				}
 
 				$synchronizationContract['targetId'] = null;

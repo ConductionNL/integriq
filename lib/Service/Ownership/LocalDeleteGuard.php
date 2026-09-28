@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Ownership;
 
 use InvalidArgumentException;
+use OCP\IL10N;
 
 /**
  * A delete of a source-owned record is refused, and the refusal names the
@@ -35,6 +36,18 @@ class LocalDeleteGuard {
 	 * The key an override is recorded on the object under.
 	 */
 	public const OVERRIDE_KEY = 'ownershipDeleteOverride';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N|null $l Translates the refusals, which a person reads. Without it
+	 *                      (a bare construction in a script) they stay English.
+	 */
+	public function __construct(
+		private readonly ?IL10N $l = null,
+	) {
+
+	}//end __construct()
 
 	/**
 	 * Decide whether a delete may go ahead.
@@ -59,9 +72,12 @@ class LocalDeleteGuard {
 		}
 
 		if (trim($reason) === '') {
-			throw new InvalidArgumentException(
-				'An override of an ownership refusal requires a reason. Nothing was deleted.'
-			);
+			$message = 'An override of an ownership refusal requires a reason. Nothing was deleted.';
+			if ($this->l !== null) {
+				$message = $this->l->t('An override of an ownership refusal requires a reason. Nothing was deleted.');
+			}
+
+			throw new InvalidArgumentException($message);
 		}
 
 		return [
@@ -84,6 +100,13 @@ class LocalDeleteGuard {
 	 */
 	public function refusalMessage(OwnershipState $ownership): string {
 		$name = ($ownership->getSynchronizationName() ?? $ownership->getSynchronizationId() ?? 'an external synchronisation');
+
+		if ($this->l !== null) {
+			return $this->l->t(
+				'This record is maintained by "%s", so it cannot be deleted here. Override the refusal with a reason if it really has to go.',
+				[$name]
+			);
+		}
 
 		return sprintf(
 			'This record is maintained by "%s", so it cannot be deleted here. Override the refusal with a reason if it really has to go.',
