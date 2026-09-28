@@ -845,12 +845,18 @@
 						"labelEn": "The job lacks a setting this target requires",
 						"category": "koppeling",
 						"severity": "blocking"
+					},
+					"no-owner-answer": {
+						"label": "De eigenaar-app nam de ontvangen records niet aan",
+						"labelEn": "The owning app did not take the received records",
+						"category": "poort",
+						"severity": "blocking"
 					}
 				},
 				"unset": [],
 				"cast": {},
 				"passThrough": false,
-				"version": "1.0.0"
+				"version": "1.1.0"
 			}
 		]
 	}

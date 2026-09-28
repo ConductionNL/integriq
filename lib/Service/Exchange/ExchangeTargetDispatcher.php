@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Exchange;
 
+use OCA\Integriq\Event\ExchangeRecordsReceivedEvent;
 use OCA\Integriq\Exception\OsoTranslationException;
 use OCA\Integriq\Exception\RodTranslationException;
 use OCA\Integriq\Exception\UwlrEduVTranslationException;
@@ -34,6 +35,8 @@ use OCA\Integriq\Service\RodService;
 use OCA\Integriq\Service\UwlrEduVService;
 use OCA\Integriq\Service\VerzuimloketService;
 use OCA\Integriq\Sources\Swv\SwvHandoffSourceAdapter;
+use OCP\EventDispatcher\IEventDispatcher;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -57,6 +60,25 @@ class ExchangeTargetDispatcher {
 	public const CODE_SEND = 'send-failed';
 
 	public const CODE_SOURCE_MISSING = 'source-missing';
+
+	/**
+	 * An import handed its records over and the owning app did not answer.
+	 *
+	 * @var string
+	 */
+	public const CODE_NO_OWNER_ANSWER = 'no-owner-answer';
+
+	/**
+	 * Import jobs whose received records land in the owning app through
+	 * {@see ExchangeRecordsReceivedEvent}, target to directions.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const LANDED = [
+		'lvs-results' => ['import'],
+		'oso' => ['import'],
+		'migration-import' => ['import'],
+	];
 
 	/**
 	 * Handled target and direction pairs.
@@ -89,6 +111,8 @@ class ExchangeTargetDispatcher {
 	 * @param OsoService              $osoService          OSO.
 	 * @param UwlrEduVService         $uwlrEduVService     UWLR, Edu-V, Basispoort, Entree.
 	 * @param SwvHandoffSourceAdapter $swvAdapter          SWV hand-off.
+	 * @param IEventDispatcher        $events              Hands import records to the owning app.
+	 * @param LoggerInterface         $logger              Logger.
 	 */
 	public function __construct(
 		private readonly RodService $rodService,
@@ -96,6 +120,8 @@ class ExchangeTargetDispatcher {
 		private readonly OsoService $osoService,
 		private readonly UwlrEduVService $uwlrEduVService,
 		private readonly SwvHandoffSourceAdapter $swvAdapter,
+		private readonly IEventDispatcher $events,
+		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
@@ -111,7 +137,7 @@ class ExchangeTargetDispatcher {
 	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
 	 */
 	public function supports(string $target, string $direction): bool {
-		return in_array($direction, (self::HANDLED[$target] ?? []), true);
+		return in_array($direction, $this->handledDirections(target: $target), true);
 
 	}//end supports()
 
@@ -125,7 +151,7 @@ class ExchangeTargetDispatcher {
 	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function handledDirections(string $target): array {
-		return (self::HANDLED[$target] ?? []);
+		return array_values(array_unique(array_merge((self::HANDLED[$target] ?? []), (self::LANDED[$target] ?? []))));
 
 	}//end handledDirections()
 
@@ -137,17 +163,43 @@ class ExchangeTargetDispatcher {
 	 * @param string                           $direction The direction.
 	 * @param array<string,mixed>              $scope     The job's scope.
 	 * @param array<int, array<string, mixed>> $records   `{recordId, sourceKind, data}`, data already mapped.
+	 * @param string                           $ownerApp  The owning app, for an import that lands there.
+	 * @param string                           $ownerRef  The owner's reference, for an import that lands there.
 	 *
-	 * @return array{accepted: array<int, string>, rejected: array<int, array<string, mixed>>, refusal: string|null}
+	 * @return array{accepted: array<int, string>, rejected: array<int, array<string, mixed>>, refusal: string|null, acceptedCount?: int}
 	 *     Accepted record ids, rejections, and a job-wide refusal code when the job cannot run at all.
+	 *     A landed import reports `acceptedCount` instead of ids: the owning app answers with a count.
 	 *
 	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
+	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-001-an-import-job-hands-its-records-to-the-owning-app
 	 */
-	public function dispatch(string $jobId, string $target, string $direction, array $scope, array $records): array {
+	public function dispatch(
+		string $jobId,
+		string $target,
+		string $direction,
+		array $scope,
+		array $records,
+		string $ownerApp='',
+		string $ownerRef=''
+	): array {
 		$outcome = ['accepted' => [], 'rejected' => [], 'refusal' => null];
 		if ($this->supports(target: $target, direction: $direction) === false) {
 			$outcome['refusal'] = 'no-handler';
 			return $outcome;
+		}
+
+		if (in_array($direction, (self::LANDED[$target] ?? []), true) === true) {
+			return $this->land(
+				context: [
+					'jobId' => $jobId,
+					'ownerApp' => $ownerApp,
+					'target' => $target,
+					'direction' => $direction,
+					'ownerRef' => $ownerRef,
+				],
+				scope: $scope,
+				records: $records
+			);
 		}
 
 		if ($target === 'swv' && (string)($scope['receiverId'] ?? '') === '') {
@@ -190,6 +242,55 @@ class ExchangeTargetDispatcher {
 		return $outcome;
 
 	}//end dispatch()
+
+	/**
+	 * Hand an import job's received records to the owning app and read its answer.
+	 *
+	 * The owning app answers through {@see ExchangeRecordsReceivedEvent::accept()}.
+	 * No answer, or a listener that throws, is `no-owner-answer`.
+	 *
+	 * @param array{jobId: string, ownerApp: string, target: string, direction: string, ownerRef: string} $context The job.
+	 * @param array<string,mixed>                                                                         $scope   The job's scope.
+	 * @param array<int, array<string, mixed>>                                                            $records The mapped records.
+	 *
+	 * @return array{accepted: array<int, string>, rejected: array<int, array<string, mixed>>, refusal: string|null, acceptedCount?: int}
+	 *
+	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-002-the-owning-apps-answer-ends-the-job
+	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-003-an-unanswered-import-ends-with-no-owner-answer
+	 */
+	private function land(array $context, array $scope, array $records): array {
+		$event = new ExchangeRecordsReceivedEvent(
+			jobId: $context['jobId'],
+			ownerApp: $context['ownerApp'],
+			target: $context['target'],
+			direction: $context['direction'],
+			ownerRef: $context['ownerRef'],
+			scope: $scope,
+			records: array_values($records)
+		);
+
+		try {
+			$this->events->dispatchTyped($event);
+		} catch (Throwable $exception) {
+			// The exception class only: a listener's message can quote a record.
+			$this->logger->warning(
+				'[ExchangeTargetDispatcher] the owning app failed on the records of job '.$context['jobId'].': '.get_class($exception)
+			);
+			return ['accepted' => [], 'rejected' => [], 'refusal' => self::CODE_NO_OWNER_ANSWER];
+		}
+
+		if ($event->isAnswered() === false) {
+			return ['accepted' => [], 'rejected' => [], 'refusal' => self::CODE_NO_OWNER_ANSWER];
+		}
+
+		return [
+			'accepted' => [],
+			'rejected' => $event->getRejected(),
+			'refusal' => null,
+			'acceptedCount' => $event->getAcceptedCount(),
+		];
+
+	}//end land()
 
 	/**
 	 * Send one record to the target's adapter.
