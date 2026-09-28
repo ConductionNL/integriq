@@ -45,6 +45,8 @@ use OCA\Integriq\Adapters\Roster\RosterImportClientMock;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
+use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
+use OCA\Integriq\Adapters\Swv\SwvHandoffClientMock;
 use OCA\Integriq\Capabilities;
 use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
@@ -52,6 +54,8 @@ use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
+use OCA\Integriq\Event\ExchangeJobRequestedEvent;
+use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
 use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
@@ -59,6 +63,8 @@ use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
 use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
 use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
+use OCA\Integriq\EventListener\ExchangeJobRequestedListener;
+use OCA\Integriq\EventListener\ExchangeMappingRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
 use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
 use OCA\Integriq\EventListener\NextcloudFileEventListener;
@@ -302,6 +308,14 @@ class Application extends App implements IBootstrap {
 			DocumentRenderRequestedEvent::class,
 			DocumentRenderRequestedListener::class
 		);
+		// Exchange jobs another app owns (learniq-exchange-jobs-native): the
+		// owning app asks integriq to carry a job, or to store its own
+		// mapping, with two typed commands (ADR-041). The SWV hand-off client
+		// is bound to its dormant mock, the only binding that exists, so the
+		// dispatcher that routes `swv` jobs can be built at all.
+		$context->registerEventListener(ExchangeJobRequestedEvent::class, ExchangeJobRequestedListener::class);
+		$context->registerEventListener(ExchangeMappingRequestedEvent::class, ExchangeMappingRequestedListener::class);
+		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);
 		// Rostering into planninq (rostering-adapter-targets-planninq,
 		// decision D10): learniq's timetable-import job asks integriq to
 		// deliver a rostering source; the listener always answers on the
