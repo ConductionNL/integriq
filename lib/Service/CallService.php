@@ -2467,6 +2467,45 @@ class CallService {
 	}//end hydrateInjectedCredentials()
 
 	/**
+	 * Resolves app-injected TLS client identity placeholders in the merged call configuration.
+	 *
+	 * A `cert` / `ssl_key` held in the credential broker (integriq#2102) is resolved here,
+	 * before Phase 9 writes the certificate files for Guzzle. A resolution failure is a
+	 * synthetic 409 config-error CallLog, like every other brokered credential failure.
+	 *
+	 * @param ObjectEntity $source The source ObjectEntity.
+	 * @param array $config The merged call configuration (Phase 7 output).
+	 * @param \DateTime|null $errorExpires Expiry for error log entries.
+	 *
+	 * @return ObjectEntity|array The hydrated configuration, or an ObjectEntity CallLog on a hard config error.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	private function hydrateInjectedTlsIdentity(
+		ObjectEntity $source,
+		array $config,
+		?\DateTime $errorExpires,
+	): ObjectEntity|array {
+		if ($this->brokeredCallService->hasInjectableTlsIdentity(config: $config) === false) {
+			return $config;
+		}
+
+		try {
+			return $this->brokeredCallService->hydrateInjectableTlsIdentity(config: $config);
+		} catch (BrokeredCallConfigurationException $exception) {
+			return $this->saveEarlyErrorLog(
+				source: $source,
+				statusCode: 409,
+				statusMessage: $exception->getMessage(),
+				expires: $errorExpires,
+			);
+		}
+
+	}//end hydrateInjectedTlsIdentity()
+
+	/**
 	 * Phase 7b+7c combined: resolves brokered/injected credentials for one
 	 * call, or produces the synthetic config-error CallLog the caller must
 	 * return immediately.
@@ -2484,7 +2523,7 @@ class CallService {
 	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
 	 * @param \DateTime|null $errorExpires Expiry for error log entries.
 	 *
-	 * @return array{shortCircuit: ObjectEntity|null, brokeredCredential: array|null, sourceData: array}
+	 * @return array{shortCircuit: ObjectEntity|null, brokeredCredential: array|null, sourceData: array, config: array}
 	 *
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
 	 *
@@ -2510,6 +2549,7 @@ class CallService {
 				'shortCircuit' => $brokeredCredential,
 				'brokeredCredential' => null,
 				'sourceData' => $sourceData,
+				'config' => $config,
 			];
 		}
 
@@ -2524,16 +2564,30 @@ class CallService {
 					'shortCircuit' => $injected,
 					'brokeredCredential' => null,
 					'sourceData' => $sourceData,
+					'config' => $config,
 				];
 			}
 
 			$sourceData = $injected;
-		}
+
+			// The TLS identity was merged into the call configuration at Phase 7, before
+			// hydration, so its placeholders are resolved there too (integriq#2102).
+			$config = $this->hydrateInjectedTlsIdentity(source: $source, config: $config, errorExpires: $errorExpires);
+			if ($config instanceof ObjectEntity) {
+				return [
+					'shortCircuit' => $config,
+					'brokeredCredential' => null,
+					'sourceData' => $sourceData,
+					'config' => [],
+				];
+			}
+		}//end if
 
 		return [
 			'shortCircuit' => null,
 			'brokeredCredential' => $brokeredCredential,
 			'sourceData' => $sourceData,
+			'config' => $config,
 		];
 
 	}//end resolveCallCredentials()
@@ -2787,6 +2841,7 @@ class CallService {
 
 		$prepared['brokeredCredential'] = $credentials['brokeredCredential'];
 		$sourceData = $credentials['sourceData'];
+		$config = $credentials['config'];
 
 		// Phase 8: Handle preRequest hook; capture postRequest descriptor.
 		$prepared['postRequest'] = $this->extractAndFirePreRequest(
