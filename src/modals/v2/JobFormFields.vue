@@ -321,6 +321,10 @@ function jobClassLabel(fqn) {
 		'OCA\\Integriq\\Action\\FlowAction': t('integriq', 'Run a flow'),
 		'OCA\\Integriq\\Action\\EventAction': t('integriq', 'Dispatch an event'),
 		'OCA\\Integriq\\Action\\PingAction': t('integriq', 'Ping a source'),
+		'OCA\\Integriq\\Action\\ExchangeJobAction': t(
+			'integriq',
+			'Run a data exchange',
+		),
 	}
 	return labels[fqn] || fqn
 }
