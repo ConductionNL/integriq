@@ -187,7 +187,7 @@ class LtiLaunchServiceTest extends TestCase {
 		);
 
 		$keyServiceObjectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-		$keyService = new LtiKeyService($keyServiceObjectService, new NullLogger());
+		$keyService = new LtiKeyService($keyServiceObjectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 
 		return new LtiLaunchService(
 			$resolver,
@@ -649,7 +649,7 @@ class LtiLaunchServiceTest extends TestCase {
 				return $entity;
 			}
 		);
-		$keyService = new LtiKeyService($objectService, new NullLogger());
+		$keyService = new LtiKeyService($objectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$activeKey = $keyService->generateKey('lti_tool', $toolUuid);
 
 		$cacheFactory = $this->createMock(ICacheFactory::class);
@@ -703,7 +703,7 @@ class LtiLaunchServiceTest extends TestCase {
 				return $entity;
 			}
 		);
-		$keyService = new LtiKeyService($objectService, new NullLogger());
+		$keyService = new LtiKeyService($objectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$activeKey = $keyService->generateKey('lti_platform', $platformUuid);
 
 		$resolver = $this->createMock(LtiRegistrationResolverService::class);

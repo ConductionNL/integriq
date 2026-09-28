@@ -171,7 +171,12 @@ class PaymentIntentService {
 				'updatedAt' => $now,
 			],
 			register: self::REGISTER,
-			schema: self::SCHEMA_PAYMENT_INTENT
+			schema: self::SCHEMA_PAYMENT_INTENT,
+			// System context: `payment_intent` is locked to admins and owners
+			// (99-payment-intent-lockdown.json), and a `payments.create` holder
+			// need not be an admin. The ADR-023 action check in
+			// PaymentsController::create() is the gate for this write.
+			_rbac: false
 		);
 
 		return [
@@ -244,7 +249,9 @@ class PaymentIntentService {
 				object: $data,
 				register: self::REGISTER,
 				schema: self::SCHEMA_PAYMENT_INTENT,
-				uuid: $record->getUuid()
+				uuid: $record->getUuid(),
+				_rbac: false,
+				_multitenancy: false
 			);
 			return ['result' => 'noop', 'outcome' => null];
 		}
@@ -257,7 +264,9 @@ class PaymentIntentService {
 				object: $data,
 				register: self::REGISTER,
 				schema: self::SCHEMA_PAYMENT_INTENT,
-				uuid: $record->getUuid()
+				uuid: $record->getUuid(),
+				_rbac: false,
+				_multitenancy: false
 			);
 			return ['result' => 'noop', 'outcome' => $outcome];
 		}
@@ -267,7 +276,9 @@ class PaymentIntentService {
 			object: $data,
 			register: self::REGISTER,
 			schema: self::SCHEMA_PAYMENT_INTENT,
-			uuid: $record->getUuid()
+			uuid: $record->getUuid(),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->emitStatusEvent(providerPaymentId: $providerPaymentId, outcome: $outcome);
@@ -337,7 +348,14 @@ class PaymentIntentService {
 			$filters['isEnabled'] = true;
 		}
 
-		$matches = $this->objectService->findAll(config: ['filters' => $filters, 'limit' => 1]);
+		// System context: `source` is admin-only (99-source-lockdown.json), and this
+		// runs for a non-admin `payments.create` holder and for the sessionless
+		// provider webhook. The engine needs the source; the caller never sees it.
+		$matches = $this->objectService->findAll(
+			config: ['filters' => $filters, 'limit' => 1],
+			_rbac: false,
+			_multitenancy: false
+		);
 		$results = ($matches['results'] ?? $matches);
 
 		if (empty($results) === true) {
@@ -390,7 +408,12 @@ class PaymentIntentService {
 					'providerPaymentId' => $providerPaymentId,
 				],
 				'limit' => 1,
-			]
+			],
+			// System context: the verified provider webhook has no session and
+			// `payment_intent` is locked to admins and owners
+			// (99-payment-intent-lockdown.json). The webhook signature is the gate.
+			_rbac: false,
+			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
 
