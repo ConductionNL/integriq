@@ -245,7 +245,9 @@
 					"leerlingId": "learnerId",
 					"periodeVan": "{{ windowStart|date('Y-m-d') }}",
 					"periodeTm": "{{ windowEnd|date('Y-m-d') }}",
-					"aantalLesuren": "metricValue"
+					"aantalLesuren": "metricValue",
+					"breachingRecords": "breachingRecords",
+					"interventions": "interventions"
 				},
 				"unset": [],
 				"cast": {},
@@ -264,7 +266,9 @@
 				"mapping": {
 					"hulpvraagDomein": "supportDomain",
 					"hulpvraagOmschrijving": "description",
-					"urgentie": "urgency"
+					"urgentie": "urgency",
+					"learner": "learner",
+					"learningPlanContext": "learningPlanContext"
 				},
 				"unset": [],
 				"cast": {},
