@@ -28,6 +28,9 @@ use OCA\Integriq\Service\PeppolTransmissionService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\Files\File;
+use OCP\Files\IRootFolder;
+use OCP\Files\NotFoundException;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -70,9 +73,29 @@ class PeppolTransmissionServiceTest extends TestCase {
 	private $logger;
 
 	/**
+	 * @var IRootFolder|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $rootFolder;
+
+	/**
 	 * @var PeppolTransmissionService
 	 */
 	private PeppolTransmissionService $service;
+
+	/**
+	 * A minimal UBL invoice, as shillinq stores it in Nextcloud Files.
+	 *
+	 * @var string
+	 */
+	private const UBL = '<?xml version="1.0" encoding="UTF-8"?>'
+		. '<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"><ID>2026-0142</ID></Invoice>';
+
+	/**
+	 * Where that invoice sits in Nextcloud Files.
+	 *
+	 * @var string
+	 */
+	private const UBL_PATH = '/admin/files/Invoices/2026-0142.xml';
 
 	/**
 	 * Set up test fixtures.
@@ -89,6 +112,7 @@ class PeppolTransmissionServiceTest extends TestCase {
 		$this->l = $this->createMock(IL10N::class);
 		$this->l->method('t')->willReturnArgument(0);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->rootFolder = $this->createMock(IRootFolder::class);
 
 		$this->service = new PeppolTransmissionService(
 			$this->objectService,
@@ -96,7 +120,8 @@ class PeppolTransmissionServiceTest extends TestCase {
 			$this->restProvider,
 			$this->eventService,
 			$this->l,
-			$this->logger
+			$this->logger,
+			$this->rootFolder
 		);
 
 	}//end setUp()
@@ -115,6 +140,70 @@ class PeppolTransmissionServiceTest extends TestCase {
 		$entity->setUuid($uuid);
 		return $entity;
 	}//end entity()
+
+	/**
+	 * A Nextcloud file node holding the given content.
+	 *
+	 * @param string $path The node's absolute path.
+	 * @param string $content The file's content.
+	 *
+	 * @return File
+	 */
+	private function file(string $path, string $content): File {
+		$file = $this->createMock(File::class);
+		$file->method('getPath')->willReturn($path);
+		$file->method('getContent')->willReturn($content);
+		return $file;
+	}//end file()
+
+	/**
+	 * Configure one active log-provider source and no existing transmission,
+	 * and return the transmission the first save creates.
+	 *
+	 * @return ObjectEntity The queued transmission.
+	 */
+	private function givenActiveSourceAndNoTransmission(): ObjectEntity {
+		$source = $this->entity(['type' => 'peppol', 'configuration' => ['provider' => 'log']]);
+
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config) use ($source) {
+				$filters = ($config['filters'] ?? []);
+				if (($filters['schema'] ?? null) === 'source') {
+					return ['results' => [$source], 'total' => 1];
+				}
+
+				return ['results' => [], 'total' => 0];
+			}
+		);
+
+		return $this->entity(
+			[
+				'objectUri' => '/apps/shillinq/invoices/2026-0142',
+				'recipientPeppolId' => '0106:12345678',
+				'documentType' => 'ubl-invoice-2.1',
+				'status' => 'queued',
+				'attempts' => [],
+			],
+			'tx-uuid-142'
+		);
+	}//end givenActiveSourceAndNoTransmission()
+
+	/**
+	 * An outbound request for the given payload reference.
+	 *
+	 * @param string $payloadFileUri The reference to the UBL document.
+	 *
+	 * @return array The CloudEvent data payload.
+	 */
+	private function outboundRequest(string $payloadFileUri): array {
+		return [
+			'sourceApp' => 'shillinq',
+			'objectUri' => '/apps/shillinq/invoices/2026-0142',
+			'recipientPeppolId' => '0106:12345678',
+			'documentType' => 'ubl-invoice-2.1',
+			'payloadFileUri' => $payloadFileUri,
+		];
+	}//end outboundRequest()
 
 	/**
 	 * A valid `scheme:identifier` peppolId passes validation.
@@ -241,6 +330,7 @@ class PeppolTransmissionServiceTest extends TestCase {
 				)
 			);
 
+		$this->rootFolder->method('get')->willReturn($this->file(self::UBL_PATH, self::UBL));
 		$this->logProvider->method('submitDocument')->willReturn('MOCK-PEPPOL-1');
 
 		$this->eventService->expects($this->once())
@@ -258,7 +348,7 @@ class PeppolTransmissionServiceTest extends TestCase {
 				'objectUri' => '/objects/ar-invoice/1',
 				'recipientPeppolId' => '0192:1234567890',
 				'documentType' => 'ubl-invoice-2.1',
-				'payloadFileUri' => 'https://example.com/invoice.xml',
+				'payloadFileUri' => self::UBL_PATH,
 			]
 		);
 
@@ -394,7 +484,9 @@ class PeppolTransmissionServiceTest extends TestCase {
 
 		$this->objectService->method('saveObject')->willReturnOnConsecutiveCalls($created, $failed);
 
-		$this->logProvider->method('submitDocument')->willThrowException(new PeppolProviderException(message: 'AP unreachable'));
+		$this->rootFolder->method('get')->willReturn($this->file(self::UBL_PATH, self::UBL));
+		// The document is readable, so the failure recorded is the access point's.
+		$this->logProvider->expects($this->once())->method('submitDocument')->willThrowException(new PeppolProviderException(message: 'AP unreachable'));
 
 		$this->eventService->expects($this->once())
 			->method('emitCloudEvent')
@@ -410,13 +502,113 @@ class PeppolTransmissionServiceTest extends TestCase {
 				'objectUri' => '/objects/ar-invoice/1',
 				'recipientPeppolId' => '0192:1234567890',
 				'documentType' => 'ubl-invoice-2.1',
-				'payloadFileUri' => 'https://example.com/invoice.xml',
+				'payloadFileUri' => self::UBL_PATH,
 			]
 		);
 
 		$this->assertSame('failed', $result->getObject()['status']);
 
 	}//end testHandleOutboundRequestedRecordsFailedAttemptOnException()
+
+	/**
+	 * REQ-008: the access point receives the XML of the file `payloadFileUri`
+	 * names by absolute path, not the path itself. Before the fix the
+	 * reference string was passed on as the document.
+	 *
+	 * @return void
+	 */
+	public function testSubmitsTheUblContentNotItsReference(): void {
+		$created = $this->givenActiveSourceAndNoTransmission();
+		$this->objectService->method('saveObject')->willReturnOnConsecutiveCalls($created, $created);
+
+		$this->rootFolder->method('get')->willReturnCallback(
+			fn (string $path) => $path === self::UBL_PATH ? $this->file(self::UBL_PATH, self::UBL) : throw new NotFoundException($path)
+		);
+
+		$this->logProvider->expects($this->once())
+			->method('submitDocument')
+			->with($this->anything(), '0106:12345678', 'ubl-invoice-2.1', self::UBL)
+			->willReturn('MOCK-PEPPOL-142');
+
+		$this->service->handleOutboundRequested($this->outboundRequest(self::UBL_PATH));
+
+	}//end testSubmitsTheUblContentNotItsReference()
+
+	/**
+	 * REQ-008: a `nextcloud-file:<id>` reference is read by file id.
+	 *
+	 * @return void
+	 */
+	public function testSubmitsTheUblNamedByFileId(): void {
+		$created = $this->givenActiveSourceAndNoTransmission();
+		$this->objectService->method('saveObject')->willReturnOnConsecutiveCalls($created, $created);
+
+		$this->rootFolder->method('getFirstNodeById')->willReturnCallback(
+			fn (int $id) => $id === 4711 ? $this->file(self::UBL_PATH, self::UBL) : null
+		);
+
+		$this->logProvider->expects($this->once())
+			->method('submitDocument')
+			->with($this->anything(), '0106:12345678', 'ubl-invoice-2.1', self::UBL)
+			->willReturn('MOCK-PEPPOL-142');
+
+		$this->service->handleOutboundRequested($this->outboundRequest('nextcloud-file:4711'));
+
+	}//end testSubmitsTheUblNamedByFileId()
+
+	/**
+	 * REQ-008: a reference that does not resolve fails the transmission with
+	 * "payload not readable" and the reference, and no call reaches the
+	 * access point. The attempt is recorded, so the existing retry budget and
+	 * dead-letter path apply.
+	 *
+	 * @return void
+	 */
+	public function testUnreadableReferenceFailsWithoutCallingTheAccessPoint(): void {
+		$created = $this->givenActiveSourceAndNoTransmission();
+		$missing = '/admin/files/Invoices/missing.xml';
+
+		$this->rootFolder->method('get')->willThrowException(new NotFoundException($missing));
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved, $created) {
+				$saved[] = $object;
+				return (count($saved) === 1) ? $created : $this->entity($object, 'tx-uuid-142');
+			}
+		);
+
+		$this->logProvider->expects($this->never())->method('submitDocument');
+
+		$result = $this->service->handleOutboundRequested($this->outboundRequest($missing));
+
+		$this->assertSame('failed', $result->getObject()['status']);
+		$this->assertStringContainsString('payload not readable', (string)$result->getObject()['detail']);
+		$this->assertStringContainsString($missing, (string)$result->getObject()['detail']);
+		$this->assertCount(1, $result->getObject()['attempts']);
+
+	}//end testUnreadableReferenceFailsWithoutCallingTheAccessPoint()
+
+	/**
+	 * A path outside a user's `files/` tree is not read, so a request cannot
+	 * make integriq send app data or another storage root.
+	 *
+	 * @return void
+	 */
+	public function testPathOutsideUserFilesIsNotRead(): void {
+		$this->givenActiveSourceAndNoTransmission();
+		$this->objectService->method('saveObject')->willReturnCallback(
+			fn (array $object) => $this->entity($object, 'tx-uuid-142')
+		);
+
+		$this->rootFolder->expects($this->never())->method('get');
+		$this->logProvider->expects($this->never())->method('submitDocument');
+
+		$result = $this->service->handleOutboundRequested($this->outboundRequest('/appdata_oc123/integriq/secret.xml'));
+
+		$this->assertSame('failed', $result->getObject()['status']);
+
+	}//end testPathOutsideUserFilesIsNotRead()
 
 	/**
 	 * A signed delivery callback for a known transmissionId advances the transmission and emits a status event.
