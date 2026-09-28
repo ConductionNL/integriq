@@ -29,6 +29,7 @@ use OCA\Integriq\Service\DocumentGeneration\LogDocumentGenerationProvider;
 use OCA\Integriq\Service\DocumentGeneration\SmartDocumentsProvider;
 use OCA\Integriq\Service\DocumentGeneration\XentialProvider;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
@@ -167,6 +168,66 @@ class DocumentGenerationControllerTest extends TestCase {
 		$this->assertTrue($this->saved[0]['isEnabled']);
 
 	}//end testAMockModeSourceActivates()
+
+	/**
+	 * Activating a seeded vendor source from the source page writes a source
+	 * the register accepts, so the activation is kept rather than refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+	 */
+	public function testActivatingASeededSourceWritesWhatTheRegisterAccepts(): void {
+		$fragment = json_decode(
+			(string)file_get_contents(dirname(__DIR__, 3) . '/lib/Settings/register.d/document-generation-vendor-adapter.json'),
+			true,
+			flags: JSON_THROW_ON_ERROR
+		);
+		foreach ($fragment['components']['objects'] as $seed) {
+			$this->saved = [];
+			unset($seed['@self']);
+			$controller = $this->controllerFor($seed);
+
+			$response = $controller->activate(sourceId: 'source-1');
+
+			$this->assertSame(Http::STATUS_OK, $response->getStatus(), (string)$seed['name']);
+			$this->assertTrue($this->saved[0]['isEnabled']);
+			$this->assertSame([], RegisterSchemaValidator::errors('source', $this->saved[0]), (string)$seed['name']);
+		}
+
+	}//end testActivatingASeededSourceWritesWhatTheRegisterAccepts()
+
+	/**
+	 * A source seeded before this fix still carries an empty credential
+	 * reference; activating it drops the empty reference, so the write is
+	 * one the register accepts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
+	 */
+	public function testAnEmptyCredentialReferenceIsDroppedOnActivation(): void {
+		$controller = $this->controllerFor(
+			[
+				'name' => 'Xential',
+				'type' => 'documentGeneration',
+				'isEnabled' => false,
+				'configuration' => [
+					'providerId' => 'xential',
+					'baseUrl' => 'https://vendor.example',
+					'mockMode' => true,
+					'authentication' => ['credentialRef' => ''],
+				],
+			]
+		);
+
+		$response = $controller->activate(sourceId: 'source-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertArrayNotHasKey('authentication', $this->saved[0]['configuration']);
+		$this->assertSame([], RegisterSchemaValidator::errors('source', $this->saved[0]));
+
+	}//end testAnEmptyCredentialReferenceIsDroppedOnActivation()
 
 	/**
 	 * The templates of a mock-mode source are listed from the binding.

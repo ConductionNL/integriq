@@ -103,10 +103,7 @@
         "configuration": {
           "providerId": "smartdocuments",
           "baseUrl": "https://api.smartdocuments.example/v1",
-          "mockMode": true,
-          "authentication": {
-            "credentialRef": ""
-          }
+          "mockMode": true
         }
       },
       {
@@ -124,10 +121,7 @@
         "configuration": {
           "providerId": "xential",
           "baseUrl": "https://api.xential.example",
-          "mockMode": true,
-          "authentication": {
-            "credentialRef": ""
-          }
+          "mockMode": true
         }
       }
     ]
