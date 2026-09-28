@@ -12,7 +12,7 @@
  * source on. These tests mount the real panel with the section context
  * CnDetailPage provides and assert the requests it sends and what it shows.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
  */
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'
 import { flushPromises, mount } from '@vue/test-utils'

@@ -19,7 +19,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use Exception;
 /**
  * A document generation binding could not produce, or could not be reached.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md
  */
 class DocumentGenerationException extends Exception {
 
@@ -53,7 +53,7 @@ class DocumentGenerationException extends Exception {
 	 *
 	 * @return static
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function asUnreachable(): static {
 		$this->unreachable = true;
@@ -67,7 +67,7 @@ class DocumentGenerationException extends Exception {
 	 *
 	 * @return boolean True when nobody got an answer from the vendor.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function isUnreachable(): bool {
 		return $this->unreachable;

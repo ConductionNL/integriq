@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+ * Spec coverage: openspec/specs/document-generation-vendor-adapter/spec.md
  *
  * Two scenarios drive the real objects and the real catalog page: a vendor
  * source that carries no credential reference cannot be activated, and a
@@ -26,7 +26,7 @@ test.describe.configure({ mode: 'serial' })
 test('a vendor source without a credential reference cannot be activated', async ({
 	request,
 }) => {
-	// @e2e openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
+	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
 	const created = await request.post(`${OR_BASE}/source`, {
 		data: {
@@ -63,7 +63,7 @@ test('a vendor source without a credential reference cannot be activated', async
 test('a mock-mode source lists the vendor templates, and stores none of them', async ({
 	request,
 }) => {
-	// @e2e openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
+	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
 	const created = await request.post(`${OR_BASE}/source`, {
 		data: {
@@ -107,7 +107,7 @@ test('a mock-mode source lists the vendor templates, and stores none of them', a
 })
 
 test('the catalog carries both vendors, dormant', async ({ page }) => {
-	// @e2e openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-catalog-lists-both-vendors-dormant
+	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-catalog-lists-both-vendors-dormant
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-catalog-lists-both-vendors-dormant
 	await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
 

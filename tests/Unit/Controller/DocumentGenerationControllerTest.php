@@ -15,7 +15,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
  */
 
 declare(strict_types=1);
@@ -175,7 +175,7 @@ class DocumentGenerationControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 	 */
 	public function testActivatingASeededSourceWritesWhatTheRegisterAccepts(): void {
 		$fragment = json_decode(
@@ -204,7 +204,7 @@ class DocumentGenerationControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	public function testAnEmptyCredentialReferenceIsDroppedOnActivation(): void {
 		$controller = $this->controllerFor(

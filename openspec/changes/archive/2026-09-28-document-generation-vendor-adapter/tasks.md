@@ -40,5 +40,5 @@
 
 ## Cross-repo follow-ups
 
-- [ ] Open the filinq follow-up on `document-creatie-sjablonen`: a template `engine` of `twig` or `vendor:<sourceSlug>` that dispatches `DocumentRenderRequestedEvent` and files the result (design D6)
-- [ ] Tell dossiq to bind `TemplateEngineAdapterInterface` to filinq's contract and delete `MockTemplateEngineAdapter` (ADR-075); its task sits in `competitor-parity-2026-09`
+- [x] Open the filinq follow-up on `document-creatie-sjablonen` (ConductionNL/filinq#1253): a template `engine` of `twig` or `vendor:<sourceSlug>` that dispatches `DocumentRenderRequestedEvent` and files the result (design D6)
+- [x] Tell dossiq to bind `TemplateEngineAdapterInterface` to filinq's contract and delete `MockTemplateEngineAdapter` (ADR-075); its task sits in `competitor-parity-2026-09` (filed as ConductionNL/dossiq#3131)

@@ -7188,12 +7188,13 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-28-document-generation-vendor-adapter",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Render: lib/AppInfo/Application.php:281 registers DocumentRenderRequestedEvent -> lib/EventListener/DocumentRenderRequestedListener.php:71 handle() -> lib/Service/DocumentGeneration/DocumentGenerationService.php:119 requestRender(), polled by lib/BackgroundJob/DocumentGenerationStatusJob.php (appinfo/info.xml:129); providers SmartDocumentsProvider.php and XentialProvider.php extend AbstractRestDocumentGenerationProvider.php over BrokeredCallService (:61). Seeded sources ship mockMode:true (lib/Settings/register.d/document-generation-vendor-adapter.json:106). appinfo/routes.php:311-312 documentGeneration#templates/#activate (AuthorizedAdminSetting) have no frontend caller (not in frontend-api-paths.txt). Covered by openspec/changes/document-generation-vendor-adapter/ (13 of 15 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the source page and template list. Its tick does not hold up: no file under src/ calls documentGeneration#templates or #activate."
+				"evidence": "Render: lib/AppInfo/Application.php registers DocumentRenderRequestedEvent -> lib/EventListener/DocumentRenderRequestedListener.php handle() -> lib/Service/DocumentGeneration/DocumentGenerationService.php requestRender(), polled by lib/BackgroundJob/DocumentGenerationStatusJob.php, announced by DocumentRenderedEvent; providers SmartDocumentsProvider.php and XentialProvider.php extend AbstractRestDocumentGenerationProvider.php over BrokeredCallService. Operator: src/manifest.json SourceDetail bodyWidgets mounts src/components/DocumentGenerationSourcePanel.vue, which lists the vendor templates (documentGeneration#templates) and activates the source (documentGeneration#activate); tests/vitest/documentGenerationSourcePanel.spec.js, tests/Unit/Controller/DocumentGenerationControllerTest.php (activation writes a source the register accepts). Seeded sources ship mockMode:true (lib/Settings/register.d/document-generation-vendor-adapter.json). Built by change document-generation-vendor-adapter (archived 2026-09-28). Filinq picking the vendor engine is filinq#1253."
 			},
-			"reachedOn": "machine path: DocumentRenderRequestedEvent dispatched by filinq; template listing and activation reached by nothing",
-			"note": "The vendor adapter is real and event-driven, but the vendor sources ship in mock mode and there is no page to list templates or activate a source. The filinq emitter could not be checked locally.",
+			"reachedOn": "machine path: DocumentRenderRequestedEvent dispatched by filinq (filinq#1253 wires the template engine); operator path: Sources > a SmartDocuments or Xential source > Document generation, which lists the templates and activates the source",
+			"note": "The vendor adapter is real and event-driven, but the vendor sources ship in mock mode. Built 2026-09-28: the source page lists the vendor templates and activates the source; a seeded source could not be activated before, because its empty credentialRef was refused by the register. Stays partial until filinq dispatches the render (filinq#1253) and a live vendor is configured.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "document-cms-connectors",

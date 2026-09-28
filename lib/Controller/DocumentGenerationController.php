@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
  * Both endpoints are administrator-only: a document generation source is
  * instance configuration, and its template list is a vendor's, not a user's.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
  */
 class DocumentGenerationController extends Controller {
 
@@ -75,7 +75,7 @@ class DocumentGenerationController extends Controller {
 	 *
 	 * @return JSONResponse The vendor's template ids and names.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function templates(string $sourceId): JSONResponse {
@@ -115,7 +115,7 @@ class DocumentGenerationController extends Controller {
 	 *
 	 * @return JSONResponse Whether the source is now active.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function activate(string $sourceId): JSONResponse {
@@ -171,7 +171,7 @@ class DocumentGenerationController extends Controller {
 	 *
 	 * @return array<string, mixed> The source without an empty credential reference.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
 	private function withoutEmptyCredentialRef(array $object): array {
 		$authentication = ($object['configuration']['authentication'] ?? null);

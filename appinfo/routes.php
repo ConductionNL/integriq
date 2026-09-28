@@ -356,7 +356,7 @@ return [
 		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
 		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
 
-		// Vendor document generation (openspec/changes/document-generation-vendor-adapter).
+		// Vendor document generation (openspec/changes/archive/2026-09-28-document-generation-vendor-adapter).
 		// The operator's half only: read the vendor's own template list for a
 		// source, and activate a source that can actually render. Filinq asks
 		// for a render through the typed DocumentRenderRequestedEvent, not

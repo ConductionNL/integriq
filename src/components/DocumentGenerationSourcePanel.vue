@@ -13,7 +13,7 @@
   a source that cannot render (no credential reference, no base URL) and says
   which setting is missing.
 
-  @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+  @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 -->
 <template>
 	<section
@@ -128,7 +128,7 @@ export default {
 		 * The loaded source object.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+		 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 		 */
 		source() {
 			const ctx = this.cnSectionContext
@@ -140,7 +140,7 @@ export default {
 		 * The source's id for the endpoint URLs.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+		 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 		 */
 		objectId() {
 			const ctx = this.cnSectionContext
@@ -158,7 +158,7 @@ export default {
 		 * Whether this source generates documents.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+		 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 		 */
 		isDocumentGeneration() {
 			return this.source.type === DOCUMENT_GENERATION_TYPE
@@ -168,7 +168,7 @@ export default {
 		 * Whether the source is active, after a successful activation too.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+		 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 		 */
 		enabled() {
 			return this.activated || this.source.isEnabled === true
@@ -182,7 +182,7 @@ export default {
 			 * Ask the vendor for its templates once the source is known.
 			 *
 			 * @return {void}
-			 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+			 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 			 */
 			handler() {
 				if (this.isDocumentGeneration && this.objectId) {
@@ -199,7 +199,7 @@ export default {
 		 * List the vendor's templates through integriq, which stores none.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+		 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 		 */
 		async loadTemplates() {
 			this.loading = true
@@ -225,7 +225,7 @@ export default {
 		 * Activate the source, or show why it cannot render yet.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
+		 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 		 */
 		async activate() {
 			this.activating = true
