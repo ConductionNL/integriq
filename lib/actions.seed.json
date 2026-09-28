@@ -64,6 +64,9 @@
     "configuration.export": ["admin"],
     "configuration.import": ["admin"],
     "environment.manage": ["admin"],
-    "environment.promote": ["admin"]
+    "environment.promote": ["admin"],
+    "exchange.read": ["admin"],
+    "exchange.resubmit": ["admin"],
+    "exchange.waive": ["admin"]
   }
 }
