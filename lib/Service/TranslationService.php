@@ -96,10 +96,9 @@ class TranslationService {
 		$slug     = (string)($data['slug'] ?? '');
 		$provider = (string)($data['configuration']['translationProvider'] ?? $slug);
 
+		$body = ['q' => $text, 'source' => $from, 'target' => $to, 'format' => 'text'];
 		if ($provider === 'deepl') {
 			$body = ['text' => [$text], 'source_lang' => strtoupper($from), 'target_lang' => strtoupper($to)];
-		} else {
-			$body = ['q' => $text, 'source' => $from, 'target' => $to, 'format' => 'text'];
 		}
 
 		try {
