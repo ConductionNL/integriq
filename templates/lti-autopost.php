@@ -17,6 +17,6 @@
 <form id="integriq-lti-autopost" method="post" action="<?php p($_['redirectUri']); ?>">
 	<input type="hidden" name="id_token" value="<?php p($_['idToken']); ?>">
 	<input type="hidden" name="state" value="<?php p($_['state']); ?>">
-	<button type="submit"><?php p($_['continueLabel']); ?></button>
+	<button type="submit" aria-label="<?php p($_['continueLabel']); ?>"><?php p($_['continueLabel']); ?></button>
 </form>
 <script nonce="<?php p($_['cspNonce'] ?? ''); ?>">document.getElementById('integriq-lti-autopost').submit();</script>
