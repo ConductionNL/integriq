@@ -463,6 +463,40 @@ class SourceCallNodeTest extends TestCase {
 	}//end testTemplatedValuesAreResolvedFromTheItem()
 
 	/**
+	 * A body naming `{{ @item }}` posts the whole item, which is what a retired webhook step sent.
+	 *
+	 * @return void
+	 */
+	public function testWholeItemBodyPostsTheItemItself(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$captured = [];
+		$this->callService->method('callAsync')->willReturnCallback(
+			function (...$arguments) use (&$captured) {
+				$captured = $arguments;
+				return $this->promisedLog(statusCode: 204, body: '');
+			}
+		);
+
+		$case = ['id' => 'c-7', 'title' => 'Kapvergunning', 'status' => 'open'];
+		$this->node->execute(
+			[['json' => $case]],
+			[
+				'source' => 'url-https-hooks-example-org',
+				'endpoint' => '/case-events',
+				'method' => 'POST',
+				'body' => ['case' => '{{ @item }}', 'transition' => ['to' => 'closed']],
+			],
+			$this->context()
+		);
+
+		$this->assertSame('/case-events', $captured[1]);
+		$this->assertSame(['case' => $case, 'transition' => ['to' => 'closed']], $captured[3]['json']);
+
+	}//end testWholeItemBodyPostsTheItemItself()
+
+	/**
 	 * The response lands under the author-named key and cannot spoof provenance.
 	 *
 	 * @return void
