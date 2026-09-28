@@ -1,0 +1,857 @@
+{
+	"$comment": "ADR-037 register fragment (learniq-exchange-jobs-native). Decision D7: another app's data exchange jobs ride on integriq's own schemas. Adds optional exchange tags to job (1.3.0) and exchange rejection fields to sync_item_dead_letter (1.1.0), and seeds 28 mapping rows: the 23 mappings learniq carried as DataMappingProfile seeds (slugs shared with learniq change data-exchange-to-integriq), the rejection status translation, and four error code catalogues. The catalogues are code tables read by ExchangeErrorCodeCatalogue, never executed by MappingService. No personal data is ever stored on a job or a dead letter: the owning app hands the allowed records over in its gate answer, in process. See openspec/changes/learniq-exchange-jobs-native/design.md.",
+	"components": {
+		"schemas": {
+			"job": {
+				"version": "1.3.0",
+				"properties": {
+					"exchangeTarget": {
+						"type": "string",
+						"enum": [
+							"bron-rod",
+							"oso",
+							"leerplicht",
+							"surfconext",
+							"hr",
+							"swv",
+							"ooapi-catalog",
+							"timetable-import",
+							"migration-import",
+							"lvs-results",
+							"uwlr",
+							"edu-v",
+							"basispoort",
+							"entree-content"
+						],
+						"description": "The data exchange target this job carries, for an exchange job owned by another app. Absent on every other job.",
+						"title": "Exchange Target"
+					},
+					"exchangeDirection": {
+						"type": "string",
+						"enum": [
+							"export",
+							"import",
+							"sync"
+						],
+						"description": "Direction of an exchange job: export (the owning app to the target), import, or sync.",
+						"title": "Exchange Direction"
+					},
+					"ownerApp": {
+						"type": "string",
+						"description": "Id of the app that owns this exchange job and answers its gate, such as learniq.",
+						"title": "Owner App"
+					},
+					"ownerRef": {
+						"type": "string",
+						"description": "The owning app's opaque reference for what the job is about, such as attendance-flag/<uuid>. Never personal data.",
+						"title": "Owner Reference"
+					},
+					"exchangeScope": {
+						"type": "object",
+						"description": "Selectors and target parameters of an exchange job (schema, filters, cohortId, period, recordIds, berichtsoort, meldingType, subtype, dataService, receiverId). Never personal data.",
+						"title": "Exchange Scope"
+					},
+					"exchangeMapping": {
+						"type": "string",
+						"description": "Slug of the mapping row applied to each allowed record before it reaches the adapter.",
+						"title": "Exchange Mapping"
+					},
+					"exchangeStatus": {
+						"type": "string",
+						"enum": [
+							"queued",
+							"running",
+							"succeeded",
+							"partial",
+							"failed",
+							"refused"
+						],
+						"description": "Status of an exchange job. succeeded, partial, failed and refused are terminal.",
+						"title": "Exchange Status"
+					},
+					"gateDecision": {
+						"type": "object",
+						"description": "The owning app's last gate answer: {decision: allow|refuse, code, reason, checkedAt}.",
+						"title": "Gate Decision"
+					},
+					"exchangeResult": {
+						"type": "object",
+						"description": "Counts of the last run: {recordsProcessed, recordsAccepted, recordsRejected, runId, artefactRef}.",
+						"title": "Exchange Result"
+					},
+					"exchangeError": {
+						"type": "string",
+						"description": "Why the exchange job failed as a whole, starting with its error code.",
+						"title": "Exchange Error"
+					},
+					"requestedBy": {
+						"type": "string",
+						"description": "Nextcloud user id of whoever requested the exchange job.",
+						"title": "Requested By"
+					},
+					"requestedAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the exchange job was requested.",
+						"title": "Requested At"
+					},
+					"startedAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the last run of the exchange job started.",
+						"title": "Started At"
+					},
+					"finishedAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the last run of the exchange job finished.",
+						"title": "Finished At"
+					},
+					"resubmissionOf": {
+						"type": "string",
+						"description": "Uuid of the rejection (sync_item_dead_letter) this single-record exchange job resubmits.",
+						"title": "Resubmission Of"
+					},
+					"migratedFrom": {
+						"type": "string",
+						"description": "Id of the owning app's former job row this exchange job was migrated from. A migrated job never runs.",
+						"title": "Migrated From"
+					}
+				}
+			},
+			"sync_item_dead_letter": {
+				"version": "1.1.0",
+				"properties": {
+					"exchangeJob": {
+						"type": "string",
+						"format": "uuid",
+						"$ref": "#/components/schemas/job",
+						"x-openregister-onDelete": "SET NULL",
+						"description": "Uuid of the exchange job whose run rejected this record (many-to-one; onDelete=SET NULL keeps the rejection for audit). Set only on exchange rejections.",
+						"title": "Exchange Job"
+					},
+					"ownerApp": {
+						"type": "string",
+						"description": "Id of the app that owns the exchange job that rejected this record, copied so an app lists only its own rejections.",
+						"title": "Owner App"
+					},
+					"exchangeTarget": {
+						"type": "string",
+						"description": "The exchange target of the job that rejected this record, copied so the rejection list can filter on it.",
+						"title": "Exchange Target"
+					},
+					"errorCode": {
+						"type": "string",
+						"description": "The target's or the runner's error code for this rejection, resolved to a label by the exchange error code catalogues.",
+						"title": "Error Code"
+					},
+					"offendingFields": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"description": "Field names the target named as the cause. Names only, never values.",
+						"title": "Offending Fields"
+					},
+					"ownerRef": {
+						"type": "string",
+						"description": "The owning app's reference to the rejected record, such as learner-profile/<uuid>.",
+						"title": "Owner Reference"
+					},
+					"sourceKind": {
+						"type": "string",
+						"description": "Which kind of object in the owning app the rejected record is, such as learner-profile.",
+						"title": "Source Kind"
+					},
+					"correctionDeadlineAt": {
+						"type": "string",
+						"format": "date",
+						"description": "Externally supplied deadline to correct this rejection, when one exists.",
+						"title": "Correction Deadline"
+					},
+					"discardReason": {
+						"type": "string",
+						"description": "Why this rejection was waived. Required when an exchange rejection is discarded.",
+						"title": "Discard Reason"
+					},
+					"correctedBy": {
+						"type": "string",
+						"description": "User id of whoever marked the source record corrected before resubmission.",
+						"title": "Corrected By"
+					},
+					"correctedAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the source record was marked corrected.",
+						"title": "Corrected At"
+					}
+				}
+			}
+		},
+		"objects": [
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-bron-rod-export-learner"
+				},
+				"name": "learniq: BRON/ROD learner export",
+				"description": "Maps a learniq learner-profile record onto DUO:LeerlingV2. Target bron-rod, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"BRON/ROD learner export\" (decision D7). Validation profile: duo-bron-v2.",
+				"reference": "learniq-bron-rod-export-learner",
+				"mapping": {
+					"eckId": "eckId",
+					"bsn": "eckId",
+					"voornamen": "givenName",
+					"achternaam": "familyName",
+					"geboorteDatum": "{{ birthDate|date('Y-m-d') }}",
+					"brinNummer": "schoolId"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-oso-export-dossier"
+				},
+				"name": "learniq: OSO transfer dossier",
+				"description": "Maps a learniq learner-profile record onto OSO:TransferDossier. Target oso, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"OSO transfer dossier\" (decision D7). Validation profile: oso-transfer-v3.",
+				"reference": "learniq-oso-export-dossier",
+				"mapping": {
+					"leerlingEckId": "eckId",
+					"voornamen": "givenName",
+					"achternaam": "familyName",
+					"geboortedatum": "{{ birthDate|date('Y-m-d') }}",
+					"brinNummer": "schoolBrin"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-leerplicht-export-melding"
+				},
+				"name": "learniq: Leerplicht notification export",
+				"description": "Maps a learniq attendance-flag record onto Digikoppeling:LeerplichtMelding. Target leerplicht, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Leerplicht notification export\" (decision D7).",
+				"reference": "learniq-leerplicht-export-melding",
+				"mapping": {
+					"leerlingId": "learnerId",
+					"periodeVan": "{{ windowStart|date('Y-m-d') }}",
+					"periodeTm": "{{ windowEnd|date('Y-m-d') }}",
+					"aantalLesuren": "metricValue",
+					"breachingRecords": "breachingRecords",
+					"interventions": "interventions"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-swv-export-zorgvraag"
+				},
+				"name": "learniq: SWV zorgvraag dossier",
+				"description": "Maps a learniq support-request record onto OSO:CareRequestDossier. Target swv, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"SWV zorgvraag dossier\" (decision D7). Validation profile: oso-care-request-v1.",
+				"reference": "learniq-swv-export-zorgvraag",
+				"mapping": {
+					"hulpvraagDomein": "supportDomain",
+					"hulpvraagOmschrijving": "description",
+					"urgentie": "urgency",
+					"learner": "learner",
+					"learningPlanContext": "learningPlanContext"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-timetable-import-zermelo"
+				},
+				"name": "learniq: Zermelo timetable import",
+				"description": "Maps an incoming Zermelo:Appointment record onto learniq session. Target timetable-import, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Zermelo timetable import\" (decision D7).",
+				"reference": "learniq-timetable-import-zermelo",
+				"mapping": {
+					"externalRef": "appointmentId",
+					"cohortId": "groupInDepartment",
+					"title": "subjects",
+					"startsAt": "{{ start|date('c') }}",
+					"endsAt": "{{ end|date('c') }}",
+					"location": "locationOfBranch"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-timetable-import-untis"
+				},
+				"name": "learniq: Untis timetable import",
+				"description": "Maps an incoming Untis:Period record onto learniq session. Target timetable-import, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Untis timetable import\" (decision D7).",
+				"reference": "learniq-timetable-import-untis",
+				"mapping": {
+					"externalRef": "id",
+					"cohortId": "klasseId",
+					"title": "faechId",
+					"startsAt": "{{ startDateTime|date('c') }}",
+					"endsAt": "{{ endDateTime|date('c') }}",
+					"location": "raumId"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-timetable-import-xedule"
+				},
+				"name": "learniq: Xedule timetable import",
+				"description": "Maps an incoming Xedule:Event record onto learniq session. Target timetable-import, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Xedule timetable import\" (decision D7).",
+				"reference": "learniq-timetable-import-xedule",
+				"mapping": {
+					"externalRef": "eventId",
+					"cohortId": "groupCode",
+					"title": "activityName",
+					"startsAt": "{{ startMoment|date('c') }}",
+					"endsAt": "{{ endMoment|date('c') }}",
+					"location": "locationName"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-lvs-results-import-uwlr"
+				},
+				"name": "learniq: LVS results import (Cito/IEP/Boom/Dia via UWLR)",
+				"description": "Maps an incoming UWLR:ToetsResultaat record onto learniq assessment-result. Target lvs-results, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"LVS results import (Cito/IEP/Boom/Dia via UWLR)\" (decision D7).",
+				"reference": "learniq-lvs-results-import-uwlr",
+				"mapping": {
+					"provider": "leverancier",
+					"instrument": "toetsnaam",
+					"moment": "meetmoment",
+					"takenAt": "{{ afnameDatum|date('c') }}",
+					"rawScore": "ruweScore",
+					"vaardigheidsscore": "vaardigheidsscore",
+					"niveau": "niveau",
+					"referentieniveau": "referentieniveau",
+					"dle": "dle"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-oso-import-dossier"
+				},
+				"name": "learniq: OSO overstapdossier import",
+				"description": "Maps an incoming OSO:TransferDossier record onto learniq oso-import-dossier. Target oso, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"OSO overstapdossier import\" (decision D7). Validation profile: oso-transfer-v3.",
+				"reference": "learniq-oso-import-dossier",
+				"mapping": {
+					"learnerEckId": "leerlingEckId",
+					"sourceSchoolBrin": "brinNummer",
+					"receivedAt": "{{ verzendDatum|date('c') }}"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-uwlr-export-pupil"
+				},
+				"name": "learniq: UWLR pupil export",
+				"description": "Maps a learniq learner-profile record onto UWLR:Leerling. Target uwlr, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"UWLR pupil export\" (decision D7).",
+				"reference": "learniq-uwlr-export-pupil",
+				"mapping": {
+					"leerlingEckId": "eckId",
+					"voornamen": "givenName",
+					"achternaam": "familyName",
+					"geboortedatum": "{{ birthDate|date('Y-m-d') }}",
+					"brinNummer": "schoolId"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-uwlr-export-group"
+				},
+				"name": "learniq: UWLR group export",
+				"description": "Maps a learniq cohort record onto UWLR:Groep. Target uwlr, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"UWLR group export\" (decision D7).",
+				"reference": "learniq-uwlr-export-group",
+				"mapping": {
+					"groepsnaam": "name",
+					"schooljaar": "academicYear",
+					"periode": "period"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-uwlr-export-teacher"
+				},
+				"name": "learniq: UWLR teacher export",
+				"description": "Maps a learniq learner-profile record onto UWLR:Onderwijsmedewerker. Target uwlr, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"UWLR teacher export\" (decision D7).",
+				"reference": "learniq-uwlr-export-teacher",
+				"mapping": {
+					"medewerkerEckId": "eckId",
+					"voornamen": "givenName",
+					"achternaam": "familyName",
+					"functiecode": "department"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-uwlr-import-results"
+				},
+				"name": "learniq: UWLR results import (generic data services)",
+				"description": "Maps an incoming UWLR:Onderwijsresultaten record onto learniq lvs-result. Target uwlr, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"UWLR results import (generic data services)\" (decision D7).",
+				"reference": "learniq-uwlr-import-results",
+				"mapping": {
+					"provider": "leverancier",
+					"instrument": "toetsnaam",
+					"vaardigheidsscore": "vaardigheidsscore"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-edu-v-export-onderwijsdeelnemers"
+				},
+				"name": "learniq: Edu-V Onderwijsdeelnemers data service export",
+				"description": "Maps a learniq learner-profile record onto EduV:Onderwijsdeelnemers. Target edu-v, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Edu-V Onderwijsdeelnemers data service export\" (decision D7).",
+				"reference": "learniq-edu-v-export-onderwijsdeelnemers",
+				"mapping": {
+					"eckId": "eckId",
+					"voornamen": "givenName",
+					"achternaam": "familyName",
+					"geboortedatum": "{{ birthDate|date('Y-m-d') }}"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-edu-v-export-onderwijsgroepen"
+				},
+				"name": "learniq: Edu-V Onderwijsgroepen data service export",
+				"description": "Maps a learniq cohort record onto EduV:Onderwijsgroepen. Target edu-v, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Edu-V Onderwijsgroepen data service export\" (decision D7).",
+				"reference": "learniq-edu-v-export-onderwijsgroepen",
+				"mapping": {
+					"groepsnaam": "name",
+					"schooljaar": "academicYear"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-edu-v-export-onderwijsmedewerkers"
+				},
+				"name": "learniq: Edu-V Onderwijsmedewerkers data service export",
+				"description": "Maps a learniq learner-profile record onto EduV:Onderwijsmedewerkers. Target edu-v, direction export. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Edu-V Onderwijsmedewerkers data service export\" (decision D7).",
+				"reference": "learniq-edu-v-export-onderwijsmedewerkers",
+				"mapping": {
+					"eckId": "eckId",
+					"voornamen": "givenName",
+					"achternaam": "familyName"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-basispoort-sync-learner"
+				},
+				"name": "learniq: Basispoort SSO and pupil/group/staff export (PO)",
+				"description": "Maps a learniq learner-profile record onto Basispoort:Leerling. Target basispoort, direction sync. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Basispoort SSO and pupil/group/staff export (PO)\" (decision D7).",
+				"reference": "learniq-basispoort-sync-learner",
+				"mapping": {
+					"eckId": "eckId",
+					"voornamen": "givenName",
+					"achternaam": "familyName",
+					"brinNummer": "schoolId"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-entree-content-sync-learner"
+				},
+				"name": "learniq: Entree content SSO hand-off (VO)",
+				"description": "Maps a learniq learner-profile record onto Entree:MethodeToegang. Target entree-content, direction sync. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Entree content SSO hand-off (VO)\" (decision D7).",
+				"reference": "learniq-entree-content-sync-learner",
+				"mapping": {
+					"eckId": "eckId",
+					"rol": "roles"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-timetable-import-timeedit"
+				},
+				"name": "learniq: TimeEdit timetable import",
+				"description": "Maps an incoming TimeEdit:Activity record onto learniq session. Target timetable-import, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"TimeEdit timetable import\" (decision D7).",
+				"reference": "learniq-timetable-import-timeedit",
+				"mapping": {
+					"externalRef": "activityId",
+					"cohortId": "resourceGroup",
+					"title": "activityTitle",
+					"startsAt": "{{ beginTime|date('c') }}",
+					"endsAt": "{{ endTime|date('c') }}",
+					"location": "roomName"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-migration-import-parnassys"
+				},
+				"name": "learniq: ParnasSys migration import",
+				"description": "Maps an incoming ParnasSys:Leerling record onto learniq learner-profile. Target migration-import, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"ParnasSys migration import\" (decision D7).",
+				"reference": "learniq-migration-import-parnassys",
+				"mapping": {
+					"eckId": "eckId",
+					"givenName": "voornamen",
+					"familyName": "achternaam",
+					"birthDate": "{{ geboortedatum|date('c') }}",
+					"schoolId": "brinNummer"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-migration-import-esis"
+				},
+				"name": "learniq: ESIS migration import",
+				"description": "Maps an incoming ESIS:Leerling record onto learniq learner-profile. Target migration-import, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"ESIS migration import\" (decision D7).",
+				"reference": "learniq-migration-import-esis",
+				"mapping": {
+					"eckId": "eckId",
+					"givenName": "voornamen",
+					"familyName": "achternaam",
+					"birthDate": "{{ geboortedatum|date('c') }}",
+					"schoolId": "brinNummer"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-migration-import-magister"
+				},
+				"name": "learniq: Magister migration import",
+				"description": "Maps an incoming Magister:Leerling record onto learniq learner-profile. Target migration-import, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"Magister migration import\" (decision D7).",
+				"reference": "learniq-migration-import-magister",
+				"mapping": {
+					"eckId": "eckId",
+					"givenName": "voornamen",
+					"familyName": "achternaam",
+					"birthDate": "{{ geboortedatum|date('c') }}",
+					"schoolId": "brinNummer"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-migration-import-somtoday"
+				},
+				"name": "learniq: SOMtoday migration import",
+				"description": "Maps an incoming Somtoday:Leerling record onto learniq learner-profile. Target migration-import, direction import. Keys are the output field, values the input field or a Twig template. Moved from learniq DataMappingProfile \"SOMtoday migration import\" (decision D7).",
+				"reference": "learniq-migration-import-somtoday",
+				"mapping": {
+					"eckId": "eckId",
+					"givenName": "voornamen",
+					"familyName": "achternaam",
+					"birthDate": "{{ geboortedatum|date('c') }}",
+					"schoolId": "brinNummer"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-exchange-rejection-status"
+				},
+				"name": "learniq: rejection status translation",
+				"description": "Translates the status of a learniq ExchangeRejection into the status of the integriq sync_item_dead_letter that replaces it. Applied by ExchangeRejectionService::migrate() when a migrated job carries its rejections. A corrected rejection stays open until it is resubmitted.",
+				"reference": "learniq-exchange-rejection-status",
+				"mapping": {
+					"open": "failed",
+					"corrected": "failed",
+					"resubmitted": "replayed",
+					"accepted": "replayed",
+					"waived": "discarded"
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-exchange-error-codes-bron-rod"
+				},
+				"name": "Exchange error codes: bron-rod",
+				"description": "Error codes of target bron-rod, keyed by code. A code table, not a transformation: read by ExchangeErrorCodeCatalogue, never executed by MappingService. Each value is {label, labelEn, category, severity}. Moved from learniq ExchangeErrorCode (decision D7). Illustrative starter data: DUO owns the authoritative list.",
+				"reference": "learniq-exchange-error-codes-bron-rod",
+				"mapping": {
+					"BRON-101": {
+						"label": "Ongeldig BSN-formaat",
+						"labelEn": "Invalid BSN format",
+						"category": "identiteit",
+						"severity": "blocking"
+					},
+					"BRON-102": {
+						"label": "Ontbrekende geboortedatum",
+						"labelEn": "Missing birth date",
+						"category": "identiteit",
+						"severity": "blocking"
+					},
+					"BRON-201": {
+						"label": "Overlappende inschrijving gevonden",
+						"labelEn": "Overlapping enrolment found",
+						"category": "inschrijving",
+						"severity": "blocking"
+					},
+					"BRON-205": {
+						"label": "Ontbrekende vooropleidingscode",
+						"labelEn": "Missing prior education code",
+						"category": "vooropleiding",
+						"severity": "blocking"
+					}
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-exchange-error-codes-oso"
+				},
+				"name": "Exchange error codes: oso",
+				"description": "Error codes of target oso, keyed by code. A code table, not a transformation: read by ExchangeErrorCodeCatalogue, never executed by MappingService. Each value is {label, labelEn, category, severity}. Moved from learniq ExchangeErrorCode (decision D7). Illustrative starter data: DUO owns the authoritative list.",
+				"reference": "learniq-exchange-error-codes-oso",
+				"mapping": {
+					"OSO-301": {
+						"label": "Onvolledig overstapdossier",
+						"labelEn": "Incomplete transfer dossier",
+						"category": "dossier",
+						"severity": "warning"
+					}
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-exchange-error-codes-leerplicht"
+				},
+				"name": "Exchange error codes: leerplicht",
+				"description": "Error codes of target leerplicht, keyed by code. A code table, not a transformation: read by ExchangeErrorCodeCatalogue, never executed by MappingService. Each value is {label, labelEn, category, severity}. Moved from learniq ExchangeErrorCode (decision D7). Illustrative starter data: DUO owns the authoritative list.",
+				"reference": "learniq-exchange-error-codes-leerplicht",
+				"mapping": {
+					"LP-401": {
+						"label": "Ontbrekend BRIN-nummer",
+						"labelEn": "Missing BRIN number",
+						"category": "melding",
+						"severity": "blocking"
+					}
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "mapping",
+					"slug": "learniq-exchange-error-codes-integriq"
+				},
+				"name": "Exchange error codes: integriq",
+				"description": "Error codes the integriq exchange runner raises itself. A code table, not a transformation: read by ExchangeErrorCodeCatalogue, never executed by MappingService. Each value is {label, labelEn, category, severity}.",
+				"reference": "learniq-exchange-error-codes-integriq",
+				"mapping": {
+					"gate-owner-missing": {
+						"label": "De taak noemt geen eigenaar-app",
+						"labelEn": "The job names no owning app",
+						"category": "poort",
+						"severity": "blocking"
+					},
+					"gate-app-absent": {
+						"label": "De eigenaar-app is niet geïnstalleerd of staat uit",
+						"labelEn": "The owning app is not installed or not enabled",
+						"category": "poort",
+						"severity": "blocking"
+					},
+					"gate-unanswered": {
+						"label": "De eigenaar-app gaf geen antwoord op de poort",
+						"labelEn": "The owning app did not answer the gate",
+						"category": "poort",
+						"severity": "blocking"
+					},
+					"gate-error": {
+						"label": "De poort van de eigenaar-app gaf een fout",
+						"labelEn": "The owning app's gate failed",
+						"category": "poort",
+						"severity": "blocking"
+					},
+					"gate-refused": {
+						"label": "De eigenaar-app weigerde de taak",
+						"labelEn": "The owning app refused the job",
+						"category": "poort",
+						"severity": "blocking"
+					},
+					"no-handler": {
+						"label": "Geen koppeling voor dit doel en deze richting",
+						"labelEn": "No handler for this target and direction",
+						"category": "koppeling",
+						"severity": "blocking"
+					},
+					"mapping-missing": {
+						"label": "De vertaling die de taak noemt bestaat niet",
+						"labelEn": "The mapping the job names does not exist",
+						"category": "vertaling",
+						"severity": "blocking"
+					},
+					"mapping-failed": {
+						"label": "De vertaling faalde voor dit record",
+						"labelEn": "The mapping failed for this record",
+						"category": "vertaling",
+						"severity": "blocking"
+					},
+					"translation-failed": {
+						"label": "De koppeling weigerde de velden van dit record",
+						"labelEn": "The adapter refused this record's fields",
+						"category": "koppeling",
+						"severity": "blocking"
+					},
+					"send-failed": {
+						"label": "De koppeling kon dit record niet versturen",
+						"labelEn": "The adapter could not send this record",
+						"category": "koppeling",
+						"severity": "blocking"
+					},
+					"source-missing": {
+						"label": "De taak mist een verplichte instelling voor dit doel",
+						"labelEn": "The job lacks a setting this target requires",
+						"category": "koppeling",
+						"severity": "blocking"
+					}
+				},
+				"unset": [],
+				"cast": {},
+				"passThrough": false,
+				"version": "1.0.0"
+			}
+		]
+	}
+}

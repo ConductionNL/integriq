@@ -2085,7 +2085,8 @@
               "OCA\\Integriq\\Action\\SynchronizationAction",
               "OCA\\Integriq\\Action\\FlowAction",
               "OCA\\Integriq\\Action\\EventAction",
-              "OCA\\Integriq\\Action\\PingAction"
+              "OCA\\Integriq\\Action\\PingAction",
+              "OCA\\Integriq\\Action\\ExchangeJobAction"
             ]
           },
           "arguments": {
