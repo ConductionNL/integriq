@@ -106,6 +106,8 @@ class SynchronizationContractLogService {
 	 * @param array $object The contract log data.
 	 *
 	 * @return array The (unpersisted) contract log array.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
 	 */
 	public function createFromArray(array $object): array {
 		// Auto-fill a stable uuid the engine can reference before persistence.
