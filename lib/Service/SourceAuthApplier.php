@@ -18,7 +18,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/sources-declared-basic-and-apikey-auth/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace OCA\Integriq\Service;
  * without credentials. What an operator wrote in `configuration` still wins,
  * and a source on the credential broker is left to the broker.
  *
- * @spec openspec/changes/sources-declared-basic-and-apikey-auth/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
  */
 class SourceAuthApplier {
 
@@ -52,7 +52,7 @@ class SourceAuthApplier {
 	 *
 	 * @return array<string,mixed> The options, with the declared login added where nothing overrides it.
 	 *
-	 * @spec openspec/changes/sources-declared-basic-and-apikey-auth/specs/http-call-engine/spec.md#requirement-an-explicit-login-and-the-broker-win-req-sdl-002
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-an-explicit-login-and-the-broker-win-req-sdl-002
 	 */
 	public function apply(array $sourceData, array $config): array {
 		$authentication = ($sourceData['configuration']['authentication'] ?? null);

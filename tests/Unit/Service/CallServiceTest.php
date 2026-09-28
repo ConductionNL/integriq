@@ -475,7 +475,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-declared-basic-and-apikey-auth/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
 	 */
 	public function testADeclaredBasicLoginIsSent(): void {
 		$options = $this->callWithSourceFields(['auth' => 'basic', 'username' => 'koppeling', 'password' => 'geheim-wachtwoord']);
@@ -491,7 +491,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-declared-basic-and-apikey-auth/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
 	 */
 	public function testADeclaredApiKeyIsSentInTheDeclaredHeader(): void {
 		$options = $this->callWithSourceFields(['auth' => 'apikey', 'apikey' => 'sleutel-123', 'authorizationHeader' => 'Partner-Token']);
@@ -507,7 +507,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-declared-basic-and-apikey-auth/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
 	 */
 	public function testAnApiKeyWithoutAHeaderNameGoesInAuthorization(): void {
 		$options = $this->callWithSourceFields(['auth' => 'apikey', 'apikey' => 'sleutel-123']);
@@ -520,7 +520,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-declared-basic-and-apikey-auth/specs/http-call-engine/spec.md#requirement-an-explicit-login-and-the-broker-win-req-sdl-002
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-an-explicit-login-and-the-broker-win-req-sdl-002
 	 */
 	public function testAnExplicitLoginAndTheBrokerWin(): void {
 		$explicitAuth = $this->callWithSourceFields(

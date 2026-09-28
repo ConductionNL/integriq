@@ -570,15 +570,15 @@
 			"area": "sources",
 			"name": "Log in to a source with an API key or a username and password.",
 			"source": "own-code",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
-				"change": "sources-declared-basic-and-apikey-auth",
+				"state": "built",
+				"change": "2026-09-28-sources-declared-basic-and-apikey-auth",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/integriq_register.json:157-213 declares source.auth ('apikey, basic, oauth, jwt, none'), authorizationHeader, username, password, apikey as generic schema fields the Source form renders and saves; grep -noE \"sourceData\\['[a-zA-Z_]+'\\]\" lib/Service/CallService.php (35 hits) shows CallService NEVER reads auth/authorizationHeader/apikey/username/password, only 'type','location','headers','configuration' and circuit/rate-limit fields are read (CallService.php mergeSourceConfiguration():835-856). An API key CAN be wired manually via the free-form 'headers' object with a Twig expression like {{ source.apikey }} (renderValue() context is ['source'=>$sourceData], CallService.php:318), but true HTTP Basic auth has no path: the call-Twig sandbox's allowedFilters (CallService.php:222) is only ['upper','lower','trim','default','escape','raw','replace'], no base64 filter, and nothing sets Guzzle's 'auth' tuple from username/password."
+				"evidence": "lib/Service/SourceAuthApplier.php apply(), called in CallService after mergeSourceConfiguration(): a source with auth basic sends username and password as the Guzzle auth tuple, a source with auth apikey sends the key in authorizationHeader (Authorization when none is named); an explicit configuration.auth or header wins and a credentialRef source is left to the broker. Tests: CallServiceTest::testADeclaredBasicLoginIsSent, testADeclaredApiKeyIsSentInTheDeclaredHeader (call log holds no key and validates against call_log), testAnApiKeyWithoutAHeaderNameGoesInAuthorization, testAnExplicitLoginAndTheBrokerWin. Built by change sources-declared-basic-and-apikey-auth (archived 2026-09-28)."
 			},
-			"reachedOn": "/sources/:id edit form shows auth/username/password/apikey/authorizationHeader as plain fields (schema-driven), but filling them in does nothing at call time; a working API key requires manually typing a Twig expression into the separate 'headers' JSON field instead",
-			"note": "Live-defect candidate: the guided Basic/API-key auth fields on the Source form (auth strategy, username, password, apikey, authorizationHeader) are dead, CallService never reads them, so a source configured only through those fields calls out unauthenticated. API key auth is only reachable by hand-writing {{ source.apikey }} into the generic headers object; Basic auth (user:pass) has no working path at all (no base64 available in the sandboxed Twig).",
+			"reachedOn": "/sources/:id edit form: auth basic with username and password, or apikey with a key and a header name; every call to the source carries them",
+			"note": "Built 2026-09-28: the guided auth fields on the Source form now take effect at call time. Before, they were dead and a source configured only through them called out unauthenticated.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
