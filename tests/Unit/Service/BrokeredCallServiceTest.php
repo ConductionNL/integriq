@@ -1395,4 +1395,98 @@ class BrokeredCallServiceTest extends TestCase {
 		$this->assertCount(0, $broker->resolveCalls);
 	}//end testHydrateIsANoOpWithoutPlaceholders()
 
+	// -------------------------------------------------------------------
+	// integriq#2102: a TLS client identity next to a credentialRef.
+	// -------------------------------------------------------------------
+
+	/**
+	 * Empty `cert` / `ssl_key` keys are no certificate: the proxy call proceeds.
+	 *
+	 * The seeded BRP source ships both as "" placeholders, and `isset("")` is
+	 * true, so the scope guard refused a brokered call that carried no
+	 * certificate at all.
+	 *
+	 * @return void
+	 */
+	public function testPrepareAcceptsEmptyCertificateKeys(): void {
+		$result = $this->service->prepare(
+			config: $this->brokeredConfig(['cert' => '', 'ssl_key' => '']),
+			sourceData: ['type' => 'api'],
+			asynchronous: false,
+		);
+
+		$this->assertSame(self::NIL_UUID, $result['credentialId']);
+	}//end testPrepareAcceptsEmptyCertificateKeys()
+
+	/**
+	 * A certificate and key held in the broker are detected as injectable, even
+	 * when no authentication placeholder is present.
+	 *
+	 * @return void
+	 */
+	public function testACertificatePlaceholderIsInjectable(): void {
+		$source = [
+			'configuration' => [
+				'cert' => ['credentialRef' => ['credentialId' => self::NIL_UUID]],
+				'ssl_key' => ['credentialRef' => ['credentialName' => 'brp-client-key']],
+			],
+		];
+
+		$this->assertTrue($this->service->hasInjectableCredentials($source));
+		$this->assertTrue($this->service->hasInjectableTlsIdentity($source['configuration']));
+		$this->assertFalse($this->service->hasInjectableTlsIdentity(['cert' => '-----BEGIN CERTIFICATE-----', 'ssl_key' => '']));
+	}//end testACertificatePlaceholderIsInjectable()
+
+	/**
+	 * The BRP shape: an OAuth client secret and the client certificate and key,
+	 * all three in the broker, are resolved together.
+	 *
+	 * @return void
+	 */
+	public function testSecretAndCertificateAreBothHydrated(): void {
+		$broker = new FakeInjectingBroker();
+		$broker->secret = 'VAULT-MATERIAL';
+		$this->service->brokerInstance = $broker;
+
+		$source = [
+			'configuration' => [
+				'authentication' => [
+					'grant_type' => 'client_credentials',
+					'client_id' => 'integriq',
+					'client_secret' => ['credentialRef' => ['credentialId' => self::NIL_UUID]],
+				],
+				'cert' => ['credentialRef' => ['credentialId' => self::NIL_UUID]],
+				'ssl_key' => [['credentialRef' => ['credentialId' => self::NIL_UUID]], 'key-passphrase'],
+			],
+		];
+
+		$hydrated = $this->service->hydrateInjectableCredentials($source);
+
+		$this->assertSame('VAULT-MATERIAL', $hydrated['configuration']['authentication']['client_secret']);
+		$this->assertSame('VAULT-MATERIAL', $hydrated['configuration']['cert']);
+		$this->assertSame(['VAULT-MATERIAL', 'key-passphrase'], $hydrated['configuration']['ssl_key']);
+		$this->assertCount(3, $broker->resolveCalls);
+	}//end testSecretAndCertificateAreBothHydrated()
+
+	/**
+	 * The merged call configuration's certificate placeholder is resolved too,
+	 * and a configuration without one is returned untouched without the broker.
+	 *
+	 * @return void
+	 */
+	public function testHydrateTlsIdentityOnTheCallConfiguration(): void {
+		$broker = new FakeInjectingBroker();
+		$broker->secret = 'PEM-CERT';
+		$this->service->brokerInstance = $broker;
+
+		$config = $this->service->hydrateInjectableTlsIdentity(
+			['cert' => ['credentialRef' => ['credentialId' => self::NIL_UUID]], 'headers' => ['Accept' => 'application/json']]
+		);
+		$this->assertSame('PEM-CERT', $config['cert']);
+		$this->assertSame(['Accept' => 'application/json'], $config['headers']);
+
+		$plain = ['cert' => '/etc/ssl/client.pem'];
+		$this->assertSame($plain, $this->service->hydrateInjectableTlsIdentity($plain));
+		$this->assertCount(1, $broker->resolveCalls);
+	}//end testHydrateTlsIdentityOnTheCallConfiguration()
 }//end class

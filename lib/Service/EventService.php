@@ -28,12 +28,14 @@ use OCA\Integriq\Broker\CloudEventHttpBinding;
 use OCA\Integriq\Event\DeliveryConcludedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Exception\BrokerTransportException;
+use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -136,6 +138,13 @@ class EventService {
 	public const DELIVERY_REQUESTED_TYPE = 'nl.conduction.delivery.requested';
 
 	/**
+	 * Refuses a push sink that points into the instance's own network (integriq#2212).
+	 *
+	 * @var EgressGuard
+	 */
+	private readonly EgressGuard $egressGuard;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService The OR ObjectService for data access.
@@ -172,6 +181,9 @@ class EventService {
 	 *                                                     as above; null means no broker is wired, which
 	 *                                                     the dispatch reports as a configuration error
 	 *                                                     rather than as a delivery.
+	 * @param EgressGuard|null $egressGuard Judges a push sink before every post (integriq#2212). Nullable +
+	 *                                      defaulted for the same test-compatibility reason as above;
+	 *                                      null means a guard without an allowlist, never no guard.
 	 *
 	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -194,7 +206,9 @@ class EventService {
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?BrokerTransportRegistry $brokerRegistry = null,
+		?EgressGuard $egressGuard = null,
 	) {
+		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
 	}//end __construct()
 
@@ -590,6 +604,16 @@ class EventService {
 				$headers['X-OpenConnector-Event-Id'] = $message->getUuid();
 			}
 
+			// Egress guard (integriq#2212, hydra ADR-067 decision 3): the sink is
+			// judged here, at the one place a push leaves the instance, because a
+			// subscription can be written through the object API as well as the
+			// subscribe route. A refusal is abandoned at once: retrying it only
+			// repeats the refusal.
+			$refusal = $this->refuseUnsafeSink(message: $message, subscriptionData: $subscriptionData);
+			if ($refusal !== null) {
+				return false;
+			}
+
 			$client = $this->clientService->newClient();
 			$response = $client->post(
 				$subscriptionData['sink'],
@@ -747,6 +771,44 @@ class EventService {
 		];
 
 	}//end resolveRetryPolicy()
+
+	/**
+	 * Abandon a push delivery whose sink the egress guard refuses.
+	 *
+	 * Records the refusal on the message through {@see recordFailure()} with a
+	 * retry budget of zero, so the message is abandoned on this attempt and shows
+	 * on the dead-letter page with the guard's reason. After the sink is fixed it
+	 * can be replayed from there.
+	 *
+	 * @param ObjectEntity $message The message under delivery.
+	 * @param array $subscriptionData The owning push subscription.
+	 *
+	 * @return string|null The refusal reason, or null when the sink may be called.
+	 *
+	 * @spec openspec/changes/events-async-api-products/design.md
+	 */
+	private function refuseUnsafeSink(ObjectEntity $message, array $subscriptionData): ?string {
+		try {
+			$this->egressGuard->assertAllowed(url: (string)($subscriptionData['sink'] ?? ''));
+		} catch (EgressRefusedException $exception) {
+			$reason = 'Sink refused by the egress guard: ' . $exception->getMessage();
+			$this->logger->warning(
+				'[EventService] ' . $reason,
+				['subscription' => ($message->getObject()['subscription'] ?? null)]
+			);
+			$this->recordFailure(
+				message: $message,
+				error: $reason,
+				statusCode: null,
+				retryAfter: null,
+				retryPolicy: ['maxRetries' => 0]
+			);
+
+			return $reason;
+		}
+
+		return null;
+	}//end refuseUnsafeSink()
 
 	/**
 	 * Record a failed delivery attempt: increment retryCount, append an audit
