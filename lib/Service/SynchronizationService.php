@@ -379,9 +379,6 @@ class SynchronizationService {
 	 * @var int
 	 */
 	public const MAX_PREFETCH_WINDOW = 20;
-	// Safety limit to prevent infinite page requesting loop.
-	private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
-	private const DEFAULT_ERROR_LOG_RETENTION = 259200000;
 
 	/**
 	 * Default share (0.0-1.0) of a synchronization's existing contracts that
@@ -630,16 +627,19 @@ class SynchronizationService {
 			$this->runProgressService = $runProgressService;
 		}
 
+		// Fall back to the defaults the settings read reports, from one table,
+		// so an unset key means the 30 days both log schemas declare, for
+		// synchronization and contract logs alike (integriq#2210).
 		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
 			$retention = json_decode($appConfig->getValueString(app: 'integriq', key: 'retention'), true);
 
-			$this->errorRetention = ($retention['syncLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
-			$this->errorContractRetention = ($retention['syncContractLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
-			$this->successRetention = ($retention['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION);
+			$this->errorRetention = ($retention['syncLogRetention'] ?? RetentionDefaults::SYNC_LOG);
+			$this->errorContractRetention = ($retention['syncContractLogRetention'] ?? RetentionDefaults::SYNC_CONTRACT_LOG);
+			$this->successRetention = ($retention['successLogRetention'] ?? RetentionDefaults::SUCCESS_LOG);
 		} else {
-			$this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-			$this->errorContractRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-			$this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
+			$this->errorRetention = RetentionDefaults::SYNC_LOG;
+			$this->errorContractRetention = RetentionDefaults::SYNC_CONTRACT_LOG;
+			$this->successRetention = RetentionDefaults::SUCCESS_LOG;
 		}
 
 	}//end __construct()
@@ -4432,7 +4432,10 @@ class SynchronizationService {
 					'source' => $object,
 					'test' => $isTest,
 					'force' => $force,
-					'expiry' => $this->calculateExpires(...[$this->errorContractRetention]),
+					// `expires`, the schema's field, as an ISO 8601 string. This
+					// was `expiry`, which the schema does not have, so every
+					// contract log fell back to the log writer's own default.
+					'expires' => $this->calculateExpires(...[$this->errorContractRetention])?->format(DateTime::ATOM),
 				]
 			);
 		}

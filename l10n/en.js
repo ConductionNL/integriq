@@ -2639,7 +2639,8 @@ OC.L10N.register(
         "Which kind of object in the owning app the rejected record is, such as learner-profile.": "Which kind of object in the owning app the rejected record is, such as learner-profile.",
         "Why the exchange job failed as a whole, starting with its error code.": "Why the exchange job failed as a whole, starting with its error code.",
         "Why this rejection was waived. Required when an exchange rejection is discarded.": "Why this rejection was waived. Required when an exchange rejection is discarded.",
-        "Run a data exchange": "Run a data exchange"
+        "Run a data exchange": "Run a data exchange",
+        "S3-compatible storage with an API key (not AWS S3)": "S3-compatible storage with an API key (not AWS S3)"
     },
     "nplurals=2; plural=(n != 1);"
 )
