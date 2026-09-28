@@ -3828,14 +3828,15 @@
 			"area": "automation",
 			"name": "Start a flow when something happens in Nextcloud, such as a file being added.",
 			"source": "own-code",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/changes/nc-events-start-or-flows/tasks.md: task 1 (schema) and task 2 (dispatch) checked [x]; lib/Service/EventService.php:1051 case 'flow' dispatches dispatchFlowAction(); task 3 (UI picker option) is unchecked [ ] and task 4 (Playwright) unchecked [ ]. src/modals/EventSubscription/SubscriptionActionFields.vue:215-217 kindOptions only lists webhook/synchronization/job, no 'flow' option."
+				"change": "2026-09-28-nc-events-start-or-flows",
+				"evidence": "src/modals/EventSubscription/SubscriptionActionFields.vue KIND_OPTIONS offers flow and fetchFlows() lists integriq/flow objects; onFlowPick() writes action {kind: flow, flowId}; lib/Service/EventService.php:1113 case 'flow' dispatches dispatchFlowAction() into FlowRunnerService::run(). tests/vitest/subscriptionFlowAction.spec.js, EventServiceTest. Built by change nc-events-start-or-flows (build-all pass 2026-09-28)."
 			},
-			"reachedOn": "no UI: the 'flow' event_subscription action.kind can only be set by writing to the object directly via the API, not through the Webhooks page's subscription form",
-			"note": "Backend dispatch is real and tested; the staff screen to configure an NC-event-to-flow subscription does not exist yet.",
+			"reachedOn": "Webhooks page, subscription modal, Delivery action \"Flow\" with a flow picker",
+			"note": "Backend dispatch is real and tested; the staff screen to configure an NC-event-to-flow subscription does not exist yet. Built 2026-09-28: the modal now offers Flow.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "nextcloud-event-triggers",

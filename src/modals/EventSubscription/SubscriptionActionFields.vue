@@ -364,7 +364,7 @@ export default {
 		 * synthetic fallback as the job and synchronization pickers.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/nc-events-start-or-flows/specs/nextcloud-event-triggers/spec.md
+		 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-the-subscription-modal-offers-the-flow-action-kind
 		 */
 		selectedFlow() {
 			const id = this.formData?.action?.flowId
@@ -508,7 +508,7 @@ export default {
 		 *
 		 * @param {object} option The picked flow option.
 		 * @return {void}
-		 * @spec openspec/changes/nc-events-start-or-flows/specs/nextcloud-event-triggers/spec.md
+		 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-the-subscription-modal-offers-the-flow-action-kind
 		 */
 		onFlowPick(option) {
 			this.updateField('action', {
@@ -644,7 +644,7 @@ export default {
 		 * reads the `flowId` from).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/nc-events-start-or-flows/specs/nextcloud-event-triggers/spec.md
+		 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-the-subscription-modal-offers-the-flow-action-kind
 		 */
 		async fetchFlows() {
 			this.flowsLoading = true

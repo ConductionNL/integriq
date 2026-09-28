@@ -14,7 +14,7 @@
  * choosing "Flow" loads the flows from OpenRegister, and picking one writes
  * exactly `{kind: 'flow', flowId}` through the dialog's updateField.
  *
- * @spec openspec/changes/nc-events-start-or-flows/specs/nextcloud-event-triggers/spec.md
+ * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-the-subscription-modal-offers-the-flow-action-kind
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
