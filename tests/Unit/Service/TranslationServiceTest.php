@@ -190,4 +190,29 @@ class TranslationServiceTest extends TestCase {
 		$this->expectException(TranslationUnavailableException::class);
 		$service->translate('Goedemorgen', 'nl', 'en');
 	}//end testAnAnswerWithoutATranslationThrows()
+	/**
+	 * The class decidiq resolves by name exists there and autowires.
+	 *
+	 * decidiq LogTranslationAdapter::OPENCONNECTOR_SERVICES names
+	 * 'Service\\TranslationService' under integriq's namespace, checks
+	 * method_exists($delegate, 'translate') and passes three strings.
+	 *
+	 * @return void
+	 */
+	public function testTheClassDecidiqLooksUpExistsAndAutowires(): void {
+		$this->assertTrue(class_exists('OCA\\Integriq\\Service\\TranslationService'));
+
+		$method = new \ReflectionMethod(TranslationService::class, 'translate');
+		$this->assertTrue($method->isPublic());
+		$this->assertSame(['text', 'sourceLocale', 'targetLocale'], array_map(fn ($p) => $p->getName(), $method->getParameters()));
+
+		// Every constructor dependency is a concrete class or the PSR logger, both of which Nextcloud's container resolves without a registration.
+		foreach ((new \ReflectionMethod(TranslationService::class, '__construct'))->getParameters() as $parameter) {
+			$type = (string)$parameter->getType();
+			$this->assertTrue(
+				$type === \Psr\Log\LoggerInterface::class || (class_exists($type) === true && (new \ReflectionClass($type))->isInstantiable() === true),
+				$type . ' is not autowirable'
+			);
+		}
+	}//end testTheClassDecidiqLooksUpExistsAndAutowires()
 }//end class

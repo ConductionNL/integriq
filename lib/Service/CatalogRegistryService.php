@@ -99,6 +99,9 @@ class CatalogRegistryService {
 		'xential' => 'Document generation',
 		// SLO curriculum open data (slo-kerndoelen-import): kerndoelen, examenprogramma's.
 		'slo-curriculum' => 'Education data',
+		// Text translation for sibling apps (connectors-translation-service).
+		'deepl-translation' => 'Language',
+		'libretranslate' => 'Language',
 	];
 
 	/**

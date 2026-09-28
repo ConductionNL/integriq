@@ -11,7 +11,7 @@ Kind: code. Size S. Half for decidiq `min-12` (matrix row `integriq:con-translat
   - GIVEN an enabled `deepl-translation` source WHEN `translate('Goedemorgen', 'nl', 'en')` runs THEN the service posts `{"text":["Goedemorgen"],"source_lang":"NL","target_lang":"EN"}` to `/translate` and returns the text DeepL answered
   - GIVEN an enabled `libretranslate` source WHEN the same call runs THEN it posts `q`, `source`, `target` and returns `translatedText`
 - [x] Implement
-- [x] Test (PHPUnit with the real `CallLog` entity as the call result)
+- [x] Test (PHPUnit with a call log `ObjectEntity` as the call result, as CallService returns it)
 
 ### Task 2: No source, no fake answer
 - **spec_ref**: `openspec/changes/connectors-translation-service/specs/translation-service/spec.md#requirement-an-unconfigured-instance-says-so-req-trl-002`
@@ -26,8 +26,8 @@ Kind: code. Size S. Half for decidiq `min-12` (matrix row `integriq:con-translat
 - **files**: `lib/Settings/register.d/deepl-translation-source.json`, `lib/Settings/register.d/libretranslate-source.json`, `lib/Service/CatalogRegistryService.php`
 - **acceptance_criteria**:
   - GIVEN the seed fragments WHEN they are validated against the `source` schema THEN both pass, and both are disabled
-- [ ] Implement
-- [ ] Test (PHPUnit that validates each fragment object against the real `source` schema in `lib/Settings/integriq_register.json`)
+- [x] Implement
+- [x] Test (PHPUnit that validates each fragment object against the real `source` schema in `lib/Settings/integriq_register.json`)
 
 ## Verification
-- [ ] The container resolves `OCA\Integriq\Service\TranslationService` (the name decidiq looks up)
+- [x] The container resolves `OCA\Integriq\Service\TranslationService` (the name decidiq looks up); proved by `TranslationServiceTest::testTheClassDecidiqLooksUpExistsAndAutowires`
