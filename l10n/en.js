@@ -2672,7 +2672,8 @@ OC.L10N.register(
         "This call could not be loaded.": "This call could not be loaded.",
         "Version {version}, the current one": "Version {version}, the current one",
         "Version {version}, the one the call ran under": "Version {version}, the one the call ran under",
-        "{succeeded} sent, {failed} failed.": "{succeeded} sent, {failed} failed."
+        "{succeeded} sent, {failed} failed.": "{succeeded} sent, {failed} failed.",
+        "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message": "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message"
     },
     "nplurals=2; plural=(n != 1);"
 )

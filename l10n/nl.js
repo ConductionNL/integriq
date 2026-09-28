@@ -1331,7 +1331,8 @@ OC.L10N.register(
         "This call could not be loaded.": "Deze aanroep kon niet worden geladen.",
         "Version {version}, the current one": "Versie {version}, de huidige",
         "Version {version}, the one the call ran under": "Versie {version}, waaronder de aanroep liep",
-        "{succeeded} sent, {failed} failed.": "{succeeded} verstuurd, {failed} mislukt."
+        "{succeeded} sent, {failed} failed.": "{succeeded} verstuurd, {failed} mislukt.",
+        "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message": "Het soort Verzuimloket-melding dat dit record draagt; ontbreekt bij een inkomende retour waarvan het kenmerk bij geen uitgaand bericht hoort"
     },
     "nplurals=2; plural=(n != 1);"
 )
