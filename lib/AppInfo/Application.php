@@ -58,11 +58,13 @@ use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
+use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
 use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
 use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
 use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
+use OCA\Integriq\EventListener\SourceRequestedListener;
 use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
 use OCA\Integriq\EventListener\ExchangeJobRequestedListener;
 use OCA\Integriq\EventListener\ExchangeMappingRequestedListener;
@@ -294,6 +296,10 @@ class Application extends App implements IBootstrap {
 		// replay) and writes the synchronous result slot back on the event.
 		$dispatcher->addServiceListener(eventName: DeliveryRequestedEvent::class, className: DeliveryRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DigitalPostSendRequestedEvent::class, className: DigitalPostSendRequestedListener::class);
+		// A sibling app that still holds a call to a plain URL (dossiq's retired
+		// webhook steps) asks for the Source for that base URL here, so the call
+		// can run through `openconnector.source-call` like every other one.
+		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
 		// Connection registry (connection-registry D5/D6): apps report a
 		// connection status or ask for a fresh resolve with two typed events,
 		// and enabling or disabling an app syncs or resolves its declared

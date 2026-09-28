@@ -133,4 +133,23 @@ class FlowTemplateTest extends TestCase {
 
 	}//end testHasPlaceholder()
 
+	/**
+	 * `{{ @item }}` is the whole record: typed as a whole placeholder, JSON inside text.
+	 *
+	 * @return void
+	 */
+	public function testWholeItemPlaceholderResolvesToTheRecord(): void {
+		$item = ['id' => 'c-1', 'title' => 'Bouwvergunning', 'status' => ['code' => 'open']];
+
+		$this->assertSame(
+			['case' => $item, 'kind' => 'c-1'],
+			FlowTemplate::renderValue(value: ['case' => '{{ @item }}', 'kind' => '{{ id }}'], json: $item)
+		);
+		$this->assertSame('x' . json_encode($item), FlowTemplate::renderString(template: 'x{{@item}}', json: $item));
+
+		// Only the exact path is reserved; a dotted path under it still misses.
+		$this->assertNull(FlowTemplate::lookup(path: '@item.id', json: $item));
+
+	}//end testWholeItemPlaceholderResolvesToTheRecord()
+
 }//end class
