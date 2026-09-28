@@ -259,6 +259,38 @@ class LtiRegistrationResolverService {
 	}//end findRegistrationByUuid()
 
 	/**
+	 * Read a registration's trust-gate `status` without the approval gate.
+	 *
+	 * {@see findRegistrationByUuid()} answers null for a registration that is
+	 * missing and for one that is not approved alike, which is right for a
+	 * protocol caller. A platform launch refusal has to name the status
+	 * (REQ-LTIL-001), so it asks here. Returns the status only, never the
+	 * registration, so nothing ungated leaves this method.
+	 *
+	 * @param string $registrationType `lti_platform` or `lti_tool`.
+	 * @param string $registrationUuid The registration's UUID.
+	 *
+	 * @return string|null The status (`pending` when unset), or null when the registration does not exist.
+	 *
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001
+	 */
+	public function findRegistrationStatus(string $registrationType, string $registrationUuid): ?string {
+		try {
+			$registration = $this->orObjectService->find(
+				id: $registrationUuid,
+				register: 'integriq',
+				schema: $registrationType,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $exception) {
+			return null;
+		}
+
+		return (string)($registration->getObject()['status'] ?? 'pending');
+	}//end findRegistrationStatus()
+
+	/**
 	 * Assert an `lti_deployment` references exactly one of
 	 * `ltiPlatformId`/`ltiToolId` (REQ-LTI-001 scenario 2).
 	 *
