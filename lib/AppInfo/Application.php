@@ -52,6 +52,7 @@ use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
+use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
 use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
@@ -67,6 +68,7 @@ use OCA\Integriq\EventListener\NextcloudFormsEventListener;
 use OCA\Integriq\EventListener\NextcloudTablesEventListener;
 use OCA\Integriq\EventListener\ObjectCreatedEventListener;
 use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
+use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\EventListener\RosterImportRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
@@ -309,6 +311,13 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			RosterImportRequestedEvent::class,
 			RosterImportRequestedListener::class
+		);
+		// LTI platform launch (connectors-lti-platform-launch REQ-LTIL-001):
+		// learniq raises a typed launch request and reads the login
+		// initiation form, or the named refusal, off the same instance.
+		$context->registerEventListener(
+			LtiLaunchRequestedEvent::class,
+			LtiLaunchRequestedListener::class
 		);
 		// Nextcloud-core-event triggers (nextcloud-event-hub). Each family
 		// normalizes its NC event into the SAME `event` CloudEvents envelope

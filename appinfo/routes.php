@@ -288,6 +288,10 @@ return [
 		['name' => 'lti#agsLineItem', 'url' => '/api/lti/{deployment}/ags/lineitems/{lineItemId}', 'verb' => 'GET', 'requirements' => ['lineItemId' => '.+']],
 		['name' => 'lti#nrpsMembership', 'url' => '/api/lti/{deployment}/nrps/membership', 'verb' => 'GET'],
 		['name' => 'lti#jwks', 'url' => '/.well-known/lti/{registrationType}/{registrationUuid}/jwks.json', 'verb' => 'GET'],
+		// Platform authorization endpoint (connectors-lti-platform-launch REQ-LTIL-002): the tool
+		// redirects the learner's browser here after the login initiation, by GET or form POST.
+		['name' => 'ltiPlatform#authorize', 'url' => '/api/lti/platform/authorize', 'verb' => 'GET'],
+		['name' => 'ltiPlatform#authorize', 'url' => '/api/lti/platform/authorize', 'verb' => 'POST', 'postfix' => 'Post'],
 		// AGS outbound, Tool role (REQ-LTI-008) — admin-gated, CSRF-protected.
 		// Every route above is the PLATFORM role (inbound). Without this one the
 		// Tool-role half of REQ-LTI-008 had no caller at all: LtiAgsService::
