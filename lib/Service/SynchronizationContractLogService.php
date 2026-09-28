@@ -132,9 +132,10 @@ class SynchronizationContractLogService {
 			$object['synchronizationLogId'] = 'n.a.';
 		}
 
-		// Default expiry to +3 days unless the caller provided one.
+		// Default expiry to the contract log retention unless the caller
+		// provided one; the same default the settings read reports.
 		if (isset($object['expires']) === false) {
-			$object['expires'] = (new DateTime('+3 days'))->format('c');
+			$object['expires'] = (new DateTime('+' . intdiv(RetentionDefaults::SYNC_CONTRACT_LOG, 1000) . ' seconds'))->format('c');
 		}
 
 		return $object;
