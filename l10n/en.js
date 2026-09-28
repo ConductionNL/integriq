@@ -2683,7 +2683,16 @@ OC.L10N.register(
         "The vendor lists no templates for this source.": "The vendor lists no templates for this source.",
         "The vendor templates could not be listed.": "The vendor templates could not be listed.",
         "This source is active and renders documents.": "This source is active and renders documents.",
-        "This source is not active yet. Activate it once its credential reference and address are set.": "This source is not active yet. Activate it once its credential reference and address are set."
+        "This source is not active yet. Activate it once its credential reference and address are set.": "This source is not active yet. Activate it once its credential reference and address are set.",
+        "Delete the record": "Delete the record",
+        "Keep the record and flag that the source dropped it": "Keep the record and flag that the source dropped it",
+        "Keep the record and give it an end date": "Keep the record and give it an end date",
+        "Local: people may change the records here": "Local: people may change the records here",
+        "The source, with local additions allowed": "The source, with local additions allowed",
+        "The source: the records are read-only here": "The source: the records are read-only here",
+        "This disappearance policy is not one the engine knows.": "This disappearance policy is not one the engine knows.",
+        "When the source stops sending a record": "When the source stops sending a record",
+        "Who owns these records": "Who owns these records"
     },
     "nplurals=2; plural=(n != 1);"
 )

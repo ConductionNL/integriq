@@ -1342,7 +1342,16 @@ OC.L10N.register(
         "The vendor lists no templates for this source.": "De leverancier heeft geen sjablonen voor deze bron.",
         "The vendor templates could not be listed.": "De sjablonen van de leverancier konden niet worden opgehaald.",
         "This source is active and renders documents.": "Deze bron is actief en maakt documenten aan.",
-        "This source is not active yet. Activate it once its credential reference and address are set.": "Deze bron is nog niet actief. Activeer hem zodra de verwijzing naar de inloggegevens en het adres zijn ingesteld."
+        "This source is not active yet. Activate it once its credential reference and address are set.": "Deze bron is nog niet actief. Activeer hem zodra de verwijzing naar de inloggegevens en het adres zijn ingesteld.",
+        "Delete the record": "Verwijder het record",
+        "Keep the record and flag that the source dropped it": "Bewaar het record en markeer dat de bron het niet meer levert",
+        "Keep the record and give it an end date": "Bewaar het record en geef het een einddatum",
+        "Local: people may change the records here": "Lokaal: mensen mogen de records hier wijzigen",
+        "The source, with local additions allowed": "De bron, met lokale aanvullingen toegestaan",
+        "The source: the records are read-only here": "De bron: de records zijn hier alleen-lezen",
+        "This disappearance policy is not one the engine knows.": "Dit verdwijnbeleid kent de synchronisatie niet.",
+        "When the source stops sending a record": "Als de bron een record niet meer levert",
+        "Who owns these records": "Wie is eigenaar van deze records"
     },
     "nplurals=2; plural=(n != 1);"
 )
