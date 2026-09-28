@@ -2673,7 +2673,17 @@ OC.L10N.register(
         "Version {version}, the current one": "Version {version}, the current one",
         "Version {version}, the one the call ran under": "Version {version}, the one the call ran under",
         "{succeeded} sent, {failed} failed.": "{succeeded} sent, {failed} failed.",
-        "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message": "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message"
+        "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message": "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message",
+        "Activate": "Activate",
+        "Asking the vendor for its templates": "Asking the vendor for its templates",
+        "Document generation": "Document generation",
+        "Template id, for the template admin in filinq": "Template id, for the template admin in filinq",
+        "Templates at the vendor": "Templates at the vendor",
+        "The source could not be activated.": "The source could not be activated.",
+        "The vendor lists no templates for this source.": "The vendor lists no templates for this source.",
+        "The vendor templates could not be listed.": "The vendor templates could not be listed.",
+        "This source is active and renders documents.": "This source is active and renders documents.",
+        "This source is not active yet. Activate it once its credential reference and address are set.": "This source is not active yet. Activate it once its credential reference and address are set."
     },
     "nplurals=2; plural=(n != 1);"
 )

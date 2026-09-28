@@ -37,6 +37,7 @@ import CallLogActions from './components/callLog/CallLogActions.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
@@ -126,6 +127,12 @@ export default {
 	// detail pages import the same component directly rather than through
 	// this map, because they own their own template.
 	AutomationDeprecationNotice,
+
+	// SourceDetail body widget for a document generation source: lists the
+	// vendor's templates and activates the source (documentGeneration#templates
+	// and #activate). Renders nothing for any other kind of source.
+	// document-generation-vendor-adapter REQ-DGV-004.
+	DocumentGenerationSourcePanel,
 
 	// The outbound call log (SourceLogs) acts on its calls: a per-row replay
 	// through `slots["row-actions"]`, and bulk replay plus firing by hand

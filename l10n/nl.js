@@ -1332,7 +1332,17 @@ OC.L10N.register(
         "Version {version}, the current one": "Versie {version}, de huidige",
         "Version {version}, the one the call ran under": "Versie {version}, waaronder de aanroep liep",
         "{succeeded} sent, {failed} failed.": "{succeeded} verstuurd, {failed} mislukt.",
-        "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message": "Het soort Verzuimloket-melding dat dit record draagt; ontbreekt bij een inkomende retour waarvan het kenmerk bij geen uitgaand bericht hoort"
+        "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message": "Het soort Verzuimloket-melding dat dit record draagt; ontbreekt bij een inkomende retour waarvan het kenmerk bij geen uitgaand bericht hoort",
+        "Activate": "Activeren",
+        "Asking the vendor for its templates": "De leverancier wordt om zijn sjablonen gevraagd",
+        "Document generation": "Documentgeneratie",
+        "Template id, for the template admin in filinq": "Sjabloon-id, voor het sjabloonbeheer in filinq",
+        "Templates at the vendor": "Sjablonen bij de leverancier",
+        "The source could not be activated.": "De bron kon niet worden geactiveerd.",
+        "The vendor lists no templates for this source.": "De leverancier heeft geen sjablonen voor deze bron.",
+        "The vendor templates could not be listed.": "De sjablonen van de leverancier konden niet worden opgehaald.",
+        "This source is active and renders documents.": "Deze bron is actief en maakt documenten aan.",
+        "This source is not active yet. Activate it once its credential reference and address are set.": "Deze bron is nog niet actief. Activeer hem zodra de verwijzing naar de inloggegevens en het adres zijn ingesteld."
     },
     "nplurals=2; plural=(n != 1);"
 )
