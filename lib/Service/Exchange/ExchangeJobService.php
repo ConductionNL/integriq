@@ -72,6 +72,22 @@ class ExchangeJobService {
 	public const TERMINAL = [self::STATUS_SUCCEEDED, self::STATUS_PARTIAL, self::STATUS_FAILED, self::STATUS_REFUSED];
 
 	/**
+	 * The mapping row a job gets when its owning app names none, keyed by
+	 * owner, then `target:direction`, then the scope's `berichtsoort` (`*`
+	 * for any other). An explicit slug always wins.
+	 *
+	 * @var array<string, array<string, array<string, string>>>
+	 */
+	private const DEFAULT_MAPPINGS = [
+		'learniq' => [
+			'bron-rod:export' => [
+				'schooladvies' => 'learniq-bron-rod-export-schooladvies',
+				'*' => 'learniq-bron-rod-export-learner',
+			],
+		],
+	];
+
+	/**
 	 * Legacy job statuses a migrated job may keep; anything else becomes queued.
 	 *
 	 * @var array<string, string>
@@ -417,13 +433,48 @@ class ExchangeJobService {
 			'requestedBy' => $requestedBy,
 			'requestedAt' => (new DateTime())->format('c'),
 		];
-		if (is_string($mappingSlug) === true && $mappingSlug !== '') {
+		if (is_string($mappingSlug) === false || $mappingSlug === '') {
+			$mappingSlug = $this->defaultMapping(ownerApp: $ownerApp, target: $target, direction: $direction, scope: $scope);
+		}
+
+		if ($mappingSlug !== null) {
 			$job['exchangeMapping'] = $mappingSlug;
 		}
 
 		return $job;
 
 	}//end buildJob()
+
+	/**
+	 * The mapping row for a job whose owning app named none.
+	 *
+	 * A learniq `bron-rod` export with scope `berichtsoort: schooladvies`
+	 * gets the school advice row; any other learniq `bron-rod` export gets
+	 * the learner row.
+	 *
+	 * @param string              $ownerApp  The owning app.
+	 * @param string              $target    The target.
+	 * @param string              $direction The direction.
+	 * @param array<string,mixed> $scope     The scope.
+	 *
+	 * @return string|null The mapping slug, or null when there is no default.
+	 *
+	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-default-mapping-for-a-schooladvies-job
+	 */
+	private function defaultMapping(string $ownerApp, string $target, string $direction, array $scope): ?string {
+		$byKind = (self::DEFAULT_MAPPINGS[$ownerApp][$target.':'.$direction] ?? null);
+		if ($byKind === null) {
+			return null;
+		}
+
+		$kind = $scope['berichtsoort'] ?? '';
+		if (is_string($kind) === false) {
+			$kind = '';
+		}
+
+		return ($byKind[$kind] ?? $byKind['*']);
+
+	}//end defaultMapping()
 
 	/**
 	 * Fold a migrated job's history into its data: disabled, never runs.

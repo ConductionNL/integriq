@@ -166,9 +166,12 @@ class RodEdukoppelingClient implements RodProviderInterface {
 				]
 			);
 		} catch (GuzzleException $exception) {
-			$this->logger->warning('[RodEdukoppelingClient] unexpected transport failure', ['exception' => $exception->getMessage()]);
+			// A transport message can quote the request or response body, which
+			// carries the persoonsgebonden nummer: redact before logging or rethrowing.
+			$detail = (new RodPersonalNumberRedactor())->redact(text: $exception->getMessage());
+			$this->logger->warning('[RodEdukoppelingClient] unexpected transport failure', ['exception' => $detail]);
 			throw new RodProviderException(
-				message: 'The DUO ROD request failed unexpectedly: ' . $exception->getMessage(),
+				message: 'The DUO ROD request failed unexpectedly: ' . $detail,
 				previous: $exception
 			);
 		}

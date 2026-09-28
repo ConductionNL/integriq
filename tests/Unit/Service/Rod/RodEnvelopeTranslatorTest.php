@@ -69,7 +69,12 @@ class RodEnvelopeTranslatorTest extends TestCase {
 
 		$this->assertStringContainsString('<berichtsoort>inschrijving</berichtsoort>', $xml);
 		$this->assertStringContainsString('<kenmerk>seed-kenmerk-001</kenmerk>', $xml);
-		$this->assertStringContainsString('<bsn>999999990</bsn>', $xml);
+		// The legacy `bsn` key reads as a burgerservicenummer in DUO's choice element.
+		$this->assertStringContainsString(
+			'<persoonsgebondenNummer><burgerservicenummer>999999990</burgerservicenummer></persoonsgebondenNummer>',
+			$xml
+		);
+		$this->assertStringNotContainsString('<bsn>', $xml);
 		$this->assertStringContainsString('<inschrijvingsdatum>2026-09-01</inschrijvingsdatum>', $xml);
 		$this->assertStringContainsString('<leerjaar>4</leerjaar>', $xml);
 		$this->assertStringContainsString('<groep>4B</groep>', $xml);
@@ -112,24 +117,144 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	}//end testEmptyStringRequiredFieldRaises()
 
 	/**
-	 * schooladvies carries only its own fields and does not require leerjaar/groep.
+	 * A school advice record as learniq hands it.
+	 *
+	 * @param array<string, mixed> $override Fields to change.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function advies(array $override=[]): array {
+		return array_merge(
+			[
+				'persoonsgebondenNummer' => '123456782',
+				'persoonsgebondenNummerType' => 'onderwijsnummer',
+				'adviesvolgnummer' => 'ADV2026001',
+				'onderwijsaanbieder' => '100A200',
+				'onderwijslocatie' => '100X200',
+				'vestigingscode' => '12AB00',
+				'adviesjaar' => '2026',
+				'advies1' => 'VMBO_KB',
+				'advies1Datum' => '2026-01-20',
+				'advies2' => 'VMBO_KB_TM_VMBO_GL/TL',
+				'advies2Datum' => '2026-05-15',
+			],
+			$override
+		);
+	}//end advies()
+
+	/**
+	 * schooladvies renders DUO's AanleverenAdviesVO_Request, in PvE order, with both advices.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-schooladvies-carries-no-leerjaargroep-fields
+	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-advice-with-a-reconsidered-definitive-advice
 	 */
-	public function testSchooladviesDoesNotRequireLeerjaarOrGroep(): void {
+	public function testSchooladviesRendersAanleverenAdviesVoRequest(): void {
+		$xml = $this->translator->translate('schooladvies', 'seed-kenmerk-002', $this->advies());
+
+		$doc = new \DOMDocument();
+		$doc->loadXML($xml);
+		$request = $doc->getElementsByTagNameNS(RodEnvelopeTranslator::ADVIES_VO_NAMESPACE, 'AanleverenAdviesVO_Request')->item(0);
+		$this->assertNotNull($request, 'the request element carries the DUO_PO_AdviesVO_V1 namespace');
+
+		$children = [];
+		foreach ($request->childNodes as $child) {
+			$children[] = $child->localName;
+		}
+
+		$this->assertSame(
+			['persoonsgebondenNummer', 'adviesvolgnummer', 'onderwijsaanbieder', 'onderwijslocatie', 'vestigingscode', 'adviesjaar', 'advies1', 'advies2'],
+			$children
+		);
+		$this->assertStringContainsString('<persoonsgebondenNummer><onderwijsnummer>123456782</onderwijsnummer></persoonsgebondenNummer>', $xml);
+		$this->assertStringContainsString('<advies1><advies>VMBO_KB</advies><adviesdatum>2026-01-20</adviesdatum></advies1>', $xml);
+		$this->assertStringContainsString('<advies2><advies>VMBO_KB_TM_VMBO_GL/TL</advies><adviesdatum>2026-05-15</adviesdatum></advies2>', $xml);
+		$this->assertStringNotContainsString('<leerjaar>', $xml);
+		$this->assertStringNotContainsString('<burgerservicenummer>', $xml);
+
+	}//end testSchooladviesRendersAanleverenAdviesVoRequest()
+
+	/**
+	 * A null advies2 and null location codes are left out, not rendered empty.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-advice-without-a-second-advice
+	 */
+	public function testNullAdvies2AndLocationsAreLeftOut(): void {
 		$xml = $this->translator->translate(
 			'schooladvies',
-			'seed-kenmerk-002',
-			['bsn' => '999999991', 'schooladviesWaarde' => 'vmbo-t/havo', 'schooladviesDatum' => '2026-03-01']
+			'k',
+			$this->advies(['advies2' => null, 'advies2Datum' => null, 'onderwijsaanbieder' => null, 'onderwijslocatie' => null])
 		);
 
-		$this->assertStringContainsString('<schooladviesWaarde>vmbo-t/havo</schooladviesWaarde>', $xml);
-		$this->assertStringNotContainsString('<leerjaar>', $xml);
-		$this->assertStringNotContainsString('<groep>', $xml);
+		$this->assertStringNotContainsString('advies2', $xml);
+		$this->assertStringNotContainsString('onderwijsaanbieder', $xml);
+		$this->assertStringNotContainsString('onderwijslocatie', $xml);
+		$this->assertStringContainsString('<advies1>', $xml);
 
-	}//end testSchooladviesDoesNotRequireLeerjaarOrGroep()
+	}//end testNullAdvies2AndLocationsAreLeftOut()
+
+	/**
+	 * Every malformed field fails translation, naming the field and never the number.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-a-malformed-onderwijsaanbieder
+	 */
+	public function testMalformedAdviesFieldsAreRefusedByName(): void {
+		$cases = [
+			'onderwijsaanbieder' => ['onderwijsaanbieder' => '100B200'],
+			'onderwijslocatie' => ['onderwijslocatie' => '100A200'],
+			'adviesvolgnummer' => ['adviesvolgnummer' => 'ADV-2026'],
+			'vestigingscode' => ['vestigingscode' => '12AB'],
+			'adviesjaar' => ['adviesjaar' => '26'],
+			'advies1' => ['advies1' => 'vmbo-kb'],
+			'advies1Datum' => ['advies1Datum' => '20-01-2026'],
+			'advies2Datum' => ['advies2Datum' => null],
+			'persoonsgebondenNummerType' => ['persoonsgebondenNummerType' => 'paspoort'],
+			'persoonsgebondenNummer' => ['persoonsgebondenNummer' => '12345678'],
+			'advies1" and "advies2' => ['advies1' => null, 'advies1Datum' => null, 'advies2' => null, 'advies2Datum' => null],
+		];
+		foreach ($cases as $field => $override) {
+			try {
+				$this->translator->translate('schooladvies', 'k', $this->advies($override));
+				$this->fail('Expected a refusal for '.$field);
+			} catch (RodTranslationException $exception) {
+				$this->assertStringContainsString('"'.$field.'"', $exception->getMessage());
+				$this->assertStringNotContainsString('123456782', $exception->getMessage());
+			}
+		}
+
+	}//end testMalformedAdviesFieldsAreRefusedByName()
+
+	/**
+	 * The learner record as learniq hands it, through the seeded learner mapping,
+	 * puts the number in the choice element its type names.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-an-onderwijsnummer
+	 */
+	public function testALearnerWithAnOnderwijsnummerUsesTheOnderwijsnummerElement(): void {
+		$xml = $this->translator->translate(
+			'inschrijving',
+			'k',
+			[
+				'eckId' => 'https://ketenid.nl/201703/00000000',
+				'persoonsgebondenNummer' => '123456782',
+				'persoonsgebondenNummerType' => 'onderwijsnummer',
+				'inschrijvingsdatum' => '2026-09-01',
+				'leerjaar' => 4,
+				'groep' => '4B',
+			]
+		);
+
+		$this->assertStringContainsString('<persoonsgebondenNummer><onderwijsnummer>123456782</onderwijsnummer></persoonsgebondenNummer>', $xml);
+		$this->assertStringNotContainsString('burgerservicenummer', $xml);
+		$this->assertStringNotContainsString('ketenid', $xml);
+
+	}//end testALearnerWithAnOnderwijsnummerUsesTheOnderwijsnummerElement()
 
 	/**
 	 * An unsupported berichtsoort is rejected.
