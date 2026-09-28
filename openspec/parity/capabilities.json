@@ -7857,11 +7857,11 @@
 			"integriq": "partial",
 			"built": {
 				"state": "built",
-				"owner": "ConductionNL/openregister",
+				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/integriq_register.json:673,1390,1499,1828,1966,2219,2391,2590 declare x-openregister-mcp read tools (search/get) on 8 schemas, consumed by OpenRegister's SchemaDerivedToolProvider (openregister lib/Mcp/BuiltIn/SchemaDerivedToolProvider.php, local checkout); lib/Mcp does not exist (ls: no such directory); grep 'McpTool|IMcpScannable' lib: 0 hits; openspec/changes/hermiq-ai-tooling/tasks.md 0 of 22 ticked"
 			},
 			"reachedOn": "An MCP client connected to OpenRegister's MCP server (read tools only)",
-			"note": "An assistant can search and read eight integriq schemas through OpenRegister's schema-derived MCP tools. The governed action tools (run or test a sync, test a source, replay dead letters) in hermiq-ai-tooling are specified only.",
+			"note": "An assistant can search and read eight integriq schemas through OpenRegister's schema-derived MCP tools. The governed action tools (run or test a sync, test a source, replay dead letters) in hermiq-ai-tooling are specified only. Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-08-17-declared-actions-and-mcp-scope; the missing half is integriq's own work, so the owner moved to ConductionNL/integriq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
 			"provider": "openregister",
 			"providerHow": "read-from-code",
 			"feature": "openconnector-mcp-tool-surface",
@@ -8021,9 +8021,9 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/openregister",
-				"evidence": "lib/Settings/register.d/opencorporates-source.json:8 (source seed, location https://api.opencorporates.com/v0.4, auth apikey), :20 (configuration.mock true with a canned /companies/search body); lib/Service/CatalogRegistryService.php:91 (Store category 'Company data'). The lookup logic lives in openregister lib/Service/Integration/Providers/OpenCorporatesProvider.php. grep -i opencorporates in integriq lib/src outside the catalog service = 0 hits."
+				"evidence": "lib/Settings/register.d/opencorporates-source.json:8 (source seed, location https://api.opencorporates.com/v0.4, auth apikey), :20 (configuration.mock true with a canned /companies/search body); lib/Service/CatalogRegistryService.php:91 (Store category 'Company data'). The lookup logic lives in openregister lib/Service/Integration/Providers/OpenCorporatesProvider.php. grep -i opencorporates in integriq lib/src outside the catalog service = 0 hits. Specified in ConductionNL/openregister openspec/changes/integration-kvk-opencorporates (openregister lane, OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "/store (source-template:opencorporates card) and /sources; the company search itself is reached through the OpenRegister integration leaf",
 			"note": "Integriq only ships the source template, and it ships in mock mode, so every lookup returns a canned Conduction B.V. result until an admin adds an API token and removes the mock flag. The actual company search belongs to OpenRegister's OpenCorporatesProvider.",
@@ -8054,9 +8054,9 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/openregister",
-				"evidence": "lib/Settings/register.d/xwiki-source.json:8 (source seed, location http://xwiki:8080/xwiki placeholder), :21 (isEnabled false); lib/Service/CatalogRegistryService.php:92 (Store category 'Document / CMS'). Page reading lives in openregister lib/Service/Integration/Providers/XwikiProvider.php. grep -i xwiki in integriq lib/src outside the catalog service = 0 hits."
+				"evidence": "lib/Settings/register.d/xwiki-source.json:8 (source seed, location http://xwiki:8080/xwiki placeholder), :21 (isEnabled false); lib/Service/CatalogRegistryService.php:92 (Store category 'Document / CMS'). Page reading lives in openregister lib/Service/Integration/Providers/XwikiProvider.php. grep -i xwiki in integriq lib/src outside the catalog service = 0 hits. Specified in ConductionNL/openregister openspec/changes/integration-xwiki-query-search (openregister lane, OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "/store (source-template:xwiki card) and /sources; page reading is reached through the OpenRegister xWiki integration leaf",
 			"note": "Integriq ships a dormant source pointing at a dev-stack hostname; an admin must set the real URL and auth and enable it. Reading pages is OpenRegister's XwikiProvider, integriq has no xWiki-specific code.",
@@ -9008,12 +9008,12 @@
 			"originUrl": "https://github.com/apache/apisix/pull/13676",
 			"integriq": "no",
 			"built": {
-				"state": "decided-no",
+				"state": "specified",
 				"owner": "ConductionNL/hermiq",
 				"evidence": "grep -riE 'openai|anthropic|\\bllm\\b|ollama' over lib/ src/ appinfo/ finds nothing; lib/Service/FlowRunnerService.php:364-370 has no AI step (row auto-ai-step)"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "APISIX 3.18.0 changelog: ai-proxy-multi with semantic load balancing and fallback retries. Decided no (OpenSpec pass 2026-09-27): ADR-034 decision 2 and its consequence \"No fragmentation of the AI stack\": LLM provider selection lives in Hermiq, so a second provider router in the gateway is decided against.",
+			"note": "APISIX 3.18.0 changelog: ai-proxy-multi with semantic load balancing and fallback retries. Decided no (OpenSpec pass 2026-09-27): ADR-034 decision 2 and its consequence \"No fragmentation of the AI stack\": LLM provider selection lives in Hermiq, so a second provider router in the gateway is decided against. Reopened: this row was decided no here; specified in ConductionNL/hermiq openspec/changes/models-several-models-per-turn (hermiq lane, OpenSpec pass 2026-09-27).",
 			"provider": "hermiq",
 			"providerHow": "read-from-adr",
 			"feature": "demand-changelog",
@@ -9047,7 +9047,7 @@
 				"evidence": "grep -riE 'openai|anthropic|\\bllm\\b|token.?quota' over lib/ finds nothing; quotas in lib/Settings/register.d/api-product-gateway.json:101-118 count requests, not model tokens"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "APISIX 3.18.0 changelog: ai-rate-limiting with shared redis counters. Decided no (OpenSpec pass 2026-09-27): ADR-034 decision 2: model token budgets follow the LLM call path, which is Hermiq's.",
+			"note": "APISIX 3.18.0 changelog: ai-rate-limiting with shared redis counters. Decided no (OpenSpec pass 2026-09-27): ADR-034 decision 2: model token budgets follow the LLM call path, which is Hermiq's. Built in ConductionNL/hermiq (archived openspec/changes/archive/2026-07-12-cost-guardrails; hermiq row ob-budget and op-tenant-quota rated yes). Stays decided-no for integriq with provider hermiq, by coordinator ruling (hermiq lane, OpenSpec pass 2026-09-27).",
 			"provider": "hermiq",
 			"providerHow": "read-from-adr",
 			"feature": "demand-changelog",
@@ -9081,7 +9081,7 @@
 				"evidence": "grep -riE 'prompt.?guard|moderation|lakera' over lib/ src/ finds nothing"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "APISIX 3.18.0 changelog: ai-lakera-guard plugin and response moderation. Decided no (OpenSpec pass 2026-09-27): ADR-034 decision 2: prompt and answer guarding sits on Hermiq's LLM call path.",
+			"note": "APISIX 3.18.0 changelog: ai-lakera-guard plugin and response moderation. Decided no (OpenSpec pass 2026-09-27): ADR-034 decision 2: prompt and answer guarding sits on Hermiq's LLM call path. Built in ConductionNL/hermiq (archived openspec/changes/archive/2026-07-13-agent-guardrails; hermiq row ov-guardrail-input rated yes). Stays decided-no for integriq with provider hermiq, by coordinator ruling (hermiq lane, OpenSpec pass 2026-09-27).",
 			"provider": "hermiq",
 			"providerHow": "read-from-adr",
 			"feature": "demand-changelog",
@@ -9217,7 +9217,7 @@
 				"evidence": "grep -riE 'openai|anthropic|\\bllm\\b' over lib/ src/ finds nothing, so there is no AI step to evaluate (row auto-ai-step); 'evaluation' in lib/Service/FlowRunnerService.php:13 is JsonLogic condition evaluation, not a scored test set"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "n8n 2.x changelog: evaluations with datasets, successful executions added to the evaluation dataset. Decided no (OpenSpec pass 2026-09-27): ADR-034: evaluating an AI step is Hermiq's, since it owns the model call.",
+			"note": "n8n 2.x changelog: evaluations with datasets, successful executions added to the evaluation dataset. Decided no (OpenSpec pass 2026-09-27): ADR-034: evaluating an AI step is Hermiq's, since it owns the model call. Built in ConductionNL/hermiq (archived openspec/changes/archive/2026-07-14-agent-evals; hermiq row re-evals rated yes). Stays decided-no for integriq with provider hermiq, by coordinator ruling (hermiq lane, OpenSpec pass 2026-09-27).",
 			"provider": "hermiq",
 			"providerHow": "read-from-adr",
 			"feature": "demand-changelog",
@@ -9416,12 +9416,12 @@
 			"originUrl": "https://github.com/apache/apisix/pull/13578",
 			"integriq": "no",
 			"built": {
-				"state": "decided-no",
+				"state": "specified",
 				"owner": "ConductionNL/hermiq",
 				"evidence": "grep -riE 'openai|anthropic|\\bllm\\b' over lib/ finds nothing; the gateway has no answer cache at all (row gw-cache is no)"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "APISIX 3.18.0 added the ai-cache plugin with a semantic layer. Decided no (OpenSpec pass 2026-09-27): ADR-034 decision 2: the LLM call path is Hermiq's, so caching model answers belongs there.",
+			"note": "APISIX 3.18.0 added the ai-cache plugin with a semantic layer. Decided no (OpenSpec pass 2026-09-27): ADR-034 decision 2: the LLM call path is Hermiq's, so caching model answers belongs there. Reopened: this row was decided no here; specified in ConductionNL/hermiq openspec/changes/models-prompt-and-answer-cache (hermiq lane, OpenSpec pass 2026-09-27).",
 			"provider": "hermiq",
 			"providerHow": "read-from-adr",
 			"feature": "demand-changelog",
