@@ -104,6 +104,7 @@ import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import SyncCircle from 'vue-material-design-icons/SyncCircle.vue'
+import TableArrowRight from 'vue-material-design-icons/TableArrowRight.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Timeline from 'vue-material-design-icons/Timeline.vue'
 import TransitConnectionVariant from 'vue-material-design-icons/TransitConnectionVariant.vue'
@@ -209,6 +210,7 @@ export default {
 	SwapHorizontal,
 	Sync,
 	SyncCircle,
+	TableArrowRight,
 	TextBoxOutline,
 	Timeline,
 	TransitConnectionVariant,
