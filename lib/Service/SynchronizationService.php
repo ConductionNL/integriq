@@ -576,7 +576,7 @@ class SynchronizationService {
 	 * @param LoggerInterface $logger The logger.
 	 * @param SynchronizationLogService $synchronizationLogService The OpenRegister-backed run-log write service.
 	 * @param IAppConfig $appConfig The app configuration.
-	 * @param SynchronizationApprovalGate $approvalGate HITL batch-approval gate (hitl-approval-rule-action): the approval_request that pauses a gated run.
+	 * @param SynchronizationApprovalGate $approvalGate HITL batch-approval gate: the approval_request that pauses a gated run.
 	 * @param TablesSyncAdapter $tablesSyncAdapter The `nextcloud-table` source/target adapter (tables-bridge).
 	 * @param FormsSyncAdapter $formsSyncAdapter The `nextcloud-form` source adapter (nextcloud-forms-connector).
 	 */
@@ -2442,7 +2442,7 @@ class SynchronizationService {
 				// synchronization id.
 				$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
 
-				$gatedApprovalRequest = $this->resolveApprovalForSynchronization(
+				$gatedApprovalRequest = $this->approvalGate->resolve(
 					synchronizationId: $synchronizationId,
 					bypassApprovalId: $approvalRequestId
 				);
@@ -2974,44 +2974,6 @@ class SynchronizationService {
 
 		return $log;
 	}//end synchronizeExternToIntern()
-
-	/**
-	 * Resolve whether an approved, unconsumed `approval_request` covers this
-	 * synchronization run — the batch-gate's "has this already been
-	 * approved" check (synchronization-engine REQ-015).
-	 *
-	 * @param string $synchronizationId The synchronization being gated.
-	 * @param string|null $bypassApprovalId Optional specific approval_request id (the
-	 *                                      "bypass token" `ApprovalsController` passes on
-	 *                                      resume); when given it MUST resolve to an
-	 *                                      approved, unconsumed request for THIS
-	 *                                      synchronization or the gate still fails closed.
-	 *
-	 * @return ObjectEntity|null The approved, unconsumed request, or null when the run is still gated.
-	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md
-	 */
-	private function resolveApprovalForSynchronization(string $synchronizationId, ?string $bypassApprovalId): ?ObjectEntity {
-		if ($bypassApprovalId !== null) {
-			try {
-				$candidate = $this->approvalGate->find(id: $bypassApprovalId);
-			} catch (Exception $e) {
-				return null;
-			}
-
-			$candidateData = $candidate->getObject();
-			if (($candidateData['status'] ?? null) === 'approved'
-				&& ($candidateData['synchronizationId'] ?? null) === $synchronizationId
-				&& empty($candidateData['consumedAt']) === true
-			) {
-				return $candidate;
-			}
-
-			return null;
-		}
-
-		return $this->approvalGate->findApprovedUnconsumedForSynchronization(synchronizationId: $synchronizationId);
-	}//end resolveApprovalForSynchronization()
 
 	/**
 	 * Open the approval_request that pauses a gated run, carrying its change set.

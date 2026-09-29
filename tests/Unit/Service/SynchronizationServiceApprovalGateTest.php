@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
@@ -59,6 +60,11 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 	private $approvalService;
 
 	/**
+	 * @var ApprovalService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $approvals;
+
+	/**
 	 * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $logger;
@@ -79,7 +85,13 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 		$this->callService = $this->createMock(CallService::class);
 		$this->callService->method('applyConfigDot')->willReturnArgument(0);
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
-		$this->approvalService = $this->createMock(SynchronizationApprovalGate::class);
+		// The gate's writes and lookup are doubled; its resolve() runs for
+		// real over a doubled ApprovalService::find().
+		$this->approvals = $this->createMock(ApprovalService::class);
+		$this->approvalService = $this->getMockBuilder(SynchronizationApprovalGate::class)
+			->setConstructorArgs([$this->createMock(\OCA\OpenRegister\Service\ObjectService::class), $this->createMock(\OCP\IUserSession::class), $this->approvals])
+			->onlyMethods(['findApprovedUnconsumedForSynchronization', 'suspendForSynchronization', 'markConsumed', 'markSuperseded'])
+			->getMock();
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$mappingService = $this->createMock(MappingService::class);
@@ -232,8 +244,6 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 	 * @return void
 	 */
 	public function testResolveApprovalForSynchronizationBypassToken(): void {
-		$method = new \ReflectionMethod(SynchronizationService::class, 'resolveApprovalForSynchronization');
-		$method->setAccessible(true);
 
 		// Valid: approved + unconsumed + matching sync id.
 		$valid = ObjectServiceMockBuilder::objectEntity(
@@ -241,7 +251,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 			['status' => 'approved', 'synchronizationId' => self::SYNC_ID],
 			'approval-valid'
 		);
-		$this->approvalService->method('find')->willReturnCallback(
+		$this->approvals->method('find')->willReturnCallback(
 			function (string $id) use ($valid) {
 				if ($id === 'approval-valid') {
 					return $valid;
@@ -259,15 +269,15 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 			}
 		);
 
-		$this->assertSame('approval-valid', $method->invoke($this->service, self::SYNC_ID, 'approval-valid')?->getUuid());
-		$this->assertNull($method->invoke($this->service, self::SYNC_ID, 'approval-consumed'));
-		$this->assertNull($method->invoke($this->service, self::SYNC_ID, 'approval-othersync'));
-		$this->assertNull($method->invoke($this->service, self::SYNC_ID, 'approval-pending'));
-		$this->assertNull($method->invoke($this->service, self::SYNC_ID, 'missing-id'));
+		$this->assertSame('approval-valid', $this->approvalService->resolve(self::SYNC_ID, 'approval-valid')?->getUuid());
+		$this->assertNull($this->approvalService->resolve(self::SYNC_ID, 'approval-consumed'));
+		$this->assertNull($this->approvalService->resolve(self::SYNC_ID, 'approval-othersync'));
+		$this->assertNull($this->approvalService->resolve(self::SYNC_ID, 'approval-pending'));
+		$this->assertNull($this->approvalService->resolve(self::SYNC_ID, 'missing-id'));
 
 		// No bypass token → delegates to findApprovedUnconsumedForSynchronization.
 		$this->approvalService->method('findApprovedUnconsumedForSynchronization')->willReturn($valid);
-		$this->assertSame('approval-valid', $method->invoke($this->service, self::SYNC_ID, null)?->getUuid());
+		$this->assertSame('approval-valid', $this->approvalService->resolve(self::SYNC_ID, null)?->getUuid());
 	}//end testResolveApprovalForSynchronizationBypassToken()
 	/**
 	 * A case type catalogue re-import: one new case type, one whose
@@ -415,7 +425,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 			['status' => 'approved', 'synchronizationId' => self::SYNC_ID, 'fingerprint' => str_repeat('0', 64)],
 			'approval-previewed'
 		);
-		$this->approvalService->method('find')->willReturn($approved);
+		$this->approvals->method('find')->willReturn($approved);
 
 		$this->approvalService->expects($this->once())->method('suspendForSynchronization')
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['status' => 'pending'], 'approval-new'));
@@ -461,7 +471,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 			['status' => 'approved', 'synchronizationId' => self::SYNC_ID, 'fingerprint' => $previewed['fingerprint']],
 			'approval-previewed'
 		);
-		$this->approvalService->method('find')->willReturn($approved);
+		$this->approvals->method('find')->willReturn($approved);
 		$this->approvalService->expects($this->never())->method('markSuperseded');
 		$this->approvalService->expects($this->once())->method('markConsumed')->with($approved);
 

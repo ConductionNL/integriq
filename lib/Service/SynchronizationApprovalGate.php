@@ -32,6 +32,7 @@ namespace OCA\Integriq\Service;
 
 use DateInterval;
 use DateTime;
+use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUserSession;
@@ -58,20 +59,42 @@ class SynchronizationApprovalGate {
 	}//end __construct()
 
 	/**
-	 * Read one approval_request by id.
+	 * Resolve whether an approved, unconsumed `approval_request` covers this
+	 * synchronization run — the batch-gate's "has this already been
+	 * approved" check (synchronization-engine REQ-015).
 	 *
-	 * @param string $id The approval_request uuid.
+	 * @param string $synchronizationId The synchronization being gated.
+	 * @param string|null $bypassApprovalId Optional specific approval_request id (the
+	 *                                      "bypass token" `ApprovalsController` passes on
+	 *                                      resume); when given it MUST resolve to an
+	 *                                      approved, unconsumed request for THIS
+	 *                                      synchronization or the gate still fails closed.
 	 *
-	 * @return ObjectEntity The request.
-	 *
-	 * @throws \OCA\Integriq\Exception\ApprovalStateException When it does not exist (404).
+	 * @return ObjectEntity|null The approved, unconsumed request, or null when the run is still gated.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	public function find(string $id): ObjectEntity {
-		return $this->approvalService->find(id: $id);
+	public function resolve(string $synchronizationId, ?string $bypassApprovalId): ?ObjectEntity {
+		if ($bypassApprovalId !== null) {
+			try {
+				$candidate = $this->approvalService->find(id: $bypassApprovalId);
+			} catch (Exception $e) {
+				return null;
+			}
 
-	}//end find()
+			$candidateData = $candidate->getObject();
+			if (($candidateData['status'] ?? null) === 'approved'
+				&& ($candidateData['synchronizationId'] ?? null) === $synchronizationId
+				&& empty($candidateData['consumedAt']) === true
+			) {
+				return $candidate;
+			}
+
+			return null;
+		}
+
+		return $this->findApprovedUnconsumedForSynchronization(synchronizationId: $synchronizationId);
+	}//end resolve()
 
 	/**
 	 * Create the single `approval_request` gating a Synchronization batch
