@@ -280,6 +280,7 @@ export default {
 .oc-catalog-card__chip--muted {
 	color: var(--color-text-maxcontrast);
 }
+
 .oc-catalog-card__tier {
 	margin: 0 0 6px;
 	font-size: 0.9em;
