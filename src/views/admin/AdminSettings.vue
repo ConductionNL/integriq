@@ -12,6 +12,7 @@
 		<div class="integriq-admin">
 			<ActionAuthMatrix />
 			<DsoPkiSettings />
+			<ExpressionSourceSettings />
 		</div>
 	</CnAdminSettingsShell>
 </template>
@@ -20,6 +21,7 @@
 import { CnAdminSettingsShell } from '@conduction/nextcloud-vue'
 import ActionAuthMatrix from './ActionAuthMatrix.vue'
 import DsoPkiSettings from './DsoPkiSettings.vue'
+import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
 
 /**
  * Root admin settings panel for Integriq.
@@ -27,7 +29,8 @@ import DsoPkiSettings from './DsoPkiSettings.vue'
  * Wraps the app's settings in the shared CnAdminSettingsShell (uniform title
  * header + version/support chrome) and renders the ADR-023
  * action-authorization matrix editor plus the DSO STAM PKIoverheid signature
- * configuration editor as its content.
+ * configuration editor and the environment allowlist expressions may read
+ * (allowlisted-expression-sources) as its content.
  *
  * The version card is disabled: integriq's admin getForm() does not
  * provide a `version` initial state, so the card would show "Unknown".
@@ -37,6 +40,7 @@ import DsoPkiSettings from './DsoPkiSettings.vue'
  *
  * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+ * @spec openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md#requirement-the-allowlist-is-administered-and-every-change-is-recorded-req-evs-003
  */
 export default {
 	name: 'AdminSettings',
@@ -45,6 +49,7 @@ export default {
 		CnAdminSettingsShell,
 		ActionAuthMatrix,
 		DsoPkiSettings,
+		ExpressionSourceSettings,
 	},
 }
 </script>

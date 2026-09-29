@@ -1414,7 +1414,21 @@ OC.L10N.register(
         "{count} days": "{count} dagen",
         "{count} hours": "{count} uur",
         "{count} minutes": "{count} minuten",
-        "{count} seconds": "{count} seconden"
+        "{count} seconds": "{count} seconden",
+        "Add to the list": "Aan de lijst toevoegen",
+        "Added on": "Toegevoegd op",
+        "An expression reads env:NAME only when NAME is on this list. Values are never shown or stored here, and every change is logged with your name.": "Een expressie leest env:NAAM alleen als NAAM op deze lijst staat. Waarden worden hier nooit getoond of opgeslagen, en elke wijziging wordt met je naam gelogd.",
+        "Environment variables an expression may read": "Omgevingsvariabelen die een expressie mag lezen",
+        "Loading the allowlist…": "De lijst wordt geladen…",
+        "No environment variable is listed, so an expression can read none.": "Er staat geen omgevingsvariabele op de lijst, dus een expressie kan er geen lezen.",
+        "Remove {key}": "{key} verwijderen",
+        "The allowlist could not be loaded.": "De lijst kon niet worden geladen.",
+        "The variable was not added.": "De variabele is niet toegevoegd.",
+        "The variable was not removed.": "De variabele is niet verwijderd.",
+        "Variable": "Variabele",
+        "Variable name": "Naam van de variabele",
+        "{key} added to the allowlist.": "{key} is aan de lijst toegevoegd.",
+        "{key} removed from the allowlist.": "{key} is van de lijst verwijderd."
     },
     "nplurals=2; plural=(n != 1);"
 )

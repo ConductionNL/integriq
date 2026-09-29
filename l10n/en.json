@@ -2757,7 +2757,22 @@
         "{count} days": "{count} days",
         "{count} hours": "{count} hours",
         "{count} minutes": "{count} minutes",
-        "{count} seconds": "{count} seconds"
+        "{count} seconds": "{count} seconds",
+        "Add to the list": "Add to the list",
+        "Added by": "Added by",
+        "Added on": "Added on",
+        "An expression reads env:NAME only when NAME is on this list. Values are never shown or stored here, and every change is logged with your name.": "An expression reads env:NAME only when NAME is on this list. Values are never shown or stored here, and every change is logged with your name.",
+        "Environment variables an expression may read": "Environment variables an expression may read",
+        "Loading the allowlist…": "Loading the allowlist…",
+        "No environment variable is listed, so an expression can read none.": "No environment variable is listed, so an expression can read none.",
+        "Remove {key}": "Remove {key}",
+        "The allowlist could not be loaded.": "The allowlist could not be loaded.",
+        "The variable was not added.": "The variable was not added.",
+        "The variable was not removed.": "The variable was not removed.",
+        "Variable": "Variable",
+        "Variable name": "Variable name",
+        "{key} added to the allowlist.": "{key} added to the allowlist.",
+        "{key} removed from the allowlist.": "{key} removed from the allowlist."
     },
     "plurals": {}
 }
