@@ -77,6 +77,17 @@ The allow-list starts with the services the buildiq row names, Google Sheets,
 Salesforce and Slack, and grows by pull request. Nothing reaches the Store
 that a person did not add to the allow-list.
 
+**At build (29 Sep 2026).** The snapshot of 2026-09-29 holds 2,529 APIs.
+Google Sheets (`googleapis.com:sheets`) and Slack (`slack.com`) are in it.
+Its only Salesforce entry is `salesforce.local:einstein`, Einstein Vision and
+Language, not the CRM API, so Salesforce ships as a curated template
+(`saas/salesforce-rest.json`) checked against Salesforce's REST API developer
+guide, not as a generated one. The committed snapshot is the trimmed index
+(`snapshot/index.json`, title, categories, description URL and date per
+entry) plus the trimmed description of each allow-listed entry
+(`snapshot/specs/`): servers and security schemes, no scope lists.
+`php scripts/generate-connector-templates.php refresh` re-pins it.
+
 Rejected: fetching the directory at runtime. The Store would change under an
 administrator, and an instance without internet would show nothing.
 
@@ -87,8 +98,14 @@ starts with `environment-`, because `environments-and-promotion.json`
 seeds those as promotion targets, not connectors. When an adapter entry and a
 template share a system, as `adapter:smartdocuments` (:265) and
 `source-template:smartdocuments` do, the Store shows the adapter and the
-template becomes its configure action. The Store header shows the count by
-tier, so "hundreds" is never claimed for generated starting points.
+template becomes its configure action. Every card carries its tier and the
+Store has a quick filter per template tier (Checked templates, Generated
+templates), so the count per tier is the filtered count and "hundreds" is
+never claimed for generated starting points. The index page offers no count
+per quick filter, so a header count would need a custom page, which the
+page-type ratchet refuses. Materialising removes the cards the registry no
+longer lists, so an upgraded install drops the placeholders a fresh one never
+shows.
 
 ## Declarative versus imperative
 

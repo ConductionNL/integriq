@@ -35,6 +35,13 @@
 					{{ statusLabel }}
 				</span>
 			</div>
+			<p
+				v-if="tierLabel"
+				class="oc-catalog-card__tier"
+				:class="`oc-catalog-card__tier--${catalogItem.tier}`"
+				data-testid="catalog-tier">
+				{{ tierLabel }}
+			</p>
 			<p v-if="catalogItem.description" class="oc-catalog-card__desc">
 				{{ catalogItem.description }}
 			</p>
@@ -134,6 +141,29 @@ export default {
 				default:
 					return this.catalogItem.kind || ''
 			}
+		},
+
+		/**
+		 * What kind of template this is: generated from the API directory (with
+		 * the snapshot it came from) or checked by a person. Adapters and older
+		 * cards without a tier show nothing.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-generated-saas-templates-come-from-a-pinned-directory-and-a-reviewed-allow-list-req-ccx-003
+		 */
+		tierLabel() {
+			if (this.catalogItem.tier === 'generated') {
+				return t('integriq', 'Generated from the API directory of {date}', {
+					date: this.catalogItem.snapshotDate || '',
+				})
+			}
+			if (
+				this.catalogItem.tier === 'curated'
+				&& this.catalogItem.verifiedAgainst
+			) {
+				return t('integriq', 'Checked against a published interface')
+			}
+			return ''
 		},
 
 		/**
@@ -249,5 +279,14 @@ export default {
 
 .oc-catalog-card__chip--muted {
 	color: var(--color-text-maxcontrast);
+}
+.oc-catalog-card__tier {
+	margin: 0 0 6px;
+	font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
+}
+
+.oc-catalog-card__tier--generated {
+	font-style: italic;
 }
 </style>

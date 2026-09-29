@@ -22,9 +22,16 @@
 const fs = require('fs')
 const path = require('path')
 
-const LIBRARY = path.resolve(__dirname, '..', 'lib', 'Settings', 'connector-templates')
+const LIBRARY = path.resolve(
+	__dirname,
+	'..',
+	'lib',
+	'Settings',
+	'connector-templates',
+)
 const NOT_TEMPLATES = new Set(['allow-list.json'])
-const SECRET_KEY = /^(client_?secret|secret|password|api_?key|jwt|access_?token|refresh_?token|private_?key|ssl_key)$/i
+const SECRET_KEY =
+	/^(client_?secret|secret|password|api_?key|jwt|access_?token|refresh_?token|private_?key|ssl_key)$/i
 const TIERS = ['curated', 'generated']
 
 /**
@@ -54,7 +61,12 @@ function secretPaths(value, at) {
 function problemsOf(file, data) {
 	const meta = data['x-template']
 	const source = data.source
-	if (meta === null || typeof meta !== 'object' || source === null || typeof source !== 'object') {
+	if (
+		meta === null
+		|| typeof meta !== 'object'
+		|| source === null
+		|| typeof source !== 'object'
+	) {
 		return [`${file}: needs an x-template block and a source payload`]
 	}
 
@@ -67,14 +79,29 @@ function problemsOf(file, data) {
 	if (!TIERS.includes(meta.tier)) {
 		problems.push(`${file}: x-template.tier must be curated or generated`)
 	}
-	if (typeof meta.verifiedAgainst !== 'string' || !/^https:\/\/\S+$/.test(meta.verifiedAgainst)) {
-		problems.push(`${file}: x-template.verifiedAgainst must cite the https URL of the interface it was checked against`)
+	if (
+		typeof meta.verifiedAgainst !== 'string'
+		|| !/^https:\/\/\S+$/.test(meta.verifiedAgainst)
+	) {
+		problems.push(
+			`${file}: x-template.verifiedAgainst must cite the https URL of the interface it was checked against`,
+		)
 	}
-	if (meta.tier === 'generated' && !/^\d{4}-\d{2}-\d{2}$/.test(meta.snapshotDate || '')) {
-		problems.push(`${file}: a generated template needs x-template.snapshotDate (YYYY-MM-DD)`)
+	if (
+		meta.tier === 'generated'
+		&& !/^\d{4}-\d{2}-\d{2}$/.test(meta.snapshotDate || '')
+	) {
+		problems.push(
+			`${file}: a generated template needs x-template.snapshotDate (YYYY-MM-DD)`,
+		)
 	}
-	if (typeof meta.slug === 'string' && path.basename(file, '.json') !== meta.slug) {
-		problems.push(`${file}: the file must be named after its slug ${meta.slug}.json`)
+	if (
+		typeof meta.slug === 'string'
+		&& path.basename(file, '.json') !== meta.slug
+	) {
+		problems.push(
+			`${file}: the file must be named after its slug ${meta.slug}.json`,
+		)
 	}
 	for (const key of ['name', 'type', 'location']) {
 		if (typeof source[key] !== 'string' || source[key].trim() === '') {
@@ -82,10 +109,14 @@ function problemsOf(file, data) {
 		}
 	}
 	if (source.isEnabled !== false) {
-		problems.push(`${file}: source.isEnabled must be false; an administrator enables it after Instantiate`)
+		problems.push(
+			`${file}: source.isEnabled must be false; an administrator enables it after Instantiate`,
+		)
 	}
 	for (const at of secretPaths(source, 'source')) {
-		problems.push(`${file}: ${at} looks like a credential; hold it in the credential broker and name it by credentialRef`)
+		problems.push(
+			`${file}: ${at} looks like a credential; hold it in the credential broker and name it by credentialRef`,
+		)
 	}
 	return problems
 }
@@ -99,14 +130,22 @@ function problemsOf(file, data) {
 function validateLibrary(dir) {
 	const problems = []
 	const slugs = new Map()
-	const sets = fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory()) : []
+	const sets = fs.existsSync(dir)
+		? fs
+				.readdirSync(dir, { withFileTypes: true })
+				.filter((entry) => entry.isDirectory())
+		: []
 	for (const set of sets) {
-		const files = fs.readdirSync(path.join(dir, set.name)).filter((name) => name.endsWith('.json') && !NOT_TEMPLATES.has(name))
+		const files = fs
+			.readdirSync(path.join(dir, set.name))
+			.filter((name) => name.endsWith('.json') && !NOT_TEMPLATES.has(name))
 		for (const name of files) {
 			const file = `${set.name}/${name}`
 			let data
 			try {
-				data = JSON.parse(fs.readFileSync(path.join(dir, set.name, name), 'utf8'))
+				data = JSON.parse(
+					fs.readFileSync(path.join(dir, set.name, name), 'utf8'),
+				)
 			} catch (error) {
 				problems.push(`${file}: not valid JSON (${error.message})`)
 				continue
@@ -115,7 +154,9 @@ function validateLibrary(dir) {
 			const slug = data?.['x-template']?.slug
 			if (typeof slug === 'string') {
 				if (slugs.has(slug)) {
-					problems.push(`${file}: slug ${slug} is also used by ${slugs.get(slug)}`)
+					problems.push(
+						`${file}: slug ${slug} is also used by ${slugs.get(slug)}`,
+					)
 				}
 				slugs.set(slug, file)
 			}
@@ -133,7 +174,9 @@ if (require.main === module) {
 		for (const problem of problems) {
 			console.error(`  ✗ ${problem}`)
 		}
-		console.error(`\n${problems.length} problem(s) in the connector template library.`)
+		console.error(
+			`\n${problems.length} problem(s) in the connector template library.`,
+		)
 		process.exit(1)
 	}
 	console.log('Connector template library: every template is sound.')

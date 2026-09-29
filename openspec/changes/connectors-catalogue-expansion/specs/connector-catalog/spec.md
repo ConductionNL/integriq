@@ -63,8 +63,8 @@ NOT carry a credential. The Store card MUST say the template is generated.
 
 #### Scenario: Google Sheets, Salesforce and Slack are in the Store
 - GIVEN the first allow-list
-- WHEN an administrator filters the Store to SaaS
-- THEN Google Sheets, Salesforce and Slack are listed, each marked generated with its snapshot date
+- WHEN an administrator opens the Store
+- THEN Google Sheets and Slack are listed, each marked generated with its snapshot date, and Salesforce is listed as a checked template, because the directory's only Salesforce entry is Einstein Vision and Language, not the CRM API
 - e2e: `tests/e2e/connector-catalogue.spec.ts`
 
 #### Scenario: an entry off the allow-list never appears
@@ -77,7 +77,8 @@ NOT carry a credential. The Store card MUST say the template is generated.
 
 The Store MUST NOT list a source whose slug starts with `environment-`, and
 MUST list a system that has both an adapter and a template once, as the
-adapter. The Store MUST show its count per tier.
+adapter. Every card MUST carry its tier, and the Store MUST offer a filter per
+template tier, so the count per tier is the filtered count.
 
 #### Scenario: placeholders are gone from the count
 - GIVEN a fresh install

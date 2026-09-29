@@ -16,18 +16,34 @@ import { afterEach, describe, expect, it } from 'vitest'
 const require = createRequire(import.meta.url)
 const { validateLibrary } = require('../validate-connector-templates.js')
 
-const good = (slug, extra = {}) => ({
-	'x-template': {
-		slug,
-		vendor: 'Hyland (Alfresco)',
-		system: 'Alfresco Content Services',
-		standard: 'CMIS 1.1 browser binding',
-		verifiedAgainst: 'https://docs.alfresco.com/content-services/7.1/develop/reference/cmis-ref/',
-		tier: 'curated',
-		...extra,
-	},
-	source: { name: 'Alfresco', type: 'api', location: 'https://alfresco.example.nl/cmis', auth: 'basic', isEnabled: false },
-})
+/**
+ * A sound curated template.
+ *
+ * @param {string} slug The template slug.
+ * @param {object} extra Keys to add to or replace in the x-template block.
+ * @return {object} The template.
+ */
+function good(slug, extra = {}) {
+	return {
+		'x-template': {
+			slug,
+			vendor: 'Hyland (Alfresco)',
+			system: 'Alfresco Content Services',
+			standard: 'CMIS 1.1 browser binding',
+			verifiedAgainst:
+				'https://docs.alfresco.com/content-services/7.1/develop/reference/cmis-ref/',
+			tier: 'curated',
+			...extra,
+		},
+		source: {
+			name: 'Alfresco',
+			type: 'api',
+			location: 'https://alfresco.example.nl/cmis',
+			auth: 'basic',
+			isEnabled: false,
+		},
+	}
+}
 
 let dirs = []
 
@@ -56,14 +72,20 @@ describe('the connector template validator', () => {
 	})
 
 	it('accepts a curated template that cites where it was checked', () => {
-		expect(validateLibrary(library({ 'backoffice/alfresco-cmis.json': good('alfresco-cmis') }))).toEqual([])
+		expect(
+			validateLibrary(
+				library({ 'backoffice/alfresco-cmis.json': good('alfresco-cmis') }),
+			),
+		).toEqual([])
 	})
 
 	it('refuses a curated template without verifiedAgainst, naming the file', () => {
 		const template = good('alfresco-cmis')
 		delete template['x-template'].verifiedAgainst
 
-		const problems = validateLibrary(library({ 'backoffice/alfresco-cmis.json': template }))
+		const problems = validateLibrary(
+			library({ 'backoffice/alfresco-cmis.json': template }),
+		)
 
 		expect(problems).toHaveLength(1)
 		expect(problems[0]).toContain('backoffice/alfresco-cmis.json')
@@ -71,16 +93,30 @@ describe('the connector template validator', () => {
 	})
 
 	it('refuses a generated template with a secret-shaped field', () => {
-		const template = good('slack', { tier: 'generated', snapshotDate: '2026-09-29' })
-		template.source.configuration = { authentication: { tokenUrl: 'https://slack.com/api/oauth.access', client_secret: '' } }
+		const template = good('slack', {
+			tier: 'generated',
+			snapshotDate: '2026-09-29',
+		})
+		template.source.configuration = {
+			authentication: {
+				tokenUrl: 'https://slack.com/api/oauth.access',
+				client_secret: '',
+			},
+		}
 
 		const problems = validateLibrary(library({ 'saas/slack.json': template }))
 
-		expect(problems).toEqual([expect.stringContaining('source.configuration.authentication.client_secret looks like a credential')])
+		expect(problems).toEqual([
+			expect.stringContaining(
+				'source.configuration.authentication.client_secret looks like a credential',
+			),
+		])
 	})
 
 	it('refuses a generated template without its snapshot date', () => {
-		const problems = validateLibrary(library({ 'saas/slack.json': good('slack', { tier: 'generated' }) }))
+		const problems = validateLibrary(
+			library({ 'saas/slack.json': good('slack', { tier: 'generated' }) }),
+		)
 
 		expect(problems).toEqual([expect.stringContaining('snapshotDate')])
 	})
@@ -90,17 +126,32 @@ describe('the connector template validator', () => {
 		enabled.source.isEnabled = true
 		const twin = good('alfresco-cmis')
 
-		const problems = validateLibrary(library({ 'backoffice/alfresco-cmis.json': enabled, 'saas/alfresco-cmis.json': twin }))
+		const problems = validateLibrary(
+			library({
+				'backoffice/alfresco-cmis.json': enabled,
+				'saas/alfresco-cmis.json': twin,
+			}),
+		)
 
-		expect(problems.some((problem) => problem.includes('isEnabled must be false'))).toBe(true)
-		expect(problems.some((problem) => problem.includes('is also used by'))).toBe(true)
+		expect(
+			problems.some((problem) => problem.includes('isEnabled must be false')),
+		).toBe(true)
+		expect(problems.some((problem) => problem.includes('is also used by'))).toBe(
+			true,
+		)
 	})
 
 	it('skips the allow-list, which is not a template', () => {
-		expect(validateLibrary(library({ 'saas/allow-list.json': { entries: [] } }))).toEqual([])
+		expect(
+			validateLibrary(library({ 'saas/allow-list.json': { entries: [] } })),
+		).toEqual([])
 	})
 
 	it('finds the shipped library sound', () => {
-		expect(validateLibrary(path.resolve(__dirname, '../../lib/Settings/connector-templates'))).toEqual([])
+		expect(
+			validateLibrary(
+				path.resolve(__dirname, '../../lib/Settings/connector-templates'),
+			),
+		).toEqual([])
 	})
 })

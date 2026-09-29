@@ -2888,7 +2888,16 @@ OC.L10N.register(
         "A hash over the stored change set. An approve writes only when the run builds the same hash again.": "A hash over the stored change set. An approve writes only when the run builds the same hash again.",
         "How the resumed run ended. Superseded means the source changed after the preview, nothing was written, and a new request shows the new changes.": "How the resumed run ended. Superseded means the source changed after the preview, nothing was written, and a new request shows the new changes.",
         "The request that replaced this one because the source changed after its preview.": "The request that replaced this one because the source changed after its preview.",
-        "Superseded by": "Superseded by"
+        "Superseded by": "Superseded by",
+        "Generated from the API directory of {date}": "Generated from the API directory of {date}",
+        "Checked against a published interface": "Checked against a published interface",
+        "Checked templates": "Checked templates",
+        "Generated templates": "Generated templates",
+        "Checked against": "Checked against",
+        "Snapshot date": "Snapshot date",
+        "The date of the API directory snapshot a generated template was made from.": "The date of the API directory snapshot a generated template was made from.",
+        "The published interface description the template was checked against.": "The published interface description the template was checked against.",
+        "Where the connector comes from: an adapter integriq ships, a template a person checked against a published interface, or a template generated from a pinned API directory.": "Where the connector comes from: an adapter integriq ships, a template a person checked against a published interface, or a template generated from a pinned API directory."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -1546,7 +1546,16 @@ OC.L10N.register(
         "A hash over the stored change set. An approve writes only when the run builds the same hash again.": "Een hash over de opgeslagen wijzigingenset. Goedkeuren schrijft alleen als de run dezelfde hash opnieuw bouwt.",
         "How the resumed run ended. Superseded means the source changed after the preview, nothing was written, and a new request shows the new changes.": "Hoe de hervatte run eindigde. Vervangen betekent dat de bron na de voorvertoning is gewijzigd, er niets is geschreven en een nieuw verzoek de nieuwe wijzigingen toont.",
         "The request that replaced this one because the source changed after its preview.": "Het verzoek dat dit verzoek verving omdat de bron na de voorvertoning is gewijzigd.",
-        "Superseded by": "Vervangen door"
+        "Superseded by": "Vervangen door",
+        "Generated from the API directory of {date}": "Gegenereerd uit de API-catalogus van {date}",
+        "Checked against a published interface": "Gecontroleerd tegen een gepubliceerde koppelvlakbeschrijving",
+        "Checked templates": "Gecontroleerde sjablonen",
+        "Generated templates": "Gegenereerde sjablonen",
+        "Checked against": "Gecontroleerd tegen",
+        "Snapshot date": "Datum momentopname",
+        "The date of the API directory snapshot a generated template was made from.": "De datum van de momentopname van de API-catalogus waaruit een gegenereerd sjabloon is gemaakt.",
+        "The published interface description the template was checked against.": "De gepubliceerde koppelvlakbeschrijving waartegen het sjabloon is gecontroleerd.",
+        "Where the connector comes from: an adapter integriq ships, a template a person checked against a published interface, or a template generated from a pinned API directory.": "Waar de koppeling vandaan komt: een adapter die integriq meelevert, een sjabloon dat iemand tegen een gepubliceerd koppelvlak heeft gecontroleerd, of een sjabloon gegenereerd uit een vastgelegde API-catalogus."
     },
     "nplurals=2; plural=(n != 1);"
 )

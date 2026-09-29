@@ -4014,6 +4014,7 @@
           "name",
           "category",
           "kind",
+          "tier",
           "status"
         ],
         "showAdd": false,
@@ -4043,6 +4044,20 @@
             "label": "Configuration templates",
             "filter": {
               "kind": "configuration-template"
+            },
+            "icon": "FileCogOutline"
+          },
+          {
+            "label": "Checked templates",
+            "filter": {
+              "tier": "curated"
+            },
+            "icon": "CheckDecagramOutline"
+          },
+          {
+            "label": "Generated templates",
+            "filter": {
+              "tier": "generated"
             },
             "icon": "FileCogOutline"
           }
