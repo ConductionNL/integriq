@@ -206,4 +206,36 @@ final class IdpConsumer {
 
 	}//end mayReturnTo()
 
+	/**
+	 * Whether an address may be registered as a return address at all.
+	 *
+	 * An absolute https address with a host, no user info and no fragment.
+	 * Plain http is accepted only for localhost, so a development portal can
+	 * be registered and a production one cannot be sent a code in the clear.
+	 *
+	 * @param string $url The address.
+	 *
+	 * @return boolean True when it may be registered.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 */
+	public static function isAcceptableReturnUrl(string $url): bool {
+		$parts = parse_url($url);
+		if (is_array($parts) === false || trim((string)($parts['host'] ?? '')) === '') {
+			return false;
+		}
+
+		if (isset($parts['user']) === true || isset($parts['pass']) === true || isset($parts['fragment']) === true) {
+			return false;
+		}
+
+		$scheme = strtolower((string)($parts['scheme'] ?? ''));
+		if ($scheme === 'https') {
+			return true;
+		}
+
+		return $scheme === 'http' && in_array(strtolower((string)$parts['host']), ['localhost', '127.0.0.1', '[::1]'], true);
+
+	}//end isAcceptableReturnUrl()
+
 }//end class
