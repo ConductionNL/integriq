@@ -16,7 +16,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/idp-broker-envelope-runtime/specs/digid-eherkenning-auth-adapter/spec.md#requirement-single-use-artefacts-refuse-rather-than-degrade
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-single-use-artefacts-refuse-rather-than-degrade
  */
 
 declare(strict_types=1);

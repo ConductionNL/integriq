@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests minting, guarding and exchanging a subject envelope.
  *
- * @spec openspec/changes/idp-broker-envelope-runtime/specs/digid-eherkenning-auth-adapter/spec.md#requirement-single-use-artefacts-refuse-rather-than-degrade
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-single-use-artefacts-refuse-rather-than-degrade
  */
 class EnvelopeLifecycleTest extends TestCase {
 
