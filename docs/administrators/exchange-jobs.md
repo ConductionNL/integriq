@@ -56,4 +56,4 @@ The interface, including the events an app raises and answers and the read endpo
 `/api/exchange/`, is in
 `openspec/changes/archive/2026-09-29-learniq-exchange-jobs-native/contract.md`.
 The import hand-off event, `ExchangeRecordsReceivedEvent`, is described in
-`openspec/changes/exchange-import-landing/design.md`.
+`openspec/changes/archive/2026-09-29-exchange-import-landing/design.md`.

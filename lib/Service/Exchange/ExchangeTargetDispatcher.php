@@ -171,7 +171,7 @@ class ExchangeTargetDispatcher {
 	 *     A landed import reports `acceptedCount` instead of ids: the owning app answers with a count.
 	 *
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-001-an-import-job-hands-its-records-to-the-owning-app
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
 	 */
 	public function dispatch(
 		string $jobId,
@@ -255,8 +255,8 @@ class ExchangeTargetDispatcher {
 	 *
 	 * @return array{accepted: array<int, string>, rejected: array<int, array<string, mixed>>, refusal: string|null, acceptedCount?: int}
 	 *
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-002-the-owning-apps-answer-ends-the-job
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-003-an-unanswered-import-ends-with-no-owner-answer
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-011-the-owning-apps-answer-ends-the-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-012-an-unanswered-import-ends-with-no-owner-answer
 	 */
 	private function land(array $context, array $scope, array $records): array {
 		$event = new ExchangeRecordsReceivedEvent(

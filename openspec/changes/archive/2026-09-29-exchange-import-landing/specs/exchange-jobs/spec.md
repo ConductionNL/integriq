@@ -13,7 +13,7 @@ ends the job (D7).
 
 ## ADDED Requirements
 
-### Requirement: REQ-001: an import job hands its records to the owning app
+### Requirement: REQ-010: an import job hands its records to the owning app
 For `lvs-results` import, `oso` import and `migration-import` import, integriq MUST dispatch
 `OCA\Integriq\Event\ExchangeRecordsReceivedEvent` once per run, after the gate allowed the job
 and the job's mapping row ran, carrying the job id, owner app, target, direction, owner
@@ -24,7 +24,7 @@ reference, scope and the mapped records. It MUST NOT end these jobs with `no-han
 - WHEN the job runs
 - THEN `ExchangeRecordsReceivedEvent` is dispatched with `ownerApp` `learniq` and both records
 
-### Requirement: REQ-002: the owning app's answer ends the job
+### Requirement: REQ-011: the owning app's answer ends the job
 The first `accept(acceptedCount, rejected)` MUST count; later calls MUST be ignored. Each
 rejection MUST be stored as an exchange rejection with its code and field names and never a
 value. The job MUST end `succeeded` when every record is accepted, `partial` when some are,
@@ -37,7 +37,7 @@ dropped, and the accepted count MUST be clamped to the records not rejected.
 - THEN the job ends `partial` with 1 of 2 accepted
 - AND a rejection for `b` with code `LVS-DUPLICATE` is stored
 
-### Requirement: REQ-003: an unanswered import ends with no-owner-answer
+### Requirement: REQ-012: an unanswered import ends with no-owner-answer
 When no listener calls `accept()`, or a listener throws, the job MUST end `failed` with
 `exchangeError` starting `no-owner-answer` and no rejections stored.
 

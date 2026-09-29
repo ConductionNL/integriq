@@ -246,7 +246,7 @@ class ExchangeTargetDispatcherTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-001-an-import-job-hands-its-records-to-the-owning-app
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
 	 */
 	public function testATargetWithoutAnAdapter(): void {
 		$this->assertFalse($this->dispatcher->supports('surfconext', 'sync'));

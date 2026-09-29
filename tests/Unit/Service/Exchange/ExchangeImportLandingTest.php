@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-001-an-import-job-hands-its-records-to-the-owning-app
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
  */
 
 declare(strict_types=1);
@@ -184,7 +184,7 @@ final class ExchangeImportLandingTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#scenario-an-lvs-results-import-is-handed-over
+	 * @spec openspec/specs/exchange-jobs/spec.md#scenario-an-lvs-results-import-is-handed-over
 	 */
 	public function testTheRecordsAreHandedToTheOwningApp(): void {
 		foreach (['lvs-results', 'oso', 'migration-import'] as $target) {
@@ -210,7 +210,7 @@ final class ExchangeImportLandingTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#scenario-the-owning-app-accepts-one-and-rejects-one
+	 * @spec openspec/specs/exchange-jobs/spec.md#scenario-the-owning-app-accepts-one-and-rejects-one
 	 */
 	public function testTheAnswerEndsTheJob(): void {
 		$this->listener = static function (ExchangeRecordsReceivedEvent $event): void {
@@ -234,7 +234,7 @@ final class ExchangeImportLandingTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#scenario-learniq-does-not-listen-yet
+	 * @spec openspec/specs/exchange-jobs/spec.md#scenario-learniq-does-not-listen-yet
 	 */
 	public function testAnUnansweredImportEndsNoOwnerAnswer(): void {
 		$this->runner(target: 'oso')->run(jobId: 'job-1');
@@ -251,7 +251,7 @@ final class ExchangeImportLandingTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-003-an-unanswered-import-ends-with-no-owner-answer
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-012-an-unanswered-import-ends-with-no-owner-answer
 	 */
 	public function testAThrowingListenerEndsNoOwnerAnswer(): void {
 		$this->listener = static function (): void {

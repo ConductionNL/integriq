@@ -222,7 +222,7 @@ class ExchangeJobRunner {
 	 *
 	 * @return string The detail.
 	 *
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-003-an-unanswered-import-ends-with-no-owner-answer
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-012-an-unanswered-import-ends-with-no-owner-answer
 	 */
 	private function refusalDetail(string $code): string {
 		if ($code === ExchangeTargetDispatcher::CODE_NO_OWNER_ANSWER) {
