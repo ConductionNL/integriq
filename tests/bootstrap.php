@@ -395,6 +395,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletingEvent.php';
 		}
 
+		if (interface_exists('OCA\\OpenRegister\\Service\\Notification\\RecipientResolverInterface') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/RecipientResolverInterface.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Event\\ObjectCreatingEvent') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectCreatingEvent.php';
 		}

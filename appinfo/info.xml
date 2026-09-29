@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.8-unstable.20260929100001</version>
+	<version>0.4.8-unstable.20260929120001</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -140,6 +140,12 @@
 		     version moved, probes at most 25 linked sources, oldest first,
 		     then resolves every connection row without an outbound call. -->
 		<job>OCA\Integriq\BackgroundJob\ConnectionHealthJob</job>
+		<!-- observability-connection-run-summary: every five minutes. Counts
+		     failed calls, failed runs and invalid objects against the
+		     thresholds on sources and synchronizations, opens a
+		     connection_alert above one and clears it once the count falls
+		     back. Sources and synchronizations without thresholds are skipped. -->
+		<job>OCA\Integriq\BackgroundJob\ConnectionThresholdJob</job>
 		<!-- registry-subscription-connector: every fifteen minutes. Asks each
 		     registry binding what changed about the identities it follows and
 		     posts that to OpenRegister. Nothing about the changed record is
