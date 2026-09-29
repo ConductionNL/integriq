@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use Symfony\Component\Uid\Uuid;
  * plug-in: when the request path ends in a model uuid, it extends that model's
  * views through the software catalogue service.
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
  */
 class ConnectRelationsPlugin implements EndpointRulePluginInterface {
 	public const ID = 'connectRelations';
@@ -41,7 +41,7 @@ class ConnectRelationsPlugin implements EndpointRulePluginInterface {
 	 *
 	 * @param SoftwareCatalogueService $catalogueService Extends the model's views.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function __construct(
 		private readonly SoftwareCatalogueService $catalogueService,
@@ -53,7 +53,7 @@ class ConnectRelationsPlugin implements EndpointRulePluginInterface {
 	 *
 	 * @return string The id.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function pluginId(): string {
 		return self::ID;
@@ -69,7 +69,7 @@ class ConnectRelationsPlugin implements EndpointRulePluginInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is Symfony's static validator; there is no instance API.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function process(array $rule, array $data): array|JSONResponse {
 		$explodedPath = explode(separator: '/', string: (string)($data['path'] ?? ''));

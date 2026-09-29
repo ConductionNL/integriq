@@ -203,7 +203,7 @@ class RuleService {
 	 * @throws Exception When no plug-in answers to the named id.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse {
 		$ruleData = $rule->getObject();
@@ -230,7 +230,7 @@ class RuleService {
 	 *
 	 * @return EndpointRulePluginRegistry The registry.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	private function pluginRegistry(): EndpointRulePluginRegistry {
 		if ($this->pluginRegistry === null) {

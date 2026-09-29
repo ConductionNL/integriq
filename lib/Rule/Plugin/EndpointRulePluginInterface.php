@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\AppFramework\Http\JSONResponse;
  * Register a plug-in by listening for {@see RegisterEndpointRulePluginsEvent}
  * in your app's `register()` and calling `$event->register($plugin)`.
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
  */
 interface EndpointRulePluginInterface {
 	/**
@@ -44,7 +44,7 @@ interface EndpointRulePluginInterface {
 	 *
 	 * @return string The plug-in id.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function pluginId(): string;
 
@@ -57,7 +57,7 @@ interface EndpointRulePluginInterface {
 	 * @return array|JSONResponse The data the next rule and the consumer receive, or a response that
 	 *                            ends the pipeline with that answer.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function process(array $rule, array $data): array|JSONResponse;
 }//end interface

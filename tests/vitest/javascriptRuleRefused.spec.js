@@ -12,7 +12,7 @@
  * runs no scripts: the type is no longer offered, and a rule that still
  * carries it shows why it fails instead of a code box.
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-javascript-rule-is-refused-req-gtp-003
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-javascript-rule-is-refused-req-gtp-003
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'

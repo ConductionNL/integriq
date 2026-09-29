@@ -463,8 +463,17 @@ MUST NOT block or alter the response (same pattern as
 - WHEN a product-scoped request otherwise succeeds
 - THEN the response is still returned successfully and the logging failure is recorded only in the application log
 
+### Requirement: An endpoint's output mapping reshapes its answer (REQ-GTP-001)
+
+When an endpoint has an `outputMapping`, integriq MUST apply that mapping to the answer body after the endpoint's `after` rules have run. A list answer MUST have each item mapped and MUST keep its pagination fields.
+
+#### Scenario: a consumer gets the partner's shape, not the register's
+- GIVEN an endpoint on the `zaak` schema with an output mapping that renames `identificatie` to `zaaknummer`
+- WHEN a consumer calls the endpoint for one zaak
+- THEN the answer carries `zaaknummer` and not `identificatie`
+- @e2e exclude gateway response shape; covered by PHPUnit on EndpointService
+
 ## Non-Functional Requirements
 
 - **Performance:** the self-URL/HAL output helper adds negligible per-response overhead (URL construction only, no extra storage round-trip).
 - **Internationalization:** PUT/PATCH validation errors are localisable (Dutch + English, hydra ADR-007) — not yet localised; see the archived change's tasks.md Deviations.
-

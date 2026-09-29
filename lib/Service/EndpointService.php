@@ -770,7 +770,7 @@ class EndpointService {
 	 *
 	 * @throws DoesNotExistException When the named mapping does not exist.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/endpoint-runtime/spec.md#requirement-an-endpoints-output-mapping-reshapes-its-answer-req-gtp-001
+	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-an-endpoints-output-mapping-reshapes-its-answer-req-gtp-001
 	 */
 	private function applyOutputMapping(array $endpointData, mixed $body): mixed {
 		$mappingId = (string)($endpointData['outputMapping'] ?? '');
@@ -3949,7 +3949,7 @@ class EndpointService {
 	 *
 	 * @throws Exception Always.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-javascript-rule-is-refused-req-gtp-003
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-javascript-rule-is-refused-req-gtp-003
 	 */
 	private function processJavaScriptRule(ObjectEntity $rule, array $data): array {
 		unset($data);

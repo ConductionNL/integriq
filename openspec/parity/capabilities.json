@@ -1267,15 +1267,15 @@
 			"area": "gateway",
 			"name": "Reshape an endpoint's incoming request and outgoing answer with a mapping.",
 			"source": "own-code",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
-				"change": "gateway-endpoint-transform-and-plugins",
+				"state": "built",
+				"change": "2026-09-29-gateway-endpoint-transform-and-plugins",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Incoming: lib/Service/EndpointService.php:1889-1892 handleSchemaRequest() applies endpointData['inputMapping'] via mappingService.executeMapping() to request parameters. Outgoing: no code path reads endpointData['outputMapping'] to transform a response, grep for [\\x27]outputMapping[\\x27] outside EndpointsController's isSimpleEndpoint() gate and ConfigurationService's export/import id<->slug translation returns nothing in EndpointService.php. A response CAN still be reshaped via a Rule of type 'mapping' run at timing='after' (processMappingRule/processMapping, EndpointService.php:3104-3141, applied to $data['body'] in dispatchAfterBeforeRules() around line 693-700), but that is the generic rule pipeline, not the dedicated outputMapping field."
+				"evidence": "Incoming: EndpointService::handleSchemaRequest() applies inputMapping to the request parameters. Outgoing: EndpointService::dispatchAfterBeforeRules() passes the body the after rules produced through applyOutputMapping(), which runs MappingService::executeMapping() with the endpoint's outputMapping on one object, or on each item of a results list while keeping the pagination keys. Tests: EndpointServiceOutputMappingTest (4, real MappingService and mapping object). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29)."
 			},
-			"reachedOn": "/endpoints/:id edit form, 'inputMapping' field works; for the outgoing answer, use /endpoints/:id Rules tab -> Add rule (type=mapping, timing=after) instead of the 'outputMapping' field, which is inert",
-			"note": "Live-defect candidate: outputMapping is a declared, form-visible field on the endpoint schema and participates in configuration export/import id translation, but nothing ever applies it to a response. Reshaping outgoing data only works through a separately-added mapping Rule.",
+			"reachedOn": "/endpoints/:id edit form: Input mapping reshapes the request, Output mapping reshapes the answer a consumer gets",
+			"note": "Built 2026-09-29: the output mapping is applied to the answer after the after rules. Before, it was a form field nothing read.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "rule-pipeline",
@@ -1614,15 +1614,15 @@
 			"area": "gateway",
 			"name": "Add your own logic to the request pipeline with a plug-in or a script.",
 			"source": "competitor-derived",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
-				"change": "gateway-endpoint-transform-and-plugins",
+				"state": "built",
+				"change": "2026-09-29-gateway-endpoint-transform-and-plugins",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:3905-3910 processJavaScriptRule() body: '// @todo: Here we need to implement the JavaScript execution logic. For now, just return the data unchanged.', a rule of type 'javascript' is a no-op stub. lib/Service/RuleService.php:191-212 processCustomRule() only recognises one hardcoded custom type, 'connectRelations' (processCustomConnectionsRule, line 410); any other value throws 'Unsupported custom rule type'."
+				"evidence": "lib/Rule/Plugin/EndpointRulePluginInterface.php is the plug-in contract; a sibling app registers an implementation by listening for RegisterEndpointRulePluginsEvent, and RuleService::processCustomRule() runs the plug-in a custom rule names in configuration.plugin (an unknown id is refused by name). connectRelations is the first registered plug-in. A javascript rule is refused: the rule schema type enum leaves it out, the editor no longer offers it, and EndpointService::processJavaScriptRule() throws. Tests: EndpointRulePluginTest (4), RuleTypeRefusesJavaScriptTest (3), EndpointServiceTest::testAJavaScriptRuleIsRefusedWhenItRuns, tests/vitest/javascriptRuleRefused.spec.js (2). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29)."
 			},
-			"reachedOn": "/endpoints/:id Rules tab -> Add rule (type=custom or type=javascript) exists in the UI, but a javascript rule silently does nothing and a custom rule only supports the one hardcoded 'connectRelations' operation",
-			"note": "Live-defect candidate: the rule pipeline advertises 'custom' and 'javascript' rule types an operator can pick, but neither is a real extension point, javascript is an unimplemented stub, custom is hardcoded to one unrelated ArchiMate operation. There is no working way to add arbitrary logic or a script to the pipeline.",
+			"reachedOn": "/rules: a rule of type Custom with configuration.plugin naming a plug-in a sibling app registered; JavaScript is no longer a rule type",
+			"note": "Built 2026-09-29 as a PHP plug-in point for sibling apps. Integriq runs no tenant scripts (design D3, an open product question for Ruben); flows are the no-code route.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "rule-pipeline",

@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCP\EventDispatcher\Event;
  *
  * and in the listener `$event->register(new MyPlugin())`.
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
  */
 class RegisterEndpointRulePluginsEvent extends Event {
 	/**
@@ -40,7 +40,7 @@ class RegisterEndpointRulePluginsEvent extends Event {
 	 *
 	 * @param EndpointRulePluginRegistry $registry The registry the plug-ins are added to.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function __construct(
 		private readonly EndpointRulePluginRegistry $registry,
@@ -55,7 +55,7 @@ class RegisterEndpointRulePluginsEvent extends Event {
 	 *
 	 * @return boolean True when registered, false when its id was already taken.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function register(EndpointRulePluginInterface $plugin): bool {
 		return $this->registry->register(plugin: $plugin);

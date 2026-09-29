@@ -71,7 +71,7 @@ Notes: `RuleConditionGroup.vue` (11), `RuleConditionLeaf.vue` (19).
 
 The action configuration panel SHALL present the available rule action types,
 swap in the matching action form component for the selected type, and relay the
-form's slot updates (mapping id, JavaScript code, raw JSON) back to the rule. Each
+form's slot updates (mapping id, flow id, raw JSON) back to the rule. Each
 action form (authentication, mapping, save-object, synchronization, file fetch/write,
 filepart create/upload, locking, download, error, extend-input, extend-external-input,
 upload) reads and emits its own action-specific configuration shape.

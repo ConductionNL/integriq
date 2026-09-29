@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use Psr\Log\LoggerInterface;
  * {@see RegisterEndpointRulePluginsEvent}, dispatched once on first lookup so
  * every app has registered its listeners by then.
  *
- * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
  */
 class EndpointRulePluginRegistry {
 	/**
@@ -55,7 +55,7 @@ class EndpointRulePluginRegistry {
 	 * @param IEventDispatcher|null                 $dispatcher Asks sibling apps for theirs; null registers none.
 	 * @param LoggerInterface|null                  $logger     Notes an id collision.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function __construct(
 		iterable $plugins = [],
@@ -74,7 +74,7 @@ class EndpointRulePluginRegistry {
 	 *
 	 * @return boolean True when registered, false when the id was empty or taken.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function register(EndpointRulePluginInterface $plugin): bool {
 		$pluginId = trim($plugin->pluginId());
@@ -106,7 +106,7 @@ class EndpointRulePluginRegistry {
 	 *
 	 * @return EndpointRulePluginInterface|null The plug-in.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function pluginFor(string $pluginId): ?EndpointRulePluginInterface {
 		$this->collect();
@@ -118,7 +118,7 @@ class EndpointRulePluginRegistry {
 	 *
 	 * @return array<int, string> The ids.
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function ids(): array {
 		$this->collect();
@@ -132,7 +132,7 @@ class EndpointRulePluginRegistry {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	private function collect(): void {
 		if ($this->collected === true) {
