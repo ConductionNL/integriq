@@ -1967,7 +1967,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
 	 */
 	public function testCallPassesSinkToGuzzleAndKeepsItOutOfTheCallLog(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);

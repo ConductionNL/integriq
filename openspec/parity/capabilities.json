@@ -989,7 +989,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/CallService.php:1166-1227 dispatchRequest() accepts an optional $sink resource, kept OUT of the persisted/logged $config, and passes it to Guzzle's 'sink' request option (buildRequestOptions) so the response body streams to disk instead of being buffered in memory; @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md"
+				"evidence": "lib/Service/CallService.php:1166-1227 dispatchRequest() accepts an optional $sink resource, kept OUT of the persisted/logged $config, and passes it to Guzzle's 'sink' request option (buildRequestOptions) so the response body streams to disk instead of being buffered in memory; @spec openspec/specs/synchronization-files/spec.md",
+				"change": "2026-09-29-stream-file-content"
 			},
 			"reachedOn": "machine path: file-fetch rule / concurrent file fetcher dispatching a source call with a sink target",
 			"provider": "integriq",

@@ -1664,7 +1664,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
 	 */
 	public function testFetchFileStreamsRawBinaryDownloadIntoASinkResource(): void {
 		$bytes = 'binary-file-bytes-that-are-not-a-json-envelope';
@@ -1733,7 +1733,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-base64-in-json-content-shall-continue-on-the-existing-string-path
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-base64-in-json-content-shall-continue-on-the-existing-string-path
 	 */
 	public function testFetchFileKeepsBase64InJsonResponsesOffTheStreamingPath(): void {
 		$sinkWasResource = false;
