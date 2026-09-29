@@ -49,12 +49,14 @@ class ConnectionAlertSettingsController extends Controller {
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param IGroupManager $groupManager The group manager.
 	 * @param IL10N $l The localization service.
+	 * @param ConnectionAlertRecipientResolver $recipients Reads the group in force.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly IAppConfig $appConfig,
 		private readonly IGroupManager $groupManager,
 		private readonly IL10N $l,
+		private readonly ConnectionAlertRecipientResolver $recipients,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -69,7 +71,7 @@ class ConnectionAlertSettingsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getConfig(): JSONResponse {
 		return new JSONResponse(
-			['group' => ConnectionAlertRecipientResolver::namedGroup(appConfig: $this->appConfig)]
+			['group' => $this->recipients->namedGroup()]
 		);
 	}//end getConfig()
 

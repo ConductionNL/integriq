@@ -25,6 +25,7 @@ use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Reads and sets connection_alert_group; refuses a group that does not exist.
@@ -81,7 +82,9 @@ final class ConnectionAlertSettingsControllerTest extends TestCase {
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnCallback(static fn (string $text, array $args = []): string => vsprintf($text, $args));
 
-		return new ConnectionAlertSettingsController($request, $appConfig, $groups, $l);
+		$recipients = new ConnectionAlertRecipientResolver($appConfig, $groups, $this->createMock(LoggerInterface::class));
+
+		return new ConnectionAlertSettingsController($request, $appConfig, $groups, $l, $recipients);
 	}//end makeController()
 
 	/**

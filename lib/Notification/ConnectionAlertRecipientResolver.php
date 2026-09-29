@@ -87,7 +87,7 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 	 */
 	public function resolve(ObjectEntity $object, array $context): array {
-		$groupId = self::namedGroup(appConfig: $this->appConfig);
+		$groupId = $this->namedGroup();
 		$group = $this->groupManager->get($groupId);
 		if ($group === null) {
 			$this->logger->warning(
@@ -108,14 +108,12 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 	/**
 	 * The group named for connection alerts, or the admin group when none is.
 	 *
-	 * @param IAppConfig $appConfig The app configuration.
-	 *
 	 * @return string A group id, never empty.
 	 *
 	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 	 */
-	public static function namedGroup(IAppConfig $appConfig): string {
-		$groupId = trim($appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, ''));
+	public function namedGroup(): string {
+		$groupId = trim($this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, ''));
 		if ($groupId === '') {
 			return self::DEFAULT_GROUP;
 		}
