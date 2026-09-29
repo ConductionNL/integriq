@@ -34,6 +34,13 @@ designed for:
 
 Either way the result is the same objects on the same target schema.
 
+**Outcome (29 Sep 2026, Task 1).** No real i-Navigator export and no vendor
+interface document were available to the build. Neither outcome above can
+be checked, so the interface stays open and Task 2 is blocked until someone
+with an i-Navigator installation supplies an anonymised export or the
+vendor's interface document. The preview of D3 to D5 shipped without it, as
+the Risks section foresaw.
+
 ## D2. Custom attributes are properties, not a fixed list
 
 "Unlimited case attributes" means the mapping cannot name a fixed set of
@@ -72,12 +79,22 @@ administrator would accept something other than what they saw.
 
 ## D4. Accept writes what was previewed, or asks again
 
-`ApprovalService::resume()` re-invokes the synchronization with the approved
-request. The run fetches again, rebuilds the change set and compares its
+There is no `ApprovalService::resume()`. The accept is
+`ApprovalsController::approveSynchronizationGate()`, which re-invokes the
+synchronization with the request's id as the bypass token. The gate honours
+only an approved, unconsumed request, and the controller used to store the
+approve after the run, so a resumed run met a pending request, paused
+again and opened a new one on every approve. The controller now stores the
+approve first, then runs, then reads the request back (the engine marks it
+consumed or superseded).
+
+The run The run fetches again, rebuilds the change set and compares its
 fingerprint with the stored one. When they match, the write loop runs. When
 they differ, the source changed after the preview: the run writes nothing,
-marks the request `superseded` in `resumeResult`, and opens a new request
-with the new change set.
+marks the request `superseded` in `resumeResult`, names the new request in
+`supersededBy`, and opens that new request with the new change set. The run
+log's message is `approval_superseded` and the approve answers 409, so the
+screen opens the new request.
 
 ## D5. The approval screen shows the change set
 
@@ -95,8 +112,11 @@ lifecycle behaviour.
 
 ## Seed data
 
-`approval_request` (1.0.0) gains `fingerprint`, a string, and its `snapshot`
-now holds a change set for synchronization requests; it moves to 1.1.0. The
+`approval_request` (1.0.0) gains `fingerprint` and `supersededBy`, both
+strings, `resumeResult` gains `superseded`, and its `snapshot` now holds
+`changeSet` for synchronization requests; it moves to 1.1.0. A scheduled
+run has no session user, so `requesterUserId` is left out rather than
+written as null, which the register refuses. The
 mock register gains one pending synchronization approval with a change set
 of two created, one changed and one removed case type, so the approval
 screen shows a real preview on a demo install. The i-Navigator source

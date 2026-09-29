@@ -5216,13 +5216,14 @@
 			"area": "nl-standards",
 			"name": "Preview and accept the changes when case types are synchronised again from their source.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep for a catalogi-specific resync/diff-preview found nothing; the generic mapping preview (appinfo/routes.php mappings#test -> src/components/mapping/MappingResultPanel.vue:503) is schema-agnostic and not wired to a catalogi connector, which itself does not exist (see nl-zgw-catalogi). Specified in openspec/changes/connectors-inavigator-case-types/ (OpenSpec pass 2026-09-27)."
+				"evidence": "The generic half is built (connectors-inavigator-case-types tasks 3 to 5, 29 Sep 2026): every gated synchronization stores its change set on the approval_request (lib/Service/Synchronization/ChangeSetBuilder.php, SynchronizationService::buildGateChangeSet), an accept writes only when the rerun's fingerprint matches and otherwise supersedes the request (ApprovalsController::approveSynchronizationGate, ApprovalService::markSuperseded), and src/components/Approvals/ApprovalChangeSet.vue shows created, changed and removed objects with field diffs. Missing: a case type catalogue connector to run it on (nl-zgw-catalogi, zgw-connectors-for-dossiq) and the i-Navigator import (Task 2, blocked on the interface).",
+				"change": "connectors-inavigator-case-types"
 			},
-			"reachedOn": "nothing reaches it",
+			"reachedOn": "Approvals > a synchronization request",
 			"note": "Depends entirely on the unbuilt zgw-catalogi connector; there is no catalogi-specific resync preview/accept flow.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
