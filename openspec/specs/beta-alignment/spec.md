@@ -1,6 +1,9 @@
-# Capability: beta-alignment
+# beta-alignment Specification
 
-## ADDED Requirements
+## Purpose
+Integriq's public surfaces (the `appinfo/info.xml` summary and description, the product page and the docs) name only what the app ships, in one shared vocabulary, with the version taken from `info.xml`.
+
+## Requirements
 
 ### Requirement: Public-facing surfaces SHALL only claim verified, shipped capabilities (REQ-BA-001)
 
@@ -11,6 +14,8 @@ demonstrably implemented in `lib/` at the time of writing. A protocol or
 adapter name MUST NOT appear on a public surface unless it is traceable to a
 concrete class/service and, where one exists, a retrofit
 `openspec/specs/*` entry.
+
+@e2e exclude documentation and metadata claim: checked by reading info.xml, the docs and the product page against lib/, no browser surface in this app
 
 #### Scenario: Reviewer checks a protocol claim against code
 
@@ -33,6 +38,8 @@ The `<summary>`/`<description>` in `appinfo/info.xml`, the product page's
 FeatureList/Showcase copy, and the docs `intro.md` MUST name the same
 capabilities using the same terms, and the product page's `version` prop MUST
 match `info.xml`'s `<version>` (the source of truth).
+
+@e2e exclude documentation and metadata claim: checked by reading info.xml, the docs and the product page against lib/, no browser surface in this app
 
 #### Scenario: Version drift is corrected
 

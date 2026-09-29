@@ -22,7 +22,7 @@
 
 - [x] 2.1 Split `<summary>` into `lang="en"` / `lang="nl"` with real Dutch copy.
 - [x] 2.2 Rewrite `<description>` (EN + NL) to name shipped capabilities.
-- [x] 2.3 Add `<app>openregister</app>` to `<dependencies>`.
+- [x] 2.3 Add `<app>openregister</app>` to `<dependencies>`. (Later removed on purpose: the App Store schema has no app child under dependencies and Nextcloud's DependencyAnalyzer never read it; the reason is a comment in `appinfo/info.xml`.)
 - [x] 2.4 Correct `php min-version` to `8.3`.
 - [x] 2.5 Confirm `img/app.svg` matches the white-fill/24×24 convention (no change needed).
 
