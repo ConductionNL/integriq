@@ -78,7 +78,7 @@ class CaseReferenceDetector {
 	 *
 	 * @return string|null The reference, or null when the text names none.
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function detectInText(string $text, ?string $pattern = null): ?string {
 		$effective = $this->resolvePattern(pattern: $pattern);

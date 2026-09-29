@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+ * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use RuntimeException;
 /**
  * Tests the Teams intake channel adapter.
  *
- * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+ * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
  */
 class TeamsChannelAdapterTest extends TestCase {
 
@@ -306,7 +306,7 @@ class TeamsChannelAdapterTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function testAReplyIsNotSentToAnUntrustedServiceUrl(): void {
 		$client = $this->createMock(IClient::class);
@@ -336,7 +336,7 @@ class TeamsChannelAdapterTest extends TestCase {
 	 *
 	 * @dataProvider untrustedServiceUrlProvider
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function testALookalikeHostIsNotTrusted(string $serviceUrl): void {
 		$client = $this->createMock(IClient::class);
@@ -381,7 +381,7 @@ class TeamsChannelAdapterTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function testTheConfiguredServiceUrlWinsOverThePayload(): void {
 		$seen = null;
@@ -424,7 +424,7 @@ class TeamsChannelAdapterTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function testAConfiguredHostListReplacesTheDefaultOne(): void {
 		$seen = null;
@@ -472,7 +472,7 @@ class TeamsChannelAdapterTest extends TestCase {
 	 *
 	 * @dataProvider unusableHostListProvider
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function testAnUnusableHostListFallsBackToTheDefault(mixed $configured): void {
 		$seen = null;
@@ -514,7 +514,7 @@ class TeamsChannelAdapterTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function testAListOfBlankEntriesTrustsNobody(): void {
 		$client = $this->createMock(IClient::class);
