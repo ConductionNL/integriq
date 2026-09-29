@@ -34,13 +34,16 @@ use Psr\Log\LoggerInterface;
  * The members of the group named in the app setting `connection_alert_group`.
  *
  * The `threshold-passed` rule on `connection_alert` names this class as an
- * `expression` recipient, so OpenRegister's engine sends the notification and
- * integriq never calls the notification manager. Until an administrator names
+ * `expression` recipient, and so does every other integriq alert rule in the
+ * register (failed jobs, deliveries, payments, approval requests). So
+ * OpenRegister's engine sends the notification and integriq never calls the
+ * notification manager. Until an administrator names
  * another group, the members of `admin` are told (Ruben, 29 Sep 2026): every
  * instance has that group, where the `openconnector-ops` the change first
  * named exists on none. An empty setting counts as unset.
  *
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+ * @spec openspec/changes/integriq-notifications/specs/openconnector-notifications/spec.md
  */
 class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 

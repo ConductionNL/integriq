@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Settings;
 
+use OCA\Integriq\Notification\ConnectionAlertRecipientResolver;
 use OCA\Integriq\Repair\InitializeRegister;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -192,13 +193,14 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 
 	/**
 	 * Task 6: the schema declares a compliant, declarative
-	 * `x-openregister-notifications` `created` rule targeting the static
-	 * `openconnector-ops` group, matching the dialect shape used by every
-	 * other occurrence in this app (design.md Decision 4).
+	 * `x-openregister-notifications` `created` rule. Its recipient is the
+	 * settable alert group (ConnectionAlertRecipientResolver, `admin` until an
+	 * administrator names another), which replaced the `openconnector-ops`
+	 * group that exists on no instance (Ruben, 29 Sep 2026).
 	 *
 	 * @return void
 	 */
-	public function testDeclarativeOpsVisibilityNotificationTargetsOpsGroup(): void {
+	public function testDeclarativeOpsVisibilityNotificationTellsTheAlertGroup(): void {
 		$schema = $this->fragment()['components']['schemas']['approval_request'];
 
 		$rule = ($schema['x-openregister-notifications']['created'] ?? null);
@@ -209,13 +211,13 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 		$this->assertContains('nc-notification', $rule['channels'] ?? []);
 
 		$recipients = ($rule['recipients'][0] ?? []);
-		$this->assertSame('groups', $recipients['kind'] ?? null);
-		$this->assertSame(['openconnector-ops'], $recipients['groups'] ?? null);
+		$this->assertSame('expression', $recipients['kind'] ?? null);
+		$this->assertSame(ConnectionAlertRecipientResolver::class, $recipients['resolver'] ?? null);
 
 		$this->assertArrayHasKey('nl', $rule['subject'] ?? []);
 		$this->assertArrayHasKey('en', $rule['subject'] ?? []);
 
-	}//end testDeclarativeOpsVisibilityNotificationTargetsOpsGroup()
+	}//end testDeclarativeOpsVisibilityNotificationTellsTheAlertGroup()
 
 	/**
 	 * Task 15: three `approval_request` seed objects exist (pending /

@@ -1514,7 +1514,7 @@ OC.L10N.register(
         "Window in minutes": "Periode in minuten",
         "There is no group called %s.": "Er is geen groep met de naam %s.",
         "Who hears about connection alerts": "Wie hoort van verbindingsmeldingen",
-        "Members of this group get a notification when a source or synchronization passes an alert threshold. Leave it empty to tell the admin group.": "Leden van deze groep krijgen een melding als een bron of synchronisatie een meldingsdrempel passeert. Laat het leeg om de groep admin te laten weten.",
+        "Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.": "Leden van deze groep krijgen een melding als een verbinding, taak of bezorging mislukt of een meldingsdrempel passeert. Laat het leeg om de groep admin te laten weten.",
         "Loading the setting…": "De instelling wordt geladen…",
         "Group id": "Groeps-id",
         "The setting could not be read.": "De instelling kon niet worden gelezen.",

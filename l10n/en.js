@@ -2856,7 +2856,7 @@ OC.L10N.register(
         "Window in minutes": "Window in minutes",
         "There is no group called %s.": "There is no group called %s.",
         "Who hears about connection alerts": "Who hears about connection alerts",
-        "Members of this group get a notification when a source or synchronization passes an alert threshold. Leave it empty to tell the admin group.": "Members of this group get a notification when a source or synchronization passes an alert threshold. Leave it empty to tell the admin group.",
+        "Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.": "Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.",
         "Loading the setting…": "Loading the setting…",
         "Group id": "Group id",
         "The setting could not be read.": "The setting could not be read.",

@@ -174,10 +174,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {

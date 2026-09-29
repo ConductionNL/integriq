@@ -5,7 +5,8 @@
 
 <!--
   ConnectionAlertSettings: the group whose members hear about an opened
-  connection alert (app setting connection_alert_group). Until an
+  connection alert and about integriq's other alerts, failed jobs, deliveries
+  and payments among them (app setting connection_alert_group). Until an
   administrator names another group, the admin group is told; clearing the
   field puts the admin group back.
 
@@ -20,7 +21,7 @@
 			{{
 				t(
 					'integriq',
-					'Members of this group get a notification when a source or synchronization passes an alert threshold. Leave it empty to tell the admin group.',
+					'Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.',
 				)
 			}}
 		</p>
