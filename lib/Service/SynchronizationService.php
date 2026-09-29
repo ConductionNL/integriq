@@ -39,7 +39,6 @@ use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
 use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
-use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Ownership\DisappearanceApplier;
@@ -2447,54 +2446,15 @@ class SynchronizationService {
 					bypassApprovalId: $approvalRequestId
 				);
 
-				// What this run would create, change and remove, built before
-				// any write (REQ-INAV-003). Removals only where REQ-010 and
-				// REQ-018 would allow a deletion in this run.
-				$changeSet = $this->buildGateChangeSet(
-					synchronization: $synchronization,
-					objectList: $objectList,
-					removalsAllowed: (
-						$rateLimitException === null
-						&& ($fetchInfo['complete'] ?? true) === true
-						&& (string)($synchronization['syncMode'] ?? 'full') !== 'incremental'
-					)
-				);
-
-				// An accept whose source changed after the preview writes
-				// nothing and asks again (REQ-INAV-004). A request stored
-				// before previews existed carries no fingerprint and passes.
-				$previewedFingerprint = null;
-				if ($gatedApprovalRequest !== null) {
-					$previewedFingerprint = ($gatedApprovalRequest->getObject()['fingerprint'] ?? null);
-				}
-
-				$superseded = (
-					is_string($previewedFingerprint) === true
-					&& $previewedFingerprint !== ''
-					&& $previewedFingerprint !== $changeSet['fingerprint']
-				);
-
-				if ($gatedApprovalRequest === null || $superseded === true) {
-					$newRequest = $this->suspendGatedRun(
-						synchronization: $synchronization,
+				if ($gatedApprovalRequest === null) {
+					$approvalConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig']['approval'] ?? []));
+					$this->approvalService->suspendForSynchronization(
 						synchronizationId: $synchronizationId,
-						changeSet: $changeSet
+						approverGroup: (string)($approvalConfig['approverGroup'] ?? ''),
+						onReject: (string)($approvalConfig['onReject'] ?? 'error'),
+						onTimeout: (string)($approvalConfig['onTimeout'] ?? 'error'),
+						ttlSeconds: (int)($approvalConfig['ttlSeconds'] ?? ApprovalService::DEFAULT_TTL_SECONDS)
 					);
-
-					$message = 'pending_approval';
-					if ($superseded === true) {
-						$this->approvalService->markSuperseded(
-							approvalRequest: $gatedApprovalRequest,
-							supersededBy: (string)$newRequest->getUuid()
-						);
-						$result['approval'] = [
-							'superseded' => true,
-							'previous' => $gatedApprovalRequest->getUuid(),
-							'supersededBy' => $newRequest->getUuid(),
-						];
-						$message = 'approval_superseded';
-						$gatedApprovalRequest = null;
-					}
 
 					$result['objects']['found'] = count($objectList);
 					$result['objects']['created'] = 0;
@@ -2503,7 +2463,7 @@ class SynchronizationService {
 					$result['objects']['deleted'] = 0;
 
 					$log->setResult($result);
-					$log->setMessage($message);
+					$log->setMessage('pending_approval');
 					$log = $this->synchronizationLogService->update(log: $log);
 
 					// No writes, no garbage collection, no follow-ups — the run
@@ -3012,143 +2972,6 @@ class SynchronizationService {
 
 		return $this->approvalService->findApprovedUnconsumedForSynchronization(synchronizationId: $synchronizationId);
 	}//end resolveApprovalForSynchronization()
-
-	/**
-	 * Open the approval_request that pauses a gated run, carrying its change set.
-	 *
-	 * @param array $synchronization The gated synchronization.
-	 * @param string $synchronizationId Its id.
-	 * @param array $changeSet What the run would write (ChangeSetBuilder::build()).
-	 *
-	 * @return ObjectEntity The pending request.
-	 *
-	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
-	 */
-	private function suspendGatedRun(array $synchronization, string $synchronizationId, array $changeSet): ObjectEntity {
-		$approvalConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig']['approval'] ?? []));
-
-		return $this->approvalService->suspendForSynchronization(
-			synchronizationId: $synchronizationId,
-			approverGroup: (string)($approvalConfig['approverGroup'] ?? ''),
-			onReject: (string)($approvalConfig['onReject'] ?? 'error'),
-			onTimeout: (string)($approvalConfig['onTimeout'] ?? 'error'),
-			ttlSeconds: (int)($approvalConfig['ttlSeconds'] ?? ApprovalService::DEFAULT_TTL_SECONDS),
-			changeSet: $changeSet
-		);
-	}//end suspendGatedRun()
-
-	/**
-	 * Build the change set of a gated run: each fetched object mapped, set
-	 * against the target its contract points at, plus the targets the
-	 * source no longer carries.
-	 *
-	 * Reads only. The preview runs the extra-data fetch and the mapping, not
-	 * the `before` rules: a rule may call out or write, and nothing may be
-	 * written before the accept (design D3). An object that cannot be read or
-	 * mapped is left out; the write loop dead-letters it as it always has.
-	 *
-	 * @param array $synchronization The gated synchronization.
-	 * @param array $objectList The fetched source objects.
-	 * @param bool $removalsAllowed Whether this run may delete at all.
-	 *
-	 * @return array The change set (ChangeSetBuilder::build()).
-	 *
-	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
-	 */
-	private function buildGateChangeSet(array $synchronization, array $objectList, bool $removalsAllowed): array {
-		$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-
-		$mapping = null;
-		if (empty($synchronization['sourceTargetMapping']) === false) {
-			$mapping = $this->orObjectService->find(
-				id: (string)$synchronization['sourceTargetMapping'],
-				register: 'integriq',
-				schema: 'mapping'
-			);
-		}
-
-		$contractIndex = $this->indexContractsByOrigin(
-			synchronizationId: $synchronizationId,
-			originIds: $this->originIdsForIndex(synchronization: $synchronization, objectList: $objectList),
-			justByOriginId: (
-				isset($sourceConfig['findContractByOriginIdOnly']) === true
-				&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
-			)
-		);
-
-		$entries = [];
-		$seen = [];
-		foreach ($objectList as $object) {
-			if (is_array($object) === false) {
-				$object = ['value' => $object];
-			}
-
-			try {
-				$originId = $this->getOriginId(synchronization: $synchronization, object: $object);
-				$object = $this->fetchMultipleExtraData(synchronization: $synchronization, sourceConfig: $sourceConfig, object: $object);
-				$mapped = $object;
-				if ($mapping !== null) {
-					$mapped = $this->mappingService->executeMapping(mapping: $mapping, input: $object);
-				}
-			} catch (\Throwable $exception) {
-				continue;
-			}
-
-			$seen[$originId] = true;
-			$targetId = ($contractIndex[$originId][0]['targetId'] ?? null);
-			$entries[] = [
-				'originId' => $originId,
-				'targetId' => $targetId,
-				'mapped' => $mapped,
-				'existing' => $this->readGateTarget(synchronization: $synchronization, targetId: $targetId),
-			];
-		}//end foreach
-
-		$removed = [];
-		if ($removalsAllowed === true) {
-			foreach ($this->findAllContractObjects(filters: ['synchronizationId' => $synchronizationId]) as $contract) {
-				$payload = $contract->jsonSerialize();
-				$originId = (string)($payload['originId'] ?? '');
-				if ($originId === '' || isset($seen[$originId]) === true || empty($payload['targetId']) === true) {
-					continue;
-				}
-
-				$removed[] = ['originId' => $originId, 'targetId' => (string)$payload['targetId']];
-			}
-		}
-
-		return (new ChangeSetBuilder())->build(entries: $entries, removed: $removed, removalsAllowed: $removalsAllowed);
-	}//end buildGateChangeSet()
-
-	/**
-	 * The stored target a contract points at, or null when there is none.
-	 *
-	 * @param array $synchronization The synchronization (its `targetId` is `register/schema`).
-	 * @param string|null $targetId The contract's target object id.
-	 *
-	 * @return array|null The stored object, or null when it does not exist or cannot be read.
-	 *
-	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
-	 */
-	private function readGateTarget(array $synchronization, ?string $targetId): ?array {
-		$parts = explode('/', (string)($synchronization['targetId'] ?? ''));
-		if ($targetId === null || $targetId === '' || count($parts) !== 2) {
-			return null;
-		}
-
-		try {
-			$target = $this->orObjectService->find(id: $targetId, register: $parts[0], schema: $parts[1]);
-		} catch (\Throwable $exception) {
-			return null;
-		}
-
-		if ($target instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		return $target->getObject();
-	}//end readGateTarget()
 
 	/**
 	 * Best-effort capture of a per-item sync failure to `sync_item_dead_letter`
