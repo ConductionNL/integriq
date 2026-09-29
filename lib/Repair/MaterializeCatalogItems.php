@@ -137,27 +137,7 @@ class MaterializeCatalogItems implements IRepairStep {
 
 				$status = $registryService->resolveStatus(entry: $entry);
 
-				$payload = [
-					'slug' => $slug,
-					'name' => (string)($entry['name'] ?? $slug),
-					'description' => (string)($entry['description'] ?? ''),
-					'category' => (string)($entry['category'] ?? ''),
-					'kind' => (string)($entry['kind'] ?? 'adapter'),
-					'mechanism' => (string)($entry['mechanism'] ?? 'always-available'),
-					'flagKey' => (string)($entry['flagKey'] ?? ''),
-					'sourceTemplateSlug' => (string)($entry['sourceTemplateSlug'] ?? ''),
-					'status' => $status,
-					'standards' => (array)($entry['standards'] ?? []),
-					'icon' => (string)($entry['icon'] ?? ''),
-					'tier' => (string)($entry['tier'] ?? 'adapter'),
-				];
-				// Where a template was checked, and the directory snapshot a
-				// generated one came from (connectors-catalogue-expansion).
-				foreach (['verifiedAgainst', 'snapshotDate'] as $key) {
-					if (empty($entry[$key]) === false) {
-						$payload[$key] = (string)$entry[$key];
-					}
-				}
+				$payload = $this->payloadFor(entry: $entry, slug: $slug, status: $status);
 
 				try {
 					$orObjectService->saveObject(
@@ -192,6 +172,43 @@ class MaterializeCatalogItems implements IRepairStep {
 		$output->info('Integriq: materialized ' . $upserted . ' of ' . count($entries) . ' catalog_item entries.');
 
 	}//end run()
+
+	/**
+	 * The catalog_item payload for one collected entry.
+	 *
+	 * @param array<string,mixed> $entry  A collect() entry.
+	 * @param string              $slug   Its slug.
+	 * @param string              $status Its resolved status.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 */
+	private function payloadFor(array $entry, string $slug, string $status): array {
+		$payload = [
+			'slug' => $slug,
+			'name' => (string)($entry['name'] ?? $slug),
+			'description' => (string)($entry['description'] ?? ''),
+			'category' => (string)($entry['category'] ?? ''),
+			'kind' => (string)($entry['kind'] ?? 'adapter'),
+			'mechanism' => (string)($entry['mechanism'] ?? 'always-available'),
+			'flagKey' => (string)($entry['flagKey'] ?? ''),
+			'sourceTemplateSlug' => (string)($entry['sourceTemplateSlug'] ?? ''),
+			'status' => $status,
+			'standards' => (array)($entry['standards'] ?? []),
+			'icon' => (string)($entry['icon'] ?? ''),
+			'tier' => (string)($entry['tier'] ?? 'adapter'),
+		];
+		// Where a template was checked, and the directory snapshot a
+		// generated one came from (connectors-catalogue-expansion).
+		foreach (['verifiedAgainst', 'snapshotDate'] as $key) {
+			if (empty($entry[$key]) === false) {
+				$payload[$key] = (string)$entry[$key];
+			}
+		}
+
+		return $payload;
+	}//end payloadFor()
 
 	/**
 	 * Remove the cards the registry no longer lists: environment
