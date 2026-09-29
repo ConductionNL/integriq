@@ -67,6 +67,13 @@ use Throwable;
  * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalsController extends Controller {
+
+	/**
+	 * Answer codes for a resumed run's message, where it is not a plain 200:
+	 * the source changed after the preview (REQ-INAV-004).
+	 */
+	private const RESUME_STATUS_BY_MESSAGE = ['approval_superseded' => Http::STATUS_CONFLICT];
+
 	/**
 	 * Constructor.
 	 *
@@ -459,9 +466,7 @@ class ApprovalsController extends Controller {
 
 		// The source changed after the preview: nothing was written and a
 		// new request carries the new change set.
-		if (is_array($result) === true && ($result['message'] ?? null) === 'approval_superseded') {
-			$statusCode = Http::STATUS_CONFLICT;
-		}
+		$statusCode = (self::RESUME_STATUS_BY_MESSAGE[(string)($result['message'] ?? '')] ?? $statusCode);
 
 		$body = ['data' => $result];
 		if (is_array($result) === true) {

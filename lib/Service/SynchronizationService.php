@@ -3107,19 +3107,37 @@ class SynchronizationService {
 
 		$removed = [];
 		if ($removalsAllowed === true) {
-			foreach ($this->findAllContractObjects(filters: ['synchronizationId' => $synchronizationId]) as $contract) {
-				$payload = $contract->jsonSerialize();
-				$originId = (string)($payload['originId'] ?? '');
-				if ($originId === '' || isset($seen[$originId]) === true || empty($payload['targetId']) === true) {
-					continue;
-				}
-
-				$removed[] = ['originId' => $originId, 'targetId' => (string)$payload['targetId']];
-			}
+			$removed = $this->gateRemovals(synchronizationId: $synchronizationId, seen: $seen);
 		}
 
 		return (new ChangeSetBuilder())->build(entries: $entries, removed: $removed, removalsAllowed: $removalsAllowed);
 	}//end buildGateChangeSet()
+
+	/**
+	 * The targets a gated run would remove: contracts of this synchronization
+	 * whose origin the fetch no longer carried.
+	 *
+	 * @param string $synchronizationId The synchronization.
+	 * @param array<string, bool> $seen The origin ids the fetch carried.
+	 *
+	 * @return array<int, array{originId: string, targetId: string}>
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
+	 */
+	private function gateRemovals(string $synchronizationId, array $seen): array {
+		$removed = [];
+		foreach ($this->findAllContractObjects(filters: ['synchronizationId' => $synchronizationId]) as $contract) {
+			$payload = $contract->jsonSerialize();
+			$originId = (string)($payload['originId'] ?? '');
+			if ($originId === '' || isset($seen[$originId]) === true || empty($payload['targetId']) === true) {
+				continue;
+			}
+
+			$removed[] = ['originId' => $originId, 'targetId' => (string)$payload['targetId']];
+		}
+
+		return $removed;
+	}//end gateRemovals()
 
 	/**
 	 * The stored target a contract points at, or null when there is none.
