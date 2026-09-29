@@ -1339,6 +1339,12 @@
             "component": "DocumentGenerationSourcePanel",
             "placement": "after-data",
             "colSpan": 12
+          },
+          {
+            "id": "src-run-summary",
+            "component": "SourceRunSummaryWidget",
+            "placement": "after-data",
+            "colSpan": 12
           }
         ],
         "sidebar": {
@@ -4212,6 +4218,12 @@
             }
           },
           {
+            "key": "triggeredBy",
+            "label": "Started by",
+            "sortable": true,
+            "width": "9%"
+          },
+          {
             "key": "processed",
             "label": "Processed",
             "sortable": true,
@@ -4260,7 +4272,20 @@
           "showMetadata": true
         },
         "showViewAction": true,
-        "showEditAction": false
+        "showEditAction": false,
+        "actions": [
+          {
+            "id": "run-again",
+            "label": "Run again",
+            "icon": "PlayOutline",
+            "handler": "rerunFailedRunHandler",
+            "visibleWhen": {
+              "field": "status",
+              "op": "eq",
+              "value": "failed"
+            }
+          }
+        ]
       }
     }
   ],

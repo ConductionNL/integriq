@@ -2808,7 +2808,25 @@
         "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.": "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.",
         "You cannot sign in right now": "You cannot sign in right now",
         "Go back to the page you came from and try again.": "Go back to the page you came from and try again.",
-        "Still stuck? Contact the organisation whose page sent you here.": "Still stuck? Contact the organisation whose page sent you here."
+        "Still stuck? Contact the organisation whose page sent you here.": "Still stuck? Contact the organisation whose page sent you here.",
+        "Give the dates as year-month-day, for example 2026-09-28.": "Give the dates as year-month-day, for example 2026-09-28.",
+        "Choose a window of at most %s days that ends after it starts.": "Choose a window of at most %s days that ends after it starts.",
+        "This run names no synchronization, so it cannot run again.": "This run names no synchronization, so it cannot run again.",
+        "The pull ran again. Select this notice to open the new run.": "The pull ran again. Select this notice to open the new run.",
+        "The pull did not run again: {reason}": "The pull did not run again: {reason}",
+        "Pulls per day": "Pulls per day",
+        "Reading the pulls of this source": "Reading the pulls of this source",
+        "Day": "Day",
+        "Pull runs": "Pull runs",
+        "This source has no pulls in this period.": "This source has no pulls in this period.",
+        "Started by": "Started by",
+        "Runs": "Runs",
+        "Succeeded": "Succeeded",
+        "The pulls of this source could not be read.": "The pulls of this source could not be read.",
+        "Running": "Running",
+        "Schedule": "Schedule",
+        "An administrator": "An administrator",
+        "Unknown": "Unknown"
     },
     "plurals": {}
 }

@@ -39,6 +39,7 @@ import {
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 import { rowId } from './rowId.js'
+import { runAgain } from './runAgain.js'
 
 /**
  * Test a source's connection by POSTing to /api/sources/test/{id}.
@@ -99,6 +100,20 @@ export function runSynchronizationHandler({ item }) {
 		mode: 'run',
 		item,
 	})
+}
+
+/**
+ * Run a failed synchronization run again: one POST, no dialog.
+ *
+ * Offered only on failed runs (the manifest action's `visibleWhen`). Unlike
+ * "Run now" it opens no modal, because the run asks for no options.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<string|null>} The new run's id.
+ * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+ */
+export function rerunFailedRunHandler({ item }) {
+	return runAgain(item)
 }
 
 /**

@@ -39,6 +39,7 @@ import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
 import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
+import SourceRunSummaryWidget from './components/SourceRunSummaryWidget.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import ColumnMappingEditorModal from './modals/Migration/ColumnMappingEditorModal.vue'
 import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
@@ -70,6 +71,7 @@ import {
 	openPromotionHandler,
 	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
+	rerunFailedRunHandler,
 	runDirectorySyncHandler,
 	runJobHandler,
 	runSynchronizationHandler,
@@ -92,6 +94,9 @@ export default {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	// Run again on a failed run: one POST, no dialog (connection-run-monitoring
+	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
+	rerunFailedRunHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
 	// Directory connections are Sources, so their run and preview actions sit on
@@ -141,6 +146,11 @@ export default {
 	// and #activate). Renders nothing for any other kind of source.
 	// document-generation-vendor-adapter REQ-DGV-004.
 	DocumentGenerationSourcePanel,
+
+	// SourceDetail body widget: the source's pulls per day and its latest
+	// runs, with Run again on a failed one. Reads sources#runSummary.
+	// connection-run-monitoring REQ-CRUN-002 and REQ-CRUN-003.
+	SourceRunSummaryWidget,
 
 	// The outbound call log (SourceLogs) acts on its calls: a per-row replay
 	// through `slots["row-actions"]`, and bulk replay plus firing by hand

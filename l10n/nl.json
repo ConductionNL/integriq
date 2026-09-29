@@ -1466,7 +1466,25 @@
         "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.": "App-id’s die deze mapping via een event mogen uitvoeren, zoals opencatalogi. Laat je het leeg, dan kan geen andere app hem uitvoeren.",
         "You cannot sign in right now": "Je kunt nu niet inloggen",
         "Go back to the page you came from and try again.": "Ga terug naar de pagina waar je vandaan kwam en probeer het opnieuw.",
-        "Still stuck? Contact the organisation whose page sent you here.": "Lukt het nog steeds niet? Neem contact op met de organisatie van de pagina die je hierheen stuurde."
+        "Still stuck? Contact the organisation whose page sent you here.": "Lukt het nog steeds niet? Neem contact op met de organisatie van de pagina die je hierheen stuurde.",
+        "Give the dates as year-month-day, for example 2026-09-28.": "Geef de datums als jaar-maand-dag, bijvoorbeeld 2026-09-28.",
+        "Choose a window of at most %s days that ends after it starts.": "Kies een periode van hoogstens %s dagen die na het begin eindigt.",
+        "This run names no synchronization, so it cannot run again.": "Deze run noemt geen synchronisatie en kan dus niet opnieuw draaien.",
+        "The pull ran again. Select this notice to open the new run.": "De ophaalrun is opnieuw gedraaid. Kies deze melding om de nieuwe run te openen.",
+        "The pull did not run again: {reason}": "De ophaalrun is niet opnieuw gedraaid: {reason}",
+        "Pulls per day": "Ophaalruns per dag",
+        "Reading the pulls of this source": "De ophaalruns van deze bron worden gelezen",
+        "Day": "Dag",
+        "Pull runs": "Ophaalruns",
+        "This source has no pulls in this period.": "Deze bron heeft in deze periode geen ophaalruns.",
+        "Run again": "Opnieuw draaien",
+        "Runs": "Runs",
+        "Succeeded": "Gelukt",
+        "The pulls of this source could not be read.": "De ophaalruns van deze bron konden niet worden gelezen.",
+        "Running": "Bezig",
+        "Schedule": "Planning",
+        "An administrator": "Een beheerder",
+        "Unknown": "Onbekend"
     },
     "plurals": {}
 }
