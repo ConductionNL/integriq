@@ -362,7 +362,7 @@ class BrokeredCallService {
 	 *
 	 * @throws BrokeredCallConfigurationException On any resolution failure.
 	 *
-	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 	 */
 	public function resolveCredentialRef(array $ref): string {
 		$this->assertBrokerAvailable();

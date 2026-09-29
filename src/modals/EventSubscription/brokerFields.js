@@ -9,7 +9,7 @@
 // describeAll()), never from a fixed list, so a transport a deployment
 // registers needs no form change.
 //
-// @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+// @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
 
 /** The dormant transport: it refuses every publish on purpose. */
 export const LOG_BROKER_ID = 'log'
@@ -25,7 +25,7 @@ export const BROKER_SECRET_KEYS = ['password', 'token']
  *
  * @param {object[]} descriptions The `results` of GET /api/events/brokers.
  * @return {object[]} `{id, label, needsTopic, contentModes, refuses}` options.
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
  */
 export function brokerOptions(descriptions) {
 	if (!Array.isArray(descriptions)) return []
@@ -52,7 +52,7 @@ export function brokerOptions(descriptions) {
  *
  * @param {string|null} brokerId The picked broker.
  * @return {boolean} True for RabbitMQ only.
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
  */
 export function showsRoutingKey(brokerId) {
 	return brokerId === RABBITMQ_BROKER_ID
@@ -63,7 +63,7 @@ export function showsRoutingKey(brokerId) {
  *
  * @param {object|null} option The picked broker option.
  * @return {string[]} Its content modes, structured when it names none.
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
  */
 export function contentModesFor(option) {
 	return option
@@ -100,7 +100,7 @@ function compact(object) {
  * @param {object} patch The changed fields.
  * @param {object[]} options The broker options.
  * @return {object} `{kind: 'broker', brokerId, topic, routingKey, contentMode, orderingKey}` without empty keys.
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
  */
 export function buildBrokerAction(current, patch, options) {
 	const base = current && typeof current === 'object' ? current : {}
@@ -129,7 +129,7 @@ export function buildBrokerAction(current, patch, options) {
  *
  * @param {object} formData The subscription form data.
  * @return {object} `protocolSettings.broker`, or an empty object.
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
  */
 export function readBrokerConnection(formData) {
 	const broker = formData?.protocolSettings?.broker
@@ -147,7 +147,7 @@ export function readBrokerConnection(formData) {
  * @param {object} patch The changed connection fields.
  * @param {string|null} brokerId The picked broker.
  * @return {object} The new protocolSettings.
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
  */
 export function buildBrokerSettings(protocolSettings, patch, brokerId) {
 	const settings =
@@ -177,7 +177,7 @@ export function buildBrokerSettings(protocolSettings, patch, brokerId) {
  *
  * @param {object} broker A `protocolSettings.broker` block as the app's subscription endpoint returns it.
  * @return {boolean} True when a password or token is stored.
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
  */
 export function storesBrokerSecret(broker) {
 	if (!broker || typeof broker !== 'object') return false

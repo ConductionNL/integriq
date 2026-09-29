@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-app-lists-the-broker-transports-it-has-req-ebsc-001
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-app-lists-the-broker-transports-it-has-req-ebsc-001
  */
 
 declare(strict_types=1);

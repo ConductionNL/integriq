@@ -1999,7 +1999,7 @@ class EventService {
 	 * @throws BrokeredCallConfigurationException When the credential reference cannot be resolved.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
-	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 	 */
 	private function brokerSettings(string $brokerId, array $subscriptionData): array {
 		$settings = ($subscriptionData['protocolSettings']['broker'] ?? []);

@@ -471,7 +471,7 @@ export default {
 		 * The picked broker option, or a stand-in naming its id when the list does not hold it.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
 		 */
 		selectedBroker() {
 			const id = this.formData?.action?.brokerId
@@ -491,7 +491,7 @@ export default {
 		 * Whether the routing key field shows (RabbitMQ only).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
 		 */
 		showsBrokerRoutingKey() {
 			return showsRoutingKey(this.formData?.action?.brokerId || null)
@@ -501,7 +501,7 @@ export default {
 		 * The content modes the picked broker offers, as select options.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
 		 */
 		contentModeOptions() {
 			const labels = {
@@ -521,7 +521,7 @@ export default {
 		 * The select model for the content mode.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
 		 */
 		selectedContentMode() {
 			const mode = this.formData?.action?.contentMode || 'structured'
@@ -835,7 +835,7 @@ export default {
 		 *
 		 * @param {object} patch The changed fields.
 		 * @return {void}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
 		 */
 		onBrokerField(patch) {
 			this.updateField(
@@ -852,7 +852,7 @@ export default {
 		 * Load the broker transports this instance has.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
 		 */
 		async fetchBrokers() {
 			this.brokersLoading = true

@@ -24,7 +24,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\Integriq\Service\Security;
 /**
  * Masks every secret under a subscription's `protocolSettings`.
  *
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
  */
 class SubscriptionSecretMasker {
 
@@ -71,7 +71,7 @@ class SubscriptionSecretMasker {
 	 * @return array The same array with secret fields replaced by a marker.
 	 *
 	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
-	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 	 */
 	public function mask(array $subscription): array {
 		if (isset($subscription['protocolSettings']) === false || is_array($subscription['protocolSettings']) === false) {
@@ -103,7 +103,7 @@ class SubscriptionSecretMasker {
 	 *
 	 * @return mixed The value to serve.
 	 *
-	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 	 */
 	private function maskSetting(string $key, mixed $value, SensitiveFieldRegistry $registry): mixed {
 		if ($value === null || $value === '' || in_array($key, self::NON_SECRET_SETTING_KEYS, true) === true) {

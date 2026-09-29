@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\Integriq\Service\BrokeredCallService;
 /**
  * Resolves a broker subscription's credential reference into the transport's settings.
  *
- * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
  */
 class BrokerCredentialResolver {
 
@@ -64,7 +64,7 @@ class BrokerCredentialResolver {
 	 *
 	 * @throws BrokeredCallConfigurationException When the reference cannot be resolved.
 	 *
-	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 	 */
 	public function resolve(string $brokerId, array $settings): array {
 		$ref = ($settings['credentialRef'] ?? null);

@@ -11,8 +11,8 @@
   app's own subscription endpoint returns it masked; this component reads that
   and says so, and saving with a credential picked drops the stored secret.
 
-  @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
-  @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+  @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+  @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 -->
 <template>
 	<div class="cn-broker-connection-fields">
@@ -129,7 +129,7 @@ export default {
 		 * The broker connection as the form holds it.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 		 */
 		connection() {
 			return readBrokerConnection(this.formData)
@@ -139,7 +139,7 @@ export default {
 		 * The picked credential, or a stand-in naming its id when the list does not hold it.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 		 */
 		selectedCredential() {
 			const id = this.connection.credentialRef?.credentialId
@@ -157,7 +157,7 @@ export default {
 	 * Load the credentials, and on an existing subscription ask the app whether a secret is stored.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 	 */
 	created() {
 		this.fetchCredentials()
@@ -173,7 +173,7 @@ export default {
 		 * @param {string} key The field.
 		 * @param {string} value Its new value.
 		 * @return {void}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 		 */
 		onConnectionField(key, value) {
 			this.updateField(
@@ -191,7 +191,7 @@ export default {
 		 *
 		 * @param {object|null} option The picked credential.
 		 * @return {void}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 		 */
 		onCredentialPick(option) {
 			this.updateField(
@@ -212,7 +212,7 @@ export default {
 		 * List the signed-in user's credentials from the OpenRegister credential broker.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 		 */
 		async fetchCredentials() {
 			this.credentialsLoading = true
@@ -240,7 +240,7 @@ export default {
 		 * object API the form reads through never returns protocolSettings.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 		 */
 		async checkStoredSecret() {
 			const id =
