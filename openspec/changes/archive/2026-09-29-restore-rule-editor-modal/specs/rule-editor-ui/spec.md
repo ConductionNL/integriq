@@ -113,10 +113,12 @@ Notes: `DEFAULT_ERROR_CONFIG` in `views/Rule/ruleDraft.js`.
 
 ### Requirement: Rule detail page load, edit, and save lifecycle (REQ-RULEUI-001)
 
-The rule detail page SHALL fetch the active rule, expose its fields for editing, track a
-dirty flag, normalise the rule's `conditions` between string/array/object representations,
-and persist changes through the object store. Save and cancel actions reset or restore
-local state; a load failure surfaces an error message with a retry affordance.
+The rule detail page SHALL fetch the active rule, expose its fields for editing,
+track a dirty flag, normalise the rule's `conditions` between string/array/object
+representations, and persist changes through the object store. Save persists local
+state and Discard restores it from the last persisted version; both are available
+only while the page is dirty. A load failure surfaces an error message with a
+retry affordance.
 
 The page SHALL additionally expose the rule's `action` — a `required` property on the
 `rule` schema that the page previously had no editor for — and SHALL offer `timing` as a
@@ -124,9 +126,26 @@ closed two-value select rather than free text. It SHALL take its conditions norm
 from the shared `views/Rule/ruleDraft.js` rather than carrying its own copy.
 
 #### Scenario: Editing a field marks the page dirty
-
 - WHEN the user changes a rule field via `updateField`
 - THEN the local copy is updated AND the `dirty` computed flag becomes true
+
+#### Scenario: Discard is unavailable with no unsaved edits
+- WHEN the page is not dirty
+- THEN the Discard action is disabled AND `resetEdits` is a no-op
+
+#### Scenario: Discard restores the last persisted version
+- WHEN the user discards while the page is dirty
+- THEN the local copy is replaced by the pristine snapshot AND any raw-conditions
+  JSON input is re-rendered from the restored condition tree
+
+#### Scenario: Conditions are normalised on input
+- WHEN the user types raw conditions JSON
+- THEN `normaliseConditions` parses string/array/object/`and`/`or` shapes into the
+  canonical condition tree, and an empty value yields an empty condition set
+
+#### Scenario: Load failure offers retry
+- WHEN the initial `load()` fails
+- THEN an error message is shown AND `onRetry` re-issues the fetch
 
 #### Scenario: The required action field is editable
 
@@ -134,24 +153,13 @@ from the shared `views/Rule/ruleDraft.js` rather than carrying its own copy.
 - THEN `action` is offered as a select over the four request methods, and saving persists
   the picked value
 
-#### Scenario: Conditions are normalised on input
-
-- WHEN the user types raw conditions JSON
-- THEN `normaliseConditions` parses string/array/object/`and`/`or` shapes into the
-  canonical condition tree, and an empty value yields an empty condition set
-
-#### Scenario: Load failure offers retry
-
-- WHEN the initial `load()` fails
-- THEN an error message is shown AND `onRetry` re-issues the fetch
-
-Notes: `RuleDetailPage.vue`.
+Notes: `RuleDetailPage.vue` (16 methods/computeds/watchers).
 
 ### Requirement: Action-type configuration and per-action-type forms (REQ-RULEUI-003)
 
 The action configuration panel SHALL present the available rule action types, swap in the
 matching action form component for the selected type, and relay the form's slot updates
-(mapping id, JavaScript code, raw JSON) back to the rule. Each action form reads and emits
+(mapping id, flow id, raw JSON) back to the rule. Each action form reads and emits
 its own action-specific configuration shape.
 
 Picking a type SHALL propagate to the rule's **top-level** `type` property, not only to
