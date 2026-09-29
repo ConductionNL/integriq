@@ -5969,10 +5969,10 @@
 				"state": "building",
 				"change": "statutory-gateways-and-frameworks",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Gateway/Adapter/{CorvGateway,GgkGateway,WkpbGateway}.php only implement id()/schemas() (metadata, no send/deliver method) and are referenced only by tests/Unit/Gateway/StatutoryGatewayAdapterTest.php, zero production callers; appinfo/routes.php:543-548 gateways#index/overview/exportOverview/testBinding/bridges/revokeBridge -> lib/Controller/GatewaysController.php, but a repo-wide search of src/ finds no page or component calling /api/gateways anywhere, and the only 'Gateway' string in src/manifest.json (line 217-218) is the unrelated ApiProducts 'Gateway' menu grouping."
+				"evidence": "lib/Event/GatewayDeliveryRequestedEvent.php + lib/EventListener/GatewayDeliveryRequestedListener.php (registered in lib/AppInfo/Application.php) are the production caller of the CORV, GGK, WKPB and publication adapters: a sibling dispatches the event, the adapter validates before anything leaves, SourceGatewayTransport sends over the configured source, and the GatewayDelivery comes back on the event (tests/Unit/EventListener/GatewayDeliveryRequestedListenerTest.php, real adapters). Sources > Statutory gateways (src/dialogs/GatewayCatalogueDialog.vue) shows the catalogue by standard and where each endpoint sits. Still open in change statutory-gateways-and-frameworks: task 3 (seeded mock-mode CORV/GGK sources, once the statutory endpoints are known) and task 6 (ZGW call sites through the registry binding)."
 			},
-			"reachedOn": "nothing reaches it: no frontend page, and the CORV/GGK/WKPB adapter classes have no production caller at all",
-			"note": "Only a read-only registry/catalogue of which laws this instance claims to reach is built, and even that has no page; actual message delivery through CORV/GGK/WKPB is metadata-only scaffolding.",
+			"reachedOn": "Sources > Statutory gateways (catalogue and overview); a sibling app sends by dispatching GatewayDeliveryRequestedEvent",
+			"note": "29 Sep 2026: the adapters now have a caller and the catalogue a screen. No source for CORV or GGK ships yet, so a send answers 'no source configured' until an administrator adds one; that is task 3. dossiq#3189 asks dossiq to declare the WKPB flag.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",

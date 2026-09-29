@@ -54,6 +54,7 @@ use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
+use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
 use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
@@ -67,6 +68,7 @@ use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
 use OCA\Integriq\EventListener\SourceRequestedListener;
 use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
+use OCA\Integriq\EventListener\GatewayDeliveryRequestedListener;
 use OCA\Integriq\EventListener\MappingExecutionRequestedListener;
 use OCA\Integriq\EventListener\ExchangeJobRequestedListener;
 use OCA\Integriq\EventListener\ExchangeMappingRequestedListener;
@@ -340,6 +342,13 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			MappingExecutionRequestedEvent::class,
 			MappingExecutionRequestedListener::class
+		);
+		// A sibling sends through a statutory gateway (statutory-gateways-and-
+		// frameworks REQ-SG-010): the caller the CORV, GGK, WKPB and publication
+		// adapters lacked.
+		$context->registerEventListener(
+			GatewayDeliveryRequestedEvent::class,
+			GatewayDeliveryRequestedListener::class
 		);
 		// Exchange jobs another app owns (learniq-exchange-jobs-native): the
 		// owning app asks integriq to carry a job, or to store its own

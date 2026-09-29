@@ -64,6 +64,13 @@ D21 and D6. Waits on nothing.
 - [x] Implement (registration, the returned identifier recorded, and an unresolvable property reference refused before sending, checked through the `bag` property source rather than a second lookup)
 - [x] Test
 
+### Task 11: A caller for the adapters
+- **spec_ref**: `openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-sibling-app-sends-through-a-gateway-with-a-typed-event-req-sg-010`
+- **files**: `lib/Event/GatewayDeliveryRequestedEvent.php`, `lib/EventListener/GatewayDeliveryRequestedListener.php`, `lib/AppInfo/Application.php`
+- Added at build (29 Sep 2026): the CORV, GGK, WKPB and publication adapters had `send()`, `register()` and `publish()` with tests and no production caller, so nothing in the fleet could deliver through them. A typed event (ADR-041) is the caller, in the shape of `DocumentRenderRequestedEvent`.
+- [x] Implement
+- [x] Test (`tests/Unit/EventListener/GatewayDeliveryRequestedListenerTest.php`, real adapters, only the transport and the BAG lookup doubled)
+
 ### Task 10: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, the catalogue entries, this change's row in `competitor-parity-2026-09`
 - [x] Hand dossiq the case-type half: the WKPB flag and the registry binding declaration, and say that C-integrations-3 stays with dossiq's term model, cluster 18 (dossiq#3189)
