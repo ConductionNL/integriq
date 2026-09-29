@@ -157,7 +157,11 @@ class LtiKeyService {
 				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
-				_multitenancy: false
+				_multitenancy: false,
+				// `signingKeys` is writeOnly (register.d/99-lti-*-secrets-writeonly.json)
+				// and the rendered read strips writeOnly unconditionally, also under
+				// `_rbac: false` (openregister#460). Unrendered, the keys are there.
+				_render: false
 			);
 		} catch (DoesNotExistException $exception) {
 			throw new LtiValidationException(
@@ -645,7 +649,10 @@ class LtiKeyService {
 			);
 			$registrations = ($matches['results'] ?? $matches);
 
-			foreach ($registrations as $registration) {
+			foreach ($registrations as $listed) {
+				// The list is rendered, so its rows carry no writeOnly `signingKeys`:
+				// read each registration again past the render boundary.
+				$registration = $this->findRegistration(registrationType: $registrationType, registrationUuid: $listed->getUuid());
 				$data = $registration->getObject();
 				$signingKeys = ($data['signingKeys'] ?? []);
 				$changed = false;
