@@ -2854,7 +2854,16 @@ OC.L10N.register(
         "When to warn about this source: each threshold counts failures over a window. Leave it empty and nothing is counted.": "When to warn about this source: each threshold counts failures over a window. Leave it empty and nothing is counted.",
         "When to warn about this synchronization: each threshold counts failures over a window. Leave it empty and nothing is counted.": "When to warn about this synchronization: each threshold counts failures over a window. Leave it empty and nothing is counted.",
         "Whether the threshold belongs to a source or a synchronization.": "Whether the threshold belongs to a source or a synchronization.",
-        "Window in minutes": "Window in minutes"
+        "Window in minutes": "Window in minutes",
+        "There is no group called %s.": "There is no group called %s.",
+        "Who hears about connection alerts": "Who hears about connection alerts",
+        "When a source or synchronization passes one of its alert thresholds, the members of this group get a notification. Leave it empty and nobody is notified; the alert still shows on the Connection alerts page.": "When a source or synchronization passes one of its alert thresholds, the members of this group get a notification. Leave it empty and nobody is notified; the alert still shows on the Connection alerts page.",
+        "Loading the setting…": "Loading the setting…",
+        "Group id": "Group id",
+        "No group is named, so nobody is notified.": "No group is named, so nobody is notified.",
+        "The setting could not be read.": "The setting could not be read.",
+        "Saved.": "Saved.",
+        "The setting could not be saved.": "The setting could not be saved."
     },
     "nplurals=2; plural=(n != 1);"
 )

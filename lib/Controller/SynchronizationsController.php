@@ -415,10 +415,15 @@ class SynchronizationsController extends Controller {
 
 			// If synchronization fails, return an error response.
 			return new JSONResponse(
-				data: [
-					'error' => $this->l->t('Synchronization error'),
-					'message' => $e->getMessage(),
-				],
+				data: array_filter(
+					[
+						'error' => $this->l->t('Synchronization error'),
+						'message' => $e->getMessage(),
+						// A run that failed again still has a run record; name it.
+						'runId' => $this->runProgress?->lastRunId(),
+					],
+					static fn ($value): bool => $value !== null
+				),
 				statusCode: 400,
 				headers: $headers
 			);

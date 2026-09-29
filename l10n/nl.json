@@ -1514,7 +1514,16 @@
         "When to warn about this source: each threshold counts failures over a window. Leave it empty and nothing is counted.": "Wanneer er over deze bron gewaarschuwd wordt: elke drempel telt fouten over een periode. Laat het leeg en er wordt niets geteld.",
         "When to warn about this synchronization: each threshold counts failures over a window. Leave it empty and nothing is counted.": "Wanneer er over deze synchronisatie gewaarschuwd wordt: elke drempel telt fouten over een periode. Laat het leeg en er wordt niets geteld.",
         "Whether the threshold belongs to a source or a synchronization.": "Of de drempel bij een bron of een synchronisatie hoort.",
-        "Window in minutes": "Periode in minuten"
+        "Window in minutes": "Periode in minuten",
+        "There is no group called %s.": "Er is geen groep met de naam %s.",
+        "Who hears about connection alerts": "Wie hoort van verbindingsmeldingen",
+        "When a source or synchronization passes one of its alert thresholds, the members of this group get a notification. Leave it empty and nobody is notified; the alert still shows on the Connection alerts page.": "Wanneer een bron of synchronisatie een van haar meldingsdrempels passeert, krijgen de leden van deze groep een melding. Laat het leeg en niemand krijgt een melding; de melding staat dan alleen op de pagina Verbindingsmeldingen.",
+        "Loading the setting…": "De instelling wordt geladen…",
+        "Group id": "Groeps-id",
+        "No group is named, so nobody is notified.": "Er is geen groep genoemd, dus niemand krijgt een melding.",
+        "The setting could not be read.": "De instelling kon niet worden gelezen.",
+        "Saved.": "Opgeslagen.",
+        "The setting could not be saved.": "De instelling kon niet worden opgeslagen."
     },
     "plurals": {}
 }

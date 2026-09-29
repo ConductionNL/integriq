@@ -19,7 +19,7 @@ or synchronization passes a threshold of failures. Matrix rows
 
 A synchronization run record MUST carry the `sourceId` of the synchronization's
 source at the moment the run started, and `triggeredBy` of `cron`, `manual` or
-`rerun`.
+`rerun`. Only Run again may ask for `rerun`; a caller cannot claim `cron`.
 
 #### Scenario: a scheduled pull records its source
 - GIVEN a synchronization reading source `KVK`
@@ -55,7 +55,7 @@ new run. It MUST require the action `synchronization.run`.
 #### Scenario: a failed Monday pull is restarted
 - GIVEN a failed run on the source detail page
 - WHEN the administrator chooses "Run again"
-- THEN a new run starts for the same synchronization and the notice links to it
+- THEN a new run starts for the same synchronization, recorded with `triggeredBy` `rerun`, and the notice opens the runs page on it
 - e2e: tests/e2e/connection-run-summary.spec.ts
 
 ### Requirement: Thresholds per source and synchronization open an alert (REQ-CRUN-004)
@@ -79,16 +79,25 @@ NOT open a second one.
 - THEN no second alert is opened
 - @e2e exclude a background job; covered by PHPUnit on ConnectionThresholdJob
 
-### Requirement: An opened alert notifies the operations group (REQ-CRUN-005)
+### Requirement: An opened alert notifies the group an administrator named (REQ-CRUN-005)
 
 The `connection_alert` schema MUST declare an `x-openregister-notifications`
-rule with a `created` trigger that notifies the `openconnector-ops` group,
-naming the subject, the rule, the count and the threshold. Integriq MUST NOT
-call the notification manager directly for this. The alerts page MUST list
-alerts with their state.
+rule with a `created` trigger whose recipients are the members of the group
+named in the app setting `connection_alert_group`, naming the subject, the
+rule, the count and the threshold. No group MUST be named by default: with
+none named nobody is notified and the alert shows on the alerts page only.
+Setting the group MUST be admin only and MUST refuse a group that does not
+exist. Integriq MUST NOT call the notification manager directly for this.
+The alerts page MUST list alerts with their state.
 
-#### Scenario: the operations group is told
-- GIVEN a member of `openconnector-ops`
+#### Scenario: the named group is told
+- GIVEN an administrator named the group `koppelbeheer` for connection alerts
 - WHEN an alert opens for source `KVK`
-- THEN they receive a Nextcloud notification naming `KVK`, the rule and the count, and the alerts page lists the alert as open
+- THEN the members of `koppelbeheer` receive a Nextcloud notification naming `KVK`, the rule and the count, and the alerts page lists the alert as open
 - e2e: tests/e2e/connection-run-summary.spec.ts
+
+#### Scenario: nobody is named
+- GIVEN a fresh install where no group is named for connection alerts
+- WHEN an alert opens
+- THEN nobody is notified and the alerts page lists the alert as open
+- @e2e exclude a recipient resolution; covered by PHPUnit on ConnectionAlertRecipientResolver

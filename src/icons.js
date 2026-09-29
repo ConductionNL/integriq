@@ -19,6 +19,7 @@ import AccountKeyOutline from 'vue-material-design-icons/AccountKeyOutline.vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import AccountNetworkOutline from 'vue-material-design-icons/AccountNetworkOutline.vue'
 import AccountVoice from 'vue-material-design-icons/AccountVoice.vue'
+import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import Bank from 'vue-material-design-icons/Bank.vue'
@@ -123,6 +124,7 @@ export default {
 	AccountMultipleOutline,
 	AccountNetworkOutline,
 	AccountVoice,
+	AlertOutline,
 	Api,
 	ApplicationOutline,
 	Bank,

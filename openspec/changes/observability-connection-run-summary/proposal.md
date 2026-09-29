@@ -1,6 +1,6 @@
 ---
 kind: code
-depends_on: [integriq-notifications]
+depends_on: []
 ---
 
 # Proposal: observability-connection-run-summary
@@ -84,8 +84,9 @@ a sibling matrix) and `integriq:obs-threshold-counts`.
 6. A background job that counts against the thresholds every five minutes and
    opens a `connection_alert` when one is passed, and clears it when the count
    falls back.
-7. A declared `created` notification on `connection_alert` to the
-   `openconnector-ops` group, and an alerts page.
+7. A declared `created` notification on `connection_alert` to the members of
+   the group an administrator names in the app setting
+   `connection_alert_group` (none by default, design D5), and an alerts page.
 
 ## Opencatalogi's half, not built here
 

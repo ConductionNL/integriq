@@ -687,6 +687,8 @@ return [
 		// DSO STAM PKIoverheid signing configuration (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoPkiSettings#getConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'GET'],
 		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
+		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
+		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
 		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The engine generic is

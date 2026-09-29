@@ -98,6 +98,24 @@ final class SynchronizationsControllerRerunTest extends TestCase {
 	}//end testRunAgainRecordsRerunAndAnswersTheNewRunId()
 
 	/**
+	 * A run that fails again still names its run record.
+	 *
+	 * @return void
+	 */
+	public function testARunThatFailsAgainStillNamesItsRun(): void {
+		$service = $this->createMock(SynchronizationService::class);
+		$service->method('synchronize')->willThrowException(new \Exception('Source answered 500'));
+
+		$progress = $this->createMock(SynchronizationRunProgressService::class);
+		$progress->method('lastRunId')->willReturn('run-failed-again');
+
+		$response = $this->makeController(['triggeredBy' => 'rerun'], $service, $progress)->run('sync-1');
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame('run-failed-again', $response->getData()['runId']);
+	}//end testARunThatFailsAgainStillNamesItsRun()
+
+	/**
 	 * A plain Run now leaves the trigger to the engine, and a made-up trigger is not passed on.
 	 *
 	 * @return void

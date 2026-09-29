@@ -7,7 +7,11 @@ job, and the warning itself is a declared notification on an alert object.
 ## Where it fits
 
 - Run record: `lib/Settings/register.d/sync-run-progress.json` gains
-  `sourceId` (uuid) and `triggeredBy` (`cron`, `manual`, `rerun`).
+  `sourceId` (a string: a synchronization's `sourceId` is polymorphic, a uuid,
+  a legacy number or a `register/schema` pair) and `triggeredBy` (`cron`,
+  `manual`, `rerun`). `SynchronizationService::synchronize()` takes an
+  optional `triggeredBy`; without one it reads the execution trace (`cron`
+  from JobService, `manual` otherwise).
   `lib/Service/SynchronizationRunProgressService.php:176` (`start()`) takes
   both and writes them with the first counters.
 - Summary: `sources#runSummary` (GET `/api/sources/{id}/run-summary?from=&to=`)
@@ -16,10 +20,11 @@ job, and the warning itself is a declared notification on an alert object.
   (`lib/actions.seed.json:4`). A new `lib/Service/RunSummaryService.php` reads
   `synchronization_run` for the source in the window, at most 31 days, in
   bounded pages (ADR-058), and sums per day.
-- Source page: `SourceDetail` (`src/manifest.json:998`) gets a body widget
-  `SourceRunSummaryWidget` (registered in `src/registry.js`) for the per-day
-  table, and an `object-list` widget over `synchronization_run` filtered by
-  `sourceId: @objectId`, the filter token the page's existing widgets use.
+- Source page: `SourceDetail` gets a body widget `SourceRunSummaryWidget`
+  (`src/components/`, registered in `src/registry.js`) for the per-day table
+  and the source's latest runs with Run again on a failed one. The route
+  answers both, so the page makes one request behind one action guard
+  instead of a second `object-list` widget.
 - Rerun: a new `rerunFailedRunHandler` in `src/handlers/actionHandlers.js`
   posts to `synchronizations#run` (`appinfo/routes.php:405`) with the run's
   `synchronizationId` and shows a toast linking the new run. It is offered on
@@ -30,14 +35,16 @@ job, and the warning itself is a declared notification on an alert object.
   `connection_alert` (`subjectType`, `subject`, `rule`, `count`, `threshold`,
   `windowMinutes`, `state` open or cleared, `openedAt`, `clearedAt`). It
   declares on `connection_alert` an `x-openregister-notifications` rule
-  `threshold-passed` with trigger `created` and recipients the
-  `openconnector-ops` group, the group the existing rules on
-  `lib/Settings/integriq_register.json` already notify.
+  `threshold-passed` with trigger `created` and one `expression` recipient,
+  `OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver` (D5).
 - Job: `lib/BackgroundJob/ConnectionThresholdJob.php`, a `TimedJob` every 300
   seconds (ADR-069), counts failed calls (`call_log`, `source`, `statusCode`
   400 or more), failed runs (`synchronization_run`, `status: failed`) and
   invalid objects (sum of `invalid`) in each window, and opens or clears
   alerts.
+- Recipient setting: `ConnectionAlertSettingsController` (GET and PUT
+  `/api/admin/connection-alert-group`, admin only) and
+  `src/views/admin/ConnectionAlertSettings.vue` on the admin settings page.
 - Alerts page: a manifest fragment `src/manifest.d/observability-connection-run-summary.json`
   adds a `logs` page `ConnectionAlerts` over `connection_alert`.
 
@@ -76,6 +83,19 @@ on that schema sends the notification through OpenRegister's engine, with no
 `INotificationManager` call in integriq. An alert stays open until the count
 falls back, so a source failing all night notifies once, not every five
 minutes.
+
+## D5. The recipient group is an app setting with no default
+
+The change first named `openconnector-ops`, the group the older rules in
+`integriq_register.json` notify. That group exists on no instance, and which
+group looks after an organisation's connections is that organisation's call.
+So the rule names an `expression` recipient, `ConnectionAlertRecipientResolver`,
+which returns the members of the group in the app setting
+`connection_alert_group`. Nothing is set by default: an alert then notifies
+nobody and shows on the alerts page only. An administrator names the group on
+the admin settings page, which refuses a group that does not exist. The
+alternative, a `groups` recipient with a fixed name, would ship a rule that
+notifies nobody on every install without saying so.
 
 ## Declarative versus imperative
 

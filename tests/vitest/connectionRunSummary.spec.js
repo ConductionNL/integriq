@@ -19,17 +19,19 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SourceRunSummaryWidget from '@/components/SourceRunSummaryWidget.vue'
+import ConnectionAlertSettings from '@/views/admin/ConnectionAlertSettings.vue'
 import { rerunFailedRunHandler } from '@/handlers/actionHandlers.js'
 import { modalBus } from '@/handlers/modalBus.js'
 import { setRouter } from '@/handlers/routerRef.js'
 
-const { get, post, showSuccess, showError } = vi.hoisted(() => ({
+const { get, post, put, showSuccess, showError } = vi.hoisted(() => ({
 	get: vi.fn(),
 	post: vi.fn(),
+	put: vi.fn(),
 	showSuccess: vi.fn(),
 	showError: vi.fn(),
 }))
-vi.mock('@nextcloud/axios', () => ({ default: { get, post } }))
+vi.mock('@nextcloud/axios', () => ({ default: { get, post, put } }))
 vi.mock('@nextcloud/dialogs', () => ({ showSuccess, showError }))
 
 vi.mock('@nextcloud/vue', async () => {
@@ -45,6 +47,18 @@ vi.mock('@nextcloud/vue', async () => {
 					{ disabled: this.disabled, onClick: () => this.$emit('click') },
 					this.$slots.default?.(),
 				)
+			},
+		}),
+		NcTextField: defineComponent({
+			name: 'NcTextField',
+			props: ['modelValue', 'label'],
+			emits: ['update:modelValue'],
+			render() {
+				return h('input', {
+					value: this.modelValue,
+					'aria-label': this.label,
+					onInput: (event) => this.$emit('update:modelValue', event.target.value),
+				})
 			},
 		}),
 	}
@@ -201,5 +215,68 @@ describe('Run again as a row action', () => {
 		const page = manifest.pages.find((p) => p.id === 'SourceDetail')
 		const widget = page.config.bodyWidgets.find((w) => w.component === 'SourceRunSummaryWidget')
 		expect(widget).toBeTruthy()
+	})
+})
+
+describe('the connection alerts page', () => {
+	it('lists the alerts with their state under Operations', async () => {
+		const { buildManifest } = await import('@conduction/nextcloud-vue/src/utils/buildManifest.js')
+		const read = (relative) => JSON.parse(readFileSync(join(__dirname, '../..', relative), 'utf8'))
+		const merged = buildManifest(
+			read('src/manifest.json'),
+			[read('src/manifest.d/observability-connection-run-summary.json')],
+			read('src/menu-layout.json'),
+		)
+		const page = merged.pages.find((candidate) => candidate.id === 'ConnectionAlerts')
+		expect(page.config.schema).toBe('connection_alert')
+		const keys = page.config.columns.map((column) => column.key)
+		expect(keys).toEqual(expect.arrayContaining(['subjectName', 'rule', 'count', 'threshold', 'state']))
+		const state = page.config.columns.find((column) => column.key === 'state')
+		expect(state.widgetProps.colorMap.open).toBe('error')
+		const operations = merged.menu.find((item) => item.id === 'OperationsGroup')
+		expect(operations.children.map((child) => child.id)).toContain('ConnectionAlerts')
+	})
+})
+
+describe('the group that hears about connection alerts', () => {
+	beforeEach(() => {
+		get.mockReset()
+		put.mockReset()
+	})
+
+	it('says nobody is notified while no group is named', async () => {
+		get.mockResolvedValue({ data: { group: '' } })
+		const wrapper = mount(ConnectionAlertSettings)
+		await flushPromises()
+
+		expect(get).toHaveBeenCalledWith('/index.php/apps/integriq/api/admin/connection-alert-group')
+		expect(wrapper.find('[data-testid="admin-connection-alert-group-none"]').exists()).toBe(true)
+	})
+
+	it('saves the group an administrator names', async () => {
+		get.mockResolvedValue({ data: { group: '' } })
+		put.mockResolvedValue({ data: { group: 'koppelbeheer' } })
+		const wrapper = mount(ConnectionAlertSettings)
+		await flushPromises()
+
+		await wrapper.find('input').setValue('koppelbeheer ')
+		await wrapper.find('[data-testid="admin-connection-alert-group-save"]').trigger('click')
+		await flushPromises()
+
+		expect(put).toHaveBeenCalledWith('/index.php/apps/integriq/api/admin/connection-alert-group', { group: 'koppelbeheer' })
+		expect(wrapper.find('[data-testid="admin-connection-alert-group-none"]').exists()).toBe(false)
+	})
+
+	it('shows the refusal of a group that does not exist', async () => {
+		get.mockResolvedValue({ data: { group: '' } })
+		put.mockRejectedValue({ response: { data: { error: 'There is no group called openconnector-ops.' } } })
+		const wrapper = mount(ConnectionAlertSettings)
+		await flushPromises()
+
+		await wrapper.find('input').setValue('openconnector-ops')
+		await wrapper.find('[data-testid="admin-connection-alert-group-save"]').trigger('click')
+		await flushPromises()
+
+		expect(wrapper.find('[role="alert"]').text()).toContain('openconnector-ops')
 	})
 })
