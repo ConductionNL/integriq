@@ -36,7 +36,7 @@ use Throwable;
  * Never throws into the sender: every failure becomes a named refusal on the
  * event, so the owning app can tell "not taken" from "taken".
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
  *
  * @template-implements IEventListener<Event>
  */
@@ -64,7 +64,7 @@ class ExchangeJobRequestedListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ExchangeJobRequestedEvent) === false) {

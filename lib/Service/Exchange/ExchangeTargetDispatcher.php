@@ -49,7 +49,7 @@ use Throwable;
  * record. This is the routing `connectors-data-exchange-dispatch` D3 sketches,
  * driven by an integriq-native job instead of a learniq one (decision D7).
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -134,7 +134,7 @@ class ExchangeTargetDispatcher {
 	 *
 	 * @return bool True when handled.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
 	 */
 	public function supports(string $target, string $direction): bool {
 		return in_array($direction, $this->handledDirections(target: $target), true);
@@ -148,7 +148,7 @@ class ExchangeTargetDispatcher {
 	 *
 	 * @return array<int, string> The handled directions.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function handledDirections(string $target): array {
 		return array_values(array_unique(array_merge((self::HANDLED[$target] ?? []), (self::LANDED[$target] ?? []))));
@@ -170,7 +170,7 @@ class ExchangeTargetDispatcher {
 	 *     Accepted record ids, rejections, and a job-wide refusal code when the job cannot run at all.
 	 *     A landed import reports `acceptedCount` instead of ids: the owning app answers with a count.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
 	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-001-an-import-job-hands-its-records-to-the-owning-app
 	 */
 	public function dispatch(

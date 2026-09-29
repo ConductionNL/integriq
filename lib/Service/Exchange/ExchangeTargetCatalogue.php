@@ -32,7 +32,7 @@ namespace OCA\Integriq\Service\Exchange;
  * and the job schema's enum must agree with it; the fragment test asserts
  * the enum equals ids().
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
  */
 class ExchangeTargetCatalogue {
 
@@ -63,7 +63,7 @@ class ExchangeTargetCatalogue {
 	 *
 	 * @return array<int, string> The ids.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function ids(): array {
 		return array_keys(self::TARGETS);
@@ -77,7 +77,7 @@ class ExchangeTargetCatalogue {
 	 *
 	 * @return bool True when known.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function has(string $target): bool {
 		return isset(self::TARGETS[$target]);
@@ -92,7 +92,7 @@ class ExchangeTargetCatalogue {
 	 *
 	 * @return bool True when the target lists the direction.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function supportsDirection(string $target, string $direction): bool {
 		if ($this->has(target: $target) === false) {
@@ -110,7 +110,7 @@ class ExchangeTargetCatalogue {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function label(string $target): string {
 		return (self::TARGETS[$target]['label'] ?? $target);
@@ -122,7 +122,7 @@ class ExchangeTargetCatalogue {
 	 *
 	 * @return array<int, array{id: string, label: string, directions: array<int, string>, adapter: string}> The rows.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function all(): array {
 		$rows = [];

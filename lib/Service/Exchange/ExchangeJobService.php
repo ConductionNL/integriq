@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  * OpenRegister call here passes `_rbac: false, _multitenancy: false`; the
  * callers are the in-process event listeners and the runner, never a request.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -124,7 +124,7 @@ class ExchangeJobService {
 	 *
 	 * @return ObjectEntity|null The job created by this call, or null when none was.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function handleRequest(ExchangeJobRequestedEvent $event): ?ObjectEntity {
 		$refusal = $this->validate(
@@ -182,7 +182,7 @@ class ExchangeJobService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
 	 */
 	public function handleMappingRequest(ExchangeMappingRequestedEvent $event): void {
 		$ownerApp = $event->getOwnerApp();
@@ -242,7 +242,7 @@ class ExchangeJobService {
 	 *
 	 * @return ObjectEntity The new job.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	public function createResubmission(
 		array $original,
@@ -281,7 +281,7 @@ class ExchangeJobService {
 	 *
 	 * @return ObjectEntity|null The job, or null when absent.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function findJob(string $jobId): ?ObjectEntity {
 		if ($jobId === '') {
@@ -311,7 +311,7 @@ class ExchangeJobService {
 	 *
 	 * @return ObjectEntity The saved job.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function saveJob(array $data, ?string $uuid = null): ObjectEntity {
 		return $this->objectService->saveObject(
@@ -332,7 +332,7 @@ class ExchangeJobService {
 	 *
 	 * @return ObjectEntity|null The mapping, or null when absent.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-004-the-jobs-mapping-transforms-each-allowed-record
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-004-the-jobs-mapping-transforms-each-allowed-record
 	 */
 	public function findMapping(string $slug): ?ObjectEntity {
 		$matches = $this->objectService->findAll(
