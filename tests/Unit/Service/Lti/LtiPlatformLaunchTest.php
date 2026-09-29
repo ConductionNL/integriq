@@ -23,6 +23,7 @@ use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Lti\LtiAgsService;
 use OCA\Integriq\Service\Lti\LtiJwksResolverService;
 use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCA\Integriq\Service\Lti\LtiLaunchService;
@@ -242,6 +243,21 @@ class LtiPlatformLaunchTest extends TestCase {
 		$this->assertSame(self::LAUNCH_URL, $claims[LtiPlatformLoginService::CLAIM_TARGET_LINK_URI]);
 		$this->assertSame(['id' => 'course-3', 'title' => 'Biology'], $claims[LtiPlatformLoginService::CLAIM_CONTEXT]);
 
+		// REQ-LTIL-003: the grade service claim names the placement's line item on
+		// this deployment, with the scopes to read it and post scores to it.
+		$this->assertSame(
+			[
+				'scope' => [LtiAgsService::SCOPE_LINEITEM_READONLY, LtiAgsService::SCOPE_SCORE],
+				'lineitem' => 'https://nc.example/index.php/apps/integriq/api/lti/' . self::DEPLOYMENT_UUID . '/ags/lineitems/placement-7',
+			],
+			$claims[LtiPlatformLoginService::CLAIM_AGS_ENDPOINT]
+		);
+		$this->assertSame(
+			[LtiAgsService::SCOPE_LINEITEM_READONLY, LtiAgsService::SCOPE_SCORE],
+			array_values(array_intersect($claims[LtiPlatformLoginService::CLAIM_AGS_ENDPOINT]['scope'], LtiAgsService::ALLOWED_SCOPES)),
+			'every scope the claim offers must be one the token endpoint grants'
+		);
+
 		$policy = $response->getContentSecurityPolicy()->buildPolicy();
 		$this->assertStringContainsString('https://tool.example', $policy, 'the form may post to the tool origin');
 
@@ -440,6 +456,25 @@ class LtiPlatformLaunchTest extends TestCase {
 	private function makeLoginService(): LtiPlatformLoginService {
 		$urlGenerator = $this->createMock(IURLGenerator::class);
 		$urlGenerator->method('getAbsoluteURL')->willReturnCallback(static fn (string $url): string => 'https://nc.example' . $url);
+		// Resolve a route the way the router does: from the app's own routes.php,
+		// so a claim pointing at a route that does not exist cannot pass.
+		$urlGenerator->method('linkToRouteAbsolute')->willReturnCallback(
+			static function (string $routeName, array $arguments = []): string {
+				$routes = require __DIR__ . '/../../../../appinfo/routes.php';
+				foreach ($routes['routes'] as $route) {
+					if ('integriq.' . str_replace('#', '.', $route['name']) === $routeName && ($route['verb'] ?? 'GET') === 'GET') {
+						$url = $route['url'];
+						foreach ($arguments as $key => $value) {
+							$url = str_replace('{' . $key . '}', (string)$value, $url);
+						}
+
+						return 'https://nc.example/index.php/apps/integriq' . $url;
+					}
+				}
+
+				throw new \RuntimeException('No GET route named ' . $routeName);
+			}
+		);
 
 		return new LtiPlatformLoginService(
 			$this->makeResolver(),

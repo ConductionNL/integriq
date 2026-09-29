@@ -73,6 +73,15 @@ class LtiPlatformLoginService {
 	public const CLAIM_TARGET_LINK_URI = 'https://purl.imsglobal.org/spec/lti/claim/target_link_uri';
 	public const CLAIM_CONTEXT = 'https://purl.imsglobal.org/spec/lti/claim/context';
 	public const CLAIM_LAUNCH_PRESENTATION = 'https://purl.imsglobal.org/spec/lti/claim/launch_presentation';
+	public const CLAIM_AGS_ENDPOINT = 'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint';
+
+	/**
+	 * The route of a line item on a deployment ({@see LtiController::agsLineItem()}).
+	 * The score route is the same URL plus `/scores` (AGS 2.0).
+	 *
+	 * @var string
+	 */
+	public const LINE_ITEM_ROUTE = 'integriq.lti.agsLineItem';
 
 	/**
 	 * Constructor.
@@ -399,8 +408,44 @@ class LtiPlatformLoginService {
 			$claims[self::CLAIM_LAUNCH_PRESENTATION] = ['return_url' => (string)$context['returnUrl']];
 		}
 
+		$agsEndpoint = $this->agsEndpointClaim(context: $context);
+		if ($agsEndpoint !== null) {
+			$claims[self::CLAIM_AGS_ENDPOINT] = $agsEndpoint;
+		}
+
 		return $claims;
 	}//end launchClaims()
+
+	/**
+	 * The grade service claim (LTI AGS 2.0) for a launch from a placement.
+	 *
+	 * The placement is the line item: `lineitem` is this deployment's line item
+	 * route with the placement id, so a score the tool posts to `lineitem/scores`
+	 * reaches the score CloudEvent with the placement as `lineItemId`. `lineitems`
+	 * is left out because the platform offers no line item container; the scopes
+	 * are the ones a tool needs to read that line item and post scores to it.
+	 *
+	 * @param array $context The verified hint payload.
+	 *
+	 * @return array{scope: array<int, string>, lineitem: string}|null The claim, or null without a placement.
+	 *
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
+	 */
+	private function agsEndpointClaim(array $context): ?array {
+		$placementId = (string)($context['placementId'] ?? '');
+		$deploymentUuid = (string)($context['deploymentUuid'] ?? '');
+		if ($placementId === '' || $deploymentUuid === '') {
+			return null;
+		}
+
+		return [
+			'scope' => [LtiAgsService::SCOPE_LINEITEM_READONLY, LtiAgsService::SCOPE_SCORE],
+			'lineitem' => $this->urlGenerator->linkToRouteAbsolute(
+				self::LINE_ITEM_ROUTE,
+				['deployment' => $deploymentUuid, 'lineItemId' => $placementId]
+			),
+		];
+	}//end agsEndpointClaim()
 
 	/**
 	 * Build the validation failure for a named check.
