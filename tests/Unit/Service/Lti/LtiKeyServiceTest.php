@@ -48,15 +48,26 @@ class LtiKeyServiceTest extends TestCase {
 	private function makeService(): LtiKeyService {
 		$objectService = $this->createMock(ObjectService::class);
 
+		// Mirrors OpenRegister's read contract: find() renders by default, and the
+		// render strips every writeOnly property unconditionally, also under
+		// `_rbac: false` (openregister#460). `signingKeys` is writeOnly on both LTI
+		// registration schemas (register.d/99-lti-*-secrets-writeonly.json), so
+		// only a `_render: false` read sees the keys. Parameter order follows the
+		// stub (tests/stubs/OCA/OpenRegister/Service/ObjectService.php).
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $_extend = [], $files = false, $register = null, $schema = null, $_rbac = true, $_multitenancy = true) {
+			function ($id, $register = null, $schema = null, $_rbac = true, $_multitenancy = true, $_render = true) {
 				if (isset($this->registrations[$id]) === false) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 				}
 
+				$data = $this->registrations[$id];
+				if ($_render === true) {
+					unset($data['signingKeys']);
+				}
+
 				$entity = new ObjectEntity();
 				$entity->setUuid($id);
-				$entity->setObject($this->registrations[$id]);
+				$entity->setObject($data);
 				return $entity;
 			}
 		);
@@ -70,6 +81,8 @@ class LtiKeyServiceTest extends TestCase {
 						continue;
 					}
 
+					// findAll() always renders: writeOnly `signingKeys` never reach a list row.
+					unset($data['signingKeys']);
 					$entity = new ObjectEntity();
 					$entity->setUuid($uuid);
 					$entity->setObject($data);
@@ -136,6 +149,36 @@ class LtiKeyServiceTest extends TestCase {
 		}
 
 	}//end testGenerateKeyProducesActiveKeyRedacted()
+
+	/**
+	 * A generated key is published and signs, although `signingKeys` is writeOnly.
+	 *
+	 * OpenRegister's rendered read strips writeOnly properties, so a key read
+	 * through it finds no keys: the JWKS publishes nothing and no id_token can
+	 * be signed. The key reads must bypass the render.
+	 *
+	 * @return void
+	 */
+	public function testKeysAreReadPastTheWriteOnlyRenderBoundary(): void {
+		$service = $this->makeService();
+		$this->seedRegistration('tool-wo', 'lti_tool');
+
+		$entry = $service->generateKey('lti_tool', 'tool-wo', 'RS256');
+
+		$jwks = $service->getPublishableJwks('lti_tool', 'tool-wo');
+		$this->assertCount(1, $jwks['keys'] ?? $jwks, 'the JWKS must publish the active key');
+
+		$active = $service->getActiveKeyEntry('lti_tool', 'tool-wo');
+		$this->assertNotNull($active, 'the active key must be readable for signing');
+		$this->assertSame($entry['kid'], $active['kid']);
+		$this->assertStringContainsString('PRIVATE KEY', (string)base64_decode((string)$active['privateKeySecret']));
+
+		// A second generate sees the existing active key and refuses, instead
+		// of reading an empty list and writing a second active key.
+		$this->expectException(BadRequestException::class);
+		$service->generateKey('lti_tool', 'tool-wo', 'RS256');
+
+	}//end testKeysAreReadPastTheWriteOnlyRenderBoundary()
 
 	/**
 	 * generateKey() refuses to run when an active key already exists.
