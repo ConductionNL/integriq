@@ -13,6 +13,7 @@
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
  */
+import { resolveQueryFilters } from '@conduction/nextcloud-vue/src/utils/routeFilters.js'
 import { evaluateVisibleWhenLocal } from '@conduction/nextcloud-vue/src/utils/visibleWhen.js'
 import { flushPromises, mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
@@ -67,6 +68,13 @@ vi.mock('@nextcloud/vue', async () => {
 
 const manifest = JSON.parse(
 	readFileSync(join(__dirname, '../../src/manifest.json'), 'utf8'),
+)
+
+const runSchema = JSON.parse(
+	readFileSync(
+		join(__dirname, '../../lib/Settings/register.d/sync-run-progress.json'),
+		'utf8',
+	),
 )
 
 /**
@@ -230,8 +238,41 @@ describe('Run again as a row action', () => {
 		options.onClick()
 		expect(push).toHaveBeenCalledWith({
 			name: 'SynchronizationRuns',
-			query: { run: 'run-3' },
+			query: { uuid: 'run-3' },
 		})
+	})
+
+	it('lands on a runs page narrowed to the new run', async () => {
+		// The runs page is a self-fetching index: every query key that does not
+		// start with an underscore goes to OpenRegister as a filter. OpenRegister
+		// reads `uuid` as the record's own id (metadataFields in
+		// openregister lib/Service/Object/SearchQueryHandler.php) and treats any
+		// other key as a schema property, ignoring one the schema lacks. So the
+		// notice must only send keys OpenRegister can narrow on, or the page
+		// opens on every run.
+		const push = vi.fn(() => Promise.resolve())
+		setRouter({ push })
+		post.mockResolvedValue({ data: { runId: 'run-3' } })
+
+		await rerunFailedRunHandler({
+			item: { synchronizationId: 'sync-1', status: 'failed' },
+		})
+		showSuccess.mock.calls[0][1].onClick()
+
+		const { query, name } = push.mock.calls[0][0]
+		const page = manifest.pages.find((p) => p.route && p.id === name)
+		expect(page.config.schema).toBe('synchronization_run')
+		const filters = resolveQueryFilters(query, {})
+		expect(filters).toEqual({ uuid: 'run-3' })
+		const openRegisterMetadata = ['uuid']
+		const properties = Object.keys(
+			runSchema.components.schemas.synchronization_run.properties,
+		)
+		for (const key of Object.keys(filters)) {
+			expect(
+				openRegisterMetadata.includes(key) || properties.includes(key),
+			).toBe(true)
+		}
 	})
 
 	it('reports the refusal and starts nothing else', async () => {

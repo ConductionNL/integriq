@@ -68,9 +68,12 @@ export function openRun(runId) {
 	if (!router) {
 		return
 	}
+	// The runs page sends every plain query key to OpenRegister as a filter.
+	// OpenRegister reads `uuid` as the record's own id and ignores a key the
+	// schema lacks, so `?run=` opened the page on every run.
 	const location = {
 		name: 'SynchronizationRuns',
-		query: runId ? { run: runId } : {},
+		query: runId ? { uuid: runId } : {},
 	}
 	router.push(location).catch(() => {})
 }
