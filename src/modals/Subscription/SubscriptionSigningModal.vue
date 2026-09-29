@@ -13,7 +13,13 @@
   the current secret to the previous secret (24h dual-sign grace) and again
   reveals the new value once. Every other read shows the redaction marker.
 
+  signed-outbound-webhooks: the verification recipe is always shown, and the
+  signed/unsigned state is read from `signingPosture` and `unsignedReason`,
+  the readable mirror SubscriptionSigningDefaultListener writes on save:
+  `protocolSettings` is writeOnly, so it never reaches this page.
+
   @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
+  @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-the-subscription-page-states-what-a-receiver-must-compute-req-sow-002
 -->
 <template>
 	<NcModal
@@ -39,10 +45,7 @@
 				data-testid="signing-reveal">
 				<p class="signing__warn">
 					{{
-						t(
-							'integriq',
-							'Copy this secret now — it is shown only once.',
-						)
+						t('integriq', 'Copy this secret now. It is shown only once.')
 					}}
 				</p>
 				<code class="signing__secret">{{ revealed }}</code>
@@ -50,12 +53,8 @@
 					{{ t('integriq', 'Copy') }}
 				</NcButton>
 			</div>
-			<p v-else class="signing__status">
-				{{
-					hasSecret
-						? t('integriq', 'A signing secret is configured (hidden).')
-						: t('integriq', 'No signing secret configured.')
-				}}
+			<p v-else class="signing__status" data-testid="signing-status">
+				{{ statusText }}
 			</p>
 
 			<div class="signing__actions">
@@ -66,6 +65,15 @@
 					{{ t('integriq', 'Rotate secret') }}
 				</NcButton>
 			</div>
+
+			<section class="signing__recipe" data-testid="signing-recipe">
+				<h3>{{ t('integriq', 'How a receiver checks the signature') }}</h3>
+				<ul>
+					<li v-for="(line, index) in recipe" :key="index">
+						{{ line }}
+					</li>
+				</ul>
+			</section>
 		</div>
 	</NcModal>
 </template>
@@ -76,6 +84,10 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal } from '@nextcloud/vue'
+
+// Vue's text interpolation escapes already; letting translate() escape too
+// would print `&lt;t&gt;` where the recipe says `<t>`.
+const NO_ESCAPE = { escape: false }
 
 export default {
 	name: 'SubscriptionSigningModal',
@@ -104,6 +116,82 @@ export default {
 		}
 	},
 
+	computed: {
+		/**
+		 * The one line that says whether this webhook signs, and why not.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+		 */
+		statusText() {
+			if (this.hasSecret) {
+				return t(
+					'integriq',
+					'This webhook is signed. Nobody sees the secret after it is made, so if the receiver lacks it, generate a new one.',
+				)
+			}
+			if (this.subscription?.signingPosture === 'unsigned') {
+				const reason = this.subscription?.unsignedReason || ''
+				return reason
+					? t(
+							'integriq',
+							'This webhook delivers unsigned. Reason given: {reason}',
+							{ reason },
+							undefined,
+							NO_ESCAPE,
+						)
+					: t(
+							'integriq',
+							'This webhook delivers unsigned. Nobody recorded why.',
+						)
+			}
+			return t(
+				'integriq',
+				'This webhook was saved before signing was recorded. Save it again to see whether it signs.',
+			)
+		},
+
+		/**
+		 * The verification recipe, one fact per line (REQ-SOW-002).
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-the-subscription-page-states-what-a-receiver-must-compute-req-sow-002
+		 */
+		recipe() {
+			return [
+				t('integriq', 'Each delivery carries the header {header}.', {
+					header: 'X-OpenConnector-Signature',
+				}),
+				t(
+					'integriq',
+					'Its value looks like {shape}.',
+					{ shape: 't=<unix-ts>,v1=<hex>' },
+					undefined,
+					NO_ESCAPE,
+				),
+				t(
+					'integriq',
+					'v1 is HMAC-SHA256 with the secret as key, computed over {signed}.',
+					{ signed: '<t>.<rawBody>' },
+					undefined,
+					NO_ESCAPE,
+				),
+				t(
+					'integriq',
+					'Use the body exactly as received, before you parse it.',
+				),
+				t(
+					'integriq',
+					'Choose your own timestamp tolerance and reject requests older than that.',
+				),
+				t(
+					'integriq',
+					'For 24 hours after a rotation the header carries two v1 values. Accept the request when either one matches.',
+				),
+			]
+		},
+	},
+
 	watch: {
 		/**
 		 * Reset reveal state and recompute hasSecret when opened.
@@ -114,7 +202,9 @@ export default {
 		open(next) {
 			if (next) {
 				this.revealed = ''
-				this.hasSecret = !!this.subscription?.protocolSettings?.signingSecret
+				this.hasSecret =
+					this.subscription?.signingPosture === 'signed'
+					|| !!this.subscription?.protocolSettings?.signingSecret
 			}
 		},
 	},
@@ -234,5 +324,16 @@ export default {
 .signing__actions {
 	display: flex;
 	gap: 8px;
+}
+
+.signing__recipe ul {
+	margin: 0;
+	padding-inline-start: 20px;
+	list-style: disc;
+}
+
+.signing__recipe code,
+.signing__recipe li {
+	overflow-wrap: anywhere;
 }
 </style>

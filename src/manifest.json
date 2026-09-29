@@ -2026,6 +2026,7 @@
           "protocol",
           "style",
           "status",
+          "signingPosture",
           "updated"
         ],
         "includeFields": [

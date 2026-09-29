@@ -20,7 +20,7 @@ signing secret and store it as `protocolSettings.signingSecret`, unless
 the request sets `protocolSettings.unsigned`. The create response MUST
 return the full secret exactly once, and every later read MUST redact it
 under REQ-WHS-002's convention. `protocolSettings.unsigned` MUST carry a
-`reason`, the user who set it and the time; a save that sets `unsigned`
+`reason`, the user who set it (`setBy`) and the time (`setAt`); a save that sets `unsigned`
 without a reason MUST be refused. Subscriptions that already exist MUST
 NOT gain a secret.
 
@@ -35,7 +35,7 @@ NOT gain a secret.
 - GIVEN an operator creating a push subscription with `protocolSettings.unsigned: {}`
 - WHEN the subscription is saved
 - THEN the save is refused and the message names the missing reason
-- @e2e exclude validation path; covered by PHPUnit
+- @e2e exclude validation path; covered by PHPUnit `SubscriptionSigningDefaultListenerTest`
 
 #### Scenario: unsigned with a reason is accepted and recorded
 - GIVEN an operator creating a push subscription with `unsigned: {"reason": "receiver cannot verify HMAC yet"}`
@@ -47,7 +47,7 @@ NOT gain a secret.
 - GIVEN a subscription created before this change with no `signingSecret`
 - WHEN the app is upgraded
 - THEN the subscription still has no secret and its deliveries are unchanged
-- @e2e exclude upgrade behaviour; covered by PHPUnit
+- @e2e exclude upgrade behaviour; covered by PHPUnit `SubscriptionSigningDefaultListenerTest::testAnExistingSubscriptionDoesNotGainASecretOnUpdate`
 
 ### Requirement: The subscription page states what a receiver must compute (REQ-SOW-002)
 
@@ -64,7 +64,7 @@ and English strings.
 - WHEN an operator opens the subscription page
 - THEN the verification recipe is shown with the header name, the signed string and the algorithm
 - AND the secret itself is redacted
-- e2e: `tests/e2e/signed-outbound-webhooks.spec.ts`
+- @e2e exclude modal content; covered by `tests/vitest/subscriptionSigningRecipe.spec.js`
 
 ### Requirement: An unsigned subscription and an unsigned attempt are marked (REQ-SOW-003)
 
@@ -82,4 +82,4 @@ it was signed, for immediate attempts, retries and operator replays alike.
 - GIVEN an unsigned subscription with three delivery attempts
 - WHEN an operator reads its delivery log
 - THEN each attempt records that it was sent unsigned
-- @e2e exclude delivery logging; covered by PHPUnit
+- @e2e exclude delivery logging; covered by PHPUnit `EventServiceTest::testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo`
