@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/exchange-read-defaults/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
+ * @spec openspec/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
  * The step runs once. A marker in IAppConfig stops a later upgrade from
  * broadening an `["admin"]` that an administrator set back on purpose.
  *
- * @spec openspec/changes/exchange-read-defaults/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
+ * @spec openspec/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
  */
 class BroadenExchangeReadDefault implements IRepairStep {
 
@@ -79,7 +79,7 @@ class BroadenExchangeReadDefault implements IRepairStep {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/exchange-read-defaults/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
+	 * @spec openspec/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
 	 */
 	public function getName(): string {
 		return 'Give exchange.read its D33 default when it was never changed';
@@ -92,7 +92,7 @@ class BroadenExchangeReadDefault implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/exchange-read-defaults/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
+	 * @spec openspec/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
 	 */
 	public function run(IOutput $output): void {
 		if ($this->appConfig->getValueBool(Application::APP_ID, self::MARKER_KEY, false) === true) {
