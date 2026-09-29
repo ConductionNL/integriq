@@ -269,4 +269,209 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 		$this->approvalService->method('findApprovedUnconsumedForSynchronization')->willReturn($valid);
 		$this->assertSame('approval-valid', $method->invoke($this->service, self::SYNC_ID, null)?->getUuid());
 	}//end testResolveApprovalForSynchronizationBypassToken()
+	/**
+	 * A case type catalogue re-import: one new case type, one whose
+	 * description moved, and one the source no longer carries.
+	 *
+	 * The source page, the stored target and the contracts are stubbed on
+	 * OpenRegister's ObjectService by id and filter, the way the engine reads
+	 * them.
+	 *
+	 * @return void
+	 */
+	private function stubACaseTypeResync(): void {
+		$sourceEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['location' => 'https://example.test', 'enabled' => true],
+			'source-uuid-ag'
+		);
+		$target = ObjectServiceMockBuilder::objectEntity($this, ['id' => 'target-2', 'omschrijving' => 'Oud'], 'target-2');
+		$this->orObjectService->method('find')->willReturnCallback(
+			static function (...$args) use ($sourceEntity, $target) {
+				$id = (string)($args['id'] ?? $args[0] ?? '');
+				if ($id === 'target-2') {
+					return $target;
+				}
+
+				return $sourceEntity;
+			}
+		);
+
+		$changedContract = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['synchronizationId' => self::SYNC_ID, 'originId' => 'zt-changed', 'targetId' => 'target-2'],
+			'contract-changed'
+		);
+		$goneContract = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['synchronizationId' => self::SYNC_ID, 'originId' => 'zt-gone', 'targetId' => 'target-9'],
+			'contract-gone'
+		);
+		$this->orObjectService->method('findAll')->willReturnCallback(
+			static function (...$args) use ($changedContract, $goneContract) {
+				$filters = (($args['config'] ?? $args[0] ?? [])['filters'] ?? []);
+				if (($filters['schema'] ?? null) !== 'synchronization_contract') {
+					return ['results' => [], 'total' => 0];
+				}
+
+				if (isset($filters['originId']) === true) {
+					return ['results' => [$changedContract], 'total' => 1];
+				}
+
+				return ['results' => [$changedContract, $goneContract], 'total' => 2];
+			}
+		);
+
+		$items = [
+			['id' => 'zt-new', 'omschrijving' => 'Parkeervergunning'],
+			['id' => 'zt-changed', 'omschrijving' => 'Nieuw'],
+		];
+		$this->callService->method('call')->willReturn(
+			ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['response' => ['statusCode' => 200, 'body' => json_encode(['items' => $items]), 'encoding' => 'UTF-8', 'headers' => []]],
+				'call-log-resync'
+			)
+		);
+	}//end stubACaseTypeResync()
+
+	/**
+	 * REQ-INAV-003: a gated run stores what it would create, change and
+	 * remove on the approval request, and writes no target object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
+	 */
+	public function testAGatedRunStoresItsChangeSetAndWritesNothing(): void {
+		$this->stubACaseTypeResync();
+		$this->approvalService->method('findApprovedUnconsumedForSynchronization')->willReturn(null);
+
+		$stored = null;
+		$this->approvalService->expects($this->once())->method('suspendForSynchronization')
+			->willReturnCallback(
+				function (...$args) use (&$stored) {
+					$stored = ($args[5] ?? null);
+					return ObjectServiceMockBuilder::objectEntity($this, ['status' => 'pending'], 'approval-created');
+				}
+			);
+		$this->service->expects($this->never())->method('updateTarget');
+
+		$result = $this->service->synchronize(
+			synchronization: $this->makeSyncPayload(['requiresApproval' => true])
+		);
+
+		$this->assertSame('pending_approval', $result['message']);
+		$this->assertIsArray($stored);
+		$this->assertSame(['zt-new'], array_column($stored['created'], 'originId'));
+		$this->assertSame(
+			[['originId' => 'zt-changed', 'targetId' => 'target-2', 'fields' => [['field' => 'omschrijving', 'before' => 'Oud', 'after' => 'Nieuw']]]],
+			$stored['changed']
+		);
+		$this->assertSame([['originId' => 'zt-gone', 'targetId' => 'target-9']], $stored['removed']);
+		$this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $stored['fingerprint']);
+	}//end testAGatedRunStoresItsChangeSetAndWritesNothing()
+
+	/**
+	 * REQ-INAV-003: an incremental run never deletes (REQ-018), so its
+	 * change set lists no removals.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
+	 */
+	public function testARunThatMayNotDeleteListsNoRemovals(): void {
+		$this->stubACaseTypeResync();
+		$this->approvalService->method('findApprovedUnconsumedForSynchronization')->willReturn(null);
+
+		$stored = null;
+		$this->approvalService->method('suspendForSynchronization')->willReturnCallback(
+			function (...$args) use (&$stored) {
+				$stored = ($args[5] ?? null);
+				return ObjectServiceMockBuilder::objectEntity($this, ['status' => 'pending'], 'approval-created');
+			}
+		);
+
+		$payload = $this->makeSyncPayload(['requiresApproval' => true]);
+		$payload['syncMode'] = 'incremental';
+		$this->service->synchronize(synchronization: $payload);
+
+		$this->assertSame([], $stored['removed']);
+		$this->assertCount(1, $stored['changed']);
+	}//end testARunThatMayNotDeleteListsNoRemovals()
+
+	/**
+	 * REQ-INAV-004: the source changed after the preview, so the accept
+	 * writes nothing, the request is superseded and a new one is opened.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+	 */
+	public function testAnAcceptAfterTheSourceChangedWritesNothingAndAsksAgain(): void {
+		$this->stubACaseTypeResync();
+		$approved = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['status' => 'approved', 'synchronizationId' => self::SYNC_ID, 'fingerprint' => str_repeat('0', 64)],
+			'approval-previewed'
+		);
+		$this->approvalService->method('find')->willReturn($approved);
+
+		$this->approvalService->expects($this->once())->method('suspendForSynchronization')
+			->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['status' => 'pending'], 'approval-new'));
+		$this->approvalService->expects($this->once())->method('markSuperseded')
+			->with($approved, 'approval-new');
+		$this->approvalService->expects($this->never())->method('markConsumed');
+		$this->service->expects($this->never())->method('updateTarget');
+
+		$result = $this->service->synchronize(
+			synchronization: $this->makeSyncPayload(['requiresApproval' => true]),
+			force: true,
+			approvalRequestId: 'approval-previewed'
+		);
+
+		$this->assertSame('approval_superseded', $result['message']);
+		$this->assertSame('approval-new', $result['result']['approval']['supersededBy']);
+		$this->assertSame(0, $result['result']['objects']['created']);
+	}//end testAnAcceptAfterTheSourceChangedWritesNothingAndAsksAgain()
+
+	/**
+	 * REQ-INAV-004: the source did not change, so the accept passes the gate
+	 * and the write phase runs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+	 */
+	public function testAnAcceptOfAnUnchangedSourceWrites(): void {
+		$this->stubACaseTypeResync();
+		$this->approvalService->method('findApprovedUnconsumedForSynchronization')->willReturn(null);
+
+		$previewed = null;
+		$this->approvalService->method('suspendForSynchronization')->willReturnCallback(
+			function (...$args) use (&$previewed) {
+				$previewed = ($args[5] ?? null);
+				return ObjectServiceMockBuilder::objectEntity($this, ['status' => 'pending'], 'approval-previewed');
+			}
+		);
+		$this->service->synchronize(synchronization: $this->makeSyncPayload(['requiresApproval' => true]));
+
+		$approved = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['status' => 'approved', 'synchronizationId' => self::SYNC_ID, 'fingerprint' => $previewed['fingerprint']],
+			'approval-previewed'
+		);
+		$this->approvalService->method('find')->willReturn($approved);
+		$this->approvalService->expects($this->never())->method('markSuperseded');
+		$this->approvalService->expects($this->once())->method('markConsumed')->with($approved);
+
+		$result = $this->service->synchronize(
+			synchronization: $this->makeSyncPayload(['requiresApproval' => true]),
+			force: true,
+			approvalRequestId: 'approval-previewed'
+		);
+
+		$this->assertNotSame('approval_superseded', $result['message']);
+		$this->assertNotSame('pending_approval', $result['message']);
+	}//end testAnAcceptOfAnUnchangedSourceWrites()
 }//end class
