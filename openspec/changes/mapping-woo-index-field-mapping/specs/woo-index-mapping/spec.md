@@ -26,7 +26,7 @@ and MUST NOT set an output.
 - GIVEN the seeded mapping `woo-index-publication` with `callableBy` containing `opencatalogi`
 - WHEN opencatalogi dispatches the event with that slug and a publication whose title is `Besluit parkeerbeleid`
 - THEN the event carries an output with `officieleTitel` `Besluit parkeerbeleid` and `isHandled()` is true
-- @e2e exclude an in-process event between two apps; covered by PHPUnit on MappingExecutionRequestedListener with the real MappingService
+- @e2e exclude an in-process event between two apps; covered by PHPUnit `MappingExecutionRequestedListenerTest::testOpencatalogiMapsAPublication` with the real MappingService
 
 #### Scenario: an unknown slug is refused
 - GIVEN no mapping with slug `does-not-exist`
@@ -64,4 +64,4 @@ re-import of the seed MUST NOT overwrite an administrator's edit.
 - GIVEN an administrator edited the `officieleTitel` rule
 - WHEN integriq is upgraded and the seed runs again
 - THEN the edited rule is unchanged
-- @e2e exclude an upgrade path; covered by an integration test on the seed import
+- @e2e exclude an upgrade path; the create-once rule is OpenRegister's seed import (`ImportHandler::importSeedDataObjects` skips a seed object that already exists), not integriq code, and integriq has no test of it

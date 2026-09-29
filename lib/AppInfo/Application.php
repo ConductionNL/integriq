@@ -54,6 +54,7 @@ use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
+use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
@@ -66,6 +67,7 @@ use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
 use OCA\Integriq\EventListener\SourceRequestedListener;
 use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
+use OCA\Integriq\EventListener\MappingExecutionRequestedListener;
 use OCA\Integriq\EventListener\ExchangeJobRequestedListener;
 use OCA\Integriq\EventListener\ExchangeMappingRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
@@ -332,6 +334,12 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			DocumentRenderRequestedEvent::class,
 			DocumentRenderRequestedListener::class
+		);
+		// A sibling runs a mapping by slug (mapping-woo-index-field-mapping
+		// REQ-WOOM-001): only an app the mapping lists in callableBy.
+		$context->registerEventListener(
+			MappingExecutionRequestedEvent::class,
+			MappingExecutionRequestedListener::class
 		);
 		// Exchange jobs another app owns (learniq-exchange-jobs-native): the
 		// owning app asks integriq to carry a job, or to store its own

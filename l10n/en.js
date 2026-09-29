@@ -2798,7 +2798,12 @@ OC.L10N.register(
         "{gateway}: {jurisdiction}": "{gateway}: {jurisdiction}",
         "Download the overview": "Download the overview",
         "The gateway catalogue could not be read.": "The gateway catalogue could not be read.",
-        "Not declared": "Not declared"
+        "Not declared": "Not declared",
+        "Run by other apps": "Run by other apps",
+        "Apps that may run this mapping": "Apps that may run this mapping",
+        "No other app can run this mapping.": "No other app can run this mapping.",
+        "These apps can run this mapping by its slug.": "These apps can run this mapping by its slug.",
+        "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.": "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it."
     },
     "nplurals=2; plural=(n != 1);"
 )

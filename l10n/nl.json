@@ -1458,7 +1458,12 @@
         "{gateway}: {jurisdiction}": "{gateway}: {jurisdiction}",
         "Download the overview": "Overzicht downloaden",
         "The gateway catalogue could not be read.": "De catalogus met koppelvlakken kon niet worden gelezen.",
-        "Not declared": "Niet opgegeven"
+        "Not declared": "Niet opgegeven",
+        "Run by other apps": "Uitvoeren door andere apps",
+        "Apps that may run this mapping": "Apps die deze mapping mogen uitvoeren",
+        "No other app can run this mapping.": "Geen andere app kan deze mapping uitvoeren.",
+        "These apps can run this mapping by its slug.": "Deze apps kunnen deze mapping via de slug uitvoeren.",
+        "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.": "App-id’s die deze mapping via een event mogen uitvoeren, zoals opencatalogi. Laat je het leeg, dan kan geen andere app hem uitvoeren."
     },
     "plurals": {}
 }

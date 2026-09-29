@@ -1,0 +1,43 @@
+{
+  "$comment": "ADR-037 register fragment (mapping-woo-index-field-mapping). Adds callableBy to the mapping schema, the list of app ids that may run a mapping through MappingExecutionRequestedEvent (empty: no app may), and seeds woo-index-publication, the editable mapping of a publication onto the Woo-index fields opencatalogi reads. x-openregister-seed creates the object once and never overwrites an administrator's edit. See openspec/changes/mapping-woo-index-field-mapping/design.md D2 and D3.",
+  "components": {
+    "schemas": {
+      "mapping": {
+        "version": "1.2.0",
+        "properties": {
+          "callableBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "title": "Apps that may run this mapping",
+            "description": "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it."
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "mapping",
+              "slug": "woo-index-publication"
+            },
+            "name": "Woo-index publication",
+            "slug": "woo-index-publication",
+            "description": "Maps a publication onto the fields of the Woo-index sitemap. Change a rule here and opencatalogi's sitemap follows.",
+            "mapping": {
+              "publisher": "{{ tooiIdentifier }}",
+              "officieleTitel": "{{ title|default(name) }}",
+              "informatiecategorie": "{{ tooiCategorieUri|default(category) }}",
+              "soortHandeling": "{{ soortHandeling }}"
+            },
+            "passThrough": false,
+            "callableBy": [
+              "opencatalogi"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
