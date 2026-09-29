@@ -22,9 +22,11 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
+use OCA\Integriq\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerTransportRegistry;
 use OCA\Integriq\Broker\CloudEventHttpBinding;
+use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Event\DeliveryConcludedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Exception\BrokerTransportException;
@@ -184,6 +186,8 @@ class EventService {
 	 * @param EgressGuard|null $egressGuard Judges a push sink before every post (integriq#2212). Nullable +
 	 *                                      defaulted for the same test-compatibility reason as above;
 	 *                                      null means a guard without an allowlist, never no guard.
+	 * @param BrokerCredentialResolver|null $brokerCredentials Resolves a broker subscription's credentialRef at
+	 *                                                        publish (REQ-EBSC-003). Null leaves the settings as stored.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -207,6 +211,7 @@ class EventService {
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?BrokerTransportRegistry $brokerRegistry = null,
 		?EgressGuard $egressGuard = null,
+		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
 	) {
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
@@ -1882,6 +1887,15 @@ class EventService {
 			return false;
 		}
 
+		try {
+			$configuration = $this->brokerSettings(brokerId: $brokerId, subscriptionData: $subscriptionData);
+		} catch (BrokeredCallConfigurationException $exception) {
+			// A credential reference that does not resolve will not resolve on a
+			// retry either (REQ-EBSC-003): it fails once, like an unknown broker id.
+			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
+			return false;
+		}
+
 		$messageData = $message->getObject();
 		$cloudEvent = ($messageData['payload'] ?? []);
 		if (is_array($cloudEvent) === false) {
@@ -1895,7 +1909,7 @@ class EventService {
 					subscriptionData: $subscriptionData,
 					action: $action
 				),
-				configuration: $this->brokerSettings(subscriptionData: $subscriptionData)
+				configuration: $configuration
 			);
 		} catch (\Throwable $exception) {
 			$this->logger->error(
@@ -1975,21 +1989,29 @@ class EventService {
 	}//end brokerPublication()
 
 	/**
-	 * The broker connection settings off a subscription.
+	 * The broker connection settings off a subscription, its credential reference resolved.
 	 *
+	 * @param string $brokerId The broker the subscription publishes through.
 	 * @param array $subscriptionData The owning subscription's OR object array.
 	 *
 	 * @return array The settings, empty when the subscription configures none.
 	 *
+	 * @throws BrokeredCallConfigurationException When the credential reference cannot be resolved.
+	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
+	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
 	 */
-	private function brokerSettings(array $subscriptionData): array {
+	private function brokerSettings(string $brokerId, array $subscriptionData): array {
 		$settings = ($subscriptionData['protocolSettings']['broker'] ?? []);
 		if (is_array($settings) === false) {
 			return [];
 		}
 
-		return $settings;
+		if ($this->brokerCredentials === null) {
+			return $settings;
+		}
+
+		return $this->brokerCredentials->resolve(brokerId: $brokerId, settings: $settings);
 
 	}//end brokerSettings()
 
