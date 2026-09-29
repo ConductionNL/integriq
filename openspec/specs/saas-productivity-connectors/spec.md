@@ -15,7 +15,7 @@ access). To add the next vendor: create a new class extending
 metadata methods plus vendor-specific read methods via `brokeredRequest()`,
 and register it in `Application::registerIntegrationProviders()`. The
 remaining named vendors stay explicit backlog (see
-`openspec/changes/connector-category-adapter-scaffolding`).
+`openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding`).
 
 ## Requirements
 ### Requirement: SaaS productivity and work-management connector adapters SHALL register through the integration registry per ADR-019 (REQ-SPC-001)

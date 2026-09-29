@@ -132,7 +132,7 @@ class SynchronizationItemIsolationTest extends TestCase {
 					$this->createMock(LoggerInterface::class),
 					$this->synchronizationLogService,
 					$appConfig,
-					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class),
 				]
 			)
 			->onlyMethods(['getAllObjectsFromSource'])

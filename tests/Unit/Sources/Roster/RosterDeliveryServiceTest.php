@@ -16,7 +16,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
  */
 
 declare(strict_types=1);
@@ -220,7 +220,7 @@ class RosterDeliveryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-adapter-can-be-constructed-on-an-instance-req-006
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-adapter-can-be-constructed-on-an-instance-req-006
 	 */
 	public function testApplicationBindsTheClientAndRegistersTheListener(): void {
 		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/AppInfo/Application.php');

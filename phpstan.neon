@@ -89,6 +89,13 @@ parameters:
         # "extends unknown class" is a *general* error PHPStan refuses to baseline —
         # same limitation, same remedy, as SynchronizationContractProvider above.
         - lib/BackgroundJob/DeferredViewCascadeJob.php
+        # ConnectionAlertRecipientResolver implements
+        # OCA\OpenRegister\Service\Notification\RecipientResolverInterface, the
+        # contract OpenRegister's notification engine resolves `expression`
+        # recipients through, which exists only at runtime. "implements unknown
+        # interface" is a general error no baseline absorbs; same remedy as
+        # IntegriqMetricsProvider above.
+        - lib/Notification/ConnectionAlertRecipientResolver.php
 
     ignoreErrors:
         # flow-workflowengine-integration: NC's concrete IRequest implementation

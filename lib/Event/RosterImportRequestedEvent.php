@@ -11,7 +11,7 @@
  * error code. The consumer MUST guard the dispatch with class_exists() and
  * treat an absent class or an unhandled event as a failed import.
  *
- * Contract: `openspec/changes/rostering-adapter-targets-planninq/contract.md`.
+ * Contract: `openspec/changes/archive/2026-09-28-rostering-adapter-targets-planninq/contract.md`.
  *
  * @category Event
  * @package  OCA\Integriq\Event
@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\EventDispatcher\Event;
 /**
  * Typed cross-app command: "deliver this rostering source into planninq".
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
  */
 class RosterImportRequestedEvent extends Event {
 	/**
@@ -74,7 +74,7 @@ class RosterImportRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
 	public function getSourceApp(): string {
 		return $this->sourceApp;
@@ -85,7 +85,7 @@ class RosterImportRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
 	public function getSystemId(): string {
 		return $this->systemId;
@@ -96,7 +96,7 @@ class RosterImportRequestedEvent extends Event {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
 	public function getOptions(): array {
 		return $this->options;
@@ -107,7 +107,7 @@ class RosterImportRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
 	public function getCorrelationId(): string {
 		return $this->correlationId;
@@ -120,7 +120,7 @@ class RosterImportRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
 	public function setResult(array $result): void {
 		$this->result = $result;
@@ -131,7 +131,7 @@ class RosterImportRequestedEvent extends Event {
 	 *
 	 * @return array<string,mixed>|null
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
 	public function getResult(): ?array {
 		return $this->result;
@@ -142,7 +142,7 @@ class RosterImportRequestedEvent extends Event {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
 	 */
 	public function isHandled(): bool {
 		return $this->result !== null;

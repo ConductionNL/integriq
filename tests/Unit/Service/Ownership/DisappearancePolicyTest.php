@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * REQ-SOR-002 and REQ-SOR-003.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
  */
 class DisappearancePolicyTest extends TestCase {
 	/**

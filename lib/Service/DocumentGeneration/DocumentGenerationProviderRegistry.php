@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use OCA\Integriq\Exception\DocumentGenerationException;
 /**
  * The bindings this instance ships, by provider id.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
  */
 class DocumentGenerationProviderRegistry {
 
@@ -54,7 +54,7 @@ class DocumentGenerationProviderRegistry {
 	 *
 	 * @return array<int, DocumentGenerationProviderInterface> The bindings.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	public function all(): array {
 		return [$this->logProvider, $this->smartDocuments, $this->xentialProvider];
@@ -70,7 +70,7 @@ class DocumentGenerationProviderRegistry {
 	 *
 	 * @throws DocumentGenerationException When the configuration names no binding, or names one that does not exist.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	public function resolve(array $sourceConfiguration): DocumentGenerationProviderInterface {
 		$providerId = trim((string)($sourceConfiguration['providerId'] ?? ''));

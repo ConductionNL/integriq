@@ -10,6 +10,7 @@ Provides the rule editor frontend for Integriq, where users edit a rule's fields
 @e2e exclude Vue component-internal method/computed behaviour (dirty flag, normaliseConditions, argsForKind, onTypePick/formComponent, dynamic-row prune, onSave guard) reverse-engineered from RuleDetailPage/RuleConditionGroup/RuleConditionLeaf/RuleActionConfig/EditRule/AddEndpointRule .vue files — unit-level (vitest), not browser-observable; the rule detail-page render + Add Rule modal surfaces are covered by manifest-pages e2e under rule-pipeline
 
 ## Requirements
+
 ### Requirement: Rule detail page load, edit, and save lifecycle (REQ-RULEUI-001)
 
 The rule detail page SHALL fetch the active rule, expose its fields for editing,
@@ -70,7 +71,7 @@ Notes: `RuleConditionGroup.vue` (11), `RuleConditionLeaf.vue` (19).
 
 The action configuration panel SHALL present the available rule action types,
 swap in the matching action form component for the selected type, and relay the
-form's slot updates (mapping id, JavaScript code, raw JSON) back to the rule. Each
+form's slot updates (mapping id, flow id, raw JSON) back to the rule. Each
 action form (authentication, mapping, save-object, synchronization, file fetch/write,
 filepart create/upload, locking, download, error, extend-input, extend-external-input,
 upload) reads and emits its own action-specific configuration shape.
@@ -122,3 +123,12 @@ guards save when nothing is selected or the endpoint id is missing.
 
 Notes: `AddEndpointRule.vue` (3), `v2/AddEndpointRuleModal.vue` (9).
 
+### Requirement: An administrator can start a flow from an endpoint rule (REQ-AFT-001)
+
+The rule editor MUST offer the `flow` action with a labelled picker of the instance's flows, MUST write the picked flow's id to `configuration.flow`, and MUST refuse to save a flow rule that names no flow.
+
+#### Scenario: a partner's webhook starts the intake flow
+- GIVEN an endpoint `/meldingen` and a flow "Melding intake"
+- WHEN an administrator adds a rule with action Flow and picks "Melding intake", and a partner then posts to `/meldingen`
+- THEN the flow runs with the partner's request as its input
+- @e2e exclude needs a configured flow and an inbound call; covered by vitest on the form and PHPUnit on EndpointService processFlowRule

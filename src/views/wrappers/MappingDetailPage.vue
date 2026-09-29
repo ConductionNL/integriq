@@ -97,6 +97,13 @@
 							}}
 						</p>
 					</dd>
+					<dt>{{ t('integriq', 'Run by other apps') }}</dt>
+					<dd>
+						<MappingCallableByField
+							:value="mapping.callableBy || []"
+							:disabled="saving"
+							@update="onUpdateCallableBy" />
+					</dd>
 				</dl>
 			</section>
 
@@ -172,6 +179,7 @@ import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
+import MappingCallableByField from '../../components/mapping/MappingCallableByField.vue'
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import MappingRulesEditor from './MappingRulesEditor.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
@@ -188,6 +196,7 @@ export default {
 	components: {
 		AutomationDeprecationNotice,
 		CnDetailPage,
+		MappingCallableByField,
 		MappingRulesEditor,
 		MappingResultPanel,
 		NcButton,
@@ -463,6 +472,19 @@ export default {
 		 */
 		onTogglePassThrough(value) {
 			return this.persistPatch({ passThrough: !!value })
+		},
+
+		/**
+		 * Persist the apps allowed to run this mapping by event. Saved with the
+		 * mapping, so it needs the same right as changing its rules.
+		 *
+		 * @param {string[]} next The normalised app ids.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+		 */
+		onUpdateCallableBy(next) {
+			return this.persistPatch({ callableBy: next })
 		},
 
 		/**

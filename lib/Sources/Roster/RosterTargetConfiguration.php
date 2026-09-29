@@ -25,7 +25,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-a-per-source-target-configuration-links-school-codes-to-fleet-ids-req-003
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-a-per-source-target-configuration-links-school-codes-to-fleet-ids-req-003
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Resolves the target and the code maps for one rostering source.
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-a-per-source-target-configuration-links-school-codes-to-fleet-ids-req-003
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-a-per-source-target-configuration-links-school-codes-to-fleet-ids-req-003
  */
 class RosterTargetConfiguration {
 	/**
@@ -71,7 +71,7 @@ class RosterTargetConfiguration {
 	 *
 	 * @return array{target:string,groupMap:array<string,string>,teacherMap:array<string,string>}
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-a-per-source-target-configuration-links-school-codes-to-fleet-ids-req-003
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-a-per-source-target-configuration-links-school-codes-to-fleet-ids-req-003
 	 */
 	public function forSystem(string $systemId, array $overrides = []): array {
 		// `+`, not array_merge(): a school code such as `3` or `1024` becomes an

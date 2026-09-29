@@ -7,10 +7,10 @@
   SourceFormFields.vue precedent) and adds the delivery-action authoring UX
   the schema-driven generic renderer cannot express declaratively:
 
-    - An "action kind" picker (Webhook / Synchronization / Job —
+    - An "action kind" picker (Webhook / Synchronization / Job / Flow —
       nextcloud-event-hub REQ-008). Webhook keeps using the schema's own
       `sink` field (unchanged); Synchronization/Job reveal a target picker
-      that writes `formData.action = { kind, synchronizationId|jobId }`.
+      that writes `formData.action = { kind, synchronizationId|jobId|flowId }`.
     - An optional, collapsible "Retry policy" block (REQ-009) writing
       `formData.retryPolicy = { baseSeconds?, factor?, capSeconds?,
       maxRetries? }` — every key independently optional; an unset key falls
@@ -109,7 +109,7 @@
 				{{
 					t(
 						'integriq',
-						'A matched event either POSTs to the sink above (Webhook), runs a synchronization, or runs a job. All three are tracked, retried, and dead-letterable the same way.',
+						'A matched event either POSTs to the sink above (Webhook), runs a synchronization, runs a job, or starts a flow. All four are tracked, retried and dead-lettered the same way.',
 					)
 				}}
 			</span>
@@ -148,6 +148,24 @@
 					:clearable="false"
 					:placeholder="t('integriq', 'Select a job')"
 					@update:modelValue="onJobPick" />
+			</template>
+
+			<template v-else-if="actionKind === 'flow'">
+				<label
+					for="cn-subscription-action-target"
+					class="cn-subscription-action-fields__label">
+					{{ t('integriq', 'Flow') }}
+				</label>
+				<NcSelect
+					inputId="cn-subscription-action-target"
+					:inputLabel="t('integriq', 'Flow')"
+					:aria-label-combobox="t('integriq', 'Flow')"
+					:modelValue="selectedFlow"
+					:options="flowOptions"
+					:loading="flowsLoading"
+					:clearable="false"
+					:placeholder="t('integriq', 'Select a flow')"
+					@update:modelValue="onFlowPick" />
 			</template>
 		</div>
 
@@ -215,6 +233,7 @@ const KIND_OPTIONS = [
 	{ id: 'webhook', label: 'Webhook' },
 	{ id: 'synchronization', label: 'Synchronization' },
 	{ id: 'job', label: 'Job' },
+	{ id: 'flow', label: 'Flow' },
 ]
 
 export default {
@@ -246,6 +265,8 @@ export default {
 			synchronizationsLoading: false,
 			jobOptions: [],
 			jobsLoading: false,
+			flowOptions: [],
+			flowsLoading: false,
 		}
 	},
 
@@ -273,7 +294,7 @@ export default {
 		},
 
 		/**
-		 * The three dispatch kinds REQ-008 fixes: webhook, synchronization, job.
+		 * The dispatch kinds: webhook, synchronization and job (REQ-008), and flow (nc-events-start-or-flows).
 		 *
 		 * @return {Array<{id: string, label: string}>}
 		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -339,6 +360,24 @@ export default {
 		},
 
 		/**
+		 * The `NcSelect` model for a `flow`-kind target, with the same
+		 * synthetic fallback as the job and synchronization pickers.
+		 *
+		 * @return {object|null}
+		 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-the-subscription-modal-offers-the-flow-action-kind
+		 */
+		selectedFlow() {
+			const id = this.formData?.action?.flowId
+			if (!id) return null
+			return (
+				this.flowOptions.find((option) => option.id === id) || {
+					id,
+					label: id,
+				}
+			)
+		},
+
+		/**
 		 * Whether the subscription declares a `retryPolicy` block at all.
 		 *
 		 * @return {boolean}
@@ -371,6 +410,8 @@ export default {
 				this.fetchSynchronizations()
 			} else if (value === 'job' && this.jobOptions.length === 0) {
 				this.fetchJobs()
+			} else if (value === 'flow' && this.flowOptions.length === 0) {
+				this.fetchFlows()
 			}
 		},
 	},
@@ -389,6 +430,8 @@ export default {
 			this.fetchSynchronizations()
 		} else if (this.actionKind === 'job') {
 			this.fetchJobs()
+		} else if (this.actionKind === 'flow') {
+			this.fetchFlows()
 		}
 	},
 
@@ -457,6 +500,20 @@ export default {
 			this.updateField('action', {
 				kind: 'job',
 				jobId: option?.id ? String(option.id) : null,
+			})
+		},
+
+		/**
+		 * Write the picked flow target.
+		 *
+		 * @param {object} option The picked flow option.
+		 * @return {void}
+		 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-the-subscription-modal-offers-the-flow-action-kind
+		 */
+		onFlowPick(option) {
+			this.updateField('action', {
+				kind: 'flow',
+				flowId: option?.id ? String(option.id) : null,
 			})
 		},
 
@@ -578,6 +635,40 @@ export default {
 				this.jobOptions = []
 			} finally {
 				this.jobsLoading = false
+			}
+		},
+
+		/**
+		 * Load the flows a subscription can start, from integriq's `flow`
+		 * schema in OpenRegister (the schema FlowRunnerService::findFlow()
+		 * reads the `flowId` from).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-the-subscription-modal-offers-the-flow-action-kind
+		 */
+		async fetchFlows() {
+			this.flowsLoading = true
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/objects/integriq/flow'),
+					// `_limit`, not `limit`: an unprefixed param is a property filter.
+					{ params: { _limit: 500 } },
+				)
+				const list = Array.isArray(response.data?.results)
+					? response.data.results
+					: Array.isArray(response.data)
+						? response.data
+						: []
+				this.flowOptions = list.map((item) => ({
+					id: String(item.id || item.uuid),
+					label: item.name || item.title || item.id,
+				}))
+			} catch (err) {
+				// eslint-disable-next-line no-console
+				console.warn('[SubscriptionActionFields] flow fetch failed', err)
+				this.flowOptions = []
+			} finally {
+				this.flowsLoading = false
 			}
 		},
 	},

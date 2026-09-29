@@ -185,7 +185,7 @@ class EventService {
 	 *                                      defaulted for the same test-compatibility reason as above;
 	 *                                      null means a guard without an allowlist, never no guard.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
@@ -530,6 +530,7 @@ class EventService {
 	 */
 	public function deliverMessage(ObjectEntity $message, ?ExecutionTraceContext $trace = null): bool {
 		$callStepStart = microtime(true);
+		$signed = null;
 
 		try {
 			$messageData = $message->getObject();
@@ -584,8 +585,13 @@ class EventService {
 				...($subscriptionData['protocolSettings']['headers'] ?? []),
 			];
 
+			// REQ-SOW-001: `unsigned` (a decision with a reason on it) wins over a
+			// secret left from before, the same rule SubscriptionSigningPolicy::isSigned()
+			// reads for the list, so the list and the wire never disagree.
 			$signingSecret = ($subscriptionData['protocolSettings']['signingSecret'] ?? null);
-			if ($signingSecret !== null && $signingSecret !== '') {
+			$signed = ($signingSecret !== null && $signingSecret !== ''
+				&& array_key_exists('unsigned', (array)($subscriptionData['protocolSettings'] ?? [])) === false);
+			if ($signed === true) {
 				// A signing failure must surface as a failed attempt, not an
 				// unsigned send: let any exception propagate to the failure path.
 				$previousSecret = null;
@@ -677,7 +683,8 @@ class EventService {
 					attempts: $priorAttempts,
 					at: $now,
 					statusCode: $response->getStatusCode(),
-					error: null
+					error: null,
+					signed: $signed
 				);
 				$this->objectService->saveObject(
 					object: $messageData,
@@ -695,7 +702,8 @@ class EventService {
 				error: 'Delivery failed with status code: ' . $statusCode,
 				statusCode: $statusCode,
 				retryAfter: $retryAfter,
-				retryPolicy: $this->resolveRetryPolicy(subscriptionData: $subscriptionData)
+				retryPolicy: $this->resolveRetryPolicy(subscriptionData: $subscriptionData),
+				signed: $signed
 			);
 
 			return false;
@@ -735,7 +743,8 @@ class EventService {
 				error: $e->getMessage(),
 				statusCode: null,
 				retryAfter: null,
-				retryPolicy: $this->resolveRetryPolicy(subscriptionData: ($subscriptionData ?? []))
+				retryPolicy: $this->resolveRetryPolicy(subscriptionData: ($subscriptionData ?? [])),
+				signed: $signed
 			);
 
 			return false;
@@ -820,6 +829,7 @@ class EventService {
 	 * @param integer|null $retryAfter A Retry-After delay in seconds, or null when absent.
 	 * @param array $retryPolicy Resolved {baseSeconds,factor,capSeconds,maxRetries}; empty uses
 	 *                           the class defaults (see {@see resolveRetryPolicy}).
+	 * @param bool|null $signed Whether the attempt carried a signature; null when not a signed kind of delivery.
 	 *
 	 * @return void
 	 *
@@ -827,6 +837,7 @@ class EventService {
 	 *
 	 * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
 	 */
 	private function recordFailure(
 		ObjectEntity $message,
@@ -834,6 +845,7 @@ class EventService {
 		?int $statusCode,
 		?int $retryAfter,
 		array $retryPolicy = [],
+		?bool $signed = null,
 	): void {
 		$messageData = $message->getObject();
 		$retryCount = ((int)($messageData['retryCount'] ?? 0) + 1);
@@ -857,7 +869,8 @@ class EventService {
 			attempts: $priorAttempts,
 			at: $nowIso,
 			statusCode: $statusCode,
-			error: $attemptError
+			error: $attemptError,
+			signed: $signed
 		);
 
 		if ($retryCount >= $maxRetries) {
@@ -962,12 +975,14 @@ class EventService {
 	 * @param string $at ISO 8601 timestamp of the attempt.
 	 * @param integer|null $statusCode HTTP status code, or null on transport failure.
 	 * @param string|null $error Transport/error message, or null on HTTP-level outcome.
+	 * @param bool|null $signed Whether a push attempt carried a signature; null (omitted) for other kinds.
 	 *
 	 * @return array The attempts array with the new entry appended.
 	 *
 	 * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
 	 */
-	private function appendAttempt(array $attempts, string $at, ?int $statusCode, ?string $error): array {
+	private function appendAttempt(array $attempts, string $at, ?int $statusCode, ?string $error, ?bool $signed = null): array {
 		// OMIT a null rather than writing it. `attempts[].statusCode` is typed
 		// `integer` and `attempts[].error` `string` in the schema, and
 		// OpenRegister refuses BOTH `null` and `{}` for a nested array-item
@@ -990,6 +1005,10 @@ class EventService {
 
 		if ($error !== null) {
 			$attempt['error'] = $error;
+		}
+
+		if ($signed !== null) {
+			$attempt['signed'] = $signed;
 		}
 
 		$attempts[] = $attempt;
@@ -1059,7 +1078,7 @@ class EventService {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	private function attemptDeliveryDispatch(ObjectEntity $message, ?ObjectEntity $subscription, ExecutionTraceContext $trace): bool {
 		if ($subscription === null) {
@@ -1828,8 +1847,8 @@ class EventService {
 	 *
 	 * @return boolean True when the broker took the message and routed it.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
 	 */
 	private function dispatchBrokerAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
 		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
@@ -1926,7 +1945,7 @@ class EventService {
 	 *
 	 * @return BrokerPublication The publication.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	private function brokerPublication(array $cloudEvent, array $subscriptionData, array $action): BrokerPublication {
 		$contentMode = trim((string)($action['contentMode'] ?? ''));
@@ -1962,7 +1981,7 @@ class EventService {
 	 *
 	 * @return array The settings, empty when the subscription configures none.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
 	 */
 	private function brokerSettings(array $subscriptionData): array {
 		$settings = ($subscriptionData['protocolSettings']['broker'] ?? []);

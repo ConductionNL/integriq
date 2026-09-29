@@ -7,7 +7,7 @@
  * colour for a value the schema cannot hold, or a menu entry that lands
  * outside the group it was written for.
  *
- * Spec coverage: openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * Spec coverage: openspec/specs/mail-intake/spec.md
  */
 
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'

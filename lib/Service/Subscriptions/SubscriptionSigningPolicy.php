@@ -36,7 +36,7 @@
  *
  * @link https://Integriq.app
  *
- * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
+ * @spec openspec/specs/webhook-signing/spec.md
  */
 
 declare(strict_types=1);
@@ -48,6 +48,8 @@ use OCA\Integriq\Service\WebhookSignatureService;
 
 /**
  * Decides a push subscription's signing posture, and refuses the requests that hide it.
+ *
+ * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
  */
 class SubscriptionSigningPolicy {
 
@@ -94,7 +96,7 @@ class SubscriptionSigningPolicy {
 	 *
 	 * @return string|null The refusal, or null when it may be saved.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
+	 * @spec openspec/specs/webhook-signing/spec.md
 	 */
 	public function refuse(array $subscription): ?string {
 		if ((string)($subscription['style'] ?? '') !== self::STYLE_PUSH) {
@@ -125,7 +127,7 @@ class SubscriptionSigningPolicy {
 	 *
 	 * @return array<string, mixed> The settings to store.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
+	 * @spec openspec/specs/webhook-signing/spec.md
 	 */
 	public function settingsForNew(array $subscription, string $user = '', ?DateTimeImmutable $now = null): array {
 		$settings = (array)($subscription['protocolSettings'] ?? []);
@@ -168,7 +170,7 @@ class SubscriptionSigningPolicy {
 	 *
 	 * @return array<string, mixed> The settings to store.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
+	 * @spec openspec/specs/webhook-signing/spec.md
 	 */
 	public function settingsForExisting(
 		array $existing,
@@ -206,7 +208,7 @@ class SubscriptionSigningPolicy {
 	 *
 	 * @return bool True when a delivery carries a signature.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
+	 * @spec openspec/specs/webhook-signing/spec.md
 	 */
 	public function isSigned(array $subscription): bool {
 		$settings = (array)($subscription['protocolSettings'] ?? []);
@@ -230,7 +232,7 @@ class SubscriptionSigningPolicy {
 	 *
 	 * @return array<string, mixed> The read shape.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
+	 * @spec openspec/specs/webhook-signing/spec.md
 	 */
 	public function forReading(array $subscription): array {
 		$settings = (array)($subscription['protocolSettings'] ?? []);
@@ -266,7 +268,7 @@ class SubscriptionSigningPolicy {
 	 *
 	 * @return array<string, mixed> What the attempt records.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
+	 * @spec openspec/specs/webhook-signing/spec.md
 	 */
 	public function attemptRecord(array $subscription, string $kind = 'immediate'): array {
 		$signed = $this->isSigned(subscription: $subscription);
@@ -294,6 +296,44 @@ class SubscriptionSigningPolicy {
 	}//end posture()
 
 	/**
+	 * Whether a create request leaves the secret to the default, so there is one to reveal.
+	 *
+	 * A caller that supplied its own secret already has it, and an unsigned
+	 * one has none.
+	 *
+	 * @param array<string, mixed> $subscription The create request.
+	 *
+	 * @return bool True when the create generates a secret.
+	 *
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 */
+	public function generatesSecret(array $subscription): bool {
+		$settings = (array)($subscription['protocolSettings'] ?? []);
+
+		return (string)($subscription['style'] ?? '') === self::STYLE_PUSH
+			&& array_key_exists('signingSecret', $settings) === false
+			&& array_key_exists('unsigned', $settings) === false;
+	}//end generatesSecret()
+
+	/**
+	 * The one reveal of a stored secret, for the create response only.
+	 *
+	 * @param array<string, mixed> $stored The subscription as stored, unrendered.
+	 *
+	 * @return array<string, string> `['signingSecret' => ...]`, or nothing when there is none.
+	 *
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 */
+	public function reveal(array $stored): array {
+		$secret = (string)(((array)($stored['protocolSettings'] ?? []))['signingSecret'] ?? '');
+		if ($secret === '') {
+			return [];
+		}
+
+		return ['signingSecret' => $secret];
+	}//end reveal()
+
+	/**
 	 * The recipe a receiver needs, shown whether or not the secret is revealed.
 	 *
 	 * Shown ALWAYS, because the person integrating the receiving end is usually
@@ -302,7 +342,7 @@ class SubscriptionSigningPolicy {
 	 *
 	 * @return array<string, mixed> The verification recipe.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md
+	 * @spec openspec/specs/webhook-signing/spec.md
 	 */
 	public function verificationRecipe(): array {
 		return [

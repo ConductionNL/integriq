@@ -200,26 +200,7 @@ class MappingService {
 			return (new OrMapping())->hydrate($mapping);
 		}
 
-		// String/int -> resolve via OpenRegister UUID first, then imported
-		// configuration identifiers (`slug`/`reference`).
-		try {
-			$object = $this->orObjectService->find(
-				id: (string)$mapping,
-				register: self::REGISTER,
-				schema: self::SCHEMA
-			);
-		} catch (DoesNotExistException $e) {
-			throw new InvalidArgumentException(
-				sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string)$mapping),
-				0,
-				$e
-			);
-		}
-
-		if ($object === null) {
-			$object = $this->findMappingByIdentifier(identifier: (string)$mapping);
-		}
-
+		$object = $this->findMapping(reference: (string)$mapping);
 		if ($object === null) {
 			throw new InvalidArgumentException(
 				sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string)$mapping)
@@ -228,6 +209,38 @@ class MappingService {
 
 		return (new OrMapping())->hydrate($object->getObject());
 	}//end normaliseMapping()
+
+	/**
+	 * Resolve a mapping by uuid, id or slug, then by imported identifiers.
+	 *
+	 * OpenRegister's find() throws DoesNotExistException for an identifier it
+	 * cannot resolve. That used to end the lookup before the `slug`/`reference`
+	 * fallback could run, so a mapping known only by its imported reference
+	 * never resolved (mapping-woo-index-field-mapping D4).
+	 *
+	 * @param string $reference The uuid, id, slug or reference.
+	 *
+	 * @return ObjectEntity|null The mapping object, or null when nothing matches.
+	 *
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 */
+	public function findMapping(string $reference): ?ObjectEntity {
+		try {
+			$object = $this->orObjectService->find(
+				id: $reference,
+				register: self::REGISTER,
+				schema: self::SCHEMA
+			);
+		} catch (DoesNotExistException) {
+			$object = null;
+		}
+
+		if ($object === null) {
+			$object = $this->findMappingByIdentifier(identifier: $reference);
+		}
+
+		return $object;
+	}//end findMapping()
 
 	/**
 	 * Find a mapping by imported configuration identifiers.

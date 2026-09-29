@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\Integriq\Service\Mail\ParsedMessage;
 /**
  * Serves a mailbox source's fixture messages.
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
+ * @spec openspec/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
  */
 class MockMailboxTransport implements MailboxTransportInterface {
 
@@ -77,7 +77,7 @@ class MockMailboxTransport implements MailboxTransportInterface {
 	 *
 	 * @return array<int,ParsedMessage> The fixture messages.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function fetch(array $configuration, ?string $cursor): array {
 		$fixture = ($configuration['fixture'] ?? []);

@@ -89,7 +89,7 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 49 — `rod_message` added by openspec/changes/integriq-adapter-rod,
 	 * bringing the count to 50.
 	 *
-	 * Was 50 — `verzuim_message` added by openspec/changes/integriq-adapter-verzuimloket,
+	 * Was 50 — `verzuim_message` added by openspec/changes/archive/2026-09-28-integriq-adapter-verzuimloket,
 	 * bringing the count to 51.
 	 *
 	 * Was 51 — `oso_message` added by openspec/changes/integriq-adapter-oso,
@@ -97,6 +97,9 @@ class RegisterDescriptorTest extends TestCase {
 	 *
 	 * Was 52 — `uwlr_eduv_message` added by openspec/changes/integriq-adapter-uwlr-eduv,
 	 * bringing the count to 53.
+	 *
+	 * Was 53: `column_mapping` added by migration-source-adapters (the stored
+	 * mapping a delivered file is read through), bringing the count to 54.
 	 *
 	 * @var array<string, string>
 	 */
@@ -109,6 +112,7 @@ class RegisterDescriptorTest extends TestCase {
 		'EventSubscription' => 'event_subscription',
 		'Job' => 'job',
 		'Mapping' => 'mapping',
+		'ColumnMapping' => 'column_mapping',
 		'Message' => 'mail_message',
 		'IntakeMessage' => 'intake_message',
 		'IntakeRoutingRule' => 'intake_routing_rule',

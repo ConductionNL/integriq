@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use InvalidArgumentException;
 /**
  * Registry of rostering mapping presets, keyed by Source row id.
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
  */
 class RosterMappingPresetRegistry {
 	/**
@@ -82,7 +82,7 @@ class RosterMappingPresetRegistry {
 	 *
 	 * @return array<string,array{id:string,sourceSystem:string,target:string,contractVersion:int,fields:array<string,array<string,mixed>>}>
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
 	 */
 	public function all(): array {
 		return $this->presets;
@@ -95,7 +95,7 @@ class RosterMappingPresetRegistry {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
 	 */
 	public function has(string $systemId): bool {
 		return isset($this->presets[$systemId]);
@@ -110,7 +110,7 @@ class RosterMappingPresetRegistry {
 	 *
 	 * @throws InvalidArgumentException When no preset exists for the id.
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-one-mapping-preset-per-rostering-source-req-001
 	 */
 	public function get(string $systemId): array {
 		if ($this->has(systemId: $systemId) === false) {

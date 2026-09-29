@@ -29,9 +29,9 @@ use Psr\Log\LoggerInterface;
  * Suggest and resolve keep their separate guarantees, and every answer says
  * where it came from.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-suggest-and-resolve-are-separate-calls-with-separate-guarantees-req-rfs-002
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-live-means-a-stated-staleness-budget-req-rfs-004
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-suggest-and-resolve-are-separate-calls-with-separate-guarantees-req-rfs-002
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-live-means-a-stated-staleness-budget-req-rfs-004
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005
  */
 class PropertySourceResolver {
 	/**

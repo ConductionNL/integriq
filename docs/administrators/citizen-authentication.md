@@ -9,7 +9,8 @@ cannot store a BSN it should not hold, and does not need its own certificate.
 
 ## What an app receives
 
-A subject envelope. Six claims about the person, and nothing else:
+A subject envelope. Six claims about the person, a seventh for a branch login,
+and nothing else:
 
 | Claim | What it holds |
 |---|---|
@@ -19,6 +20,7 @@ A subject envelope. Six claims about the person, and nothing else:
 | `audience` | the app the envelope was minted for |
 | `organisation` | the tenant the login happened in |
 | `trust` | `low`, `substantial` or `high` |
+| `branch` | eHerkenning only: the vestigingsnummer the login was restricted to. Absent otherwise |
 
 It also carries `use: idp-envelope`. That claim is what stops a leaked envelope
 being used as a session: a session resolver refuses any token that carries it.
@@ -34,29 +36,65 @@ key and a JWKS, and that is a change rather than a setting.
 
 ## How the hand-off works
 
-1. The person authenticates at the provider.
-2. Integriq verifies the assertion, mints the envelope, and puts it behind a
+1. The app sends the browser to
+   `/apps/integriq/api/idp/<provider>/start?organisation=&consumer=&trust=&returnUrl=&relayState=`.
+   `<provider>` is `digid`, `eherkenning` or `eidas`.
+2. Integriq checks the app and its return address, keeps a signed state for
+   five minutes, and sends the browser to the provider.
+3. The person authenticates at the provider, which sends the browser to
+   `/apps/integriq/api/idp/<provider>/callback`.
+4. Integriq verifies the assertion, mints the envelope, and puts it behind a
    one-time code.
-3. The browser is redirected back to the app carrying the code, not the
-   envelope. Anything in a URL bar gets read, logged and shared.
-4. The app's server posts the code to `/api/idp/envelope/exchange` with its own
+5. The browser goes back to the return address with `code` and `relayState`.
+   It carries the code, not the envelope. Anything in a URL bar gets read,
+   logged and shared.
+6. The app's server posts the code to `/api/idp/envelope/exchange` with its own
    shared secret, and receives the envelope once.
-5. The app mints its own session from it.
+7. The app mints its own session from it.
+
+Integriq sends the browser back only to an address registered for that app,
+compared character for character. A start with any other address ends on
+integriq's own error page, and the browser goes nowhere.
+
+When a login fails after the start, the browser still goes back to the app,
+with `error=login_failed` and the relay state. The app gets one reason for
+every failure. The real one is in the Nextcloud log.
+
+A response the provider sends without a login integriq started is refused.
 
 A second exchange of the same code fails. So does a second verification of the
 same envelope.
 
 ## What you configure
 
-Five settings, under `integriq`:
+Five settings under `integriq`, and one command per app:
 
 ```bash
 occ config:app:set integriq idp_broker_signing_key --value "<32 bytes or more>"
-occ config:app:set integriq idp_broker_consumers --value '{"portaliq":"<secret>"}'
 occ config:app:set integriq idp_broker_salts --value '{"gemeente-x":"<32 bytes or more>"}'
 occ config:app:set integriq idp_broker_trust_aliases --value '{"digid":{"<urn>":"Hoog"}}'
+occ config:app:set integriq idp_broker_entity_ids --value '{"digid":"<your SP EntityID>"}'
+occ integriq:idp:consumer portaliq \
+  --return-url=https://portal.example.nl/portal/api/session/broker/callback \
+  --secret-ref=<credential id in the OpenRegister credential broker>
 occ config:app:set integriq idp_broker_enabled --value "1"
 ```
+
+Integriq ships `portaliq` registered and switched off, without a secret or an
+address, so the command above is all it takes. Repeat `--return-url` for more
+addresses. A return address must be https; plain http works for `localhost`
+only. Add `--secret-organisation=<organisation>` when the credential belongs to
+an organisation, and `--disable` to switch an app off.
+
+The exchange secret stays in the credential broker. Integriq reads it when a
+code is redeemed and never copies it into app config.
+
+`idp_broker_entity_ids` names, per provider, the EntityID an assertion must be
+addressed to. Without it every assertion is refused.
+
+An app registered the older way, `{"portaliq":"<secret>"}` in
+`idp_broker_consumers`, can still redeem codes. It cannot start a login, because
+it has no return address. Run the command with `--secret-ref` to move it.
 
 Set the flag last. With it at `0` every endpoint answers 401 and no adapter
 authenticates anybody.
@@ -121,7 +159,8 @@ This is the half of the broker that needs no vendor. The other half does.
 - **The SAML Service Provider and the OIDC Relying Party.** Signature
   verification, metadata, certificates and the broker contract itself. Until
   those land, every provider binds to an adapter that logs the attempt and
-  refuses.
+  refuses. The start and the callback are built and work against that
+  adapter's contract, so a start today ends on the error page.
 - **The Beheer > Authenticatie screen.** The settings above are the same ones
   it will write.
 - **Single logout.** Local logout in the consuming app works and always will.
@@ -130,6 +169,7 @@ This is the half of the broker that needs no vendor. The other half does.
 ## Walk it once
 
 At the time of writing this page has been walked against the spec and the
-services' own tests, not against a live broker or a live tenant. The DigiD
+services' own tests, not against a live broker or a live tenant. The start and
+callback round trip ran against a scripted provider in the unit tests only. The DigiD
 level spellings and the polymorphie hand-off are the two points where a live
 walk is most likely to correct it.

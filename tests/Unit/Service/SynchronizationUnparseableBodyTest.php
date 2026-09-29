@@ -110,7 +110,7 @@ class SynchronizationUnparseableBodyTest extends TestCase {
 			$logger,
 			$this->createMock(SynchronizationLogService::class),
 			$appConfig,
-			$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
+			$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class),
 			$this->createMock(TablesSyncAdapter::class),
 		);
 

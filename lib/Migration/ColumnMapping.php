@@ -26,7 +26,7 @@ use InvalidArgumentException;
  * Authored once and reused across deliveries, so a second file of the same
  * shape is a selection rather than a morning of mapping columns again.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 final class ColumnMapping {
 	/**

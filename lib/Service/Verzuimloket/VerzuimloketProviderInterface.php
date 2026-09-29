@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\Integriq\Exception\VerzuimloketProviderException;
  * A Verzuimloket transport binding: dispatch one already-translated
  * meldingType envelope and report the transport-assigned reference.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
  */
 interface VerzuimloketProviderInterface {
 	/**
@@ -42,7 +42,7 @@ interface VerzuimloketProviderInterface {
 	 *
 	 * @return string The provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getProviderId(): string;
 
@@ -51,7 +51,7 @@ interface VerzuimloketProviderInterface {
 	 *
 	 * @return array<string, mixed> A JSON Schema (object) fragment.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getConfigSchema(): array;
 
@@ -68,7 +68,7 @@ interface VerzuimloketProviderInterface {
 	 *
 	 * @throws VerzuimloketProviderException When the endpoint is unreachable, errors, or is misconfigured.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function send(array $sourceConfiguration, string $meldingType, string $kenmerk, string $envelopeXml): string;
 }//end interface

@@ -25,7 +25,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * @spec openspec/specs/outbound-call-log/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 /**
  * Writes and updates outbound call records.
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
  */
 class CallRecorder {
 
@@ -82,6 +82,13 @@ class CallRecorder {
 	public const KIND_DRY_RUN = 'dry-run';
 
 	/**
+	 * What the register accepts in the `source` relation.
+	 *
+	 * @var string
+	 */
+	private const UUID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService Persists the records.
@@ -102,6 +109,8 @@ class CallRecorder {
 	 *                                  `firedBy`, `retryPolicy`, `mapping`, `mappingVersion`.
 	 *
 	 * @return ObjectEntity The record.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
 	 */
 	public function record(array $call): ObjectEntity {
 		$now = (new DateTimeImmutable())->format('c');
@@ -128,7 +137,6 @@ class CallRecorder {
 			'mapping' => (string)($call['mapping'] ?? ''),
 			'mappingVersion' => (string)($call['mappingVersion'] ?? ''),
 			'deadLettered' => false,
-			'source' => (string)($call['source'] ?? ($call['target'] ?? '')),
 			'created' => $now,
 			'attempts' => [
 				[
@@ -142,6 +150,11 @@ class CallRecorder {
 				],
 			],
 		];
+
+		$source = $this->sourceRef(call: $call);
+		if ($source !== null) {
+			$record['source'] = $source;
+		}
 
 		return $this->objectService->saveObject(
 			object: $record,
@@ -238,6 +251,33 @@ class CallRecorder {
 		return $record;
 
 	}//end read()
+
+	/**
+	 * The source relation for a call, when there is one.
+	 *
+	 * `source` on `call_log` is a uuid relation to a source object, so the
+	 * register refuses anything else. A call's target is often not a source
+	 * (a pre-check URL, a partner name), and writing it there made the
+	 * register refuse the whole record, so the call that failed was never
+	 * kept. The target stays in `target`; `source` is only set when the call
+	 * names a source uuid, or when its target is one.
+	 *
+	 * @param array<string,mixed> $call The call as handed to record().
+	 *
+	 * @return string|null The source uuid, or null when the call has none.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+	 */
+	private function sourceRef(array $call): ?string {
+		foreach ([($call['source'] ?? null), ($call['target'] ?? null)] as $candidate) {
+			if (is_string($candidate) === true && preg_match(self::UUID_PATTERN, $candidate) === 1) {
+				return $candidate;
+			}
+		}
+
+		return null;
+
+	}//end sourceRef()
 
 	/**
 	 * Whether a status code counts as a success.

@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md
+ * Spec coverage: openspec/specs/registry-field-source/spec.md
  *
  * The scenarios the spec sends here are the ones a person can see: the
  * type-ahead an applicant uses, what a resolve returns when the registry does

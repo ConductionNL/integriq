@@ -1,0 +1,28 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-translation-service). Seeds the DORMANT `libretranslate` source that OCA\\Integriq\\Service\\TranslationService tries when `deepl-translation` is not enabled. configuration.translationProvider 'libretranslate' selects the LibreTranslate request shape (POST /translate with q, source, target, format). The location is a placeholder: point it at your own LibreTranslate instance, add an API key through configuration.authentication.credentialRef when the instance requires one, and enable the source.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "libretranslate"
+        },
+        "name": "LibreTranslate",
+        "description": "Translates text for other apps, such as minutes in decidiq, through a LibreTranslate instance you host. Set the instance address and enable the source.",
+        "type": "api",
+        "location": "https://libretranslate.example.org",
+        "auth": "none",
+        "configuration": {
+          "translationProvider": "libretranslate",
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
  * delivery of the same shape is a selection rather than the same morning
  * again. The file is read and nothing is written to it.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 class FileMigrationSource implements MigrationSourceAdapterInterface {
 	/**
@@ -332,7 +332,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 *
 	 * @throws InvalidArgumentException When nobody is signed in.
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md
+	 * @spec openspec/specs/migration-sources/spec.md
 	 */
 	private function actingUid(): string {
 		$user = null;

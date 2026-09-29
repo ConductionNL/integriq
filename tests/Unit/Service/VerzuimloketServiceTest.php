@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/tasks.md
+ * @spec openspec/changes/archive/2026-09-28-integriq-adapter-verzuimloket/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -34,15 +34,19 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
+use OCA\Integriq\Repair\InitializeRegister;
+use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 
 /**
  * Tests for the Verzuimloket send/retour orchestration.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md
+ * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
 class VerzuimloketServiceTest extends TestCase {
 
@@ -282,4 +286,104 @@ class VerzuimloketServiceTest extends TestCase {
 		$this->assertSame('sent', $this->saved[VerzuimloketService::SCHEMA_MESSAGE][0]['object']['status']);
 
 	}//end testRetryFailedRetriesOnlyFailedOrPendingRows()
+	/**
+	 * Validate a saved record against the real `verzuim_message` schema, built
+	 * as InitializeRegister imports it, with opis/json-schema, the validator
+	 * OpenRegister itself uses (the integriq#2261 method: a null in a string
+	 * property is refused there, and a record the register refuses was never
+	 * kept, whatever the unit tests around it said).
+	 *
+	 * @param array $object The object as handed to saveObject().
+	 *
+	 * @return array<string, mixed> Formatted errors, empty when valid.
+	 */
+	private static function schemaErrors(array $object): array {
+		$root = dirname(__DIR__, 3);
+		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/integriq_register.json'), true, flags: JSON_THROW_ON_ERROR);
+		$merge = new ReflectionMethod(InitializeRegister::class, 'deepMergeConfig');
+		$fragments = glob($root . '/lib/Settings/register.d/*.json');
+		sort($fragments);
+		foreach ($fragments as $fragmentPath) {
+			$fragment = json_decode((string)file_get_contents($fragmentPath), true);
+			if (is_array($fragment) === true) {
+				$descriptor = $merge->invoke(null, $descriptor, $fragment);
+			}
+		}
+
+		$schema = $descriptor['components']['schemas'][VerzuimloketService::SCHEMA_MESSAGE];
+		$result = (new Validator())->validate(
+			json_decode(json_encode($object, JSON_THROW_ON_ERROR)),
+			json_encode($schema, JSON_THROW_ON_ERROR)
+		);
+		if ($result->isValid() === true) {
+			return [];
+		}
+
+		return (new ErrorFormatter())->format($result->error());
+	}//end schemaErrors()
+
+	/**
+	 * The record a successful send writes is one the register accepts.
+	 *
+	 * @return void
+	 */
+	public function testSentRecordValidatesAgainstRegisterSchema(): void {
+		$this->sources[] = $this->sourceEntity();
+
+		$this->service->sendMelding(
+			'eerste-melding',
+			'seed-verzuim-kenmerk-001',
+			['bsn' => '999999990', 'windowStart' => '2026-09-01', 'windowEnd' => '2026-09-28', 'metricValue' => 16]
+		);
+
+		$this->assertSame([], self::schemaErrors($this->saved[VerzuimloketService::SCHEMA_MESSAGE][0]['object']));
+	}//end testSentRecordValidatesAgainstRegisterSchema()
+
+	/**
+	 * The record a matched retour writes is one the register accepts.
+	 *
+	 * @return void
+	 */
+	public function testMatchedRetourRecordValidatesAgainstRegisterSchema(): void {
+		$this->messages[] = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['direction' => 'outbound', 'meldingType' => 'eerste-melding', 'kenmerk' => 'seed-verzuim-kenmerk-001', 'status' => 'sent'],
+			'msg-1'
+		);
+
+		$this->service->receiveReturn((string)file_get_contents(__DIR__ . '/../../fixtures/verzuimloket/retour-accepted.xml'));
+
+		$this->assertSame([], self::schemaErrors($this->saved[VerzuimloketService::SCHEMA_MESSAGE][0]['object']));
+	}//end testMatchedRetourRecordValidatesAgainstRegisterSchema()
+
+	/**
+	 * A retour whose kenmerk matches nothing is still recorded, and validly.
+	 *
+	 * @return void
+	 */
+	public function testUnmatchedRetourRecordValidatesAgainstRegisterSchema(): void {
+		$this->service->receiveReturn((string)file_get_contents(__DIR__ . '/../../fixtures/verzuimloket/retour-rejected.xml'));
+
+		$saved = $this->saved[VerzuimloketService::SCHEMA_MESSAGE][0]['object'];
+		$this->assertSame([], self::schemaErrors($saved));
+		$this->assertSame('No matching outbound message found for kenmerk', $saved['error']);
+	}//end testUnmatchedRetourRecordValidatesAgainstRegisterSchema()
+
+	/**
+	 * A retried record is one the register accepts.
+	 *
+	 * @return void
+	 */
+	public function testRetriedRecordValidatesAgainstRegisterSchema(): void {
+		$this->sources[] = $this->sourceEntity();
+		$this->messages[] = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['direction' => 'outbound', 'meldingType' => 'eerste-melding', 'kenmerk' => 'k-failed', 'status' => 'failed', 'ref' => 'MOCK-VERZUIM-1', 'error' => 'timeout'],
+			'msg-failed'
+		);
+
+		$this->service->retryFailed();
+
+		$this->assertSame([], self::schemaErrors($this->saved[VerzuimloketService::SCHEMA_MESSAGE][0]['object']));
+	}//end testRetriedRecordValidatesAgainstRegisterSchema()
 }//end class

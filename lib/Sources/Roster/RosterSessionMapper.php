@@ -26,7 +26,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Exception;
 /**
  * Maps a vendor lesson onto a planninq timetable session.
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
  */
 class RosterSessionMapper {
 	/**
@@ -69,7 +69,7 @@ class RosterSessionMapper {
 	 *
 	 * @return array<string,string> The planninq session row.
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
 	 */
 	public function map(array $preset, array $record, array $maps): array {
 		$session = [];

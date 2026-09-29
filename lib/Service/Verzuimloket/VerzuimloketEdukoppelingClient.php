@@ -26,7 +26,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Edukoppeling (Digikoppeling WUS) Verzuimloket provider: signed envelope dispatch.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
  */
 class VerzuimloketEdukoppelingClient implements VerzuimloketProviderInterface {
 
@@ -73,7 +73,7 @@ class VerzuimloketEdukoppelingClient implements VerzuimloketProviderInterface {
 	 *
 	 * @return string The stable `edukoppeling` provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getProviderId(): string {
 		return 'edukoppeling';
@@ -84,7 +84,7 @@ class VerzuimloketEdukoppelingClient implements VerzuimloketProviderInterface {
 	 *
 	 * @return array<string, mixed> The Verzuimloket Edukoppeling source configuration JSON Schema.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getConfigSchema(): array {
 		return [
@@ -120,7 +120,7 @@ class VerzuimloketEdukoppelingClient implements VerzuimloketProviderInterface {
 	 * @throws VerzuimloketProviderException When no certificate reference resolves, the endpoint is
 	 *                                       missing, or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public function send(array $sourceConfiguration, string $meldingType, string $kenmerk, string $envelopeXml): string {
 		$certificateRef = (string)($sourceConfiguration['certificateRef'] ?? '');

@@ -13,7 +13,7 @@
         "slug": "catalog_item",
         "title": "Catalog Item",
         "icon": "ViewGridOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A browsable catalog entry describing a real connector adapter, seeded source template, or importable configuration template",
         "description": "One row per real, already-shipped adapter/source/template, materialised by MaterializeCatalogItems from CatalogRegistryService::collect(). No entry is invented: every catalog_item corresponds to code already in the repository. See openspec/specs/connector-catalog/spec.md#requirement-a-single-php-side-adapter-metadata-registry-is-the-source-of-truth-for-catalog-entries-req-003.",
         "required": [
@@ -100,6 +100,24 @@
             "type": "string",
             "description": "MDI icon name (without mdi- prefix) shown on the card",
             "title": "Icon"
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["adapter", "curated", "generated"],
+            "description": "Where the connector comes from: an adapter integriq ships, a template a person checked against a published interface, or a template generated from a pinned API directory.",
+            "title": "Tier"
+          },
+          "verifiedAgainst": {
+            "type": "string",
+            "format": "uri",
+            "description": "The published interface description the template was checked against.",
+            "title": "Checked against"
+          },
+          "snapshotDate": {
+            "type": "string",
+            "format": "date",
+            "description": "The date of the API directory snapshot a generated template was made from.",
+            "title": "Snapshot date"
           },
           "created": {
             "type": "string",

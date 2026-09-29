@@ -152,7 +152,7 @@ class SynchronizationServiceAdHocSourceTest extends TestCase {
 					$logger,
 					$logService,
 					$appConfig,
-					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class),
 				]
 			)
 			->onlyMethods(['synchronizeContract'])

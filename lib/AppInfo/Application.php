@@ -54,6 +54,8 @@ use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
+use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
+use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
@@ -66,6 +68,8 @@ use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
 use OCA\Integriq\EventListener\SourceRequestedListener;
 use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
+use OCA\Integriq\EventListener\GatewayDeliveryRequestedListener;
+use OCA\Integriq\EventListener\MappingExecutionRequestedListener;
 use OCA\Integriq\EventListener\ExchangeJobRequestedListener;
 use OCA\Integriq\EventListener\ExchangeMappingRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
@@ -79,6 +83,8 @@ use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
 use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\EventListener\RosterImportRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
+use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
+use OCA\Integriq\EventListener\SubscriptionSigningDefaultListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
@@ -148,6 +154,8 @@ use OCA\Integriq\PropertySource\PropertySourceRegistry;
 use OCA\Integriq\PropertySource\Provider\BagPropertySource;
 use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
 use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
+use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
+use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
 use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
@@ -159,8 +167,11 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\Tables\Event\RowAddedEvent;
@@ -276,6 +287,16 @@ class Application extends App implements IBootstrap {
 		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ObjectUpdatedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
+		// REQ-SOR-005 (records-owned-by-an-external-source): every delete passes
+		// OpenRegister's stoppable ObjectDeletingEvent, so the refusal of a
+		// source-owned record holds whichever page or app deletes it.
+		$dispatcher->addServiceListener(eventName: ObjectDeletingEvent::class, className: SourceOwnedDeleteGuardListener::class);
+		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a
+		// subscription through OpenRegister's object API, so the signing
+		// default and the unsigned-needs-a-reason refusal run on its stoppable
+		// creating/updating events, whichever page or app saves it.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: SubscriptionSigningDefaultListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: SubscriptionSigningDefaultListener::class);
 		// Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
 		// CloudEvents (register `openconnector` — the OpenRegister register slug,
 		// frozen across the app-id rename; schema event) created by any app.
@@ -315,6 +336,19 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			DocumentRenderRequestedEvent::class,
 			DocumentRenderRequestedListener::class
+		);
+		// A sibling runs a mapping by slug (mapping-woo-index-field-mapping
+		// REQ-WOOM-001): only an app the mapping lists in callableBy.
+		$context->registerEventListener(
+			MappingExecutionRequestedEvent::class,
+			MappingExecutionRequestedListener::class
+		);
+		// A sibling sends through a statutory gateway (statutory-gateways-and-
+		// frameworks REQ-SG-010): the caller the CORV, GGK, WKPB and publication
+		// adapters lacked.
+		$context->registerEventListener(
+			GatewayDeliveryRequestedEvent::class,
+			GatewayDeliveryRequestedListener::class
 		);
 		// Exchange jobs another app owns (learniq-exchange-jobs-native): the
 		// owning app asks integriq to carry a job, or to store its own
@@ -464,6 +498,20 @@ class Application extends App implements IBootstrap {
 			RosterImportClient::class,
 			static function ($c) {
 				return $c->get(RosterImportClientMock::class);
+			}
+		);
+
+		// Endpoint rule plug-ins (gateway-endpoint-transform-and-plugins D2):
+		// integriq's own connectRelations, plus whatever sibling apps register
+		// on RegisterEndpointRulePluginsEvent, dispatched on first lookup.
+		$context->registerService(
+			EndpointRulePluginRegistry::class,
+			static function ($c): EndpointRulePluginRegistry {
+				return new EndpointRulePluginRegistry(
+					plugins: [$c->get(ConnectRelationsPlugin::class)],
+					dispatcher: $c->get(IEventDispatcher::class),
+					logger: $c->get('Psr\Log\LoggerInterface')
+				);
 			}
 		);
 
@@ -1591,7 +1639,7 @@ class Application extends App implements IBootstrap {
 	 *     S3Adapter — one reference adapter per connector-category spec
 	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
 	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
-	 *     (openspec/changes/connector-category-adapter-scaffolding).
+	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
 	 *
 	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
 	 * integriq is loaded but openregister isn't enabled yet) so boot
@@ -1602,7 +1650,7 @@ class Application extends App implements IBootstrap {
 	 * @return void
 	 *
 	 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-integrationprovider-boot-time-registration-with-or-integrationregistry-req-002
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	private function registerIntegrationProviders(IBootContext $context): void {
 		if (class_exists(IntegrationRegistry::class) === false) {

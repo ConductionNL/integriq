@@ -40,7 +40,7 @@ use Throwable;
  * synchronisation or a source. A delete of a source-owned record is refused
  * here rather than by convention.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-the-consuming-app-reads-ownership-through-one-contract-req-sor-006
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-the-consuming-app-reads-ownership-through-one-contract-req-sor-006
  */
 class OwnershipController extends Controller {
 	/**
@@ -92,7 +92,7 @@ class OwnershipController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#scenario-an-unknown-object-answers-local-rather-than-failing
+	 * @spec openspec/specs/source-owned-records/spec.md#scenario-an-unknown-object-answers-local-rather-than-failing
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -121,7 +121,7 @@ class OwnershipController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -184,7 +184,7 @@ class OwnershipController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#scenario-a-misspelled-policy-is-refused-at-save
+	 * @spec openspec/specs/source-owned-records/spec.md#scenario-a-misspelled-policy-is-refused-at-save
 	 *
 	 * @no-admin-idor-exempt Pure computation over the caller's own argument. The sourceConfig
 	 *   arrives in the request and the answer is whether its policy value is one this engine

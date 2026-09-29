@@ -1,5 +1,5 @@
 {
-  "$comment": "Named-incumbent column-mapping presets for the migration-source-adapters engine (FileMigrationSource + ColumnMapping). Column names are representative -- no vendor in market-intelligence learniq round 1 published a raw pupil-export column-header sample for ParnasSys, ESIS, Magister or Somtoday. Correct against a real captured export once a design-partner school supplies one; the seam is this one file, not the engine (see openspec/changes/integriq-adapter-rostering-imports/specs/migration-mapping-presets/spec.md).",
+  "$comment": "Named-incumbent column-mapping presets for the migration-source-adapters engine (FileMigrationSource + ColumnMapping). Column names are representative -- no vendor in market-intelligence learniq round 1 published a raw pupil-export column-header sample for ParnasSys, ESIS, Magister or Somtoday. Correct against a real captured export once a design-partner school supplies one; the seam is this one file, not the engine (see openspec/specs/migration-mapping-presets/spec.md).",
   "presets": [
     {
       "id": "parnassys-export",

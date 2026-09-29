@@ -28,7 +28,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests the four refusals and the dormant seam.
  *
- * @spec openspec/changes/idp-broker-envelope-runtime/specs/digid-eherkenning-auth-adapter/spec.md#requirement-dormant-seam-adapters-ship-config-flag-gated-and-inert
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-dormant-seam-adapters-ship-config-flag-gated-and-inert
  */
 class AssertionGuardTest extends TestCase {
 

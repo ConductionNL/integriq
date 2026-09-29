@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
  */
 class DocumentGenerationStatusJob extends TimedJob {
 
@@ -88,7 +88,7 @@ class DocumentGenerationStatusJob extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $argument is Nextcloud's TimedJob::run()
 	 * signature; this job is scheduled, never given an argument.

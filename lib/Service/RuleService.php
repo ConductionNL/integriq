@@ -27,6 +27,8 @@ namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use Exception;
+use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
+use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -164,6 +166,8 @@ class RuleService {
 	 *                                                       identifiers; nullable so unit tests that don't
 	 *                                                       exercise the catalogue rule path can omit the
 	 *                                                       dependency.
+	 * @param EndpointRulePluginRegistry|null $pluginRegistry The rule plug-ins a `custom` rule names; null
+	 *                                                       falls back to integriq's own (connectRelations).
 	 *
 	 * @return void
 	 */
@@ -175,41 +179,68 @@ class RuleService {
 		private readonly CallService $callService,
 		private readonly ORObjectService $orObjectService,
 		private readonly ?RegisterResolverService $registerResolver = null,
+		private ?EndpointRulePluginRegistry $pluginRegistry = null,
 	) {
 	}//end __construct()
 
 	/**
-	 * Process a custom rule.
+	 * Process a custom rule: run the plug-in named by `configuration.plugin`.
+	 *
+	 * A rule written before plug-ins named its sub-type in `configuration.type`
+	 * (`connectRelations`), so that key is read when `plugin` is absent.
+	 * `connectRelations` is now the first registered plug-in and runs as before.
+	 *
+	 * `softwareCatalogus` was removed earlier. It was a rule type hard-coded to
+	 * one consumer's domain model, living in the connector's shared rule
+	 * pipeline. Logic like that now belongs in a sibling app's plug-in, or in a
+	 * flow composed of generic steps.
 	 *
 	 * @param ObjectEntity $rule The rule to process.
 	 * @param array $data The data to process.
 	 *
 	 * @return array|JSONResponse The updated data array (or a JSONResponse if the rule short-circuits).
 	 *
+	 * @throws Exception When no plug-in answers to the named id.
+	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse {
 		$ruleData = $rule->getObject();
-		$type = ($ruleData['configuration']['type'] ?? '');
+		$configuration = ($ruleData['configuration'] ?? []);
+		$pluginId = (string)($configuration['plugin'] ?? $configuration['type'] ?? '');
 
-		// Process custom rule based on type.
-		//
-		// `softwareCatalogus` was removed. It was a rule type hard-coded to one
-		// consumer's domain model — Voorziening / VoorzieningGebruik /
-		// Organisatie / VoorzieningAanbod schemas, a `vng-gemma` register, an
-		// `extendview` schema and literal `propertyDefinitionRef` ids — living
-		// in the connector's shared rule pipeline, where every other connector
-		// pays for it in surface area and nobody else can use it. That belongs
-		// to the software-catalog app, or to a flow composed of generic steps,
-		// which is where the OpenRegister flow migration takes the rest of this
-		// pipeline anyway.
-		$data = match ($type) {
-			'connectRelations' => $this->processCustomConnectionsRule(rule: $rule, data: $data),
-			default => throw new Exception('Unsupported custom rule type: ' . ($ruleData['type'] ?? '')),
-		};
+		$plugin = $this->pluginRegistry()->pluginFor(pluginId: $pluginId);
+		if ($plugin === null) {
+			$installed = implode(', ', $this->pluginRegistry()->ids());
+			if ($installed === '') {
+				$installed = 'none';
+			}
 
-		return $data;
+			throw new Exception(
+				sprintf("No rule plug-in '%s' is installed. Installed plug-ins: %s.", $pluginId, $installed)
+			);
+		}
+
+		return $plugin->process(rule: $ruleData, data: $data);
 	}//end processCustomRule()
+
+	/**
+	 * The plug-in registry, or integriq's own plug-ins when none was injected.
+	 *
+	 * @return EndpointRulePluginRegistry The registry.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+	 */
+	private function pluginRegistry(): EndpointRulePluginRegistry {
+		if ($this->pluginRegistry === null) {
+			$this->pluginRegistry = new EndpointRulePluginRegistry(
+				plugins: [new ConnectRelationsPlugin(catalogueService: $this->catalogueService)]
+			);
+		}
+
+		return $this->pluginRegistry;
+	}//end pluginRegistry()
 
 	/**
 	 * Create an ArchiMate connection entry tying a relation/source/target triple together.
@@ -396,28 +427,6 @@ class RuleService {
 			}
 		}//end foreach
 	}//end processNodes()
-
-	/**
-	 * Process the custom-connections rule by extending the catalogue model with the given model id.
-	 *
-	 * @param ObjectEntity $rule The rule being processed.
-	 * @param array $data The rule data envelope.
-	 *
-	 * @return array|JSONResponse A JSON-response with the outcome, or the data on no-op paths.
-	 *
-	 * @spec openspec/specs/rule-pipeline/spec.md
-	 */
-	private function processCustomConnectionsRule(ObjectEntity $rule, array $data): array|JSONResponse {
-		$explodedPath = explode(separator: '/', string: (string)($data['path'] ?? ''));
-
-		if (is_string(end($explodedPath)) === true && Uuid::isValid(end($explodedPath)) === true) {
-			$this->catalogueService->extendModel(end($explodedPath));
-
-			return new JSONResponse(['message' => 'Connected views succesfully'], statusCode: 200);
-		}
-
-		return new JSONResponse(['message' => 'model id was not provided'], 200);
-	}//end processCustomConnectionsRule()
 
 	/**
 	 * Fetches an external object and if requested, validate it.

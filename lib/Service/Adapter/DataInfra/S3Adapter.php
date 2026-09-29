@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use RuntimeException;
  * proxied, and AWS hosts can. The label says so, so an administrator does
  * not configure this adapter for AWS S3 and meet a signature error.
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
  */
 class S3Adapter extends AbstractCategoryAdapterProvider {
 	/**
@@ -83,7 +83,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function getId(): string {
 		return 'data-infra-s3';
@@ -94,7 +94,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function getLabel(): string {
 		// Names the limit where an administrator chooses the adapter: AWS S3
@@ -107,7 +107,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function getIcon(): string {
 		return 'Database';
@@ -118,7 +118,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function getRequiredApp(): ?string {
 		return null;
@@ -129,7 +129,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function getCapabilities(): array {
 		return ['object-read', 'object-write', 'object-list'];
@@ -144,7 +144,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,array<string,mixed>> Normalised object summaries.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function listObjects(string $bucket, string $prefix = ''): array {
 		$path = sprintf('/%s?list-type=2', rawurlencode($bucket));
@@ -168,7 +168,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string|null The raw object bytes, or null when unconfigured/not found/error.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function readObject(string $bucket, string $key): ?string {
 		$path = sprintf('/%s/%s', rawurlencode($bucket), $this->encodeKey(key: $key));
@@ -189,7 +189,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array{status: int}|null The upstream status, or null on failure.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	public function writeObject(string $bucket, string $key, string $content): ?array {
 		$path = sprintf('/%s/%s', rawurlencode($bucket), $this->encodeKey(key: $key));
@@ -271,7 +271,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
 	 *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
@@ -303,7 +303,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @throws DoesNotExistException When `$entityId` is malformed or the object is not found.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
 	 *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
@@ -358,7 +358,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 * @throws DoesNotExistException When `bucket` or `key` is missing from the payload.
 	 * @throws \RuntimeException When the upstream write fails.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
 	 *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
@@ -400,7 +400,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 * @throws DoesNotExistException When `$entityId` is malformed.
 	 * @throws \RuntimeException When the upstream write fails.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
 	 *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
@@ -445,7 +445,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @throws \RuntimeException When the write did not complete with a 2xx status.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
 	private function putObject(string $bucket, string $key, string $content): array {
 		$result = $this->writeObject(bucket: $bucket, key: $key, content: $content);

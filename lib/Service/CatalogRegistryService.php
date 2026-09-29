@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Catalog\ConnectorTemplateLibrary;
+
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -57,6 +59,25 @@ class CatalogRegistryService {
 	 * @var string
 	 */
 	private const FRAGMENT_DIR = __DIR__ . '/../Settings/register.d';
+
+	/**
+	 * The connector template library: listed in the Store, never imported
+	 * as source objects (connectors-catalogue-expansion design D1).
+	 */
+	private const TEMPLATE_DIR = __DIR__ . '/../Settings/connector-templates';
+
+	/**
+	 * Seeded sources that are not connectors: promotion targets seeded by
+	 * environments-and-promotion.json (design D4).
+	 */
+	private const PLACEHOLDER_SLUG_PREFIX = 'environment-';
+
+	/**
+	 * The connector template library this instance reads.
+	 *
+	 * @var ConnectorTemplateLibrary
+	 */
+	private readonly ConnectorTemplateLibrary $templates;
 
 	/**
 	 * Human-readable category labels keyed by the source schema's free-form
@@ -99,6 +120,9 @@ class CatalogRegistryService {
 		'xential' => 'Document generation',
 		// SLO curriculum open data (slo-kerndoelen-import): kerndoelen, examenprogramma's.
 		'slo-curriculum' => 'Education data',
+		// Text translation for sibling apps (connectors-translation-service).
+		'deepl-translation' => 'Language',
+		'libretranslate' => 'Language',
 	];
 
 	/**
@@ -124,13 +148,16 @@ class CatalogRegistryService {
 	 * @param OrObjectService $orObjectService OR object service, used to resolve seeded Source objects.
 	 * @param IAppConfig $appConfig App config, used to resolve flag-gated mechanism status.
 	 * @param LoggerInterface $logger Logger for malformed seed-fragment warnings.
+	 * @param string|null $templateDir The template library to read; the shipped one when null.
 	 */
 	public function __construct(
 		private readonly IntegrationRegistry $integrationRegistry,
 		private readonly OrObjectService $orObjectService,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		?string $templateDir = null,
 	) {
+		$this->templates = new ConnectorTemplateLibrary(directory: ($templateDir ?? self::TEMPLATE_DIR));
 	}//end __construct()
 
 	/**
@@ -143,24 +170,38 @@ class CatalogRegistryService {
 	 * @return array<int, array<string,mixed>>
 	 *
 	 * @spec openspec/specs/connector-catalog/spec.md#scenario-materialization-is-idempotent
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
 	 */
 	public function collect(): array {
-		$entries = [];
+		$withTier = static fn (string $tier): \Closure => static fn (array $entry): array => $entry + ['tier' => $tier];
 
-		foreach ($this->collectFromIntegrationRegistry() as $entry) {
-			$entries[] = $entry;
-		}
+		$adapters = array_map($withTier('adapter'), [...$this->collectFromIntegrationRegistry(), ...$this->collectStaticDescriptors()]);
 
-		foreach ($this->collectStaticDescriptors() as $entry) {
-			$entries[] = $entry;
-		}
+		// A system with an adapter and a seeded source is listed once, as the
+		// adapter; the seeded source is what its Instantiate enables (D4).
+		$backedByAdapter = array_flip(array_filter(array_column($adapters, 'sourceTemplateSlug')));
+		$seeded = array_filter(
+			$this->collectFromSeedFragments(),
+			static fn (array $entry): bool => isset($backedByAdapter[$entry['sourceTemplateSlug']]) === false
+		);
 
-		foreach ($this->collectFromSeedFragments() as $entry) {
-			$entries[] = $entry;
-		}
-
-		return $entries;
+		return [...$adapters, ...array_map($withTier('curated'), array_values($seeded)), ...$this->collectFromTemplates()];
 	}//end collect()
+
+	/**
+	 * (d) One entry per template in the connector template library, which
+	 * the Store lists and the register import never installs (design D1).
+	 *
+	 * @return array<int, array<string,mixed>>
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	private function collectFromTemplates(): array {
+		return array_map(
+			fn (array $card): array => ['icon' => $this->iconForType(type: (string)$card['sourceType'])] + array_diff_key($card, ['sourceType' => true]),
+			$this->templates->cards()
+		);
+	}//end collectFromTemplates()
 
 	/**
 	 * (a) Read every provider registered with OR's IntegrationRegistry.
@@ -358,7 +399,7 @@ class CatalogRegistryService {
 				}
 
 				$slug = (string)($self['slug'] ?? '');
-				if ($slug === '') {
+				if ($slug === '' || str_starts_with($slug, self::PLACEHOLDER_SLUG_PREFIX) === true) {
 					continue;
 				}
 
@@ -443,8 +484,14 @@ class CatalogRegistryService {
 	 * @return array<string,mixed>|null The raw source object payload (minus `@self`), or null when not found.
 	 *
 	 * @spec openspec/specs/connector-catalog/spec.md#scenario-instantiate-action-creates-a-source-from-a-seeded-template
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function findSeedSourcePayload(string $slug): ?array {
+		$templatePayload = $this->templates->payload(slug: $slug);
+		if ($templatePayload !== null) {
+			return $templatePayload;
+		}
+
 		if (is_dir(self::FRAGMENT_DIR) === false) {
 			return null;
 		}

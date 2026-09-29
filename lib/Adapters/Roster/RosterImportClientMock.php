@@ -22,7 +22,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-rostering-imports/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
+ * @spec openspec/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ namespace OCA\Integriq\Adapters\Roster;
  * `lib/roster-mapping-presets.seed.json` is exercised in mock mode. An
  * unknown source id returns no lessons.
  *
- * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+ * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
  */
 final class RosterImportClientMock extends RosterImportClient {
 	/**
@@ -143,7 +143,7 @@ final class RosterImportClientMock extends RosterImportClient {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-rostering-imports/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
+	 * @spec openspec/specs/rostering-import/spec.md#requirement-dormant-roster-import-client-with-deterministic-mock-default-req-001
 	 */
 	public function flavour(): string {
 		return 'mock';
@@ -156,7 +156,7 @@ final class RosterImportClientMock extends RosterImportClient {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/rostering-adapter-targets-planninq/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-mapper-turns-a-vendor-lesson-into-a-planninq-session-req-002
 	 */
 	public function fetchLessons(string $systemId): array {
 		return (self::BATCHES[$systemId] ?? []);

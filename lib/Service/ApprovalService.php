@@ -9,7 +9,7 @@
  * authorization model (ADR-023 action matrix + per-request approverGroup
  * membership), FlowToken snapshot stripping/rehydration, the imperative
  * actionable-notification dispatch, and expiry sweeping. Callers
- * (`EndpointService`, `SynchronizationService`, `ApprovalsController`,
+ * (`EndpointService`, `SynchronizationService` through `SynchronizationApprovalGate`, `ApprovalsController`,
  * `ApprovalTimeoutSweepJob`) depend on this service; it deliberately depends
  * on neither of the two former to avoid a circular service graph — the
  * suspend/resume ORCHESTRATION (rehydrating the pipeline, re-invoking
@@ -209,53 +209,24 @@ class ApprovalService {
 	}//end suspend()
 
 	/**
-	 * Create the single `approval_request` gating a Synchronization batch
-	 * run (synchronization-engine REQ-015). Unlike the endpoint-rule case
-	 * there is no FlowToken snapshot to persist — resume re-runs
-	 * `synchronize()` rather than replaying a payload (design.md Decision 6).
+	 * Hand a just-created, pending approval_request to its approvers: mirror
+	 * it into one shared task, then notify the approver group. Every suspend
+	 * path ends here; {@see SynchronizationApprovalGate} calls it for the
+	 * synchronization gate.
 	 *
-	 * @param string $synchronizationId The gated synchronization's id.
-	 * @param string $approverGroup The configured approver group.
-	 * @param string $onReject Outcome on reject.
-	 * @param string $onTimeout Outcome on timeout.
-	 * @param integer $ttlSeconds TTL in seconds before expiry.
+	 * @param ObjectEntity $approvalRequest The just-created, pending approval_request.
 	 *
-	 * @return ObjectEntity The created, `pending` approval_request.
+	 * @return ObjectEntity The record, carrying `taskUuid` when the mirror was created.
 	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md
+	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
-	public function suspendForSynchronization(
-		string $synchronizationId,
-		string $approverGroup,
-		string $onReject,
-		string $onTimeout,
-		int $ttlSeconds,
-	): ObjectEntity {
-		$now = new DateTime();
-		$expiresAt = (clone $now)->add(new DateInterval('PT' . max($ttlSeconds, 1) . 'S'));
-
-		$record = $this->objectService->saveObject(
-			object: [
-				'status' => 'pending',
-				'synchronizationId' => $synchronizationId,
-				'timing' => 'before',
-				'snapshot' => [],
-				'requesterUserId' => $this->userSession->getUser()?->getUID(),
-				'approverGroup' => $approverGroup,
-				'onReject' => $onReject,
-				'onTimeout' => $onTimeout,
-				'createdAt' => $now->format('c'),
-				'expiresAt' => $expiresAt->format('c'),
-			],
-			register: self::REGISTER,
-			schema: self::SCHEMA
-		);
-
-		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
+	public function announce(ObjectEntity $approvalRequest): ObjectEntity {
+		$record = $this->mirrorIntoSharedTask(approvalRequest: $approvalRequest);
 		$this->notifyApprovers(approvalRequest: $record);
 
 		return $record;
-	}//end suspendForSynchronization()
+
+	}//end announce()
 
 	/**
 	 * Suspend a `FlowRunnerService::run()` invocation on an `approval` flow
@@ -389,7 +360,7 @@ class ApprovalService {
 	 * Create the `approval_request` gating an `api_product_subscription`
 	 * whose chosen tier has `requiresApproval: true` (api-product-gateway
 	 * REQ-APG-004). Structurally identical to
-	 * {@see suspendForSynchronization()} — no FlowToken snapshot, no
+	 * {@see SynchronizationApprovalGate::suspendForSynchronization()} — no FlowToken snapshot, no
 	 * resumed pipeline; a *different* subject (`ProductSubscriptionsController`)
 	 * resolves on `completeApproval()`/`reject()` and flips the
 	 * subscription's own `status`, since that orchestration is not this
@@ -440,62 +411,27 @@ class ApprovalService {
 	}//end suspendForSubscription()
 
 	/**
-	 * Find an approved, not-yet-consumed approval_request for a
-	 * synchronization (the batch-gate's "has this run already been
-	 * approved" check).
-	 *
-	 * @param string $synchronizationId The synchronization id.
-	 *
-	 * @return ObjectEntity|null The approved, unconsumed request, or null.
-	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md
-	 */
-	public function findApprovedUnconsumedForSynchronization(string $synchronizationId): ?ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA,
-					'synchronizationId' => $synchronizationId,
-					'status' => 'approved',
-				],
-				'limit' => 10,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		foreach ($results as $candidate) {
-			$data = $candidate->getObject();
-			if (empty($data['consumedAt']) === true) {
-				return $candidate;
-			}
-		}
-
-		return null;
-	}//end findApprovedUnconsumedForSynchronization()
-
-	/**
-	 * Mark a Synchronization batch-gate approval_request consumed once its
-	 * gated write phase has completed, so it cannot re-authorize a later run.
+	 * Record how a resumed run ended on an already approved request.
 	 *
 	 * @param ObjectEntity $approvalRequest The approved approval_request.
+	 * @param string $resumeResult `success`, `error` or `superseded`.
 	 *
-	 * @return void
+	 * @return ObjectEntity The stored request.
 	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
 	 */
-	public function markConsumed(ObjectEntity $approvalRequest): void {
+	public function recordResumeResult(ObjectEntity $approvalRequest, string $resumeResult): ObjectEntity {
 		$data = $approvalRequest->getObject();
-		$data['consumedAt'] = (new DateTime())->format('c');
+		$data['resumeResult'] = $resumeResult;
 
-		$this->objectService->saveObject(
+		return $this->objectService->saveObject(
 			object: $data,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $approvalRequest->getUuid()
 		);
 
-	}//end markConsumed()
+	}//end recordResumeResult()
 
 	/**
 	 * Rehydrate a FlowToken from a persisted snapshot via the public

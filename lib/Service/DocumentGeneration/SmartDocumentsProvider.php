@@ -15,7 +15,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ namespace OCA\Integriq\Service\DocumentGeneration;
 /**
  * SmartDocuments, reached over its REST API.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
  */
 class SmartDocumentsProvider extends AbstractRestDocumentGenerationProvider {
 
@@ -54,7 +54,7 @@ class SmartDocumentsProvider extends AbstractRestDocumentGenerationProvider {
 	 *
 	 * @return string The templates path.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function templatesPath(): string {
 		return '/templates';
@@ -66,7 +66,7 @@ class SmartDocumentsProvider extends AbstractRestDocumentGenerationProvider {
 	 *
 	 * @return string The render path.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function renderPath(): string {
 		return '/documents';
@@ -80,7 +80,7 @@ class SmartDocumentsProvider extends AbstractRestDocumentGenerationProvider {
 	 *
 	 * @return string The status path.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function statusPath(string $providerJobId): string {
 		return '/documents/' . rawurlencode($providerJobId) . '/status';
@@ -98,7 +98,7 @@ class SmartDocumentsProvider extends AbstractRestDocumentGenerationProvider {
 	 *
 	 * @return array<string, mixed> The request body.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function renderEnvelope(string $templateId, array $data): array {
 		return [
@@ -114,7 +114,7 @@ class SmartDocumentsProvider extends AbstractRestDocumentGenerationProvider {
 	 *
 	 * @return array<int, array{id: string, name: string}> The fixture templates.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
 	 */
 	protected function fixtureTemplates(): array {
 		return [

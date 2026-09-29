@@ -278,6 +278,14 @@
           "order": 20
         },
         {
+          "id": "Migrations",
+          "label": "Migrations",
+          "icon": "DatabaseImportOutline",
+          "route": "Migrations",
+          "order": 25,
+          "permission": "admin"
+        },
+        {
           "id": "NotificatiesAbonnementen",
           "label": "Subscriptions",
           "icon": "BellRingOutline",
@@ -952,6 +960,18 @@
             "label": "Promote configuration",
             "icon": "RocketLaunchOutline",
             "handler": "openPromotionHandler"
+          },
+          {
+            "id": "registry-lookup",
+            "label": "Look up in a base registry",
+            "icon": "DatabaseSearchOutline",
+            "handler": "openRegistryLookupHandler"
+          },
+          {
+            "id": "gateway-catalogue",
+            "label": "Statutory gateways",
+            "icon": "ScaleBalance",
+            "handler": "openGatewayCatalogueHandler"
           }
         ],
         "showViewAction": false,
@@ -1313,6 +1333,18 @@
             "title": "Circuit breaker",
             "placement": "before-body",
             "colSpan": 12
+          },
+          {
+            "id": "src-document-generation",
+            "component": "DocumentGenerationSourcePanel",
+            "placement": "after-data",
+            "colSpan": 12
+          },
+          {
+            "id": "src-run-summary",
+            "component": "SourceRunSummaryWidget",
+            "placement": "after-data",
+            "colSpan": 12
           }
         ],
         "sidebar": {
@@ -1339,6 +1371,10 @@
       "route": "/sources/logs",
       "type": "logs",
       "title": "Source logs",
+      "actionsComponent": "CallLogActions",
+      "slots": {
+        "row-actions": "CallLogRowActions"
+      },
       "config": {
         "register": "integriq",
         "schema": "call_log",
@@ -2002,6 +2038,7 @@
           "protocol",
           "style",
           "status",
+          "signingPosture",
           "updated"
         ],
         "includeFields": [
@@ -3977,6 +4014,7 @@
           "name",
           "category",
           "kind",
+          "tier",
           "status"
         ],
         "showAdd": false,
@@ -4006,6 +4044,20 @@
             "label": "Configuration templates",
             "filter": {
               "kind": "configuration-template"
+            },
+            "icon": "FileCogOutline"
+          },
+          {
+            "label": "Checked templates",
+            "filter": {
+              "tier": "curated"
+            },
+            "icon": "CheckDecagramOutline"
+          },
+          {
+            "label": "Generated templates",
+            "filter": {
+              "tier": "generated"
             },
             "icon": "FileCogOutline"
           }
@@ -4106,6 +4158,34 @@
       }
     },
     {
+      "id": "Migrations",
+      "route": "/migrations",
+      "type": "index",
+      "title": "Migrations",
+      "config": {
+        "register": "integriq",
+        "schema": "column_mapping",
+        "columns": [
+          "name",
+          "kind",
+          "targetSchema",
+          "version"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "documentationUrl": "https://integriq.conduction.nl"
+      },
+      "_note": "The saved column mappings a delivered file is read through (migration-source-adapters task 2). Create and Edit open ColumnMappingEditorModal, which runs POST /api/migration-sources/column-mapping/validate before every save and raises the version by one. below-header renders MigrationTestRunPanel: pick a migration source (GET /api/migration-sources) and run the read-only preview, which writes nothing.",
+      "slots": {
+        "form-dialog": "ColumnMappingEditorModal",
+        "below-header": "MigrationTestRunPanel"
+      }
+    },
+    {
       "id": "DeadLetters",
       "route": "/dead-letters",
       "type": "custom",
@@ -4151,6 +4231,12 @@
                 "failed": "error"
               }
             }
+          },
+          {
+            "key": "triggeredBy",
+            "label": "Started by",
+            "sortable": true,
+            "width": "9%"
           },
           {
             "key": "processed",
@@ -4201,7 +4287,20 @@
           "showMetadata": true
         },
         "showViewAction": true,
-        "showEditAction": false
+        "showEditAction": false,
+        "actions": [
+          {
+            "id": "run-again",
+            "label": "Run again",
+            "icon": "PlayOutline",
+            "handler": "rerunFailedRunHandler",
+            "visibleWhen": {
+              "field": "status",
+              "op": "eq",
+              "value": "failed"
+            }
+          }
+        ]
       }
     }
   ],

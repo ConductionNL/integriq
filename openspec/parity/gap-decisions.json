@@ -1478,5 +1478,261 @@
 		"reason": "Microsoft Graph search for opencatalogi row wr-search-sources, a half the merged dossiq change woo-requests-gather-documents-from-sources depends on (its live path is blocked on it). Tender demand https://www.tenderned.nl/aankondigingen/overzicht/391449 and TenderNed 388421; no competitor rated yes. No search/query call exists in integriq.",
 		"change": "connectors-graph-document-search",
 		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "acc-monetise",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor partial at most (apisix, wso2), no tender or request.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "sync-conflict",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand; it only matters once two-way sync (sync-twoway, building) writes back, and that change settles its own write-back rules.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "auto-compensate",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "ADR-065 decision 1: compensation across flow steps is flow-engine semantics, which OpenRegister owns; built.owner is ConductionNL/openregister.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "evt-zgw-publish",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes (mulesoft partial) and no demand row; integriq subscribes to and publishes through an outside Notificaties API, which covers the fleet today.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "nl-tooi",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row. decidiq pub-13 refused it and assigned it here; reversible when a Woo tender asks for TOOI tagging.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "msg-notes-sync",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row; the generic synchronization engine can keep notes in step when an administrator configures one.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "msg-esign",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row. filinq owns document signing (decidiq prefers docudesk-signing), and decidiq reaches an eidas-qes source through CallService without integriq code; note decidiq looks it up through Db\\SourceMapper, which integriq does not have, so its fallback path never resolves (a decidiq defect, not an integriq change).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "con-translate",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "decidiq min-12 (building) already calls OCA\\Integriq\\Service\\TranslationService::translate(), which does not exist, so every minutes translation falls back to the log adapter: a defect the sibling exposes. n8n rates yes.",
+		"change": "connectors-translation-service",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "con-sbb",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row; learniq wpl-check-the-company-is-approved is itself unbuilt.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "con-software-catalogue",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes and no demand row.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "acc-token-exchange",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor yes (mulesoft) plus a Tyk changelog, no tender or request, outside the core area.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "plt-upgrade-report",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor yes (n8n) plus its own changelog, no tender or request, outside the core area.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "acc-mcp-tool-filter",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor yes (tyk) plus its changelog, no tender or request; gateway-mcp-proxy lists it out of scope, and Hermiq agents are scoped by ADR-063 decision 6.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "src-auth-basic",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Five competitors rate yes and the row is in the core area (sources); the declared auth fields are never read by CallService.",
+		"change": "sources-declared-basic-and-apikey-auth",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "gw-transform",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Five competitors rate yes and the row is in the core area (gateway); outputMapping is declared but never applied.",
+		"change": "gateway-endpoint-transform-and-plugins",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "gw-plugins",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "All six competitors rate yes and the row is in the core area (gateway); the javascript rule is a no-op stub.",
+		"change": "gateway-endpoint-transform-and-plugins",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "auto-webhook-trigger",
+		"matrix": "integriq",
+		"decision": "build",
+		"reason": "Three competitors rate yes; the flow rule runs but the rule editor cannot author one.",
+		"change": "automation-endpoint-flow-trigger",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "src-encrypt",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The missing half (source secrets held encrypted outside the source object) is migrate-inline-secrets-to-broker.",
+		"change": "migrate-inline-secrets-to-broker",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "map-registry-field",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The missing half (a screen that calls the property-source lookups) is task work in registry-backed-field-source.",
+		"change": "registry-backed-field-source",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "map-expression-allowlist",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The missing half (the evaluator consulting the allowlist, and its admin screen) is task work in allowlisted-expression-sources.",
+		"change": "allowlisted-expression-sources",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "sync-migration",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "The missing half (the mapping screen and the source picker) is task work in migration-source-adapters.",
+		"change": "migration-source-adapters",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "evt-unsigned-visible",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "signed-outbound-webhooks makes an unsigned subscription visible as unsigned wherever it is listed.",
+		"change": "signed-outbound-webhooks",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "nl-sector-gateways",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "statutory-gateways-and-frameworks names CORV, GGK and WKPB as statutory routes.",
+		"change": "statutory-gateways-and-frameworks",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "nl-woo-index",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "mapping-woo-index-field-mapping gives integriq the Woo-index mapping and the delivery event decidiq and opencatalogi call.",
+		"change": "mapping-woo-index-field-mapping",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "id-digid",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "identity-broker-browser-login adds the browser start and callback the DigiD broker lacks.",
+		"change": "identity-broker-browser-login",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "id-eherkenning",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "identity-broker-browser-login adds the eHerkenning branch and the browser steps.",
+		"change": "identity-broker-browser-login",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "id-envelope",
+		"matrix": "integriq",
+		"decision": "existing",
+		"reason": "identity-broker-browser-login returns the browser to the app with the one-time code for the envelope.",
+		"change": "identity-broker-browser-login",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "sync-twoway",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes, no demand row, outside the core area (sources, gateway). Reversible.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "auto-migrate-jobs",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes, no demand row, outside the core area; the occ commands already render a flow for review. Reversible.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "obs-verdict",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "Single competitor yes (n8n), no demand row, outside the core area; PreCheckService stays dormant. Reversible.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "nl-stuf-bg",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes, no demand row, outside the core area; persons and addresses are read through Haal Centraal BRP. Reversible.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "id-eidas",
+		"matrix": "integriq",
+		"decision": "decided-no",
+		"reason": "No competitor rates yes, no demand row, outside the core area; the broker change covers DigiD and eHerkenning only. Reversible.",
+		"change": null,
+		"decidedOn": "2026-09-28"
 	}
 ]

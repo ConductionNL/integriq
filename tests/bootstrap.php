@@ -239,6 +239,16 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/SystemOperationContext.php';
 		}
 
+		// The abstract base is a copy of OpenRegister's: it implements the
+		// interface and throws its NotImplementedException, so both load first.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationProvider.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Exception\\NotImplementedException') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Exception/NotImplementedException.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\Integration\\AbstractIntegrationProvider') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/AbstractIntegrationProvider.php';
 		}
@@ -389,6 +399,22 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
 		if (class_exists('OCA\\OpenRegister\\Event\\ObjectDeletedEvent') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletedEvent.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectDeletingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletingEvent.php';
+		}
+
+		if (interface_exists('OCA\\OpenRegister\\Service\\Notification\\RecipientResolverInterface') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/RecipientResolverInterface.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectCreatingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectCreatingEvent.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectUpdatingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectUpdatingEvent.php';
 		}
 
 		// nextcloud-event-hub: the four OCP\Calendar\Events\* stubs that used to

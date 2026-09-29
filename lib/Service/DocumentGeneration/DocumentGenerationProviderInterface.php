@@ -19,7 +19,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\Integriq\Exception\DocumentGenerationException;
  * Filinq owns document generation for the fleet (ADR-075) and calls this seam
  * as one of its template backends. No case app talks to a vendor.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
  */
 interface DocumentGenerationProviderInterface {
 
@@ -72,7 +72,7 @@ interface DocumentGenerationProviderInterface {
 	 *
 	 * @throws DocumentGenerationException When the source cannot render.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
 	 */
 	public function assertActivatable(array $sourceConfiguration): void;
 
@@ -89,7 +89,7 @@ interface DocumentGenerationProviderInterface {
 	 *
 	 * @throws DocumentGenerationException When the source is unconfigured or the vendor cannot be reached.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
 	 */
 	public function listTemplates(array $sourceConfiguration): array;
 
@@ -102,7 +102,7 @@ interface DocumentGenerationProviderInterface {
 	 *
 	 * @return RenderOutcome What the vendor answered, including `unreachable` when it answered nothing.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function render(array $sourceConfiguration, string $templateId, array $data): RenderOutcome;
 
@@ -114,7 +114,7 @@ interface DocumentGenerationProviderInterface {
 	 *
 	 * @return RenderOutcome The current outcome.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function status(array $sourceConfiguration, string $providerJobId): RenderOutcome;
 
@@ -128,7 +128,7 @@ interface DocumentGenerationProviderInterface {
 	 *
 	 * @throws DocumentGenerationException When the document cannot be fetched.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function fetch(array $sourceConfiguration, string $fileReference): string;
 }//end interface

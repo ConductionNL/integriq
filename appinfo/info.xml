@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.8-unstable.20260928100001</version>
+	<version>0.4.8-unstable.20260929120001</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -123,6 +123,7 @@
 		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\RodRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\VerzuimloketRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\MailboxPollJob</job>
 		<job>OCA\Integriq\BackgroundJob\OsoRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\StufZknRetryJob</job>
 		<!-- document-generation-vendor-adapter: every five minutes, ask the
@@ -139,6 +140,12 @@
 		     version moved, probes at most 25 linked sources, oldest first,
 		     then resolves every connection row without an outbound call. -->
 		<job>OCA\Integriq\BackgroundJob\ConnectionHealthJob</job>
+		<!-- observability-connection-run-summary: every five minutes. Counts
+		     failed calls, failed runs and invalid objects against the
+		     thresholds on sources and synchronizations, opens a
+		     connection_alert above one and clears it once the count falls
+		     back. Sources and synchronizations without thresholds are skipped. -->
+		<job>OCA\Integriq\BackgroundJob\ConnectionThresholdJob</job>
 		<!-- registry-subscription-connector: every fifteen minutes. Asks each
 		     registry binding what changed about the identities it follows and
 		     posts that to OpenRegister. Nothing about the changed record is
@@ -340,6 +347,9 @@
 			     idempotent, so nothing broke, but the second registration's
 			     stated reason was false and the placement above is the
 			     deliberate one (integriq#1983 review 5278999788). -->
+			<!-- identity-broker-browser-login: the disabled portaliq consumer,
+			     so enabling it is one occ command. Never overwrites an entry. -->
+			<step>OCA\Integriq\Repair\SeedIdpBrokerConsumers</step>
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes
@@ -455,6 +465,9 @@
 			     exists. Whether a brand-new instance should ship without those
 			     fields is a product decision, tracked separately, not one this
 			     fix should take by side effect. -->
+			<!-- identity-broker-browser-login: the disabled portaliq consumer,
+			     so enabling it is one occ command. Never overwrites an entry. -->
+			<step>OCA\Integriq\Repair\SeedIdpBrokerConsumers</step>
 		</install>
 	</repair-steps>
 
@@ -512,6 +525,7 @@
 		     (XML comments must not contain a double hyphen, so the flags are
 		     not written with their leading dashes here.) -->
 		<command>OCA\Integriq\Command\FlowStepsToGraph</command>
+		<command>OCA\Integriq\Command\IdpConsumerCommand</command>
 	</commands>
 
 	<settings>

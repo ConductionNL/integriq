@@ -27,7 +27,7 @@ namespace OCA\Integriq\PropertySource;
  * provider id here. openregister resolves through this contract; a leaf app
  * never reaches a registry on its own.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
 interface PropertySourceProviderInterface {
 	/**

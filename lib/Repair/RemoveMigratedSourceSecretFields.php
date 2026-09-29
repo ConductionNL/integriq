@@ -76,7 +76,7 @@ use Throwable;
 /**
  * Removes the four auto-migratable secret fields from the live source schema once clean.
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
  */
 class RemoveMigratedSourceSecretFields implements IRepairStep {
 
@@ -175,7 +175,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
 	 */
 	public function run(IOutput $output): void {
 		if (class_exists('\\' . self::SCHEMA_MAPPER) === false || class_exists('\\' . self::OR_OBJECT_SERVICE) === false) {
@@ -219,7 +219,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 *
 	 * @return bool True only when NO source holds an inline value in any of the four fields.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
 	 */
 	private function isAutoMigratableClean(): bool {
 		$objectService = $this->container->get(self::OR_OBJECT_SERVICE);
@@ -246,7 +246,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
 	 */
 	private function removeFieldsWhenClean(IOutput $output): void {
 		$schemaMapper = $this->container->get(self::SCHEMA_MAPPER);

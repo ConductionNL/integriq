@@ -110,7 +110,7 @@ class SynchronizationServiceDeletionRatioGuardTest extends TestCase {
 					$this->logger,
 					$logService,
 					$appConfig,
-					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class),
 				]
 			)
 			->onlyMethods(['updateTarget'])

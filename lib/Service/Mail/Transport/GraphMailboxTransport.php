@@ -21,7 +21,7 @@
  * @link https://www.integriq.nl
  * @link https://learn.microsoft.com/en-us/graph/api/user-list-messages
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Microsoft Graph binding for a mailbox source.
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
+ * @spec openspec/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
  */
 class GraphMailboxTransport implements MailboxTransportInterface {
 
@@ -94,7 +94,7 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 	 *
 	 * @throws MailboxTransportException When the mailbox is not configured or Graph refuses.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function fetch(array $configuration, ?string $cursor): array {
 		$mailbox = trim((string)($configuration['mailbox'] ?? ''));

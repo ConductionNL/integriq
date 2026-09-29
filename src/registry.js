@@ -33,9 +33,15 @@
 //   3. customComponents (this file) — escape hatch for handlers + future widgets
 
 import AutomationDeprecationNotice from './components/AutomationDeprecationNotice.vue'
+import CallLogActions from './components/callLog/CallLogActions.vue'
+import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
+import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
+import SourceRunSummaryWidget from './components/SourceRunSummaryWidget.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
+import ColumnMappingEditorModal from './modals/Migration/ColumnMappingEditorModal.vue'
 import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
@@ -60,9 +66,12 @@ import {
 	manageSigningHandler,
 	openConfigurationExportHandler,
 	openConfigurationImportHandler,
+	openGatewayCatalogueHandler,
 	openLinkSourceHandler,
 	openPromotionHandler,
+	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
+	rerunFailedRunHandler,
 	runDirectorySyncHandler,
 	runJobHandler,
 	runSynchronizationHandler,
@@ -85,6 +94,9 @@ export default {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	// Run again on a failed run: one POST, no dialog (connection-run-monitoring
+	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
+	rerunFailedRunHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
 	// Directory connections are Sources, so their run and preview actions sit on
@@ -107,6 +119,10 @@ export default {
 	// Environments page header action (environments-and-promotion): open the
 	// promote-configuration flow via the modal bus.
 	openPromotionHandler,
+	openRegistryLookupHandler,
+	// Sources page header action (statutory-gateways-and-frameworks): the
+	// gateway catalogue and where data goes.
+	openGatewayCatalogueHandler,
 	// App connections page header action (connection-registry D9): open the
 	// link-a-source dialog via the modal bus.
 	openLinkSourceHandler,
@@ -124,6 +140,24 @@ export default {
 	// detail pages import the same component directly rather than through
 	// this map, because they own their own template.
 	AutomationDeprecationNotice,
+
+	// SourceDetail body widget for a document generation source: lists the
+	// vendor's templates and activates the source (documentGeneration#templates
+	// and #activate). Renders nothing for any other kind of source.
+	// document-generation-vendor-adapter REQ-DGV-004.
+	DocumentGenerationSourcePanel,
+
+	// SourceDetail body widget: the source's pulls per day and its latest
+	// runs, with Run again on a failed one. Reads runSummary#show.
+	// connection-run-monitoring REQ-CRUN-002 and REQ-CRUN-003.
+	SourceRunSummaryWidget,
+
+	// The outbound call log (SourceLogs) acts on its calls: a per-row replay
+	// through `slots["row-actions"]`, and bulk replay plus firing by hand
+	// through `actionsComponent`. The API behind them is CallLogController.
+	// outbound-call-delivery-and-replay REQ-OCD-002 and REQ-OCD-003.
+	CallLogRowActions,
+	CallLogActions,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
@@ -233,6 +267,12 @@ export default {
 	// components above — the queues stay separate underneath because they are
 	// different schemas behind different admin-only endpoints.
 	DeadLettersPage,
+
+	// Migrations index over column_mapping: the form-dialog slot checks a
+	// mapping before every save, and the below-header slot picks a migration
+	// source and runs the read-only test.
+	ColumnMappingEditorModal,
+	MigrationTestRunPanel,
 
 	// Source detail circuit-breaker badge (declarative body section on
 	// SourceDetail via config.bodyWidgets): shows breaker state + failure

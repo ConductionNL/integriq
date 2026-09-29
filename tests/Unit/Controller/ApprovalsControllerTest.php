@@ -466,4 +466,116 @@ class ApprovalsControllerTest extends TestCase {
 		$this->assertSame('a-1', $data['results'][0]['id']);
 
 	}//end testIndexListsForCaller()
+
+	/**
+	 * REQ-INAV-004: the gate only honours an APPROVED request, so the
+	 * approve is stored before the synchronization resumes. Before this, the
+	 * run met a pending request, paused again and opened a new one on every
+	 * approve.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+	 */
+	public function testApproveSynchronizationGateStoresTheApproveBeforeTheRunResumes(): void {
+		$request = $this->entity(['status' => 'pending', 'approverGroup' => 'admin', 'synchronizationId' => 'sync-1']);
+		$approved = $this->entity(['status' => 'approved', 'synchronizationId' => 'sync-1', 'consumedAt' => 'now']);
+		$this->approvalService->method('find')->willReturnOnConsecutiveCalls($request, $approved);
+		$this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+		$this->orObjectService->method('find')->willReturn($this->entity(['name' => 'Case types'], 'sync-1'));
+
+		$order = [];
+		$this->approvalService->expects($this->once())->method('completeApproval')
+			->willReturnCallback(
+				function () use (&$order, $approved) {
+					$order[] = 'approve';
+					return $approved;
+				}
+			);
+		$this->synchronizationService->expects($this->once())->method('synchronize')
+			->willReturnCallback(
+				function () use (&$order) {
+					$order[] = 'run';
+					return ['message' => 'Success', 'result' => []];
+				}
+			);
+		$this->approvalService->expects($this->never())->method('recordResumeResult');
+
+		$response = $this->controller->approve('approval-1');
+
+		$this->assertSame(['approve', 'run'], $order);
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('approved', $response->getData()['_approval']['status']);
+	}//end testApproveSynchronizationGateStoresTheApproveBeforeTheRunResumes()
+
+	/**
+	 * REQ-INAV-004: the source changed after the preview, so the answer says
+	 * the request was superseded and names the new one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+	 */
+	public function testApproveSynchronizationGateReportsASupersededRequest(): void {
+		$request = $this->entity(['status' => 'pending', 'approverGroup' => 'admin', 'synchronizationId' => 'sync-1']);
+		$superseded = $this->entity(['status' => 'approved', 'resumeResult' => 'superseded', 'supersededBy' => 'approval-2']);
+		$this->approvalService->method('find')->willReturnOnConsecutiveCalls($request, $superseded);
+		$this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+		$this->approvalService->method('completeApproval')->willReturn($this->entity(['status' => 'approved']));
+		$this->orObjectService->method('find')->willReturn($this->entity(['name' => 'Case types'], 'sync-1'));
+		$this->synchronizationService->method('synchronize')->willReturn(
+			['message' => 'approval_superseded', 'result' => ['approval' => ['superseded' => true, 'supersededBy' => 'approval-2']]]
+		);
+
+		$response = $this->controller->approve('approval-1');
+
+		$this->assertSame(409, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('superseded', $data['_approval']['resumeResult']);
+		$this->assertSame('approval-2', $data['_approval']['supersededBy']);
+	}//end testApproveSynchronizationGateReportsASupersededRequest()
+
+	/**
+	 * A run that fails after the approve records `error` on the request.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+	 */
+	public function testApproveSynchronizationGateRecordsAFailedRun(): void {
+		$request = $this->entity(['status' => 'pending', 'approverGroup' => 'admin', 'synchronizationId' => 'sync-1']);
+		$this->approvalService->method('find')->willReturn($request);
+		$this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+		$this->approvalService->method('completeApproval')->willReturn($this->entity(['status' => 'approved']));
+		$this->orObjectService->method('find')->willReturn($this->entity(['name' => 'Case types'], 'sync-1'));
+		$this->synchronizationService->method('synchronize')->willThrowException(new \RuntimeException('source down'));
+		$this->approvalService->expects($this->once())->method('recordResumeResult')
+			->with($this->anything(), 'error')
+			->willReturn($this->entity(['status' => 'approved', 'resumeResult' => 'error']));
+
+		$response = $this->controller->approve('approval-1');
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame('error', $response->getData()['_approval']['resumeResult']);
+	}//end testApproveSynchronizationGateRecordsAFailedRun()
+
+	/**
+	 * REQ-INAV-003: the detail of a synchronization request carries the
+	 * change set the run stored, so the approver sees what an accept writes.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
+	 */
+	public function testShowCarriesTheStoredChangeSet(): void {
+		$changeSet = ['created' => [['originId' => 'zt-1', 'fields' => ['omschrijving' => 'A']]], 'changed' => [], 'removed' => [], 'unchanged' => 3, 'counts' => ['created' => 1, 'changed' => 0, 'removed' => 0, 'unchanged' => 3], 'truncated' => false, 'limit' => 500, 'fingerprint' => 'abc'];
+		$request = $this->entity(['status' => 'pending', 'approverGroup' => 'admin', 'synchronizationId' => 'sync-1', 'snapshot' => ['changeSet' => $changeSet], 'fingerprint' => 'abc']);
+		$this->approvalService->method('find')->willReturn($request);
+		$this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+
+		$response = $this->controller->show('approval-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame($changeSet, $response->getData()['changeSet']);
+	}//end testShowCarriesTheStoredChangeSet()
 }//end class

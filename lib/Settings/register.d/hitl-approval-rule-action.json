@@ -11,7 +11,7 @@
         "slug": "approval_request",
         "title": "Approval Request",
         "icon": "CheckboxMarkedCircleOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A suspended rule-pipeline or Synchronization run awaiting human approve/reject",
         "description": "Persists the resumable context of a suspended endpoint rule-pipeline run (via the `approval` rule action type) or a gated Synchronization batch (`sourceConfig.requiresApproval`). See openspec/specs/approval-workflow/spec.md.",
         "required": ["status", "approverGroup", "onReject", "onTimeout", "expiresAt"],
@@ -59,7 +59,7 @@
           },
           "snapshot": {
             "type": "object",
-            "description": "FlowToken::__serialize() output (the 8-key request/response/syncInput/syncOutput array) with sensitive headers (at minimum Authorization) stripped. Empty for the Synchronization batch-gate case.",
+            "description": "The paused request with sensitive headers such as Authorization removed. For a paused synchronization it holds the change set: what the run would create, change and remove.",
             "title": "Snapshot"
           },
           "synchronizationId": {
@@ -124,9 +124,19 @@
           },
           "resumeResult": {
             "type": "string",
-            "enum": ["success", "error"],
-            "description": "Outcome of the resumed chain, for audit (approval-workflow REQ-003)",
+            "enum": ["success", "error", "superseded"],
+            "description": "How the resumed run ended. Superseded means the source changed after the preview, nothing was written, and a new request shows the new changes.",
             "title": "Resume Result"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "A hash over the stored change set. An approve writes only when the run builds the same hash again.",
+            "title": "Fingerprint"
+          },
+          "supersededBy": {
+            "type": "string",
+            "description": "The request that replaced this one because the source changed after its preview.",
+            "title": "Superseded by"
           },
           "consumedAt": {
             "type": "string",

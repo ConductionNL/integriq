@@ -747,14 +747,19 @@ class CallService {
 		string $statusMessage,
 		?\DateTime $expires,
 	): ObjectEntity {
+		$object = [
+			'source' => $source->getUuid(),
+			'statusCode' => $statusCode,
+			'statusMessage' => $statusMessage,
+			'created' => (new DateTime())->format('c'),
+		];
+		$formatted = $this->formatExpires(expires: $expires);
+		if ($formatted !== null) {
+			$object['expires'] = $formatted;
+		}
+
 		return $this->objectService->saveObject(
-			object: [
-				'source' => $source->getUuid(),
-				'statusCode' => $statusCode,
-				'statusMessage' => $statusMessage,
-				'created' => (new DateTime())->format('c'),
-				'expires' => $this->formatExpires(expires: $expires),
-			],
+			object: $object,
 			register: 'integriq',
 			schema: 'call_log'
 		);
@@ -1181,7 +1186,7 @@ class CallService {
 	 * @throws GuzzleException On HTTP transport failure.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
 	 */
 	private function dispatchRequest(
 		ObjectEntity $source,
@@ -1290,8 +1295,8 @@ class CallService {
 	 *
 	 * @return array The request options to hand to the Guzzle client.
 	 *
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private function buildRequestOptions(array $config, mixed $sink, ?callable $onHeaders): array {
 		if ($sink !== null) {
@@ -1724,8 +1729,15 @@ class CallService {
 			'request' => $data['request'],
 			'response' => $responseData,
 			'created' => (new DateTime())->format('c'),
-			'expires' => $this->formatExpires(expires: $expiresChosen),
 		];
+
+		// A call kept for ever (retention 0) has no expiry. `expires` is a
+		// date-time string on call_log, and the register refuses a null in a
+		// string property, so the key is left out rather than written as null.
+		$formattedExpires = $this->formatExpires(expires: $expiresChosen);
+		if ($formattedExpires !== null) {
+			$callLogData['expires'] = $formattedExpires;
+		}
 
 		// Execution-trace REQ-011: repurpose the previously-dead
 		// call_log.sessionId field to carry the active trace's traceId, so
@@ -2717,7 +2729,7 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error.
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	private function prepareCall(
@@ -2795,6 +2807,11 @@ class CallService {
 
 		// Phase 7: Merge source-level configuration.
 		$config = $this->mergeSourceConfiguration(config: $config, sourceData: $sourceData);
+
+		// Phase 7-auth: the login the source declares on its own fields
+		// (auth basic or apikey). What configuration says still wins, and a
+		// broker source is left to the broker (sources-declared-basic-and-apikey-auth).
+		$config = (new SourceAuthApplier())->apply(sourceData: $sourceData, config: $config);
 
 		// Phase 7a: Resolve HTTP method; strip method-override keys from config.
 		//
@@ -2895,7 +2912,7 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error.
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
 	 */
 	private function finalizeCall(
@@ -3004,7 +3021,7 @@ class CallService {
 	 * @spec openspec/specs/http-call-engine/spec.md
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
@@ -3038,7 +3055,7 @@ class CallService {
 			throw new InvalidArgumentException(
 				'CallService::call() is synchronous and returns an ObjectEntity call log. '
 				. 'For concurrent dispatch use CallService::callAsync(), which returns a '
-				. 'GuzzleHttp promise; see openspec/changes/parallel-file-fetch/design.md '
+				. 'GuzzleHttp promise; see openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md '
 				. '("Sibling async methods, not union returns").'
 			);
 		}
@@ -3100,7 +3117,7 @@ class CallService {
 	 * `PromotionService`, `SynchronizationService`, …) that all rely on the
 	 * `ObjectEntity` return. An `ObjectEntity|PromiseInterface` union would ripple
 	 * through static analysis at every one of them for no behavioural gain. See
-	 * `openspec/changes/parallel-file-fetch/design.md` → "Sibling async methods,
+	 * `openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md` → "Sibling async methods,
 	 * not union returns".
 	 *
 	 * ONE consumed shape. The promise always resolves to a persisted `CallLog`
@@ -3148,8 +3165,8 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error during preparation.
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog during preparation.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function callAsync(
 		ObjectEntity $source,
@@ -3174,7 +3191,7 @@ class CallService {
 				'CallService::callAsync() requires a temp-file PATH as its sink, not a stream resource. '
 				. 'Guzzle closes a resource-typed sink when its PSR-7 wrapper is destructed, which under '
 				. 'asynchronous dispatch happens outside the caller\'s control; see '
-				. 'openspec/changes/parallel-file-fetch/design.md ("The sink is a PATH, never a handle").'
+				. 'openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md ("The sink is a PATH, never a handle").'
 			);
 		}
 

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/tasks.md
+ * @spec openspec/changes/archive/2026-09-28-integriq-adapter-verzuimloket/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the Verzuimloket outbound envelope translator.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
  */
 class VerzuimloketEnvelopeTranslatorTest extends TestCase {
 
@@ -52,7 +52,7 @@ class VerzuimloketEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-a-complete-eerste-melding-translates-to-a-valid-envelope
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-a-complete-eerste-melding-translates-to-a-valid-envelope
 	 */
 	public function testCompleteEersteMeldingTranslatesToValidEnvelope(): void {
 		$xml = $this->translator->translate(
@@ -80,7 +80,7 @@ class VerzuimloketEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
 	 */
 	public function testMissingRequiredFieldNeverReachesEnvelope(): void {
 		$this->expectException(VerzuimloketTranslationException::class);
@@ -99,7 +99,7 @@ class VerzuimloketEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-langdurig-relatief-verzuim-requires-no-windowend
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-langdurig-relatief-verzuim-requires-no-windowend
 	 */
 	public function testLrvDoesNotRequireWindowEnd(): void {
 		$xml = $this->translator->translate(

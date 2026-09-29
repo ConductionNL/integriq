@@ -20,7 +20,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\Integriq\Service\Verzuimloket;
 /**
  * Sandbox Verzuimloket provider: no network call, synthetic reference.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
  */
 class LogVerzuimloketProvider implements VerzuimloketProviderInterface {
 
@@ -46,7 +46,7 @@ class LogVerzuimloketProvider implements VerzuimloketProviderInterface {
 	 *
 	 * @return string The stable `log` provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getProviderId(): string {
 		return 'log';
@@ -57,7 +57,7 @@ class LogVerzuimloketProvider implements VerzuimloketProviderInterface {
 	 *
 	 * @return array<string, mixed> An empty schema — the log provider needs no configuration.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getConfigSchema(): array {
 		return ['type' => 'object', 'properties' => []];
@@ -73,7 +73,7 @@ class LogVerzuimloketProvider implements VerzuimloketProviderInterface {
 	 *
 	 * @return string The synthetic `MOCK-VERZUIM-<n>` reference.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
 	 */
 	public function send(array $sourceConfiguration, string $meldingType, string $kenmerk, string $envelopeXml): string {
 		self::$counter++;

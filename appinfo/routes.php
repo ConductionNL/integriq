@@ -68,7 +68,7 @@ return [
 		['name' => 'directorySync#run', 'url' => '/api/directory/connections/{id}/run', 'verb' => 'POST'],
 		['name' => 'directorySync#runs', 'url' => '/api/directory/runs', 'verb' => 'GET'],
 
-		// Mail intake (openspec/changes/mail-intake-creates-cases). Importing a
+		// Mail intake (openspec/changes/archive/2026-09-28-mail-intake-creates-cases). Importing a
 		// saved message and polling a mailbox both write `message` objects that
 		// other apps act on, so both sit behind the ADR-023 action matrix
 		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
@@ -120,7 +120,7 @@ return [
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
 
 		// The outbound call log, its replay and the verdicts
-		// (openspec/changes/outbound-call-delivery-and-replay). Reading a call
+		// (openspec/changes/archive/2026-09-28-outbound-call-delivery-and-replay). Reading a call
 		// means reading the request and the response it carried, so it sits
 		// behind its own action (`call-log.read`) rather than the listing's.
 		// Replaying and hand-firing share one action (`call-log.replay`),
@@ -356,7 +356,7 @@ return [
 		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
 		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
 
-		// Vendor document generation (openspec/changes/document-generation-vendor-adapter).
+		// Vendor document generation (openspec/changes/archive/2026-09-28-document-generation-vendor-adapter).
 		// The operator's half only: read the vendor's own template list for a
 		// source, and activate a source that can actually render. Filinq asks
 		// for a render through the typed DocumentRenderRequestedEvent, not
@@ -384,10 +384,18 @@ return [
 		// Every refusal is one undifferentiated 401
 		// (openspec/specs/digid-eherkenning-auth-adapter/spec.md).
 		['name' => 'idpBroker#exchange', 'url' => '/api/idp/envelope/exchange', 'verb' => 'POST'],
+		// The browser half of the same login. The start checks the consumer and
+		// its registered return address before anything leaves integriq; the
+		// callback sends the browser back only to the address kept in the
+		// signed state (openspec/changes/archive/2026-09-29-identity-broker-browser-login).
+		['name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
+		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
+		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST', 'requirements' => ['provider' => 'digid|eherkenning|eidas'], 'postfix' => 'post'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
+		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
@@ -679,6 +687,8 @@ return [
 		// DSO STAM PKIoverheid signing configuration (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoPkiSettings#getConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'GET'],
 		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
+		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
+		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
 		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The engine generic is

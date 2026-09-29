@@ -35,7 +35,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The read a consuming app uses, and the delete it is refused.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
  */
 class OwnershipControllerTest extends TestCase {
 	/**

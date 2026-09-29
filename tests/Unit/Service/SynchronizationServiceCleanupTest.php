@@ -104,7 +104,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 					$this->logger,
 					$synchronizationLogService,
 					$appConfig,
-					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class),
 					$tablesSyncAdapter,
 				]
 			)

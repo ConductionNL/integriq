@@ -10,6 +10,7 @@ Provides the Integriq application shell and log viewer UI. The root component re
 @e2e exclude Vue component-internal method/computed behaviour (permissions admin-marker, translateForApp adapter, modal-bus subscribe/unsubscribe, LogIndex config/refresh/pagination/openDetail) reverse-engineered from App.vue/ModalHost.vue/LogIndex.vue — unit-level (vitest), not browser-observable; the app shell render + log sub-page renders are covered by manifest-pages e2e
 
 ## Requirements
+
 ### Requirement: App-shell permission resolution and translate adapter (REQ-SHELLUI-001)
 
 The root component SHALL resolve the current user's effective permission list —
@@ -69,14 +70,6 @@ belongs to the shared nc-vue component per ADR-036.
 - **WHEN** it scans `src/views/` for components not referenced by any manifest
   entry
 - **THEN** it finds no orphaned log-index wrapper component
-
-Notes: `src/views/wrappers/LogIndex.vue` was deleted (confirmed orphaned — zero
-manifest `"component": "LogIndex"` references, zero importers outside its own
-file, and its two referenced store members (`sourceStore.refreshSourceLogs` /
-`sourceStore.sourceLogs`) were never actually defined in `src/store/store.js`
-— the wrapper referenced undefined store members and would have thrown at
-runtime had it ever been reachable). No store cleanup was needed since those
-members never existed.
 
 ### Requirement: Shared run/test modal for row actions (REQ-SHELLUI-004)
 

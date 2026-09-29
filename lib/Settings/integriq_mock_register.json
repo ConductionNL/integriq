@@ -359,6 +359,62 @@
         "appendOnly": false,
         "immutable": false
       },
+      "column_mapping": {
+        "slug": "column_mapping",
+        "title": "Column mapping",
+        "icon": "TableArrowRight",
+        "version": "1.0.0",
+        "summary": "How the columns of a delivered file map onto the fields of a schema",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "description": "Write a column mapping once and pick it again for every delivery with the same columns. Each save raises the version by one. A migration test run reads a file through it and writes nothing.",
+        "required": [
+          "name",
+          "columns",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name you pick the mapping by",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record the mapping produces, such as case",
+            "title": "Record kind"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The schema the columns map onto",
+            "title": "Target schema"
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Each column of the file and the field it fills",
+            "title": "Columns"
+          },
+          "identifierColumn": {
+            "type": "string",
+            "description": "The column that holds each record's number in the old system. Leave it empty when the file has none.",
+            "title": "Identifier column"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Goes up by one each time the mapping is saved",
+            "title": "Version"
+          }
+        }
+      },
       "consumer": {
         "slug": "consumer",
         "title": "Consumer",
@@ -767,7 +823,7 @@
         },
         "title": "EventMessage",
         "icon": "EmailFast",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A delivery record for an Event-to-Subscription match",
         "description": "An EventMessage is created when an Event matches an EventSubscription. It tracks delivery state per (Event × Subscription × Consumer) tuple. See local ADR-013.",
         "required": [],
@@ -879,6 +935,11 @@
                   "type": "string",
                   "description": "Transport/exception message, or null on an HTTP-level outcome",
                   "title": "Error Message"
+                },
+                "signed": {
+                  "type": "boolean",
+                  "description": "Whether this attempt carried an X-OpenConnector-Signature header",
+                  "title": "Signed"
                 }
               }
             },
@@ -927,7 +988,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -986,7 +1047,7 @@
           },
           "protocolSettings": {
             "type": "object",
-            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted).",
+            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface. A new push subscription is created with one unless `unsigned` is set; later it changes only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted); `unsigned` (object `{reason, setBy, setAt}`: deliver without a signature; refused without a reason).",
             "title": "Protocol Settings"
           },
           "style": {
@@ -1141,6 +1202,17 @@
             "type": "string",
             "description": "Nextcloud user id that owns the subscription",
             "title": "User ID"
+          },
+          "signingPosture": {
+            "type": "string",
+            "enum": ["signed", "unsigned"],
+            "description": "Whether a push delivery carries a signature. Written on save from protocolSettings, which is hidden on every read.",
+            "title": "Signature"
+          },
+          "unsignedReason": {
+            "type": "string",
+            "description": "Why this subscription delivers unsigned, as the person who turned signing off wrote it.",
+            "title": "Reason for unsigned delivery"
           },
           "created": {
             "type": "string",
@@ -2424,7 +2496,7 @@
         "icon": "Gavel",
         "version": "1.0.0",
         "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
-        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/specs/outbound-call-log/spec.md.",
         "required": [
           "objectRef",
           "state",
@@ -3820,7 +3892,7 @@
         "icon": "SourceBranch",
         "version": "1.0.0",
         "summary": "A snapshot of a mapping as it stood when a call ran under it",
-        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/specs/outbound-call-log/spec.md.",
         "required": [
           "mapping",
           "version"
@@ -3856,7 +3928,7 @@
         "icon": "EmailOutline",
         "version": "1.0.0",
         "summary": "One mail message integriq received, from a mailbox poll or an imported .eml/.msg file",
-        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md.",
+        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/specs/mail-intake/spec.md.",
         "required": [
           "sourceId",
           "messageId",
@@ -6797,7 +6869,28 @@
         "ruleId": "00000000-0000-4000-8000-000000000000",
         "timing": "before",
         "resumeOrder": 1,
-        "snapshot": {},
+        "snapshot": {
+          "changeSet": {
+            "created": [
+              {"originId": "zt-parkeervergunning", "fields": {"omschrijving": "Parkeervergunning", "doel": "Een parkeervergunning verlenen"}},
+              {"originId": "zt-standplaatsvergunning", "fields": {"omschrijving": "Standplaatsvergunning", "doel": "Een standplaats toewijzen"}}
+            ],
+            "changed": [
+              {"originId": "zt-evenementenvergunning", "targetId": "00000000-0000-4000-8000-000000000001", "fields": [
+                {"field": "statustypen", "before": ["Ontvangen", "Afgehandeld"], "after": ["Ontvangen", "Besloten", "Afgehandeld"]}
+              ]}
+            ],
+            "removed": [
+              {"originId": "zt-kapvergunning-oud", "targetId": "00000000-0000-4000-8000-000000000002"}
+            ],
+            "unchanged": 14,
+            "counts": {"created": 2, "changed": 1, "removed": 1, "unchanged": 14},
+            "truncated": false,
+            "limit": 500,
+            "fingerprint": "4f2c9a0d8b1e7f3a6c5d2e9b0a1f8c7d6e5b4a3f2e1d0c9b8a7f6e5d4c3b2a19"
+          }
+        },
+        "fingerprint": "4f2c9a0d8b1e7f3a6c5d2e9b0a1f8c7d6e5b4a3f2e1d0c9b8a7f6e5d4c3b2a19",
         "synchronizationId": "00000000-0000-4000-8000-000000000000",
         "requesterUserId": "Voorbeeld Requesteruserid 1",
         "approverUserId": "Voorbeeld Approveruserid 1",
@@ -10544,7 +10637,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 1",
         "conditions": {},
-        "type": "Voorbeeld Type 1",
+        "type": "error",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -10568,7 +10661,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 2",
         "conditions": {},
-        "type": "Voorbeeld Type 2",
+        "type": "mapping",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -10592,7 +10685,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 3",
         "conditions": {},
-        "type": "Voorbeeld Type 3",
+        "type": "custom",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -11681,6 +11774,107 @@
         "eckId": "Voorbeeld Eckid 4",
         "error": "Voorbeeld Error 4",
         "syncedAt": "2026-03-04T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-zaken-uit-het-oude-systeem"
+        },
+        "name": "Zaken uit het oude systeem",
+        "kind": "case",
+        "targetSchema": "case",
+        "columns": {
+          "zaaknummer": "reference",
+          "naam": "requesterName",
+          "plaats": "city"
+        },
+        "identifierColumn": "zaaknummer",
+        "version": 2
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-meldingen-openbare-ruimte"
+        },
+        "name": "Meldingen openbare ruimte",
+        "kind": "melding",
+        "targetSchema": "melding",
+        "columns": {
+          "meldingnummer": "reference",
+          "omschrijving": "description",
+          "straat": "street",
+          "datum": "reportedOn"
+        },
+        "identifierColumn": "meldingnummer",
+        "version": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-contactpersonen-zonder-sleutel"
+        },
+        "name": "Contactpersonen zonder sleutel",
+        "kind": "contact",
+        "targetSchema": "contact",
+        "columns": {
+          "naam": "name",
+          "email": "email",
+          "telefoon": "phone"
+        },
+        "identifierColumn": "",
+        "version": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-kvk-failed-calls"
+        },
+        "subjectType": "source",
+        "subject": "b7d1e2f3-4a5b-4c6d-8e9f-0a1b2c3d4e5f",
+        "subjectName": "KVK Handelsregister",
+        "rule": "failedCalls",
+        "count": 14,
+        "threshold": 10,
+        "windowMinutes": 60,
+        "state": "open",
+        "openedAt": "2026-09-29T07:15:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-brp-failed-runs"
+        },
+        "subjectType": "synchronization",
+        "subject": "c8e2f3a4-5b6c-4d7e-9f0a-1b2c3d4e5f6a",
+        "subjectName": "BRP personen ophalen",
+        "rule": "failedRuns",
+        "count": 3,
+        "threshold": 2,
+        "windowMinutes": 240,
+        "state": "cleared",
+        "openedAt": "2026-09-28T03:05:00+02:00",
+        "clearedAt": "2026-09-28T09:40:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-bag-invalid-objects"
+        },
+        "subjectType": "synchronization",
+        "subject": "c8e2f3a4-5b6c-4d7e-9f0a-1b2c3d4e5f6a",
+        "subjectName": "BAG adressen ophalen",
+        "rule": "invalidObjects",
+        "count": 120,
+        "threshold": 100,
+        "windowMinutes": 1440,
+        "state": "open",
+        "openedAt": "2026-09-29T02:30:00+02:00"
       }
     ]
   }

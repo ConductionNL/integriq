@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+ * Spec coverage: openspec/specs/source-owned-records/spec.md
  *
  * The scenarios the spec sends here are the ones a running instance can
  * answer: the refusal of a policy the engine does not know, the two policies

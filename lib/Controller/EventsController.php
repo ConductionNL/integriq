@@ -27,6 +27,7 @@ use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -199,10 +200,27 @@ class EventsController extends Controller {
 		}
 
 		try {
-			// Create subscription.
+			// Create subscription. SubscriptionSigningDefaultListener gives a
+			// push subscription its signing secret on OpenRegister's create path.
 			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
 
-			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
+			// REQ-SOW-001: the one reveal of a generated secret. protocolSettings is
+			// writeOnly, so the stored row is read unrendered, as delivery reads it.
+			$response = $this->redactSubscription(subscription: $subscription->getObject());
+			$policy = new SubscriptionSigningPolicy(signatures: $this->signatureService);
+			if ($policy->generatesSecret(subscription: $data) === true) {
+				$stored = $this->orObjectService->find(
+					id: (string)$subscription->getUuid(),
+					register: 'integriq',
+					schema: 'event_subscription',
+					_rbac: false,
+					_multitenancy: false,
+					_render: false
+				);
+				$response += $policy->reveal(stored: (array)$stored?->getObject());
+			}
+
+			return new JSONResponse($response);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}
@@ -484,8 +502,10 @@ class EventsController extends Controller {
 
 		$secret = $this->signatureService->generateSecret();
 		$protocolSettings['signingSecret'] = $secret;
-		// A first generate clears any rotation remnants.
-		unset($protocolSettings['previousSigningSecret'], $protocolSettings['secretRotatedAt']);
+		// A first generate clears any rotation remnants, and generating a
+		// secret is choosing to sign: an earlier `unsigned` decision ends here
+		// (REQ-SOW-001), or the policy would keep reading it as unsigned.
+		unset($protocolSettings['previousSigningSecret'], $protocolSettings['secretRotatedAt'], $protocolSettings['unsigned']);
 		$data['protocolSettings'] = $protocolSettings;
 
 		$saved = $this->orObjectService->saveObject(

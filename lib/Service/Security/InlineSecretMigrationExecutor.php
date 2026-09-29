@@ -103,7 +103,7 @@ use Throwable;
  * not worth doing inside a review-fix PR.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
  */
 class InlineSecretMigrationExecutor {
 
@@ -196,7 +196,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @throws RuntimeException When the broker is unavailable or too old to migrate safely (nothing is rewritten).
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	public function migrateAll(int $limit = 1000): array {
 		// Delegates to the generic run so the mint → verify → write → null loop
@@ -352,7 +352,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @return array{record: array<string, mixed>, migrated: int, failed: int, blocked: int, skipped: int}
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function migrateSource(object $broker, string $uuid, string $name): array {
 		$entity = $this->readRawEntity(uuid: $uuid);
@@ -449,7 +449,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @return array{record: array<string, mixed>, bucket: string}
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function migrateField(
 		object $broker,
@@ -521,7 +521,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @return array{record: array<string, mixed>, bucket: string}
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function mintVerifyNull(
 		object $broker,
@@ -625,7 +625,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @return array<string, mixed> A new data array with the ref written and the inline value nulled.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function applyMigration(array $data, string $field, string $credentialId): array {
 		// A schema may declare a SEPARATE, readable property to hold the
@@ -682,7 +682,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @return ObjectEntity|null The raw entity, or null when unreadable.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function readRawEntity(string $uuid): ?ObjectEntity {
 		try {
@@ -717,7 +717,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @throws RuntimeException When the broker is unavailable or too old (nothing is rewritten).
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function assertBrokerCapable(): object {
 		if ($this->isBrokerClassAvailable() === false) {
@@ -759,7 +759,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @return bool Whether resolveInjectable() accepts the actingOrganisationId parameter.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function brokerSupportsOrganisationResolution(object $broker): bool {
 		if (method_exists($broker, 'resolveInjectable') === false) {
@@ -827,7 +827,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function logFailure(string $step, string $uuid, string $field, string $provider, ?Throwable $e): void {
 		$context = [
@@ -856,7 +856,7 @@ class InlineSecretMigrationExecutor {
 	 *
 	 * @return array{record: array<string, mixed>, bucket: string}
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function fieldRecord(
 		string $field,

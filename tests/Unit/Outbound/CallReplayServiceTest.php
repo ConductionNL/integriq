@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * @spec openspec/specs/outbound-call-log/spec.md
  */
 
 declare(strict_types=1);
@@ -31,6 +31,7 @@ use OCA\Integriq\Outbound\Call\MappingVersionService;
 use OCA\Integriq\Outbound\Call\PreCheckService;
 use OCA\Integriq\Outbound\Call\VerdictService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -98,7 +99,7 @@ class RecordingDispatcher implements CallDispatcherInterface {
  * Tests that a call is a record, a replay is an attempt, and a dry run sends
  * nothing.
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
  */
 class CallReplayServiceTest extends TestCase {
 
@@ -124,6 +125,13 @@ class CallReplayServiceTest extends TestCase {
 	private int $created = 0;
 
 	/**
+	 * What the register would have refused, per write, keyed by schema.
+	 *
+	 * @var array<int,array{schema:string,errors:array<string,mixed>,object:array<string,mixed>}>
+	 */
+	private array $refused = [];
+
+	/**
 	 * The recorder under test.
 	 *
 	 * @var CallRecorder
@@ -140,6 +148,7 @@ class CallReplayServiceTest extends TestCase {
 
 		$this->records = [];
 		$this->created = 0;
+		$this->refused = [];
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
@@ -147,6 +156,11 @@ class CallReplayServiceTest extends TestCase {
 				if ($uuid === null || $uuid === '') {
 					$this->created++;
 					$uuid = 'object-' . $this->created;
+				}
+
+				$errors = RegisterSchemaValidator::errors($schema, $object);
+				if ($errors !== []) {
+					$this->refused[] = ['schema' => $schema, 'errors' => $errors, 'object' => $object];
 				}
 
 				$this->records[$uuid] = $object;
@@ -174,6 +188,18 @@ class CallReplayServiceTest extends TestCase {
 	}//end setUp()
 
 	/**
+	 * Every write any test made is one the real register accepts, because a
+	 * record the register refuses was never kept, whatever the assertions
+	 * above said about the payload.
+	 *
+	 * @return void
+	 */
+	protected function assertPostConditions(): void {
+		$this->assertSame([], $this->refused, 'every write validates against the merged integriq register schema');
+
+	}//end assertPostConditions()
+
+	/**
 	 * A failed call is a record with its request, its response and its step.
 	 *
 	 * @return void
@@ -190,6 +216,24 @@ class CallReplayServiceTest extends TestCase {
 		$this->assertSame('failed', $record['attempts'][0]['outcome']);
 
 	}//end testAFailedCallIsARecordWithBothHalves()
+
+	/**
+	 * A call to a source keeps its source relation, and a call to anything
+	 * else (a pre-check URL, a partner name) keeps its target without writing
+	 * a non-uuid into the relation, which the register refused, so the failed
+	 * call was never kept.
+	 *
+	 * @return void
+	 */
+	public function testTheSourceRelationIsOnlyEverAUuid(): void {
+		$toSource = $this->failedCall([], ['target' => '4b1c1c1e-1111-4111-8111-111111111111']);
+		$toPartner = $this->failedCall([], ['target' => 'https://partner.example/stuf']);
+
+		$this->assertSame('4b1c1c1e-1111-4111-8111-111111111111', $this->records[$toSource]['source']);
+		$this->assertArrayNotHasKey('source', $this->records[$toPartner]);
+		$this->assertSame('https://partner.example/stuf', $this->records[$toPartner]['target']);
+
+	}//end testTheSourceRelationIsOnlyEverAUuid()
 
 	/**
 	 * A credential never reaches the record.

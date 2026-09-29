@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCP\EventDispatcher\Event;
 /**
  * A DUO Verzuimloket acknowledgement, translated and ready for a listener to act on.
  *
- * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
+ * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
  */
 class VerzuimloketAcknowledgementReceivedEvent extends Event {
 	/**
@@ -60,7 +60,7 @@ class VerzuimloketAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Kenmerk.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
 	 */
 	public function getKenmerk(): string {
 		return $this->kenmerk;
@@ -71,7 +71,7 @@ class VerzuimloketAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Signaalcode.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
 	 */
 	public function getSignaalcode(): string {
 		return $this->signaalcode;
@@ -82,7 +82,7 @@ class VerzuimloketAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string|null Description, or null when absent.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
 	 */
 	public function getSignaalOmschrijving(): ?string {
 		return $this->signaalOmschrijving;
@@ -93,7 +93,7 @@ class VerzuimloketAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return bool True when accepted.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
 	 */
 	public function isAccepted(): bool {
 		return $this->accepted;
@@ -104,7 +104,7 @@ class VerzuimloketAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Melding kind, empty string when unresolved.
 	 *
-	 * @spec openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-003-duo-acknowledgement-translation-to-a-typed-event
 	 */
 	public function getMeldingType(): string {
 		return $this->meldingType;

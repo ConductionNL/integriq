@@ -69,4 +69,4 @@ $refusal = $event->getRefusal();  // ['code' => ..., 'reason' => ...]
 
 The outcome arrives as `DocumentRenderedEvent` with the job id, the requester, and either a file reference or the error.
 
-Spec: `openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md`, requirements REQ-DGV-001 to REQ-DGV-005.
+Spec: `openspec/specs/document-generation-vendor-adapter/spec.md`, requirements REQ-DGV-001 to REQ-DGV-005.

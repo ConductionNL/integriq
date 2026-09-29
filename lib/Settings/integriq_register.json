@@ -25,6 +25,7 @@
           "call_log",
           "cardfeed_account",
           "cardfeed_batch",
+          "column_mapping",
           "consumer",
           "dso_message",
           "dso_verzoek",
@@ -416,6 +417,62 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "column_mapping": {
+        "slug": "column_mapping",
+        "title": "Column mapping",
+        "icon": "TableArrowRight",
+        "version": "1.0.0",
+        "summary": "How the columns of a delivered file map onto the fields of a schema",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "description": "Write a column mapping once and pick it again for every delivery with the same columns. Each save raises the version by one. A migration test run reads a file through it and writes nothing.",
+        "required": [
+          "name",
+          "columns",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name you pick the mapping by",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record the mapping produces, such as case",
+            "title": "Record kind"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The schema the columns map onto",
+            "title": "Target schema"
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Each column of the file and the field it fills",
+            "title": "Columns"
+          },
+          "identifierColumn": {
+            "type": "string",
+            "description": "The column that holds each record's number in the old system. Leave it empty when the file has none.",
+            "title": "Identifier column"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Goes up by one each time the mapping is saved",
+            "title": "Version"
+          }
+        }
       },
       "consumer": {
         "slug": "consumer",
@@ -819,7 +876,7 @@
         },
         "title": "EventMessage",
         "icon": "EmailFast",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A delivery record for an Event-to-Subscription match",
         "description": "An EventMessage is created when an Event matches an EventSubscription. It tracks delivery state per (Event × Subscription × Consumer) tuple. See local ADR-013.",
         "required": [],
@@ -931,6 +988,11 @@
                   "type": "string",
                   "description": "Transport/exception message, or null on an HTTP-level outcome",
                   "title": "Error Message"
+                },
+                "signed": {
+                  "type": "boolean",
+                  "description": "Whether this attempt carried an X-OpenConnector-Signature header",
+                  "title": "Signed"
                 }
               }
             },
@@ -979,7 +1041,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -1038,7 +1100,7 @@
           },
           "protocolSettings": {
             "type": "object",
-            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted).",
+            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface. A new push subscription is created with one unless `unsigned` is set; later it changes only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted); `unsigned` (object `{reason, setBy, setAt}`: deliver without a signature; refused without a reason).",
             "title": "Protocol Settings"
           },
           "style": {
@@ -1185,6 +1247,17 @@
             "type": "string",
             "description": "Nextcloud user id that owns the subscription",
             "title": "User ID"
+          },
+          "signingPosture": {
+            "type": "string",
+            "enum": ["signed", "unsigned"],
+            "description": "Whether a push delivery carries a signature. Written on save from protocolSettings, which is hidden on every read.",
+            "title": "Signature"
+          },
+          "unsignedReason": {
+            "type": "string",
+            "description": "Why this subscription delivers unsigned, as the person who turned signing off wrote it.",
+            "title": "Reason for unsigned delivery"
           },
           "created": {
             "type": "string",
@@ -1524,7 +1597,7 @@
         "slug": "rule",
         "title": "Rule",
         "icon": "Filter",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
         "required": [
@@ -1577,7 +1650,8 @@
           },
           "type": {
             "type": "string",
-            "description": "Rule kind (authorization, transformation, validation, audit)",
+            "description": "What the rule does when it runs. Integriq runs no scripts, so JavaScript is not a choice.",
+            "enum": ["error", "mapping", "synchronization", "authentication", "download", "upload", "locking", "fetch_file", "write_file", "fileparts_create", "filepart_upload", "save_object", "extend_input", "extend_external_input", "webhook_signature", "approval", "flow", "audit_trail", "override", "custom", "composite_fanout", "referentienummer", "avg_bsn_policy", "selfurl_hal"],
             "title": "Type"
           },
           "configuration": {
@@ -2435,7 +2509,7 @@
         "icon": "Gavel",
         "version": "1.0.0",
         "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
-        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/specs/outbound-call-log/spec.md.",
         "required": [
           "objectRef",
           "state",
@@ -3828,7 +3902,7 @@
         "icon": "SourceBranch",
         "version": "1.0.0",
         "summary": "A snapshot of a mapping as it stood when a call ran under it",
-        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/specs/outbound-call-log/spec.md.",
         "required": [
           "mapping",
           "version"
@@ -3864,7 +3938,7 @@
         "icon": "EmailOutline",
         "version": "1.0.0",
         "summary": "One mail message integriq received, from a mailbox poll or an imported .eml/.msg file",
-        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md.",
+        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/specs/mail-intake/spec.md.",
         "required": [
           "sourceId",
           "messageId",
@@ -6077,10 +6151,9 @@
         "icon": "SchoolOutline",
         "version": "1.0.0",
         "summary": "Audit record for one outbound DUO Verzuimloket melding send or one inbound acknowledgement/retour, produced by the integriq-adapter-verzuimloket connector",
-        "description": "A Verzuimloket Message tracks either one outbound meldingType dispatch (eerste-melding, herhaalmelding or langdurig-relatief-verzuim, translated and sent to DUO) or one inbound acknowledgement/retour (accepted or rejected, with the DUO signaalcode) received back: never merged into a single mutable row. See openspec/changes/integriq-adapter-verzuimloket/specs/verzuimloket-adapter/spec.md.",
+        "description": "A Verzuimloket Message tracks either one outbound meldingType dispatch (eerste-melding, herhaalmelding or langdurig-relatief-verzuim, translated and sent to DUO) or one inbound acknowledgement/retour (accepted or rejected, with the DUO signaalcode) received back: never merged into a single mutable row. See openspec/specs/verzuimloket-adapter/spec.md.",
         "required": [
           "direction",
-          "meldingType",
           "status"
         ],
         "type": "object",
@@ -6101,7 +6174,7 @@
               "herhaalmelding",
               "langdurig-relatief-verzuim"
             ],
-            "description": "The Verzuimloket melding kind this record carries",
+            "description": "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message",
             "title": "Melding Kind"
           },
           "status": {

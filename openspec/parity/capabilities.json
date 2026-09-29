@@ -570,14 +570,15 @@
 			"area": "sources",
 			"name": "Log in to a source with an API key or a username and password.",
 			"source": "own-code",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-28-sources-declared-basic-and-apikey-auth",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/integriq_register.json:157-213 declares source.auth ('apikey, basic, oauth, jwt, none'), authorizationHeader, username, password, apikey as generic schema fields the Source form renders and saves; grep -noE \"sourceData\\['[a-zA-Z_]+'\\]\" lib/Service/CallService.php (35 hits) shows CallService NEVER reads auth/authorizationHeader/apikey/username/password, only 'type','location','headers','configuration' and circuit/rate-limit fields are read (CallService.php mergeSourceConfiguration():835-856). An API key CAN be wired manually via the free-form 'headers' object with a Twig expression like {{ source.apikey }} (renderValue() context is ['source'=>$sourceData], CallService.php:318), but true HTTP Basic auth has no path: the call-Twig sandbox's allowedFilters (CallService.php:222) is only ['upper','lower','trim','default','escape','raw','replace'], no base64 filter, and nothing sets Guzzle's 'auth' tuple from username/password."
+				"evidence": "lib/Service/SourceAuthApplier.php apply(), called in CallService after mergeSourceConfiguration(): a source with auth basic sends username and password as the Guzzle auth tuple, a source with auth apikey sends the key in authorizationHeader (Authorization when none is named); an explicit configuration.auth or header wins and a credentialRef source is left to the broker. Tests: CallServiceTest::testADeclaredBasicLoginIsSent, testADeclaredApiKeyIsSentInTheDeclaredHeader (call log holds no key and validates against call_log), testAnApiKeyWithoutAHeaderNameGoesInAuthorization, testAnExplicitLoginAndTheBrokerWin. Built by change sources-declared-basic-and-apikey-auth (archived 2026-09-28)."
 			},
-			"reachedOn": "/sources/:id edit form shows auth/username/password/apikey/authorizationHeader as plain fields (schema-driven), but filling them in does nothing at call time; a working API key requires manually typing a Twig expression into the separate 'headers' JSON field instead",
-			"note": "Live-defect candidate: the guided Basic/API-key auth fields on the Source form (auth strategy, username, password, apikey, authorizationHeader) are dead, CallService never reads them, so a source configured only through those fields calls out unauthenticated. API key auth is only reachable by hand-writing {{ source.apikey }} into the generic headers object; Basic auth (user:pass) has no working path at all (no base64 available in the sandboxed Twig).",
+			"reachedOn": "/sources/:id edit form: auth basic with username and password, or apikey with a key and a header name; every call to the source carries them",
+			"note": "Built 2026-09-28: the guided auth fields on the Source form now take effect at call time. Before, they were dead and a source configured only through them called out unauthenticated.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
@@ -858,9 +859,10 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-29-migrate-inline-secrets-to-broker",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Real ICrypto-at-rest encryption exists but only for specific bridge clients: lib/Service/Mtls/MtlsConfigResolver.php:83-165, lib/Service/Dso/DsoClient.php:81-184, lib/Service/StufZkn/StufZknClient.php, lib/Service/Fsc/FscDirectoryClient.php:89-183, lib/Service/Sms/RestNotifyNlProvider.php:65-177 all use OCP\\Security\\ICrypto to encrypt/decrypt their specific stored tokens/certs. For the general source, lib/Settings/integriq_register.json:185/195/205/210 explicitly document jwt/secret/password/apikey as 'Stored unencrypted at rest until field encryption ships' (ADR-007 pending), and register.d/99-source-secrets-writeonly.json's comment corrects an older claim that they were 'plaintext per ADR-007' as wrong."
+				"evidence": "Built (migrate-inline-secrets-to-broker, archived 29 Sep 2026): `occ integriq:migrate-inline-secrets` moves each source's inline apikey/secret/password/jwt into the OpenRegister credential broker (organisation-scoped, verified round trip before the inline value is nulled; InlineSecretMigrationExecutor), RemoveMigratedSourceSecretFields removes those four properties from the live source schema once a raw gate is clean, and authenticationConfig goes through the operator-gated `occ integriq:authentication-config`. Partial: an instance keeps inline values, stored unencrypted, until an operator runs the migration; the bridge clients (Mtls, Dso, StufZkn, Fsc, Sms) keep their own ICrypto encryption."
 			},
 			"reachedOn": "/sources/:id, credentials on a plain REST/SOAP source (apikey/secret/password/jwt, and configuration.authentication.client_secret) are stored as plaintext in the OR object store; only the six named bridge clients (DSO, StufZkn, IWMO/IStandaarden, FSC, KISS, NotifyNL) encrypt their residual token/cert fields via ICrypto",
 			"note": "General field encryption at rest is explicitly not shipped (ADR-007 pending per the schema's own comments); only a handful of hardcoded government-bridge integrations encrypt their secrets today. This is a documented gap, not a silent one.",
@@ -987,7 +989,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/CallService.php:1166-1227 dispatchRequest() accepts an optional $sink resource, kept OUT of the persisted/logged $config, and passes it to Guzzle's 'sink' request option (buildRequestOptions) so the response body streams to disk instead of being buffered in memory; @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md"
+				"evidence": "lib/Service/CallService.php:1166-1227 dispatchRequest() accepts an optional $sink resource, kept OUT of the persisted/logged $config, and passes it to Guzzle's 'sink' request option (buildRequestOptions) so the response body streams to disk instead of being buffered in memory; @spec openspec/specs/synchronization-files/spec.md",
+				"change": "2026-09-29-stream-file-content"
 			},
 			"reachedOn": "machine path: file-fetch rule / concurrent file fetcher dispatching a source call with a sink target",
 			"provider": "integriq",
@@ -1265,14 +1268,15 @@
 			"area": "gateway",
 			"name": "Reshape an endpoint's incoming request and outgoing answer with a mapping.",
 			"source": "own-code",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-29-gateway-endpoint-transform-and-plugins",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Incoming: lib/Service/EndpointService.php:1889-1892 handleSchemaRequest() applies endpointData['inputMapping'] via mappingService.executeMapping() to request parameters. Outgoing: no code path reads endpointData['outputMapping'] to transform a response, grep for [\\x27]outputMapping[\\x27] outside EndpointsController's isSimpleEndpoint() gate and ConfigurationService's export/import id<->slug translation returns nothing in EndpointService.php. A response CAN still be reshaped via a Rule of type 'mapping' run at timing='after' (processMappingRule/processMapping, EndpointService.php:3104-3141, applied to $data['body'] in dispatchAfterBeforeRules() around line 693-700), but that is the generic rule pipeline, not the dedicated outputMapping field."
+				"evidence": "Incoming: EndpointService::handleSchemaRequest() applies inputMapping to the request parameters. Outgoing: EndpointService::dispatchAfterBeforeRules() passes the body the after rules produced through applyOutputMapping(), which runs MappingService::executeMapping() with the endpoint's outputMapping on one object, or on each item of a results list while keeping the pagination keys. Tests: EndpointServiceOutputMappingTest (4, real MappingService and mapping object). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29)."
 			},
-			"reachedOn": "/endpoints/:id edit form, 'inputMapping' field works; for the outgoing answer, use /endpoints/:id Rules tab -> Add rule (type=mapping, timing=after) instead of the 'outputMapping' field, which is inert",
-			"note": "Live-defect candidate: outputMapping is a declared, form-visible field on the endpoint schema and participates in configuration export/import id translation, but nothing ever applies it to a response. Reshaping outgoing data only works through a separately-added mapping Rule.",
+			"reachedOn": "/endpoints/:id edit form: Input mapping reshapes the request, Output mapping reshapes the answer a consumer gets",
+			"note": "Built 2026-09-29: the output mapping is applied to the answer after the after rules. Before, it was a form field nothing read.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "rule-pipeline",
@@ -1611,14 +1615,15 @@
 			"area": "gateway",
 			"name": "Add your own logic to the request pipeline with a plug-in or a script.",
 			"source": "competitor-derived",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-29-gateway-endpoint-transform-and-plugins",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:3905-3910 processJavaScriptRule() body: '// @todo: Here we need to implement the JavaScript execution logic. For now, just return the data unchanged.', a rule of type 'javascript' is a no-op stub. lib/Service/RuleService.php:191-212 processCustomRule() only recognises one hardcoded custom type, 'connectRelations' (processCustomConnectionsRule, line 410); any other value throws 'Unsupported custom rule type'."
+				"evidence": "lib/Rule/Plugin/EndpointRulePluginInterface.php is the plug-in contract; a sibling app registers an implementation by listening for RegisterEndpointRulePluginsEvent, and RuleService::processCustomRule() runs the plug-in a custom rule names in configuration.plugin (an unknown id is refused by name). connectRelations is the first registered plug-in. A javascript rule is refused: the rule schema type enum leaves it out, the editor no longer offers it, and EndpointService::processJavaScriptRule() throws. Tests: EndpointRulePluginTest (4), RuleTypeRefusesJavaScriptTest (3), EndpointServiceTest::testAJavaScriptRuleIsRefusedWhenItRuns, tests/vitest/javascriptRuleRefused.spec.js (2). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29)."
 			},
-			"reachedOn": "/endpoints/:id Rules tab -> Add rule (type=custom or type=javascript) exists in the UI, but a javascript rule silently does nothing and a custom rule only supports the one hardcoded 'connectRelations' operation",
-			"note": "Live-defect candidate: the rule pipeline advertises 'custom' and 'javascript' rule types an operator can pick, but neither is a real extension point, javascript is an unimplemented stub, custom is hardcoded to one unrelated ArchiMate operation. There is no working way to add arbitrary logic or a script to the pipeline.",
+			"reachedOn": "/rules: a rule of type Custom with configuration.plugin naming a plug-in a sibling app registered; JavaScript is no longer a rule type",
+			"note": "Built 2026-09-29 as a PHP plug-in point for sibling apps. Integriq runs no tenant scripts (design D3, an open product question for Ruben); flows are the no-code route.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "rule-pipeline",
@@ -2246,7 +2251,7 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniF 'monetiz|billing|pricing|price plan|invoice' across lib/ and src/ returns zero hits; the api_product schema (lib/Settings/register.d/api-product-gateway.json) tiers map only carries rateLimit/quota/requiresApproval, no price field."
 			},
@@ -2268,7 +2273,8 @@
 				"mulesoft": "not checked: the docs index (4,960 pages) has no page on monetising APIs or price plans; searching it for monetize, billing and price returns only Object Store v2 usage billing. No page states the absence either, so the row stays open.",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:5977 /apis/{apiId}/monetize and apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1251 \"Commercial Policies\" wire commercial subscription policies to a billing provider set at carbon-apimgt/features/apimgt/org.wso2.carbon.apimgt.core.feature/src/main/resources/conf_templates/templates/repository/conf/api-manager.xml.j2:1432 MonetizationImpl; the implementation in the tree, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.impl/src/main/java/org/wso2/carbon/apimgt/impl/monetization/DefaultMonetizationImpl.java:37, is a no-op that returns true, so charging needs an external provider plug-in (the Stripe one is not in this tree: grep -rli \"stripe\" over carbon-apimgt/components finds nothing); reached on: publisher portal, API > Monetization; deployment.toml [apim.monetization] monetization_impl",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'monetiz|monetis|price.?plan|billing|invoice' over java, ts and html finds no charging feature; no consumer or product model exists (see acc-products)"
-			}
+			},
+			"note": "Decided no (build-all pass 2026-09-28): Single competitor partial at most (apisix, wso2), no tender or request."
 		},
 		{
 			"id": "acc-tenants",
@@ -2746,14 +2752,15 @@
 			"area": "mapping",
 			"name": "Read a field live from a base registry instead of keeping a copy.",
 			"source": "dossiq-round4",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-29-registry-backed-field-source",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/PropertySourceController.php + appinfo/routes.php:520-523 (/api/property-sources/{provider}/suggest|resolve|resync) implement a full KVK/BRP/BAG live-lookup engine (lib/PropertySource/PropertySourceResolver.php), but grep of src/ for 'property-sources'/'propertySource' returns zero hits, no frontend page calls it. The only internal caller of PropertySourceResolver::resolve() is lib/Gateway/Adapter/WkpbGateway.php:99, and WkpbGateway itself is never instantiated anywhere (grep for 'WkpbGateway::class'/'new WkpbGateway' = 0 hits); lib/Gateway/GatewayCatalogue.php:117 lists 'wkpb' with claimLevel PLANNED, a descriptor, not a wired gateway."
+				"evidence": "Integriq half built: lib/PropertySource/ (PropertySourceResolver, BAG/BRP/KvK providers over existing sources, provenance, staleness budget, labelled last value when unreachable, ListResyncService) behind /api/property-sources/{provider}/suggest|resolve|resync, reached from Sources > Look up in a base registry (src/dialogs/RegistryLookupDialog.vue: search, resolve a suggestion by its identifier, provenance and state, read again skipping the cache, resync a list). Tests: tests/vitest/registryLookupDialog.spec.js (8) plus the existing PropertySource PHPUnit suite. A form field cannot yet read live: that needs x-openregister-property-source on a schema property (openregister#4168) and the declaration on a case type (dossiq#3188), so the rating stays partial. Built by change registry-backed-field-source (archived 2026-09-29)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "Both the admin-facing route and its only would-be internal caller are orphaned, a fully implemented capability with no path from any route, page or registered service to a user or machine. Live-check candidate: confirm /api/property-sources/{provider}/resolve 404s or is unreachable via the UI.",
+			"reachedOn": "Sources > Look up in a base registry (an administrator's lookup); no form field yet, see openregister#4168",
+			"note": "Built 2026-09-29 on integriq's side. Partial until openregister ships the property key and dossiq declares fields with it.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "data-infra-connectors",
@@ -2786,6 +2793,7 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "allowlisted-expression-sources",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Controller/ExpressionSourceController.php (index:87, add:112, remove:146) plus appinfo/routes.php:616-618 implement a full admin-only CRUD API for an environment-variable allowlist (lib/Expression/EnvironmentAllowlist.php, ExpressionValueSourceRegistry.php, EnvironmentValueSource.php). grep of src/ for 'expression-sources'/'EnvironmentAllowlist' returns zero hits (no admin settings page), and grep of lib/AppInfo/Application.php and lib/Listener/ for any wiring of ExpressionValueSourceRegistry into OpenRegister's expression evaluator also returns zero hits."
 			},
@@ -2910,9 +2918,9 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "synchronization.targetSourceMapping is declared in the schema and carried through configuration import/export (lib/Service/ConfigurationService.php:891-892, lib/Service/ConfigurationHandlers/SynchronizationHandler.php:159-162/280-283), but grep of lib/Service/SynchronizationService.php (the runtime engine) for 'targetSourceMapping' returns zero hits: nothing ever reads it to push a change back to the source. lib/Service/SynchronizationSemanticRefusals.php:95-97 states outright that 'the reverse (target->source) leg of a bidirectional sync has no decomposed steps.' The only real reverse-direction write found, NotuBizConnectorService::pushVergaderstuk() (lib/Service/NotuBizConnectorService.php:255-292), has zero callers anywhere in lib/."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): No competitor rates yes, no demand row, outside the core area (sources, gateway). Reversible. What exists: synchronization.targetSourceMapping is declared in the schema and carried through configuration import/export (lib/Service/ConfigurationService.php:891-892, lib/Service/ConfigurationHandlers/SynchronizationHandler.php:159-162/280-283), but grep of lib/Service/SynchronizationService.php (the runtime engine) for 'targetSourceMapping' returns zero hits: nothing ever reads it to push a change back to the source. lib/Service/SynchronizationSemanticRefusals.php:95-97 states outright that 'the reverse (target->source) leg of a bidirectional sync has no decomposed steps.' The only real reverse-direction write found, NotuBizConnectorService::pushVergaderstuk() (lib/Service/NotuBizConnectorService.php:255-292), has zero callers anywhere in lib/."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The overlay's own summary for synchronization-engine claims 'in both directions' (openspec/features.overlay.json), code reading contradicts that marketing claim for the generic Synchronization object. Live-check candidate: verify a target-side edit never reaches the source for any synchronization.",
@@ -3223,14 +3231,15 @@
 			"area": "synchronisation",
 			"name": "Mark records as owned by an outside source so they cannot be changed here by mistake.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-28-records-owned-by-an-external-source",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/OwnershipController.php (show/destroy/validatePolicy) plus appinfo/routes.php:529-531 implement real ownership-state reads and a LocalDeleteGuard (lib/Service/Ownership/LocalDeleteGuard.php) that refuses deleting a source-owned record without a reason. But grep of src/ for 'ownership' (case-insensitive) returns zero hits: no page or component ever calls GET /api/ownership/{id} or DELETE /api/ownership/{id}. LocalDeleteGuard is only invoked from OwnershipController::destroy (line 157), nowhere else, so the generic OpenRegister object-delete path any index/detail page actually uses to delete a record is not guarded by it at all."
+				"evidence": "Declared: src/modals/v2/SynchronizationEditorModal.vue sets sourceConfig.ownershipMode and disappearancePolicy (src/views/Synchronization/ownershipOptions.js) and asks POST /api/ownership/validate-policy before saving (tests/vitest/syncOwnershipEditor.spec.js). Read: GET /api/ownership/{id} (lib/Controller/OwnershipController.php, RecordOwnershipService). Enforced: lib/EventListener/SourceOwnedDeleteGuardListener.php, registered on OpenRegister ObjectDeletingEvent in lib/AppInfo/Application.php, stops any delete of a source-owned record without the override OwnershipController::destroy writes, and lets the engine delete (SynchronizationService wraps its delete in whileTheEngineDeletes) (tests/Unit/EventListener/SourceOwnedDeleteGuardListenerTest.php, SynchronizationServiceTest::testTheEnginesDeletePassesTheSourceOwnedGuard). Built by change records-owned-by-an-external-source (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "The refusal logic (REQ-SOR-005) is real but unreachable from any UI action; a user deleting an owned record through the normal generic delete button on e.g. the Sources or Endpoints index page bypasses this guard entirely. Live-check candidate: delete a source-owned record via its index page and see whether the refusal fires.",
+			"reachedOn": "Synchronizations > edit: who owns these records, and what happens when the source stops sending one; any delete of a source-owned record is refused with the synchronisation named",
+			"note": "Built 2026-09-28. The refusal now runs on OpenRegister's own delete path, so the delete button on any page meets it; a delete with a stated reason goes through /api/ownership/{id}. Showing the ownership on a contact or case party is the consuming app's screen (dossiq). Rated partial: a local edit of a source-owned record is not refused, it is overwritten at the next run (design D4).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "synchronization-engine",
@@ -3317,14 +3326,15 @@
 			"area": "synchronisation",
 			"name": "Move data out of a legacy system with a migration source.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-29-migration-source-adapters",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:536-538 migrationSources#index/preview/validateMapping; lib/Controller/MigrationSourcesController.php and adapters lib/Migration/Source/FileMigrationSource.php (real CSV parsing) and RedmineMigrationSource.php implement real logic. But grep -rn 'migration-sources|migrationSource' across src/ (case-insensitive) returns zero hits, and the synchronization editor's sourceType picker (src/views/Synchronization/syncDraft.js:48-52, TYPE_OPTIONS = api/register-schema/file, plus conditional nextcloud-table/nextcloud-form) offers no 'migration' option at all."
+				"evidence": "Connections > Migrations (src/manifest.json page Migrations, an index over integriq/column_mapping): ColumnMappingEditorModal writes a column mapping, runs POST /api/migration-sources/column-mapping/validate before every save and raises version by one; MigrationTestRunPanel picks a migration source from GET /api/migration-sources (file, redmine) and runs POST /api/migration-sources/preview, which reads and writes nothing. Adapters: lib/Migration/Source/FileMigrationSource.php, RedmineMigrationSource.php. Tests: tests/vitest/migrationColumnMapping.spec.js (9), tests/Unit/Migration/ColumnMappingStoredPayloadTest.php (3), the existing migration source tests. The write half (import engine, preview, conflict policy) is openregister's, openregister#4167. Built by change migration-source-adapters (archived 2026-09-29)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "A fully implemented backend (including CSV column-mapping validation) with no frontend path to configure or trigger it.",
+			"reachedOn": "Connections > Migrations: New column mapping, and Test a migration above the list",
+			"note": "Built 2026-09-29: the screen that reaches the migration sources. Integriq reads and reports; OpenRegister's import engine writes.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "synchronization-engine",
@@ -3383,7 +3393,7 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniF 'conflict|lastwritewins|last-write-wins|mergestrategy' across lib/ returns zero hits. This is consistent with sync-twoway being unimplemented: since the engine never writes register changes back to a source, there is no scenario in which both sides can have changed the same record for the engine to reconcile."
 			},
@@ -3405,7 +3415,8 @@
 				"mulesoft": "docs read on 2026-09-26: https://anypoint.mulesoft.com/exchange/org.mule.templates/template-sfdc2sfdc-contact-bidirectional-sync/ (template home page, v2.1.4) 'the integration triggers an upsert (update or create depending the case) taking the last modification as the one that should be applied'. Conflicts are settled last change wins inside specific templates; there is no general conflict setting or review step.; reached on: Bidirectional sync templates from Exchange, edited in Studio",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -n -i \"synchroni|\\bsync\\b\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json, apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json and apim-apps/portals/devportal/src/main/webapp/site/public/locales/en.json finds no data synchronisation feature, and API Manager has no record store to synchronise into (its REST APIs at carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:120, carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.admin.v1/src/main/resources/admin-api.yaml:117 and carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.store.v1/src/main/resources/devportal-api.yaml:117 manage APIs, policies and applications only); scheduled data movement is a Micro Integrator task",
 				"frank": "source read at v10.2.0, not driven: grep -rniE 'conflict|merge.?strateg|last.?write' over core main code finds only a row-locking comment (core/src/main/java/org/frankframework/jdbc/JdbcListener.java:247) and a method-name note, no conflict handling for records; Frank passes messages and keeps no shared record state in which both sides could conflict"
-			}
+			},
+			"note": "Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand; it only matters once two-way sync (sync-twoway, building) writes back, and that change settles its own write-back rules."
 		},
 		{
 			"id": "sync-registry-subscription",
@@ -3826,14 +3837,15 @@
 			"area": "automation",
 			"name": "Start a flow when something happens in Nextcloud, such as a file being added.",
 			"source": "own-code",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/changes/nc-events-start-or-flows/tasks.md: task 1 (schema) and task 2 (dispatch) checked [x]; lib/Service/EventService.php:1051 case 'flow' dispatches dispatchFlowAction(); task 3 (UI picker option) is unchecked [ ] and task 4 (Playwright) unchecked [ ]. src/modals/EventSubscription/SubscriptionActionFields.vue:215-217 kindOptions only lists webhook/synchronization/job, no 'flow' option."
+				"change": "2026-09-28-nc-events-start-or-flows",
+				"evidence": "src/modals/EventSubscription/SubscriptionActionFields.vue KIND_OPTIONS offers flow and fetchFlows() lists integriq/flow objects; onFlowPick() writes action {kind: flow, flowId}; lib/Service/EventService.php:1113 case 'flow' dispatches dispatchFlowAction() into FlowRunnerService::run(). tests/vitest/subscriptionFlowAction.spec.js, EventServiceTest. Built by change nc-events-start-or-flows (build-all pass 2026-09-28)."
 			},
-			"reachedOn": "no UI: the 'flow' event_subscription action.kind can only be set by writing to the object directly via the API, not through the Webhooks page's subscription form",
-			"note": "Backend dispatch is real and tested; the staff screen to configure an NC-event-to-flow subscription does not exist yet.",
+			"reachedOn": "Webhooks page, subscription modal, Delivery action \"Flow\" with a flow picker",
+			"note": "Backend dispatch is real and tested; the staff screen to configure an NC-event-to-flow subscription does not exist yet. Built 2026-09-28: the modal now offers Flow.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "nextcloud-event-triggers",
@@ -3858,14 +3870,15 @@
 			"area": "automation",
 			"name": "Start a flow when an outside system calls a webhook.",
 			"source": "competitor-derived",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-28-automation-endpoint-flow-trigger",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:120 endpoint rule type 'flow' triggers 'a real FlowRunnerService::run()'; src/views/Rule/ruleDraft.js:59-63: 'flow' also has a match arm but no authoring UI, so it is deliberately not offered in ACTION_TYPES (lines 65-81). Rules of that type are seeded only from configuration imports."
+				"evidence": "src/views/Rule/actionForms/FlowForm.vue picks a flow from OpenRegister's integriq/flow objects; ruleDraft.js ACTION_TYPES offers 'flow'; RuleActionConfig.vue and RuleEditorModal.vue write the id to configuration.flow, which EndpointService::processFlowRule() reads to run FlowRunnerService::run() with the request as input; flowRuleMissingFlow() holds Save back in the dialog and on the detail page for a flow rule with no flow. Tests: tests/vitest/endpointFlowRule.spec.js (6), EndpointServiceTest::testProcessFlowRuleRunsAndReturnsDataUnmodified, testProcessFlowRuleThrowsWithoutConfiguredFlow. Built by change automation-endpoint-flow-trigger (archived 2026-09-28)."
 			},
-			"reachedOn": "no UI: RuleDetailPage/RuleEditorModal cannot create or edit a rule with action type 'flow'; only a rule seeded from an imported configuration can carry one",
-			"note": "An inbound Endpoint call matching a pre-seeded 'flow' rule does start a flow (this is the closest thing to an inbound webhook trigger), but a staff member cannot configure this themselves.",
+			"reachedOn": "Rules > Create rule (or a rule's detail page): Type Flow shows a Flow picker; the rule on an endpoint makes the endpoint path the webhook a partner calls",
+			"note": "Built 2026-09-28: the flow action is offered in the rule editor. Before, only a rule seeded from an imported configuration could start a flow.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "flow-orchestration",
@@ -4020,7 +4033,7 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/openregister",
 				"evidence": "No compensation/saga/rollback-across-steps logic found: `grep -rn 'compensat\\|rollback\\|undo' openregister/lib/Service/Flow/` only turns up a per-object DB transaction rollback comment (Nodes/ObjectWriteNode.php) and unrelated version/delegation checks, none of it a cross-step undo. integriq's own FlowRunnerService has no compensating-step concept at all."
 			},
@@ -4043,7 +4056,7 @@
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager has no flow or job engine: the Policies page (apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1480 \"Request Flow\", apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1481 \"Response Flow\", apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json:1478 \"Fault Flow\") is a fixed per-operation list of policies, and grep -n -i \"schedul|cron\" over apim-apps/portals/publisher/src/main/webapp/site/public/locales/en.json and apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json finds only the API discovery interval for federated gateways (apim-apps/portals/admin/src/main/webapp/site/public/locales/en.json:544); orchestration and scheduled tasks are Micro Integrator features; grep -rli \"compensat|saga\" over carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.gateway/src/main/java/org/wso2/carbon/apimgt/gateway finds nothing",
 				"frank": "source read at v10.2.0, not driven: core/src/main/java/org/frankframework/core/PipeLine.java:108 HasTransactionAttribute and the Receiver transactionAttribute (core/src/main/java/org/frankframework/receivers/Receiver.java:1028) roll back all XA resources (databases, JMS) when a later step fails; for non-transactional calls such as HTTP there is no compensation step, you model an undo path yourself with exception forwards; reached on: configuration XML transactionAttribute=Required on pipeline or receiver"
 			},
-			"note": "Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: compensation across flow steps is flow-engine semantics, OpenRegister's. Corrections round 9 (2026-09-28): built.state decided-no to none, deferred by openregister 28 Sep: the owner-moves pass recorded defer in openregister openspec/parity/gap-decisions.json (no competitor rates it yes, no demand row, and no OpenRegister change covers compensation across steps)."
+			"note": "Decided no (OpenSpec pass 2026-09-27): ADR-065 decision 1: compensation across flow steps is flow-engine semantics, OpenRegister's. Corrections round 9 (2026-09-28): built.state decided-no to none, deferred by openregister 28 Sep: the owner-moves pass recorded defer in openregister openspec/parity/gap-decisions.json (no competitor rates it yes, no demand row, and no OpenRegister change covers compensation across steps). Decided no (build-all pass 2026-09-28): ADR-065 decision 1: compensation across flow steps is flow-engine semantics, which OpenRegister owns; built.owner is ConductionNL/openregister."
 		},
 		{
 			"id": "auto-migrate-jobs",
@@ -4052,9 +4065,9 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Command/SynchronizationToFlow.php, lib/Command/JobToFlow.php, lib/Command/RuleToFlow.php: all three occ commands render a generated flow document for review and explicitly 'WRITE NOTHING. It creates no flow, enables nothing' (see each file's docblock); none of the three has an --apply flag (`grep -n 'apply' lib/Command/{JobToFlow,RuleToFlow,SynchronizationToFlow}.php` = 0 hits)."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): No competitor rates yes, no demand row, outside the core area; the occ commands already render a flow for review. Reversible. What exists: lib/Command/SynchronizationToFlow.php, lib/Command/JobToFlow.php, lib/Command/RuleToFlow.php: all three occ commands render a generated flow document for review and explicitly 'WRITE NOTHING. It creates no flow, enables nothing' (see each file's docblock); none of the three has an --apply flag (`grep -n 'apply' lib/Command/{JobToFlow,RuleToFlow,SynchronizationToFlow}.php` = 0 hits)."
 			},
 			"reachedOn": "occ integriq:synchronization-to-flow / occ integriq:job-to-flow / occ integriq:rule-to-flow <id> (CLI only, no page)",
 			"note": "The generators (SynchronizationFlowGenerator, JobToFlowGenerator) produce a correct preview document, but there is no automatic conversion: nothing anywhere actually creates the migrated flow object, by CLI or UI.",
@@ -4213,14 +4226,15 @@
 			"area": "events",
 			"name": "See which subscriptions still go out unsigned.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-29-signed-outbound-webhooks",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Subscriptions/SubscriptionSigningPolicy.php implements an 'unsigned with reason' policy (ATTEMPT_UNSIGNED constant, reason requirement at lines 105-141) with a full test suite (tests/Unit/Service/Subscriptions/SubscriptionSigningPolicyTest.php), but has ZERO production callers: `grep -rn SubscriptionSigningPolicy lib/ --include=*.php` outside its own file and the test only matches the class file itself, no controller or EventService reference. The Webhooks index columns (src/manifest.json:1999-2005: sink/protocol/style/status/updated) carry no signed/unsigned indicator."
+				"evidence": "lib/EventListener/SubscriptionSigningDefaultListener.php, registered in lib/AppInfo/Application.php on OpenRegister's ObjectCreatingEvent and ObjectUpdatingEvent, runs lib/Service/Subscriptions/SubscriptionSigningPolicy.php on every event_subscription save: a new push subscription gains a secret, unsigned needs a reason (stamped setBy/setAt), and the readable mirror signingPosture/unsignedReason is written because protocolSettings is writeOnly. src/manifest.json Webhooks columns include signingPosture; src/modals/Subscription/SubscriptionSigningModal.vue shows the posture, the reason and the verification recipe. lib/Service/EventService.php deliverMessage records attempts[].signed and sends no signature when unsigned is set. Tests: tests/Unit/EventListener/SubscriptionSigningDefaultListenerTest.php (real OpenRegister events, stored payload validated against the merged register), EventServiceTest::testASignedAttemptRecordsThatItWasSigned and ::testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo, tests/vitest/subscriptionSigningRecipe.spec.js. Built by change signed-outbound-webhooks (archived 2026-09-29)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "This is a guard with a full test suite and no call site: staff can open the signing modal per-subscription one at a time, but there is no column, badge, or report showing which subscriptions are unsigned across the fleet.",
+			"reachedOn": "Webhooks index: the Signature column; the Webhook signing action on a row shows signed or unsigned with its reason, and the recipe",
+			"note": "Built 2026-09-29: the policy #2074 shipped with tests and no caller now runs on OpenRegister's save path. A subscription saved before this has no Signature value until it is saved again (no migration, design D5).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "webhook-signing",
@@ -4342,7 +4356,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/changes/event-broker-transport/tasks.md tasks 1-5 all checked [x]: lib/Broker/BrokerTransportInterface.php, BrokerTransportRegistry.php, CloudEventHttpBinding.php, Transport/RabbitMqHttpTransport.php, Transport/KafkaRestTransport.php (real HTTP calls via OCP\\Http\\Client\\IClientService, e.g. KafkaRestTransport.php:113-133), Transport/CloudEventsHttpTransport.php, and a dormant Transport/LogBrokerTransport.php that always refuses. lib/Service/EventService.php dispatches a 'broker' action.kind through the registry. No UI task exists in tasks.md, and src/modals/EventSubscription/SubscriptionActionFields.vue:215-217 kindOptions still lists only webhook/synchronization/job. Specified in openspec/changes/events-broker-subscription-screen/ (OpenSpec pass 2026-09-27)."
+				"evidence": "openspec/changes/archive/2026-09-29-event-broker-transport/tasks.md tasks 1-5 all checked [x]: lib/Broker/BrokerTransportInterface.php, BrokerTransportRegistry.php, CloudEventHttpBinding.php, Transport/RabbitMqHttpTransport.php, Transport/KafkaRestTransport.php (real HTTP calls via OCP\\Http\\Client\\IClientService, e.g. KafkaRestTransport.php:113-133), Transport/CloudEventsHttpTransport.php, and a dormant Transport/LogBrokerTransport.php that always refuses. lib/Service/EventService.php dispatches a 'broker' action.kind through the registry. No UI task exists in tasks.md, and src/modals/EventSubscription/SubscriptionActionFields.vue:215-217 kindOptions still lists only webhook/synchronization/job. Specified in openspec/changes/events-broker-subscription-screen/ (OpenSpec pass 2026-09-27)."
 			},
 			"reachedOn": "no UI: a subscription with action.kind='broker' can only be created by writing to the object directly via the API, not through the Webhooks page's subscription form",
 			"note": "Backend is genuinely built and tested against RabbitMQ, Kafka REST proxy and generic CloudEvents-HTTP; the gap is purely a missing staff screen to pick 'Broker' and its brokerId/config.",
@@ -4406,12 +4420,12 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php's notificaties routes (321-325) are all self-directed: abonnementen CRUD registers INTEGRIQ as a subscriber against an external kanaal, and the callback route RECEIVES pushes integriq itself asked for. No route lets an outside ZGW system register its own abonnement with integriq, and no 'kanalen' listing endpoint exists (`grep -rin kanalen lib/Controller` = 0 hits outside comments). EventService.php:1416 'publish' action (kanaal reference) sends a CloudEvent onward to a kanaal integriq does not own, i.e. integriq acting as a client of someone else's API, not offering its own."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "The archived proposal's own title, 'notificaties-api-subscriber', names what was actually built: subscriber plus outbound-publish-as-a-client. Serving the ZGW Notificaties API standard for other systems to subscribe TO integriq was not part of that change and is not implemented elsewhere.",
+			"note": "The archived proposal's own title, 'notificaties-api-subscriber', names what was actually built: subscriber plus outbound-publish-as-a-client. Serving the ZGW Notificaties API standard for other systems to subscribe TO integriq was not part of that change and is not implemented elsewhere. Decided no (build-all pass 2026-09-28): No competitor rates yes (mulesoft partial) and no demand row; integriq subscribes to and publishes through an outside Notificaties API, which covers the fleet today.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "notificaties-api-connector",
@@ -4685,14 +4699,15 @@
 			"area": "observability",
 			"name": "Send a failed outbound call again with its original content.",
 			"source": "own-code",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-28-outbound-call-delivery-and-replay",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/Call/CallReplayService.php:1-46 implements dry-run, single and bulk replay, and hand-fire of a failed outbound call, per openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md REQ-OCD-002 ('a failed call is replayed from the screen singly and in bulk'). appinfo/routes.php:129-133 wires callLog#show/preview/replay(+bulk)/fire. Used only by lib/Controller/CallLogController.php; `grep -rln 'callLog|call-log|CallReplay|api/calls' src/` = 0 hits, so no frontend anywhere calls these routes. src/manifest.d/outbound-call-log.json (the fragment this change shipped) only adds the Verdicts page, not a call-replay screen; the SourceDetail page's call-log widget is explicitly read-only (src/manifest.json:1005 'call log is read-only (allowCreate:false) with a View-all to SourceLogs')."
+				"evidence": "src/manifest.json SourceLogs wires slots[\"row-actions\"] to src/components/callLog/CallLogRowActions.vue (Replay, opening src/modals/CallLog/CallReplayModal.vue: preview, mapping version choice, dry run, replay) and actionsComponent to src/components/callLog/CallLogActions.vue (Replay failed calls, src/modals/CallLog/CallBulkReplayModal.vue with per-call outcomes; Fire a call by hand, src/modals/CallLog/CallFireModal.vue), all calling appinfo/routes.php callLog#preview/#replay(+bulk)/#fire in lib/Controller/CallLogController.php over lib/Outbound/Call/CallReplayService.php. tests/vitest/callLogReplay.spec.js drives the real components; tests/Unit/Outbound/CallReplayServiceTest.php validates every write against the merged call_log schema. Built by change outbound-call-delivery-and-replay (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it: the routes exist but no page or modal calls them",
-			"note": "The spec's own requirement name says 'replayed from the screen', but no screen was built. This is a fully-tested backend capability with zero UI wiring.",
+			"reachedOn": "Sources > Logs: Replay on a row, and Replay failed calls or Fire a call by hand above the list",
+			"note": "The spec's own requirement name says 'replayed from the screen', but no screen was built. Built 2026-09-28: the screen replays one call with a preview and a dry run, replays the recent failed calls together with an outcome per call, and fires a call by hand. Replay is per outbound call record, not per whole run like n8n or Frank.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
@@ -4723,9 +4738,9 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/Call/PreCheckService.php:34-181 implements a blocking ask-before-acting call (allow/refuse/no-answer) but has ZERO callers: `grep -rln PreCheckService lib/ --include=*.php` outside its own file returns nothing. lib/Controller/VerdictController.php's verdict#inbound route (appinfo/routes.php:134) is an ASYNC, INBOUND webhook where an outside checker reports a verdict about an OBJECT independently, not a live gate on one specific outbound call. src/manifest.d/outbound-call-log.json Verdicts page (/verdicts) only lists these after-the-fact object verdicts."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): Single competitor yes (n8n), no demand row, outside the core area; PreCheckService stays dormant. Reversible. What exists: lib/Outbound/Call/PreCheckService.php:34-181 implements a blocking ask-before-acting call (allow/refuse/no-answer) but has ZERO callers: `grep -rln PreCheckService lib/ --include=*.php` outside its own file returns nothing. lib/Controller/VerdictController.php's verdict#inbound route (appinfo/routes.php:134) is an ASYNC, INBOUND webhook where an outside checker reports a verdict about an OBJECT independently, not a live gate on one specific outbound call. src/manifest.d/outbound-call-log.json Verdicts page (/verdicts) only lists these after-the-fact object verdicts."
 			},
 			"reachedOn": "nothing reaches it as a live gate; /verdicts shows unrelated after-the-fact object verdicts",
 			"note": "The hint's three pieces (Verdicts page, VerdictService, PreCheckService) do not connect: PreCheckService is the only piece that could hold a specific outbound call back before it went out, and it is never called from CallService or anywhere else. What is visible on the Verdicts page is a different thing: an outside system's async opinion about a record, unrelated to any one outbound call being blocked.",
@@ -5202,13 +5217,14 @@
 			"area": "nl-standards",
 			"name": "Preview and accept the changes when case types are synchronised again from their source.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep for a catalogi-specific resync/diff-preview found nothing; the generic mapping preview (appinfo/routes.php mappings#test -> src/components/mapping/MappingResultPanel.vue:503) is schema-agnostic and not wired to a catalogi connector, which itself does not exist (see nl-zgw-catalogi). Specified in openspec/changes/connectors-inavigator-case-types/ (OpenSpec pass 2026-09-27)."
+				"evidence": "The generic half is built (connectors-inavigator-case-types tasks 3 to 5, 29 Sep 2026): every gated synchronization stores its change set on the approval_request (lib/Service/Synchronization/ChangeSetBuilder.php, SynchronizationService::buildGateChangeSet), an accept writes only when the rerun's fingerprint matches and otherwise supersedes the request (ApprovalsController::approveSynchronizationGate, ApprovalService::markSuperseded), and src/components/Approvals/ApprovalChangeSet.vue shows created, changed and removed objects with field diffs. Missing: a case type catalogue connector to run it on (nl-zgw-catalogi, zgw-connectors-for-dossiq) and the i-Navigator import (Task 2, blocked on the interface).",
+				"change": "connectors-inavigator-case-types"
 			},
-			"reachedOn": "nothing reaches it",
+			"reachedOn": "Approvals > a synchronization request",
 			"note": "Depends entirely on the unbuilt zgw-catalogi connector; there is no catalogi-specific resync preview/accept flow.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -5371,9 +5387,9 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/StUFBGService.php:101 handleNpsLv01(), :169 handleAdrLv01(), :223 parseNpsLa01Response() fully implement StUF-BG SOAP parsing, but `grep -rn StUFBGService lib/ appinfo/` finds zero callers anywhere outside the class itself; there is no route in appinfo/routes.php and no controller references it. Its only other reference is tests/Unit/Service/StUFBGServiceTest.php."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): No competitor rates yes, no demand row, outside the core area; persons and addresses are read through Haal Centraal BRP. Reversible. What exists: lib/Service/StUFBGService.php:101 handleNpsLv01(), :169 handleAdrLv01(), :223 parseNpsLa01Response() fully implement StUF-BG SOAP parsing, but `grep -rn StUFBGService lib/ appinfo/` finds zero callers anywhere outside the class itself; there is no route in appinfo/routes.php and no controller references it. Its only other reference is tests/Unit/Service/StUFBGServiceTest.php."
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "A fully-implemented service with no route, no controller and no caller: code exists but the capability is not wired to anything.",
@@ -5953,11 +5969,12 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "statutory-gateways-and-frameworks",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Gateway/Adapter/{CorvGateway,GgkGateway,WkpbGateway}.php only implement id()/schemas() (metadata, no send/deliver method) and are referenced only by tests/Unit/Gateway/StatutoryGatewayAdapterTest.php, zero production callers; appinfo/routes.php:543-548 gateways#index/overview/exportOverview/testBinding/bridges/revokeBridge -> lib/Controller/GatewaysController.php, but a repo-wide search of src/ finds no page or component calling /api/gateways anywhere, and the only 'Gateway' string in src/manifest.json (line 217-218) is the unrelated ApiProducts 'Gateway' menu grouping."
+				"evidence": "lib/Event/GatewayDeliveryRequestedEvent.php + lib/EventListener/GatewayDeliveryRequestedListener.php (registered in lib/AppInfo/Application.php) are the production caller of the CORV, GGK, WKPB and publication adapters: a sibling dispatches the event, the adapter validates before anything leaves, SourceGatewayTransport sends over the configured source, and the GatewayDelivery comes back on the event (tests/Unit/EventListener/GatewayDeliveryRequestedListenerTest.php, real adapters). Sources > Statutory gateways (src/dialogs/GatewayCatalogueDialog.vue) shows the catalogue by standard and where each endpoint sits. Still open in change statutory-gateways-and-frameworks: task 3 (seeded mock-mode CORV/GGK sources, once the statutory endpoints are known) and task 6 (ZGW call sites through the registry binding)."
 			},
-			"reachedOn": "nothing reaches it: no frontend page, and the CORV/GGK/WKPB adapter classes have no production caller at all",
-			"note": "Only a read-only registry/catalogue of which laws this instance claims to reach is built, and even that has no page; actual message delivery through CORV/GGK/WKPB is metadata-only scaffolding.",
+			"reachedOn": "Sources > Statutory gateways (catalogue and overview); a sibling app sends by dispatching GatewayDeliveryRequestedEvent",
+			"note": "29 Sep 2026: the adapters now have a caller and the catalogue a screen. No source for CORV or GGK ships yet, so a send answers 'no source configured' until an administrator adds one; that is task 3. dossiq#3189 asks dossiq to declare the WKPB flag.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -5982,14 +5999,15 @@
 			"area": "nl-standards",
 			"name": "Deliver publications to the national Woo index.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-29-mapping-woo-index-field-mapping",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Gateway/Adapter/PublicationGateway.php:57 publish(), :80 validate() are real methods, but `grep -rln PublicationGateway lib/ tests/` shows the only caller anywhere is tests/Unit/Gateway/StatutoryGatewayAdapterTest.php; no route, background job or listener invokes it."
+				"evidence": "lib/Event/MappingExecutionRequestedEvent.php + lib/EventListener/MappingExecutionRequestedListener.php (registered in lib/AppInfo/Application.php) run a mapping by slug for an app listed in the mapping's callableBy, refusing not-found, not-allowed or failed. lib/Settings/register.d/mapping-woo-index-field-mapping.json adds callableBy to the mapping schema and seeds woo-index-publication (publisher, officieleTitel, informatiecategorie, soortHandeling; callableBy opencatalogi). src/components/mapping/MappingCallableByField.vue edits callableBy on the mapping detail page. MappingService::findMapping() now reaches the slug/reference fallback when find() throws. Tests: tests/Unit/EventListener/MappingExecutionRequestedListenerTest.php (real MappingService, the seed read from the fragment and validated against the merged mapping schema), tests/vitest/mappingCallableBy.spec.js. Built by change mapping-woo-index-field-mapping (archived 2026-09-29)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "Sibling row names decidiq:pub-05; integriq's own PublicationGateway is unwired scaffolding with a real method body but no production caller, so if this capability is delivered anywhere it is not from integriq today.",
+			"reachedOn": "Mappings > woo-index-publication: the rules and Run by other apps; opencatalogi reaches it by dispatching MappingExecutionRequestedEvent",
+			"note": "Built on integriq's side 2026-09-29, rated partial: integriq maps a publication onto the Woo-index fields, but the sitemap that feeds the national index is opencatalogi's, and opencatalogi does not dispatch the event yet (opencatalogi issue filed with the event contract, docs/developers/run-a-mapping-from-another-app.md). PublicationGateway (Wet elektronisch publiceren) is a separate route, opencatalogi#1671.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -6019,7 +6037,7 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "`grep -rli tooi lib/ src/` returns no matches anywhere in the repository."
 			},
@@ -6044,7 +6062,8 @@
 				"mulesoft": "not checked: Exchange search for tooi returns 0 public assets and the docs index has no TOOI page; tagging publications with TOOI value lists is outside anything the docs describe.",
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: grep -rliE over carbon-apimgt/components, product-apim/all-in-one-apim/modules/distribution and the apim-apps locale files for stuf, zgw, zaken, notificaties, haal.centraal, digikoppeling, ebms, fsc, omgevingsloket, dso, brp, kvk, pdok, berichtenbox, iwmo, peppol, ibabs, notubiz, open.formulieren, kiss, notifynl, digid, eherkenning, eidas, lti, psd2, xs2a, corv and pkioverheid finds 0 files each (tally kept in _lane/r-wso2/nl-grep.txt); the only hits, for bag, tooi and woo, are unrelated identifiers (JMSTaskManagerFactory.java, identity.xml, the gateway pom)",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'woo|tooi' over java, xml, xsd, ts, properties and json outside test folders finds 0 files; no TOOI value lists"
-			}
+			},
+			"note": "Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row. decidiq pub-13 refused it and assigned it here; reversible when a Woo tender asks for TOOI tagging."
 		},
 		{
 			"id": "nl-api-design-rules",
@@ -6085,8 +6104,9 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "2026-09-29-identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Auth/Idp/GovernmentIdpAdapterInterface.php:60 beginAuthentication(), :75 readAssertion(), `grep -rln beginAuthentication lib/` shows no caller anywhere except lib/AppInfo/Application.php's DI binding. lib/Auth/Idp/LogGovernmentIdpAdapter.php:43 is the only class implementing the interface (spec: openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-dormant-seam-adapters-ship-config-flag-gated-and-inert). No route in appinfo/routes.php starts or completes a DigiD authentication; the only related route is idpBroker#exchange (line 333), which only redeems a code, see id-envelope for why that never succeeds either."
+				"evidence": "Browser half built in 2026-09-29-identity-broker-browser-login: GET /api/idp/digid/start and GET|POST .../callback (lib/Controller/IdpBrokerController.php, lib/Auth/Idp/IdpLoginService.php) call beginAuthentication() and readAssertion() on the adapter the container binds. Still missing: the vendor SAML Service Provider or OIDC Relying Party behind GovernmentIdpAdapterInterface; LogGovernmentIdpAdapter is still the only production implementation, so a start refuses. That half waits on Open Decision D1 (broker vendor and contract, openspec/changes/archive/2026-07-15-portal-idp-broker/proposal.md), which is Ruben's."
 			},
 			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete a DigiD authentication",
 			"note": "The spec calls this a deliberately dormant seam, but even the wiring around it (issuing the code the exchange step redeems) has no caller, see id-envelope for the specific dead path.",
@@ -6120,8 +6140,9 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
+				"change": "2026-09-29-identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Same GovernmentIdpAdapterInterface as id-digid; lib/Auth/Idp/TrustLevelMapper.php:73 const PROVIDER_EHERKENNING exists and maps trust levels, but the adapter it would classify is never invoked (LogGovernmentIdpAdapter is the only implementation, called from nowhere but DI)."
+				"evidence": "Browser half built in 2026-09-29-identity-broker-browser-login: GET /api/idp/eherkenning/start and GET|POST .../callback (lib/Controller/IdpBrokerController.php, lib/Auth/Idp/IdpLoginService.php) call beginAuthentication() and readAssertion() on the adapter the container binds, and an eHerkenning envelope carries the vestigingsnummer as branch. Still missing: the vendor SAML Service Provider or OIDC Relying Party behind GovernmentIdpAdapterInterface; LogGovernmentIdpAdapter is still the only production implementation, so a start refuses. That half waits on Open Decision D1 (broker vendor and contract, openspec/changes/archive/2026-07-15-portal-idp-broker/proposal.md), which is Ruben's."
 			},
 			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete an eHerkenning authentication",
 			"note": "Same dormant/unwired seam as id-digid.",
@@ -6154,9 +6175,9 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "building",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Same GovernmentIdpAdapterInterface as id-digid/id-eherkenning; lib/Auth/Idp/TrustLevelMapper.php:80 const PROVIDER_EIDAS exists, but the adapter is never invoked."
+				"evidence": "Decided no on 2026-09-28 (build-all pass): No competitor rates yes, no demand row, outside the core area; the broker change covers DigiD and eHerkenning only. Reversible. What exists: Same GovernmentIdpAdapterInterface as id-digid/id-eherkenning; lib/Auth/Idp/TrustLevelMapper.php:80 const PROVIDER_EIDAS exists, but the adapter is never invoked."
 			},
 			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete an eIDAS authentication",
 			"note": "Same dormant/unwired seam as id-digid.",
@@ -6184,11 +6205,12 @@
 			"area": "identity",
 			"name": "Pass a logged-in person on to another app as a short-lived pseudonym without handing over the BSN.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-29-identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Auth/Idp/EnvelopeExchangeService.php:67 issueCode() has zero callers anywhere in lib/ (`grep -rln issueCode lib/` only matches its own declaration); lib/Auth/Idp/SubjectPseudonymService.php:74 fromPolymorphic(), :108 pseudonymFor() are also never called outside their own file. Only :96 redeemCode() is reachable, via appinfo/routes.php:372 idpBroker#exchange -> lib/Controller/IdpBrokerController.php:84 exchange()."
+				"evidence": "The code now has a caller: lib/Auth/Idp/IdpLoginService.php callback() reads the assertion, consumes the signed single-use state (IdpLoginStateStore), runs AssertionGuard, maps trust, pseudonymises a BSN through SubjectPseudonymService::pseudonymFor() or takes a polymorphic pseudonym through fromPolymorphic(), mints the envelope (with branch for eHerkenning) and calls EnvelopeExchangeService::issueCode(); the browser goes back to the consumer's registered address with code and relayState. Routes idpBroker#start and idpBroker#callback in appinfo/routes.php. Consumers carry returnUrls, enabled and a secret by broker reference (IdpConsumer, IdpConsumerSecretResolver, occ integriq:idp:consumer, seeded disabled portaliq). Tests: tests/Unit/Auth/Idp/IdpBrowserLoginTest.php (17, start, callback and exchange round trip against a scripted provider), IdpConsumerRegistrationTest.php (6), IdpBrokerControllerTest.php (+3). Rated partial: a live login still needs the vendor SAML SP or OIDC RP (Open Decision D1), so on an instance the start ends on the error page."
 			},
 			"reachedOn": "machine route POST /api/idp/envelope/exchange exists, but nothing in the repository ever issues a code for it to redeem",
 			"note": "Live-defect candidate: a consuming app calling exchange today would always get a 401, because issueCode() and the BSN-pseudonymisation step are never invoked by any controller, listener or job in this codebase.",
@@ -6577,14 +6599,15 @@
 			"area": "messaging",
 			"name": "Take mail from a mailbox and turn it into a case.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:75 mailIntake#import and :76 mailIntake#poll -> lib/Controller/MailIntakeController.php:108 import() and :180 poll() (both #[NoAdminRequired] + ActionAuthService, seeded admin-only in lib/actions.seed.json:27,37) -> lib/Service/Mail/MailboxSourceHandler.php poll() with real IMAP/Graph transports (lib/Service/Mail/Transport/ImapMailboxTransport.php:86, GraphMailboxTransport.php:99) -> lib/Service/Mail/MailIntakeService.php:135 intake() saves a mail_message and dispatches MessageReceivedEvent (:162); it never creates a case itself. NO frontend caller: grep -rn 'mail-intake|MailIntake|mailbox' src/ = 0 hits outside the manifest fragment comment; NO background job in appinfo/info.xml:103-150 calls MailboxSourceHandler (grep MailboxSourceHandler lib = only the controller). src/manifest.d/mail-intake.json MailMessages page (/messages/mail, logs type) only displays mail_message rows. Covered by openspec/changes/mail-intake-creates-cases/ (10 of 10 tasks ticked; OpenSpec pass 2026-09-27): Its spec runs the mailbox poll as a background job. The tick does not hold up: nothing schedules a poll."
+				"change": "2026-09-28-mail-intake-creates-cases",
+				"evidence": "lib/BackgroundJob/MailboxPollJob.php (appinfo/info.xml) calls lib/Service/Mail/MailboxSourceHandler.php:150 pollAll(), which polls every enabled mailbox source and hands each new message to MailIntakeService::intake(); intake dispatches MessageReceivedEvent, which dossiq lib/Listener/MessageReceivedListener.php answers (registered in dossiq CrossAppListenerRegistrar, accessors getMessage/getMessageUuid/getDetectedReference/setOutcome match integriq lib/Event/MessageReceivedEvent.php). tests/Unit/BackgroundJob/MailboxPollJobTest.php. Built by change mail-intake-creates-cases (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "The intake engine is complete but nothing ever runs it: no poll job, no poll button, no import upload, so the MailMessages page stays empty. Case creation is delegated to whichever app listens for MessageReceivedEvent; no listener was found in the local procest checkout, so the case half is unverified.",
+			"reachedOn": "every five minutes through MailboxPollJob for each enabled mailbox source, POST /api/mail-intake/poll/{id} and /api/mail-intake/import; the Mail intake page lists the messages; dossiq MessageReceivedListener links or creates the case",
+			"note": "The intake engine is complete but nothing ever runs it: no poll job, no poll button, no import upload, so the MailMessages page stays empty. Case creation is delegated to whichever app listens for MessageReceivedEvent; no listener was found in the local procest checkout, so the case half is unverified. Built 2026-09-28: the poll is now scheduled, and dossiq development has the listener that links or creates the case.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "source-management",
@@ -7182,12 +7205,13 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
+				"change": "2026-09-28-document-generation-vendor-adapter",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Render: lib/AppInfo/Application.php:281 registers DocumentRenderRequestedEvent -> lib/EventListener/DocumentRenderRequestedListener.php:71 handle() -> lib/Service/DocumentGeneration/DocumentGenerationService.php:119 requestRender(), polled by lib/BackgroundJob/DocumentGenerationStatusJob.php (appinfo/info.xml:129); providers SmartDocumentsProvider.php and XentialProvider.php extend AbstractRestDocumentGenerationProvider.php over BrokeredCallService (:61). Seeded sources ship mockMode:true (lib/Settings/register.d/document-generation-vendor-adapter.json:106). appinfo/routes.php:311-312 documentGeneration#templates/#activate (AuthorizedAdminSetting) have no frontend caller (not in frontend-api-paths.txt). Covered by openspec/changes/document-generation-vendor-adapter/ (13 of 15 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the source page and template list. Its tick does not hold up: no file under src/ calls documentGeneration#templates or #activate."
+				"evidence": "Render: lib/AppInfo/Application.php registers DocumentRenderRequestedEvent -> lib/EventListener/DocumentRenderRequestedListener.php handle() -> lib/Service/DocumentGeneration/DocumentGenerationService.php requestRender(), polled by lib/BackgroundJob/DocumentGenerationStatusJob.php, announced by DocumentRenderedEvent; providers SmartDocumentsProvider.php and XentialProvider.php extend AbstractRestDocumentGenerationProvider.php over BrokeredCallService. Operator: src/manifest.json SourceDetail bodyWidgets mounts src/components/DocumentGenerationSourcePanel.vue, which lists the vendor templates (documentGeneration#templates) and activates the source (documentGeneration#activate); tests/vitest/documentGenerationSourcePanel.spec.js, tests/Unit/Controller/DocumentGenerationControllerTest.php (activation writes a source the register accepts). Seeded sources ship mockMode:true (lib/Settings/register.d/document-generation-vendor-adapter.json). Built by change document-generation-vendor-adapter (archived 2026-09-28). Filinq picking the vendor engine is filinq#1253."
 			},
-			"reachedOn": "machine path: DocumentRenderRequestedEvent dispatched by filinq; template listing and activation reached by nothing",
-			"note": "The vendor adapter is real and event-driven, but the vendor sources ship in mock mode and there is no page to list templates or activate a source. The filinq emitter could not be checked locally.",
+			"reachedOn": "machine path: DocumentRenderRequestedEvent dispatched by filinq (filinq#1253 wires the template engine); operator path: Sources > a SmartDocuments or Xential source > Document generation, which lists the templates and activates the source",
+			"note": "The vendor adapter is real and event-driven, but the vendor sources ship in mock mode. Built 2026-09-28: the source page lists the vendor templates and activates the source; a seeded source could not be activated before, because its empty credentialRef was refused by the register. Stays partial until filinq dispatches the render (filinq#1253) and a live vendor is configured.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "document-cms-connectors",
@@ -7217,12 +7241,12 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniE 'notes?[ _-]?sync|sync(ing)? notes|NoteSync|notitie' lib src openspec = 1 file, openspec/parity/capabilities.json (the parity row itself). No class, route, schema or change."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Nothing in integriq keeps notes in step with an outside case register. The generic synchronization engine could in theory be configured for it, but there is no notes-specific code.",
+			"note": "Nothing in integriq keeps notes in step with an outside case register. The generic synchronization engine could in theory be configured for it, but there is no notes-specific code. Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row; the generic synchronization engine can keep notes in step when an administrator configures one.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "synchronization-engine",
@@ -7252,12 +7276,12 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniE 'SigningAdapter|QualifiedSignature|e-?signature|ValidSign|DocuSign|Signicat|qualified (electronic )?signature|gekwalificeerde|ondertekening|Zynyo|Evidos' lib src openspec = 0 code hits (only openspec/parity/capabilities.json and an unrelated Signicat IdP mention in openspec/changes/portal-idp-broker-config/proposal.md:31). Signature code present is webhook HMAC, DSO PKIoverheid verification and WS-Security (lib/Adapters/Digikoppeling/WsSecuritySigner.php), none of which sign documents."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "The hint's signing adapter does not exist in integriq; there is no qualified electronic signature integration.",
+			"note": "The hint's signing adapter does not exist in integriq; there is no qualified electronic signature integration. Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row. filinq owns document signing (decidiq prefers docudesk-signing), and decidiq reaches an eidas-qes source through CallService without integriq code; note decidiq looks it up through Db\\SourceMapper, which integriq does not have, so its fallback path never resolves (a decidiq defect, not an integriq change).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "integration-leaves",
@@ -7771,12 +7795,13 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/AppInfo/Application.php:1463-1475 registers SynchronizationContractProvider plus AzureVirtualDesktopAdapter, SharePointOnlineAdapter, Microsoft365Adapter and S3Adapter with OR's IntegrationRegistry; lib/Service/Integration/SynchronizationContractProvider.php:51 (list :163, isEnabled :388); lib/Service/Adapter/AbstractCategoryAdapterProvider.php:220 isEnabled only when app config '<id>_credential_id' is set, brokered calls via OR CredentialBrokerService. Covered by openspec/changes/or-integration-provider/ (0 of 7 tasks ticked; OpenSpec pass 2026-09-27): The open change (0 of 7) specifies the provider registration."
+				"evidence": "lib/Service/Integration/SynchronizationContractProvider.php extends OpenRegister's AbstractIntegrationProvider (sync-contract, Synced from, query-time, read-only) and lib/AppInfo/Application.php::registerIntegrationProviders() registers it with the four category adapters behind a class_exists guard and a try/catch. Verified against openregister development 4abd834344 by tests/Unit/Service/Integration/SynchronizationContractProviderContractTest.php (stubs are copies of OR's IntegrationProvider, AbstractIntegrationProvider and NotImplementedException): whole contract implemented, metadata, four mutation verbs refused, targetId-only query, paging by _limit (fixed: the offset used 50 per page), empty before storage_migrated, boot carries on when the registry cannot be resolved, every leaf text in nl.json (five added).",
+				"change": "2026-09-29-or-integration-provider"
 			},
 			"reachedOn": "OR object sidebars and detail pages in any app (Synced from leaf); category adapters also listed on integriq's Store page",
-			"note": "Registration code is real. The one live provider is the Synced from provenance leaf; the four connector adapters stay disabled until an admin sets '<id>_credential_id' with occ, since no screen writes that key (grep '_credential_id' src: 0). openspec/changes/or-integration-provider is spec-only with 0 of 7 tasks ticked.",
+			"note": "Registration code is real. The one live provider is the Synced from provenance leaf (built, 2026-09-29-or-integration-provider); the four connector adapters stay disabled until an admin sets '<id>_credential_id' with occ, since no screen writes that key (grep '_credential_id' src: 0), which is why integriq stays partial.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "synced-from-tab",
@@ -8197,14 +8222,15 @@
 			"area": "connectors",
 			"name": "Import a timetable from scheduling software.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniE 'timetable|rooster|untis|zermelo' lib src configurations = 0 relevant hits (3 false positives on 'countIs' in lib/Migration/MigrationPreviewReader.php). Covered by openspec/changes/integriq-adapter-rostering-imports/ (13 of 14 tasks ticked; OpenSpec pass 2026-09-27): The roster adapter for Zermelo, Untis, Xedule and TimeEdit landed dormant on 2026-09-27 (#2166), after the matrix was read; matrix corrected to building."
+				"change": "2026-09-28-rostering-adapter-targets-planninq",
+				"evidence": "lib/EventListener/RosterImportRequestedListener.php (registered in lib/AppInfo/Application.php) -> lib/Sources/Roster/RosterDeliveryService.php deliver() -> RosterImportSourceAdapter importLessons() -> lib/Sources/Roster/PlanninqTimetableTarget.php deliver(), whose named arguments match planninq lib/Event/TimetableUpsertRequestedEvent.php; the learniq caller lib/Timetabling/PlanninqTimetableImport.php matches RosterImportRequestedEvent. RosterImportClient is bound to RosterImportClientMock whatever the flag (Application.php), because no live vendor client exists (design D9, per-institution onboarding). Built by changes integriq-adapter-rostering-imports and rostering-adapter-targets-planninq (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "No source template, mapping or adapter for any scheduling package ships; a timetable import would have to be built by hand with the generic sync engine.",
+			"reachedOn": "learniq timetable import job through RosterImportRequestedEvent, delivered into planninq through TimetableUpsertRequestedEvent; mock client only",
+			"note": "No source template, mapping or adapter for any scheduling package ships; a timetable import would have to be built by hand with the generic sync engine. Built 2026-09-28 as a dormant adapter: the chain learniq -> integriq -> planninq is wired end to end, but only the mock client exists, so the rating stays partial until a live Zermelo, Untis, Xedule or TimeEdit client is onboarded.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -8232,14 +8258,15 @@
 			"area": "connectors",
 			"name": "Report persistent absence onward to the authority.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniwE 'verzuim|absence|absent|DUO|leerplicht|BRON' lib src configurations = 0 relevant hits (only 'absent' in docblocks about missing apps, e.g. lib/Capabilities.php:10). Covered by openspec/changes/integriq-adapter-verzuimloket/ (17 of 17 tasks ticked; OpenSpec pass 2026-09-27): The DUO Verzuimloket adapter landed dormant on 2026-09-27 (#2181), after the matrix was read; matrix corrected to building."
+				"change": "2026-09-28-integriq-adapter-verzuimloket",
+				"evidence": "lib/Service/Exchange/ExchangeTargetDispatcher.php:315 calls lib/Service/VerzuimloketService.php:125 sendMelding(), which translates the melding, sends it through the log or Edukoppeling provider and keeps a verzuim_message record the register accepts (tests/Unit/Service/VerzuimloketServiceTest.php validates every record kind against the merged schema with opis); appinfo/routes.php verzuimloket#berichten and #retour; appinfo/info.xml VerzuimloketRetryJob. Ships dormant: the live Edukoppeling transport waits on a DUO certificate. Built by change integriq-adapter-verzuimloket (archived 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "There is no DUO or verzuimregister target template; only the generic outbound sync (see con-push-register) could be configured for it by hand.",
+			"reachedOn": "learniq leerplicht DataExchangeJob through the exchange target dispatcher, and POST /api/verzuimloket/berichten; DUO retour at POST /api/verzuimloket/retour; hourly VerzuimloketRetryJob",
+			"note": "There is no DUO or verzuimregister target template; only the generic outbound sync (see con-push-register) could be configured for it by hand. Built 2026-09-28; the build-all pass found every audit record refused by the register (nulls in string properties) and fixed it. Rated partial until the Edukoppeling transport has a DUO certificate; the code path is complete.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -8304,12 +8331,13 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "specified",
+				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Counted: 25 seeded source objects across 24 files in lib/Settings/register.d/ (python enumeration of components.objects with schema source); 6 static descriptors at lib/Service/CatalogRegistryService.php:215-303; 4 integriq adapters registered in the IntegrationRegistry (find lib/Service/Adapter -name '*Adapter.php' = 4); 8 more source files under configurations/*/sources/ that the Store does not list. Store collection: lib/Service/CatalogRegistryService.php:145-161, materialised by lib/Repair/MaterializeCatalogItems.php:46. Specified in openspec/changes/connectors-catalogue-expansion/ (OpenSpec pass 2026-09-27).",
-				"catalogCount": "about 35 catalog_item cards (25 source templates + 6 static + 4 adapters), about 43 connectors counting configuration templates"
+				"evidence": "The mechanism is built (connectors-catalogue-expansion, 29 Sep 2026): a pinned APIs.guru snapshot (2,529 APIs), a reviewed allow-list and scripts/generate-connector-templates.php write generated Store templates. The allow-list holds two (Google Sheets, Slack) plus curated Salesforce and Alfresco, so the Store is not near hundreds; the count grows by adding allow-list entries.",
+				"catalogCount": "about 35 catalog_item cards (25 source templates + 6 static + 4 adapters), about 43 connectors counting configuration templates",
+				"change": "2026-09-29-connectors-catalogue-expansion"
 			},
-			"reachedOn": "/store",
+			"reachedOn": "Store > Generated templates",
 			"note": "The Store holds roughly 35 entries, not hundreds, and that count is padded: two environment placeholder sources (environment-local-source, environment-acceptance-source) become connector cards, and SmartDocuments and Xential each appear twice (adapter and source template). About ten of the real ones are Specter feeds that write to a register integriq does not ship.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8335,13 +8363,14 @@
 			"area": "connectors",
 			"name": "Translate a text through an outside translation service.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "none",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniE 'deepl|libretranslate|translation service|translation api|ITranslationManager|TranslationProvider|google translate' lib src = 0 relevant hits (only 'deeply' and LtiDeepLinking matches); lib/Service/ZgwVersionTranslationService.php translates ZGW API versions, not text"
+				"change": "2026-09-28-connectors-translation-service",
+				"evidence": "lib/Service/TranslationService.php:81 translate() sends the text to the first enabled source of deepl-translation or libretranslate (lib/Settings/register.d/deepl-translation-source.json, libretranslate-source.json) and returns the answer in the shape decidiq LogTranslationAdapter reads; tests/Unit/Service/TranslationServiceTest.php, tests/Unit/Settings/TranslationSourceTemplatesTest.php. Built by change connectors-translation-service (build-all pass 2026-09-28)."
 			},
-			"reachedOn": "nothing reaches it",
+			"reachedOn": "sibling apps through OCA\\Integriq\\Service\\TranslationService::translate() (decidiq minutes translation); DeepL and LibreTranslate source templates in the catalogue under Language",
 			"note": "No translation service template or adapter exists; the ZGW 'translate' code is API version translation and does not count.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8372,12 +8401,12 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniE '\\bSBB\\b|leerbedrijf|s-bb\\.nl|erkend' lib src configurations = 0 hits"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "No SBB leerbedrijven source or check exists in integriq.",
+			"note": "No SBB leerbedrijven source or check exists in integriq. Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row; learniq wpl-check-the-company-is-approved is itself unbuilt.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -8407,12 +8436,12 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SoftwareCatalogueService.php:112-186 extendModel reads a local vng-gemma model object in OpenRegister and writes extendview objects (called only from the custom-connections rule at lib/Service/RuleService.php:414); :584-725 every organisation/contact lifecycle handler is a TODO that only logs (e.g. :586 'TODO: Implement email sending logic'). No HTTP call to any software catalogue anywhere in the class."
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "The hint was wrong: SoftwareCatalogueService is a VNG Softwarecatalogus helper that extends GEMMA ArchiMate views inside OpenRegister, plus stubbed lifecycle hooks, and it never reads software from a catalogue. No source template for a software catalogue ships either.",
+			"note": "The hint was wrong: SoftwareCatalogueService is a VNG Softwarecatalogus helper that extends GEMMA ArchiMate views inside OpenRegister, plus stubbed lifecycle hooks, and it never reads software from a catalogue. No source template for a software catalogue ships either. Decided no (build-all pass 2026-09-28): No competitor rates yes and no demand row.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "software-catalogus-events",
@@ -8507,13 +8536,14 @@
 			"source": "demand-signal",
 			"origin": "tender",
 			"originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/226100",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -riE 'iburgerzaken|pinkroccade|centric|\\bgws\\b|nedgraphics|civision' over lib/ src/ appinfo/ finds nothing; none of the 25 seeded sources in lib/Settings/register.d/ is one of these systems (row con-library-size). Specified in openspec/changes/connectors-catalogue-expansion/ (OpenSpec pass 2026-09-27)."
+				"evidence": "Built 29 Sep 2026 (connectors-catalogue-expansion): the Store lists lib/Settings/connector-templates/ without installing it (CatalogRegistryService::collectFromTemplates). Of the fourteen systems in Stein requirements 166859 and 186343, Alfresco has a checked template (backoffice/alfresco-cmis.json, CMIS 1.1 browser binding) and SmartDocuments is an adapter; the other twelve have a recorded reason in backoffice/README.md (reached over BRP, BAG, iWMO/iJW or OGC through existing adapters, or no published interface to check). Partial because most are reached indirectly, not by a vendor connector.",
+				"change": "2026-09-29-connectors-catalogue-expansion"
 			},
-			"reachedOn": "nothing reaches it",
+			"reachedOn": "Store > Checked templates",
 			"note": "Gemeente Stein requirements 166859 and 186343 list Alfresco, CIR, GWS, LBA, iBurgerzaken, Civision Samenleving, iObjecten BAG, Cipers, NedGeo, NedGlobe, NedOmgeving, Stratech, Simsuite and SmartDocuments. Integriq: A buyer can still configure these as plain REST or SOAP sources; no ready-made connector exists.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8677,13 +8707,14 @@
 			"source": "demand-signal",
 			"origin": "tender",
 			"originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/226100",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
+				"change": "2026-09-29-observability-connection-run-summary",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:420-435 Dashboard page shows counts of runs, dead letters, event messages and circuit states over time (row obs-dashboard); no threshold warning: grep 'INotificationManager|createNotification' over lib/ finds only lib/Service/ApprovalService.php (row obs-alerts). Specified in openspec/changes/observability-connection-run-summary/ (OpenSpec pass 2026-09-27)."
+				"evidence": "lib/Service/RunSummaryService.php behind GET /api/sources/{id}/run-summary (lib/Controller/RunSummaryController.php, action source.logs, at most 31 days) sums a source's runs per day; src/components/SourceRunSummaryWidget.vue shows it on SourceDetail with the latest runs and Run again on a failed one (src/handlers/runAgain.js, triggeredBy rerun, no dialog; also a row action on Synchronization Runs). Run records carry sourceId and triggeredBy (SynchronizationRunProgressService::start). lib/BackgroundJob/ConnectionThresholdJob.php runs lib/Service/ConnectionAlertService.php every five minutes: alertThresholds on source and synchronization (failed calls, failed runs, invalid objects over a window) open one connection_alert above a threshold and clear it once the count falls back. The alert's created rule notifies the members of the group in the app setting connection_alert_group (lib/Notification/ConnectionAlertRecipientResolver.php, no default; set on the admin page, ConnectionAlertSettingsController refuses an unknown group). Operations > Connection alerts lists them. Tests: SynchronizationRunProgressServiceTest, RunSummaryServiceTest, RunSummaryControllerTest, SynchronizationsControllerRerunTest, ConnectionAlertServiceTest (payloads validated against the merged connection_alert schema), ConnectionAlertRecipientResolverTest, ConnectionThresholdJobTest, ConnectionAlertSettingsControllerTest, tests/vitest/connectionRunSummary.spec.js. Built by change observability-connection-run-summary (archived 2026-09-29)."
 			},
-			"reachedOn": "/ (Dashboard)",
+			"reachedOn": "/sources/:id (Pulls per day), /connection-alerts, Administration settings > Integriq",
 			"note": "Gemeente Stein wens W3 (requirement 20243). Integriq: Counts are shown; no threshold alert reaches the administrator.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -9156,12 +9187,12 @@
 			"originUrl": "https://tyk.io/docs/developer-support/release-notes/gateway",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -i 'exchange' over lib/Service/CallService.php and lib/Service/BrokeredCallService.php finds only a docblock at BrokeredCallService.php:190; the proxy path lib/Service/EndpointService.php:2174-2266 forwards with the source's own credentials, it never exchanges the caller's token"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Tyk 5.14.0 (2026-07-07) RFC 8693 token exchange; 5.15.0 Entra on-behalf-of.",
+			"note": "Tyk 5.14.0 (2026-07-07) RFC 8693 token exchange; 5.15.0 Entra on-behalf-of. Decided no (build-all pass 2026-09-28): Single competitor yes (mulesoft) plus a Tyk changelog, no tender or request, outside the core area.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "demand-changelog",
@@ -9326,12 +9357,12 @@
 			"originUrl": "https://github.com/n8n-io/n8n/pull/20918",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -riE 'breaking.?change|upgrade.?report|preUpgrade' over lib/ finds only docblocks at lib/Capabilities.php:51 and lib/Flow/SynchronizationRunNode.php:121; migrations and repair steps run during the upgrade, nothing reports their impact beforehand"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "n8n 1.119.0 (2025-11-03) added a breaking-change audit rule engine and a migration report in the settings.",
+			"note": "n8n 1.119.0 (2025-11-03) added a breaking-change audit rule engine and a migration report in the settings. Decided no (build-all pass 2026-09-28): Single competitor yes (n8n) plus its own changelog, no tender or request, outside the core area.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "demand-changelog",
@@ -9496,12 +9527,12 @@
 			"originUrl": "https://tyk.io/docs/developer-support/release-notes/gateway",
 			"integriq": "no",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Mcp does not exist and the gateway proxies HTTP endpoints only (lib/Service/EndpointService.php:2174-2266); grep -ri 'tools/list' over lib/ finds nothing (row acc-mcp-gateway)"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Tyk 5.14.0 (2026-07-07): the MCP proxy filters the tool, resource and prompt lists returned during capability discovery.",
+			"note": "Tyk 5.14.0 (2026-07-07): the MCP proxy filters the tool, resource and prompt lists returned during capability discovery. Decided no (build-all pass 2026-09-28): Single competitor yes (tyk) plus its changelog, no tender or request; gateway-mcp-proxy lists it out of scope, and Hermiq agents are scoped by ADR-063 decision 6.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "demand-changelog",

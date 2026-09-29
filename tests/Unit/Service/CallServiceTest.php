@@ -432,6 +432,123 @@ class CallServiceTest extends TestCase {
 	}//end testGuzzlePathCallLogRedactsAuthorizationHeaderWithoutAffectingRealRequest()
 
 	/**
+	 * Call a source with extra top-level fields through a captured Guzzle
+	 * client and return the options the client received.
+	 *
+	 * @param array<string,mixed> $fields Top-level source fields (auth, username, ...).
+	 * @param array<string,mixed> $configuration The source configuration.
+	 *
+	 * @return array<string,mixed> The Guzzle request options.
+	 */
+	private function callWithSourceFields(array $fields, array $configuration = []): array {
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturnCallback(
+			static fn (array $config): bool => is_array($config['authentication'] ?? null) === true
+				&& array_key_exists('credentialRef', $config['authentication']) === true
+		);
+		$service = $this->buildBrokeredCallService($brokered);
+
+		$captured = [];
+		$mockClient = $this->createMock(\GuzzleHttp\Client::class);
+		$mockClient->method('request')->willReturnCallback(
+			function (string $method, string $url, array $config) use (&$captured) {
+				$captured = $config;
+
+				return new Response(200, [], '{"ok":true}');
+			}
+		);
+		$clientProperty = new \ReflectionProperty(CallService::class, 'client');
+		$clientProperty->setAccessible(true);
+		$clientProperty->setValue($service, $mockClient);
+
+		$source = $this->makeBrokeredSource(configuration: $configuration);
+		// A real source carries a uuid, which the call log's source relation requires.
+		$source->setUuid('7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f');
+		$source->setObject(array_merge($source->getObject(), $fields));
+		$service->call(source: $source, endpoint: '/v1/items');
+
+		return $captured;
+	}//end callWithSourceFields()
+
+	/**
+	 * A source that declares Basic login sends it (sources-declared-basic-and-apikey-auth).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
+	 */
+	public function testADeclaredBasicLoginIsSent(): void {
+		$options = $this->callWithSourceFields(['auth' => 'basic', 'username' => 'koppeling', 'password' => 'geheim-wachtwoord']);
+
+		$this->assertSame(['koppeling', 'geheim-wachtwoord'], $options['auth'] ?? null);
+		$log = $this->savedCallLogs()[0]['object'];
+		$this->assertStringNotContainsString('geheim-wachtwoord', json_encode($log));
+	}//end testADeclaredBasicLoginIsSent()
+
+	/**
+	 * A source that declares an API key sends it in the declared header, and
+	 * the call log does not keep it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
+	 */
+	public function testADeclaredApiKeyIsSentInTheDeclaredHeader(): void {
+		$options = $this->callWithSourceFields(['auth' => 'apikey', 'apikey' => 'sleutel-123', 'authorizationHeader' => 'Partner-Token']);
+
+		$this->assertSame('sleutel-123', $options['headers']['Partner-Token'] ?? null);
+		$log = $this->savedCallLogs()[0]['object'];
+		$this->assertStringNotContainsString('sleutel-123', json_encode($log));
+		$this->assertSame([], \OCA\Integriq\Tests\Helpers\RegisterSchemaValidator::errors('call_log', $log), 'the call log record is one the register accepts');
+	}//end testADeclaredApiKeyIsSentInTheDeclaredHeader()
+
+	/**
+	 * An API key with no declared header goes in Authorization.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-a-source-logs-in-with-the-login-it-declares-req-sdl-001
+	 */
+	public function testAnApiKeyWithoutAHeaderNameGoesInAuthorization(): void {
+		$options = $this->callWithSourceFields(['auth' => 'apikey', 'apikey' => 'sleutel-123']);
+
+		$this->assertSame('sleutel-123', $options['headers']['Authorization'] ?? null);
+	}//end testAnApiKeyWithoutAHeaderNameGoesInAuthorization()
+
+	/**
+	 * What the operator wrote wins, and a broker source is untouched.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-an-explicit-login-and-the-broker-win-req-sdl-002
+	 */
+	public function testAnExplicitLoginAndTheBrokerWin(): void {
+		$explicitAuth = $this->callWithSourceFields(
+			['auth' => 'basic', 'username' => 'koppeling', 'password' => 'geheim'],
+			['auth' => ['beheer', 'ander-wachtwoord']]
+		);
+		$this->assertSame(['beheer', 'ander-wachtwoord'], $explicitAuth['auth']);
+
+		$explicitHeader = $this->callWithSourceFields(
+			['auth' => 'apikey', 'apikey' => 'sleutel-123'],
+			['headers' => ['Authorization' => 'Bearer handgeschreven']]
+		);
+		$this->assertSame('Bearer handgeschreven', $explicitHeader['headers']['Authorization']);
+
+		$this->assertTrue((new \ReflectionClass(\OCA\Integriq\Service\SourceAuthApplier::class))->hasMethod('apply'));
+		$applier = new \OCA\Integriq\Service\SourceAuthApplier();
+		$config = ['headers' => []];
+		$this->assertSame(
+			$config,
+			$applier->apply(
+				sourceData: ['auth' => 'apikey', 'apikey' => 'sleutel-123', 'configuration' => ['authentication' => ['credentialRef' => ['credentialId' => 'x']]]],
+				config: $config
+			),
+			'a broker source is called through the broker only'
+		);
+	}//end testAnExplicitLoginAndTheBrokerWin()
+
+	/**
 	 * TC-10 — a secret submitted as a form parameter and echoed back verbatim
 	 * in an upstream error response body is scrubbed before the CallLog is
 	 * persisted, on the non-brokered Guzzle path.
@@ -1850,7 +1967,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
 	 */
 	public function testCallPassesSinkToGuzzleAndKeepsItOutOfTheCallLog(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -1951,7 +2068,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testCallRejectsTheAsynchronousFlagAndNamesTheSibling(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -1993,7 +2110,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testCallAsyncResolvesToACallLogEntity(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -2047,7 +2164,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testCallAsyncRefusesAResourceSink(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -2095,7 +2212,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testCallAsyncPassesOnHeadersToGuzzleAndKeepsItOutOfTheCallLog(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -2157,7 +2274,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function testCallAsyncFulfilsWithTheShortCircuitCallLog(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);

@@ -737,7 +737,12 @@ class EndpointService {
 				$statusCode = $configurations['defaultStatusCode'];
 			}
 
-			return new JSONResponse(data: $ruleResult['body'], statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
+			// The endpoint's output mapping reshapes the answer last, so every
+			// `after` rule sees the register's own shape and the consumer sees
+			// the mapped one (gateway-endpoint-transform-and-plugins D1).
+			$answerBody = $this->applyOutputMapping(endpointData: $endpointData, body: $ruleResult['body']);
+
+			return new JSONResponse(data: $answerBody, statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
 		}//end if
 
 		// Check if endpoint connects to a source.
@@ -749,6 +754,44 @@ class EndpointService {
 		// Invalid endpoint configuration.
 		throw new Exception('Endpoint must specify either a schema or source connection');
 	}//end dispatchAfterBeforeRules()
+
+	/**
+	 * Apply an endpoint's `outputMapping` to the answer body.
+	 *
+	 * A single object is mapped as a whole. A list answer (a `results` array)
+	 * has each item mapped and keeps its other keys, the pagination envelope.
+	 * No mapping, or a body that is not an array (an empty DELETE answer), is
+	 * returned unchanged.
+	 *
+	 * @param array $endpointData The endpoint object.
+	 * @param mixed $body The body the `after` rules produced.
+	 *
+	 * @return mixed The body the consumer receives.
+	 *
+	 * @throws DoesNotExistException When the named mapping does not exist.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-an-endpoints-output-mapping-reshapes-its-answer-req-gtp-001
+	 */
+	private function applyOutputMapping(array $endpointData, mixed $body): mixed {
+		$mappingId = (string)($endpointData['outputMapping'] ?? '');
+		if ($mappingId === '' || is_array($body) === false) {
+			return $body;
+		}
+
+		$mapping = $this->mappingService->getMapping(mappingId: $mappingId);
+
+		if (isset($body['results']) === true && is_array($body['results']) === true) {
+			foreach ($body['results'] as $index => $item) {
+				if (is_array($item) === true) {
+					$body['results'][$index] = $this->mappingService->executeMapping(mapping: $mapping, input: $item);
+				}
+			}
+
+			return $body;
+		}
+
+		return $this->mappingService->executeMapping(mapping: $mapping, input: $body);
+	}//end applyOutputMapping()
 
 	/**
 	 * Resume an endpoint rule-pipeline run suspended by an `approval` rule,
@@ -3893,20 +3936,29 @@ class EndpointService {
 	}//end processFilePartUploadRule()
 
 	/**
-	 * Processes a JavaScript rule
+	 * Refuse a JavaScript rule. Integriq runs no scripts: tenant-written code
+	 * in a Nextcloud PHP process needs a sandbox integriq does not have. This
+	 * rule used to return its input unchanged, which is worse than no rule.
+	 * The register no longer stores the type; a rule saved before that fails
+	 * here, loudly, the first time it runs.
 	 *
-	 * @param ObjectEntity $rule The rule object containing JavaScript execution details
-	 * @param array $data The input data to be processed by the JavaScript rule
+	 * @param ObjectEntity $rule The rule.
+	 * @param array $data The pipeline data (untouched).
 	 *
-	 * @return array The processed data after executing the JavaScript rule
+	 * @return array Never returns.
 	 *
-	 * @spec openspec/specs/rule-pipeline/spec.md
+	 * @throws Exception Always.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-javascript-rule-is-refused-req-gtp-003
 	 */
 	private function processJavaScriptRule(ObjectEntity $rule, array $data): array {
-		$config = $rule->getObject()['configuration'] ?? [];
-		// @todo: Here we need to implement the JavaScript execution logic
-		// For now, just return the data unchanged
-		return $data;
+		unset($data);
+		throw new Exception(
+			sprintf(
+				"Integriq runs no scripts, so the JavaScript rule '%s' was not run. Use a custom rule that names a plug-in, or a flow.",
+				(string)($rule->getObject()['name'] ?? $rule->getUuid())
+			)
+		);
 	}//end processJavaScriptRule()
 
 	/**
