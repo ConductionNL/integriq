@@ -193,6 +193,45 @@ class LtiRegistrationResolverService {
 	}//end findDeployment()
 
 	/**
+	 * Every `lti_deployment` of a tool registration.
+	 *
+	 * A conformant LTI Advantage token request names the tool (the client
+	 * assertion's `iss`/`sub`), not a deployment; the token then covers the
+	 * tool's own deployments.
+	 *
+	 * @param string $toolUuid The `lti_tool` registration uuid.
+	 *
+	 * @return array<int, ObjectEntity> The tool's deployments (possibly none).
+	 *
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
+	 */
+	public function findDeploymentsForTool(string $toolUuid): array {
+		if ($toolUuid === '') {
+			return [];
+		}
+
+		$matches = $this->orObjectService->findAll(
+			config: [
+				'filters' => [
+					'register' => 'integriq',
+					'schema' => 'lti_deployment',
+					'ltiToolId' => $toolUuid,
+				],
+			],
+			_rbac: false,
+			_multitenancy: false
+		);
+		$results = ($matches['results'] ?? $matches);
+
+		return array_values(
+			array_filter(
+				$results,
+				static fn ($row): bool => $row instanceof ObjectEntity && ($row->getObject()['ltiToolId'] ?? null) === $toolUuid
+			)
+		);
+	}//end findDeploymentsForTool()
+
+	/**
 	 * Find an `lti_deployment` by its own UUID.
 	 *
 	 * @param string $deploymentUuid The deployment's UUID.

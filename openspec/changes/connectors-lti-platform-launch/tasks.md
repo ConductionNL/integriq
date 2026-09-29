@@ -28,8 +28,10 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
 - **acceptance_criteria**:
   - GIVEN a resource link launch WHEN the id_token is built THEN it has `resource_link.id` the placement id, LIS roles, context, return URL and the grade service claim
   - GIVEN a score posted to that line item WHEN it is received THEN the CloudEvent names the placement as `lineItemId`
-- [ ] Implement
+- [x] Implement
+  - 2026-09-29: `LtiPlatformLoginService::agsEndpointClaim()` adds `https://purl.imsglobal.org/spec/lti-ags/claim/endpoint` with `lineitem` = this deployment's `lti#agsLineItem` URL for the placement id and `scope` = `lineitem.readonly` + `score` (`lineitems` is left out: no line item container route). `lti#token` now serves a conformant request without the former `deployment_id` parameter, scoping the token to the tool's only deployment (a tool with several still names one), and grants `lineitem.readonly`; `lti#agsLineItem` accepts it.
 - [ ] Test (integration test launching the reference tool fixture and posting a score)
+  - Not yet: the live run against a reference tool is pending. PHPUnit pins the pieces: `LtiPlatformLaunchTest::testAuthorizePostsIdTokenWithToolNonceAndState` (claim, URL resolved from routes.php, every scope grantable), `LtiAgsServiceTest::testConformantTokenRequestIsScopedToTheToolsOnlyDeployment` and `testAToolWithSeveralDeploymentsMustNameOne`, `LtiControllerInboundTest::testAConformantTokenRequestWithoutDeploymentIdIsServed`.
 
 ### Task 4: Redirect URIs and the platform details view
 - **spec_ref**: openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-an-administrator-can-give-a-tool-the-platform-details-it-needs-req-ltil-004

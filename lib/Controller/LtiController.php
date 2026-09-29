@@ -229,15 +229,17 @@ class LtiController extends Controller {
 	/**
 	 * RFC 7523 JWT-bearer client-credentials token endpoint.
 	 *
-	 * Accepts `deployment_id` (this instance's `lti_deployment` UUID) as an
-	 * additional form parameter beyond the RFC 7523 baseline — required
-	 * because design.md D8 mandates the issued token be scoped to exactly
-	 * one deployment, and the base RFC provides no deployment-selection
-	 * mechanism of its own.
+	 * A conformant LTI Advantage request (1EdTech Security Framework 4.1)
+	 * carries grant_type, client_assertion_type, client_assertion and scope,
+	 * and no deployment: the token is scoped to the asserting tool's only
+	 * deployment. The token stays scoped to exactly one deployment (design.md
+	 * D8), so a tool with several still names one in the optional
+	 * `deployment_id` form parameter (an `lti_deployment` UUID).
 	 *
 	 * @return JSONResponse The access token on success; 400/401/403 per the specific failure.
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -252,7 +254,6 @@ class LtiController extends Controller {
 		if ($grantType !== 'client_credentials'
 			|| $assertionType !== 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 			|| $clientAssertion === ''
-			|| $deploymentId === ''
 		) {
 			return $this->renderRejection(
 				exception: new LtiValidationException(message: 'Invalid token request', details: [], httpStatus: 400)
@@ -263,7 +264,7 @@ class LtiController extends Controller {
 			$token = $this->agsService->issueAccessToken(
 				clientAssertion: $clientAssertion,
 				requestedScope: $scope,
-				deploymentUuid: $deploymentId
+				deploymentUuid: ($deploymentId === '' ? null : $deploymentId)
 			);
 		} catch (LtiValidationException $exception) {
 			return $this->renderRejection(exception: $exception);
@@ -338,7 +339,7 @@ class LtiController extends Controller {
 			$this->agsService->assertScopedToDeployment(
 				accessToken: $token,
 				deploymentUuid: $deployment,
-				requiredScope: LtiAgsService::SCOPE_LINEITEM
+				requiredScope: [LtiAgsService::SCOPE_LINEITEM, LtiAgsService::SCOPE_LINEITEM_READONLY]
 			);
 		} catch (LtiValidationException $exception) {
 			return $this->renderRejection(exception: $exception);

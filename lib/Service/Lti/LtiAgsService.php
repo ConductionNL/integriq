@@ -50,6 +50,7 @@ class LtiAgsService {
 	 * @var string
 	 */
 	public const SCOPE_LINEITEM = 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem';
+	public const SCOPE_LINEITEM_READONLY = 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly';
 	public const SCOPE_SCORE = 'https://purl.imsglobal.org/spec/lti-ags/scope/score';
 	public const SCOPE_RESULT = 'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly';
 	public const SCOPE_NRPS = 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly';
@@ -61,6 +62,7 @@ class LtiAgsService {
 	 */
 	public const ALLOWED_SCOPES = [
 		self::SCOPE_LINEITEM,
+		self::SCOPE_LINEITEM_READONLY,
 		self::SCOPE_SCORE,
 		self::SCOPE_RESULT,
 		self::SCOPE_NRPS,
@@ -122,17 +124,24 @@ class LtiAgsService {
 	 * RFC 7523 JWT-bearer client-credentials grant: exchange a signed
 	 * `client_assertion` for a deployment-scoped access token.
 	 *
-	 * @param string $clientAssertion The `client_assertion` JWT posted to `POST /api/lti/token`.
-	 * @param string $requestedScope Space-separated requested scopes.
-	 * @param string $deploymentUuid The `lti_deployment` this token is scoped to.
+	 * A conformant LTI Advantage token request carries no deployment (1EdTech
+	 * Security Framework 4.1): the tool is named by the assertion's `iss`/`sub`.
+	 * The token is still scoped to exactly one deployment (design.md D8,
+	 * REQ-LTI-007): the asserting tool's only deployment, or, for a tool with
+	 * several, the one the caller names in the optional `deployment_id`.
+	 *
+	 * @param string      $clientAssertion The `client_assertion` JWT posted to `POST /api/lti/token`.
+	 * @param string      $requestedScope  Space-separated requested scopes.
+	 * @param string|null $deploymentUuid  The `lti_deployment` to scope to; optional when the tool has one.
 	 *
 	 * @return array{access_token: string, token_type: string, expires_in: integer, scope: string}
 	 *
 	 * @throws LtiValidationException On any assertion/deployment/scope failure (no cross-deployment token — design.md D8).
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
 	 */
-	public function issueAccessToken(string $clientAssertion, string $requestedScope, string $deploymentUuid): array {
+	public function issueAccessToken(string $clientAssertion, string $requestedScope, ?string $deploymentUuid = null): array {
 		[$payload, $tool] = $this->launchService->verifyIdTokenSignature(idToken: $clientAssertion, registrationType: 'lti_tool');
 
 		// RFC 7523: the assertion's iss and sub MUST both be the client's own
@@ -146,22 +155,7 @@ class LtiAgsService {
 		// (HTTP 401) rather than letting it escape uncaught.
 		$this->launchService->validateTiming(payload: $payload);
 
-		$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
-		if ($deployment === null) {
-			throw new LtiValidationException(message: 'Unknown lti_deployment', details: [], httpStatus: 400);
-		}
-
-		$deploymentData = $deployment->getObject();
-		if (($deploymentData['ltiToolId'] ?? null) !== $tool->getUuid()) {
-			// Per-deployment isolation (design.md D8): the asserting tool
-			// must own this deployment — never issue a token scoped to a
-			// deployment belonging to a different tool registration.
-			throw new LtiValidationException(
-				message: 'Deployment is not registered under the asserting tool',
-				details: [],
-				httpStatus: 403
-			);
-		}
+		$scopedDeployment = $this->tokenDeployment(toolUuid: $tool->getUuid(), deploymentUuid: $deploymentUuid);
 
 		$requestedScopes = array_values(array_filter(explode(' ', trim($requestedScope))));
 		if ($requestedScopes === []) {
@@ -178,7 +172,7 @@ class LtiAgsService {
 			'token:' . $accessToken,
 			json_encode(
 				[
-					'deploymentUuid' => $deployment->getUuid(),
+					'deploymentUuid' => $scopedDeployment,
 					'toolUuid' => $tool->getUuid(),
 					'scopes' => $grantedScopes,
 				]
@@ -188,7 +182,7 @@ class LtiAgsService {
 
 		$this->logger->info(
 			'LtiAgsService: issued access token',
-			['deploymentUuid' => $deployment->getUuid(), 'scopes' => $grantedScopes]
+			['deploymentUuid' => $scopedDeployment, 'scopes' => $grantedScopes]
 		);
 
 		return [
@@ -199,6 +193,54 @@ class LtiAgsService {
 		];
 
 	}//end issueAccessToken()
+
+	/**
+	 * The one deployment a token for this tool is scoped to.
+	 *
+	 * @param string      $toolUuid       The asserting tool's registration uuid.
+	 * @param string|null $deploymentUuid A deployment the caller named, or null.
+	 *
+	 * @return string The deployment uuid.
+	 *
+	 * @throws LtiValidationException When the named deployment is unknown (400) or
+	 *                                not the tool's (403), or, unnamed, the tool has
+	 *                                no deployment or more than one (400).
+	 */
+	private function tokenDeployment(string $toolUuid, ?string $deploymentUuid): string {
+		if ($deploymentUuid !== null && $deploymentUuid !== '') {
+			$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
+			if ($deployment === null) {
+				throw new LtiValidationException(message: 'Unknown lti_deployment', details: [], httpStatus: 400);
+			}
+
+			if (($deployment->getObject()['ltiToolId'] ?? null) !== $toolUuid) {
+				// Per-deployment isolation (design.md D8): the asserting tool
+				// must own this deployment.
+				throw new LtiValidationException(
+					message: 'Deployment is not registered under the asserting tool',
+					details: [],
+					httpStatus: 403
+				);
+			}
+
+			return (string)$deployment->getUuid();
+		}
+
+		$deployments = $this->resolver->findDeploymentsForTool(toolUuid: $toolUuid);
+		if (count($deployments) === 1) {
+			return (string)$deployments[0]->getUuid();
+		}
+
+		if ($deployments === []) {
+			throw new LtiValidationException(message: 'The asserting tool has no deployment', details: [], httpStatus: 400);
+		}
+
+		throw new LtiValidationException(
+			message: 'The asserting tool has more than one deployment; name one with deployment_id',
+			details: ['deployments' => count($deployments)],
+			httpStatus: 400
+		);
+	}//end tokenDeployment()
 
 	/**
 	 * Resolve an issued access token to its bound deployment + granted scopes.
@@ -224,13 +266,13 @@ class LtiAgsService {
 	}//end resolveAccessToken()
 
 	/**
-	 * Enforce that a token is valid, carries the required scope, and is
-	 * bound to the given deployment (route-layer enforcement, REQ-LTI-007
+	 * Enforce that a token is valid, carries one of the accepted scopes, and
+	 * is bound to the given deployment (route-layer enforcement, REQ-LTI-007
 	 * scenario: cross-deployment access rejected 403).
 	 *
-	 * @param string $accessToken The bearer token value.
-	 * @param string $deploymentUuid The deployment the calling route is scoped to.
-	 * @param string $requiredScope The scope the endpoint requires.
+	 * @param string                    $accessToken    The bearer token value.
+	 * @param string                    $deploymentUuid The deployment the calling route is scoped to.
+	 * @param string|array<int, string> $requiredScope  The scope the endpoint requires, or the scopes any one of which suffices.
 	 *
 	 * @return array The resolved token data.
 	 *
@@ -238,13 +280,13 @@ class LtiAgsService {
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
-	public function assertScopedToDeployment(string $accessToken, string $deploymentUuid, string $requiredScope): array {
+	public function assertScopedToDeployment(string $accessToken, string $deploymentUuid, string|array $requiredScope): array {
 		$tokenData = $this->resolveAccessToken(accessToken: $accessToken);
 		if ($tokenData === null) {
 			throw new LtiValidationException(message: 'Invalid or expired access token', details: [], httpStatus: 401);
 		}
 
-		if ($tokenData['deploymentUuid'] !== $deploymentUuid) {
+		if (($tokenData['deploymentUuid'] ?? null) !== $deploymentUuid) {
 			throw new LtiValidationException(
 				message: 'Access token is not scoped to this deployment',
 				details: [],
@@ -252,10 +294,11 @@ class LtiAgsService {
 			);
 		}
 
-		if (in_array(needle: $requiredScope, haystack: $tokenData['scopes'], strict: true) === false) {
+		$accepted = (array)$requiredScope;
+		if (array_intersect($accepted, (array)($tokenData['scopes'] ?? [])) === []) {
 			throw new LtiValidationException(
 				message: 'Access token lacks the required scope',
-				details: ['requiredScope' => $requiredScope],
+				details: ['requiredScope' => implode(' ', $accepted)],
 				httpStatus: 403
 			);
 		}

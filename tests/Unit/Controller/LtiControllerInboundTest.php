@@ -256,7 +256,7 @@ class LtiControllerInboundTest extends TestCase {
 			->with(
 				$this->identicalTo('service-token'),
 				$this->identicalTo('deployment-1'),
-				$this->identicalTo(LtiAgsService::SCOPE_LINEITEM)
+				$this->identicalTo([LtiAgsService::SCOPE_LINEITEM, LtiAgsService::SCOPE_LINEITEM_READONLY])
 			);
 
 		$response = $this->controller->agsLineItem('deployment-1', 'lineitem-7');
@@ -265,6 +265,35 @@ class LtiControllerInboundTest extends TestCase {
 		$this->assertSame('lineitem-7', $response->getData()['id']);
 
 	}//end testAgsLineItemAssertsTheLineItemScopeAgainstTheRouteDeployment()
+
+	/**
+	 * A conformant LTI Advantage token request carries no `deployment_id`
+	 * (1EdTech Security Framework 4.1). It is answered by the service, which
+	 * resolves the deployments from the asserting tool, instead of a 400.
+	 *
+	 * @return void
+	 */
+	public function testAConformantTokenRequestWithoutDeploymentIdIsServed(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => [
+				'grant_type' => 'client_credentials',
+				'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+				'client_assertion' => 'signed.client.assertion',
+				'scope' => LtiAgsService::SCOPE_SCORE,
+			][$key] ?? $default
+		);
+
+		$this->agsService->expects($this->once())
+			->method('issueAccessToken')
+			->with($this->identicalTo('signed.client.assertion'), $this->identicalTo(LtiAgsService::SCOPE_SCORE), $this->isNull())
+			->willReturn(['access_token' => 't', 'token_type' => 'Bearer', 'expires_in' => 3600, 'scope' => LtiAgsService::SCOPE_SCORE]);
+
+		$response = $this->controller->token();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('t', $response->getData()['access_token']);
+
+	}//end testAConformantTokenRequestWithoutDeploymentIdIsServed()
 
 	// ---------------------------------------------------------------------
 	// REQ-LTI-009 — NRPS inbound (Platform role)

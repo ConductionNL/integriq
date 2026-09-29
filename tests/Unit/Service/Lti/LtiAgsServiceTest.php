@@ -118,6 +118,9 @@ class LtiAgsServiceTest extends TestCase {
 				};
 			}
 		);
+		$resolver->method('findDeploymentsForTool')->willReturnCallback(
+			fn ($toolUuid) => ($toolUuid === self::TOOL_UUID) ? [$deploymentA] : []
+		);
 		$resolver->method('findRegistrationByUuid')->willReturnCallback(
 			fn ($type, $uuid) => ($type === 'lti_platform') ? null : null
 		);
@@ -232,6 +235,66 @@ class LtiAgsServiceTest extends TestCase {
 		$this->assertSame(self::DEPLOYMENT_A, $resolved['deploymentUuid']);
 
 	}//end testValidAssertionIssuesDeploymentScopedToken()
+
+	/**
+	 * A conformant token request names no deployment: the token is scoped to
+	 * the asserting tool's only deployment, so a score posts to its line item,
+	 * and another deployment stays refused (design.md D8).
+	 *
+	 * @return void
+	 */
+	public function testConformantTokenRequestIsScopedToTheToolsOnlyDeployment(): void {
+		$fixtures = $this->makeFixtures();
+		$eventService = $this->createMock(EventService::class);
+		$eventService->expects($this->once())->method('emitCloudEvent')->willReturn([]);
+		$service = $this->makeService($fixtures, null, null, $eventService);
+
+		$token = $service->issueAccessToken(
+			$this->signClientAssertion(),
+			LtiAgsService::SCOPE_LINEITEM_READONLY . ' ' . LtiAgsService::SCOPE_SCORE
+		);
+
+		$this->assertSame(LtiAgsService::SCOPE_LINEITEM_READONLY . ' ' . LtiAgsService::SCOPE_SCORE, $token['scope']);
+		$this->assertSame(self::DEPLOYMENT_A, $service->resolveAccessToken($token['access_token'])['deploymentUuid']);
+
+		$service->receiveScore($token['access_token'], self::DEPLOYMENT_A, 'placement-7', ['userId' => 'learner-1', 'scoreGiven' => 8]);
+
+		try {
+			$service->assertScopedToDeployment($token['access_token'], self::DEPLOYMENT_B, LtiAgsService::SCOPE_SCORE);
+			$this->fail('a token for one deployment must not reach another');
+		} catch (LtiValidationException $exception) {
+			$this->assertSame(403, $exception->getHttpStatus());
+		}
+
+	}//end testConformantTokenRequestIsScopedToTheToolsOnlyDeployment()
+
+	/**
+	 * A tool with several deployments that names none gets a 400 naming the
+	 * ambiguity, never a token spanning its deployments (REQ-LTI-007).
+	 *
+	 * @return void
+	 */
+	public function testAToolWithSeveralDeploymentsMustNameOne(): void {
+		$fixtures = $this->makeFixtures();
+		$second = new ObjectEntity();
+		$second->setUuid('dep-a2');
+		$second->setObject(['deploymentId' => 'deploy-a2', 'ltiToolId' => self::TOOL_UUID]);
+
+		$resolver = $this->createMock(LtiRegistrationResolverService::class);
+		$resolver->method('findToolByClientId')->willReturn($fixtures['tool']);
+		$resolver->method('findDeploymentsForTool')->willReturn([$fixtures['deploymentA'], $second]);
+		$fixtures['resolver'] = $resolver;
+		$service = $this->makeService($fixtures);
+
+		try {
+			$service->issueAccessToken($this->signClientAssertion(), LtiAgsService::SCOPE_SCORE);
+			$this->fail('an unnamed deployment on a tool with two must be refused');
+		} catch (LtiValidationException $exception) {
+			$this->assertSame(400, $exception->getHttpStatus());
+			$this->assertStringContainsString('deployment_id', $exception->getMessage());
+		}
+
+	}//end testAToolWithSeveralDeploymentsMustNameOne()
 
 	/**
 	 * An assertion whose iss/sub mismatch is rejected.
