@@ -29,7 +29,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use SimpleXMLElement;
 /**
  * Export retour XML envelope -> plain acknowledgement status update.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
  */
 class OsoAcknowledgementTranslator {
 
@@ -74,7 +74,7 @@ class OsoAcknowledgementTranslator {
 	 *
 	 * @throws OsoTranslationException When the XML is malformed or the `kenmerk` is missing/empty.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function translate(string $xml): array {
 		$root = $this->parseXml(xml: $xml);

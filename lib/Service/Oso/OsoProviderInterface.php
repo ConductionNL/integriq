@@ -24,7 +24,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\Integriq\Exception\OsoProviderException;
  * An OSO export transport binding: dispatch one already-translated
  * overstapdossier envelope and report the transport-assigned reference.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
  */
 interface OsoProviderInterface {
 	/**
@@ -45,7 +45,7 @@ interface OsoProviderInterface {
 	 *
 	 * @return string The provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function getProviderId(): string;
 
@@ -54,7 +54,7 @@ interface OsoProviderInterface {
 	 *
 	 * @return array<string, mixed> A JSON Schema (object) fragment.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function getConfigSchema(): array;
 
@@ -69,7 +69,7 @@ interface OsoProviderInterface {
 	 *
 	 * @throws OsoProviderException When the endpoint is unreachable, errors, or is misconfigured.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function sendExport(array $sourceConfiguration, string $kenmerk, string $envelopeXml): string;
 }//end interface

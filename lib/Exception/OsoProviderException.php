@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+ * @spec openspec/specs/oso-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Exception;
 /**
  * Thrown on any OSO provider/transport or configuration failure.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+ * @spec openspec/specs/oso-adapter/spec.md
  */
 class OsoProviderException extends Exception {
 }//end class

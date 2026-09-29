@@ -6237,7 +6237,7 @@
         "icon": "SwapHorizontal",
         "version": "1.0.0",
         "summary": "Audit record for one outbound OSO overstapdossier export, one inbound overstapdossier import, or one export acknowledgement/retour, produced by the integriq-adapter-oso connector",
-        "description": "An OSO Message tracks one outbound export dispatch, one inbound import receipt, or one export acknowledgement/retour: never merged into a single mutable row. Import records feed OsoDossierReceivedEvent for learniq's oso-inbound-contract listener; integriq never writes learniq's OsoImportDossier directly. See openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md.",
+        "description": "An OSO Message tracks one outbound export dispatch, one inbound import receipt, or one export acknowledgement/retour: never merged into a single mutable row. Import records feed OsoDossierReceivedEvent for learniq's oso-inbound-contract listener; integriq never writes learniq's OsoImportDossier directly. See openspec/specs/oso-adapter/spec.md.",
         "required": [
           "direction",
           "status"

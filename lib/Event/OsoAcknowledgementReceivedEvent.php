@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCP\EventDispatcher\Event;
 /**
  * An OSO export acknowledgement, translated and ready for a listener to act on.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
  */
 class OsoAcknowledgementReceivedEvent extends Event {
 	/**
@@ -56,7 +56,7 @@ class OsoAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Kenmerk.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function getKenmerk(): string {
 		return $this->kenmerk;
@@ -67,7 +67,7 @@ class OsoAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Signaalcode.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function getSignaalcode(): string {
 		return $this->signaalcode;
@@ -78,7 +78,7 @@ class OsoAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string|null Description, or null when absent.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function getSignaalOmschrijving(): ?string {
 		return $this->signaalOmschrijving;
@@ -89,7 +89,7 @@ class OsoAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return bool True when accepted.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function isAccepted(): bool {
 		return $this->accepted;

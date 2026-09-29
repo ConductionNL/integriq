@@ -30,7 +30,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use SimpleXMLElement;
 /**
  * Inbound OSO overstapdossier XML -> OsoImportDossier-shaped field array.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
  */
 class OsoImportTranslator {
 
@@ -71,7 +71,7 @@ class OsoImportTranslator {
 	 * @throws OsoTranslationException When the XML is malformed or the sending school BRIN /
 	 *                                 learner ECK iD are missing.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-a-complete-inbound-dossier-dispatches-osodossierreceivedevent
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-a-complete-inbound-dossier-dispatches-osodossierreceivedevent
 	 */
 	public function translate(string $xml): array {
 		$root = $this->parseXml(xml: $xml);
