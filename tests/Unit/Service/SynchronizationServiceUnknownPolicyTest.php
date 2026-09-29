@@ -113,7 +113,7 @@ class SynchronizationServiceUnknownPolicyTest extends TestCase {
 					$this->createMock(LoggerInterface::class),
 					$this->createMock(SynchronizationLogService::class),
 					$appConfig,
-					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class),
 				]
 			)
 			->onlyMethods(['updateTarget'])

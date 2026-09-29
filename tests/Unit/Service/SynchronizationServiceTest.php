@@ -83,7 +83,7 @@ class SynchronizationServiceTest extends TestCase {
 		$synchronizationLogService = $this->createMock(SynchronizationLogService::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
-		$approvalService = $this->createMock(\OCA\Integriq\Service\ApprovalService::class);
+		$approvalService = $this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class);
 		$this->tablesSyncAdapter = $this->createMock(TablesSyncAdapter::class);
 
 		$this->service = new SynchronizationService(

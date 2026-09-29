@@ -30,7 +30,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use DateTime;
 use DateTimeInterface;
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\MappingService;
@@ -108,7 +108,7 @@ class SynchronizationServiceRetentionDefaultTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$logService,
 			$appConfig,
-			$this->createMock(ApprovalService::class),
+			$this->createMock(SynchronizationApprovalGate::class),
 		);
 	}//end service()
 

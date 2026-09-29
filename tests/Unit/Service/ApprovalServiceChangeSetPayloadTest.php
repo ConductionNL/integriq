@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
@@ -54,6 +55,8 @@ class ApprovalServiceChangeSetPayloadTest extends TestCase {
 
 	private ApprovalService $service;
 
+	private SynchronizationApprovalGate $gate;
+
 	/**
 	 * Set up an ApprovalService over a capturing object service.
 	 *
@@ -78,6 +81,8 @@ class ApprovalServiceChangeSetPayloadTest extends TestCase {
 			$this->createMock(IURLGenerator::class),
 			$this->createMock(LoggerInterface::class),
 		);
+
+		$this->gate = new SynchronizationApprovalGate($this->objectService, $this->createMock(IUserSession::class), $this->service);
 
 	}//end setUp()
 
@@ -106,7 +111,7 @@ class ApprovalServiceChangeSetPayloadTest extends TestCase {
 	public function testThePausedRequestWithItsChangeSetIsAcceptedByTheRegister(): void {
 		$changeSet = $this->changeSet();
 
-		$this->service->suspendForSynchronization(
+		$this->gate->suspendForSynchronization(
 			synchronizationId: self::SYNC_ID,
 			approverGroup: 'admin',
 			onReject: 'error',
@@ -146,7 +151,7 @@ class ApprovalServiceChangeSetPayloadTest extends TestCase {
 			'approval-previewed'
 		);
 
-		$this->service->markSuperseded(approvalRequest: $approved, supersededBy: '7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f');
+		$this->gate->markSuperseded(approvalRequest: $approved, supersededBy: '7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f');
 
 		$stored = $this->saved[0];
 		$this->assertSame('superseded', $stored['resumeResult']);

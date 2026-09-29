@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -74,6 +75,8 @@ class ApprovalServiceTest extends TestCase {
 	 */
 	private ApprovalService $service;
 
+	private SynchronizationApprovalGate $gate;
+
 	/**
 	 * Set up fixtures.
 	 *
@@ -97,6 +100,8 @@ class ApprovalServiceTest extends TestCase {
 			$this->urlGenerator,
 			$this->createMock(LoggerInterface::class),
 		);
+
+		$this->gate = new SynchronizationApprovalGate($this->objectService, $this->userSession, $this->service);
 
 	}//end setUp()
 
@@ -690,7 +695,7 @@ class ApprovalServiceTest extends TestCase {
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$consumed, $unconsumed], 'total' => 2]);
 
-		$result = $this->service->findApprovedUnconsumedForSynchronization('sync-1');
+		$result = $this->gate->findApprovedUnconsumedForSynchronization('sync-1');
 
 		$this->assertNotNull($result);
 		$this->assertSame('live-1', $result->getUuid());
@@ -713,7 +718,7 @@ class ApprovalServiceTest extends TestCase {
 			}
 		);
 
-		$this->service->markConsumed($request);
+		$this->gate->markConsumed($request);
 
 		$this->assertNotEmpty($captured['consumedAt']);
 

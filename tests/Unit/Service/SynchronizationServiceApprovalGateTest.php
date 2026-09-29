@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
@@ -54,7 +54,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 	private $orObjectService;
 
 	/**
-	 * @var ApprovalService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var SynchronizationApprovalGate|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $approvalService;
 
@@ -79,7 +79,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 		$this->callService = $this->createMock(CallService::class);
 		$this->callService->method('applyConfigDot')->willReturnArgument(0);
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
-		$this->approvalService = $this->createMock(ApprovalService::class);
+		$this->approvalService = $this->createMock(SynchronizationApprovalGate::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$mappingService = $this->createMock(MappingService::class);

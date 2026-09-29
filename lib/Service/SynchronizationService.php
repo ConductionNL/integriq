@@ -576,7 +576,7 @@ class SynchronizationService {
 	 * @param LoggerInterface $logger The logger.
 	 * @param SynchronizationLogService $synchronizationLogService The OpenRegister-backed run-log write service.
 	 * @param IAppConfig $appConfig The app configuration.
-	 * @param ApprovalService $approvalService HITL batch-approval gate (hitl-approval-rule-action).
+	 * @param SynchronizationApprovalGate $approvalGate HITL batch-approval gate (hitl-approval-rule-action): the approval_request that pauses a gated run.
 	 * @param TablesSyncAdapter $tablesSyncAdapter The `nextcloud-table` source/target adapter (tables-bridge).
 	 * @param FormsSyncAdapter $formsSyncAdapter The `nextcloud-form` source adapter (nextcloud-forms-connector).
 	 */
@@ -589,7 +589,7 @@ class SynchronizationService {
 		private readonly LoggerInterface $logger,
 		SynchronizationLogService $synchronizationLogService,
 		IAppConfig $appConfig,
-		private readonly ApprovalService $approvalService,
+		private readonly SynchronizationApprovalGate $approvalGate,
 		private readonly ?TablesSyncAdapter $tablesSyncAdapter = null,
 		private readonly ?FormsSyncAdapter $formsSyncAdapter = null,
 	) {
@@ -2483,7 +2483,7 @@ class SynchronizationService {
 
 					$message = 'pending_approval';
 					if ($superseded === true) {
-						$this->approvalService->markSuperseded(
+						$this->approvalGate->markSuperseded(
 							approvalRequest: $gatedApprovalRequest,
 							supersededBy: (string)$newRequest->getUuid()
 						);
@@ -2883,7 +2883,7 @@ class SynchronizationService {
 		// this run) and the write phase above has now completed — mark it
 		// consumed so it cannot re-authorize a later run (REQ-015).
 		if ($gatedApprovalRequest !== null) {
-			$this->approvalService->markConsumed(approvalRequest: $gatedApprovalRequest);
+			$this->approvalGate->markConsumed(approvalRequest: $gatedApprovalRequest);
 		}
 
 		// Stage 6: Follow-up synchronizations.
@@ -2994,7 +2994,7 @@ class SynchronizationService {
 	private function resolveApprovalForSynchronization(string $synchronizationId, ?string $bypassApprovalId): ?ObjectEntity {
 		if ($bypassApprovalId !== null) {
 			try {
-				$candidate = $this->approvalService->find(id: $bypassApprovalId);
+				$candidate = $this->approvalGate->find(id: $bypassApprovalId);
 			} catch (Exception $e) {
 				return null;
 			}
@@ -3010,7 +3010,7 @@ class SynchronizationService {
 			return null;
 		}
 
-		return $this->approvalService->findApprovedUnconsumedForSynchronization(synchronizationId: $synchronizationId);
+		return $this->approvalGate->findApprovedUnconsumedForSynchronization(synchronizationId: $synchronizationId);
 	}//end resolveApprovalForSynchronization()
 
 	/**
@@ -3027,7 +3027,7 @@ class SynchronizationService {
 	private function suspendGatedRun(array $synchronization, string $synchronizationId, array $changeSet): ObjectEntity {
 		$approvalConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig']['approval'] ?? []));
 
-		return $this->approvalService->suspendForSynchronization(
+		return $this->approvalGate->suspendForSynchronization(
 			synchronizationId: $synchronizationId,
 			approverGroup: (string)($approvalConfig['approverGroup'] ?? ''),
 			onReject: (string)($approvalConfig['onReject'] ?? 'error'),
