@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Syncs connection declarations into rows.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
  */
 class SyncConnectionDeclarations implements IRepairStep {
 	/**
@@ -70,7 +70,7 @@ class SyncConnectionDeclarations implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
 	 */
 	public function run(IOutput $output): void {
 		if (class_exists('\\OCA\\OpenRegister\\Service\\ObjectService') === false) {

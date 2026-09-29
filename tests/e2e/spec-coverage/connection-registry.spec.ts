@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/connection-registry/specs/connection-registry/spec.md
+ * Spec coverage: openspec/specs/connection-registry/spec.md
  * The browser half of REQ-CONN-006 (the App connections overview) and
  * REQ-CONN-007 (Add integration and the link a source dialog).
  *

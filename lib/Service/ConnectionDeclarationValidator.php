@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace OCA\Integriq\Service;
 /**
  * Validates a connection declaration file.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
  */
 class ConnectionDeclarationValidator {
 
@@ -130,7 +130,7 @@ class ConnectionDeclarationValidator {
 	 *
 	 * @return string[] One message per failing path, empty when the file is valid.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-invalid-file-is-skipped-whole
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-invalid-file-is-skipped-whole
 	 */
 	public function validate(mixed $data): array {
 		if ($this->isObject(value: $data) === false) {
@@ -311,7 +311,7 @@ class ConnectionDeclarationValidator {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-required-value-inside-a-json-setting
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-required-value-inside-a-json-setting
 	 */
 	private function isRequiredList(mixed $value): bool {
 		if (is_array($value) === false || array_is_list($value) === false) {

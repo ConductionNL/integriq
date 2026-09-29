@@ -37,7 +37,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCP\IAppConfig;
 /**
  * Reads another app's config for the D4 rules.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
  */
 class ConnectionConfigReader {
 
@@ -88,8 +88,8 @@ class ConnectionConfigReader {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-provider-name-selects-simulated
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-json-path-reads-inside-a-settings-blob
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-provider-name-selects-simulated
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-json-path-reads-inside-a-settings-blob
 	 */
 	public function isSimulated(string $app, array $adapter): bool {
 		$configKey = (string)($adapter['configKey'] ?? '');
@@ -121,9 +121,9 @@ class ConnectionConfigReader {
 	 *
 	 * @return bool False when there is no switch, or it has no usable `configKey`.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-connection-switched-off-reads-disabled
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-off-values-leave-a-working-default-alone
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-off-value-switches-the-connection-off
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-connection-switched-off-reads-disabled
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-off-values-leave-a-working-default-alone
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-off-value-switches-the-connection-off
 	 */
 	public function isSwitchedOff(string $app, mixed $switch): bool {
 		if (is_array($switch) === false || is_string($switch['configKey'] ?? null) === false || $switch['configKey'] === '') {
@@ -163,10 +163,10 @@ class ConnectionConfigReader {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-saved-settings-show-configured
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-switch-stored-as-false-is-not-filled
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-required-value-inside-a-json-setting
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-dotted-key-is-read-as-one-key
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-saved-settings-show-configured
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-switch-stored-as-false-is-not-filled
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-required-value-inside-a-json-setting
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-dotted-key-is-read-as-one-key
 	 */
 	public function allFilled(string $app, array $entries): bool {
 		foreach ($entries as $entry) {

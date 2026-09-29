@@ -153,7 +153,7 @@ export default {
 		'$route.query': {
 			/**
 			 * @param {object} query The current route query.
-			 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
+			 * @spec openspec/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
 			 */
 			handler(query) {
 				if (
@@ -368,13 +368,13 @@ export default {
 
 		/**
 		 * @param {object} payload `{ app }`, the app id to pre-filter by.
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
 		 */
 		openLinkSource(payload) {
 			this.linkSource = { open: true, app: payload?.app ?? '' }
 		},
 
-		/** @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007 */
+		/** @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007 */
 		closeLinkSource() {
 			this.linkSource = { open: false, app: '' }
 		},
@@ -384,7 +384,7 @@ export default {
 		 * source and probe. The index page re-fetches on any query change, and
 		 * a `_`-prefixed key is never read as a filter.
 		 *
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
 		 */
 		onSourceLinked() {
 			if (this.$route?.name !== 'AppConnections') {

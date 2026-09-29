@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
+ * @spec openspec/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\EventDispatcher\Event;
  * a constructor argument without changing that contract first: every
  * adopting app constructs this class by name.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
+ * @spec openspec/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
  */
 final class ConnectionStatusReportedEvent extends Event {
 	/**

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
  */
 
 declare(strict_types=1);
@@ -482,7 +482,7 @@ class ConnectionRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-app-reports-a-connection-that-works-in-part
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-app-reports-a-connection-that-works-in-part
 	 */
 	public function testLimitedReportIsAccepted(): void {
 		$service = $this->makeService(appPaths: ['dossiq' => $this->appDir(declaration: $this->dossiqDeclaration())]);
@@ -503,7 +503,7 @@ class ConnectionRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-app-reports-a-switch-it-keeps-elsewhere
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-app-reports-a-switch-it-keeps-elsewhere
 	 */
 	public function testDisabledReportIsAccepted(): void {
 		$declaration = ['app' => 'keepiq', 'connections' => [['key' => 'siem', 'title' => 'SIEM', 'reportedOnly' => true]]];
@@ -545,7 +545,7 @@ class ConnectionRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-key-set-with-occ-shows-within-the-hour
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-key-set-with-occ-shows-within-the-hour
 	 */
 	public function testRefreshPicksUpAKeySetWithOcc(): void {
 		$this->rows['r1'] = [
@@ -590,7 +590,7 @@ class ConnectionRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
 	 */
 	public function testSaveRetiresAnOlderError(): void {
 		$this->rows['r1'] = $this->zrcRow();
@@ -618,7 +618,7 @@ class ConnectionRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-report-after-the-refresh-counts-again
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-report-after-the-refresh-counts-again
 	 */
 	public function testReportAfterTheRefreshCountsAgain(): void {
 		$this->rows['r1'] = array_merge(

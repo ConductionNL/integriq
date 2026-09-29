@@ -249,7 +249,7 @@ export function openGatewayCatalogueHandler() {
  * App connections page's `?app=` query when it carries one. Wired to that
  * page's "Add integration" header action.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
+ * @spec openspec/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
  */
 export function openLinkSourceHandler() {
 	const app = getRouter()?.currentRoute?.value?.query?.app

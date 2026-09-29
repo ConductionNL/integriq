@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Probes linked sources and links new ones.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
  */
 class ConnectionProbeService {
 
@@ -80,7 +80,7 @@ class ConnectionProbeService {
 	 *
 	 * @return int The number of rows probed.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-at-most-25-probes-per-run
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-at-most-25-probes-per-run
 	 */
 	public function probeDue(int $limit = self::PROBE_LIMIT): int {
 		$linked = array_values(
@@ -120,7 +120,7 @@ class ConnectionProbeService {
 	 *
 	 * @return array{uuid:string,data:array<string,mixed>} The row as saved.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-open-breaker-is-not-called
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-open-breaker-is-not-called
 	 */
 	public function probe(array $row): array {
 		$data = $row['data'];
@@ -141,7 +141,7 @@ class ConnectionProbeService {
 	 *
 	 * @throws ConnectionLinkException When the row or source is missing, or the row already has a source.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
 	 */
 	public function linkSource(string $connectionId, string $sourceId): array {
 		$row = $this->unlinkedRow(connectionId: $connectionId);
@@ -166,7 +166,7 @@ class ConnectionProbeService {
 	 *
 	 * @throws ConnectionLinkException When the row is missing or linked, or the template is absent.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 	 */
 	public function linkTemplate(string $connectionId): array {
 		$row = $this->unlinkedRow(connectionId: $connectionId);

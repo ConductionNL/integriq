@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ namespace OCA\Integriq\Service;
 /**
  * Judges a config value for the D4 rules.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
  */
 class ConnectionConfigValue {
 
@@ -62,8 +62,8 @@ class ConnectionConfigValue {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-empty-json-list-is-not-filled
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-switch-stored-as-false-is-not-filled
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-empty-json-list-is-not-filled
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-switch-stored-as-false-is-not-filled
 	 */
 	public function isFilled(mixed $value): bool {
 		if (is_array($value) === true) {
@@ -89,7 +89,7 @@ class ConnectionConfigValue {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-off-value-switches-the-connection-off
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-off-value-switches-the-connection-off
 	 */
 	public function isOneOf(mixed $value, array $candidates): bool {
 		if (is_array($value) === true && $value !== []) {
@@ -115,7 +115,7 @@ class ConnectionConfigValue {
 	 *
 	 * @return string The text, or '' when the value is null, an object or a list.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-json-path-reads-inside-a-settings-blob
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-json-path-reads-inside-a-settings-blob
 	 */
 	public function text(mixed $value): string {
 		return match (true) {

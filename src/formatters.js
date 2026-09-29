@@ -32,7 +32,7 @@ const CONNECTION_STATUS_LABELS = {
  *
  * @param {string} value The stored status value.
  * @return {string} The translated label, or the raw value when unknown.
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-integriq-shows-all-connections-on-one-admin-page-req-conn-006
+ * @spec openspec/specs/connection-registry/spec.md#requirement-integriq-shows-all-connections-on-one-admin-page-req-conn-006
  */
 export function connectionStatus(value) {
 	const label = CONNECTION_STATUS_LABELS[value]
@@ -47,7 +47,7 @@ export function connectionStatus(value) {
  *
  * @param {string} value The row's settingsUrl.
  * @return {string} The label, or an empty string.
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-integriq-shows-all-connections-on-one-admin-page-req-conn-006
+ * @spec openspec/specs/connection-registry/spec.md#requirement-integriq-shows-all-connections-on-one-admin-page-req-conn-006
  */
 export function connectionSettingsLabel(value) {
 	return value ? t('integriq', 'Open settings') : ''

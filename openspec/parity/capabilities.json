@@ -5086,7 +5086,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:837-909 AppConnections (/connections, admin-only, schema app_connection): columns app/title/status (formatter connectionStatus)/statusMessage/checkedAt; note: 'every app's declared connections in one admin-only list. Rows are written by the declaration sync, the status resolver, app reports and the hourly health job.'"
+				"evidence": "src/manifest.json:837-909 AppConnections (/connections, admin-only, schema app_connection): columns app/title/status (formatter connectionStatus)/statusMessage/checkedAt; note: 'every app's declared connections in one admin-only list. Rows are written by the declaration sync, the status resolver, app reports and the hourly health job.'",
+				"change": "2026-09-29-connection-registry"
 			},
 			"reachedOn": "/connections (AppConnections, admin only)",
 			"note": "integriq owns the app_connection registry itself (the connection-registry programme); other apps' matrices naming integriq as provider for this row are consistent with that.",
