@@ -27,6 +27,7 @@ import {
 	EVENT_OPEN_CONFIGURATION_EXPORT,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_DIRECTORY_RUN,
+	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
 	EVENT_OPEN_REGISTRY_LOOKUP,
@@ -214,6 +215,18 @@ export function openPromotionHandler() {
  */
 export function openRegistryLookupHandler() {
 	modalBus.emit(EVENT_OPEN_REGISTRY_LOOKUP, {})
+}
+
+/**
+ * Open the statutory gateway catalogue (statutory-gateways-and-frameworks):
+ * filter by standard, read each claim and where each endpoint sits, and
+ * download the overview. Wired to the Sources page's "Statutory gateways"
+ * header action.
+ *
+ * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008
+ */
+export function openGatewayCatalogueHandler() {
+	modalBus.emit(EVENT_OPEN_GATEWAY_CATALOGUE, {})
 }
 
 /**

@@ -11,7 +11,7 @@ D21 and D6. Waits on nothing.
 - **files**: `lib/Gateway/GatewayDescriptor.php`, `lib/Gateway/GatewayRegistry.php`, `lib/Gateway/GatewayCatalogue.php`, `lib/Controller/GatewaysController.php`
 - [x] Implement (`standard`, `claimLevel`, `claimEvidence`, a standard facet, and the claim wording carried in the data so no screen has to remember it)
 - [x] Test (an entry with no standard, with no evidence, or with an unknown level fails registration naming itself)
-- [ ] The catalogue page's standard facet in the UI, which reads `GET /api/gateways?standard=`.
+- [x] The catalogue's standard facet in the UI, which reads `GET /api/gateways?standard=` (29 Sep): there was no catalogue page, so it is `src/dialogs/GatewayCatalogueDialog.vue`, opened by Sources > **Statutory gateways**. Test: `tests/vitest/gatewayCatalogueDialog.spec.js` (6).
 
 ### Task 2: The Digikoppeling broker becomes configuration
 - **spec_ref**: `openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-the-digikoppeling-broker-is-chosen-per-instance-req-sg-002`
@@ -56,7 +56,7 @@ D21 and D6. Waits on nothing.
 - **files**: `lib/Gateway/GatewayRegistry.php`, `lib/Controller/GatewaysController.php`
 - [x] Implement (declared jurisdiction, an overview with a comma-separated export, and `unknown` beside `jurisdictionDeclared: false` so an absent value can never read as a checked one)
 - [x] Test
-- [ ] The overview screen itself, which reads `GET /api/gateways/overview`.
+- [x] The overview screen itself, which reads `GET /api/gateways/overview` (29 Sep): the "Where data goes" section of the same dialog, an undeclared jurisdiction reading "Not declared", with **Download the overview** on `GET /api/gateways/overview/export`. Test: `tests/vitest/gatewayCatalogueDialog.spec.js`.
 
 ### Task 9: The WKPB gateway
 - **spec_ref**: `openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-wkpb-restriction-is-registered-through-a-gateway-req-sg-009`
@@ -66,7 +66,7 @@ D21 and D6. Waits on nothing.
 
 ### Task 10: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, the catalogue entries, this change's row in `competitor-parity-2026-09`
-- [ ] Hand dossiq the case-type half: the WKPB flag and the registry binding declaration, and say that C-integrations-3 stays with dossiq's term model, cluster 18
-- [ ] Tell the opencatalogi lane that the Wet elektronisch publiceren gateway sits under cluster 50, and agree the instruction shape
-- [ ] Record C-integrations-23 as already answered, so it is not rediscovered
+- [x] Hand dossiq the case-type half: the WKPB flag and the registry binding declaration, and say that C-integrations-3 stays with dossiq's term model, cluster 18 (dossiq#3189)
+- [x] Tell the opencatalogi lane that the Wet elektronisch publiceren gateway sits under cluster 50, and agree the instruction shape (opencatalogi#1671 states the shape and asks for confirmation)
+- [x] Record C-integrations-23 as already answered, so it is not rediscovered (proposal "What this change does not build", and dossiq#3189)
 - [x] Test (`tests/e2e/statutory-gateways-catalogue.spec.ts`, `tests/e2e/statutory-gateways-registry-binding.spec.ts`, `tests/e2e/statutory-gateways-bridge.spec.ts`, `openspec validate statutory-gateways-and-frameworks --strict`)

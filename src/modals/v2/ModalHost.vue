@@ -63,6 +63,9 @@
 		<RegistryLookupDialog
 			:open="registryLookup.open"
 			@close="closeRegistryLookup" />
+		<GatewayCatalogueDialog
+			:open="gatewayCatalogue.open"
+			@close="closeGatewayCatalogue" />
 		<LinkSourceDialog
 			:open="linkSource.open"
 			:app="linkSource.app"
@@ -74,6 +77,7 @@
 <script>
 import CatalogItemDetailDialog from '../../dialogs/CatalogItemDetailDialog.vue'
 import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.vue'
+import GatewayCatalogueDialog from '../../dialogs/GatewayCatalogueDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '../../dialogs/LinkSourceDialog.vue'
 import RegistryLookupDialog from '../../dialogs/RegistryLookupDialog.vue'
@@ -90,6 +94,7 @@ import {
 	EVENT_OPEN_CONFIGURATION_EXPORT,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_DIRECTORY_RUN,
+	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
 	EVENT_OPEN_REGISTRY_LOOKUP,
@@ -116,6 +121,7 @@ export default {
 		PromotePreviewModal,
 		LinkSourceDialog,
 		RegistryLookupDialog,
+		GatewayCatalogueDialog,
 	},
 
 	data() {
@@ -131,6 +137,7 @@ export default {
 			configurationExport: { open: false },
 			promotion: { open: false },
 			registryLookup: { open: false },
+			gatewayCatalogue: { open: false },
 			linkSource: { open: false, app: '' },
 		}
 	},
@@ -179,6 +186,7 @@ export default {
 		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
 		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
+		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 	},
 
@@ -195,6 +203,7 @@ export default {
 		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
 		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
+		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 	},
 
@@ -345,6 +354,16 @@ export default {
 		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
 		closeRegistryLookup() {
 			this.registryLookup = { open: false }
+		},
+
+		/** @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008 */
+		openGatewayCatalogue() {
+			this.gatewayCatalogue = { open: true }
+		},
+
+		/** @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008 */
+		closeGatewayCatalogue() {
+			this.gatewayCatalogue = { open: false }
 		},
 
 		/**

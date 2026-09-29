@@ -1446,7 +1446,19 @@
         "Whether a push delivery carries a signature. Written on save from protocolSettings, which is hidden on every read.": "Of een push-levering een ondertekening heeft. Wordt bij opslaan afgeleid uit protocolSettings, dat bij elke uitlezing verborgen blijft.",
         "Whether this attempt carried an X-OpenConnector-Signature header": "Of deze poging een X-OpenConnector-Signature-header had",
         "Why this subscription delivers unsigned, as the person who turned signing off wrote it.": "Waarom deze abonnering zonder ondertekening levert, zoals degene die ondertekening uitzette het schreef.",
-        "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface. A new push subscription is created with one unless `unsigned` is set; later it changes only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted); `unsigned` (object `{reason, setBy, setAt}`: deliver without a signature; refused without a reason).": "Protocolspecifieke leveringsinstellingen (vrij formaat). Herkende sleutels: `headers` (object, extra uitgaande headers); `signingSecret` (tekst met prefix `whsec_`. Als die er is, wordt elke push-levering met HMAC-SHA256 ondertekend via de header X-OpenConnector-Signature; bij elke uitlezing verborgen. Een nieuwe push-abonnering krijgt er een, tenzij `unsigned` is gezet; daarna verandert hij alleen via de endpoints voor genereren en roteren); `previousSigningSecret` + `secretRotatedAt` (rotatieperiode, 24 uur dubbel ondertekend; verborgen); `unsigned` (object `{reason, setBy, setAt}`: leveren zonder ondertekening; geweigerd zonder reden)."
+        "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface. A new push subscription is created with one unless `unsigned` is set; later it changes only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted); `unsigned` (object `{reason, setBy, setAt}`: deliver without a signature; refused without a reason).": "Protocolspecifieke leveringsinstellingen (vrij formaat). Herkende sleutels: `headers` (object, extra uitgaande headers); `signingSecret` (tekst met prefix `whsec_`. Als die er is, wordt elke push-levering met HMAC-SHA256 ondertekend via de header X-OpenConnector-Signature; bij elke uitlezing verborgen. Een nieuwe push-abonnering krijgt er een, tenzij `unsigned` is gezet; daarna verandert hij alleen via de endpoints voor genereren en roteren); `previousSigningSecret` + `secretRotatedAt` (rotatieperiode, 24 uur dubbel ondertekend; verborgen); `unsigned` (object `{reason, setBy, setAt}`: leveren zonder ondertekening; geweigerd zonder reden).",
+        "Statutory gateways": "Wettelijke koppelvlakken",
+        "Each gateway names the law it serves and how firmly integriq claims to meet it.": "Elk koppelvlak noemt de wet die het dient en hoe stellig integriq zegt daaraan te voldoen.",
+        "Standard": "Standaard",
+        "All standards": "Alle standaarden",
+        "Claim": "Claim",
+        "Where the endpoint sits": "Waar het eindpunt staat",
+        "No gateway serves this standard.": "Geen koppelvlak dient deze standaard.",
+        "Where data goes": "Waar gegevens heen gaan",
+        "{gateway}: {jurisdiction}": "{gateway}: {jurisdiction}",
+        "Download the overview": "Overzicht downloaden",
+        "The gateway catalogue could not be read.": "De catalogus met koppelvlakken kon niet worden gelezen.",
+        "Not declared": "Niet opgegeven"
     },
     "plurals": {}
 }

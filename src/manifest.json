@@ -966,6 +966,12 @@
             "label": "Look up in a base registry",
             "icon": "DatabaseSearchOutline",
             "handler": "openRegistryLookupHandler"
+          },
+          {
+            "id": "gateway-catalogue",
+            "label": "Statutory gateways",
+            "icon": "ScaleBalance",
+            "handler": "openGatewayCatalogueHandler"
           }
         ],
         "showViewAction": false,

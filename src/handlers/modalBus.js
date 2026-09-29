@@ -58,3 +58,5 @@ export const EVENT_OPEN_PROMOTION = 'open-promotion'
 export const EVENT_OPEN_LINK_SOURCE = 'open-link-source'
 // registry-backed-field-source: try a base-registry lookup from the Sources page.
 export const EVENT_OPEN_REGISTRY_LOOKUP = 'open-registry-lookup'
+// statutory-gateways-and-frameworks: the gateway catalogue and where data goes.
+export const EVENT_OPEN_GATEWAY_CATALOGUE = 'open-gateway-catalogue'
