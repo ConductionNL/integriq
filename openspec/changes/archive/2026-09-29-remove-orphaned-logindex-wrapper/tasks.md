@@ -29,7 +29,7 @@
       nc-vue's `CnLogsPage`, not an integriq-owned wrapper) — applied the
       change's own MODIFIED-requirement delta verbatim, plus a Notes line
       recording why the file was safe to delete.
-- [ ] NOT DONE — closing GitHub issue #814 is a live external repo action
+- [x] Closed as not applicable (29 Sep 2026): issue #814 is "Reduce manifest custom% via typed-primitive wrappers", a fleet-wide goal wider than this wrapper, so deleting LogIndex.vue does not finish it and the issue stays open. Originally: closing GitHub issue #814 is a live external repo action
       (gh CLI / GitHub API), out of scope for an isolated-worktree code task
       that must not touch anything outside the worktree's file tree. Left for
       a human/PR step.
