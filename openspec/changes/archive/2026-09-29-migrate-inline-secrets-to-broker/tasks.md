@@ -36,4 +36,4 @@
 
 ## 5. Phase D (separate change — NOT here)
 
-- [ ] 5.1 Remove `apikey`/`secret`/`password`/`jwt`/`authenticationConfig` from the source schema once the gate is clean
+- [x] 5.1 Remove `apikey`/`secret`/`password`/`jwt`/`authenticationConfig` from the source schema once the gate is clean. Found built at archive time (29 Sep 2026): `lib/Repair/RemoveMigratedSourceSecretFields.php` removes the four auto-migratable properties from the live schema on a clean raw gate (`RemoveMigratedSourceSecretFieldsTest`), and `authenticationConfig` goes through the operator-gated `occ integriq:authentication-config` (`AuthenticationConfigRemover`, `AuthenticationConfigRemoverTest`).

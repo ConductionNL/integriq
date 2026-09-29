@@ -63,7 +63,7 @@ use Throwable;
 /**
  * Reports (and, once unblocked, performs) the inline-secret → credentialRef migration.
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
  */
 class MigrateInlineSecrets extends Command {
 	/**
@@ -122,7 +122,7 @@ class MigrateInlineSecrets extends Command {
 	 *
 	 * @return integer 0 on success; non-zero on validation failure or a refused real run.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$io = new SymfonyStyle($input, $output);
@@ -213,7 +213,7 @@ class MigrateInlineSecrets extends Command {
 	 *
 	 * @return integer Command::SUCCESS on a completed run, Command::FAILURE when refused or if a field failed.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function runMigrate(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
 		try {
@@ -315,7 +315,7 @@ class MigrateInlineSecrets extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
 	 */
 	private function recordPhaseDGate(array $result): void {
 		$postRun = (array)($result['postRun'] ?? []);
@@ -344,7 +344,7 @@ class MigrateInlineSecrets extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function renderResult(SymfonyStyle $io, array $result): void {
 		$rows = [];
@@ -396,7 +396,7 @@ class MigrateInlineSecrets extends Command {
 	 *
 	 * @return integer Command::SUCCESS.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	private function renderPlan(SymfonyStyle $io, array $plan): int {
 		$io->note('Dry-run: nothing is written. Inline secrets are left exactly as they are.');

@@ -28,7 +28,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
  */
 
 declare(strict_types=1);

@@ -859,10 +859,10 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
-				"change": "migrate-inline-secrets-to-broker",
+				"state": "built",
+				"change": "2026-09-29-migrate-inline-secrets-to-broker",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Real ICrypto-at-rest encryption exists but only for specific bridge clients: lib/Service/Mtls/MtlsConfigResolver.php:83-165, lib/Service/Dso/DsoClient.php:81-184, lib/Service/StufZkn/StufZknClient.php, lib/Service/Fsc/FscDirectoryClient.php:89-183, lib/Service/Sms/RestNotifyNlProvider.php:65-177 all use OCP\\Security\\ICrypto to encrypt/decrypt their specific stored tokens/certs. For the general source, lib/Settings/integriq_register.json:185/195/205/210 explicitly document jwt/secret/password/apikey as 'Stored unencrypted at rest until field encryption ships' (ADR-007 pending), and register.d/99-source-secrets-writeonly.json's comment corrects an older claim that they were 'plaintext per ADR-007' as wrong."
+				"evidence": "Built (migrate-inline-secrets-to-broker, archived 29 Sep 2026): `occ integriq:migrate-inline-secrets` moves each source's inline apikey/secret/password/jwt into the OpenRegister credential broker (organisation-scoped, verified round trip before the inline value is nulled; InlineSecretMigrationExecutor), RemoveMigratedSourceSecretFields removes those four properties from the live source schema once a raw gate is clean, and authenticationConfig goes through the operator-gated `occ integriq:authentication-config`. Partial: an instance keeps inline values, stored unencrypted, until an operator runs the migration; the bridge clients (Mtls, Dso, StufZkn, Fsc, Sms) keep their own ICrypto encryption."
 			},
 			"reachedOn": "/sources/:id, credentials on a plain REST/SOAP source (apikey/secret/password/jwt, and configuration.authentication.client_secret) are stored as plaintext in the OR object store; only the six named bridge clients (DSO, StufZkn, IWMO/IStandaarden, FSC, KISS, NotifyNL) encrypt their residual token/cert fields via ICrypto",
 			"note": "General field encryption at rest is explicitly not shipped (ADR-007 pending per the schema's own comments); only a handful of hardcoded government-bridge integrations encrypt their secrets today. This is a documented gap, not a silent one.",

@@ -12,7 +12,9 @@ properties may be removed (phase D, a separate change).
 
 @e2e exclude occ/repair inline-secret migration has no browser surface — it is exercised end-to-end by PHPUnit round-trip + mutation tests (InlineSecretMigrationExecutorTest, InlineSecretMigrationPlannerTest, RecordInlineSecretMigrationStatusTest).
 
-## Requirement: Inline Secret Migration Plan
+## ADDED Requirements
+
+### Requirement: Inline Secret Migration Plan
 
 The planner SHALL classify each inline secret field of every `source` object as
 `already-migrated`, `empty`, `would-migrate` (mapped to an inject-only broker
@@ -30,7 +32,7 @@ without ever returning, logging, or embedding a secret value.
 - **WHEN** a source holds an `authenticationConfig` object
 - **THEN** the field is classified `needs-manual-review` with no provider
 
-## Requirement: Raw Secret Read
+### Requirement: Raw Secret Read
 
 The migration SHALL read a source's inline secrets via `ObjectService::find(...,
 _render: false)`, the only read that survives OpenRegister's writeOnly render
@@ -41,7 +43,7 @@ boundary. A rendered read strips the secret and MUST NOT be used.
 - **WHEN** the planner reads a source that holds a writeOnly `apikey`
 - **THEN** the read is issued with `_render: false` and returns the secret intact
 
-## Requirement: Inline Secret Migration Executor
+### Requirement: Inline Secret Migration Executor
 
 The executor SHALL, per source per would-migrate field, mint an
 organisation-scoped broker credential, VERIFY the secret round-trips via
@@ -76,7 +78,7 @@ nothing) when the installed broker lacks `mint()` or the 4-argument
 - **WHEN** the installed broker lacks `mint()` or the `actingOrganisationId` parameter
 - **THEN** the run refuses with an upgrade hint and rewrites nothing
 
-## Requirement: Real Run Fails Closed
+### Requirement: Real Run Fails Closed
 
 A real (writing) run SHALL never silently leave plaintext: when it cannot mint or
 verify safely it SHALL refuse with an actionable upgrade hint and a non-zero exit,
@@ -87,7 +89,7 @@ and SHALL NOT downgrade the scope to make the run "work".
 - **WHEN** a real run cannot mint or resolve organisation-scoped credentials sessionlessly
 - **THEN** the command exits non-zero, prints the upgrade hint, and no source is modified
 
-## Requirement: Phase D Gate Signal
+### Requirement: Phase D Gate Signal
 
 The `openconnector / inline_secrets_clean` appconfig flag SHALL be `'1'` only when
 no source holds an unmigrated inline secret (zero would-migrate AND zero
@@ -99,7 +101,7 @@ status. A real run SHALL re-report the true post-run gate from fresh raw reads.
 - **WHEN** any source still holds an inline secret or an unmappable field after a run
 - **THEN** `inline_secrets_clean` is `'0'` and Phase D must not remove the schema properties
 
-## Requirement: Phase D Remove Migrated Fields
+### Requirement: Phase D Remove Migrated Fields
 
 Once the gate above is clean, the `RemoveMigratedSourceSecretFields` repair step
 SHALL remove the four auto-migratable properties — `apikey`, `secret`,
@@ -142,7 +144,7 @@ leave the schema untouched, set the flag to `'0'`, and report why.
   rather than indistinguishable from "nothing to do"
 - @e2e exclude same — a repair step has no browser surface
 
-## Requirement: Authentication Config Audit
+### Requirement: Authentication Config Audit
 
 `authenticationConfig` SHALL NOT be migrated to a `credentialRef`: it is VESTIGIAL —
 no code authenticates from it (`AuthenticationService` reads `$configuration[...]`;
@@ -174,7 +176,7 @@ offer `--json`, and SHALL be read-only.
 - **THEN** the source is reported `referenced` with the configuration path, because `CallService::renderValue()` renders `configuration` against the RAW source and the reference resolves to a live secret
 - **AND** the field is not reported as safely removable
 
-## Requirement: Authentication Config Removal
+### Requirement: Authentication Config Removal
 
 Removal of `authenticationConfig` DELETES credential data and SHALL therefore be
 reachable ONLY via an explicit human opt-in flag on an occ command. It SHALL NOT be
