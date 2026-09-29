@@ -23,7 +23,7 @@ namespace OCA\Integriq\PropertySource\Exception;
 /**
  * An unknown provider fails loudly rather than resolving to nothing.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
 class UnknownPropertySourceException extends PropertySourceException {
 	/**

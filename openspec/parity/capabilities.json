@@ -2751,15 +2751,15 @@
 			"area": "mapping",
 			"name": "Read a field live from a base registry instead of keeping a copy.",
 			"source": "dossiq-round4",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
-				"change": "registry-backed-field-source",
+				"state": "built",
+				"change": "2026-09-29-registry-backed-field-source",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/PropertySourceController.php + appinfo/routes.php:520-523 (/api/property-sources/{provider}/suggest|resolve|resync) implement a full KVK/BRP/BAG live-lookup engine (lib/PropertySource/PropertySourceResolver.php), but grep of src/ for 'property-sources'/'propertySource' returns zero hits, no frontend page calls it. The only internal caller of PropertySourceResolver::resolve() is lib/Gateway/Adapter/WkpbGateway.php:99, and WkpbGateway itself is never instantiated anywhere (grep for 'WkpbGateway::class'/'new WkpbGateway' = 0 hits); lib/Gateway/GatewayCatalogue.php:117 lists 'wkpb' with claimLevel PLANNED, a descriptor, not a wired gateway."
+				"evidence": "Integriq half built: lib/PropertySource/ (PropertySourceResolver, BAG/BRP/KvK providers over existing sources, provenance, staleness budget, labelled last value when unreachable, ListResyncService) behind /api/property-sources/{provider}/suggest|resolve|resync, reached from Sources > Look up in a base registry (src/dialogs/RegistryLookupDialog.vue: search, resolve a suggestion by its identifier, provenance and state, read again skipping the cache, resync a list). Tests: tests/vitest/registryLookupDialog.spec.js (8) plus the existing PropertySource PHPUnit suite. A form field cannot yet read live: that needs x-openregister-property-source on a schema property (openregister#4168) and the declaration on a case type (dossiq#3188), so the rating stays partial. Built by change registry-backed-field-source (archived 2026-09-29)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "Both the admin-facing route and its only would-be internal caller are orphaned, a fully implemented capability with no path from any route, page or registered service to a user or machine. Live-check candidate: confirm /api/property-sources/{provider}/resolve 404s or is unreachable via the UI.",
+			"reachedOn": "Sources > Look up in a base registry (an administrator's lookup); no form field yet, see openregister#4168",
+			"note": "Built 2026-09-29 on integriq's side. Partial until openregister ships the property key and dossiq declares fields with it.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "data-infra-connectors",

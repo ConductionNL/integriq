@@ -33,7 +33,7 @@ use Throwable;
  * through the configured source and the shared call service, per ADR-005 and
  * ADR-011.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
  */
 class RegistrySourceGateway {
 	/**

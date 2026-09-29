@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
  * resynced on demand, it says when it last ran, and a failed resync leaves the
  * previous list serving.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007
  */
 class ListResyncService {
 	/**

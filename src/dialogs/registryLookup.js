@@ -8,7 +8,7 @@
  * a value the registry did not answer for is shown with its age, never as a
  * fresh one.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
  */
 
 /**
@@ -18,7 +18,7 @@
  *
  * @return {Array} The rows.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
 export function listOf(data) {
 	if (Array.isArray(data?.results)) {
@@ -35,7 +35,7 @@ export function listOf(data) {
  *
  * @return {string} The phrase.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
  */
 export function ageText(seconds, t) {
 	const age = Math.max(0, Math.round(Number(seconds) || 0))
@@ -60,7 +60,7 @@ export function ageText(seconds, t) {
  *
  * @return {{state: string, text: string}} `live`, `cached` or `unreachable`, and its sentence.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
  */
 export function provenanceState(provenance, t) {
 	const age = provenance?.cacheAgeSeconds
@@ -107,7 +107,7 @@ export function provenanceState(provenance, t) {
  *
  * @return {Array<{key: string, text: string}>} The rows.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
 export function valueRows(value) {
 	if (value === null || value === undefined) {

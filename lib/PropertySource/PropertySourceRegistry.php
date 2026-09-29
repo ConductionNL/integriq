@@ -26,7 +26,7 @@ use Psr\Log\LoggerInterface;
 /**
  * First registration wins on an id collision, as the integration registry does.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
 class PropertySourceRegistry {
 	/**

@@ -13,7 +13,7 @@
   identifier first. "Read again now" skips the cache, and a list-shaped
   registry can be resynced, keeping the previous list when that fails.
 
-  @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+  @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
 -->
 <template>
 	<NcDialog
@@ -202,7 +202,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on */
+		/** @spec openspec/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on */
 		providerOptions() {
 			return this.providers.map((provider) => ({
 				id: provider.id,
@@ -211,17 +211,17 @@ export default {
 			}))
 		},
 
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007 */
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007 */
 		isListShaped() {
 			return this.selectedProvider?.provider?.listShaped === true
 		},
 
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003 */
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003 */
 		state() {
 			return provenanceState(this.resolved?.provenance, t)
 		},
 
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005 */
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005 */
 		stateNoteType() {
 			if (this.state.state === 'unreachable') {
 				return 'warning'
@@ -229,12 +229,12 @@ export default {
 			return this.state.state === 'live' ? 'success' : 'info'
 		},
 
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
 		rows() {
 			return valueRows(this.resolved?.value)
 		},
 
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007 */
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007 */
 		resyncText() {
 			const report = this.resyncReport || {}
 			if (report.succeeded === false) {
@@ -258,7 +258,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen Whether the dialog is open.
 		 *
-		 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on
+		 * @spec openspec/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -267,7 +267,7 @@ export default {
 		},
 	},
 
-	/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on */
+	/** @spec openspec/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on */
 	mounted() {
 		if (this.open) {
 			this.fetchProviders()
@@ -277,7 +277,7 @@ export default {
 	methods: {
 		t,
 
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on */
+		/** @spec openspec/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on */
 		async fetchProviders() {
 			this.loadingProviders = true
 			try {
@@ -290,7 +290,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
 		onPickProvider() {
 			this.query = ''
 			this.suggestions = []
@@ -306,7 +306,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the suggestions are shown.
 		 *
-		 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
+		 * @spec openspec/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
 		 */
 		async runSuggest() {
 			if (!this.selectedProvider || this.query.trim() === '') {
@@ -340,7 +340,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the value is shown.
 		 *
-		 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-a-caller-demands-a-fresh-read
+		 * @spec openspec/specs/registry-field-source/spec.md#scenario-a-caller-demands-a-fresh-read
 		 */
 		async resolve(identifier, fresh) {
 			if (!identifier) {
@@ -372,7 +372,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the report is shown.
 		 *
-		 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-an-administrator-resyncs-the-classification-plan
+		 * @spec openspec/specs/registry-field-source/spec.md#scenario-an-administrator-resyncs-the-classification-plan
 		 */
 		async runResync() {
 			this.busy = true
@@ -394,7 +394,7 @@ export default {
 		/**
 		 * @param {boolean} isOpen The dialog's new open state.
 		 *
-		 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+		 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
 		 */
 		onOpenChanged(isOpen) {
 			if (!isOpen) {
@@ -402,7 +402,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
 		close() {
 			this.$emit('close')
 		},

@@ -210,7 +210,7 @@ export function openPromotionHandler() {
  * registry, search, and read a value with where it came from and how old it
  * is. Wired to the Sources page's "Look up in a base registry" header action.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
 export function openRegistryLookupHandler() {
 	modalBus.emit(EVENT_OPEN_REGISTRY_LOOKUP, {})

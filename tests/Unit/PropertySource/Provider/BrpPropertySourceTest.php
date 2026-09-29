@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  * REQ-RFS-006: a binding reads through the gateway, never through a client of
  * its own, and a missing source is a configuration error.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
  */
 class BrpPropertySourceTest extends TestCase {
 	/**
