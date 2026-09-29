@@ -7,10 +7,7 @@
 - **files**: `lib/Service/Registry/SubscriptionProviderInterface.php`, `lib/Service/Registry/SubscriptionResult.php`, `lib/Service/Registry/SubscriptionChange.php`, `lib/Service/Registry/LogSubscriptionProvider.php`, `lib/Service/Registry/SubscriptionRegistry.php`
 - [x] Implement
 - [x] Test
-- [BLOCKED] Confirm with the OpenRegister team whether `RegistrySubscriptionRequestedEvent`
-  (design.md D2) is fanned out as a CloudEvent or is in-process only inside
-  OpenRegister. `registry-subscriptions` has no implementation yet to check
-  against. Do not build the listener in Task 3 against a guessed wire shape.
+- [x] Confirm the wire shape of `RegistrySubscriptionRequestedEvent` (design.md D2): resolved under Task 3, OpenRegister ships the event and dispatches it in-process from `RegistrySubscriptionNotifier`.
 
 ### Task 2: `BrpVolgindicatieProvider` and `KvkMutatieProvider`
 - **spec_ref**: `openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001`
@@ -56,23 +53,8 @@
 - [x] Implement
 - [x] Test
 
-## What is built, and what is still blocked
+## What is built
 
-Tasks 1, 2 and 4 are built, with unit tests. Task 3 is built up to the wire:
-the handler that turns a request into a live subscription exists and is
-tested, and the listener that binds it to OpenRegister's event does not,
-because `registry-subscriptions` still has no implementation to bind
-against. The roster holds identity values and subscription references only;
-the person and the company stay in OpenRegister, which was the whole reason
-the store-and-copy design was superseded.
+All four tasks are built with unit tests, and the listener is registered in `lib/AppInfo/Application.php` against OpenRegister's `RegistrySubscriptionRequestedEvent`; `RegistrySubscriptionPollJob` is registered in `appinfo/info.xml`. The roster holds identity values and subscription references only; the person and the company stay in OpenRegister. The BRP and KvK bindings are structural: they call the seeded sources through `CallService` and have not run against a live BRP or KvK subscription contract, which needs the municipality's own connection.
 
-## Why nothing was checked before
-
-This change was written 2026-09-11 to retire the rejected
-`brp-kvk-store-and-subscriptions` design and replace it with a spec that
-matches the chosen `registry-subscriptions` (OpenRegister) shape. It is not
-implemented in the same session: OpenRegister's own capability has no
-inbound endpoint to POST to yet, and Task 1's open question has to be
-answered before Task 3 can be built against a real event shape rather than
-a guess. Implement once `registry-subscriptions` ships its endpoint and its
-event delivery mechanism is confirmed.
+Checked at archive time (2026-09-29): every file named above exists at development 458548b0; `tests/Unit/Service/Registry`, `RegistrySubscriptionPollJobTest` and `RegistrySubscriptionRequestedListenerTest` pass (20 tests).

@@ -24,7 +24,7 @@ namespace OCA\Integriq\Service\Registry;
  * A registry id maps to exactly one binding, and an unknown id is an absence
  * the caller has to handle rather than a silent nothing.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
 class SubscriptionRegistry {
 	/**

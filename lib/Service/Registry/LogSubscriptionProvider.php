@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
  * Bound while no real registry contract is in place. It logs what it was
  * asked and never pretends a registry answered.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
 class LogSubscriptionProvider implements SubscriptionProviderInterface {
 	/**

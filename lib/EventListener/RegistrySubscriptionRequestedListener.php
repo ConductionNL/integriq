@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.app
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+ * @spec openspec/specs/registry-subscription-connector/spec.md
  */
 
 declare(strict_types=1);

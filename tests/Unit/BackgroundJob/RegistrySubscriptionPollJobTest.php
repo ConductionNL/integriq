@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
  * REQ-RSC-003: a change is posted to OpenRegister, an unchanged payload posts
  * nothing, and a 422 is not retried.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
 class RegistrySubscriptionPollJobTest extends TestCase {
 	/**
