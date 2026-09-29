@@ -1526,7 +1526,22 @@ OC.L10N.register(
         "Connection alerts": "Verbindingsmeldingen",
         "Minutes": "Minuten",
         "Opened": "Geopend",
-        "Source or synchronization": "Bron of synchronisatie"
+        "Source or synchronization": "Bron of synchronisatie",
+        "What an approve would write": "Wat goedkeuren zou schrijven",
+        "{count} to create": "{count} aan te maken",
+        "{count} to change": "{count} te wijzigen",
+        "{count} to remove": "{count} te verwijderen",
+        "{count} unchanged": "{count} ongewijzigd",
+        "Each list shows the first {limit} objects. The counts are exact.": "Elke lijst toont de eerste {limit} objecten. De aantallen zijn exact.",
+        "Kind of change": "Soort wijziging",
+        "Nothing in this list.": "Niets in deze lijst.",
+        "stored as {id}": "opgeslagen als {id}",
+        "Now": "Nu",
+        "After approve": "Na goedkeuren",
+        "Changed": "Gewijzigd",
+        "(empty)": "(leeg)",
+        "Open the request that replaced this one": "Open het verzoek dat dit verzoek verving",
+        "The source changed after this preview. Nothing was written. A new request shows the new changes.": "De bron is na deze voorvertoning gewijzigd. Er is niets geschreven. Een nieuw verzoek toont de nieuwe wijzigingen."
     },
     "nplurals=2; plural=(n != 1);"
 )

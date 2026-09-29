@@ -56,6 +56,10 @@
 				</template>
 			</dl>
 
+			<ApprovalChangeSet
+				v-if="request.changeSet"
+				:change-set="request.changeSet" />
+
 			<!-- Audit trail (visible for resolved requests) -->
 			<div
 				v-if="request.approverUserId || request.comment"
@@ -80,6 +84,11 @@
 				<p v-if="request.resumeResult">
 					<strong>{{ t('integriq', 'Resume result') }}:</strong>
 					{{ request.resumeResult }}
+				</p>
+				<p v-if="request.supersededBy">
+					<NcButton variant="tertiary" @click="openRequest(request.supersededBy)">
+						{{ t('integriq', 'Open the request that replaced this one') }}
+					</NcButton>
 				</p>
 			</div>
 
@@ -134,11 +143,12 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
+import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import ApprovalChangeSet from '../../components/Approvals/ApprovalChangeSet.vue'
 
 let uidCounter = 0
 
@@ -150,6 +160,7 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		AlertCircleOutline,
+		ApprovalChangeSet,
 	},
 
 	data() {
@@ -169,6 +180,17 @@ export default {
 		},
 	},
 
+	watch: {
+		/**
+		 * Opening the request that replaced this one reuses this page.
+		 *
+		 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+		 */
+		requestId() {
+			this.load()
+		},
+	},
+
 	mounted() {
 		this.load()
 	},
@@ -182,6 +204,16 @@ export default {
 		 */
 		goBack() {
 			this.$router.push('/approvals')
+		},
+
+		/**
+		 * Open another approval request, such as the one that replaced this.
+		 *
+		 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+		 * @param {string} id The approval_request id.
+		 */
+		openRequest(id) {
+			this.$router.push(`/approvals/${id}`)
 		},
 
 		/**
@@ -220,6 +252,19 @@ export default {
 				showSuccess(t('integriq', 'Approved'))
 				await this.load()
 			} catch (err) {
+				// The source changed after the preview (REQ-INAV-004): nothing
+				// was written and a new request carries the new change set.
+				const replacedBy = err?.response?.data?._approval?.supersededBy
+				if (err?.response?.status === 409 && replacedBy) {
+					showWarning(
+						t(
+							'integriq',
+							'The source changed after this preview. Nothing was written. A new request shows the new changes.',
+						),
+					)
+					this.openRequest(replacedBy)
+					return
+				}
 				const detail = err?.response?.data?.error || err?.message || ''
 				showError(
 					t('integriq', 'Approve failed') + (detail ? `: ${detail}` : ''),

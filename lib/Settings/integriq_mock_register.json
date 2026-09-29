@@ -6869,7 +6869,28 @@
         "ruleId": "00000000-0000-4000-8000-000000000000",
         "timing": "before",
         "resumeOrder": 1,
-        "snapshot": {},
+        "snapshot": {
+          "changeSet": {
+            "created": [
+              {"originId": "zt-parkeervergunning", "fields": {"omschrijving": "Parkeervergunning", "doel": "Een parkeervergunning verlenen"}},
+              {"originId": "zt-standplaatsvergunning", "fields": {"omschrijving": "Standplaatsvergunning", "doel": "Een standplaats toewijzen"}}
+            ],
+            "changed": [
+              {"originId": "zt-evenementenvergunning", "targetId": "00000000-0000-4000-8000-000000000001", "fields": [
+                {"field": "statustypen", "before": ["Ontvangen", "Afgehandeld"], "after": ["Ontvangen", "Besloten", "Afgehandeld"]}
+              ]}
+            ],
+            "removed": [
+              {"originId": "zt-kapvergunning-oud", "targetId": "00000000-0000-4000-8000-000000000002"}
+            ],
+            "unchanged": 14,
+            "counts": {"created": 2, "changed": 1, "removed": 1, "unchanged": 14},
+            "truncated": false,
+            "limit": 500,
+            "fingerprint": "4f2c9a0d8b1e7f3a6c5d2e9b0a1f8c7d6e5b4a3f2e1d0c9b8a7f6e5d4c3b2a19"
+          }
+        },
+        "fingerprint": "4f2c9a0d8b1e7f3a6c5d2e9b0a1f8c7d6e5b4a3f2e1d0c9b8a7f6e5d4c3b2a19",
         "synchronizationId": "00000000-0000-4000-8000-000000000000",
         "requesterUserId": "Voorbeeld Requesteruserid 1",
         "approverUserId": "Voorbeeld Approveruserid 1",

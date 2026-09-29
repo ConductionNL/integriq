@@ -2870,7 +2870,22 @@
         "Connection alerts": "Connection alerts",
         "Minutes": "Minutes",
         "Opened": "Opened",
-        "Source or synchronization": "Source or synchronization"
+        "Source or synchronization": "Source or synchronization",
+        "What an approve would write": "What an approve would write",
+        "{count} to create": "{count} to create",
+        "{count} to change": "{count} to change",
+        "{count} to remove": "{count} to remove",
+        "{count} unchanged": "{count} unchanged",
+        "Each list shows the first {limit} objects. The counts are exact.": "Each list shows the first {limit} objects. The counts are exact.",
+        "Kind of change": "Kind of change",
+        "Nothing in this list.": "Nothing in this list.",
+        "stored as {id}": "stored as {id}",
+        "Now": "Now",
+        "After approve": "After approve",
+        "Changed": "Changed",
+        "(empty)": "(empty)",
+        "Open the request that replaced this one": "Open the request that replaced this one",
+        "The source changed after this preview. Nothing was written. A new request shows the new changes.": "The source changed after this preview. Nothing was written. A new request shows the new changes."
     },
     "plurals": {}
 }
