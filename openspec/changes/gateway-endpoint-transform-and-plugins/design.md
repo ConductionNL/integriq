@@ -10,7 +10,7 @@ After the `after` rules, when `outputMapping` is set, the body is passed through
 
 ## D2. A plug-in is a PHP class a sibling app registers
 
-`EndpointRulePluginInterface` has `id(): string` and `process(array $rule, array $data): array`. Implementations are registered through an `EndpointRulePluginRegistry` that collects tagged services at boot (the same pattern `ExpressionValueSourceRegistry` uses). A `custom` rule's `configuration.plugin` names the id; an unknown id throws "No rule plug-in 'x' is installed", naming the id. `connectRelations` moves behind the interface unchanged, so existing rules keep working.
+`EndpointRulePluginInterface` has `pluginId(): string` and `process(array $rule, array $data): array|JSONResponse` (a response ends the pipeline with that answer, as `connectRelations` always did). Implementations are registered through an `EndpointRulePluginRegistry`: integriq's own through the constructor, a sibling app's by listening for `RegisterEndpointRulePluginsEvent`, which the registry dispatches once on its first lookup. (Amended at build time: Nextcloud has no tagged services, so an event replaces them; `id()` became `pluginId()` because PHPMD refuses two-letter method names.) A `custom` rule's `configuration.plugin` names the id; an unknown id throws "No rule plug-in 'x' is installed", naming the id. `connectRelations` moves behind the interface unchanged, so existing rules keep working.
 
 ## D3. JavaScript is refused, not stubbed
 

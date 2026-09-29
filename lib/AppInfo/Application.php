@@ -146,11 +146,11 @@ use OCA\Integriq\Migration\MigrationSourceRegistry;
 use OCA\Integriq\Migration\Source\FileMigrationSource;
 use OCA\Integriq\Migration\Source\RedmineMigrationSource;
 use OCA\Integriq\PropertySource\PropertySourceRegistry;
-use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
-use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
 use OCA\Integriq\PropertySource\Provider\BagPropertySource;
 use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
 use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
+use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
+use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
 use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
@@ -475,11 +475,6 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
-		// The property-source registry: one keyed list of the registry
-		// bindings a schema property can name through
-		// `x-openregister-property-source`. Registered explicitly rather than
-		// autowired so the order, and therefore the first-wins collision
-		// policy, is readable in one place.
 		// Endpoint rule plug-ins (gateway-endpoint-transform-and-plugins D2):
 		// integriq's own connectRelations, plus whatever sibling apps register
 		// on RegisterEndpointRulePluginsEvent, dispatched on first lookup.
@@ -494,6 +489,11 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The property-source registry: one keyed list of the registry
+		// bindings a schema property can name through
+		// `x-openregister-property-source`. Registered explicitly rather than
+		// autowired so the order, and therefore the first-wins collision
+		// policy, is readable in one place.
 		$context->registerService(
 			PropertySourceRegistry::class,
 			static function ($c): PropertySourceRegistry {

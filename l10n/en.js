@@ -260,7 +260,6 @@ OC.L10N.register(
         "Input object (JSON)": "Input object (JSON)",
         "Invalid JSON format": "Invalid JSON format",
         "Invalid JSON: {message}": "Invalid JSON: {message}",
-        "JavaScript code": "JavaScript code",
         "JavaScript Code": "JavaScript Code",
         "JSON Logic predicates that gate which source records are synchronised. Leave empty to sync everything.": "JSON Logic predicates that gate which source records are synchronised. Leave empty to sync everything.",
         "JSON-encoded OR query filter": "JSON-encoded OR query filter",
@@ -344,7 +343,6 @@ OC.L10N.register(
         "Run the picked mapping against a sample object to see the transformed output.": "Run the picked mapping against a sample object to see the transformed output.",
         "Run the test to see the result here.": "Run the test to see the result here.",
         "Sample input (JSON)": "Sample input (JSON)",
-        "Sandboxed script that runs against the request data. Stored as configuration.javascript.": "Sandboxed script that runs against the request data. Stored as configuration.javascript.",
         "Save action matrix": "Save action matrix",
         "Save changes": "Save changes",
         "Save failed": "Save failed",
@@ -2698,7 +2696,9 @@ OC.L10N.register(
         "The flow gets the request as its input. If the flow run fails, the caller gets an error.": "The flow gets the request as its input. If the flow run fails, the caller gets an error.",
         "Pick the flow below. The endpoint path is the address a partner calls to start it.": "Pick the flow below. The endpoint path is the address a partner calls to start it.",
         "Flow to start": "Flow to start",
-        "Pick the flow this rule starts.": "Pick the flow this rule starts."
+        "Pick the flow this rule starts.": "Pick the flow this rule starts.",
+        "Integriq runs no scripts, so this JavaScript rule fails when it runs. Pick another type, such as Flow.": "Integriq runs no scripts, so this JavaScript rule fails when it runs. Pick another type, such as Flow.",
+        "What the rule does when it runs. Integriq runs no scripts, so JavaScript is not a choice.": "What the rule does when it runs. Integriq runs no scripts, so JavaScript is not a choice."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -1577,7 +1577,7 @@
           },
           "type": {
             "type": "string",
-            "description": "The action the rule pipeline runs: one of the types EndpointService::handleRuleProcessing() or SynchronizationService::processRules() dispatches. javascript is refused: integriq runs no scripts; use a custom rule naming a plug-in, or a flow.",
+            "description": "What the rule does when it runs. Integriq runs no scripts, so JavaScript is not a choice.",
             "enum": ["error", "mapping", "synchronization", "authentication", "download", "upload", "locking", "fetch_file", "write_file", "fileparts_create", "filepart_upload", "save_object", "extend_input", "extend_external_input", "webhook_signature", "approval", "flow", "audit_trail", "override", "custom", "composite_fanout", "referentienummer", "avg_bsn_policy", "selfurl_hal"],
             "title": "Type"
           },

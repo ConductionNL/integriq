@@ -361,7 +361,6 @@ OC.L10N.register(
         "JSON-encoded OR query filter": "JSON-gecodeerd OR-queryfilter",
         "JWT": "JWT",
         "JavaScript Code": "JavaScript-code",
-        "JavaScript code": "JavaScript-code",
         "Job": "Taak",
         "Job class": "Taakklasse",
         "Job logs": "Taaklogboeken",
@@ -564,7 +563,6 @@ OC.L10N.register(
         "Run the picked mapping against a sample object to see the transformed output.": "Voer de gekozen mapping uit tegen een voorbeeldobject om de getransformeerde uitvoer te zien.",
         "Run the test to see the result here.": "Voer de test uit om het resultaat hier te zien.",
         "Sample input (JSON)": "Voorbeeldinvoer (JSON)",
-        "Sandboxed script that runs against the request data. Stored as configuration.javascript.": "Gesandboxed script dat tegen de verzoekgegevens wordt uitgevoerd. Opgeslagen als configuration.javascript.",
         "Save": "Opslaan",
         "Save DSO signature configuration": "DSO-handtekeningconfiguratie opslaan",
         "Save action matrix": "Actiematrix opslaan",
@@ -1357,7 +1355,9 @@ OC.L10N.register(
         "The flow gets the request as its input. If the flow run fails, the caller gets an error.": "De flow krijgt het verzoek als invoer. Als de flow mislukt, krijgt de aanroeper een foutmelding.",
         "Pick the flow below. The endpoint path is the address a partner calls to start it.": "Kies hieronder de flow. Het pad van het endpoint is het adres dat een partner aanroept om hem te starten.",
         "Flow to start": "Te starten flow",
-        "Pick the flow this rule starts.": "Kies de flow die deze regel start."
+        "Pick the flow this rule starts.": "Kies de flow die deze regel start.",
+        "Integriq runs no scripts, so this JavaScript rule fails when it runs. Pick another type, such as Flow.": "Integriq voert geen scripts uit, dus deze JavaScript-regel faalt zodra hij draait. Kies een ander type, zoals Flow.",
+        "What the rule does when it runs. Integriq runs no scripts, so JavaScript is not a choice.": "Wat de regel doet als hij draait. Integriq voert geen scripts uit, dus JavaScript is geen keuze."
     },
     "nplurals=2; plural=(n != 1);"
 )

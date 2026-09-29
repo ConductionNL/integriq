@@ -370,7 +370,6 @@ export default {
 			this.$emit('update', next)
 		},
 
-
 		/**
 		 * Fallback JSON-textarea path for action types with no bespoke form.
 		 * The draft is kept verbatim per action type so a half-typed value

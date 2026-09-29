@@ -213,12 +213,12 @@ class RuleService {
 		$plugin = $this->pluginRegistry()->pluginFor(pluginId: $pluginId);
 		if ($plugin === null) {
 			$installed = implode(', ', $this->pluginRegistry()->ids());
+			if ($installed === '') {
+				$installed = 'none';
+			}
+
 			throw new Exception(
-				sprintf(
-					"No rule plug-in '%s' is installed. Installed plug-ins: %s.",
-					$pluginId,
-					$installed === '' ? 'none' : $installed
-				)
+				sprintf("No rule plug-in '%s' is installed. Installed plug-ins: %s.", $pluginId, $installed)
 			);
 		}
 

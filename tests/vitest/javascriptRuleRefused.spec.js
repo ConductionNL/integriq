@@ -44,7 +44,9 @@ vi.mock('@nextcloud/vue', async () => {
 		'NcTextArea',
 		'NcTextField',
 	]
-	return Object.fromEntries(names.map((name) => [name, stub(name, ['type', 'modelValue', 'options'])]))
+	return Object.fromEntries(
+		names.map((name) => [name, stub(name, ['type', 'modelValue', 'options'])]),
+	)
 })
 
 const global = { mocks: { t: (_app, text) => text } }

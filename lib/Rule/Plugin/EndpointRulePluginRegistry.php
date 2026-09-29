@@ -77,7 +77,7 @@ class EndpointRulePluginRegistry {
 	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function register(EndpointRulePluginInterface $plugin): bool {
-		$pluginId = trim($plugin->id());
+		$pluginId = trim($plugin->pluginId());
 		if ($pluginId === '') {
 			$this->logger?->warning('endpoint-rule-plugin.no-id', ['class' => get_class($plugin)]);
 			return false;

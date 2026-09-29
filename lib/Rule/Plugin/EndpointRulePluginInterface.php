@@ -46,7 +46,7 @@ interface EndpointRulePluginInterface {
 	 *
 	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
-	public function id(): string;
+	public function pluginId(): string;
 
 	/**
 	 * Run the step.

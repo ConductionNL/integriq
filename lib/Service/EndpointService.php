@@ -781,10 +781,12 @@ class EndpointService {
 		$mapping = $this->mappingService->getMapping(mappingId: $mappingId);
 
 		if (isset($body['results']) === true && is_array($body['results']) === true) {
-			$body['results'] = array_map(
-				fn (mixed $item): mixed => is_array($item) === true ? $this->mappingService->executeMapping(mapping: $mapping, input: $item) : $item,
-				$body['results']
-			);
+			foreach ($body['results'] as $index => $item) {
+				if (is_array($item) === true) {
+					$body['results'][$index] = $this->mappingService->executeMapping(mapping: $mapping, input: $item);
+				}
+			}
+
 			return $body;
 		}
 

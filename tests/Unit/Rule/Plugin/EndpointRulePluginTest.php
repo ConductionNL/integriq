@@ -73,7 +73,7 @@ class EndpointRulePluginTest extends TestCase {
 			 *
 			 * @return string
 			 */
-			public function id(): string {
+			public function pluginId(): string {
 				return 'bsn-mask';
 			}
 

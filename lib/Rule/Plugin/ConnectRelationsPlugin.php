@@ -55,9 +55,9 @@ class ConnectRelationsPlugin implements EndpointRulePluginInterface {
 	 *
 	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
-	public function id(): string {
+	public function pluginId(): string {
 		return self::ID;
-	}//end id()
+	}//end pluginId()
 
 	/**
 	 * Extend the model named by the last path segment.
@@ -66,6 +66,8 @@ class ConnectRelationsPlugin implements EndpointRulePluginInterface {
 	 * @param array $data The pipeline data.
 	 *
 	 * @return array|JSONResponse A response saying whether the views were connected.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is Symfony's static validator; there is no instance API.
 	 *
 	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
