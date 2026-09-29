@@ -257,6 +257,7 @@ export default {
 		 */
 		show: {
 			immediate: true,
+			/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice */
 			handler(open) {
 				if (open) {
 					this.seed()
