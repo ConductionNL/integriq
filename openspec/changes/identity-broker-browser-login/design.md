@@ -37,3 +37,14 @@ The disabled `portaliq` consumer. The log adapter gains a scripted mode for test
 ## Risks
 
 - [State stored but browser never returns] the state expires after five minutes and is swept with the code store.
+
+## As built (2026-09-29)
+
+The code at HEAD matched the design's reading. Where the build differs, it is recorded here.
+
+- **Scripted adapter lives under `tests/`, not in `LogGovernmentIdpAdapter`.** An adapter that answers a fixed assertion is a login as anybody. A scripted mode in `lib/` needs a switch, and any switch reachable from app config on a live instance is that backdoor. So `tests/Unit/Auth/Idp/ScriptedGovernmentIdpAdapter.php` exists only in the test tree, and the round trip (start, callback, exchange) runs in PHPUnit (`IdpBrowserLoginTest`) through the real services. Newman covers only the refusals, which need no provider (collection folder 16). The Newman round trip in task 3 is replaced by the PHPUnit one for this reason.
+- **The state is keyed by the adapter's request id.** D1 said the adapter is called "with the state id". A SAML adapter mints its own AuthnRequest ID, so the start calls `beginAuthentication()` first and stores the state under the `requestId` it answers; the callback consumes by `inResponseTo`. The adapter gets integriq's nonce as `relayState`, so the consumer's relay state never reaches the identity provider.
+- **Audience EntityID per provider.** `AssertionGuard` needs the SP or RP EntityID and no setting held it. New app config key `idp_broker_entity_ids` (`{provider: entityId}`); empty refuses every assertion.
+- **Secret by broker reference.** `secretRef` is an OpenRegister credential broker id read with `resolveInjectable()` at redemption (`IdpConsumerSecretResolver`); `secretOrganisation` is passed as the sessionless organisation assertion. Any broker failure is an empty expected secret, so a refused exchange, never an open one.
+- **Extra refusals at the callback, each sending `error=login_failed`:** the consumer disabled or its address removed since the start; the assertion's organisation differing from the state's; the mapped trust below the trust the start asked for; a subject type that does not belong to the provider; an eHerkenning branch that is not twelve digits (refused rather than dropped, since dropping widens the login to the whole company).
+- **Registration rules.** A return address must be https (http only for localhost), with a host, no user info and no fragment. The command does not move an older-form consumer without `--secret-ref`, so an inline secret is never rewritten into the new shape.
