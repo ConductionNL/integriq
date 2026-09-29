@@ -147,7 +147,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-advice-with-a-reconsidered-definitive-advice
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-advice-with-a-reconsidered-definitive-advice
 	 */
 	public function testSchooladviesRendersAanleverenAdviesVoRequest(): void {
 		$xml = $this->translator->translate('schooladvies', 'seed-kenmerk-002', $this->advies());
@@ -179,7 +179,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-advice-without-a-second-advice
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-advice-without-a-second-advice
 	 */
 	public function testNullAdvies2AndLocationsAreLeftOut(): void {
 		$xml = $this->translator->translate(
@@ -200,7 +200,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-a-malformed-onderwijsaanbieder
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-malformed-onderwijsaanbieder
 	 */
 	public function testMalformedAdviesFieldsAreRefusedByName(): void {
 		$cases = [
@@ -234,7 +234,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-an-onderwijsnummer
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-an-onderwijsnummer
 	 */
 	public function testALearnerWithAnOnderwijsnummerUsesTheOnderwijsnummerElement(): void {
 		$xml = $this->translator->translate(

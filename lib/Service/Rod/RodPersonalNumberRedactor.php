@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-003-the-persoonsgebonden-nummer-never-reaches-a-log-or-a-stored-error
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-009-the-persoonsgebonden-nummer-never-reaches-a-log-or-a-stored-error
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\Integriq\Service\Rod;
 /**
  * Removes a persoonsgebonden nummer from free text.
  *
- * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-003-the-persoonsgebonden-nummer-never-reaches-a-log-or-a-stored-error
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-009-the-persoonsgebonden-nummer-never-reaches-a-log-or-a-stored-error
  */
 class RodPersonalNumberRedactor {
 
@@ -54,7 +54,7 @@ class RodPersonalNumberRedactor {
 	 *
 	 * @return string The text without any persoonsgebonden nummer.
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-003-the-persoonsgebonden-nummer-never-reaches-a-log-or-a-stored-error
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-009-the-persoonsgebonden-nummer-never-reaches-a-log-or-a-stored-error
 	 */
 	public function redact(string $text, ?string $number=null): string {
 		if ($number !== null && $number !== '') {

@@ -158,7 +158,7 @@ class LearniqExchangeJobsFragmentTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-the-learner-mapping-maps-the-number-not-the-eck-id
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-the-learner-mapping-maps-the-number-not-the-eck-id
 	 */
 	public function testTheRodMappingNeverReadsTheEncryptedBsn(): void {
 		$row   = $this->objectsBySlug()['learniq-bron-rod-export-learner'];
@@ -179,7 +179,7 @@ class LearniqExchangeJobsFragmentTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-002-the-school-advice-is-sent-as-aanleverenadviesvo_request
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-008-the-school-advice-is-sent-as-aanleverenadviesvo_request
 	 */
 	public function testTheRodSchoolAdviceMappingIsSeeded(): void {
 		$rules = $this->objectsBySlug()['learniq-bron-rod-export-schooladvies']['mapping'];

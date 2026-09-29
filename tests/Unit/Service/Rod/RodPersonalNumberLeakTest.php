@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-003-the-persoonsgebonden-nummer-never-reaches-a-log-or-a-stored-error
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-009-the-persoonsgebonden-nummer-never-reaches-a-log-or-a-stored-error
  */
 
 declare(strict_types=1);

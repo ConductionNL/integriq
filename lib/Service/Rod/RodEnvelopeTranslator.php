@@ -42,7 +42,7 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
- * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-001-the-persoonsgebonden-nummer-goes-in-duos-choice-element
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-007-the-persoonsgebonden-nummer-goes-in-duos-choice-element
  */
 
 declare(strict_types=1);
@@ -151,7 +151,7 @@ class RodEnvelopeTranslator {
 	 *                                 fields, never values.
 	 *
 	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-complete-inschrijving-translates-to-a-valid-envelope
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-001-the-persoonsgebonden-nummer-goes-in-duos-choice-element
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-007-the-persoonsgebonden-nummer-goes-in-duos-choice-element
 	 */
 	public function translate(string $berichtsoort, string $kenmerk, array $payload): string {
 		if (isset(self::REQUIRED_FIELDS[$berichtsoort]) === false) {
@@ -200,7 +200,7 @@ class RodEnvelopeTranslator {
 	 *
 	 * @throws RodTranslationException When the number or its type is missing or malformed.
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-001-the-persoonsgebonden-nummer-goes-in-duos-choice-element
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-007-the-persoonsgebonden-nummer-goes-in-duos-choice-element
 	 */
 	public function personalNumber(array $payload): array {
 		$value = $this->stringOrNull(value: ($payload['persoonsgebondenNummer'] ?? null));

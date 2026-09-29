@@ -459,7 +459,7 @@ class ExchangeJobService {
 	 *
 	 * @return string|null The mapping slug, or null when there is no default.
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-default-mapping-for-a-schooladvies-job
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-default-mapping-for-a-schooladvies-job
 	 */
 	private function defaultMapping(string $ownerApp, string $target, string $direction, array $scope): ?string {
 		$byKind = (self::DEFAULT_MAPPINGS[$ownerApp][$target.':'.$direction] ?? null);
