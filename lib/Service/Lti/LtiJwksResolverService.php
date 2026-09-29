@@ -223,11 +223,18 @@ class LtiJwksResolverService {
 		);
 
 		try {
+			// The source is ad hoc and never persisted, so its uuid is not a uuid.
+			// A persisted call log would name it in `call_log.source` (format: uuid)
+			// and the register refuses that row, which failed every JWKS fetch after
+			// the key set had already arrived. The fetch is therefore not logged as
+			// a call log: persistLog false returns the response in memory and
+			// writes nothing, neither the call log nor the source's rate-limit state.
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
 				method: 'GET',
-				read: true
+				read: true,
+				persistLog: false
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
