@@ -244,13 +244,19 @@ class ApprovalService {
 			'synchronizationId' => $synchronizationId,
 			'timing' => 'before',
 			'snapshot' => [],
-			'requesterUserId' => $this->userSession->getUser()?->getUID(),
 			'approverGroup' => $approverGroup,
 			'onReject' => $onReject,
 			'onTimeout' => $onTimeout,
 			'createdAt' => $now->format('c'),
 			'expiresAt' => $expiresAt->format('c'),
 		];
+		// A scheduled run has no session user; the register refuses a null
+		// string, so the key is left out rather than written empty.
+		$requesterUserId = $this->userSession->getUser()?->getUID();
+		if ($requesterUserId !== null) {
+			$object['requesterUserId'] = $requesterUserId;
+		}
+
 		if ($changeSet !== []) {
 			$object['snapshot'] = ['changeSet' => $changeSet];
 			$object['fingerprint'] = (string)($changeSet['fingerprint'] ?? '');
@@ -524,6 +530,7 @@ class ApprovalService {
 	public function markSuperseded(ObjectEntity $approvalRequest, string $supersededBy): void {
 		$data = $approvalRequest->getObject();
 		$data['consumedAt'] = (new DateTime())->format('c');
+		$data['resumeResult'] = 'superseded';
 		$data['supersededBy'] = $supersededBy;
 
 		$this->objectService->saveObject(
@@ -534,6 +541,29 @@ class ApprovalService {
 		);
 
 	}//end markSuperseded()
+
+	/**
+	 * Record how a resumed run ended on an already approved request.
+	 *
+	 * @param ObjectEntity $approvalRequest The approved approval_request.
+	 * @param string $resumeResult `success`, `error` or `superseded`.
+	 *
+	 * @return ObjectEntity The stored request.
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+	 */
+	public function recordResumeResult(ObjectEntity $approvalRequest, string $resumeResult): ObjectEntity {
+		$data = $approvalRequest->getObject();
+		$data['resumeResult'] = $resumeResult;
+
+		return $this->objectService->saveObject(
+			object: $data,
+			register: self::REGISTER,
+			schema: self::SCHEMA,
+			uuid: $approvalRequest->getUuid()
+		);
+
+	}//end recordResumeResult()
 
 	/**
 	 * Rehydrate a FlowToken from a persisted snapshot via the public

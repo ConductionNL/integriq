@@ -3481,14 +3481,17 @@ class SynchronizationService {
 
 		// A gated, not-yet-approved run already finalized its own log with a
 		// `pending_approval` message and made no writes — do not overwrite it
-		// with 'Success' (synchronization-engine REQ-015).
-		if ($log->getMessage() === 'pending_approval') {
+		// with 'Success' (synchronization-engine REQ-015). Nor a resumed run
+		// whose source changed after the preview (`approval_superseded`,
+		// REQ-INAV-004): it wrote nothing and opened a new request.
+		$pausedMessage = $log->getMessage();
+		if ($pausedMessage === 'pending_approval' || $pausedMessage === 'approval_superseded') {
 			// Terminal for this run even though no work happened — leaving it
 			// `running` would show as hung forever.
 			$this->runProgressService?->finish(
 				status: 'success',
 				counters: $this->progressCountersFromLog(log: $log),
-				message: 'pending_approval'
+				message: $pausedMessage
 			);
 
 			if ($ownsTrace === true) {

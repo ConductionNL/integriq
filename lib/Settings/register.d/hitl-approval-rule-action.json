@@ -11,7 +11,7 @@
         "slug": "approval_request",
         "title": "Approval Request",
         "icon": "CheckboxMarkedCircleOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A suspended rule-pipeline or Synchronization run awaiting human approve/reject",
         "description": "Persists the resumable context of a suspended endpoint rule-pipeline run (via the `approval` rule action type) or a gated Synchronization batch (`sourceConfig.requiresApproval`). See openspec/specs/approval-workflow/spec.md.",
         "required": ["status", "approverGroup", "onReject", "onTimeout", "expiresAt"],
@@ -59,7 +59,7 @@
           },
           "snapshot": {
             "type": "object",
-            "description": "FlowToken::__serialize() output (the 8-key request/response/syncInput/syncOutput array) with sensitive headers (at minimum Authorization) stripped. Empty for the Synchronization batch-gate case.",
+            "description": "FlowToken::__serialize() output (the 8-key request/response/syncInput/syncOutput array) with sensitive headers (at minimum Authorization) stripped. For the Synchronization batch-gate case it holds `changeSet`: what the run would create, change and remove (connectors-inavigator-case-types REQ-INAV-003).",
             "title": "Snapshot"
           },
           "synchronizationId": {
@@ -124,9 +124,19 @@
           },
           "resumeResult": {
             "type": "string",
-            "enum": ["success", "error"],
-            "description": "Outcome of the resumed chain, for audit (approval-workflow REQ-003)",
+            "enum": ["success", "error", "superseded"],
+            "description": "Outcome of the resumed chain, for audit (approval-workflow REQ-003). `superseded`: the source changed after the preview, nothing was written and `supersededBy` names the new request (REQ-INAV-004).",
             "title": "Resume Result"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "Hash over the change set stored in `snapshot.changeSet`. An accept writes only when the rerun builds the same fingerprint (REQ-INAV-004).",
+            "title": "Fingerprint"
+          },
+          "supersededBy": {
+            "type": "string",
+            "description": "The request that replaced this one because the source changed after its preview (REQ-INAV-004).",
+            "title": "Superseded By"
           },
           "consumedAt": {
             "type": "string",
