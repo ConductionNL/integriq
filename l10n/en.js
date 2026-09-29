@@ -2707,7 +2707,6 @@ OC.L10N.register(
         "Migrate from": "Migrate from",
         "Migrations": "Migrations",
         "Path of the delivered file in your Files": "Path of the delivered file in your Files",
-        "Pick where the data comes from and test what a migration would bring. A test run reads and writes nothing.": "Pick where the data comes from and test what a migration would bring. A test run reads and writes nothing.",
         "Read": "Read",
         "Record kind": "Record kind",
         "Remove column": "Remove column",
@@ -2715,7 +2714,6 @@ OC.L10N.register(
         "Saved as version {version}.": "Saved as version {version}.",
         "Saved mapping": "Saved mapping",
         "Source to read (leave empty for the default)": "Source to read (leave empty for the default)",
-        "Start a new mapping": "Start a new mapping",
         "Start from a preset": "Start from a preset",
         "Target schema": "Target schema",
         "Test run": "Test run",
@@ -2732,7 +2730,11 @@ OC.L10N.register(
         "The column that holds each record's number in the old system. Leave it empty when the file has none.": "The column that holds each record's number in the old system. Leave it empty when the file has none.",
         "The kind of record the mapping produces, such as case": "The kind of record the mapping produces, such as case",
         "The name you pick the mapping by": "The name you pick the mapping by",
-        "The schema the columns map onto": "The schema the columns map onto"
+        "The schema the columns map onto": "The schema the columns map onto",
+        "Edit column mapping": "Edit column mapping",
+        "New column mapping": "New column mapping",
+        "Pick where the data comes from and see what a migration would bring. A test run reads and writes nothing.": "Pick where the data comes from and see what a migration would bring. A test run reads and writes nothing.",
+        "Test a migration": "Test a migration"
     },
     "nplurals=2; plural=(n != 1);"
 )

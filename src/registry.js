@@ -38,7 +38,9 @@ import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
+import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
+import ColumnMappingEditorModal from './modals/Migration/ColumnMappingEditorModal.vue'
 import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
@@ -52,7 +54,6 @@ import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
-import MigrationSourcesPage from './views/Migration/MigrationSourcesPage.vue'
 import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
 import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
@@ -251,9 +252,11 @@ export default {
 	// different schemas behind different admin-only endpoints.
 	DeadLettersPage,
 
-	// Migrations (custom page): pick a migration source, write the column
-	// mapping a delivered file is read through, and run a read-only test.
-	MigrationSourcesPage,
+	// Migrations index over column_mapping: the form-dialog slot checks a
+	// mapping before every save, and the below-header slot picks a migration
+	// source and runs the read-only test.
+	ColumnMappingEditorModal,
+	MigrationTestRunPanel,
 
 	// Source detail circuit-breaker badge (declarative body section on
 	// SourceDetail via config.bodyWidgets): shows breaker state + failure
@@ -315,7 +318,6 @@ export const registry = {
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
-	MigrationSourcesPage: { kind: 'page', component: MigrationSourcesPage },
 	FlowDetailSidebar: { kind: 'page', component: FlowDetailSidebar },
 	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
 	TraceDetailPage: { kind: 'page', component: TraceDetailPage },

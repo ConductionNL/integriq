@@ -1366,7 +1366,6 @@ OC.L10N.register(
         "Migrate from": "Migreren vanuit",
         "Migrations": "Migraties",
         "Path of the delivered file in your Files": "Pad van het aangeleverde bestand in je Bestanden",
-        "Pick where the data comes from and test what a migration would bring. A test run reads and writes nothing.": "Kies waar de gegevens vandaan komen en test wat een migratie oplevert. Een testrun leest en schrijft niets.",
         "Read": "Gelezen",
         "Record kind": "Soort record",
         "Remove column": "Kolom verwijderen",
@@ -1374,7 +1373,6 @@ OC.L10N.register(
         "Saved as version {version}.": "Opgeslagen als versie {version}.",
         "Saved mapping": "Opgeslagen koppeling",
         "Source to read (leave empty for the default)": "Bron om te lezen (leeg laten voor de standaard)",
-        "Start a new mapping": "Nieuwe koppeling beginnen",
         "Start from a preset": "Beginnen vanuit een sjabloon",
         "Target schema": "Doelschema",
         "Test run": "Testrun",
@@ -1391,7 +1389,11 @@ OC.L10N.register(
         "The column that holds each record's number in the old system. Leave it empty when the file has none.": "De kolom met het nummer van elk record in het oude systeem. Laat hem leeg als het bestand er geen heeft.",
         "The kind of record the mapping produces, such as case": "Het soort record dat de koppeling oplevert, zoals zaak",
         "The name you pick the mapping by": "De naam waarmee je de koppeling kiest",
-        "The schema the columns map onto": "Het schema waar de kolommen op landen"
+        "The schema the columns map onto": "Het schema waar de kolommen op landen",
+        "Edit column mapping": "Kolomkoppeling bewerken",
+        "New column mapping": "Nieuwe kolomkoppeling",
+        "Pick where the data comes from and see what a migration would bring. A test run reads and writes nothing.": "Kies waar de gegevens vandaan komen en zie wat een migratie oplevert. Een testrun leest en schrijft niets.",
+        "Test a migration": "Een migratie testen"
     },
     "nplurals=2; plural=(n != 1);"
 )

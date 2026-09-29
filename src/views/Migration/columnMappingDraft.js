@@ -16,6 +16,22 @@
  */
 
 /**
+ * The list a response carries, whichever of the two shapes it has.
+ *
+ * @param {object|Array} data The response body.
+ *
+ * @return {Array} The rows.
+ *
+ * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ */
+export function listOf(data) {
+	if (Array.isArray(data?.results)) {
+		return data.results
+	}
+	return Array.isArray(data) ? data : []
+}
+
+/**
  * A blank draft with one empty column row.
  *
  * @return {{id: string|null, name: string, kind: string, targetSchema: string, identifierColumn: string, version: number, rows: Array<{column: string, target: string}>}} The draft.

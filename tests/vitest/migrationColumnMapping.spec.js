@@ -8,7 +8,9 @@
  * the check, and run the read-only test (migration-source-adapters task 2).
  *
  * The four migration-source routes had no caller in src/. These tests mount
- * the real page and assert the requests it sends. The stored payload is
+ * the real editor dialog (the Migrations index's form-dialog slot) and the
+ * real test-run panel (its below-header slot) and assert the requests they
+ * send. The stored payload is
  * compared with tests/fixtures/migration/column-mapping-stored-payload.json,
  * which ColumnMappingStoredPayloadTest validates against the register's
  * column_mapping schema, so what the page writes is what the register takes.
@@ -19,7 +21,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import MigrationSourcesPage from '@/views/Migration/MigrationSourcesPage.vue'
+import MigrationTestRunPanel from '@/components/MigrationTestRunPanel.vue'
+import ColumnMappingEditorModal from '@/modals/Migration/ColumnMappingEditorModal.vue'
 import {
 	columnsFrom,
 	draftFromPreset,
@@ -36,6 +39,7 @@ const { get, post, put } = vi.hoisted(() => ({
 }))
 vi.mock('@nextcloud/axios', () => ({ default: { get, post, put } }))
 vi.mock('@nextcloud/router', () => ({ generateUrl: (url) => url }))
+vi.mock('@nextcloud/dialogs', () => ({ showSuccess: vi.fn() }))
 
 vi.mock('@nextcloud/vue', async () => {
 	const { defineComponent, h } = await import('vue')
@@ -52,8 +56,18 @@ vi.mock('@nextcloud/vue', async () => {
 				)
 			},
 		})
+	const dialog = defineComponent({
+		name: 'NcDialog',
+		props: ['name', 'size', 'noClose'],
+		render() {
+			return h('div', { class: 'NcDialog' }, [
+				this.$slots.default?.(),
+				this.$slots.actions?.(),
+			])
+		},
+	})
 	return {
-		NcAppContent: stub('NcAppContent'),
+		NcDialog: dialog,
 		NcButton: stub('NcButton', ['variant', 'disabled']),
 		NcNoteCard: stub('NcNoteCard', ['type']),
 		NcSelect: stub('NcSelect', ['modelValue', 'options', 'inputLabel']),
@@ -123,16 +137,15 @@ function answerGet(url) {
 }
 
 /**
- * Mount the page with the file source picked and the stored mapping loaded.
+ * Mount the editor dialog on the stored mapping, as the index's Edit opens it.
  *
+ * @param {Function} confirm the slot's save binding
  * @return {Promise<object>} the wrapper
  */
-async function mountWithStoredMapping() {
-	const wrapper = mount(MigrationSourcesPage)
-	await flushPromises()
-	wrapper.vm.selectedSource = wrapper.vm.sourceOptions[0]
-	wrapper.vm.selectedStored = wrapper.vm.storedOptions[0]
-	wrapper.vm.onPickStored(wrapper.vm.storedOptions[0])
+async function mountEditor(confirm) {
+	const wrapper = mount(ColumnMappingEditorModal, {
+		props: { show: true, item: STORED, confirm, close: vi.fn() },
+	})
 	await flushPromises()
 	return wrapper
 }
@@ -197,7 +210,7 @@ describe('the column mapping draft', () => {
 	})
 })
 
-describe('the migration page', () => {
+describe('the column mapping editor on the Migrations index', () => {
 	beforeEach(() => {
 		get.mockReset()
 		post.mockReset()
@@ -205,16 +218,9 @@ describe('the migration page', () => {
 		get.mockImplementation(answerGet)
 	})
 
-	it('offers the migration sources and a saved mapping for a second delivery', async () => {
-		const wrapper = await mountWithStoredMapping()
+	it('opens a saved mapping with every column filled, for a second delivery', async () => {
+		const wrapper = await mountEditor(vi.fn())
 
-		expect(wrapper.vm.sourceOptions.map((option) => option.id)).toEqual([
-			'file',
-			'redmine',
-		])
-		expect(
-			wrapper.find('[data-testid="migration-column-mapping"]').exists(),
-		).toBe(true)
 		// Picking the saved mapping fills every column: nothing is mapped again.
 		expect(wrapper.findAll('[data-testid="migration-column-row"]')).toHaveLength(
 			3,
@@ -234,7 +240,8 @@ describe('the migration page', () => {
 				},
 			},
 		})
-		const wrapper = await mountWithStoredMapping()
+		const confirm = vi.fn()
+		const wrapper = await mountEditor(confirm)
 		wrapper.vm.draft.rows[2].target = 'town'
 
 		await wrapper.find('[data-testid="migration-mapping-save"]').trigger('click')
@@ -244,7 +251,12 @@ describe('the migration page', () => {
 		expect(post.mock.calls[0][0]).toBe(
 			'/apps/integriq/api/migration-sources/column-mapping/validate',
 		)
-		expect(put).not.toHaveBeenCalled()
+		expect(post.mock.calls[0][1].schemaFields).toEqual([
+			'reference',
+			'requesterName',
+			'city',
+		])
+		expect(confirm).not.toHaveBeenCalled()
 		expect(
 			wrapper.find('[data-testid="migration-mapping-refused"]').text(),
 		).toContain("'town'")
@@ -252,22 +264,24 @@ describe('the migration page', () => {
 
 	it('stores a checked mapping as the next version of the saved one', async () => {
 		post.mockResolvedValueOnce({ data: { valid: true } })
-		put.mockResolvedValueOnce({ data: { ...FIXTURE, id: 'cm-1' } })
-		const wrapper = await mountWithStoredMapping()
+		const confirm = vi.fn().mockResolvedValue(undefined)
+		const wrapper = await mountEditor(confirm)
 
 		await wrapper.find('[data-testid="migration-mapping-save"]').trigger('click')
 		await flushPromises()
 
-		expect(put).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/integriq/column_mapping/cm-1',
-			FIXTURE,
-		)
-		expect(
-			wrapper.find('[data-testid="migration-mapping-saved"]').exists(),
-		).toBe(true)
+		expect(confirm).toHaveBeenCalledWith({ ...FIXTURE, id: 'cm-1' })
+	})
+})
+
+describe('the migration test run panel', () => {
+	beforeEach(() => {
+		get.mockReset()
+		post.mockReset()
+		get.mockImplementation(answerGet)
 	})
 
-	it('runs the read-only test and shows each count beside whether the read was complete', async () => {
+	it('offers the migration sources and runs the read-only test through a saved mapping', async () => {
 		post.mockResolvedValueOnce({
 			data: {
 				source: 'file',
@@ -278,8 +292,16 @@ describe('the migration page', () => {
 				],
 			},
 		})
-		const wrapper = await mountWithStoredMapping()
+		const wrapper = mount(MigrationTestRunPanel)
+		await flushPromises()
+		expect(wrapper.vm.sourceOptions.map((option) => option.id)).toEqual([
+			'file',
+			'redmine',
+		])
+		wrapper.vm.selectedSource = wrapper.vm.sourceOptions[0]
+		wrapper.vm.selectedStored = wrapper.vm.storedOptions[0]
 		wrapper.vm.filePath = 'Migratie/zaken.csv'
+		await flushPromises()
 
 		await wrapper.find('[data-testid="migration-preview"]').trigger('click')
 		await flushPromises()
@@ -288,6 +310,7 @@ describe('the migration page', () => {
 			'/apps/integriq/api/migration-sources/preview',
 		)
 		expect(post.mock.calls[0][1].config.path).toBe('Migratie/zaken.csv')
+		expect(post.mock.calls[0][1].config.mapping.columns).toEqual(STORED.columns)
 		const result = wrapper
 			.find('[data-testid="migration-preview-result"]')
 			.text()

@@ -4126,13 +4126,29 @@
     {
       "id": "Migrations",
       "route": "/migrations",
-      "type": "custom",
-      "component": "MigrationSourcesPage",
+      "type": "index",
       "title": "Migrations",
-      "_note": "Custom because it is a workflow over the migration-sources API, not a list of one schema: pick an adapter (GET /api/migration-sources), write or pick a stored column_mapping object checked by POST /api/migration-sources/column-mapping/validate before every save, and run the read-only preview. migration-source-adapters task 2.",
       "config": {
         "register": "integriq",
+        "schema": "column_mapping",
+        "columns": [
+          "name",
+          "kind",
+          "targetSchema",
+          "version"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
         "documentationUrl": "https://integriq.conduction.nl"
+      },
+      "_note": "The saved column mappings a delivered file is read through (migration-source-adapters task 2). Create and Edit open ColumnMappingEditorModal, which runs POST /api/migration-sources/column-mapping/validate before every save and raises the version by one. below-header renders MigrationTestRunPanel: pick a migration source (GET /api/migration-sources) and run the read-only preview, which writes nothing.",
+      "slots": {
+        "form-dialog": "ColumnMappingEditorModal",
+        "below-header": "MigrationTestRunPanel"
       }
     },
     {
