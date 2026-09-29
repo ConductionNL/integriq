@@ -18,7 +18,7 @@ C-configuration-95. Numbers 2 and 13 of the twenty-five loudest.
 - **files**: `lib/Migration/Source/FileMigrationSource.php`, `lib/Migration/ColumnMapping.php`, `lib/Migration/ColumnMappingValidator.php`, `lib/Controller/MigrationSourcesController.php`
 - [x] Implement (stored, versioned, reusable; target field names validated before the save; an unmapped required field refused before the run)
 - [x] Test (a second delivery reusing a saved mapping, and a mapping onto a missing field)
-- [ ] The mapping editor surface itself. The check it calls is `POST /api/migration-sources/column-mapping/validate`, and the screen is still to be built.
+- [x] The mapping editor surface itself: Connections > Migrations (`src/views/Migration/MigrationSourcesPage.vue`). A mapping is stored as a `column_mapping` object (new schema, `version` raised by one on each save), and every save runs `POST /api/migration-sources/column-mapping/validate` first and shows its refusal. The same page picks the migration source and runs the read-only pass. Tests: `tests/vitest/migrationColumnMapping.spec.js`, `tests/Unit/Migration/ColumnMappingStoredPayloadTest.php`.
 
 ### Task 3: The first incumbent adapter
 - **spec_ref**: `openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-named-incumbent-has-an-adapter-and-a-supported-path-is-rehearsable-req-msa-003`

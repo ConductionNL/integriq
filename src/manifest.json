@@ -278,6 +278,14 @@
           "order": 20
         },
         {
+          "id": "Migrations",
+          "label": "Migrations",
+          "icon": "DatabaseImportOutline",
+          "route": "Migrations",
+          "order": 25,
+          "permission": "admin"
+        },
+        {
           "id": "NotificatiesAbonnementen",
           "label": "Subscriptions",
           "icon": "BellRingOutline",
@@ -4113,6 +4121,18 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "Migrations",
+      "route": "/migrations",
+      "type": "custom",
+      "component": "MigrationSourcesPage",
+      "title": "Migrations",
+      "_note": "Custom because it is a workflow over the migration-sources API, not a list of one schema: pick an adapter (GET /api/migration-sources), write or pick a stored column_mapping object checked by POST /api/migration-sources/column-mapping/validate before every save, and run the read-only preview. migration-source-adapters task 2.",
+      "config": {
+        "register": "integriq",
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {

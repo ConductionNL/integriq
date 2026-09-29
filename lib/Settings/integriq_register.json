@@ -25,6 +25,7 @@
           "call_log",
           "cardfeed_account",
           "cardfeed_batch",
+          "column_mapping",
           "consumer",
           "dso_message",
           "dso_verzoek",
@@ -416,6 +417,56 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "column_mapping": {
+        "slug": "column_mapping",
+        "title": "Column mapping",
+        "icon": "TableArrowRight",
+        "version": "1.0.0",
+        "summary": "How the columns of a delivered file map onto the fields of a schema",
+        "description": "Write a column mapping once and pick it again for every delivery with the same columns. Each save raises the version by one. A migration test run reads a file through it and writes nothing.",
+        "required": [
+          "name",
+          "columns",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name you pick the mapping by",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record the mapping produces, such as case",
+            "title": "Record kind"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The schema the columns map onto",
+            "title": "Target schema"
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Each column of the file and the field it fills",
+            "title": "Columns"
+          },
+          "identifierColumn": {
+            "type": "string",
+            "description": "The column that holds each record's number in the old system. Leave it empty when the file has none.",
+            "title": "Identifier column"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Goes up by one each time the mapping is saved",
+            "title": "Version"
+          }
+        }
       },
       "consumer": {
         "slug": "consumer",

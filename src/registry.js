@@ -52,6 +52,7 @@ import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
+import MigrationSourcesPage from './views/Migration/MigrationSourcesPage.vue'
 import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
 import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
@@ -250,6 +251,10 @@ export default {
 	// different schemas behind different admin-only endpoints.
 	DeadLettersPage,
 
+	// Migrations (custom page): pick a migration source, write the column
+	// mapping a delivered file is read through, and run a read-only test.
+	MigrationSourcesPage,
+
 	// Source detail circuit-breaker badge (declarative body section on
 	// SourceDetail via config.bodyWidgets): shows breaker state + failure
 	// count + cooldown countdown with a Reset action. See
@@ -310,6 +315,7 @@ export const registry = {
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
+	MigrationSourcesPage: { kind: 'page', component: MigrationSourcesPage },
 	FlowDetailSidebar: { kind: 'page', component: FlowDetailSidebar },
 	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
 	TraceDetailPage: { kind: 'page', component: TraceDetailPage },

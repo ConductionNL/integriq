@@ -359,6 +359,56 @@
         "appendOnly": false,
         "immutable": false
       },
+      "column_mapping": {
+        "slug": "column_mapping",
+        "title": "Column mapping",
+        "icon": "TableArrowRight",
+        "version": "1.0.0",
+        "summary": "How the columns of a delivered file map onto the fields of a schema",
+        "description": "Write a column mapping once and pick it again for every delivery with the same columns. Each save raises the version by one. A migration test run reads a file through it and writes nothing.",
+        "required": [
+          "name",
+          "columns",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name you pick the mapping by",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record the mapping produces, such as case",
+            "title": "Record kind"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The schema the columns map onto",
+            "title": "Target schema"
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Each column of the file and the field it fills",
+            "title": "Columns"
+          },
+          "identifierColumn": {
+            "type": "string",
+            "description": "The column that holds each record's number in the old system. Leave it empty when the file has none.",
+            "title": "Identifier column"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Goes up by one each time the mapping is saved",
+            "title": "Version"
+          }
+        }
+      },
       "consumer": {
         "slug": "consumer",
         "title": "Consumer",
@@ -11681,6 +11731,58 @@
         "eckId": "Voorbeeld Eckid 4",
         "error": "Voorbeeld Error 4",
         "syncedAt": "2026-03-04T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-zaken-uit-het-oude-systeem"
+        },
+        "name": "Zaken uit het oude systeem",
+        "kind": "case",
+        "targetSchema": "case",
+        "columns": {
+          "zaaknummer": "reference",
+          "naam": "requesterName",
+          "plaats": "city"
+        },
+        "identifierColumn": "zaaknummer",
+        "version": 2
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-meldingen-openbare-ruimte"
+        },
+        "name": "Meldingen openbare ruimte",
+        "kind": "melding",
+        "targetSchema": "melding",
+        "columns": {
+          "meldingnummer": "reference",
+          "omschrijving": "description",
+          "straat": "street",
+          "datum": "reportedOn"
+        },
+        "identifierColumn": "meldingnummer",
+        "version": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-contactpersonen-zonder-sleutel"
+        },
+        "name": "Contactpersonen zonder sleutel",
+        "kind": "contact",
+        "targetSchema": "contact",
+        "columns": {
+          "naam": "name",
+          "email": "email",
+          "telefoon": "phone"
+        },
+        "identifierColumn": "",
+        "version": 1
       }
     ]
   }
