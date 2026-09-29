@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  */
 class UwlrEduVService {
 
@@ -131,7 +131,7 @@ class UwlrEduVService {
 	 * @throws UwlrEduVTranslationException When a required field is missing/empty or the subtype is unknown.
 	 * @throws UwlrEduVProviderException When no active source is configured, or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
 	 */
 	public function sendUwlrExport(string $kenmerk, string $subtype, array $payload): array {
 		$envelopeXml = $this->uwlrTranslator->translate(kenmerk: $kenmerk, subtype: $subtype, payload: $payload);
@@ -157,7 +157,7 @@ class UwlrEduVService {
 	 * @throws UwlrEduVTranslationException When a required field is missing/empty or the data service is unqualified.
 	 * @throws UwlrEduVProviderException When no active source is configured, or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-003-edu-v-export-envelope-translation-across-three-qualified-data-services
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-003-edu-v-export-envelope-translation-across-three-qualified-data-services
 	 */
 	public function sendEduVExport(string $kenmerk, string $dataService, array $payload): array {
 		$envelopeXml = $this->eduVTranslator->translate(kenmerk: $kenmerk, dataService: $dataService, payload: $payload);
@@ -182,7 +182,7 @@ class UwlrEduVService {
 	 * @throws UwlrEduVTranslationException When a required field is missing/empty.
 	 * @throws UwlrEduVProviderException When no active source is configured, or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-004-basispoort-sync-translation-with-sso-hand-off
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-004-basispoort-sync-translation-with-sso-hand-off
 	 */
 	public function syncBasispoort(string $kenmerk, array $payload): array {
 		$envelopeXml = $this->basispoortTranslator->translate(kenmerk: $kenmerk, payload: $payload);
@@ -207,7 +207,7 @@ class UwlrEduVService {
 	 * @throws UwlrEduVTranslationException When a required field is missing/empty.
 	 * @throws UwlrEduVProviderException When no active source is configured, or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
 	 */
 	public function syncEntreeContent(string $kenmerk, array $payload): array {
 		$envelopeXml = $this->entreeTranslator->translate(kenmerk: $kenmerk, payload: $payload);
@@ -229,7 +229,7 @@ class UwlrEduVService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
 	 */
 	public function receiveReturn(string $rawXml): void {
 		try {
@@ -281,7 +281,7 @@ class UwlrEduVService {
 	 *
 	 * @return integer The number of rows successfully retried.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-failed-send-persists-and-is-retried-in-isolation
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-failed-send-persists-and-is-retried-in-isolation
 	 */
 	public function retryFailed(): int {
 		$matches = $this->objectService->findAll(
@@ -357,7 +357,7 @@ class UwlrEduVService {
 	 *
 	 * @throws UwlrEduVProviderException When no active source is configured.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-008-pushsync-endpoints-and-a-shared-signed-retour-endpoint
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-008-pushsync-endpoints-and-a-shared-signed-retour-endpoint
 	 */
 	public function resolveActiveSource(): ObjectEntity {
 		$matches = $this->objectService->findAll(

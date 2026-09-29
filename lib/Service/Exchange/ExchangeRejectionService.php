@@ -39,7 +39,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  * schema is readable by every account (SchemaAuthorizationRatchetTest), and
  * DUO's messages quote names and birth dates.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
  */
 class ExchangeRejectionService {
 
@@ -98,7 +98,7 @@ class ExchangeRejectionService {
 	 *
 	 * @return ObjectEntity The stored rejection.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	public function record(string $jobId, string $target, array $rejection, string $ownerApp = ''): ObjectEntity {
 		$now = (new DateTime())->format('c');
@@ -129,7 +129,7 @@ class ExchangeRejectionService {
 	 *
 	 * @return ObjectEntity The stored rejection.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
 	 */
 	public function migrate(ObjectEntity $job, array $rejection): ObjectEntity {
 		$jobData = $job->getObject();
@@ -170,7 +170,7 @@ class ExchangeRejectionService {
 	 *
 	 * @return ObjectEntity|null The rejection, or null when absent or not an exchange rejection.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	public function find(string $rejectionId): ?ObjectEntity {
 		try {
@@ -205,7 +205,7 @@ class ExchangeRejectionService {
 	 * @throws InvalidMessageStateException When the rejection is not failed, or its job is gone.
 	 * @throws InvalidArgumentException     When no exchange rejection has that id.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	public function resubmit(string $rejectionId, string $actor): array {
 		$entry = $this->find(rejectionId: $rejectionId);
@@ -249,7 +249,7 @@ class ExchangeRejectionService {
 	 *
 	 * @throws InvalidMessageStateException When the rejection is not failed.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	public function markReplayed(ObjectEntity $entry, string $actor): ObjectEntity {
 		$data = $entry->getObject();
@@ -271,7 +271,7 @@ class ExchangeRejectionService {
 	 *
 	 * @return ObjectEntity|null The updated rejection, or null when it is gone.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	public function reopen(string $rejectionId, array $rejection): ?ObjectEntity {
 		$entry = $this->find(rejectionId: $rejectionId);
@@ -313,7 +313,7 @@ class ExchangeRejectionService {
 	 * @throws InvalidArgumentException     When the reason is empty.
 	 * @throws InvalidMessageStateException When the rejection is not failed.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	public function waive(ObjectEntity $entry, string $actor, string $reason): ObjectEntity {
 		if (trim($reason) === '') {
@@ -339,7 +339,7 @@ class ExchangeRejectionService {
 	 *
 	 * @return string failed, replayed or discarded.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
 	 */
 	public function translateStatus(string $legacyStatus): string {
 		$table = self::STATUS_FALLBACK;

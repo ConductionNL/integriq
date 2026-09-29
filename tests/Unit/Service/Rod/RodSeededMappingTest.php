@@ -18,7 +18,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-002-the-school-advice-is-sent-as-aanleverenadviesvo_request
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-008-the-school-advice-is-sent-as-aanleverenadviesvo_request
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ final class RodSeededMappingTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-the-learner-mapping-maps-the-number-not-the-eck-id
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-the-learner-mapping-maps-the-number-not-the-eck-id
 	 */
 	public function testTheLearnerRowFeedsTheChoiceElement(): void {
 		$mapped = $this->mappingService()->executeMapping(
@@ -113,7 +113,7 @@ final class RodSeededMappingTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-advice-without-a-second-advice
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-advice-without-a-second-advice
 	 */
 	public function testTheSchoolAdviceRowFeedsAanleverenAdviesVo(): void {
 		$mapped = $this->mappingService()->executeMapping(

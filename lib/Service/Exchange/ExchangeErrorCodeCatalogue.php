@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * administrator's edit counts; the shipped fragment is the fallback when
  * the row has not been imported yet.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-007-the-vocabulary-ships-as-integriq-seed-rows
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-007-the-vocabulary-ships-as-integriq-seed-rows
  */
 class ExchangeErrorCodeCatalogue {
 
@@ -93,7 +93,7 @@ class ExchangeErrorCodeCatalogue {
 	 *
 	 * @return array{label: string, labelEn: string, category: string, severity: string} The entry.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-007-the-vocabulary-ships-as-integriq-seed-rows
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-007-the-vocabulary-ships-as-integriq-seed-rows
 	 */
 	public function resolve(string $target, string $code): array {
 		foreach ([$target, self::RUNNER_CATALOGUE] as $catalogue) {

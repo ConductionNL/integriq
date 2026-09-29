@@ -5827,7 +5827,7 @@
         "icon": "SchoolOutline",
         "version": "1.0.0",
         "summary": "Audit record for one outbound DUO ROD bericht send or one inbound acknowledgement/retour, produced by the integriq-adapter-rod connector",
-        "description": "A ROD Message tracks either one outbound berichtsoort dispatch (inschrijving, uitschrijving, verblijfsgegevens or schooladvies, translated and sent to DUO) or one inbound acknowledgement/retour (accepted or rejected, with the DUO signaalcode) received back: never merged into a single mutable row. See openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md.",
+        "description": "A ROD Message tracks either one outbound berichtsoort dispatch (inschrijving, uitschrijving, verblijfsgegevens or schooladvies, translated and sent to DUO) or one inbound acknowledgement/retour (accepted or rejected, with the DUO signaalcode) received back: never merged into a single mutable row. See openspec/specs/rod-adapter/spec.md.",
         "required": [
           "direction",
           "berichtsoort",
@@ -6237,7 +6237,7 @@
         "icon": "SwapHorizontal",
         "version": "1.0.0",
         "summary": "Audit record for one outbound OSO overstapdossier export, one inbound overstapdossier import, or one export acknowledgement/retour, produced by the integriq-adapter-oso connector",
-        "description": "An OSO Message tracks one outbound export dispatch, one inbound import receipt, or one export acknowledgement/retour: never merged into a single mutable row. Import records feed OsoDossierReceivedEvent for learniq's oso-inbound-contract listener; integriq never writes learniq's OsoImportDossier directly. See openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md.",
+        "description": "An OSO Message tracks one outbound export dispatch, one inbound import receipt, or one export acknowledgement/retour: never merged into a single mutable row. Import records feed OsoDossierReceivedEvent for learniq's oso-inbound-contract listener; integriq never writes learniq's OsoImportDossier directly. See openspec/specs/oso-adapter/spec.md.",
         "required": [
           "direction",
           "status"
@@ -6309,7 +6309,7 @@
         "icon": "CloudSyncOutline",
         "version": "1.0.0",
         "summary": "Audit record for one outbound UWLR, Edu-V, Basispoort or Entree-content export/sync send, or one inbound acknowledgement, produced by the integriq-adapter-uwlr-eduv connector",
-        "description": "A UWLR/Edu-V Message tracks one outbound send (uwlr pupil/group/teacher export, edu-v onderwijsdeelnemers/onderwijsgroepen/onderwijsmedewerkers export, basispoort or entree-content sync) or one inbound acknowledgement/retour, tagged by target and (where applicable) subtype. See openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md.",
+        "description": "A UWLR/Edu-V Message tracks one outbound send (uwlr pupil/group/teacher export, edu-v onderwijsdeelnemers/onderwijsgroepen/onderwijsmedewerkers export, basispoort or entree-content sync) or one inbound acknowledgement/retour, tagged by target and (where applicable) subtype. See openspec/specs/uwlr-eduv-adapter/spec.md.",
         "required": [
           "target",
           "direction",

@@ -27,7 +27,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 /**
  * Entree content sync payload -> Entree content XML envelope.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
  */
 class EntreeContentSyncTranslator {
 
@@ -76,7 +76,7 @@ class EntreeContentSyncTranslator {
 	 * @throws UwlrEduVTranslationException When a required field is missing/empty, or the
 	 *                                      rendered envelope still carries an unresolved template marker.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-entree-content-payload-carries-the-sso-audience
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-entree-content-payload-carries-the-sso-audience
 	 */
 	public function translate(string $kenmerk, array $payload): string {
 		if (trim($kenmerk) === '') {
@@ -121,7 +121,7 @@ class EntreeContentSyncTranslator {
 	 *
 	 * @throws UwlrEduVTranslationException Naming the first missing/empty required field found.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-schoolbrin-never-reaches-the-envelope
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-schoolbrin-never-reaches-the-envelope
 	 */
 	private function assertRequiredFieldsPresent(array $payload): void {
 		foreach (self::REQUIRED_FIELDS as $field) {

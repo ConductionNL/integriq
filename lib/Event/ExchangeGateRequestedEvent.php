@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCP\EventDispatcher\Event;
  * Exactly one answer counts: the first `allow()` or `refuse()` wins, so a
  * second listener cannot flip a refusal into a permission.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
  */
 class ExchangeGateRequestedEvent extends Event {
 
@@ -97,7 +97,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return string The job uuid.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function getJobId(): string {
 		return $this->jobId;
@@ -109,7 +109,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return string The app id.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function getOwnerApp(): string {
 		return $this->ownerApp;
@@ -121,7 +121,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return string The target id.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function getTarget(): string {
 		return $this->target;
@@ -133,7 +133,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return string export, import or sync.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function getDirection(): string {
 		return $this->direction;
@@ -145,7 +145,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return string The reference.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function getOwnerRef(): string {
 		return $this->ownerRef;
@@ -157,7 +157,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return array<string,mixed> The scope.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function getScope(): array {
 		return $this->scope;
@@ -174,7 +174,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function allow(array $records = []): void {
 		if ($this->answered === true) {
@@ -195,7 +195,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function refuse(string $code, string $reason): void {
 		if ($this->answered === true) {
@@ -213,7 +213,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return bool True once allow() or refuse() ran.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function isAnswered(): bool {
 		return $this->answered;
@@ -225,7 +225,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return bool True on allow.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function isAllowed(): bool {
 		return $this->allowed;
@@ -237,7 +237,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return array<int, array<string, mixed>> The records, empty unless allowed.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function getRecords(): array {
 		return $this->records;
@@ -249,7 +249,7 @@ class ExchangeGateRequestedEvent extends Event {
 	 *
 	 * @return array{code: string, reason: string}|null The refusal, or null.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function getRefusal(): ?array {
 		return $this->refusal;

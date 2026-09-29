@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 /**
  * Persistence for connection rows.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
  */
 class ConnectionStore {
 
@@ -103,7 +103,7 @@ class ConnectionStore {
 	 *
 	 * @return array<int,array{uuid:string,data:array<string,mixed>}>
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
 	 */
 	public function findRows(?string $app = null): array {
 		$filters = ['register' => self::REGISTER, 'schema' => self::SCHEMA];
@@ -147,7 +147,7 @@ class ConnectionStore {
 	 *
 	 * @return array{uuid:string,data:array<string,mixed>}|null
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 	 */
 	public function findRow(string $uuid): ?array {
 		$entity = $this->findEntity(uuid: $uuid, schema: self::SCHEMA);
@@ -170,7 +170,7 @@ class ConnectionStore {
 	 *
 	 * @return string The saved row's uuid.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
 	 */
 	public function save(array $data, ?string $uuid = null): string {
 		$payload = $this->payload(data: $data);
@@ -210,7 +210,7 @@ class ConnectionStore {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
 	 */
 	public function findSource(string $uuid): ?ObjectEntity {
 		return $this->findEntity(uuid: $uuid, schema: 'source');
@@ -223,7 +223,7 @@ class ConnectionStore {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 	 */
 	public function findSourceBySlug(string $slug): ?ObjectEntity {
 		$result = $this->asSystem(
@@ -250,7 +250,7 @@ class ConnectionStore {
 	 *
 	 * @return ObjectEntity The created source.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 	 */
 	public function createSource(array $payload): ObjectEntity {
 		return $this->asSystem(
@@ -265,7 +265,7 @@ class ConnectionStore {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
 	 */
 	public function payload(array $data): array {
 		$payload = [];

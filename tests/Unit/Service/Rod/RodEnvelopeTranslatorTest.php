@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-rod/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-rod/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
  * Tests for the ROD outbound envelope translator, contract-tested against
  * recorded fixtures under tests/fixtures/rod/.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
  */
 class RodEnvelopeTranslatorTest extends TestCase {
 
@@ -53,7 +53,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-complete-inschrijving-translates-to-a-valid-envelope
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-complete-inschrijving-translates-to-a-valid-envelope
 	 */
 	public function testCompleteInschrijvingTranslatesToValidEnvelope(): void {
 		$xml = $this->translator->translate(
@@ -86,7 +86,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
 	 */
 	public function testMissingRequiredFieldNeverReachesEnvelope(): void {
 		$this->expectException(RodTranslationException::class);
@@ -147,7 +147,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-advice-with-a-reconsidered-definitive-advice
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-advice-with-a-reconsidered-definitive-advice
 	 */
 	public function testSchooladviesRendersAanleverenAdviesVoRequest(): void {
 		$xml = $this->translator->translate('schooladvies', 'seed-kenmerk-002', $this->advies());
@@ -179,7 +179,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-advice-without-a-second-advice
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-advice-without-a-second-advice
 	 */
 	public function testNullAdvies2AndLocationsAreLeftOut(): void {
 		$xml = $this->translator->translate(
@@ -200,7 +200,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-a-malformed-onderwijsaanbieder
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-malformed-onderwijsaanbieder
 	 */
 	public function testMalformedAdviesFieldsAreRefusedByName(): void {
 		$cases = [
@@ -234,7 +234,7 @@ class RodEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-an-onderwijsnummer
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-an-onderwijsnummer
 	 */
 	public function testALearnerWithAnOnderwijsnummerUsesTheOnderwijsnummerElement(): void {
 		$xml = $this->translator->translate(

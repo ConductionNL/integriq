@@ -32,7 +32,7 @@ use Throwable;
 /**
  * Upserts a mapping by slug for the app that asked.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
  *
  * @template-implements IEventListener<Event>
  */
@@ -58,7 +58,7 @@ class ExchangeMappingRequestedListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ExchangeMappingRequestedEvent) === false) {

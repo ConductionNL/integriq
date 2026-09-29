@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
  * REQ-RSC-002: a request becomes a live subscription, and the state is
  * reported back.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
  */
 class SubscriptionRequestHandlerTest extends TestCase {
 	/**

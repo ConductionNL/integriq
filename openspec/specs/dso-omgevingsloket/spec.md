@@ -1,8 +1,10 @@
 # dso-omgevingsloket Specification
 
 ## Purpose
-TBD - created by archiving change dso-omgevingsloket. Update Purpose after archive.
+Integriq receives permit applications, notifications and their attachments from the DSO Omgevingsloket through the STAM koppelvlak, validates them, maps each activity to a case type, creates the case and pushes its status back, authenticated with PKIoverheid certificates.
+
 ## Requirements
+
 ### Requirement: STAM Koppelvlak Endpoint Registration (REQ-DSO-001)
 
 The adapter MUST register a STAM-compliant inbound REST endpoint in Integriq that receives vergunningaanvragen, meldingen, and informatieverzoeken pushed from DSO-LV. The endpoint accepts the DSO-verzoek payload (JSON or XML), **cryptographically verifies the request signature against the configured PKIoverheid certificate chain (or HMAC shared secret in pre-production mode) via `DSOSignatureVerifierService`**, and enqueues it for processing. The endpoint path follows `/api/dso/stam/verzoeken` and returns an HTTP 202 Accepted with verzoekId confirmation. A request whose signature does not verify against the configured trust chain MUST be rejected before any payload parsing occurs.
@@ -301,3 +303,24 @@ The adapter MUST be registered as an Integriq source type with DSO-LV-specific c
 - **WHEN** a DSO source is configured and an n8n workflow references the DSO source
 - **THEN** it can trigger verzoek polling, status pushes, or bijlagen downloads using the source credentials
 
+### Requirement: Scenario-Level Test Traceability (excluding REQ-DSO-050)
+
+Every `#### Scenario:` in this capability MUST carry either an `@e2e` reference to a
+browser test, or a reason-bearing `@e2e exclude <reason>` line — except the REQ-DSO-050
+(PKIoverheid Certificate Authentication) scenarios, which are tracked separately.
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
+#### Scenario: Backend-only scenario carries an exclude reason
+
+- GIVEN a scenario describes STAM koppelvlak HTTP/XML wire behavior with no Vue UI
+  surface (confirmed: no `src/**/*dso*` or `*omgevingsloket*` Vue files exist)
+- WHEN the scenario is reviewed for e2e traceability
+- THEN it MUST carry `@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI`
+
+#### Scenario: REQ-DSO-050 scenarios are exempt from this change
+
+- GIVEN a scenario belongs to REQ-DSO-050 (PKIoverheid Certificate Authentication)
+- WHEN this change's annotation pass runs
+- THEN those scenarios are left unannotated here and are owned by
+  `dso-stam-pkioverheid-signature-verification` instead

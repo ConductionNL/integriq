@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/exchange-read-defaults/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
+ * @spec openspec/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
  */
 
 declare(strict_types=1);

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the Entree content sync translator.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
  */
 class EntreeContentSyncTranslatorTest extends TestCase {
 
@@ -52,7 +52,7 @@ class EntreeContentSyncTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-entree-content-payload-carries-the-sso-audience
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-entree-content-payload-carries-the-sso-audience
 	 */
 	public function testCompletePayloadCarriesSsoAudience(): void {
 		$xml = $this->translator->translate(
@@ -71,7 +71,7 @@ class EntreeContentSyncTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-schoolbrin-never-reaches-the-envelope
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-schoolbrin-never-reaches-the-envelope
 	 */
 	public function testMissingSchoolBrinNeverReachesTheEnvelope(): void {
 		$this->expectException(UwlrEduVTranslationException::class);

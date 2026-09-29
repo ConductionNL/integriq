@@ -48,7 +48,7 @@ use OCP\IUserSession;
  * anything; every read is scoped to the `ownerApp` the caller names, so a job
  * of another app answers 404.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
  */
 class ExchangeController extends Controller {
 
@@ -81,7 +81,7 @@ class ExchangeController extends Controller {
 	 *
 	 * @return JSONResponse `{results, total}`, or 400/401/403.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -118,7 +118,7 @@ class ExchangeController extends Controller {
 	 *
 	 * @return JSONResponse The job, or 400/401/403/404.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -147,7 +147,7 @@ class ExchangeController extends Controller {
 	 *
 	 * @return JSONResponse `{results, total}`, or 400/401/403.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -182,7 +182,7 @@ class ExchangeController extends Controller {
 	 *
 	 * @return JSONResponse `{results}`, or 401/403.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -203,7 +203,7 @@ class ExchangeController extends Controller {
 	 *
 	 * @return JSONResponse `{rejectionId, jobId}`, or 401/403/404/409.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	#[NoAdminRequired]
 	public function resubmit(string $id): JSONResponse {
@@ -231,7 +231,7 @@ class ExchangeController extends Controller {
 	 *
 	 * @return JSONResponse The updated rejection, or 400/401/403/404/409.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	#[NoAdminRequired]
 	public function waive(string $id): JSONResponse {

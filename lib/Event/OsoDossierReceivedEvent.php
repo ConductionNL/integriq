@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCP\EventDispatcher\Event;
  * An inbound OSO overstapdossier, parsed and ready for learniq's
  * OsoImportDossier materialisation listener to consume.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
  */
 class OsoDossierReceivedEvent extends Event {
 	/**
@@ -62,7 +62,7 @@ class OsoDossierReceivedEvent extends Event {
 	 *
 	 * @return string BRIN.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
 	 */
 	public function getSourceSchoolBrin(): string {
 		return $this->sourceSchoolBrin;
@@ -73,7 +73,7 @@ class OsoDossierReceivedEvent extends Event {
 	 *
 	 * @return string ECK iD.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
 	 */
 	public function getLearnerEckId(): string {
 		return $this->learnerEckId;
@@ -84,7 +84,7 @@ class OsoDossierReceivedEvent extends Event {
 	 *
 	 * @return array Categories.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
 	 */
 	public function getCategories(): array {
 		return $this->categories;
@@ -95,7 +95,7 @@ class OsoDossierReceivedEvent extends Event {
 	 *
 	 * @return array|null Draft profile fields.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
 	 */
 	public function getDraftProfile(): ?array {
 		return $this->draftProfile;
@@ -106,7 +106,7 @@ class OsoDossierReceivedEvent extends Event {
 	 *
 	 * @return array Attachment refs.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
 	 */
 	public function getAttachmentRefs(): array {
 		return $this->attachmentRefs;

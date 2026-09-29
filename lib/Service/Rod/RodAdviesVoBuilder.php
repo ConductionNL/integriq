@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-002-the-school-advice-is-sent-as-aanleverenadviesvo_request
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-008-the-school-advice-is-sent-as-aanleverenadviesvo_request
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCA\Integriq\Exception\RodTranslationException;
 /**
  * School advice payload -> AanleverenAdviesVO_Request element.
  *
- * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-002-the-school-advice-is-sent-as-aanleverenadviesvo_request
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-008-the-school-advice-is-sent-as-aanleverenadviesvo_request
  */
 class RodAdviesVoBuilder {
 
@@ -84,7 +84,7 @@ class RodAdviesVoBuilder {
 	 *
 	 * @throws RodTranslationException When a field is malformed or no advice is given.
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-002-the-school-advice-is-sent-as-aanleverenadviesvo_request
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-008-the-school-advice-is-sent-as-aanleverenadviesvo_request
 	 */
 	public function append(DOMDocument $document, DOMElement $body, array $payload, DOMElement $personalNumber): void {
 		$this->assertAdviesFormats(payload: $payload);

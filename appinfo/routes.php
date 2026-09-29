@@ -470,6 +470,7 @@ return [
 		['name' => 'events#messages', 'url' => '/api/events/{id}/messages', 'verb' => 'GET'],
 
 		// Subscription management
+		['name' => 'eventBrokers#index', 'url' => '/api/events/brokers', 'verb' => 'GET'],
 		['name' => 'events#subscriptions', 'url' => '/api/events/subscriptions', 'verb' => 'GET'],
 		['name' => 'events#subscriptionMessages', 'url' => '/api/events/subscriptions/{subscriptionId}/messages', 'verb' => 'GET'],
 		['name' => 'events#subscribe', 'url' => '/api/events/subscriptions', 'verb' => 'POST'],

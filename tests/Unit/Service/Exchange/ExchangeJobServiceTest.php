@@ -154,7 +154,7 @@ class ExchangeJobServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#scenario-default-mapping-for-a-schooladvies-job
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-default-mapping-for-a-schooladvies-job
 	 */
 	public function testARodJobWithoutAMappingGetsTheDefaultRow(): void {
 		$cases = [

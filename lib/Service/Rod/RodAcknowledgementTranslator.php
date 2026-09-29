@@ -33,7 +33,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use SimpleXMLElement;
 /**
  * Retour XML envelope -> plain acknowledgement status update.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
  */
 class RodAcknowledgementTranslator {
 
@@ -78,7 +78,7 @@ class RodAcknowledgementTranslator {
 	 *
 	 * @throws RodTranslationException When the XML is malformed or the `kenmerk` is missing/empty.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-an-accepted-acknowledgement-dispatches-an-event-with-accepted-true
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-an-accepted-acknowledgement-dispatches-an-event-with-accepted-true
 	 */
 	public function translate(string $xml): array {
 		$root = $this->parseXml(xml: $xml);

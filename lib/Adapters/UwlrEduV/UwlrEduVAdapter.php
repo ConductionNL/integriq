@@ -35,7 +35,7 @@ namespace OCA\Integriq\Adapters\UwlrEduV;
 /**
  * Catalogue descriptor for the UWLR/Edu-V/Basispoort/Entree-content adapter (ADR-017 Rule 1).
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  *
  * @SuppressWarnings(PHPMD.ShortMethodName)
  */
@@ -67,7 +67,7 @@ final class UwlrEduVAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
 	 */
 	public function id(): string {
 		return self::ID;
@@ -78,7 +78,7 @@ final class UwlrEduVAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
 	 */
 	public function label(): string {
 		return 'UWLR / Edu-V / Basispoort';
@@ -89,7 +89,7 @@ final class UwlrEduVAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
 	 */
 	public function category(): string {
 		return 'government';
@@ -100,7 +100,7 @@ final class UwlrEduVAdapter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
 	 */
 	public function addsTopLevelMenu(): bool {
 		return false;
@@ -111,7 +111,7 @@ final class UwlrEduVAdapter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
 	 */
 	public function addsManagementRoute(): bool {
 		return false;
@@ -122,7 +122,7 @@ final class UwlrEduVAdapter {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function providers(): array {
 		return [self::PROVIDER_LOG, self::PROVIDER_UWLR_EDUV];
@@ -133,7 +133,7 @@ final class UwlrEduVAdapter {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
 	 */
 	public function targets(): array {
 		return ['uwlr', 'edu-v', 'basispoort', 'entree-content'];
@@ -144,7 +144,7 @@ final class UwlrEduVAdapter {
 	 *
 	 * @return array<string, mixed> A JSON-schema fragment.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function configSchema(): array {
 		return [

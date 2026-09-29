@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-oso/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-oso/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the OSO import translator, contract-tested against recorded fixtures.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
  */
 class OsoImportTranslatorTest extends TestCase {
 
@@ -63,7 +63,7 @@ class OsoImportTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-a-complete-inbound-dossier-dispatches-osodossierreceivedevent
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-a-complete-inbound-dossier-dispatches-osodossierreceivedevent
 	 */
 	public function testCompleteDossierParsesToImportDossierShape(): void {
 		$parsed = $this->translator->translate($this->fixture('import-complete.xml'));

@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
  * implementation, so its wire shape would be a guess, and tasks.md blocks
  * Task 3 on that question rather than inventing one.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
  */
 class SubscriptionRequestHandler {
 	/**

@@ -19,7 +19,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+ * @spec openspec/specs/oso-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\Integriq\Service\Oso;
 /**
  * Sandbox OSO provider: no network call, synthetic reference.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+ * @spec openspec/specs/oso-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
  */
 class LogOsoProvider implements OsoProviderInterface {
 
@@ -45,7 +45,7 @@ class LogOsoProvider implements OsoProviderInterface {
 	 *
 	 * @return string The stable `log` provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function getProviderId(): string {
 		return 'log';
@@ -56,7 +56,7 @@ class LogOsoProvider implements OsoProviderInterface {
 	 *
 	 * @return array<string, mixed> An empty schema — the log provider needs no configuration.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function getConfigSchema(): array {
 		return ['type' => 'object', 'properties' => []];
@@ -71,7 +71,7 @@ class LogOsoProvider implements OsoProviderInterface {
 	 *
 	 * @return string The synthetic `MOCK-OSO-<n>` reference.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
 	 */
 	public function sendExport(array $sourceConfiguration, string $kenmerk, string $envelopeXml): string {
 		self::$counter++;

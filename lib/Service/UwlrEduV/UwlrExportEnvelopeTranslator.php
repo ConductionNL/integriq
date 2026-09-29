@@ -26,7 +26,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 /**
  * UWLR export payload -> UWLR XML envelope.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
  */
 class UwlrExportEnvelopeTranslator {
 
@@ -84,7 +84,7 @@ class UwlrExportEnvelopeTranslator {
 	 *                                      missing/empty, or the rendered envelope still carries
 	 *                                      an unresolved template marker.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-pupil-export-payload-translates-to-a-valid-envelope
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-pupil-export-payload-translates-to-a-valid-envelope
 	 */
 	public function translate(string $kenmerk, string $subtype, array $payload): string {
 		if (trim($kenmerk) === '') {
@@ -136,7 +136,7 @@ class UwlrExportEnvelopeTranslator {
 	 *
 	 * @throws UwlrEduVTranslationException Naming the first missing/empty required field found.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-eckid-never-reaches-the-envelope
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-eckid-never-reaches-the-envelope
 	 */
 	private function assertRequiredFieldsPresent(array $payload): void {
 		foreach (self::REQUIRED_FIELDS as $field) {

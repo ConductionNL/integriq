@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  * `/api/exchange-gates/{jobId}` route would be refused and every job would
  * stay refused (ADR-041).
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
  */
 class ExchangeGateClient {
 
@@ -82,7 +82,7 @@ class ExchangeGateClient {
 	 * @return array{decision: string, code: string, reason: string, checkedAt: string, records: array<int, array<string, mixed>>}
 	 *     The decision; `records` is what may leave and is never persisted.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function ask(string $jobId, array $job): array {
 		$ownerApp = (string)($job['ownerApp'] ?? '');

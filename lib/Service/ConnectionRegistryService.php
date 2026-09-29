@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
 /**
  * The declaration sync and the status bookkeeping around it.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
  */
 class ConnectionRegistryService {
 
@@ -87,8 +87,8 @@ class ConnectionRegistryService {
 	 *
 	 * @return array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]}
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
 	 */
 	public function sync(?string $app = null): array {
 		$summary = self::EMPTY_SUMMARY;
@@ -116,7 +116,7 @@ class ConnectionRegistryService {
 	 *
 	 * @return string[] The app ids that were synced.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
 	 */
 	public function syncChangedDeclarations(): array {
 		$declaredVersions = [];
@@ -149,7 +149,7 @@ class ConnectionRegistryService {
 	 *
 	 * @return int The number of rows saved.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
 	 */
 	public function refresh(?string $app = null, ?string $key = null): int {
 		return $this->resolveRows(app: $app, key: $key, stamp: []);
@@ -168,7 +168,7 @@ class ConnectionRegistryService {
 	 *
 	 * @return int The number of rows saved.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
 	 */
 	public function refreshRequested(string $app, ?string $key = null): int {
 		return $this->resolveRows(app: $app, key: $key, stamp: ['refreshedAt' => $this->resolver->now()]);
@@ -216,8 +216,8 @@ class ConnectionRegistryService {
 	 *
 	 * @return bool Whether the report was written.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-report-reaches-the-row
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-unknown-key-is-refused-without-an-exception
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-report-reaches-the-row
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-unknown-key-is-refused-without-an-exception
 	 */
 	public function report(string $app, string $key, string $status, string $message): bool {
 		if (in_array($status, ConnectionStatusResolver::STATUSES, true) === false) {
@@ -251,7 +251,7 @@ class ConnectionRegistryService {
 	 *
 	 * @return array<string,mixed> The row data with status, statusMessage and checkedAt set.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
 	 */
 	public function resolveRow(array $data): array {
 		$app = (string)($data['app'] ?? '');

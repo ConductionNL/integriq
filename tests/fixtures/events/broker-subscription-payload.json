@@ -1,0 +1,24 @@
+{
+	"_comment": "What the Webhooks subscription form saves for a RabbitMQ broker action (events-broker-subscription-screen). tests/vitest/brokerSubscriptionFields.spec.js builds action and protocolSettings with src/modals/EventSubscription/brokerFields.js and asserts they equal this file; tests/Unit/Service/BrokerSubscriptionPayloadTest.php validates the object against the merged event_subscription schema.",
+	"subscription": {
+		"types": ["nl.zaak.created"],
+		"style": "push",
+		"status": "active",
+		"action": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "zaken",
+			"routingKey": "zaak.created",
+			"contentMode": "structured",
+			"orderingKey": "ZAAK-2026-0042"
+		},
+		"protocolSettings": {
+			"broker": {
+				"baseUrl": "https://rabbit.gemeente.example.nl",
+				"vhost": "zaken",
+				"username": "integriq",
+				"credentialRef": { "credentialId": "cred-rabbitmq-zaken" }
+			}
+		}
+	}
+}

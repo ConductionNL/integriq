@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-rod/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-rod/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -31,7 +31,7 @@ use RuntimeException;
  * Tests for the scheduled ROD outbound retry background job — proves the job
  * actually invokes RodService::retryFailed() (orphaned-capability rule).
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
  */
 class RodRetryJobTest extends TestCase {
 

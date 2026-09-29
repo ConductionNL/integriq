@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-oso/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-oso/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the OSO export envelope translator.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-002-export-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-002-export-envelope-translation-with-a-literal-leak-guard
  */
 class OsoExportEnvelopeTranslatorTest extends TestCase {
 
@@ -52,7 +52,7 @@ class OsoExportEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-a-complete-export-payload-translates-to-a-valid-envelope
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-a-complete-export-payload-translates-to-a-valid-envelope
 	 */
 	public function testCompletePayloadTranslatesToValidEnvelope(): void {
 		$xml = $this->translator->translate(
@@ -77,7 +77,7 @@ class OsoExportEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
 	 */
 	public function testMissingRequiredFieldNeverReachesEnvelope(): void {
 		$this->expectException(OsoTranslationException::class);
@@ -111,7 +111,7 @@ class OsoExportEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-an-excluded-category-is-transmitted-as-excluded-not-omitted
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-an-excluded-category-is-transmitted-as-excluded-not-omitted
 	 */
 	public function testExcludedCategoryTransmittedNotOmitted(): void {
 		$xml = $this->translator->translate(

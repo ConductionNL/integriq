@@ -242,7 +242,7 @@ class SourcesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/logs-and-statistics/spec.md
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

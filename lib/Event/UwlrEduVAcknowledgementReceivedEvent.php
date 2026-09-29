@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCP\EventDispatcher\Event;
  * A UWLR/Edu-V/Basispoort/Entree-content acknowledgement, translated and
  * ready for a listener to act on.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
  */
 class UwlrEduVAcknowledgementReceivedEvent extends Event {
 	/**
@@ -58,7 +58,7 @@ class UwlrEduVAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Kenmerk.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
 	 */
 	public function getKenmerk(): string {
 		return $this->kenmerk;
@@ -69,7 +69,7 @@ class UwlrEduVAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Signaalcode.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
 	 */
 	public function getSignaalcode(): string {
 		return $this->signaalcode;
@@ -80,7 +80,7 @@ class UwlrEduVAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string|null Description, or null when absent.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
 	 */
 	public function getSignaalOmschrijving(): ?string {
 		return $this->signaalOmschrijving;
@@ -91,7 +91,7 @@ class UwlrEduVAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return bool True when accepted.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
 	 */
 	public function isAccepted(): bool {
 		return $this->accepted;

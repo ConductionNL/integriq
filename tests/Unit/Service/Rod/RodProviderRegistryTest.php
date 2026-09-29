@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-rod/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-rod/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -28,7 +28,7 @@ use RuntimeException;
 /**
  * Tests for the ROD provider registry.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-future-alternative-duo-compatible-transport-is-a-drop-in-binding
+ * @spec openspec/specs/rod-adapter/spec.md#scenario-a-future-alternative-duo-compatible-transport-is-a-drop-in-binding
  */
 class RodProviderRegistryTest extends TestCase {
 
@@ -64,7 +64,7 @@ class RodProviderRegistryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-future-alternative-duo-compatible-transport-is-a-drop-in-binding
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-future-alternative-duo-compatible-transport-is-a-drop-in-binding
 	 */
 	public function testUnknownProviderIdFailsNamingItselfAndKnownIds(): void {
 		$registry = new RodProviderRegistry([new LogRodProvider()]);

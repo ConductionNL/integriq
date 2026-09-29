@@ -186,7 +186,7 @@ final class FlowTemplate {
 	 * @return mixed The resolved value, the whole record for `@item`, or null when the path is absent.
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public static function lookup(string $path, array $json): mixed {
 		if ($path === self::WHOLE_ITEM) {

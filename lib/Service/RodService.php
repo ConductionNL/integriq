@@ -26,7 +26,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md
+ * @spec openspec/specs/rod-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md
+ * @spec openspec/specs/rod-adapter/spec.md
  */
 class RodService {
 
@@ -128,7 +128,7 @@ class RodService {
 	 * @throws RodProviderException When no active source is configured, or the transport fails (a
 	 *                              `status: failed` `rod_message` IS persisted first).
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
 	 */
 	public function sendBericht(string $berichtsoort, string $kenmerk, array $payload): array {
 		$source = $this->resolveActiveSource();
@@ -196,7 +196,7 @@ class RodService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	public function receiveReturn(string $rawXml): void {
 		try {
@@ -268,7 +268,7 @@ class RodService {
 	 *
 	 * @return integer The number of rows successfully retried.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
 	 */
 	public function retryFailed(): int {
 		$matches = $this->objectService->findAll(
@@ -358,7 +358,7 @@ class RodService {
 	 *
 	 * @throws RodProviderException When no active ROD source is configured.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	public function resolveActiveSource(): ObjectEntity {
 		$matches = $this->objectService->findAll(

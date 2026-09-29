@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-007-per-target-audit-persistence-and-isolated-retry
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-007-per-target-audit-persistence-and-isolated-retry
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-007-per-target-audit-persistence-and-isolated-retry
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-007-per-target-audit-persistence-and-isolated-retry
  */
 class UwlrEduVRetryJob extends TimedJob {
 
@@ -84,7 +84,7 @@ class UwlrEduVRetryJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-007-per-target-audit-persistence-and-isolated-retry
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-007-per-target-audit-persistence-and-isolated-retry
 	 */
 	public function run(mixed $argument): void {
 		try {

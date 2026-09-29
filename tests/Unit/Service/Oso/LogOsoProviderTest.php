@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-oso/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-oso/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -26,7 +26,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the sandbox OSO export provider.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
  */
 class LogOsoProviderTest extends TestCase {
 
@@ -73,7 +73,7 @@ class LogOsoProviderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
 	 */
 	public function testSendExportReturnsSyntheticRef(): void {
 		$ref = $this->provider->sendExport([], 'kenmerk-1', '<OsoOverstapdossier/>');

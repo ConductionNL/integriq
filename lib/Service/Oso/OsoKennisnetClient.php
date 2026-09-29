@@ -28,7 +28,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+ * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Kennisnet OSO export provider: signed envelope dispatch.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
  */
 class OsoKennisnetClient implements OsoProviderInterface {
 
@@ -75,7 +75,7 @@ class OsoKennisnetClient implements OsoProviderInterface {
 	 *
 	 * @return string The stable `kennisnet` provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function getProviderId(): string {
 		return 'kennisnet';
@@ -86,7 +86,7 @@ class OsoKennisnetClient implements OsoProviderInterface {
 	 *
 	 * @return array<string, mixed> The OSO Kennisnet source configuration JSON Schema.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function getConfigSchema(): array {
 		return [
@@ -120,7 +120,7 @@ class OsoKennisnetClient implements OsoProviderInterface {
 	 * @throws OsoProviderException When no certificate reference resolves, the endpoint is missing,
 	 *                              or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public function sendExport(array $sourceConfiguration, string $kenmerk, string $envelopeXml): string {
 		$certificateRef = (string)($sourceConfiguration['certificateRef'] ?? '');

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-oso/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-oso/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+ * @spec openspec/specs/oso-adapter/spec.md
  */
 class OsoServiceTest extends TestCase {
 

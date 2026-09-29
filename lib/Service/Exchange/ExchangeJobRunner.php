@@ -41,7 +41,7 @@ use Throwable;
  * before a single record is touched. The records the gate hands over are
  * mapped and dispatched in this process and never written anywhere.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -77,7 +77,7 @@ class ExchangeJobRunner {
 	 *
 	 * @return array{level: string, message: string} The job_log entry.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
 	 */
 	public function run(string $jobId): array {
 		$job = $this->jobs->findJob(jobId: $jobId);
@@ -222,7 +222,7 @@ class ExchangeJobRunner {
 	 *
 	 * @return string The detail.
 	 *
-	 * @spec openspec/changes/exchange-import-landing/specs/exchange-jobs/spec.md#requirement-req-003-an-unanswered-import-ends-with-no-owner-answer
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-012-an-unanswered-import-ends-with-no-owner-answer
 	 */
 	private function refusalDetail(string $code): string {
 		if ($code === ExchangeTargetDispatcher::CODE_NO_OWNER_ANSWER) {

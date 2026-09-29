@@ -68,6 +68,19 @@ endpoint calls and the endpoint log shows outbound calls. Scoping each by
 the full list and gains a direction control, because event deliveries are
 outbound calls with no field of their own.
 
+### D4, changed while building (2026-09-29)
+
+`CallService`, which writes almost every outbound call, did not set
+`direction`; only `CallRecorder` and the inbound endpoint path did. A
+`SourceLogs` filter on `direction: outbound` would have emptied the page.
+The call engine now writes `direction: outbound` on every source call, and
+`EndpointLogs` is scoped to inbound now. `SourceLogs` gets its scope once the
+failed calls written before that fix have expired (errors are kept 30 days,
+successes one hour), because scoping it earlier hides exactly the failures
+an administrator opens the page for. A filter that also matched an empty
+direction was considered and rejected: OpenRegister's `ne` compiles to SQL
+`<>`, which never matches an empty column.
+
 ## Declarative versus imperative
 
 All of it is declarative on integriq's side: manifest configuration read by a

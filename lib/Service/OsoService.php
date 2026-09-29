@@ -25,7 +25,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+ * @spec openspec/specs/oso-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+ * @spec openspec/specs/oso-adapter/spec.md
  */
 class OsoService {
 
@@ -125,7 +125,7 @@ class OsoService {
 	 * @throws OsoTranslationException When a required field is missing/empty.
 	 * @throws OsoProviderException When no active source is configured, or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
 	 */
 	public function sendExport(string $kenmerk, array $payload): array {
 		$source = $this->resolveActiveSource();
@@ -177,7 +177,7 @@ class OsoService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-003-import-parsing-into-learniqs-osoimportdossier-field-shape
 	 */
 	public function receiveImport(string $rawXml): void {
 		try {
@@ -224,7 +224,7 @@ class OsoService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function receiveReturn(string $rawXml): void {
 		try {
@@ -275,7 +275,7 @@ class OsoService {
 	 *
 	 * @return integer The number of rows successfully retried.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
 	 */
 	public function retryFailed(): int {
 		$matches = $this->objectService->findAll(
@@ -350,7 +350,7 @@ class OsoService {
 	 *
 	 * @throws OsoProviderException When no active OSO source is configured.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function resolveActiveSource(): ObjectEntity {
 		$matches = $this->objectService->findAll(

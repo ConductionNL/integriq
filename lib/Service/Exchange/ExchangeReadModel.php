@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  * Every read is filtered on the owning app and bounded (ADR-058). Nothing
  * here carries personal data, because nothing it reads does.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
  */
 class ExchangeReadModel {
 
@@ -74,7 +74,7 @@ class ExchangeReadModel {
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int} The page.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function listJobs(string $ownerApp, array $filters = [], int $limit = 50, int $offset = 0): array {
 		$orFilters = [
@@ -108,7 +108,7 @@ class ExchangeReadModel {
 	 *
 	 * @return array<string, mixed>|null The row, or null when absent or foreign.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function getJob(string $ownerApp, string $jobId): ?array {
 		try {
@@ -154,7 +154,7 @@ class ExchangeReadModel {
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int} The page.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function listRejections(string $ownerApp, array $filters = [], int $limit = 50, int $offset = 0): array {
 		$orFilters = [
@@ -184,7 +184,7 @@ class ExchangeReadModel {
 	 *
 	 * @return array<int, array<string, mixed>> The rows.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function targets(): array {
 		$rows = [];

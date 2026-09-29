@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-rod/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-rod/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -39,7 +39,7 @@ use RuntimeException;
 /**
  * Tests for the ROD push (berichten) endpoint and the signed inbound retour receiver.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
  */
 class RodControllerTest extends TestCase {
 
@@ -166,7 +166,7 @@ class RodControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-valid-push-request-returns-a-ref-and-status
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-valid-push-request-returns-a-ref-and-status
 	 */
 	public function testBerichtenReturnsResult(): void {
 		$this->request->method('getParams')->willReturn(['berichtsoort' => 'inschrijving', 'kenmerk' => 'k1', 'payload' => []]);
@@ -206,7 +206,7 @@ class RodControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-push-request-with-no-active-source-returns-not_configured
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-push-request-with-no-active-source-returns-not_configured
 	 */
 	public function testBerichtenReportsNotConfiguredCleanly(): void {
 		$this->request->method('getParams')->willReturn(['berichtsoort' => 'inschrijving', 'kenmerk' => 'k1', 'payload' => []]);
@@ -246,7 +246,7 @@ class RodControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-any-processing
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-any-processing
 	 */
 	public function testRetourWithNoSourceConfiguredReturns401(): void {
 		$this->rodService->method('resolveActiveSource')
@@ -264,7 +264,7 @@ class RodControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-any-processing
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-any-processing
 	 */
 	public function testRetourInvalidSignatureReturns401BeforeAnySideEffect(): void {
 		$source = new ObjectEntity();
@@ -306,7 +306,7 @@ class RodControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-verified-retour-always-acknowledges-receipt
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-verified-retour-always-acknowledges-receipt
 	 */
 	public function testRetourNeverCrashesOnProcessingException(): void {
 		$source = new ObjectEntity();

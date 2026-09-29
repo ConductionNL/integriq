@@ -33,7 +33,7 @@ namespace OCA\Integriq\Adapters\Oso;
 /**
  * Catalogue descriptor for the OSO adapter (ADR-017 Rule 1).
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+ * @spec openspec/specs/oso-adapter/spec.md
  *
  * @SuppressWarnings(PHPMD.ShortMethodName)
  */
@@ -65,7 +65,7 @@ final class OsoAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+	 * @spec openspec/specs/oso-adapter/spec.md
 	 */
 	public function id(): string {
 		return self::ID;
@@ -76,7 +76,7 @@ final class OsoAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+	 * @spec openspec/specs/oso-adapter/spec.md
 	 */
 	public function label(): string {
 		return 'OSO';
@@ -87,7 +87,7 @@ final class OsoAdapter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+	 * @spec openspec/specs/oso-adapter/spec.md
 	 */
 	public function category(): string {
 		return 'government';
@@ -98,7 +98,7 @@ final class OsoAdapter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+	 * @spec openspec/specs/oso-adapter/spec.md
 	 */
 	public function addsTopLevelMenu(): bool {
 		return false;
@@ -109,7 +109,7 @@ final class OsoAdapter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+	 * @spec openspec/specs/oso-adapter/spec.md
 	 */
 	public function addsManagementRoute(): bool {
 		return false;
@@ -120,7 +120,7 @@ final class OsoAdapter {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function providers(): array {
 		return [self::PROVIDER_LOG, self::PROVIDER_KENNISNET];
@@ -131,7 +131,7 @@ final class OsoAdapter {
 	 *
 	 * @return array<string, mixed> A JSON-schema fragment.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function configSchema(): array {
 		return [

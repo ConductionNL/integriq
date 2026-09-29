@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+ * @spec openspec/specs/oso-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md
+ * @spec openspec/specs/oso-adapter/spec.md
  */
 class OsoController extends Controller {
 	/**
@@ -85,7 +85,7 @@ class OsoController extends Controller {
 	 *
 	 * @return JSONResponse `{ref, direction, status}` on success, or a 400/503/502 error envelope.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -135,7 +135,7 @@ class OsoController extends Controller {
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -151,7 +151,7 @@ class OsoController extends Controller {
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]

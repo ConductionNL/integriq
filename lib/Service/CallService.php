@@ -749,6 +749,7 @@ class CallService {
 	): ObjectEntity {
 		$object = [
 			'source' => $source->getUuid(),
+			'direction' => 'outbound',
 			'statusCode' => $statusCode,
 			'statusMessage' => $statusMessage,
 			'created' => (new DateTime())->format('c'),
@@ -1722,8 +1723,11 @@ class CallService {
 			$expiresChosen = $errorExpires;
 		}
 
+		// A call to a source is an outbound call. The source logs page is scoped
+		// to direction outbound, so a row without it would not be listed there.
 		$callLogData = [
 			'source' => $source->getUuid(),
+			'direction' => 'outbound',
 			'statusCode' => $statusCode,
 			'statusMessage' => $data['response']['statusMessage'],
 			'request' => $data['request'],

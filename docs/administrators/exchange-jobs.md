@@ -54,6 +54,6 @@ panel for administrators only, set `exchange.read` back to `admin` after the upg
 
 The interface, including the events an app raises and answers and the read endpoints under
 `/api/exchange/`, is in
-`openspec/changes/learniq-exchange-jobs-native/contract.md`.
+`openspec/changes/archive/2026-09-29-learniq-exchange-jobs-native/contract.md`.
 The import hand-off event, `ExchangeRecordsReceivedEvent`, is described in
-`openspec/changes/exchange-import-landing/design.md`.
+`openspec/changes/archive/2026-09-29-exchange-import-landing/design.md`.

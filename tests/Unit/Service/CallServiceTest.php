@@ -503,6 +503,42 @@ class CallServiceTest extends TestCase {
 	}//end testADeclaredApiKeyIsSentInTheDeclaredHeader()
 
 	/**
+	 * A call to a source is logged as an outbound call, so the source logs
+	 * page, scoped to outbound calls, lists it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
+	 */
+	public function testACallToASourceIsLoggedAsOutbound(): void {
+		$this->callWithSourceFields([]);
+
+		$log = $this->savedCallLogs()[0]['object'];
+		$this->assertSame('outbound', $log['direction'] ?? null);
+		$this->assertSame([], \OCA\Integriq\Tests\Helpers\RegisterSchemaValidator::errors('call_log', $log), 'the call log record is one the register accepts');
+	}//end testACallToASourceIsLoggedAsOutbound()
+
+	/**
+	 * A call refused before it left is still an outbound call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
+	 */
+	public function testARefusedCallIsLoggedAsOutbound(): void {
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(true);
+		$brokered->method('prepare')->willThrowException(
+			new BrokeredCallConfigurationException(message: 'credentialRef is configured but the OpenRegister credential broker is unavailable.')
+		);
+
+		$service = $this->buildBrokeredCallService($brokered);
+		$service->call(source: $this->makeBrokeredSource(), endpoint: '/v1/items');
+
+		$this->assertSame('outbound', $this->savedCallLogs()[0]['object']['direction'] ?? null);
+	}//end testARefusedCallIsLoggedAsOutbound()
+
+	/**
 	 * An API key with no declared header goes in Authorization.
 	 *
 	 * @return void
@@ -1345,7 +1381,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testGetCertificateWritesCertToTempFile(): void {
 		// Arrange
@@ -1372,7 +1408,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testGetCertificateWritesSslKeyToTempFile(): void {
 		// Arrange
@@ -1398,7 +1434,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testGetCertificateConvertsEscapedNewlines(): void {
 		// Arrange: literal backslash-n sequences, as stored in a JSON field.
@@ -1424,7 +1460,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testGetCertificateWritesArrayFormCertPreservingPassword(): void {
 		// Arrange
@@ -1450,7 +1486,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testRemoveFilesCleansUpCertSslKeyAndVerifyTogether(): void {
 		// Arrange

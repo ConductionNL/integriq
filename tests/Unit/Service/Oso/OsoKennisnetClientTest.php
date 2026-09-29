@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-oso/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-oso/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
  * every certificateRef until OpenRegister's credential broker ships
  * issueSigningMaterial.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+ * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
  */
 class OsoKennisnetClientTest extends TestCase {
 
@@ -109,7 +109,7 @@ class OsoKennisnetClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public function testSendExportRefusesClosedWhenSigningMaterialUnresolvable(): void {
 		$this->credentialResolver->method('resolveSigningMaterial')

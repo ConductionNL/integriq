@@ -31,7 +31,7 @@ use Throwable;
  * engine. It never opens a connection of its own, and it never turns a
  * refusal into a silent nothing.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
 abstract class AbstractSourceSubscriptionProvider implements SubscriptionProviderInterface {
 	/**

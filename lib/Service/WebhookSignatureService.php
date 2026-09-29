@@ -186,7 +186,7 @@ class WebhookSignatureService {
 	 *
 	 * @return boolean|null The verdict, or null when the scheme is not one of these.
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
 	 */
 	private function verifyUntimestamped(
 		string $scheme,
@@ -251,7 +251,7 @@ class WebhookSignatureService {
 	 *
 	 * @return boolean True when the signature verifies.
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
 	 */
 	private function verifyTeams(string $rawBody, string $headerValue, string $secret): bool {
 		$value = trim($headerValue);

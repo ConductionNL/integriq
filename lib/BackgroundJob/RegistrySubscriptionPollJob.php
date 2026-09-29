@@ -38,7 +38,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
 class RegistrySubscriptionPollJob extends TimedJob {
 	/**
@@ -78,7 +78,7 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	protected function run($argument): void {
 		foreach ($this->registry->all() as $registryId => $provider) {
@@ -112,7 +112,7 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 *
 	 * @return int How many changes were posted.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function postChanges(string $registryId, iterable $changes): int {
 		$posted = 0;

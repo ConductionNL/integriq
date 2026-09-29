@@ -33,7 +33,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-002-export-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-002-export-envelope-translation-with-a-literal-leak-guard
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 /**
  * Export payload -> OSO XML overstapdossier envelope.
  *
- * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#requirement-req-002-export-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/oso-adapter/spec.md#requirement-req-002-export-envelope-translation-with-a-literal-leak-guard
  */
 class OsoExportEnvelopeTranslator {
 
@@ -83,7 +83,7 @@ class OsoExportEnvelopeTranslator {
 	 * @throws OsoTranslationException When a required field is missing/empty, `categories` is empty,
 	 *                                 or the rendered envelope still carries an unresolved template marker.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-a-complete-export-payload-translates-to-a-valid-envelope
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-a-complete-export-payload-translates-to-a-valid-envelope
 	 */
 	public function translate(string $kenmerk, array $payload): string {
 		if (trim($kenmerk) === '') {
@@ -169,7 +169,7 @@ class OsoExportEnvelopeTranslator {
 	 *
 	 * @throws OsoTranslationException Naming the first missing/empty required field found.
 	 *
-	 * @spec openspec/changes/integriq-adapter-oso/specs/oso-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
 	 */
 	private function assertRequiredFieldsPresent(array $payload): void {
 		foreach (self::REQUIRED_FIELDS as $field) {

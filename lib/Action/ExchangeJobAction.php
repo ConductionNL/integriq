@@ -33,7 +33,7 @@ use OCA\Integriq\Service\Exchange\ExchangeJobRunner;
  * The job's own uuid arrives as `_jobId`, passed by JobService::executeJob()
  * next to `_executionTrace`; an exchange job keeps its `arguments` empty.
  *
- * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+ * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
  */
 class ExchangeJobAction {
 
@@ -55,7 +55,7 @@ class ExchangeJobAction {
 	 *
 	 * @return array{level: string, message: string} The job_log entry.
 	 *
-	 * @spec openspec/changes/learniq-exchange-jobs-native/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function run(array $arguments): array {
 		$jobId = (string)($arguments['_jobId'] ?? ($arguments['jobId'] ?? ''));
