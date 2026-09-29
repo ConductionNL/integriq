@@ -9,6 +9,8 @@
 Every `#### Scenario:` in this capability MUST carry either an `@e2e` reference to a
 browser test, or a reason-bearing `@e2e exclude <reason>` line.
 
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Backend-only scenario carries an exclude reason
 
 - GIVEN a scenario describes iBabs REST / NotuBiz API wire behavior with no Vue UI

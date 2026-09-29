@@ -10,6 +10,8 @@ Every `#### Scenario:` in this capability MUST carry either an `@e2e` reference 
 browser test, or a reason-bearing `@e2e exclude <reason>` line, so gate-19 can trace
 spec coverage without inventing a browser test for a backend-only SOAP/XML adapter.
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Backend-only scenario carries an exclude reason
 
 - GIVEN a scenario describes SOAP/XML wire behavior with no Vue UI surface
@@ -26,6 +28,8 @@ client certificates and SSL keys to temporary files, the SOAP/HTTP request uses 
 mTLS, and `removeFiles()` cleans up after the request. **This behavior MUST be proven by
 PHPUnit tests** — a security-relevant authentication path MUST NOT ship with zero test
 coverage.
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Client certificate used for mTLS request
 
@@ -57,6 +61,8 @@ This adds a SOAP header with username and password (optionally with nonce and ti
 to outbound SOAP requests. The authentication method is configured as a new auth type in
 AuthenticationService. **This behavior MUST be proven by PHPUnit tests**, including an
 exact assertion of the `PasswordDigest` hash formula (not merely that a header exists).
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: UsernameToken header added to SOAP request
 

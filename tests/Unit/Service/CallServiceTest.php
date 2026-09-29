@@ -1381,7 +1381,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testGetCertificateWritesCertToTempFile(): void {
 		// Arrange
@@ -1408,7 +1408,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testGetCertificateWritesSslKeyToTempFile(): void {
 		// Arrange
@@ -1434,7 +1434,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testGetCertificateConvertsEscapedNewlines(): void {
 		// Arrange: literal backslash-n sequences, as stored in a JSON field.
@@ -1460,7 +1460,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testGetCertificateWritesArrayFormCertPreservingPassword(): void {
 		// Arrange
@@ -1486,7 +1486,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-pkioverheid-mtls-authentication-req-stuf-011
 	 */
 	public function testRemoveFilesCleansUpCertSslKeyAndVerifyTogether(): void {
 		// Arrange

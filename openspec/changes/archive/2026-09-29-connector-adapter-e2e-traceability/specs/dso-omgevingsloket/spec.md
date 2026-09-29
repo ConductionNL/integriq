@@ -11,6 +11,8 @@ Every `#### Scenario:` in this capability MUST carry either an `@e2e` reference 
 browser test, or a reason-bearing `@e2e exclude <reason>` line — except the REQ-DSO-050
 (PKIoverheid Certificate Authentication) scenarios, which are tracked separately.
 
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Backend-only scenario carries an exclude reason
 
 - GIVEN a scenario describes STAM koppelvlak HTTP/XML wire behavior with no Vue UI
