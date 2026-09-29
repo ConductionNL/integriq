@@ -260,11 +260,17 @@ class LtiController extends Controller {
 			);
 		}
 
+		// A conformant request names no deployment; the former `deployment_id` narrows it.
+		$narrowTo = null;
+		if ($deploymentId !== '') {
+			$narrowTo = $deploymentId;
+		}
+
 		try {
 			$token = $this->agsService->issueAccessToken(
 				clientAssertion: $clientAssertion,
 				requestedScope: $scope,
-				deploymentUuid: ($deploymentId === '' ? null : $deploymentId)
+				deploymentUuid: $narrowTo
 			);
 		} catch (LtiValidationException $exception) {
 			return $this->renderRejection(exception: $exception);
