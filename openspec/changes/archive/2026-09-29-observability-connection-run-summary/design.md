@@ -14,9 +14,9 @@ job, and the warning itself is a declared notification on an alert object.
   from JobService, `manual` otherwise).
   `lib/Service/SynchronizationRunProgressService.php:176` (`start()`) takes
   both and writes them with the first counters.
-- Summary: `sources#runSummary` (GET `/api/sources/{id}/run-summary?from=&to=`)
-  on `lib/Controller/SourcesController.php`, registered with the source routes
-  at `appinfo/routes.php:375`, guarded by the existing action `source.logs`
+- Summary: `runSummary#show` (GET `/api/sources/{id}/run-summary?from=&to=`)
+  on its own `lib/Controller/RunSummaryController.php` (SourcesController is
+  at its complexity budget), registered with the source routes, guarded by the existing action `source.logs`
   (`lib/actions.seed.json:4`). A new `lib/Service/RunSummaryService.php` reads
   `synchronization_run` for the source in the window, at most 31 days, in
   bounded pages (ADR-058), and sums per day.

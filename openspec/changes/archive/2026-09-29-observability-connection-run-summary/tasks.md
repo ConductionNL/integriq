@@ -14,7 +14,7 @@ Kind: code. Rows `opencatalogi:int-connector-monitor` (integriq's half) and
 
 ### Task 2: The per-day summary route and the source page widgets
 - **spec_ref**: openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
-- **files**: `lib/Service/RunSummaryService.php`, `lib/Controller/SourcesController.php`, `appinfo/routes.php`, `src/components/SourceRunSummaryWidget.vue`, `src/registry.js`, `src/manifest.json`
+- **files**: `lib/Service/RunSummaryService.php`, `lib/Controller/RunSummaryController.php`, `appinfo/routes.php`, `src/components/SourceRunSummaryWidget.vue`, `src/registry.js`, `src/manifest.json`
 - **acceptance_criteria**:
   - GIVEN fourteen runs over seven days WHEN the summary is requested THEN seven rows sum to fourteen runs
   - GIVEN a 40-day window WHEN requested THEN 400

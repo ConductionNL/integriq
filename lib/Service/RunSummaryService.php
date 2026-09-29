@@ -45,6 +45,20 @@ class RunSummaryService {
 	public const MAX_WINDOW_DAYS = 31;
 
 	/**
+	 * Exception code: a date that is not Y-m-d.
+	 *
+	 * @var int
+	 */
+	public const WINDOW_NOT_A_DATE = 1;
+
+	/**
+	 * Exception code: a window over 31 days, or one that runs backwards.
+	 *
+	 * @var int
+	 */
+	public const WINDOW_TOO_LONG = 2;
+
+	/**
 	 * Run records read per page.
 	 *
 	 * @var int
@@ -115,6 +129,54 @@ class RunSummaryService {
 
 		return ['days' => array_values($days), 'runs' => $runs];
 	}//end summarise()
+
+	/**
+	 * The window a request asks for: `from` and `to` as Y-m-d, or the last
+	 * seven days when they are absent.
+	 *
+	 * @param string|null $from The first day, Y-m-d.
+	 * @param string|null $to The last day, Y-m-d.
+	 * @param DateTimeImmutable $today Today.
+	 *
+	 * @return array{0: DateTimeImmutable, 1: DateTimeImmutable} The first and the last day.
+	 *
+	 * @throws InvalidArgumentException With code WINDOW_NOT_A_DATE or WINDOW_TOO_LONG.
+	 *
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+	 */
+	public function window(?string $from, ?string $to, DateTimeImmutable $today): array {
+		$last = $this->day(value: $to, default: $today->setTime(0, 0));
+		$first = $this->day(value: $from, default: $last->modify('-6 days'));
+
+		if ($last < $first || ((int)$first->diff($last)->days + 1) > self::MAX_WINDOW_DAYS) {
+			throw new InvalidArgumentException('The window is longer than 31 days or ends before it starts.', self::WINDOW_TOO_LONG);
+		}
+
+		return [$first, $last];
+	}//end window()
+
+	/**
+	 * One Y-m-d day, or the default when the value is absent.
+	 *
+	 * @param string|null $value The value.
+	 * @param DateTimeImmutable $default The default.
+	 *
+	 * @return DateTimeImmutable The day.
+	 *
+	 * @throws InvalidArgumentException With code WINDOW_NOT_A_DATE.
+	 */
+	private function day(?string $value, DateTimeImmutable $default): DateTimeImmutable {
+		if ($value === null || $value === '') {
+			return $default;
+		}
+
+		$day = date_create_immutable_from_format('!Y-m-d', $value);
+		if ($day === false || $day->format('Y-m-d') !== $value) {
+			throw new InvalidArgumentException('Not a Y-m-d date: ' . $value, self::WINDOW_NOT_A_DATE);
+		}
+
+		return $day;
+	}//end day()
 
 	/**
 	 * One zeroed row per day, newest day first.

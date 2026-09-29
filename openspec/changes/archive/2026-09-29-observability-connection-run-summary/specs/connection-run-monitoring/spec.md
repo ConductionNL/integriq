@@ -44,7 +44,7 @@ source detail page MUST show this table and a list of the source's runs.
 - GIVEN an administrator's browser requesting a summary from January to June
 - WHEN the route is called
 - THEN the answer is 400 naming the 31-day limit
-- @e2e exclude an API guard; covered by PHPUnit on SourcesController
+- @e2e exclude an API guard; covered by PHPUnit on RunSummaryController
 
 ### Requirement: A failed pull restarts with one click (REQ-CRUN-003)
 

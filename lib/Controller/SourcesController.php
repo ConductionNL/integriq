@@ -22,7 +22,6 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\CallService;
-use OCA\Integriq\Service\RunSummaryService;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Service\SourceTestService;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -60,7 +59,6 @@ class SourcesController extends Controller {
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
-	 * @param RunSummaryService|null $runSummary Sums a source's runs per day.
 	 *
 	 * @return void
 	 */
@@ -71,7 +69,6 @@ class SourcesController extends Controller {
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
-		private readonly ?RunSummaryService $runSummary = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -230,81 +227,6 @@ class SourcesController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
 		}//end try
 	}//end logs()
-
-	/**
-	 * A source's pulls per day, and its latest runs.
-	 *
-	 * GET /api/sources/{id}/run-summary?from=Y-m-d&to=Y-m-d. The window defaults
-	 * to the last seven days and may be at most 31 days long.
-	 *
-	 * @param string $id The source.
-	 *
-	 * @return JSONResponse `{sourceId, from, to, days[], runs[]}`, or 400 naming what is wrong with the window.
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
-	 */
-	#[NoAdminRequired]
-	public function runSummary(string $id): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
-		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'source.logs');
-
-		$to = $this->dayParam(name: 'to', default: 'today');
-		$from = $this->dayParam(name: 'from', default: 'today -6 days');
-		if ($to === null || $from === null) {
-			return new JSONResponse(
-				['error' => $this->l->t('Give the dates as year-month-day, for example 2026-09-28.')],
-				\OCP\AppFramework\Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		if ((int)$from->diff($to)->days + 1 > RunSummaryService::MAX_WINDOW_DAYS || $to < $from) {
-			return new JSONResponse(
-				['error' => $this->l->t('Choose a window of at most %s days that ends after it starts.', [(string)RunSummaryService::MAX_WINDOW_DAYS])],
-				\OCP\AppFramework\Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		$service = ($this->runSummary ?? new RunSummaryService(objectService: $this->orObjectService));
-		$summary = $service->summarise(sourceId: $id, from: $from, to: $to);
-
-		return new JSONResponse(
-			[
-				'sourceId' => $id,
-				'from' => $from->format('Y-m-d'),
-				'to' => $to->format('Y-m-d'),
-				'days' => $summary['days'],
-				'runs' => $summary['runs'],
-			]
-		);
-	}//end runSummary()
-
-	/**
-	 * Read a Y-m-d query parameter, or the default when it is absent.
-	 *
-	 * @param string $name The parameter.
-	 * @param string $default A relative date for when it is absent.
-	 *
-	 * @return \DateTimeImmutable|null The day, or null when the value is not a Y-m-d date.
-	 */
-	private function dayParam(string $name, string $default): ?\DateTimeImmutable {
-		$value = $this->request->getParam($name);
-		if ($value === null || $value === '') {
-			return new \DateTimeImmutable($default);
-		}
-
-		$day = \DateTimeImmutable::createFromFormat('!Y-m-d', (string)$value);
-		if ($day === false || $day->format('Y-m-d') !== (string)$value) {
-			return null;
-		}
-
-		return $day;
-	}//end dayParam()
 
 	/**
 	 * Test a source.

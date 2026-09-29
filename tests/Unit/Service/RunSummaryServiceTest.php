@@ -140,6 +140,26 @@ final class RunSummaryServiceTest extends TestCase {
 	}//end testRunsBeforeTheWindowAreLeftOut()
 
 	/**
+	 * Without dates the window is the last seven days; a non-date is refused by code.
+	 *
+	 * @return void
+	 */
+	public function testTheWindowDefaultsToTheLastSevenDays(): void {
+		$service = $this->makeService([]);
+		[$from, $to] = $service->window(from: null, to: null, today: new DateTimeImmutable('2026-09-29 13:45'));
+
+		$this->assertSame('2026-09-23', $from->format('Y-m-d'));
+		$this->assertSame('2026-09-29', $to->format('Y-m-d'));
+
+		try {
+			$service->window(from: '29-09-2026', to: null, today: new DateTimeImmutable('2026-09-29'));
+			$this->fail('A non-date was accepted.');
+		} catch (InvalidArgumentException $exception) {
+			$this->assertSame(RunSummaryService::WINDOW_NOT_A_DATE, $exception->getCode());
+		}
+	}//end testTheWindowDefaultsToTheLastSevenDays()
+
+	/**
 	 * A window longer than 31 days is refused, naming the limit.
 	 *
 	 * @return void

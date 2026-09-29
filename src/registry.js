@@ -148,7 +148,7 @@ export default {
 	DocumentGenerationSourcePanel,
 
 	// SourceDetail body widget: the source's pulls per day and its latest
-	// runs, with Run again on a failed one. Reads sources#runSummary.
+	// runs, with Run again on a failed one. Reads runSummary#show.
 	// connection-run-monitoring REQ-CRUN-002 and REQ-CRUN-003.
 	SourceRunSummaryWidget,
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for GET /api/sources/{id}/run-summary.
+ * Unit tests for RunSummaryController: GET /api/sources/{id}/run-summary.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Controller
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\Integriq\Controller\SourcesController;
+use OCA\Integriq\Controller\RunSummaryController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\RunSummaryService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
  */
-final class SourcesControllerRunSummaryTest extends TestCase {
+final class RunSummaryControllerTest extends TestCase {
 
 	/**
 	 * Build the controller for one request.
@@ -41,9 +41,9 @@ final class SourcesControllerRunSummaryTest extends TestCase {
 	 * @param array<string, string> $params The query parameters.
 	 * @param ActionAuthService $actionAuth The action guard.
 	 *
-	 * @return SourcesController
+	 * @return RunSummaryController
 	 */
-	private function makeController(array $params, ActionAuthService $actionAuth): SourcesController {
+	private function makeController(array $params, ActionAuthService $actionAuth): RunSummaryController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
 			static fn (string $key, $default = null) => ($params[$key] ?? $default)
@@ -62,14 +62,12 @@ final class SourcesControllerRunSummaryTest extends TestCase {
 		$objects = $this->createMock(OrObjectService::class);
 		$objects->method('findAll')->willReturn([]);
 
-		return new SourcesController(
-			'integriq',
+		return new RunSummaryController(
 			$request,
-			$objects,
-			$l,
+			new RunSummaryService($objects),
 			$session,
 			$actionAuth,
-			new RunSummaryService($objects)
+			$l
 		);
 	}//end makeController()
 
@@ -82,7 +80,7 @@ final class SourcesControllerRunSummaryTest extends TestCase {
 		$actionAuth = $this->createMock(ActionAuthService::class);
 		$actionAuth->expects($this->once())->method('requireAction')->with($this->anything(), 'source.logs');
 
-		$response = $this->makeController(['from' => '2026-09-22', 'to' => '2026-09-28'], $actionAuth)->runSummary('source-kvk');
+		$response = $this->makeController(['from' => '2026-09-22', 'to' => '2026-09-28'], $actionAuth)->show('source-kvk');
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertCount(7, $response->getData()['days']);
@@ -95,7 +93,7 @@ final class SourcesControllerRunSummaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testJanuaryToJuneIsRefusedNamingTheLimit(): void {
-		$response = $this->makeController(['from' => '2026-01-01', 'to' => '2026-06-30'], $this->createMock(ActionAuthService::class))->runSummary('source-kvk');
+		$response = $this->makeController(['from' => '2026-01-01', 'to' => '2026-06-30'], $this->createMock(ActionAuthService::class))->show('source-kvk');
 
 		$this->assertSame(400, $response->getStatus());
 		$this->assertStringContainsString('31', $response->getData()['error']);
@@ -107,7 +105,7 @@ final class SourcesControllerRunSummaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testANonDateIsRefused(): void {
-		$response = $this->makeController(['from' => 'last tuesday; drop', 'to' => '2026-06-30'], $this->createMock(ActionAuthService::class))->runSummary('source-kvk');
+		$response = $this->makeController(['from' => 'last tuesday; drop', 'to' => '2026-06-30'], $this->createMock(ActionAuthService::class))->show('source-kvk');
 
 		$this->assertSame(400, $response->getStatus());
 	}//end testANonDateIsRefused()
@@ -122,6 +120,6 @@ final class SourcesControllerRunSummaryTest extends TestCase {
 		$actionAuth->method('requireAction')->willThrowException(new OCSForbiddenException('no'));
 
 		$this->expectException(OCSForbiddenException::class);
-		$this->makeController([], $actionAuth)->runSummary('source-kvk');
+		$this->makeController([], $actionAuth)->show('source-kvk');
 	}//end testWithoutSourceLogsTheReadIsRefused()
 }//end class

@@ -7,7 +7,7 @@
 
   Mounted as a body widget on SourceDetail and reads the loaded source off
   `cnSectionContext`, like DocumentGenerationSourcePanel. The sums come from
-  sources#runSummary, because the widget dialect cannot sum several counters
+  runSummary#show, because the widget dialect cannot sum several counters
   per day in one table (design D2). Run again posts straight away, with no
   dialog (design D3), and reads the summary again afterwards.
 
