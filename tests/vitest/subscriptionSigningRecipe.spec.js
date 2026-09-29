@@ -9,7 +9,7 @@
  * signed from the readable `signingPosture`, because `protocolSettings` is
  * writeOnly and never reaches the page (REQ-SOW-003).
  *
- * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-the-subscription-page-states-what-a-receiver-must-compute-req-sow-002
+ * @spec openspec/specs/webhook-signing/spec.md#requirement-the-subscription-page-states-what-a-receiver-must-compute-req-sow-002
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'

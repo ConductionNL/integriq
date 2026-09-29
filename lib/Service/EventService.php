@@ -837,7 +837,7 @@ class EventService {
 	 *
 	 * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
 	 */
 	private function recordFailure(
 		ObjectEntity $message,
@@ -980,7 +980,7 @@ class EventService {
 	 * @return array The attempts array with the new entry appended.
 	 *
 	 * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
 	 */
 	private function appendAttempt(array $attempts, string $at, ?int $statusCode, ?string $error, ?bool $signed = null): array {
 		// OMIT a null rather than writing it. `attempts[].statusCode` is typed

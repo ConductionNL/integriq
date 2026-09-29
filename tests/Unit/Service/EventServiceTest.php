@@ -557,7 +557,7 @@ class EventServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
 	 */
 	public function testASignedAttemptRecordsThatItWasSigned(): void {
 		$result = $this->deliverCapturing(protocolSettings: ['signingSecret' => 'whsec_testsecret'], status: 200);
@@ -575,7 +575,7 @@ class EventServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
 	 */
 	public function testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo(): void {
 		$result = $this->deliverCapturing(

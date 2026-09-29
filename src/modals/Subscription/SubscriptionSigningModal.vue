@@ -19,7 +19,7 @@
   `protocolSettings` is writeOnly, so it never reaches this page.
 
   @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
-  @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-the-subscription-page-states-what-a-receiver-must-compute-req-sow-002
+  @spec openspec/specs/webhook-signing/spec.md#requirement-the-subscription-page-states-what-a-receiver-must-compute-req-sow-002
 -->
 <template>
 	<NcModal
@@ -121,7 +121,7 @@ export default {
 		 * The one line that says whether this webhook signs, and why not.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+		 * @spec openspec/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
 		 */
 		statusText() {
 			if (this.hasSecret) {
@@ -155,7 +155,7 @@ export default {
 		 * The verification recipe, one fact per line (REQ-SOW-002).
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-the-subscription-page-states-what-a-receiver-must-compute-req-sow-002
+		 * @spec openspec/specs/webhook-signing/spec.md#requirement-the-subscription-page-states-what-a-receiver-must-compute-req-sow-002
 		 */
 		recipe() {
 			return [

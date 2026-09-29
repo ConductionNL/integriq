@@ -251,7 +251,7 @@ class EventsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
 	 */
 	public function testSubscribeRevealsTheGeneratedSecretOnce(): void {
 		$this->request->method('getParams')->willReturn(['style' => 'push', 'sink' => 'https://ontvanger.example.nl/hook']);
@@ -277,7 +277,7 @@ class EventsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
 	 */
 	public function testSubscribeDoesNotEchoASuppliedSecret(): void {
 		$this->request->method('getParams')->willReturn(['style' => 'push', 'protocolSettings' => ['signingSecret' => 'whsec_mine']]);
@@ -297,7 +297,7 @@ class EventsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
 	 */
 	public function testGeneratingASecretEndsAnUnsignedDecision(): void {
 		$stored = ObjectServiceMockBuilder::objectEntity(

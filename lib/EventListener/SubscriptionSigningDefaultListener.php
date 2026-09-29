@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+ * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
  * readable mirror of `protocolSettings`, which is writeOnly and so invisible
  * to every list.
  *
- * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+ * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
  *
  * @template-implements IEventListener<Event>
  */
@@ -105,7 +105,7 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
@@ -154,7 +154,7 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 	 *
 	 * @return array<string,mixed> The data to merge into the object.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
 	 */
 	private function modifiedData(array $data, ?ObjectEntity $old, bool $isCreate): array {
 		$user = $this->currentUid();

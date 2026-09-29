@@ -4225,15 +4225,15 @@
 			"area": "events",
 			"name": "See which subscriptions still go out unsigned.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
-				"change": "signed-outbound-webhooks",
+				"state": "built",
+				"change": "2026-09-29-signed-outbound-webhooks",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Subscriptions/SubscriptionSigningPolicy.php implements an 'unsigned with reason' policy (ATTEMPT_UNSIGNED constant, reason requirement at lines 105-141) with a full test suite (tests/Unit/Service/Subscriptions/SubscriptionSigningPolicyTest.php), but has ZERO production callers: `grep -rn SubscriptionSigningPolicy lib/ --include=*.php` outside its own file and the test only matches the class file itself, no controller or EventService reference. The Webhooks index columns (src/manifest.json:1999-2005: sink/protocol/style/status/updated) carry no signed/unsigned indicator."
+				"evidence": "lib/EventListener/SubscriptionSigningDefaultListener.php, registered in lib/AppInfo/Application.php on OpenRegister's ObjectCreatingEvent and ObjectUpdatingEvent, runs lib/Service/Subscriptions/SubscriptionSigningPolicy.php on every event_subscription save: a new push subscription gains a secret, unsigned needs a reason (stamped setBy/setAt), and the readable mirror signingPosture/unsignedReason is written because protocolSettings is writeOnly. src/manifest.json Webhooks columns include signingPosture; src/modals/Subscription/SubscriptionSigningModal.vue shows the posture, the reason and the verification recipe. lib/Service/EventService.php deliverMessage records attempts[].signed and sends no signature when unsigned is set. Tests: tests/Unit/EventListener/SubscriptionSigningDefaultListenerTest.php (real OpenRegister events, stored payload validated against the merged register), EventServiceTest::testASignedAttemptRecordsThatItWasSigned and ::testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo, tests/vitest/subscriptionSigningRecipe.spec.js. Built by change signed-outbound-webhooks (archived 2026-09-29)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "This is a guard with a full test suite and no call site: staff can open the signing modal per-subscription one at a time, but there is no column, badge, or report showing which subscriptions are unsigned across the fleet.",
+			"reachedOn": "Webhooks index: the Signature column; the Webhook signing action on a row shows signed or unsigned with its reason, and the recipe",
+			"note": "Built 2026-09-29: the policy #2074 shipped with tests and no caller now runs on OpenRegister's save path. A subscription saved before this has no Signature value until it is saved again (no migration, design D5).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "webhook-signing",

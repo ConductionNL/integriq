@@ -229,7 +229,7 @@ class EventsController extends Controller {
 	 *
 	 * @return string|null The secret, or null when none was generated.
 	 *
-	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
 	 */
 	private function generatedSecret(array $request, string $subscriptionId): ?string {
 		$supplied = (array)($request['protocolSettings'] ?? []);
