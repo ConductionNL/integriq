@@ -219,10 +219,14 @@ class ApprovalService {
 	 * @param string $onReject Outcome on reject.
 	 * @param string $onTimeout Outcome on timeout.
 	 * @param integer $ttlSeconds TTL in seconds before expiry.
+	 * @param array $changeSet What the run would create, change and remove
+	 *                         (ChangeSetBuilder::build()); stored as
+	 *                         `snapshot.changeSet` with its `fingerprint`.
 	 *
 	 * @return ObjectEntity The created, `pending` approval_request.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
 	 */
 	public function suspendForSynchronization(
 		string $synchronizationId,
@@ -230,23 +234,30 @@ class ApprovalService {
 		string $onReject,
 		string $onTimeout,
 		int $ttlSeconds,
+		array $changeSet = [],
 	): ObjectEntity {
 		$now = new DateTime();
 		$expiresAt = (clone $now)->add(new DateInterval('PT' . max($ttlSeconds, 1) . 'S'));
 
+		$object = [
+			'status' => 'pending',
+			'synchronizationId' => $synchronizationId,
+			'timing' => 'before',
+			'snapshot' => [],
+			'requesterUserId' => $this->userSession->getUser()?->getUID(),
+			'approverGroup' => $approverGroup,
+			'onReject' => $onReject,
+			'onTimeout' => $onTimeout,
+			'createdAt' => $now->format('c'),
+			'expiresAt' => $expiresAt->format('c'),
+		];
+		if ($changeSet !== []) {
+			$object['snapshot'] = ['changeSet' => $changeSet];
+			$object['fingerprint'] = (string)($changeSet['fingerprint'] ?? '');
+		}
+
 		$record = $this->objectService->saveObject(
-			object: [
-				'status' => 'pending',
-				'synchronizationId' => $synchronizationId,
-				'timing' => 'before',
-				'snapshot' => [],
-				'requesterUserId' => $this->userSession->getUser()?->getUID(),
-				'approverGroup' => $approverGroup,
-				'onReject' => $onReject,
-				'onTimeout' => $onTimeout,
-				'createdAt' => $now->format('c'),
-				'expiresAt' => $expiresAt->format('c'),
-			],
+			object: $object,
 			register: self::REGISTER,
 			schema: self::SCHEMA
 		);
@@ -496,6 +507,33 @@ class ApprovalService {
 		);
 
 	}//end markConsumed()
+
+	/**
+	 * Close an approved request whose source changed after its preview.
+	 *
+	 * The request is consumed, so it can never authorize a later run, and
+	 * names the new request that carries the new change set.
+	 *
+	 * @param ObjectEntity $approvalRequest The approved request whose fingerprint no longer matches.
+	 * @param string $supersededBy The new request's id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+	 */
+	public function markSuperseded(ObjectEntity $approvalRequest, string $supersededBy): void {
+		$data = $approvalRequest->getObject();
+		$data['consumedAt'] = (new DateTime())->format('c');
+		$data['supersededBy'] = $supersededBy;
+
+		$this->objectService->saveObject(
+			object: $data,
+			register: self::REGISTER,
+			schema: self::SCHEMA,
+			uuid: $approvalRequest->getUuid()
+		);
+
+	}//end markSuperseded()
 
 	/**
 	 * Rehydrate a FlowToken from a persisted snapshot via the public
