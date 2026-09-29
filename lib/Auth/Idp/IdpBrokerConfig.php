@@ -82,6 +82,14 @@ class IdpBrokerConfig {
 	public const KEY_TRUST_ALIASES = 'idp_broker_trust_aliases';
 
 	/**
+	 * The per-provider Service Provider or Relying Party EntityID an
+	 * assertion must name as its audience, as a JSON map.
+	 *
+	 * @var string
+	 */
+	public const KEY_ENTITY_IDS = 'idp_broker_entity_ids';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig The Nextcloud app configuration.
@@ -117,18 +125,95 @@ class IdpBrokerConfig {
 	}//end signingKey()
 
 	/**
-	 * One consumer's exchange secret.
+	 * One consumer's inline exchange secret, from the older id-to-secret form.
+	 *
+	 * A consumer in the current form holds its secret by broker reference, so
+	 * this answers an empty string for it: {@see IdpConsumerSecretResolver}
+	 * reads that one.
 	 *
 	 * @param string $consumer The consumer id.
 	 *
-	 * @return string The secret, or an empty string when the consumer is unknown.
+	 * @return string The secret, or an empty string when the consumer is unknown or in the current form.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-one-time-signed-subject-envelope-handoff
 	 */
 	public function consumerSecret(string $consumer): string {
-		return (string)($this->map(key: self::KEY_CONSUMERS)[$consumer] ?? '');
+		$entry = $this->consumer(consumer: $consumer);
+		if ($entry === null) {
+			return '';
+		}
+
+		return $entry->getLegacySecret();
 
 	}//end consumerSecret()
+
+	/**
+	 * One registered consumer.
+	 *
+	 * @param string $consumer The consumer id.
+	 *
+	 * @return IdpConsumer|null The consumer, or null when it is not registered.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 */
+	public function consumer(string $consumer): ?IdpConsumer {
+		$consumers = $this->map(key: self::KEY_CONSUMERS);
+		if ($consumer === '' || array_key_exists($consumer, $consumers) === false) {
+			return null;
+		}
+
+		return IdpConsumer::fromConfig(id: $consumer, entry: $consumers[$consumer]);
+
+	}//end consumer()
+
+	/**
+	 * Whether a consumer id is registered at all, in either form.
+	 *
+	 * @param string $consumer The consumer id.
+	 *
+	 * @return boolean True when an entry exists.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 */
+	public function hasConsumer(string $consumer): bool {
+		return array_key_exists($consumer, $this->map(key: self::KEY_CONSUMERS));
+
+	}//end hasConsumer()
+
+	/**
+	 * Write one consumer in the current form, leaving every other entry as it is.
+	 *
+	 * @param IdpConsumer $consumer The consumer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 */
+	public function saveConsumer(IdpConsumer $consumer): void {
+		$consumers = $this->map(key: self::KEY_CONSUMERS);
+		$consumers[$consumer->getId()] = $consumer->toConfig();
+
+		$this->appConfig->setValueString(
+			self::APP_ID,
+			self::KEY_CONSUMERS,
+			(string)json_encode($consumers, JSON_UNESCAPED_SLASHES)
+		);
+
+	}//end saveConsumer()
+
+	/**
+	 * The EntityID an assertion from this provider must name as its audience.
+	 *
+	 * @param string $provider The provider id.
+	 *
+	 * @return string The EntityID, or an empty string when none is configured.
+	 *
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-replay-audience-confusion-and-idp-initiated-flows-are-rejected
+	 */
+	public function entityId(string $provider): string {
+		return (string)($this->map(key: self::KEY_ENTITY_IDS)[strtolower(trim($provider))] ?? '');
+
+	}//end entityId()
 
 	/**
 	 * One organisation's pseudonym salt.

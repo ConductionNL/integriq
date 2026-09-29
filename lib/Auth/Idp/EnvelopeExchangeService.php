@@ -43,12 +43,14 @@ class EnvelopeExchangeService {
 	 * @param SubjectEnvelopeService $envelopeService Mints and verifies envelopes.
 	 * @param EnvelopeCodeStore $codeStore Holds an envelope behind a code.
 	 * @param LoggerInterface $logger Records a refused redemption.
+	 * @param IdpConsumerSecretResolver $secretResolver Reads a consumer's expected secret, inline or by broker reference.
 	 */
 	public function __construct(
 		private readonly IdpBrokerConfig $config,
 		private readonly SubjectEnvelopeService $envelopeService,
 		private readonly EnvelopeCodeStore $codeStore,
 		private readonly LoggerInterface $logger,
+		private readonly IdpConsumerSecretResolver $secretResolver,
 	) {
 
 	}//end __construct()
@@ -143,10 +145,16 @@ class EnvelopeExchangeService {
 	 *
 	 * @return void
 	 *
-	 * @throws IdpAssertionException When the consumer is unknown or the secret does not match.
+	 * @throws IdpAssertionException When the consumer is unknown or disabled, or the secret does not match.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	private function assertConsumer(string $consumer, string $presentedSecret): void {
-		$expected = $this->config->consumerSecret(consumer: $consumer);
+		$entry = $this->config->consumer(consumer: $consumer);
+		$expected = '';
+		if ($entry !== null) {
+			$expected = $this->secretResolver->expectedSecret(consumer: $entry);
+		}
 
 		// An unknown consumer is compared against a random string of the same
 		// shape rather than short-circuiting, so the timing of "unknown

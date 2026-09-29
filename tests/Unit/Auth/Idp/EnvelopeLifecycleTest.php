@@ -21,12 +21,14 @@ use OCA\Integriq\Auth\Idp\EnvelopeCodeStore;
 use OCA\Integriq\Auth\Idp\EnvelopeExchangeService;
 use OCA\Integriq\Auth\Idp\EnvelopeReplayGuard;
 use OCA\Integriq\Auth\Idp\IdpBrokerConfig;
+use OCA\Integriq\Auth\Idp\IdpConsumerSecretResolver;
 use OCA\Integriq\Auth\Idp\SubjectEnvelope;
 use OCA\Integriq\Auth\Idp\SubjectEnvelopeService;
 use OCA\Integriq\Exception\IdpAssertionException;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -329,7 +331,11 @@ class EnvelopeLifecycleTest extends TestCase {
 				replayGuard: new EnvelopeReplayGuard($this->cacheFactory($cache))
 			),
 			codeStore: new EnvelopeCodeStore($this->cacheFactory($cache)),
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			secretResolver: new IdpConsumerSecretResolver(
+				container: $this->createMock(ContainerInterface::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$code = $exchange->issueCode(envelope: $this->envelope());
@@ -354,7 +360,11 @@ class EnvelopeLifecycleTest extends TestCase {
 				replayGuard: new EnvelopeReplayGuard($this->cacheFactory($cache))
 			),
 			codeStore: new EnvelopeCodeStore($this->cacheFactory($cache)),
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			secretResolver: new IdpConsumerSecretResolver(
+				container: $this->createMock(ContainerInterface::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$code = $exchange->issueCode(envelope: $this->envelope());
@@ -379,7 +389,11 @@ class EnvelopeLifecycleTest extends TestCase {
 				replayGuard: new EnvelopeReplayGuard($this->cacheFactory($cache))
 			),
 			codeStore: new EnvelopeCodeStore($this->cacheFactory($cache)),
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			secretResolver: new IdpConsumerSecretResolver(
+				container: $this->createMock(ContainerInterface::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->expectException(IdpAssertionException::class);
@@ -401,7 +415,11 @@ class EnvelopeLifecycleTest extends TestCase {
 				replayGuard: new EnvelopeReplayGuard($this->cacheFactory($cache))
 			),
 			codeStore: new EnvelopeCodeStore($this->cacheFactory($cache)),
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			secretResolver: new IdpConsumerSecretResolver(
+				container: $this->createMock(ContainerInterface::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->expectException(IdpAssertionException::class);
@@ -424,7 +442,11 @@ class EnvelopeLifecycleTest extends TestCase {
 				replayGuard: new EnvelopeReplayGuard($this->cacheFactory($cache))
 			),
 			codeStore: new EnvelopeCodeStore($this->cacheFactory($cache)),
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			secretResolver: new IdpConsumerSecretResolver(
+				container: $this->createMock(ContainerInterface::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->expectException(IdpAssertionException::class);
