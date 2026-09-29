@@ -58,6 +58,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The change set preview's outcome writes
+ *   (markSuperseded, recordResumeResult) took it past 1000 lines; splitting the
+ *   synchronization-gate half into its own service is the follow-up.
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */

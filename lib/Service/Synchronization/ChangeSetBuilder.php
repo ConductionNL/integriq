@@ -47,14 +47,15 @@ class ChangeSetBuilder {
 	/**
 	 * Build the change set.
 	 *
-	 * @param array<int, array{originId: string, targetId: ?string, mapped: array, existing: ?array}> $entries
-	 *        One entry per fetched object: its mapped form and the stored target, or null when there is none.
-	 * @param array<int, array{originId: string, targetId: string}>                                   $removed
-	 *        Targets the source no longer carries.
-	 * @param bool                                                                                     $removalsAllowed
-	 *        Whether this run may delete at all (REQ-010: a complete, full fetch).
+	 * Each entry is {originId, targetId, mapped, existing}: the mapped form of
+	 * one fetched object and the stored target, or null when there is none.
+	 * Each removal is {originId, targetId}.
 	 *
-	 * @return array{created: array, changed: array, removed: array, unchanged: int, counts: array<string, int>, truncated: bool, limit: int, fingerprint: string}
+	 * @param array $entries         One entry per fetched object.
+	 * @param array $removed         Targets the source no longer carries.
+	 * @param bool  $removalsAllowed Whether this run may delete at all (REQ-010).
+	 *
+	 * @return array The change set: created, changed, removed, unchanged, counts, truncated, limit, fingerprint.
 	 *
 	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
 	 */
