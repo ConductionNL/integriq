@@ -2,6 +2,7 @@
 
 /**
  * OpenRegister RecipientResolverInterface
+ * Test stub: a copy of openregister's lib/Service/Notification/RecipientResolverInterface.php (development, 28 Sep 2026).
  *
  * Public contract apps implement to provide dynamic recipient resolution
  * for the `expression` notification recipient kind. Apps register their
@@ -47,7 +48,6 @@ interface RecipientResolverInterface {
 	 *
 	 * @return array<int, string> List of Nextcloud uids.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-11
 	 */
 	public function resolve(ObjectEntity $object, array $context): array;
 }//end interface

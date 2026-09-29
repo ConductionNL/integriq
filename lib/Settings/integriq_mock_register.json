@@ -11805,6 +11805,55 @@
         },
         "identifierColumn": "",
         "version": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-kvk-failed-calls"
+        },
+        "subjectType": "source",
+        "subject": "b7d1e2f3-4a5b-4c6d-8e9f-0a1b2c3d4e5f",
+        "subjectName": "KVK Handelsregister",
+        "rule": "failedCalls",
+        "count": 14,
+        "threshold": 10,
+        "windowMinutes": 60,
+        "state": "open",
+        "openedAt": "2026-09-29T07:15:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-brp-failed-runs"
+        },
+        "subjectType": "synchronization",
+        "subject": "c8e2f3a4-5b6c-4d7e-9f0a-1b2c3d4e5f6a",
+        "subjectName": "BRP personen ophalen",
+        "rule": "failedRuns",
+        "count": 3,
+        "threshold": 2,
+        "windowMinutes": 240,
+        "state": "cleared",
+        "openedAt": "2026-09-28T03:05:00+02:00",
+        "clearedAt": "2026-09-28T09:40:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-bag-invalid-objects"
+        },
+        "subjectType": "synchronization",
+        "subject": "c8e2f3a4-5b6c-4d7e-9f0a-1b2c3d4e5f6a",
+        "subjectName": "BAG adressen ophalen",
+        "rule": "invalidObjects",
+        "count": 120,
+        "threshold": 100,
+        "windowMinutes": 1440,
+        "state": "open",
+        "openedAt": "2026-09-29T02:30:00+02:00"
       }
     ]
   }

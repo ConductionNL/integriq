@@ -2865,7 +2865,12 @@
         "No group is named, so nobody is notified.": "No group is named, so nobody is notified.",
         "The setting could not be read.": "The setting could not be read.",
         "Saved.": "Saved.",
-        "The setting could not be saved.": "The setting could not be saved."
+        "The setting could not be saved.": "The setting could not be saved.",
+        "Cleared": "Cleared",
+        "Connection alerts": "Connection alerts",
+        "Minutes": "Minutes",
+        "Opened": "Opened",
+        "Source or synchronization": "Source or synchronization"
     },
     "plurals": {}
 }

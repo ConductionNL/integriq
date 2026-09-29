@@ -1521,7 +1521,12 @@ OC.L10N.register(
         "No group is named, so nobody is notified.": "Er is geen groep genoemd, dus niemand krijgt een melding.",
         "The setting could not be read.": "De instelling kon niet worden gelezen.",
         "Saved.": "Opgeslagen.",
-        "The setting could not be saved.": "De instelling kon niet worden opgeslagen."
+        "The setting could not be saved.": "De instelling kon niet worden opgeslagen.",
+        "Cleared": "Opgeheven",
+        "Connection alerts": "Verbindingsmeldingen",
+        "Minutes": "Minuten",
+        "Opened": "Geopend",
+        "Source or synchronization": "Bron of synchronisatie"
     },
     "nplurals=2; plural=(n != 1);"
 )
