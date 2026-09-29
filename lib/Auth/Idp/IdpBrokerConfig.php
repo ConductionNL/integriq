@@ -154,6 +154,8 @@ class IdpBrokerConfig {
 	 *
 	 * @return IdpConsumer|null The consumer, or null when it is not registered.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) IdpConsumer::fromConfig is the value object's named constructor.
+	 *
 	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function consumer(string $consumer): ?IdpConsumer {

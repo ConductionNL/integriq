@@ -168,18 +168,7 @@ class IdpLoginStateStore {
 			throw new IdpAssertionException(message: 'The response answers no login this broker started.');
 		}
 
-		$decoded = json_decode($entry, true);
-		$body = (string)($decoded['state'] ?? '');
-		$signature = (string)($decoded['sig'] ?? '');
-
-		if ($signingKey === '' || hash_equals($this->sign(body: $body, signingKey: $signingKey), $signature) === false) {
-			throw new IdpAssertionException(message: 'The login state does not verify, so it is refused.');
-		}
-
-		$state = json_decode($body, true);
-		if (is_array($state) === false) {
-			throw new IdpAssertionException(message: 'The login state is unreadable, so it is refused.');
-		}
+		$state = $this->verified(entry: $entry, signingKey: $signingKey);
 
 		if ((int)($state['expiresAt'] ?? 0) <= ($now ?? time())) {
 			throw new IdpAssertionException(message: 'The login state has expired, so it is refused.');
@@ -193,6 +182,34 @@ class IdpLoginStateStore {
 		return $narrowed;
 
 	}//end consume()
+
+	/**
+	 * The state inside one cache entry, when its signature verifies.
+	 *
+	 * @param string $entry The cache entry.
+	 * @param string $signingKey The envelope signing key.
+	 *
+	 * @return array<string,mixed> The state.
+	 *
+	 * @throws IdpAssertionException When the signature fails or the state is unreadable.
+	 */
+	private function verified(string $entry, string $signingKey): array {
+		$decoded = json_decode($entry, true);
+		$body = (string)($decoded['state'] ?? '');
+		$signature = (string)($decoded['sig'] ?? '');
+
+		if ($signingKey === '' || hash_equals($this->sign(body: $body, signingKey: $signingKey), $signature) === false) {
+			throw new IdpAssertionException(message: 'The login state does not verify, so it is refused.');
+		}
+
+		$state = json_decode($body, true);
+		if (is_array($state) === false) {
+			throw new IdpAssertionException(message: 'The login state is unreadable, so it is refused.');
+		}
+
+		return $state;
+
+	}//end verified()
 
 	/**
 	 * The signature over one state body.

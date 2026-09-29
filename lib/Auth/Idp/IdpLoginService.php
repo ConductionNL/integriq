@@ -121,24 +121,8 @@ class IdpLoginService {
 		$adapter = $this->adapters->forProvider(provider: $provider);
 		$this->assertBrokerUsable();
 
-		$consumer = $this->config->consumer(consumer: $consumerId);
-		if ($consumer === null || $consumer->isEnabled() === false) {
-			throw new IdpAssertionException(message: 'The consumer is unknown or disabled, so no login starts.');
-		}
-
-		if ($consumer->mayReturnTo(returnUrl: $returnUrl) === false) {
-			throw new IdpAssertionException(
-				message: 'The return address is not registered for this consumer, so no login starts.'
-			);
-		}
-
-		if ($organisation === '' || in_array($trust, [TrustLevelMapper::TRUST_LOW, TrustLevelMapper::TRUST_SUBSTANTIAL, TrustLevelMapper::TRUST_HIGH], true) === false) {
-			throw new IdpAssertionException(message: 'The login names no organisation or no known trust level.');
-		}
-
-		if (strlen($relayState) > self::MAX_RELAY_STATE) {
-			throw new IdpAssertionException(message: 'The relay state is too long, so no login starts.');
-		}
+		$consumer = $this->startableConsumer(consumerId: $consumerId, returnUrl: $returnUrl);
+		$this->assertStartParameters(organisation: $organisation, trust: $trust, relayState: $relayState);
 
 		if ($adapter->isConfigured() === false) {
 			throw new IdpAssertionException(
@@ -350,6 +334,55 @@ class IdpLoginService {
 		return $branch;
 
 	}//end branchOf()
+
+	/**
+	 * The consumer, when it may start a login that returns to this address.
+	 *
+	 * @param string $consumerId The consumer id.
+	 * @param string $returnUrl The return address asked for.
+	 *
+	 * @return IdpConsumer The consumer.
+	 *
+	 * @throws IdpAssertionException When the consumer is unknown or disabled, or the address is not registered.
+	 */
+	private function startableConsumer(string $consumerId, string $returnUrl): IdpConsumer {
+		$consumer = $this->config->consumer(consumer: $consumerId);
+		if ($consumer === null || $consumer->isEnabled() === false) {
+			throw new IdpAssertionException(message: 'The consumer is unknown or disabled, so no login starts.');
+		}
+
+		if ($consumer->mayReturnTo(returnUrl: $returnUrl) === false) {
+			throw new IdpAssertionException(
+				message: 'The return address is not registered for this consumer, so no login starts.'
+			);
+		}
+
+		return $consumer;
+
+	}//end startableConsumer()
+
+	/**
+	 * Refuse a start without an organisation, with an unknown trust level or an oversized relay state.
+	 *
+	 * @param string $organisation The organisation.
+	 * @param string $trust The requested trust.
+	 * @param string $relayState The consumer's relay state.
+	 *
+	 * @return void
+	 *
+	 * @throws IdpAssertionException When a parameter is unusable.
+	 */
+	private function assertStartParameters(string $organisation, string $trust, string $relayState): void {
+		$knownTrust = [TrustLevelMapper::TRUST_LOW, TrustLevelMapper::TRUST_SUBSTANTIAL, TrustLevelMapper::TRUST_HIGH];
+		if ($organisation === '' || in_array($trust, $knownTrust, true) === false) {
+			throw new IdpAssertionException(message: 'The login names no organisation or no known trust level.');
+		}
+
+		if (strlen($relayState) > self::MAX_RELAY_STATE) {
+			throw new IdpAssertionException(message: 'The relay state is too long, so no login starts.');
+		}
+
+	}//end assertStartParameters()
 
 	/**
 	 * Refuse while the broker is off or cannot sign.

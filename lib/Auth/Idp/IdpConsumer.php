@@ -118,6 +118,8 @@ final class IdpConsumer {
 	 * The consumer id.
 	 *
 	 * @return string The id.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getId(): string {
 		return $this->id;
@@ -128,6 +130,8 @@ final class IdpConsumer {
 	 * Whether the consumer is switched on.
 	 *
 	 * @return boolean True when enabled.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function isEnabled(): bool {
 		return $this->enabled;
@@ -138,6 +142,8 @@ final class IdpConsumer {
 	 * The registered return addresses.
 	 *
 	 * @return array<int,string> The addresses.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getReturnUrls(): array {
 		return $this->returnUrls;
@@ -148,6 +154,8 @@ final class IdpConsumer {
 	 * The credential broker reference of the exchange secret.
 	 *
 	 * @return string The reference, or an empty string.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getSecretRef(): string {
 		return $this->secretRef;
@@ -158,6 +166,8 @@ final class IdpConsumer {
 	 * The organisation that owns the referenced credential.
 	 *
 	 * @return string The organisation, or an empty string.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getSecretOrganisation(): string {
 		return $this->secretOrganisation;
@@ -168,6 +178,8 @@ final class IdpConsumer {
 	 * The inline secret of the older form.
 	 *
 	 * @return string The secret, or an empty string for the current form.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getLegacySecret(): string {
 		return $this->legacySecret;
@@ -178,6 +190,8 @@ final class IdpConsumer {
 	 * Whether this consumer is registered in the older id-to-secret form.
 	 *
 	 * @return boolean True for the older form.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function isLegacy(): bool {
 		return $this->legacySecret !== '';

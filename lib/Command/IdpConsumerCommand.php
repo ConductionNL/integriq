@@ -43,6 +43,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Sets one consumer's return addresses, secret reference and enabled flag.
  *
+ * @SuppressWarnings(PHPMD.StaticAccess) IdpConsumer::isAcceptableReturnUrl is a pure check with no state to inject.
+ *
  * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
  */
 class IdpConsumerCommand extends Command {
@@ -104,38 +106,17 @@ class IdpConsumerCommand extends Command {
 			return 1;
 		}
 
-		$existing = $this->config->consumer(consumer: $id);
+		// A consumer nobody registered reads as an empty, disabled one, so
+		// every option below falls back to the same place.
+		$existing = ($this->config->consumer(consumer: $id) ?? new IdpConsumer(id: $id, enabled: false));
 
-		/** @var array<int,string> $asked */
-		$asked = (array)$input->getOption('return-url');
-		$returnUrls = [];
-		if ($existing !== null) {
-			$returnUrls = $existing->getReturnUrls();
+		$returnUrls = $this->returnUrls(input: $input, output: $output, existing: $existing);
+		if ($returnUrls === null) {
+			return 1;
 		}
 
-		if ($asked !== []) {
-			$returnUrls = [];
-			foreach ($asked as $url) {
-				if (IdpConsumer::isAcceptableReturnUrl(url: (string)$url) === false) {
-					$output->writeln('<error>' . $url . ' is not an https address with a host, so it is not registered.</error>');
-					return 1;
-				}
-
-				$returnUrls[] = (string)$url;
-			}
-		}
-
-		$secretRef = trim((string)($input->getOption('secret-ref') ?? ''));
-		if ($secretRef === '' && $existing !== null) {
-			$secretRef = $existing->getSecretRef();
-		}
-
-		$secretOrganisation = trim((string)($input->getOption('secret-organisation') ?? ''));
-		if ($secretOrganisation === '' && $existing !== null) {
-			$secretOrganisation = $existing->getSecretOrganisation();
-		}
-
-		if ($existing !== null && $existing->isLegacy() === true && $secretRef === '') {
+		$secretRef = $this->option(input: $input, name: 'secret-ref', fallback: $existing->getSecretRef());
+		if ($existing->isLegacy() === true && $secretRef === '') {
 			// The inline secret is not carried into the new form: it would
 			// put a plaintext secret back into app config under a new shape.
 			$output->writeln(
@@ -144,28 +125,76 @@ class IdpConsumerCommand extends Command {
 			return 1;
 		}
 
-		$enabled = ($input->getOption('disable') !== true);
 		$consumer = new IdpConsumer(
 			id: $id,
-			enabled: $enabled,
-			returnUrls: array_values(array_unique($returnUrls)),
+			enabled: ($input->getOption('disable') !== true),
+			returnUrls: $returnUrls,
 			secretRef: $secretRef,
-			secretOrganisation: $secretOrganisation
+			secretOrganisation: $this->option(
+				input: $input,
+				name: 'secret-organisation',
+				fallback: $existing->getSecretOrganisation()
+			)
 		);
 		$this->config->saveConsumer(consumer: $consumer);
 
 		$state = 'disabled';
-		if ($enabled === true) {
+		if ($consumer->isEnabled() === true) {
 			$state = 'enabled';
 		}
 
-		$output->writeln($id . ' is ' . $state . ' with ' . count($consumer->getReturnUrls()) . ' return address(es).');
-		if ($enabled === true && ($consumer->getReturnUrls() === [] || $secretRef === '')) {
-			$output->writeln('<comment>' . $id . ' cannot start a login until it has a return address and a secret reference.</comment>');
+		$output->writeln($id . ' is ' . $state . ' with ' . count($returnUrls) . ' return address(es).');
+		if ($consumer->isEnabled() === true && ($returnUrls === [] || $secretRef === '')) {
+			$output->writeln('<comment>' . $id . ' cannot sign anybody in until it has a return address and a secret reference.</comment>');
 		}
 
 		return 0;
 
 	}//end execute()
+
+	/**
+	 * The return addresses to store: the ones asked for, or the ones already there.
+	 *
+	 * @param InputInterface $input The input.
+	 * @param OutputInterface $output The output, for a refused address.
+	 * @param IdpConsumer $existing The consumer as it is now.
+	 *
+	 * @return array<int,string>|null The addresses, or null when one of them is refused.
+	 */
+	private function returnUrls(InputInterface $input, OutputInterface $output, IdpConsumer $existing): ?array {
+		$asked = array_map('strval', (array)$input->getOption('return-url'));
+		if ($asked === []) {
+			return $existing->getReturnUrls();
+		}
+
+		foreach ($asked as $url) {
+			if (IdpConsumer::isAcceptableReturnUrl(url: $url) === false) {
+				$output->writeln('<error>' . $url . ' is not an https address with a host, so it is not registered.</error>');
+				return null;
+			}
+		}
+
+		return array_values(array_unique($asked));
+
+	}//end returnUrls()
+
+	/**
+	 * One string option, or the fallback when it was not given.
+	 *
+	 * @param InputInterface $input The input.
+	 * @param string $name The option name.
+	 * @param string $fallback The value already stored.
+	 *
+	 * @return string The value.
+	 */
+	private function option(InputInterface $input, string $name, string $fallback): string {
+		$value = trim((string)($input->getOption($name) ?? ''));
+		if ($value === '') {
+			return $fallback;
+		}
+
+		return $value;
+
+	}//end option()
 
 }//end class

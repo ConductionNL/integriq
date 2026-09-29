@@ -200,6 +200,8 @@ final class SubjectEnvelope {
 	 * @param array<string,mixed> $claims The verified claims.
 	 *
 	 * @return self The envelope.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public static function fromClaims(array $claims): self {
 		return new self(

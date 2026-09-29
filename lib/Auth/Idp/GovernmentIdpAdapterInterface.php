@@ -58,6 +58,8 @@ interface GovernmentIdpAdapterInterface {
 	 * @return array{requestId: string, redirectUrl: string} Where to send the browser, and what to expect back.
 	 *
 	 * @throws \OCA\Integriq\Exception\IdpAssertionException When the broker is not configured.
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function beginAuthentication(array $context): array;
 
