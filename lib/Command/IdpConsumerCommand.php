@@ -65,6 +65,8 @@ class IdpConsumerCommand extends Command {
 	 * Declare the command.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'integriq:idp:consumer')
