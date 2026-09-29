@@ -25,7 +25,7 @@ use RuntimeException;
 /**
  * It fails naming the source id, and reads nothing.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-unknown-source-id-fails-loudly
+ * @spec openspec/specs/migration-sources/spec.md#scenario-an-unknown-source-id-fails-loudly
  */
 class UnknownMigrationSourceException extends RuntimeException {
 	/**

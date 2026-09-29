@@ -24,7 +24,7 @@ namespace OCA\Integriq\Migration;
  * A second incumbent is a registration here plus an adapter, and nothing else.
  * No engine change, no consuming app change.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-second-incumbent-needs-no-engine-change
+ * @spec openspec/specs/migration-sources/spec.md#scenario-a-second-incumbent-needs-no-engine-change
  */
 class MigrationSourceRegistry {
 	/**

@@ -31,7 +31,7 @@ use Throwable;
  * Integriq draws no conclusion from these numbers. OpenRegister's import
  * engine does.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
  */
 class MigrationPreviewReader {
 	/**

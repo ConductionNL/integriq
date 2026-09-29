@@ -40,7 +40,7 @@ use OCP\IUserSession;
  * Reads only. Nothing here writes to an incumbent system, and nothing here
  * writes to a target: that is the import engine's half.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
  */
 class MigrationSourcesController extends Controller {
 	/**
@@ -89,7 +89,7 @@ class MigrationSourcesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-describe-says-what-an-adapter-can-yield
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-describe-says-what-an-adapter-can-yield
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -132,7 +132,7 @@ class MigrationSourcesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
 	 *
 	 * @no-admin-idor-exempt The authorization decision is made IN the method:
 	 *     `requireAction(ACTION_PREVIEW)` runs before any read, and an unset action
@@ -191,7 +191,7 @@ class MigrationSourcesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
 	 *
 	 * @no-admin-idor-exempt Pure computation over the caller's own arguments. It reads no
 	 *   storage and names no object: the mapping, the schema fields and the required fields

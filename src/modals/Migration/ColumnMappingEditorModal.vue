@@ -12,7 +12,7 @@
   schema does not have or a required field is left unmapped. Only a mapping
   the check accepts reaches the slot's `confirm`, one version up.
 
-  @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+  @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
 -->
 <template>
 	<NcDialog
@@ -207,12 +207,12 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
 		isCreate() {
 			return !this.item
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
 		dialogTitle() {
 			return this.isCreate
 				? t('integriq', 'New column mapping')
@@ -228,7 +228,7 @@ export default {
 			}))
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save */
+		/** @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save */
 		schemaOptions() {
 			return this.schemas.map((schema) => ({
 				id: String(schema.slug || schema.id),
@@ -237,7 +237,7 @@ export default {
 			}))
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
 		canSave() {
 			return (
 				this.draft.name.trim() !== ''
@@ -253,11 +253,11 @@ export default {
 		 *
 		 * @param {boolean} open Whether the dialog is open.
 		 *
-		 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice
+		 * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice
 		 */
 		show: {
 			immediate: true,
-			/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice */
+			/** @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice */
 			handler(open) {
 				if (open) {
 					this.seed()
@@ -270,7 +270,7 @@ export default {
 		 *
 		 * @param {object|null} option The picked schema option.
 		 *
-		 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+		 * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
 		 */
 		selectedSchema(option) {
 			if (option) {
@@ -287,7 +287,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the pickers are loaded.
 		 *
-		 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice
+		 * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice
 		 */
 		async seed() {
 			this.draft = this.item ? draftFromStored(this.item) : emptyDraft()
@@ -312,7 +312,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save */
+		/** @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save */
 		async fetchSchemas() {
 			this.loadingSchemas = true
 			try {
@@ -346,7 +346,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
 		addRow() {
 			this.draft.rows.push({ column: '', target: '' })
 		},
@@ -354,7 +354,7 @@ export default {
 		/**
 		 * @param {number} index The row to remove.
 		 *
-		 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+		 * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
 		 */
 		removeRow(index) {
 			this.draft.rows.splice(index, 1)
@@ -363,7 +363,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
 		onCancel() {
 			if (!this.saving) {
 				this.close?.()
@@ -377,7 +377,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the save has settled.
 		 *
-		 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+		 * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
 		 */
 		async onSave() {
 			if (!this.canSave) {

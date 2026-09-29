@@ -15,7 +15,7 @@
  * which ColumnMappingStoredPayloadTest validates against the register's
  * column_mapping schema, so what the page writes is what the register takes.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'

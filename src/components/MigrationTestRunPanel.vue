@@ -11,7 +11,7 @@
   Each count is shown beside whether the read that produced it was complete,
   so a read that stopped early never passes for a small source.
 
-  @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
+  @spec openspec/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
 -->
 <template>
 	<section class="migration-test-run" data-testid="migration-test-run">
@@ -153,7 +153,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001 */
 		sourceOptions() {
 			return this.sources.map((source) => ({
 				id: source.id,
@@ -161,18 +161,18 @@ export default {
 			}))
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001 */
 		selectedSourceDescription() {
 			const id = this.selectedSource?.id
 			return this.sources.find((source) => source.id === id) || null
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002 */
 		isFileSource() {
 			return this.selectedSource?.id === 'file'
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice */
+		/** @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice */
 		storedOptions() {
 			return this.stored.map((row) => ({
 				id: String(row.id ?? row.uuid),
@@ -181,7 +181,7 @@ export default {
 			}))
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004 */
 		canRun() {
 			if (this.previewing || !this.selectedSource) {
 				return false
@@ -193,7 +193,7 @@ export default {
 		},
 	},
 
-	/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001 */
+	/** @spec openspec/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001 */
 	mounted() {
 		this.fetchSources()
 		this.fetchStored()
@@ -202,7 +202,7 @@ export default {
 	methods: {
 		t,
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001 */
+		/** @spec openspec/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001 */
 		async fetchSources() {
 			this.loadingSources = true
 			try {
@@ -215,7 +215,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice */
+		/** @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice */
 		async fetchStored() {
 			try {
 				const response = await axios.get(generateUrl(STORE), {
@@ -233,7 +233,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the result is shown.
 		 *
-		 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
+		 * @spec openspec/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
 		 */
 		async runPreview() {
 			this.previewing = true

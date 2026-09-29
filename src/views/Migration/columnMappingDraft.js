@@ -12,7 +12,7 @@
  * that stores them (tests/Unit/Migration/ColumnMappingStoredPayloadTest.php
  * validates the fixture this module's output is compared with).
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 
 /**
@@ -22,7 +22,7 @@
  *
  * @return {Array} The rows.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 export function listOf(data) {
 	if (Array.isArray(data?.results)) {
@@ -36,7 +36,7 @@ export function listOf(data) {
  *
  * @return {{id: string|null, name: string, kind: string, targetSchema: string, identifierColumn: string, version: number, rows: Array<{column: string, target: string}>}} The draft.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 export function emptyDraft() {
 	return {
@@ -57,7 +57,7 @@ export function emptyDraft() {
  *
  * @return {Array<{column: string, target: string}>} The rows.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 function rowsFrom(columns) {
 	const rows = Object.entries(columns || {}).map(([column, target]) => ({
@@ -75,7 +75,7 @@ function rowsFrom(columns) {
  *
  * @return {object} The draft, carrying the object's id and version.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice
+ * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-maps-a-delivered-file-once-and-runs-it-twice
  */
 export function draftFromStored(stored) {
 	return {
@@ -114,7 +114,7 @@ export function draftFromPreset(preset) {
  *
  * @return {object} Column name to target field.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 export function columnsFrom(rows) {
 	const columns = {}
@@ -136,7 +136,7 @@ export function columnsFrom(rows) {
  *
  * @return {{fields: Array<string>, required: Array<string>}} Its field names.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+ * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
  */
 export function schemaFieldsFrom(schema) {
 	const properties =
@@ -157,7 +157,7 @@ export function schemaFieldsFrom(schema) {
  *
  * @return {object} The mapping.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 function mappingOf(draft, version) {
 	const mapping = {
@@ -178,7 +178,7 @@ function mappingOf(draft, version) {
  *
  * @return {{mapping: object, schemaFields: Array<string>, requiredFields: Array<string>}} The request body.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+ * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
  */
 export function validateRequest(draft, schema) {
 	const { fields, required } = schemaFieldsFrom(schema)
@@ -197,7 +197,7 @@ export function validateRequest(draft, schema) {
  *
  * @return {number} The version.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 export function nextVersion(draft) {
 	if (!draft?.id) {
@@ -214,7 +214,7 @@ export function nextVersion(draft) {
  *
  * @return {object} The object.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 export function storedPayload(draft) {
 	const mapping = mappingOf(draft, nextVersion(draft))
@@ -244,7 +244,7 @@ export function storedPayload(draft) {
  *
  * @return {{source: string, config: object}} The request body.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
  */
 export function previewRequest(sourceId, draft, options = {}) {
 	if (sourceId !== 'file') {

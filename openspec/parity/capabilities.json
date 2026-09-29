@@ -3325,15 +3325,15 @@
 			"area": "synchronisation",
 			"name": "Move data out of a legacy system with a migration source.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "building",
-				"change": "migration-source-adapters",
+				"state": "built",
+				"change": "2026-09-29-migration-source-adapters",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:536-538 migrationSources#index/preview/validateMapping; lib/Controller/MigrationSourcesController.php and adapters lib/Migration/Source/FileMigrationSource.php (real CSV parsing) and RedmineMigrationSource.php implement real logic. But grep -rn 'migration-sources|migrationSource' across src/ (case-insensitive) returns zero hits, and the synchronization editor's sourceType picker (src/views/Synchronization/syncDraft.js:48-52, TYPE_OPTIONS = api/register-schema/file, plus conditional nextcloud-table/nextcloud-form) offers no 'migration' option at all."
+				"evidence": "Connections > Migrations (src/manifest.json page Migrations, an index over integriq/column_mapping): ColumnMappingEditorModal writes a column mapping, runs POST /api/migration-sources/column-mapping/validate before every save and raises version by one; MigrationTestRunPanel picks a migration source from GET /api/migration-sources (file, redmine) and runs POST /api/migration-sources/preview, which reads and writes nothing. Adapters: lib/Migration/Source/FileMigrationSource.php, RedmineMigrationSource.php. Tests: tests/vitest/migrationColumnMapping.spec.js (9), tests/Unit/Migration/ColumnMappingStoredPayloadTest.php (3), the existing migration source tests. The write half (import engine, preview, conflict policy) is openregister's, openregister#4167. Built by change migration-source-adapters (archived 2026-09-29)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "A fully implemented backend (including CSV column-mapping validation) with no frontend path to configure or trigger it.",
+			"reachedOn": "Connections > Migrations: New column mapping, and Test a migration above the list",
+			"note": "Built 2026-09-29: the screen that reaches the migration sources. Integriq reads and reports; OpenRegister's import engine writes.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "synchronization-engine",

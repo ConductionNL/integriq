@@ -38,7 +38,7 @@ use PHPUnit\Framework\TestCase;
  * The read-only surface, and the mapping refusal a screen calls before it
  * saves.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+ * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
  */
 class MigrationSourcesControllerTest extends TestCase {
 	/**
@@ -102,7 +102,7 @@ class MigrationSourcesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
 	 */
 	public function testACallerWithoutTheActionCannotPreviewASource(): void {
 		$this->expectException(OCSForbiddenException::class);
@@ -114,7 +114,7 @@ class MigrationSourcesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
 	 */
 	public function testAnAnonymousCallerCannotPreviewASource(): void {
 		$response = $this->controller(signedIn: false)->preview('redmine');
