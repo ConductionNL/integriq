@@ -384,6 +384,13 @@ return [
 		// Every refusal is one undifferentiated 401
 		// (openspec/specs/digid-eherkenning-auth-adapter/spec.md).
 		['name' => 'idpBroker#exchange', 'url' => '/api/idp/envelope/exchange', 'verb' => 'POST'],
+		// The browser half of the same login. The start checks the consumer and
+		// its registered return address before anything leaves integriq; the
+		// callback sends the browser back only to the address kept in the
+		// signed state (openspec/changes/identity-broker-browser-login).
+		['name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
+		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
+		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST', 'requirements' => ['provider' => 'digid|eherkenning|eidas'], 'postfix' => 'post'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],

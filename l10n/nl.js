@@ -1461,7 +1461,10 @@ OC.L10N.register(
         "Apps that may run this mapping": "Apps die deze mapping mogen uitvoeren",
         "No other app can run this mapping.": "Geen andere app kan deze mapping uitvoeren.",
         "These apps can run this mapping by its slug.": "Deze apps kunnen deze mapping via de slug uitvoeren.",
-        "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.": "App-id’s die deze mapping via een event mogen uitvoeren, zoals opencatalogi. Laat je het leeg, dan kan geen andere app hem uitvoeren."
+        "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.": "App-id’s die deze mapping via een event mogen uitvoeren, zoals opencatalogi. Laat je het leeg, dan kan geen andere app hem uitvoeren.",
+        "You cannot sign in right now": "Je kunt nu niet inloggen",
+        "Go back to the page you came from and try again.": "Ga terug naar de pagina waar je vandaan kwam en probeer het opnieuw.",
+        "Still stuck? Contact the organisation whose page sent you here.": "Lukt het nog steeds niet? Neem contact op met de organisatie van de pagina die je hierheen stuurde."
     },
     "nplurals=2; plural=(n != 1);"
 )

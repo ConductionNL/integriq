@@ -2803,7 +2803,10 @@ OC.L10N.register(
         "Apps that may run this mapping": "Apps that may run this mapping",
         "No other app can run this mapping.": "No other app can run this mapping.",
         "These apps can run this mapping by its slug.": "These apps can run this mapping by its slug.",
-        "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.": "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it."
+        "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.": "App ids allowed to run this mapping through an event, such as opencatalogi. Leave it empty and no other app can run it.",
+        "You cannot sign in right now": "You cannot sign in right now",
+        "Go back to the page you came from and try again.": "Go back to the page you came from and try again.",
+        "Still stuck? Contact the organisation whose page sent you here.": "Still stuck? Contact the organisation whose page sent you here."
     },
     "nplurals=2; plural=(n != 1);"
 )
