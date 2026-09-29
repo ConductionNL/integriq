@@ -2068,7 +2068,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testCallRejectsTheAsynchronousFlagAndNamesTheSibling(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -2110,7 +2110,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testCallAsyncResolvesToACallLogEntity(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -2164,7 +2164,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testCallAsyncRefusesAResourceSink(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -2212,7 +2212,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testCallAsyncPassesOnHeadersToGuzzleAndKeepsItOutOfTheCallLog(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);
@@ -2274,7 +2274,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function testCallAsyncFulfilsWithTheShortCircuitCallLog(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);

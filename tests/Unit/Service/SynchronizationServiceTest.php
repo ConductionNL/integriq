@@ -1987,7 +1987,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testMultipleFilesForOneObjectAreFetchedConcurrently(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2013,7 +2013,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testEveryConcurrentSinkIsAPathAndEveryTempFileIsRemoved(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2042,7 +2042,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testInFlightFetchesNeverExceedTheConfiguredCap(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2064,7 +2064,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testConcurrencyIsClampedToTheHardMaximum(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2089,7 +2089,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testAFileLargerThanTheCeilingIsRefusedBeforeDownload(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2110,7 +2110,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testAFileWithinTheCeilingIsUnaffected(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2130,7 +2130,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testThePerFileCeilingIsDisabledByDefault(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2155,7 +2155,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 */
 	public function testResolvedFetchIsSavedBeforeTheLastSiblingIsDispatched(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2194,7 +2194,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 */
 	public function testSavesAreNeverRunConcurrently(): void {
 		$saveDepth = 0;
@@ -2224,7 +2224,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function testOneFailedFetchDoesNotStopTheOthers(): void {
 		$this->arrangeAsyncFetchTransport(rejectIndexes: [1]);
@@ -2251,7 +2251,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function testOneFailedSaveDoesNotStopTheOthers(): void {
 		$attempts = 0;
@@ -2283,7 +2283,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testCallSourceObjectStillReturnsAnObjectEntitySynchronously(): void {
 		$callLog = new \OCA\OpenRegister\Db\ObjectEntity();

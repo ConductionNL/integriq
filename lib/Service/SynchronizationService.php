@@ -421,7 +421,7 @@ class SynchronizationService {
 	 *
 	 * Overridable per source via `configuration.maxConcurrentFetches`.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private const FETCH_CONCURRENCY_DEFAULT = 5;
 
@@ -432,7 +432,7 @@ class SynchronizationService {
 	 * misconfiguration cannot turn one object's attachments into an unbounded
 	 * burst against an upstream.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private const FETCH_CONCURRENCY_MAX = 20;
 
@@ -447,7 +447,7 @@ class SynchronizationService {
 	 * Overridable per source via `configuration.maxInFlightFetchBytes`; 0
 	 * disables the budget and leaves count-only gating.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private const FETCH_BYTE_BUDGET_DEFAULT = 268435456;
 
@@ -7918,7 +7918,7 @@ class SynchronizationService {
 	 *
 	 * @return PromiseInterface A promise resolving to the call-log ObjectEntity.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
 	 */
 	private function callSourceObjectAsync(
@@ -8934,7 +8934,7 @@ class SynchronizationService {
 	 *
 	 * @return array{originalEndpoint: string, endpoint: string, config: array, useSink: boolean, sinkPath: string|null}
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 */
 	private function prepareFileFetch(array $source, string $endpoint, array $config): array {
 		$originalEndpoint = $endpoint;
@@ -9014,7 +9014,7 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function releaseFileFetch(array $prepared): void {
 		$sinkPath = ($prepared['sinkPath'] ?? null);
@@ -9054,7 +9054,7 @@ class SynchronizationService {
 	 * @throws NotFoundExceptionInterface
 	 * @throws \OCP\DB\Exception
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 */
 	private function saveFetchedFile(
 		array $prepared,
@@ -9970,7 +9970,7 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-objects-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-objects-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function fetchFilesForObject(array $config, mixed $endpoint, string $objectId, int $ruleId = 0): void {
 		$source = $this->findSource(id: $config['source']);
@@ -10001,7 +10001,7 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function startAsyncFileFetching(array $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void {
 		// Execute file fetching immediately but with error isolation.
@@ -11107,7 +11107,7 @@ class SynchronizationService {
 	 * @return array{items: array<int, array{endpoint: string, objectId: string|null, filename: string|null,
 	 *               tags: array, published: mixed, registerId: mixed}>, lastObjectId: string|null}
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-not-depend-on-source-ordering-or-split-source-load
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-not-depend-on-source-ordering-or-split-source-load
 	 */
 	private function resolveMultiFileWorkItems(array $config, array $endpoints, ?string $objectId = null): array {
 		$items = [];
@@ -11185,7 +11185,7 @@ class SynchronizationService {
 	 * @return array{concurrency: int, byteBudget: int, maxFileSize: int} The clamped cap, the in-flight
 	 *                                                                    byte budget (0 = count-only) and the per-file ceiling (0 = no ceiling).
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private function resolveFetchConcurrency(array $source): array {
 		$sourceConfiguration = ($source['configuration'] ?? []);
@@ -11262,9 +11262,9 @@ class SynchronizationService {
 	 * @return array The tracking filenames for cleanup. Order follows settle order rather
 	 *               than endpoint order; cleanup only membership-tests it.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function fetchFilesConcurrently(array $source, array $config, array $items): array {
 		if ($items === []) {
@@ -11334,7 +11334,7 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private function settleFileFetches(array $source, array $config, array $items, array $limits, array &$state): void {
 		$promises = (function () use ($source, $config, $items, &$state) {
@@ -11379,7 +11379,7 @@ class SynchronizationService {
 	 *
 	 * @return callable The concurrency callable.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private function buildFetchAdmissionGate(array $limits, array &$state): callable {
 		return function (int $pending) use ($limits, &$state): int {
@@ -11432,8 +11432,8 @@ class SynchronizationService {
 	 *
 	 * @return PromiseInterface A promise that settles once this file has been saved or isolated.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 118 lines. A promise chain, and
 	 *   the length is the chain's `then`/`otherwise` handlers written inline where the
@@ -11583,7 +11583,7 @@ class SynchronizationService {
 	 *
 	 * @return callable The on_headers callback.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private function buildInFlightSizeRecorder(int $slot, array &$state, int $maxFileSize = 0): callable {
 		return function ($response) use ($slot, &$state, $maxFileSize): void {
@@ -11634,7 +11634,7 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function releaseFetchSlot(int $slot, array &$state): void {
 		if (isset($state['inFlightSize'][$slot]) === true) {
@@ -11667,7 +11667,7 @@ class SynchronizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function releaseUnsettledFileFetches(array &$state): void {
 		foreach (array_keys($state['released']) as $slot) {

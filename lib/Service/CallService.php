@@ -1296,7 +1296,7 @@ class CallService {
 	 * @return array The request options to hand to the Guzzle client.
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private function buildRequestOptions(array $config, mixed $sink, ?callable $onHeaders): array {
 		if ($sink !== null) {
@@ -2729,7 +2729,7 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error.
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	private function prepareCall(
@@ -2912,7 +2912,7 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error.
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
 	 */
 	private function finalizeCall(
@@ -3055,7 +3055,7 @@ class CallService {
 			throw new InvalidArgumentException(
 				'CallService::call() is synchronous and returns an ObjectEntity call log. '
 				. 'For concurrent dispatch use CallService::callAsync(), which returns a '
-				. 'GuzzleHttp promise; see openspec/changes/parallel-file-fetch/design.md '
+				. 'GuzzleHttp promise; see openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md '
 				. '("Sibling async methods, not union returns").'
 			);
 		}
@@ -3117,7 +3117,7 @@ class CallService {
 	 * `PromotionService`, `SynchronizationService`, …) that all rely on the
 	 * `ObjectEntity` return. An `ObjectEntity|PromiseInterface` union would ripple
 	 * through static analysis at every one of them for no behavioural gain. See
-	 * `openspec/changes/parallel-file-fetch/design.md` → "Sibling async methods,
+	 * `openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md` → "Sibling async methods,
 	 * not union returns".
 	 *
 	 * ONE consumed shape. The promise always resolves to a persisted `CallLog`
@@ -3165,8 +3165,8 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error during preparation.
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog during preparation.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function callAsync(
 		ObjectEntity $source,
@@ -3191,7 +3191,7 @@ class CallService {
 				'CallService::callAsync() requires a temp-file PATH as its sink, not a stream resource. '
 				. 'Guzzle closes a resource-typed sink when its PSR-7 wrapper is destructed, which under '
 				. 'asynchronous dispatch happens outside the caller\'s control; see '
-				. 'openspec/changes/parallel-file-fetch/design.md ("The sink is a PATH, never a handle").'
+				. 'openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md ("The sink is a PATH, never a handle").'
 			);
 		}
 
