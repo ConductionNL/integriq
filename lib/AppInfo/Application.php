@@ -146,6 +146,8 @@ use OCA\Integriq\Migration\MigrationSourceRegistry;
 use OCA\Integriq\Migration\Source\FileMigrationSource;
 use OCA\Integriq\Migration\Source\RedmineMigrationSource;
 use OCA\Integriq\PropertySource\PropertySourceRegistry;
+use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
+use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
 use OCA\Integriq\PropertySource\Provider\BagPropertySource;
 use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
 use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
@@ -478,6 +480,20 @@ class Application extends App implements IBootstrap {
 		// `x-openregister-property-source`. Registered explicitly rather than
 		// autowired so the order, and therefore the first-wins collision
 		// policy, is readable in one place.
+		// Endpoint rule plug-ins (gateway-endpoint-transform-and-plugins D2):
+		// integriq's own connectRelations, plus whatever sibling apps register
+		// on RegisterEndpointRulePluginsEvent, dispatched on first lookup.
+		$context->registerService(
+			EndpointRulePluginRegistry::class,
+			static function ($c): EndpointRulePluginRegistry {
+				return new EndpointRulePluginRegistry(
+					plugins: [$c->get(ConnectRelationsPlugin::class)],
+					dispatcher: $c->get(IEventDispatcher::class),
+					logger: $c->get('Psr\Log\LoggerInterface')
+				);
+			}
+		);
+
 		$context->registerService(
 			PropertySourceRegistry::class,
 			static function ($c): PropertySourceRegistry {

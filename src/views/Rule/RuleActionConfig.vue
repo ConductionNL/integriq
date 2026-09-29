@@ -65,13 +65,16 @@
 		<div
 			v-else-if="actionType === 'javascript'"
 			class="rule-action-config__params">
-			<JavascriptForm
-				:code="
-					typeof configuration.javascript === 'string'
-						? configuration.javascript
-						: ''
-				"
-				@update:code="onJavascriptCodeUpdate" />
+			<NcNoteCard type="error" data-testid="rule-action-javascript-refused">
+				<p>
+					{{
+						t(
+							'integriq',
+							'Integriq runs no scripts, so this JavaScript rule fails when it runs. Pick another type, such as Flow.',
+						)
+					}}
+				</p>
+			</NcNoteCard>
 		</div>
 		<div v-else-if="formComponent" class="rule-action-config__params">
 			<component
@@ -111,7 +114,7 @@
 </template>
 
 <script>
-import { NcSelect } from '@nextcloud/vue'
+import { NcNoteCard, NcSelect } from '@nextcloud/vue'
 import ApprovalForm from './actionForms/ApprovalForm.vue'
 import AuthenticationForm from './actionForms/AuthenticationForm.vue'
 import DownloadForm from './actionForms/DownloadForm.vue'
@@ -122,7 +125,6 @@ import FetchFileForm from './actionForms/FetchFileForm.vue'
 import FilepartsCreateForm from './actionForms/FilepartsCreateForm.vue'
 import FilepartUploadForm from './actionForms/FilepartUploadForm.vue'
 import FlowForm from './actionForms/FlowForm.vue'
-import JavascriptForm from './actionForms/JavascriptForm.vue'
 import LockingForm from './actionForms/LockingForm.vue'
 import MappingForm from './actionForms/MappingForm.vue'
 import SaveObjectForm from './actionForms/SaveObjectForm.vue'
@@ -135,13 +137,12 @@ import { ACTION_TYPES } from './ruleDraft.js'
 /**
  * Map from action-type id to the component name to render. Forms that need to
  * read/write a different slot than `configuration[type]` (currently
- * `mapping`, `flow` and `javascript`) are special-cased in the template above.
+ * `mapping` and `flow`) are special-cased in the template above.
  */
 const ACTION_FORM_MAP = {
 	synchronization: 'SynchronizationForm',
 	error: 'ErrorForm',
 	mapping: 'MappingForm',
-	javascript: 'JavascriptForm',
 	authentication: 'AuthenticationForm',
 	download: 'DownloadForm',
 	upload: 'UploadForm',
@@ -164,11 +165,11 @@ export default {
 	name: 'RuleActionConfig',
 
 	components: {
+		NcNoteCard,
 		NcSelect,
 		SynchronizationForm,
 		ErrorForm,
 		MappingForm,
-		JavascriptForm,
 		AuthenticationForm,
 		DownloadForm,
 		UploadForm,
@@ -369,18 +370,6 @@ export default {
 			this.$emit('update', next)
 		},
 
-		/**
-		 * Store the `javascript` action's source. Like `mapping`, it is a bare
-		 * scalar at `configuration.javascript` rather than a nested slot.
-		 *
-		 * @param {string} code The script body emitted by JavascriptForm.
-		 *
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
-		onJavascriptCodeUpdate(code) {
-			const next = { ...(this.configuration || {}), javascript: code }
-			this.$emit('update', next)
-		},
 
 		/**
 		 * Fallback JSON-textarea path for action types with no bespoke form.

@@ -61,13 +61,17 @@ export function emptyRootGroup() {
  * landed with automation-endpoint-flow-trigger.) Rules of those types are seeded from configurations, and a rule
  * carrying one keeps it — nothing here rewrites a type that was not picked.
  *
+ * `javascript` is not offered either, on purpose: integriq runs no scripts,
+ * the register refuses the type, and the runtime fails a rule that still
+ * carries it (gateway-endpoint-transform-and-plugins REQ-GTP-003). A plug-in
+ * (a `custom` rule) or a flow is the route for your own logic.
+ *
  * The reverse gap also exists, in one place — see UNDISPATCHED_ACTION_TYPES.
  */
 export const ACTION_TYPES = [
 	{ id: 'error', label: 'Error' },
 	{ id: 'mapping', label: 'Mapping' },
 	{ id: 'synchronization', label: 'Synchronization' },
-	{ id: 'javascript', label: 'JavaScript' },
 	{ id: 'authentication', label: 'Authentication' },
 	{ id: 'download', label: 'Download' },
 	{ id: 'upload', label: 'Upload' },

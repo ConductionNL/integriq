@@ -10544,7 +10544,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 1",
         "conditions": {},
-        "type": "Voorbeeld Type 1",
+        "type": "error",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -10568,7 +10568,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 2",
         "conditions": {},
-        "type": "Voorbeeld Type 2",
+        "type": "mapping",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -10592,7 +10592,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 3",
         "conditions": {},
-        "type": "Voorbeeld Type 3",
+        "type": "custom",
         "configuration": {},
         "order": 100,
         "configurations": [

@@ -1524,7 +1524,7 @@
         "slug": "rule",
         "title": "Rule",
         "icon": "Filter",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
         "required": [
@@ -1577,7 +1577,8 @@
           },
           "type": {
             "type": "string",
-            "description": "Rule kind (authorization, transformation, validation, audit)",
+            "description": "The action the rule pipeline runs: one of the types EndpointService::handleRuleProcessing() or SynchronizationService::processRules() dispatches. javascript is refused: integriq runs no scripts; use a custom rule naming a plug-in, or a flow.",
+            "enum": ["error", "mapping", "synchronization", "authentication", "download", "upload", "locking", "fetch_file", "write_file", "fileparts_create", "filepart_upload", "save_object", "extend_input", "extend_external_input", "webhook_signature", "approval", "flow", "audit_trail", "override", "custom", "composite_fanout", "referentienummer", "avg_bsn_policy", "selfurl_hal"],
             "title": "Type"
           },
           "configuration": {

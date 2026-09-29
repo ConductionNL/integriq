@@ -464,6 +464,30 @@ class EndpointServiceTest extends TestCase {
 	}//end testProcessFlowRuleThrowsWithoutConfiguredFlow()
 
 	/**
+	 * A `javascript` rule that still exists fails when it runs, saying integriq
+	 * runs no scripts. It used to return its input unchanged, a rule that
+	 * silently did nothing (gateway-endpoint-transform-and-plugins REQ-GTP-003).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-endpoint-transform-and-plugins/specs/rule-pipeline/spec.md#requirement-a-javascript-rule-is-refused-req-gtp-003
+	 */
+	public function testAJavaScriptRuleIsRefusedWhenItRuns(): void {
+		$rule = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['name' => 'Oud script', 'type' => 'javascript', 'configuration' => ['javascript' => 'return data;']],
+			'rule-js'
+		);
+
+		$method = new \ReflectionMethod(EndpointService::class, 'processJavaScriptRule');
+		$method->setAccessible(true);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Integriq runs no scripts');
+		$method->invoke($this->service, $rule, ['body' => ['a' => 1]]);
+	}//end testAJavaScriptRuleIsRefusedWhenItRuns()
+
+	/**
 	 * renderSelfUrlAndHal stamps an absolute `url` self-link built from the endpoint's own path.
 	 *
 	 * @return void
