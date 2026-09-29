@@ -1541,7 +1541,12 @@ OC.L10N.register(
         "Changed": "Gewijzigd",
         "(empty)": "(leeg)",
         "Open the request that replaced this one": "Open het verzoek dat dit verzoek verving",
-        "The source changed after this preview. Nothing was written. A new request shows the new changes.": "De bron is na deze voorvertoning gewijzigd. Er is niets geschreven. Een nieuw verzoek toont de nieuwe wijzigingen."
+        "The source changed after this preview. Nothing was written. A new request shows the new changes.": "De bron is na deze voorvertoning gewijzigd. Er is niets geschreven. Een nieuw verzoek toont de nieuwe wijzigingen.",
+        "The paused request with sensitive headers such as Authorization removed. For a paused synchronization it holds the change set: what the run would create, change and remove.": "Het gepauzeerde verzoek zonder gevoelige headers zoals Authorization. Voor een gepauzeerde synchronisatie bevat het de wijzigingenset: wat de run zou aanmaken, wijzigen en verwijderen.",
+        "A hash over the stored change set. An approve writes only when the run builds the same hash again.": "Een hash over de opgeslagen wijzigingenset. Goedkeuren schrijft alleen als de run dezelfde hash opnieuw bouwt.",
+        "How the resumed run ended. Superseded means the source changed after the preview, nothing was written, and a new request shows the new changes.": "Hoe de hervatte run eindigde. Vervangen betekent dat de bron na de voorvertoning is gewijzigd, er niets is geschreven en een nieuw verzoek de nieuwe wijzigingen toont.",
+        "The request that replaced this one because the source changed after its preview.": "Het verzoek dat dit verzoek verving omdat de bron na de voorvertoning is gewijzigd.",
+        "Superseded by": "Vervangen door"
     },
     "nplurals=2; plural=(n != 1);"
 )

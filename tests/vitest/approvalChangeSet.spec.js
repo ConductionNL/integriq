@@ -56,15 +56,26 @@ vi.mock('@nextcloud/vue', async () => {
 const CHANGE_SET = {
 	created: [
 		{ originId: 'zt-parkeren', fields: { omschrijving: 'Parkeervergunning' } },
-		{ originId: 'zt-standplaats', fields: { omschrijving: 'Standplaatsvergunning' } },
+		{
+			originId: 'zt-standplaats',
+			fields: { omschrijving: 'Standplaatsvergunning' },
+		},
 	],
 	changed: [
 		{
 			originId: 'zt-evenement',
 			targetId: 'target-2',
 			fields: [
-				{ field: 'omschrijving', before: 'Evenement', after: 'Evenementenvergunning' },
-				{ field: 'statustypen', before: ['Ontvangen'], after: ['Ontvangen', 'Besloten'] },
+				{
+					field: 'omschrijving',
+					before: 'Evenement',
+					after: 'Evenementenvergunning',
+				},
+				{
+					field: 'statustypen',
+					before: ['Ontvangen'],
+					after: ['Ontvangen', 'Besloten'],
+				},
 			],
 		},
 	],
@@ -84,7 +95,13 @@ const REQUEST = {
 	changeSet: CHANGE_SET,
 }
 
-const mountDetail = async (request = REQUEST) => {
+/**
+ * Mount the real detail page on a request.
+ *
+ * @param {object} request The approval request the API answers.
+ * @return {Promise<object>} The mounted wrapper.
+ */
+async function mountDetail(request = REQUEST) {
 	get.mockResolvedValue({ data: request })
 	const wrapper = mount(ApprovalDetail, {
 		global: {
@@ -139,7 +156,9 @@ describe('the change set on the approval screen', () => {
 		const wrapper = await mountDetail()
 		await wrapper.find('[data-testid="change-set-tab-removed"]').trigger('click')
 
-		expect(wrapper.find('[data-testid="change-set-panel"]').text()).toContain('zt-oud')
+		expect(wrapper.find('[data-testid="change-set-panel"]').text()).toContain(
+			'zt-oud',
+		)
 	})
 
 	it('marks the selected tab for assistive technology', async () => {
@@ -148,17 +167,29 @@ describe('the change set on the approval screen', () => {
 		await changed.trigger('click')
 
 		expect(changed.attributes('aria-selected')).toBe('true')
-		expect(wrapper.find('[data-testid="change-set-tab-created"]').attributes('aria-selected')).toBe('false')
+		expect(
+			wrapper
+				.find('[data-testid="change-set-tab-created"]')
+				.attributes('aria-selected'),
+		).toBe('false')
 	})
 
 	it('says when the list was cut, with the exact counts kept', async () => {
 		const wrapper = await mountDetail({
 			...REQUEST,
-			changeSet: { ...CHANGE_SET, truncated: true, counts: { ...CHANGE_SET.counts, created: 740 } },
+			changeSet: {
+				...CHANGE_SET,
+				truncated: true,
+				counts: { ...CHANGE_SET.counts, created: 740 },
+			},
 		})
 
-		expect(wrapper.find('[data-testid="change-set-truncated"]').text()).toContain('500')
-		expect(wrapper.find('[data-testid="change-set-counts"]').text()).toContain('740 to create')
+		expect(
+			wrapper.find('[data-testid="change-set-truncated"]').text(),
+		).toContain('500')
+		expect(wrapper.find('[data-testid="change-set-counts"]').text()).toContain(
+			'740 to create',
+		)
 	})
 
 	it('shows no change set on a request that has none', async () => {
@@ -172,11 +203,20 @@ describe('the change set on the approval screen', () => {
 		post.mockRejectedValue({
 			response: {
 				status: 409,
-				data: { message: 'approval_superseded', _approval: { resumeResult: 'superseded', supersededBy: 'approval-2' } },
+				data: {
+					message: 'approval_superseded',
+					_approval: {
+						resumeResult: 'superseded',
+						supersededBy: 'approval-2',
+					},
+				},
 			},
 		})
 
-		await wrapper.findAll('.NcButton').find((button) => button.text() === 'Approve').trigger('click')
+		await wrapper
+			.findAll('.NcButton')
+			.find((button) => button.text() === 'Approve')
+			.trigger('click')
 		await flushPromises()
 
 		expect(showWarning).toHaveBeenCalledWith(

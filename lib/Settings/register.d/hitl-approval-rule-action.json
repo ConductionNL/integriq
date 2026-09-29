@@ -59,7 +59,7 @@
           },
           "snapshot": {
             "type": "object",
-            "description": "FlowToken::__serialize() output (the 8-key request/response/syncInput/syncOutput array) with sensitive headers (at minimum Authorization) stripped. For the Synchronization batch-gate case it holds `changeSet`: what the run would create, change and remove (connectors-inavigator-case-types REQ-INAV-003).",
+            "description": "The paused request with sensitive headers such as Authorization removed. For a paused synchronization it holds the change set: what the run would create, change and remove.",
             "title": "Snapshot"
           },
           "synchronizationId": {
@@ -125,18 +125,18 @@
           "resumeResult": {
             "type": "string",
             "enum": ["success", "error", "superseded"],
-            "description": "Outcome of the resumed chain, for audit (approval-workflow REQ-003). `superseded`: the source changed after the preview, nothing was written and `supersededBy` names the new request (REQ-INAV-004).",
+            "description": "How the resumed run ended. Superseded means the source changed after the preview, nothing was written, and a new request shows the new changes.",
             "title": "Resume Result"
           },
           "fingerprint": {
             "type": "string",
-            "description": "Hash over the change set stored in `snapshot.changeSet`. An accept writes only when the rerun builds the same fingerprint (REQ-INAV-004).",
+            "description": "A hash over the stored change set. An approve writes only when the run builds the same hash again.",
             "title": "Fingerprint"
           },
           "supersededBy": {
             "type": "string",
-            "description": "The request that replaced this one because the source changed after its preview (REQ-INAV-004).",
-            "title": "Superseded By"
+            "description": "The request that replaced this one because the source changed after its preview.",
+            "title": "Superseded by"
           },
           "consumedAt": {
             "type": "string",

@@ -58,7 +58,7 @@
 
 			<ApprovalChangeSet
 				v-if="request.changeSet"
-				:change-set="request.changeSet" />
+				:changeSet="request.changeSet" />
 
 			<!-- Audit trail (visible for resolved requests) -->
 			<div
@@ -86,8 +86,12 @@
 					{{ request.resumeResult }}
 				</p>
 				<p v-if="request.supersededBy">
-					<NcButton variant="tertiary" @click="openRequest(request.supersededBy)">
-						{{ t('integriq', 'Open the request that replaced this one') }}
+					<NcButton
+						variant="tertiary"
+						@click="openRequest(request.supersededBy)">
+						{{
+							t('integriq', 'Open the request that replaced this one')
+						}}
 					</NcButton>
 				</p>
 			</div>

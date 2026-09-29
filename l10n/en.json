@@ -2885,7 +2885,12 @@
         "Changed": "Changed",
         "(empty)": "(empty)",
         "Open the request that replaced this one": "Open the request that replaced this one",
-        "The source changed after this preview. Nothing was written. A new request shows the new changes.": "The source changed after this preview. Nothing was written. A new request shows the new changes."
+        "The source changed after this preview. Nothing was written. A new request shows the new changes.": "The source changed after this preview. Nothing was written. A new request shows the new changes.",
+        "The paused request with sensitive headers such as Authorization removed. For a paused synchronization it holds the change set: what the run would create, change and remove.": "The paused request with sensitive headers such as Authorization removed. For a paused synchronization it holds the change set: what the run would create, change and remove.",
+        "A hash over the stored change set. An approve writes only when the run builds the same hash again.": "A hash over the stored change set. An approve writes only when the run builds the same hash again.",
+        "How the resumed run ended. Superseded means the source changed after the preview, nothing was written, and a new request shows the new changes.": "How the resumed run ended. Superseded means the source changed after the preview, nothing was written, and a new request shows the new changes.",
+        "The request that replaced this one because the source changed after its preview.": "The request that replaced this one because the source changed after its preview.",
+        "Superseded by": "Superseded by"
     },
     "plurals": {}
 }

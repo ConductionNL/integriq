@@ -23,13 +23,20 @@
 			class="changeSet__note"
 			data-testid="change-set-truncated">
 			{{
-				t('integriq', 'Each list shows the first {limit} objects. The counts are exact.', {
-					limit: changeSet.limit,
-				})
+				t(
+					'integriq',
+					'Each list shows the first {limit} objects. The counts are exact.',
+					{
+						limit: changeSet.limit,
+					},
+				)
 			}}
 		</p>
 
-		<div class="changeSet__tabs" role="tablist" :aria-label="t('integriq', 'Kind of change')">
+		<div
+			class="changeSet__tabs"
+			role="tablist"
+			:aria-label="t('integriq', 'Kind of change')">
 			<button
 				v-for="tab in tabs"
 				:id="`change-set-tab-${uid}-${tab.key}`"
@@ -56,7 +63,10 @@
 				{{ t('integriq', 'Nothing in this list.') }}
 			</p>
 			<ul v-else class="changeSet__list">
-				<li v-for="item in items" :key="item.originId" class="changeSet__item">
+				<li
+					v-for="item in items"
+					:key="item.originId"
+					class="changeSet__item">
 					<strong>{{ item.originId }}</strong>
 					<span v-if="item.targetId" class="changeSet__target">
 						{{ t('integriq', 'stored as {id}', { id: item.targetId }) }}
@@ -66,7 +76,9 @@
 							<tr>
 								<th scope="col">{{ t('integriq', 'Field') }}</th>
 								<th scope="col">{{ t('integriq', 'Now') }}</th>
-								<th scope="col">{{ t('integriq', 'After approve') }}</th>
+								<th scope="col">
+									{{ t('integriq', 'After approve') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -161,7 +173,7 @@ export default {
 		 * A field value as text: strings as they are, the rest as JSON.
 		 *
 		 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
-		 * @param {*} value Any JSON value.
+		 * @param {string|number|boolean|Array|object|null} value Any JSON value.
 		 * @return {string}
 		 */
 		show(value) {
