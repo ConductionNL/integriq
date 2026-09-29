@@ -21,7 +21,6 @@ namespace OCA\Integriq\Controller;
 
 use DateTime;
 use Exception;
-use OCA\Integriq\Broker\BrokerTransportRegistry;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\ActionAuthService;
@@ -92,7 +91,6 @@ class EventsController extends Controller {
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param WebhookSignatureService $signatureService Generates signing secrets.
 	 * @param EgressGuard|null $egressGuard Judges a subscription's sink; a guard without an allowlist when not injected.
-	 * @param BrokerTransportRegistry|null $brokerRegistry The broker transports this instance has (REQ-EBSC-001).
 	 */
 	public function __construct(
 		$appName,
@@ -104,7 +102,6 @@ class EventsController extends Controller {
 		private readonly ActionAuthService $actionAuth,
 		private readonly WebhookSignatureService $signatureService,
 		?EgressGuard $egressGuard = null,
-		private readonly ?BrokerTransportRegistry $brokerRegistry = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
@@ -372,32 +369,6 @@ class EventsController extends Controller {
 
 		return new JSONResponse(['results' => $redacted]);
 	}//end subscriptions()
-
-	/**
-	 * List the broker transports a subscription can publish through.
-	 *
-	 * The subscription form reads this instead of a fixed list, so a
-	 * transport a deployment registers shows up without a form change.
-	 *
-	 * @return JSONResponse `{results: [{id, label, needsTopic, contentModes}]}`.
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-the-app-lists-the-broker-transports-it-has-req-ebsc-001
-	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	public function brokers(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'event.subscriptions');
-
-		return new JSONResponse(['results' => ($this->brokerRegistry?->describeAll() ?? [])]);
-	}//end brokers()
 
 	/**
 	 * Get messages for a specific subscription.

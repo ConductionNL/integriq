@@ -23,10 +23,8 @@ use OCA\Integriq\Broker\Transport\CloudEventsHttpTransport;
 use OCA\Integriq\Broker\Transport\KafkaRestTransport;
 use OCA\Integriq\Broker\Transport\LogBrokerTransport;
 use OCA\Integriq\Broker\Transport\RabbitMqHttpTransport;
-use OCA\Integriq\Controller\EventsController;
+use OCA\Integriq\Controller\EventBrokersController;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\EventService;
-use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\Http\Client\IClientService;
@@ -34,14 +32,13 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
-use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
  * REQ-EBSC-001: GET /api/events/brokers.
  */
-class EventsControllerBrokersTest extends TestCase {
+class EventBrokersControllerTest extends TestCase {
 
 	/**
 	 * A controller over the four transports the app registers.
@@ -50,7 +47,7 @@ class EventsControllerBrokersTest extends TestCase {
 	 *
 	 * @return EventsController
 	 */
-	private function controller(ActionAuthService $actionAuth): EventsController {
+	private function controller(ActionAuthService $actionAuth): EventBrokersController {
 		$logger = $this->createMock(LoggerInterface::class);
 		$clients = $this->createMock(IClientService::class);
 		$binding = new CloudEventHttpBinding();
@@ -71,18 +68,7 @@ class EventsControllerBrokersTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		return new EventsController(
-			'integriq',
-			$this->createMock(IRequest::class),
-			$this->createMock(OrObjectService::class),
-			$this->createMock(EventService::class),
-			$l10n,
-			$session,
-			$actionAuth,
-			$this->createMock(WebhookSignatureService::class),
-			null,
-			$registry,
-		);
+		return new EventBrokersController('integriq', $this->createMock(IRequest::class), $registry, $session, $actionAuth, $l10n);
 
 	}//end controller()
 
@@ -96,7 +82,7 @@ class EventsControllerBrokersTest extends TestCase {
 		$actionAuth->expects($this->once())->method('requireAction')
 			->with($this->anything(), 'event.subscriptions');
 
-		$response = $this->controller($actionAuth)->brokers();
+		$response = $this->controller($actionAuth)->index();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$brokers = $response->getData()['results'];
@@ -118,7 +104,7 @@ class EventsControllerBrokersTest extends TestCase {
 		$actionAuth->method('requireAction')->willThrowException(new OCSForbiddenException('Not allowed'));
 
 		$this->expectException(OCSForbiddenException::class);
-		$this->controller($actionAuth)->brokers();
+		$this->controller($actionAuth)->index();
 
 	}//end testTheListNeedsTheAction()
 
