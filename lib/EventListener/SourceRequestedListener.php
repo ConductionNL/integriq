@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+ * @spec openspec/specs/source-requested-event/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
 /**
  * Finds or creates the Source a sibling app asks for.
  *
- * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+ * @spec openspec/specs/source-requested-event/spec.md
  */
 class SourceRequestedListener implements IEventListener {
 
@@ -98,7 +98,7 @@ class SourceRequestedListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof SourceRequestedEvent) === false) {
@@ -145,7 +145,7 @@ class SourceRequestedListener implements IEventListener {
 	 *
 	 * @return array{0: string, 1: string, 2: string}|null The location, slug and host.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function baseUrlParts(SourceRequestedEvent $event): ?array {
 		$parsed = parse_url(trim($event->getBaseUrl()));

@@ -34,7 +34,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+ * @spec openspec/specs/source-requested-event/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCP\EventDispatcher\Event;
  * `getSourceId()`, `getSourceSlug()`, `wasCreated()`, or `getRefusal()` when
  * the request was refused.
  *
- * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+ * @spec openspec/specs/source-requested-event/spec.md
  */
 class SourceRequestedEvent extends Event {
 	/**
@@ -115,7 +115,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return string The source app id.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function getSourceApp(): string {
 		return $this->sourceApp;
@@ -126,7 +126,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return string The base URL.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function getBaseUrl(): string {
 		return $this->baseUrl;
@@ -137,7 +137,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return string The purpose.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function getPurpose(): string {
 		return $this->purpose;
@@ -148,7 +148,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return int|null The timeout in seconds, or null for the default.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function getTimeoutSeconds(): ?int {
 		return $this->timeoutSeconds;
@@ -159,7 +159,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return string|null The user id, or null for a system request.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function getUserId(): ?string {
 		return $this->userId;
@@ -174,7 +174,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function setSource(string $sourceId, string $sourceSlug, bool $created): void {
 		$this->sourceId = $sourceId;
@@ -191,7 +191,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function refuse(string $refusal): void {
 		$this->refusal = $refusal;
@@ -203,7 +203,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return bool True when handled.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function isHandled(): bool {
 		return $this->handled;
@@ -214,7 +214,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return string|null The uuid.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function getSourceId(): ?string {
 		return $this->sourceId;
@@ -225,7 +225,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return string|null The slug.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function getSourceSlug(): ?string {
 		return $this->sourceSlug;
@@ -236,7 +236,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return bool True when created, false when an existing one was found.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function wasCreated(): bool {
 		return $this->created;
@@ -247,7 +247,7 @@ class SourceRequestedEvent extends Event {
 	 *
 	 * @return string|null The reason, or null when it was not refused.
 	 *
-	 * @spec openspec/changes/source-requested-event/specs/source-requested-event/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public function getRefusal(): ?string {
 		return $this->refusal;
