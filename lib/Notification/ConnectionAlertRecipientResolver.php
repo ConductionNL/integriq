@@ -16,7 +16,7 @@
  *
  * @link https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  * call. Until an administrator names one, an opened alert notifies nobody and
  * shows on the alerts page only.
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
  */
 class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 
@@ -78,7 +78,7 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 	 *   resolver the object and the context; who hears about an alert depends
 	 *   on the setting alone, not on the alert.
 	 *
-	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 	 */
 	public function resolve(ObjectEntity $object, array $context): array {
 		$groupId = trim($this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, ''));

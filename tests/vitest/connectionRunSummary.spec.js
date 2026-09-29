@@ -10,8 +10,8 @@
  * CnDetailPage provides, call the real row-action handler, and read the real
  * manifest, and assert the requests sent and what is shown.
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
  */
 import { evaluateVisibleWhenLocal } from '@conduction/nextcloud-vue/src/utils/visibleWhen.js'
 import { flushPromises, mount } from '@vue/test-utils'

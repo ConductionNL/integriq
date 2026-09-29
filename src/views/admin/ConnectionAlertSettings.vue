@@ -9,7 +9,7 @@
   a fresh install, so an alert shows on the Connection alerts page only until
   an administrator names one.
 
-  @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+  @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 -->
 <template>
 	<section
@@ -83,7 +83,7 @@ export default {
 	 * Read the named group.
 	 *
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 	 */
 	async mounted() {
 		try {
@@ -104,7 +104,7 @@ export default {
 		 * Store the group, or clear it; the server refuses a group that does not exist.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 		 */
 		async save() {
 			this.busy = true

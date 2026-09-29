@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Run again starts the same synchronization, records `rerun`, and answers with the new run's id.
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
  */
 final class SynchronizationsControllerRerunTest extends TestCase {
 

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-thresholds-per-source-and-synchronization-open-an-alert-req-crun-004
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-thresholds-per-source-and-synchronization-open-an-alert-req-crun-004
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ use RuntimeException;
 /**
  * The job runs the count every five minutes and survives a failing count.
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-thresholds-per-source-and-synchronization-open-an-alert-req-crun-004
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-thresholds-per-source-and-synchronization-open-an-alert-req-crun-004
  */
 final class ConnectionThresholdJobTest extends TestCase {
 

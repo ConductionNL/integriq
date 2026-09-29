@@ -211,7 +211,7 @@ class SynchronizationRunProgressService {
 	 *   and hand callers a way to start a run they then never tick.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
-	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
 	 */
 	public function start(
 		string $synchronizationId,
@@ -327,7 +327,7 @@ class SynchronizationRunProgressService {
 	 *
 	 * @return string|null The run record's uuid, or null when none was written.
 	 *
-	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
 	 */
 	public function lastRunId(): ?string {
 		return $this->lastRunUuid;
@@ -345,7 +345,7 @@ class SynchronizationRunProgressService {
 	 *
 	 * @return string One of cron, manual or rerun.
 	 *
-	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
 	 */
 	public static function resolveTrigger(?string $requested, ?string $traceTrigger): string {
 		if ($requested !== null && in_array($requested, self::TRIGGERS, true) === true) {

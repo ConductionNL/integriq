@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md
+ * Spec coverage: openspec/specs/connection-run-monitoring/spec.md
  * (REQ-CRUN-002, REQ-CRUN-003, REQ-CRUN-005)
  *
  * A source shows its pulls per day, a failed pull runs again with one click,

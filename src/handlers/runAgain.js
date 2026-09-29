@@ -17,7 +17,7 @@ import { getRouter } from './routerRef.js'
  *
  * @param {{ synchronizationId?: string }} run The failed run record.
  * @return {Promise<string|null>} The new run's id, or null when nothing started.
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
  */
 export async function runAgain(run) {
 	const synchronizationId = run && run.synchronizationId
@@ -48,7 +48,7 @@ export async function runAgain(run) {
  *
  * @param {string|null} runId The run to open.
  * @return {void}
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
  */
 export function openRun(runId) {
 	const router = getRouter()

@@ -11,7 +11,7 @@
   per day in one table (design D2). Run again posts straight away, with no
   dialog (design D3), and reads the summary again afterwards.
 
-  @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+  @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
 -->
 <template>
 	<section class="runSummary" data-testid="source-run-summary">
@@ -136,7 +136,7 @@ export default {
 		 * The source's id, from the detail page's section context.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
 		 */
 		objectId() {
 			const ctx = this.cnSectionContext
@@ -155,7 +155,7 @@ export default {
 		 * The per-day counters, in the order the table shows them.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
 		 */
 		dayColumns() {
 			return [
@@ -177,7 +177,7 @@ export default {
 			 * Read the summary once the source is known.
 			 *
 			 * @return {void}
-			 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+			 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
 			 */
 			handler() {
 				if (this.objectId) {
@@ -194,7 +194,7 @@ export default {
 		 * Read the last seven days of pulls and the latest runs.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
 		 */
 		async load() {
 			this.loading = true
@@ -220,7 +220,7 @@ export default {
 		 *
 		 * @param {object} run The failed run.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
 		 */
 		async rerun(run) {
 			this.rerunning = run.id
@@ -237,7 +237,7 @@ export default {
 		 *
 		 * @param {string} status The run status.
 		 * @return {string}
-		 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
 		 */
 		statusLabel(status) {
 			const labels = {
@@ -253,7 +253,7 @@ export default {
 		 *
 		 * @param {string} trigger The run's triggeredBy.
 		 * @return {string}
-		 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
 		 */
 		triggerLabel(trigger) {
 			const labels = {
@@ -269,7 +269,7 @@ export default {
 		 *
 		 * @param {string} value An ISO date-time.
 		 * @return {string}
-		 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
 		 */
 		formatTime(value) {
 			if (!value) {

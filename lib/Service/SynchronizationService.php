@@ -3350,7 +3350,7 @@ class SynchronizationService {
 	 *
 	 * @return string|null The source id, or null when the synchronization names none.
 	 *
-	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
 	 */
 	private function runSourceId(array $synchronization): ?string {
 		$sourceId = ($synchronization['sourceId'] ?? null);

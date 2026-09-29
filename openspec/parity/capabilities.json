@@ -8702,13 +8702,14 @@
 			"source": "demand-signal",
 			"origin": "tender",
 			"originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/226100",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
+				"change": "2026-09-29-observability-connection-run-summary",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:420-435 Dashboard page shows counts of runs, dead letters, event messages and circuit states over time (row obs-dashboard); no threshold warning: grep 'INotificationManager|createNotification' over lib/ finds only lib/Service/ApprovalService.php (row obs-alerts). Specified in openspec/changes/observability-connection-run-summary/ (OpenSpec pass 2026-09-27)."
+				"evidence": "lib/Service/RunSummaryService.php behind GET /api/sources/{id}/run-summary (SourcesController::runSummary, action source.logs, at most 31 days) sums a source's runs per day; src/components/SourceRunSummaryWidget.vue shows it on SourceDetail with the latest runs and Run again on a failed one (src/handlers/runAgain.js, triggeredBy rerun, no dialog; also a row action on Synchronization Runs). Run records carry sourceId and triggeredBy (SynchronizationRunProgressService::start). lib/BackgroundJob/ConnectionThresholdJob.php runs lib/Service/ConnectionAlertService.php every five minutes: alertThresholds on source and synchronization (failed calls, failed runs, invalid objects over a window) open one connection_alert above a threshold and clear it once the count falls back. The alert's created rule notifies the members of the group in the app setting connection_alert_group (lib/Notification/ConnectionAlertRecipientResolver.php, no default; set on the admin page, ConnectionAlertSettingsController refuses an unknown group). Operations > Connection alerts lists them. Tests: SynchronizationRunProgressServiceTest, RunSummaryServiceTest, SourcesControllerRunSummaryTest, SynchronizationsControllerRerunTest, ConnectionAlertServiceTest (payloads validated against the merged connection_alert schema), ConnectionAlertRecipientResolverTest, ConnectionThresholdJobTest, ConnectionAlertSettingsControllerTest, tests/vitest/connectionRunSummary.spec.js. Built by change observability-connection-run-summary (archived 2026-09-29)."
 			},
-			"reachedOn": "/ (Dashboard)",
+			"reachedOn": "/sources/:id (Pulls per day), /connection-alerts, Administration settings > Integriq",
 			"note": "Gemeente Stein wens W3 (requirement 20243). Integriq: Counts are shown; no threshold alert reaches the administrator.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",

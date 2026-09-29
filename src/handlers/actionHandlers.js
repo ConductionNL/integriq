@@ -110,7 +110,7 @@ export function runSynchronizationHandler({ item }) {
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  * @return {Promise<string|null>} The new run's id.
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
  */
 export function rerunFailedRunHandler({ item }) {
 	return runAgain(item)

@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (observability-connection-run-summary). Adds alertThresholds to source and synchronization and declares connection_alert, the alert ConnectionThresholdJob opens when a count passes a threshold and clears when it falls back. The warning is declarative: a created rule on connection_alert notifies the members of the group named in the app setting connection_alert_group (ConnectionAlertRecipientResolver). No group is set by default, so nobody is notified until an administrator names one. See openspec/changes/observability-connection-run-summary/design.md D4 and D5.",
+  "$comment": "ADR-037 register fragment (observability-connection-run-summary). Adds alertThresholds to source and synchronization and declares connection_alert, the alert ConnectionThresholdJob opens when a count passes a threshold and clears when it falls back. The warning is declarative: a created rule on connection_alert notifies the members of the group named in the app setting connection_alert_group (ConnectionAlertRecipientResolver). No group is set by default, so nobody is notified until an administrator names one. See openspec/changes/archive/2026-09-29-observability-connection-run-summary/design.md D4 and D5.",
   "components": {
     "registers": {
       "integriq": {

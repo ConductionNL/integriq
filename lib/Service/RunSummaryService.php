@@ -15,7 +15,7 @@
  *
  * @link https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  * several sums per day in one table (design D2), so this reads the run records
  * of one source in the window, newest first in bounded pages, and adds them up.
  *
- * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
  */
 class RunSummaryService {
 
@@ -93,7 +93,7 @@ class RunSummaryService {
 	 *
 	 * @throws InvalidArgumentException When the window runs backwards or is longer than 31 days.
 	 *
-	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
 	 */
 	public function summarise(string $sourceId, DateTimeImmutable $from, DateTimeImmutable $to): array {
 		$firstDay = $from->format('Y-m-d');
