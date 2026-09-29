@@ -47,6 +47,7 @@ import CreditCardOutline from 'vue-material-design-icons/CreditCardOutline.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Earth from 'vue-material-design-icons/Earth.vue'
 import Email from 'vue-material-design-icons/Email.vue'
@@ -150,6 +151,7 @@ export default {
 	DatabaseArrowLeftOutline,
 	DatabaseImportOutline,
 	DatabaseOutline,
+	DatabaseSearchOutline,
 	Download,
 	Earth,
 	Email,

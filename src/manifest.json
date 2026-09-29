@@ -960,6 +960,12 @@
             "label": "Promote configuration",
             "icon": "RocketLaunchOutline",
             "handler": "openPromotionHandler"
+          },
+          {
+            "id": "registry-lookup",
+            "label": "Look up in a base registry",
+            "icon": "DatabaseSearchOutline",
+            "handler": "openRegistryLookupHandler"
           }
         ],
         "showViewAction": false,

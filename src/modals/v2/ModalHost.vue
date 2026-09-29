@@ -60,6 +60,9 @@
 			:open="configurationExport.open"
 			@close="closeConfigurationExport" />
 		<PromotePreviewModal :open="promotion.open" @close="closePromotion" />
+		<RegistryLookupDialog
+			:open="registryLookup.open"
+			@close="closeRegistryLookup" />
 		<LinkSourceDialog
 			:open="linkSource.open"
 			:app="linkSource.app"
@@ -73,6 +76,7 @@ import CatalogItemDetailDialog from '../../dialogs/CatalogItemDetailDialog.vue'
 import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '../../dialogs/LinkSourceDialog.vue'
+import RegistryLookupDialog from '../../dialogs/RegistryLookupDialog.vue'
 import DirectoryRunModal from '../Directory/DirectoryRunModal.vue'
 import PromotePreviewModal from '../PromotePreviewModal.vue'
 import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.vue'
@@ -88,6 +92,7 @@ import {
 	EVENT_OPEN_DIRECTORY_RUN,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
@@ -110,6 +115,7 @@ export default {
 		ExportConfigurationDialog,
 		PromotePreviewModal,
 		LinkSourceDialog,
+		RegistryLookupDialog,
 	},
 
 	data() {
@@ -124,6 +130,7 @@ export default {
 			configurationImport: { open: false },
 			configurationExport: { open: false },
 			promotion: { open: false },
+			registryLookup: { open: false },
 			linkSource: { open: false, app: '' },
 		}
 	},
@@ -171,6 +178,7 @@ export default {
 		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 	},
 
@@ -186,6 +194,7 @@ export default {
 		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 	},
 
@@ -326,6 +335,16 @@ export default {
 		/** @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003 */
 		closePromotion() {
 			this.promotion = { open: false }
+		},
+
+		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
+		openRegistryLookup() {
+			this.registryLookup = { open: true }
+		},
+
+		/** @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
+		closeRegistryLookup() {
+			this.registryLookup = { open: false }
 		},
 
 		/**

@@ -67,6 +67,7 @@ import {
 	openConfigurationImportHandler,
 	openLinkSourceHandler,
 	openPromotionHandler,
+	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
 	runDirectorySyncHandler,
 	runJobHandler,
@@ -112,6 +113,7 @@ export default {
 	// Environments page header action (environments-and-promotion): open the
 	// promote-configuration flow via the modal bus.
 	openPromotionHandler,
+	openRegistryLookupHandler,
 	// App connections page header action (connection-registry D9): open the
 	// link-a-source dialog via the modal bus.
 	openLinkSourceHandler,

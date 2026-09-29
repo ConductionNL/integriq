@@ -52,7 +52,7 @@ openregister, wave 1, and on dossiq CT-1 for the declaration.
 
 ### Task 8: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, the catalog entry, this change's row in `competitor-parity-2026-09`
-- [~] Ask the openregister lane for `x-openregister-property-source` on a schema property, by that name, and for the slug it opens the change under. Record whichever slug it picks here.
+- [x] (openregister#4168, 29 Sep) Ask the openregister lane for `x-openregister-property-source` on a schema property, by that name, and for the slug it opens the change under. Record whichever slug it picks here.
   - MEASURED 2026-09-18 RATHER THAN ASKED, against an openregister clone on its
     `parity/round2`: `x-openregister-property-source` is NOT in the property
     vocabulary. `grep -rn 'property-source\|propertySource'
@@ -62,6 +62,12 @@ openregister, wave 1, and on dossiq CT-1 for the declaration.
   - So the answer to "has it shipped" is no, and the integriq half above is
     built and waiting. Recorded here so the next lane reads a measurement
     instead of repeating the question.
-- [ ] Say in the same message that it is not `x-openregister-object-source`, which `object-source-providers` already uses for a whole schema
-- [ ] Hand dossiq the declaration half: the source input on `propertyDefinition`, which rides dossiq's CT-1 change, and the fixed slots it retires
+- [x] (openregister#4168) Say in the same message that it is not `x-openregister-object-source`, which `object-source-providers` already uses for a whole schema
+- [x] (dossiq#3188) Hand dossiq the declaration half: the source input on `propertyDefinition`, which rides dossiq's CT-1 change, and the fixed slots it retires
 - [x] Test (`tests/e2e/registry-backed-field-source.spec.ts`, `openspec validate registry-backed-field-source --strict`)
+
+### Task 9: An administrator reaches the engine
+- **spec_ref**: `openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003`
+- **files**: `src/dialogs/RegistryLookupDialog.vue`, `src/dialogs/registryLookup.js`, `src/modals/v2/ModalHost.vue`, `src/handlers/`, the Sources page's header actions in `src/manifest.json`
+- [x] Implement (Sources > Look up in a base registry: pick a registry, search, resolve a suggestion by its identifier, show the value with its provenance and state, read again skipping the cache, resync a list-shaped registry)
+- [x] Test (`tests/vitest/registryLookupDialog.spec.js`)

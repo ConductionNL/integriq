@@ -29,6 +29,7 @@ import {
 	EVENT_OPEN_DIRECTORY_RUN,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
@@ -202,6 +203,17 @@ export function openConfigurationExportHandler() {
  */
 export function openPromotionHandler() {
 	modalBus.emit(EVENT_OPEN_PROMOTION, {})
+}
+
+/**
+ * Open the base-registry lookup (registry-backed-field-source): pick a
+ * registry, search, and read a value with where it came from and how old it
+ * is. Wired to the Sources page's "Look up in a base registry" header action.
+ *
+ * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ */
+export function openRegistryLookupHandler() {
+	modalBus.emit(EVENT_OPEN_REGISTRY_LOOKUP, {})
 }
 
 /**
