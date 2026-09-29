@@ -29,7 +29,7 @@ use RuntimeException;
  * binding would report a ROD message sent to DUO that never left the
  * instance (mirrors DigitalPostProviderRegistry).
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
  */
 class RodProviderRegistry {
 	/**
@@ -61,7 +61,7 @@ class RodProviderRegistry {
 	 *
 	 * @return bool True when one is registered.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function has(string $providerId): bool {
 		return isset($this->providers[$providerId]);
@@ -76,7 +76,7 @@ class RodProviderRegistry {
 	 *
 	 * @throws RuntimeException When nothing answers to a non-empty, unrecognised id.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-future-alternative-duo-compatible-transport-is-a-drop-in-binding
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-future-alternative-duo-compatible-transport-is-a-drop-in-binding
 	 */
 	public function get(string $providerId): RodProviderInterface {
 		$resolved = $providerId;
@@ -107,7 +107,7 @@ class RodProviderRegistry {
 	 *
 	 * @return array<int,string> Provider ids.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function ids(): array {
 		return array_keys($this->providers);

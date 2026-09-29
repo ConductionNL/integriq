@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
  */
 class RodRetryJob extends TimedJob {
 
@@ -92,7 +92,7 @@ class RodRetryJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-005-per-message-audit-persistence-and-isolated-retry
 	 */
 	public function run(mixed $argument): void {
 		try {

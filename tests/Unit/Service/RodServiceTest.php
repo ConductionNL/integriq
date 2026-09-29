@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-rod/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-rod/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md
+ * @spec openspec/specs/rod-adapter/spec.md
  */
 class RodServiceTest extends TestCase {
 
@@ -193,8 +193,8 @@ class RodServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-successful-outbound-send-persists-a-sent-record-with-its-ref
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-the-sent-envelope-carries-the-raw-bsn-but-the-audit-record-does-not
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-successful-outbound-send-persists-a-sent-record-with-its-ref
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-the-sent-envelope-carries-the-raw-bsn-but-the-audit-record-does-not
 	 */
 	public function testSuccessfulSendPersistsSentRecordWithHashedBsn(): void {
 		$this->sources[] = $this->sourceEntity();

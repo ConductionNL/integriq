@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-rod/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-rod/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
  * Tests for the ROD acknowledgement translator, contract-tested against
  * recorded fixtures under tests/fixtures/rod/.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
  */
 class RodAcknowledgementTranslatorTest extends TestCase {
 
@@ -64,7 +64,7 @@ class RodAcknowledgementTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-an-accepted-acknowledgement-dispatches-an-event-with-accepted-true
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-an-accepted-acknowledgement-dispatches-an-event-with-accepted-true
 	 */
 	public function testAcceptedAcknowledgementTranslatesAcceptedTrue(): void {
 		$update = $this->translator->translate($this->fixture('retour-accepted.xml'));
@@ -81,7 +81,7 @@ class RodAcknowledgementTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-rejection-signaalcode-dispatches-an-event-with-accepted-false-and-the-reason
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-rejection-signaalcode-dispatches-an-event-with-accepted-false-and-the-reason
 	 */
 	public function testRejectionSignaalcodeTranslatesAcceptedFalse(): void {
 		$update = $this->translator->translate($this->fixture('retour-rejected.xml'));
@@ -98,7 +98,7 @@ class RodAcknowledgementTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-retour-with-no-kenmerk-is-rejected-before-any-event
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-retour-with-no-kenmerk-is-rejected-before-any-event
 	 */
 	public function testMissingKenmerkRaisesBeforeAnyUpdate(): void {
 		$this->expectException(RodTranslationException::class);

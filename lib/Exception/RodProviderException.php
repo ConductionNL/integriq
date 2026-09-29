@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md
+ * @spec openspec/specs/rod-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Exception;
 /**
  * Thrown on any ROD provider/transport or configuration failure.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md
+ * @spec openspec/specs/rod-adapter/spec.md
  */
 class RodProviderException extends Exception {
 }//end class

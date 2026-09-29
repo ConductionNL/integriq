@@ -34,7 +34,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
+ * @spec openspec/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Edukoppeling (Digikoppeling WUS) ROD provider: signed envelope dispatch.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
  */
 class RodEdukoppelingClient implements RodProviderInterface {
 
@@ -81,7 +81,7 @@ class RodEdukoppelingClient implements RodProviderInterface {
 	 *
 	 * @return string The stable `edukoppeling` provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getProviderId(): string {
 		return 'edukoppeling';
@@ -92,7 +92,7 @@ class RodEdukoppelingClient implements RodProviderInterface {
 	 *
 	 * @return array<string, mixed> The ROD Edukoppeling source configuration JSON Schema.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getConfigSchema(): array {
 		return [
@@ -128,7 +128,7 @@ class RodEdukoppelingClient implements RodProviderInterface {
 	 * @throws RodProviderException When no certificate reference resolves (refuses closed — see class
 	 *                              docblock), the endpoint is missing, or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public function send(array $sourceConfiguration, string $berichtsoort, string $kenmerk, string $envelopeXml): string {
 		$certificateRef = (string)($sourceConfiguration['certificateRef'] ?? '');

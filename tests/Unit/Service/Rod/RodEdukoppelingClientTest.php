@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-rod/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-rod/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
  * fail-closed boundary is exactly what M3(c) gates today, and exactly what
  * this test proves.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
+ * @spec openspec/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
  */
 class RodEdukoppelingClientTest extends TestCase {
 
@@ -112,7 +112,7 @@ class RodEdukoppelingClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public function testSendRefusesClosedWhenSigningMaterialUnresolvable(): void {
 		$this->credentialResolver->method('resolveSigningMaterial')

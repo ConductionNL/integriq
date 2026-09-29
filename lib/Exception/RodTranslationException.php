@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Exception;
  * Thrown when a translator cannot produce a complete, leak-free envelope or
  * acknowledgement event.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
  */
 class RodTranslationException extends Exception {
 }//end class

@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\Integriq\Exception\RodProviderException;
  * A ROD transport binding: dispatch one already-translated berichtsoort
  * envelope and report the transport-assigned reference.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
  */
 interface RodProviderInterface {
 	/**
@@ -45,7 +45,7 @@ interface RodProviderInterface {
 	 *
 	 * @return string The provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getProviderId(): string;
 
@@ -54,7 +54,7 @@ interface RodProviderInterface {
 	 *
 	 * @return array<string, mixed> A JSON Schema (object) fragment.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getConfigSchema(): array;
 
@@ -73,7 +73,7 @@ interface RodProviderInterface {
 	 *
 	 * @throws RodProviderException When the endpoint is unreachable, errors, or is misconfigured.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function send(array $sourceConfiguration, string $berichtsoort, string $kenmerk, string $envelopeXml): string;
 }//end interface

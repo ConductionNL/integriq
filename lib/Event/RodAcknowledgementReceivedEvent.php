@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\EventDispatcher\Event;
 /**
  * A DUO ROD acknowledgement, translated and ready for a listener to act on.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
  */
 class RodAcknowledgementReceivedEvent extends Event {
 	/**
@@ -62,7 +62,7 @@ class RodAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Kenmerk.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
 	 */
 	public function getKenmerk(): string {
 		return $this->kenmerk;
@@ -73,7 +73,7 @@ class RodAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Signaalcode.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
 	 */
 	public function getSignaalcode(): string {
 		return $this->signaalcode;
@@ -84,7 +84,7 @@ class RodAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string|null Description, or null when absent.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
 	 */
 	public function getSignaalOmschrijving(): ?string {
 		return $this->signaalOmschrijving;
@@ -95,7 +95,7 @@ class RodAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return bool True when accepted.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
 	 */
 	public function isAccepted(): bool {
 		return $this->accepted;
@@ -106,7 +106,7 @@ class RodAcknowledgementReceivedEvent extends Event {
 	 *
 	 * @return string Berichtsoort, empty string when unresolved.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
 	 */
 	public function getBerichtsoort(): string {
 		return $this->berichtsoort;

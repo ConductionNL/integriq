@@ -41,7 +41,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
  * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-001-the-persoonsgebonden-nummer-goes-in-duos-choice-element
  */
 
@@ -58,7 +58,7 @@ use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 /**
  * berichtsoort + field payload -> Edukoppeling XML envelope.
  *
- * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
  */
 class RodEnvelopeTranslator {
 
@@ -150,7 +150,7 @@ class RodEnvelopeTranslator {
 	 *                                 carries an unresolved template marker. The message names
 	 *                                 fields, never values.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-complete-inschrijving-translates-to-a-valid-envelope
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-complete-inschrijving-translates-to-a-valid-envelope
 	 * @spec openspec/changes/rod-adapter-bsn/specs/rod-adapter/spec.md#requirement-req-001-the-persoonsgebonden-nummer-goes-in-duos-choice-element
 	 */
 	public function translate(string $berichtsoort, string $kenmerk, array $payload): string {
@@ -310,7 +310,7 @@ class RodEnvelopeTranslator {
 	 *
 	 * @throws RodTranslationException Naming the first missing/empty required field found.
 	 *
-	 * @spec openspec/changes/integriq-adapter-rod/specs/rod-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
 	 */
 	private function assertRequiredFieldsPresent(array $payload, string $berichtsoort): void {
 		foreach (self::REQUIRED_FIELDS[$berichtsoort] as $field) {
