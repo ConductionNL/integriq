@@ -4608,9 +4608,10 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/changes/archive/2026-09-29-job-logs-filtering-and-columns/proposal.md documents a fixed defect: CnLogsPage now reads $route.query deep-link filters (shared nextcloud-vue fix, not integriq-owned per app-shell-and-logs-ui REQ-SHELLUI-003). src/handlers/logTargets.js:52-59 VIEW_LOGS_TARGETS wires 'View source logs'/'View endpoint logs'/'View job logs'/'View synchronization logs' row actions to pre-filtered navigation (?source=, ?endpoint=, ?jobId=, ?synchronizationId=), verified against a populated instance in the file's own comment ('?source= filters correctly, 11 of 15 rows'). CnLogsPage.vue and CnDataTable.vue (nextcloud-vue) were checked for an on-page filter/search widget: none exists. Specified in openspec/changes/observability-log-filters/ (OpenSpec pass 2026-09-27)."
+				"evidence": "openspec/changes/archive/2026-09-29-job-logs-filtering-and-columns/proposal.md documents a fixed defect: CnLogsPage now reads $route.query deep-link filters (shared nextcloud-vue fix, not integriq-owned per app-shell-and-logs-ui REQ-SHELLUI-003). src/handlers/logTargets.js:52-59 VIEW_LOGS_TARGETS wires 'View source logs'/'View endpoint logs'/'View job logs'/'View synchronization logs' row actions to pre-filtered navigation (?source=, ?endpoint=, ?jobId=, ?synchronizationId=), verified against a populated instance in the file's own comment ('?source= filters correctly, 11 of 15 rows'). CnLogsPage.vue and CnDataTable.vue (nextcloud-vue) were checked for an on-page filter/search widget: none exists. Specified in openspec/changes/observability-log-filters/ (OpenSpec pass 2026-09-27).",
+				"change": "observability-log-filters"
 			},
 			"reachedOn": "cross-page: a 'View logs' row action from Sources/Endpoints/Jobs/Synchronizations lands on the matching logs page pre-filtered; sortable 'created'/'startedAt' columns cover time; status is shown as a coloured badge but has no filter control",
 			"note": "Filtering works as deep-link query params (any non-underscore-prefixed key is forwarded as an OpenRegister property filter) and via row-action links from other pages, but none of the logs pages (SourceLogs, EndpointLogs, Traces, JobLogs) has an on-page filter bar or date-range picker a staff member can use directly.",

@@ -1376,6 +1376,79 @@
         "row-actions": "CallLogRowActions"
       },
       "config": {
+        "filterControls": [
+          {
+            "key": "statusCode",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              {
+                "label": "Success",
+                "filter": {
+                  "statusCode": {
+                    "gte": 200,
+                    "lt": 400
+                  }
+                }
+              },
+              {
+                "label": "Client error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 400,
+                    "lt": 500
+                  }
+                }
+              },
+              {
+                "label": "Server error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 500
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "source",
+            "label": "Source",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "source",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "direction",
+            "label": "Direction",
+            "type": "select",
+            "options": [
+              {
+                "label": "Inbound",
+                "filter": {
+                  "direction": "inbound"
+                }
+              },
+              {
+                "label": "Outbound",
+                "filter": {
+                  "direction": "outbound"
+                }
+              }
+            ]
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
@@ -1627,6 +1700,82 @@
       "type": "logs",
       "title": "Endpoint logs",
       "config": {
+        "filter": {
+          "direction": "inbound"
+        },
+        "filterControls": [
+          {
+            "key": "statusCode",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              {
+                "label": "Success",
+                "filter": {
+                  "statusCode": {
+                    "gte": 200,
+                    "lt": 400
+                  }
+                }
+              },
+              {
+                "label": "Client error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 400,
+                    "lt": 500
+                  }
+                }
+              },
+              {
+                "label": "Server error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 500
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "endpoint",
+            "label": "Endpoint",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "endpoint",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "direction",
+            "label": "Direction",
+            "type": "select",
+            "options": [
+              {
+                "label": "Inbound",
+                "filter": {
+                  "direction": "inbound"
+                }
+              },
+              {
+                "label": "Outbound",
+                "filter": {
+                  "direction": "outbound"
+                }
+              }
+            ]
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
@@ -2196,6 +2345,58 @@
       "type": "logs",
       "title": "Job logs",
       "config": {
+        "filterControls": [
+          {
+            "key": "level",
+            "label": "Level",
+            "type": "select",
+            "options": [
+              {
+                "label": "Success",
+                "filter": {
+                  "level": "SUCCESS"
+                }
+              },
+              {
+                "label": "Info",
+                "filter": {
+                  "level": "INFO"
+                }
+              },
+              {
+                "label": "Warning",
+                "filter": {
+                  "level": "WARNING"
+                }
+              },
+              {
+                "label": "Error",
+                "filter": {
+                  "level": "ERROR"
+                }
+              }
+            ]
+          },
+          {
+            "key": "jobId",
+            "label": "Job",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "job",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "job_log",
         "sortKey": "created",
@@ -2502,6 +2703,46 @@
       "type": "logs",
       "title": "Synchronization logs",
       "config": {
+        "filterControls": [
+          {
+            "key": "synchronizationId",
+            "label": "Synchronization",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "synchronization",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "test",
+            "label": "Test run",
+            "type": "select",
+            "options": [
+              {
+                "label": "Test runs",
+                "filter": {
+                  "test": true
+                }
+              },
+              {
+                "label": "Real runs",
+                "filter": {
+                  "test": false
+                }
+              }
+            ]
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "synchronization_log",
         "sortKey": "created",
@@ -2754,6 +2995,68 @@
       "type": "logs",
       "title": "Cloud event logs",
       "config": {
+        "filterControls": [
+          {
+            "key": "statusCode",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              {
+                "label": "Success",
+                "filter": {
+                  "statusCode": {
+                    "gte": 200,
+                    "lt": 400
+                  }
+                }
+              },
+              {
+                "label": "Client error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 400,
+                    "lt": 500
+                  }
+                }
+              },
+              {
+                "label": "Server error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 500
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "direction",
+            "label": "Direction",
+            "type": "select",
+            "options": [
+              {
+                "label": "Inbound",
+                "filter": {
+                  "direction": "inbound"
+                }
+              },
+              {
+                "label": "Outbound",
+                "filter": {
+                  "direction": "outbound"
+                }
+              }
+            ]
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
@@ -3209,6 +3512,78 @@
       "title": "Traces",
       "_note": "execution-trace-observability REQ-007: follows the SourceLogs/EndpointLogs/CloudEventLogs `type: logs` precedent — a generic list over execution_trace with server-derived entryPoint/status filters and pagination. Row navigation opens TraceDetail (a custom page — the step timeline and Replay action are not expressible as a generic logs row).",
       "config": {
+        "filterControls": [
+          {
+            "key": "status",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              {
+                "label": "Running",
+                "filter": {
+                  "status": "running"
+                }
+              },
+              {
+                "label": "Success",
+                "filter": {
+                  "status": "success"
+                }
+              },
+              {
+                "label": "Failed",
+                "filter": {
+                  "status": "failed"
+                }
+              },
+              {
+                "label": "Short-circuited",
+                "filter": {
+                  "status": "short_circuited"
+                }
+              }
+            ]
+          },
+          {
+            "key": "entryPoint",
+            "label": "Entry point",
+            "type": "select",
+            "options": [
+              {
+                "label": "Endpoint",
+                "filter": {
+                  "entryPoint": "endpoint"
+                }
+              },
+              {
+                "label": "Job",
+                "filter": {
+                  "entryPoint": "job"
+                }
+              },
+              {
+                "label": "Event",
+                "filter": {
+                  "entryPoint": "event"
+                }
+              },
+              {
+                "label": "Synchronization",
+                "filter": {
+                  "entryPoint": "sync"
+                }
+              }
+            ]
+          },
+          {
+            "key": "startedAt",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "execution_trace",
         "sortKey": "startedAt",

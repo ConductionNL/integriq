@@ -1582,7 +1582,17 @@ OC.L10N.register(
         "Events with the same ordering key stay in order. Leave empty when order does not matter.": "Gebeurtenissen met dezelfde volgordesleutel blijven op volgorde. Laat leeg als de volgorde niet uitmaakt.",
         "Structured: the whole event in the body": "Gestructureerd: de hele gebeurtenis in de body",
         "Binary: the data in the body, the attributes in headers": "Binair: de gegevens in de body, de attributen in headers",
-        "No broker configured": "Geen broker ingesteld"
+        "No broker configured": "Geen broker ingesteld",
+        "Success": "Gelukt",
+        "Client error": "Fout bij de aanvrager",
+        "Server error": "Fout bij de server",
+        "Inbound": "Inkomend",
+        "Outbound": "Uitgaand",
+        "Info": "Info",
+        "Warning": "Waarschuwing",
+        "Test runs": "Testruns",
+        "Real runs": "Echte runs",
+        "Short-circuited": "Voortijdig gestopt"
     },
     "nplurals=2; plural=(n != 1);"
 )

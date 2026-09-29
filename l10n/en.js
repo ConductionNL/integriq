@@ -2924,7 +2924,16 @@ OC.L10N.register(
         "Events with the same ordering key stay in order. Leave empty when order does not matter.": "Events with the same ordering key stay in order. Leave empty when order does not matter.",
         "Structured: the whole event in the body": "Structured: the whole event in the body",
         "Binary: the data in the body, the attributes in headers": "Binary: the data in the body, the attributes in headers",
-        "No broker configured": "No broker configured"
+        "No broker configured": "No broker configured",
+        "Success": "Success",
+        "Client error": "Client error",
+        "Server error": "Server error",
+        "Inbound": "Inbound",
+        "Outbound": "Outbound",
+        "Info": "Info",
+        "Test runs": "Test runs",
+        "Real runs": "Real runs",
+        "Short-circuited": "Short-circuited"
     },
     "nplurals=2; plural=(n != 1);"
 )

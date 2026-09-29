@@ -503,6 +503,42 @@ class CallServiceTest extends TestCase {
 	}//end testADeclaredApiKeyIsSentInTheDeclaredHeader()
 
 	/**
+	 * A call to a source is logged as an outbound call, so the source logs
+	 * page, scoped to outbound calls, lists it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
+	 */
+	public function testACallToASourceIsLoggedAsOutbound(): void {
+		$this->callWithSourceFields([]);
+
+		$log = $this->savedCallLogs()[0]['object'];
+		$this->assertSame('outbound', $log['direction'] ?? null);
+		$this->assertSame([], \OCA\Integriq\Tests\Helpers\RegisterSchemaValidator::errors('call_log', $log), 'the call log record is one the register accepts');
+	}//end testACallToASourceIsLoggedAsOutbound()
+
+	/**
+	 * A call refused before it left is still an outbound call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
+	 */
+	public function testARefusedCallIsLoggedAsOutbound(): void {
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(true);
+		$brokered->method('prepare')->willThrowException(
+			new BrokeredCallConfigurationException(message: 'credentialRef is configured but the OpenRegister credential broker is unavailable.')
+		);
+
+		$service = $this->buildBrokeredCallService($brokered);
+		$service->call(source: $this->makeBrokeredSource(), endpoint: '/v1/items');
+
+		$this->assertSame('outbound', $this->savedCallLogs()[0]['object']['direction'] ?? null);
+	}//end testARefusedCallIsLoggedAsOutbound()
+
+	/**
 	 * An API key with no declared header goes in Authorization.
 	 *
 	 * @return void
