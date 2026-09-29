@@ -15,7 +15,7 @@
 // Usage:   node tests/validate-connector-templates.js [dir]
 // Exit:    0 = the library is sound   1 = problems found, each naming its file
 //
-// @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-a-back-office-template-names-its-standard-and-where-it-was-checked-req-ccx-002
+// @spec openspec/specs/connector-catalog/spec.md#requirement-a-back-office-template-names-its-standard-and-where-it-was-checked-req-ccx-002
 
 'use strict'
 

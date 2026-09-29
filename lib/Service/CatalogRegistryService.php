@@ -168,7 +168,7 @@ class CatalogRegistryService {
 	 * @return array<int, array<string,mixed>>
 	 *
 	 * @spec openspec/specs/connector-catalog/spec.md#scenario-materialization-is-idempotent
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
 	 */
 	public function collect(): array {
 		$entries = [];
@@ -212,7 +212,7 @@ class CatalogRegistryService {
 	 *
 	 * @return array<int, array<string,mixed>>
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	private function collectFromTemplates(): array {
 		$entries = [];
@@ -251,7 +251,7 @@ class CatalogRegistryService {
 	 *
 	 * @return array<int, array{x-template: array, source: array}>
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	private function readTemplates(): array {
 		$files = glob($this->templateDir . '/*/*.json');
@@ -560,7 +560,7 @@ class CatalogRegistryService {
 	 * @return array<string,mixed>|null The raw source object payload (minus `@self`), or null when not found.
 	 *
 	 * @spec openspec/specs/connector-catalog/spec.md#scenario-instantiate-action-creates-a-source-from-a-seeded-template
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function findSeedSourcePayload(string $slug): ?array {
 		foreach ($this->readTemplates() as $template) {

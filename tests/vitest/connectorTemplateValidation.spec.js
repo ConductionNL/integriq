@@ -5,7 +5,7 @@
  * The connector template validator against good and bad libraries
  * (connectors-catalogue-expansion task 2, REQ-CCX-002 and REQ-CCX-003).
  *
- * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-a-back-office-template-names-its-standard-and-where-it-was-checked-req-ccx-002
+ * @spec openspec/specs/connector-catalog/spec.md#requirement-a-back-office-template-names-its-standard-and-where-it-was-checked-req-ccx-002
  */
 import fs from 'node:fs'
 import { createRequire } from 'node:module'

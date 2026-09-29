@@ -8329,12 +8329,13 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "specified",
+				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Counted: 25 seeded source objects across 24 files in lib/Settings/register.d/ (python enumeration of components.objects with schema source); 6 static descriptors at lib/Service/CatalogRegistryService.php:215-303; 4 integriq adapters registered in the IntegrationRegistry (find lib/Service/Adapter -name '*Adapter.php' = 4); 8 more source files under configurations/*/sources/ that the Store does not list. Store collection: lib/Service/CatalogRegistryService.php:145-161, materialised by lib/Repair/MaterializeCatalogItems.php:46. Specified in openspec/changes/connectors-catalogue-expansion/ (OpenSpec pass 2026-09-27).",
-				"catalogCount": "about 35 catalog_item cards (25 source templates + 6 static + 4 adapters), about 43 connectors counting configuration templates"
+				"evidence": "The mechanism is built (connectors-catalogue-expansion, 29 Sep 2026): a pinned APIs.guru snapshot (2,529 APIs), a reviewed allow-list and scripts/generate-connector-templates.php write generated Store templates. The allow-list holds two (Google Sheets, Slack) plus curated Salesforce and Alfresco, so the Store is not near hundreds; the count grows by adding allow-list entries.",
+				"catalogCount": "about 35 catalog_item cards (25 source templates + 6 static + 4 adapters), about 43 connectors counting configuration templates",
+				"change": "2026-09-29-connectors-catalogue-expansion"
 			},
-			"reachedOn": "/store",
+			"reachedOn": "Store > Generated templates",
 			"note": "The Store holds roughly 35 entries, not hundreds, and that count is padded: two environment placeholder sources (environment-local-source, environment-acceptance-source) become connector cards, and SmartDocuments and Xential each appear twice (adapter and source template). About ten of the real ones are Specter feeds that write to a register integriq does not ship.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8533,13 +8534,14 @@
 			"source": "demand-signal",
 			"origin": "tender",
 			"originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/226100",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -riE 'iburgerzaken|pinkroccade|centric|\\bgws\\b|nedgraphics|civision' over lib/ src/ appinfo/ finds nothing; none of the 25 seeded sources in lib/Settings/register.d/ is one of these systems (row con-library-size). Specified in openspec/changes/connectors-catalogue-expansion/ (OpenSpec pass 2026-09-27)."
+				"evidence": "Built 29 Sep 2026 (connectors-catalogue-expansion): the Store lists lib/Settings/connector-templates/ without installing it (CatalogRegistryService::collectFromTemplates). Of the fourteen systems in Stein requirements 166859 and 186343, Alfresco has a checked template (backoffice/alfresco-cmis.json, CMIS 1.1 browser binding) and SmartDocuments is an adapter; the other twelve have a recorded reason in backoffice/README.md (reached over BRP, BAG, iWMO/iJW or OGC through existing adapters, or no published interface to check). Partial because most are reached indirectly, not by a vendor connector.",
+				"change": "2026-09-29-connectors-catalogue-expansion"
 			},
-			"reachedOn": "nothing reaches it",
+			"reachedOn": "Store > Checked templates",
 			"note": "Gemeente Stein requirements 166859 and 186343 list Alfresco, CIR, GWS, LBA, iBurgerzaken, Civision Samenleving, iObjecten BAG, Cipers, NedGeo, NedGlobe, NedOmgeving, Stratech, Simsuite and SmartDocuments. Integriq: A buyer can still configure these as plain REST or SOAP sources; no ready-made connector exists.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",

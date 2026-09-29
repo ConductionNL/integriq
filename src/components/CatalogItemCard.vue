@@ -149,7 +149,7 @@ export default {
 		 * cards without a tier show nothing.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-generated-saas-templates-come-from-a-pinned-directory-and-a-reviewed-allow-list-req-ccx-003
+		 * @spec openspec/specs/connector-catalog/spec.md#requirement-generated-saas-templates-come-from-a-pinned-directory-and-a-reviewed-allow-list-req-ccx-003
 		 */
 		tierLabel() {
 			if (this.catalogItem.tier === 'generated') {

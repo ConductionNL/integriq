@@ -204,7 +204,7 @@ class MaterializeCatalogItems implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
 	 */
 	private function removeStaleCards(OrObjectService $orObjectService, array $existingBySlug, array $entries): void {
 		$listed = array_flip(array_map(static fn (array $entry): string => (string)($entry['slug'] ?? ''), $entries));

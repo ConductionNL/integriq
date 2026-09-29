@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/../../../scripts/ConnectorTemplateGenerator.php';
 
 /**
- * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-generated-saas-templates-come-from-a-pinned-directory-and-a-reviewed-allow-list-req-ccx-003
+ * @spec openspec/specs/connector-catalog/spec.md#requirement-generated-saas-templates-come-from-a-pinned-directory-and-a-reviewed-allow-list-req-ccx-003
  */
 class ConnectorTemplateGeneratorTest extends TestCase {
 

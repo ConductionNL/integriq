@@ -155,7 +155,7 @@ class MaterializeCatalogItemsTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
 	 */
 	public function testAStaleCardIsRemovedAndTheTierIsStored(): void {
 		$entries = [

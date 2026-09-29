@@ -9,7 +9,7 @@
  * and from which snapshot, a curated one says it was checked, an adapter
  * shows neither.
  *
- * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-generated-saas-templates-come-from-a-pinned-directory-and-a-reviewed-allow-list-req-ccx-003
+ * @spec openspec/specs/connector-catalog/spec.md#requirement-generated-saas-templates-come-from-a-pinned-directory-and-a-reviewed-allow-list-req-ccx-003
  */
 import { translate } from '@nextcloud/l10n'
 import { mount } from '@vue/test-utils'

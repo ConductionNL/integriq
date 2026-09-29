@@ -290,7 +290,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function testEveryTemplateInTheLibraryIsACard(): void {
 		$entries = $this->makeService(templateDir: $this->fixtureLibrary())->collect();
@@ -316,7 +316,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function testInstantiateReadsTheTemplatePayload(): void {
 		$payload = $this->makeService(templateDir: $this->fixtureLibrary())->findSeedSourcePayload(slug: 'example-crm');
@@ -334,7 +334,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function testNoLibraryTemplateIsSeededAsASource(): void {
 		$library = __DIR__ . '/../../../lib/Settings/connector-templates';
@@ -368,7 +368,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
 	 */
 	public function testTheStoreCountsOnlyRealConnectorsOnce(): void {
 		$slugs = array_column($this->makeService()->collect(), 'slug');
@@ -386,7 +386,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
 	 */
 	public function testEveryCardCarriesItsTier(): void {
 		$this->registry->withProviders([$this->makeProvider('data-infra-s3', 'S3 object storage')]);
