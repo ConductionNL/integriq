@@ -65,7 +65,7 @@ message and MUST NOT enter the retry loop.
 #### Scenario: a publish uses the referenced credential
 - GIVEN a broker subscription whose `credentialRef` names credential `rabbitmq-zaken`
 - WHEN a matching event is dispatched
-- THEN the RabbitMQ transport receives the username and password of that credential and the subscription object holds no secret
+- THEN the RabbitMQ transport receives the username stored on the subscription and the password held by that credential, and the subscription object holds no secret
 - @e2e exclude credential resolution inside dispatch; covered by PHPUnit on EventService with a mocked BrokeredCallService
 
 #### Scenario: an unknown credential fails once

@@ -673,7 +673,7 @@ class EventsController extends Controller {
 	 *
 	 * @return array The same array with secret fields replaced by a marker.
 	 *
-	 * @spec openspec/changes/events-broker-subscription-screen/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-stored-broker-secrets-are-masked-on-the-apps-subscription-endpoints-req-ebsc-004
 	 */
 	private function redactSubscription(array $subscription): array {
 		return (new SubscriptionSecretMasker())->mask(subscription: $subscription);

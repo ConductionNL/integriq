@@ -350,6 +350,28 @@ class BrokeredCallService {
 	}//end hydrateInjectableCredentials()
 
 	/**
+	 * Resolve one credential reference to its secret, for a caller that is not a source.
+	 *
+	 * The same inject-only lookup {@see hydrateInjectableCredentials()} runs for a
+	 * placeholder under a source's authentication: the broker's owner and
+	 * allowedApps guards apply, and a host-locked proxy credential is refused.
+	 *
+	 * @param array $ref The inner reference, `{credentialId}` or `{credentialName}`.
+	 *
+	 * @return string The secret.
+	 *
+	 * @throws BrokeredCallConfigurationException On any resolution failure.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+	 */
+	public function resolveCredentialRef(array $ref): string {
+		$this->assertBrokerAvailable();
+
+		return $this->resolveInjectableSecret(ref: $ref);
+
+	}//end resolveCredentialRef()
+
+	/**
 	 * Whether any leaf under the given node is a credential placeholder (recursive).
 	 *
 	 * @param array $node The authentication subtree (or a nested array within it).

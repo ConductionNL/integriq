@@ -44,6 +44,8 @@ vi.mock('@nextcloud/vue', async () => {
 		]),
 		NcTextField: stub('NcTextField', ['label', 'modelValue', 'type']),
 		NcCheckboxRadioSwitch: stub('NcCheckboxRadioSwitch', ['modelValue', 'type']),
+		// The broker block's connection fields (BrokerConnectionFields) use it.
+		NcNoteCard: stub('NcNoteCard', ['type']),
 	}
 })
 

@@ -109,7 +109,7 @@
 				{{
 					t(
 						'integriq',
-						'A matched event either POSTs to the sink above (Webhook), runs a synchronization, runs a job, or starts a flow. All four are tracked, retried and dead-lettered the same way.',
+						'A matched event either POSTs to the sink above (Webhook), runs a synchronization, runs a job, starts a flow, or is published to a message broker. All five are tracked, retried and dead-lettered the same way.',
 					)
 				}}
 			</span>
@@ -148,6 +148,85 @@
 					:clearable="false"
 					:placeholder="t('integriq', 'Select a job')"
 					@update:modelValue="onJobPick" />
+			</template>
+
+			<template v-else-if="actionKind === 'broker'">
+				<label
+					for="cn-subscription-action-broker"
+					class="cn-subscription-action-fields__label">
+					{{ t('integriq', 'Broker') }}
+				</label>
+				<NcSelect
+					inputId="cn-subscription-action-broker"
+					:inputLabel="t('integriq', 'Broker')"
+					:aria-label-combobox="t('integriq', 'Broker')"
+					:modelValue="selectedBroker"
+					:options="brokerSelectOptions"
+					:loading="brokersLoading"
+					:clearable="false"
+					:placeholder="t('integriq', 'Select a broker')"
+					@update:modelValue="
+						(option) => onBrokerField({ brokerId: option?.id || null })
+					" />
+				<span
+					v-if="selectedBroker && selectedBroker.refuses"
+					class="cn-subscription-action-fields__helper">
+					{{
+						t(
+							'integriq',
+							'This instance has no broker configured. Every publish through it is refused.',
+						)
+					}}
+				</span>
+				<NcTextField
+					v-if="!selectedBroker || selectedBroker.needsTopic"
+					:label="t('integriq', 'Topic')"
+					:modelValue="formData.action.topic || ''"
+					:helperText="
+						t(
+							'integriq',
+							'The exchange for RabbitMQ, the topic for Kafka, or the path after the address for a CloudEvents endpoint.',
+						)
+					"
+					@update:modelValue="
+						(value) => onBrokerField({ topic: value })
+					" />
+				<NcTextField
+					v-if="showsBrokerRoutingKey"
+					:label="t('integriq', 'Routing key')"
+					:modelValue="formData.action.routingKey || ''"
+					:helperText="
+						t('integriq', 'Leave empty to route on the event type.')
+					"
+					@update:modelValue="
+						(value) => onBrokerField({ routingKey: value })
+					" />
+				<NcSelect
+					inputId="cn-subscription-action-content-mode"
+					:inputLabel="t('integriq', 'Content mode')"
+					:aria-label-combobox="t('integriq', 'Content mode')"
+					:modelValue="selectedContentMode"
+					:options="contentModeOptions"
+					:clearable="false"
+					@update:modelValue="
+						(option) => onBrokerField({ contentMode: option?.id })
+					" />
+				<NcTextField
+					:label="t('integriq', 'Ordering key')"
+					:modelValue="formData.action.orderingKey || ''"
+					:helperText="
+						t(
+							'integriq',
+							'Events with the same ordering key stay in order. Leave empty when order does not matter.',
+						)
+					"
+					@update:modelValue="
+						(value) => onBrokerField({ orderingKey: value })
+					" />
+				<BrokerConnectionFields
+					:formData="formData"
+					:updateField="updateField"
+					:brokerId="formData.action.brokerId || null" />
 			</template>
 
 			<template v-else-if="actionKind === 'flow'">
@@ -228,18 +307,27 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import BrokerConnectionFields from './BrokerConnectionFields.vue'
+import {
+	brokerOptions,
+	buildBrokerAction,
+	contentModesFor,
+	showsRoutingKey,
+} from './brokerFields.js'
 
 const KIND_OPTIONS = [
 	{ id: 'webhook', label: 'Webhook' },
 	{ id: 'synchronization', label: 'Synchronization' },
 	{ id: 'job', label: 'Job' },
 	{ id: 'flow', label: 'Flow' },
+	{ id: 'broker', label: 'Broker' },
 ]
 
 export default {
 	name: 'SubscriptionActionFields',
 
 	components: {
+		BrokerConnectionFields,
 		NcTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
@@ -267,6 +355,8 @@ export default {
 			jobsLoading: false,
 			flowOptions: [],
 			flowsLoading: false,
+			brokerSelectOptions: [],
+			brokersLoading: false,
 		}
 	},
 
@@ -378,6 +468,70 @@ export default {
 		},
 
 		/**
+		 * The picked broker option, or a stand-in naming its id when the list does not hold it.
+		 *
+		 * @return {object|null}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 */
+		selectedBroker() {
+			const id = this.formData?.action?.brokerId
+			if (!id) return null
+			return (
+				this.brokerSelectOptions.find((option) => option.id === id) || {
+					id,
+					label: id,
+					needsTopic: true,
+					contentModes: ['structured'],
+					refuses: false,
+				}
+			)
+		},
+
+		/**
+		 * Whether the routing key field shows (RabbitMQ only).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 */
+		showsBrokerRoutingKey() {
+			return showsRoutingKey(this.formData?.action?.brokerId || null)
+		},
+
+		/**
+		 * The content modes the picked broker offers, as select options.
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 */
+		contentModeOptions() {
+			const labels = {
+				structured: t('integriq', 'Structured: the whole event in the body'),
+				binary: t(
+					'integriq',
+					'Binary: the data in the body, the attributes in headers',
+				),
+			}
+			return contentModesFor(this.selectedBroker).map((mode) => ({
+				id: mode,
+				label: labels[mode] || mode,
+			}))
+		},
+
+		/**
+		 * The select model for the content mode.
+		 *
+		 * @return {object}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 */
+		selectedContentMode() {
+			const mode = this.formData?.action?.contentMode || 'structured'
+			return (
+				this.contentModeOptions.find((option) => option.id === mode)
+				|| this.contentModeOptions[0]
+			)
+		},
+
+		/**
 		 * Whether the subscription declares a `retryPolicy` block at all.
 		 *
 		 * @return {boolean}
@@ -412,6 +566,8 @@ export default {
 				this.fetchJobs()
 			} else if (value === 'flow' && this.flowOptions.length === 0) {
 				this.fetchFlows()
+			} else if (value === 'broker' && this.brokerSelectOptions.length === 0) {
+				this.fetchBrokers()
 			}
 		},
 	},
@@ -432,6 +588,8 @@ export default {
 			this.fetchJobs()
 		} else if (this.actionKind === 'flow') {
 			this.fetchFlows()
+		} else if (this.actionKind === 'broker') {
+			this.fetchBrokers()
 		}
 	},
 
@@ -669,6 +827,53 @@ export default {
 				this.flowOptions = []
 			} finally {
 				this.flowsLoading = false
+			}
+		},
+
+		/**
+		 * Write one broker field into the action, keeping it valid for the picked broker.
+		 *
+		 * @param {object} patch The changed fields.
+		 * @return {void}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 */
+		onBrokerField(patch) {
+			this.updateField(
+				'action',
+				buildBrokerAction(
+					this.formData?.action,
+					patch,
+					this.brokerSelectOptions,
+				),
+			)
+		},
+
+		/**
+		 * Load the broker transports this instance has.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
+		 */
+		async fetchBrokers() {
+			this.brokersLoading = true
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/integriq/api/events/brokers'),
+				)
+				this.brokerSelectOptions = brokerOptions(response.data?.results).map(
+					(option) => ({
+						...option,
+						label: option.refuses
+							? t('integriq', 'No broker configured')
+							: option.label,
+					}),
+				)
+			} catch (err) {
+				// eslint-disable-next-line no-console
+				console.warn('[SubscriptionActionFields] broker fetch failed', err)
+				this.brokerSelectOptions = []
+			} finally {
+				this.brokersLoading = false
 			}
 		},
 	},

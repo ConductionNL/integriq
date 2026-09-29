@@ -80,3 +80,11 @@ in the sense that matters: the broker list and each broker's needs come from
 - Masking changes what the subscription endpoints return for existing broker
   subscriptions. A client that read the password back from integriq was
   reading a secret it should not have had.
+
+## Changed while building (29 Sep 2026)
+
+- **The list route has its own controller.** `EventsController` sat at phpmd's class-length and constructor-parameter limits, so `GET /api/events/brokers` is `EventBrokersController::index()` (`eventBrokers#index`), same URL and same `event.subscriptions` check.
+- **D4. The username is a plain field; the credential is the secret.** The credential broker's inject-only lookup returns one secret string (`BrokeredCallService::resolveCredentialRef()`, a public wrapper around the existing resolver). So the form stores `baseUrl`, `vhost` (RabbitMQ), `username` and `credentialRef`, and `BrokerCredentialResolver` puts the secret where the transport reads it: the password for RabbitMQ or when a username is set, otherwise the bearer token.
+- **Where the stored-password notice reads from.** The form reads through OpenRegister's generic object API, which strips `protocolSettings` (writeOnly). The notice therefore asks the app's own `GET /api/events/subscriptions?uuid=<id>`, which returns the masked block.
+- **Known limit.** `protocolSettings` is one writeOnly property. Editing a broker connection writes the whole property back with the broker block the form holds; values the form never saw (a signing secret, extra headers) are not carried over. For a broker subscription those are not used by the broker dispatch, but switching such a subscription back to a webhook afterwards needs a new signing secret (Generate on the signing dialog).
+
