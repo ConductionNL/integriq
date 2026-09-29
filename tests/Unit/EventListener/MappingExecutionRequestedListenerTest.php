@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+ * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
  */
 
 declare(strict_types=1);
@@ -162,7 +162,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-integriq-seeds-an-editable-woo-index-mapping-req-woom-003
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-integriq-seeds-an-editable-woo-index-mapping-req-woom-003
 	 */
 	public function testTheSeededMappingIsValidAndCallableByOpencatalogi(): void {
 		$seed = self::seededWooMapping();
@@ -178,7 +178,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
 	public function testOpencatalogiMapsAPublication(): void {
 		$event = $this->dispatch(
@@ -206,7 +206,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-integriq-seeds-an-editable-woo-index-mapping-req-woom-003
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-integriq-seeds-an-editable-woo-index-mapping-req-woom-003
 	 */
 	public function testTheTitleFallsBackToTheNameAndAMissingHandlingStaysEmpty(): void {
 		$output = $this->dispatch(slug: 'woo-index-publication', input: ['name' => 'Parkeerbeleid 2026'])->getOutput();
@@ -223,7 +223,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
 	public function testAnUnknownSlugIsRefused(): void {
 		$event = $this->dispatch(slug: 'does-not-exist', input: []);
@@ -238,7 +238,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
 	 */
 	public function testAMappingWithoutCallableByIsNotCallable(): void {
 		$event = $this->dispatch(slug: 'lowercase-keys', input: ['in' => 'x']);
@@ -253,7 +253,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
 	 */
 	public function testAnAppNotListedIsRefused(): void {
 		$event = $this->dispatch(slug: 'woo-index-publication', input: ['title' => 'x'], app: 'dossiq');
@@ -267,7 +267,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
 	public function testTheIdentifierFallbackRunsWhenFindThrows(): void {
 		$orObjectService = $this->createMock(OrObjectService::class);

@@ -7,7 +7,7 @@
  * The mapping detail page shows and saves callableBy, the apps allowed to run
  * a mapping by event (mapping-woo-index-field-mapping, task 2).
  *
- * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+ * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'

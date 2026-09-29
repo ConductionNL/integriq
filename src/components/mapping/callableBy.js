@@ -4,7 +4,7 @@
  *
  * The app ids a mapping lets run it by event (mapping-woo-index-field-mapping).
  *
- * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+ * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
  */
 
 /**
@@ -12,7 +12,7 @@
  *
  * @param {unknown} value The stored or edited value.
  * @return {string[]}
- * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+ * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
  */
 export function normaliseCallableBy(value) {
 	const list = Array.isArray(value) ? value : []

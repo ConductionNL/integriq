@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (mapping-woo-index-field-mapping). Adds callableBy to the mapping schema, the list of app ids that may run a mapping through MappingExecutionRequestedEvent (empty: no app may), and seeds woo-index-publication, the editable mapping of a publication onto the Woo-index fields opencatalogi reads. x-openregister-seed creates the object once and never overwrites an administrator's edit. See openspec/changes/mapping-woo-index-field-mapping/design.md D2 and D3.",
+  "$comment": "ADR-037 register fragment (mapping-woo-index-field-mapping). Adds callableBy to the mapping schema, the list of app ids that may run a mapping through MappingExecutionRequestedEvent (empty: no app may), and seeds woo-index-publication, the editable mapping of a publication onto the Woo-index fields opencatalogi reads. x-openregister-seed creates the object once and never overwrites an administrator's edit. See openspec/changes/archive/2026-09-29-mapping-woo-index-field-mapping/design.md D2 and D3.",
   "components": {
     "schemas": {
       "mapping": {

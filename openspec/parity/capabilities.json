@@ -5997,15 +5997,15 @@
 			"area": "nl-standards",
 			"name": "Deliver publications to the national Woo index.",
 			"source": "sibling-matrix",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
-				"change": "mapping-woo-index-field-mapping",
+				"state": "built",
+				"change": "2026-09-29-mapping-woo-index-field-mapping",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Gateway/Adapter/PublicationGateway.php:57 publish(), :80 validate() are real methods, but `grep -rln PublicationGateway lib/ tests/` shows the only caller anywhere is tests/Unit/Gateway/StatutoryGatewayAdapterTest.php; no route, background job or listener invokes it."
+				"evidence": "lib/Event/MappingExecutionRequestedEvent.php + lib/EventListener/MappingExecutionRequestedListener.php (registered in lib/AppInfo/Application.php) run a mapping by slug for an app listed in the mapping's callableBy, refusing not-found, not-allowed or failed. lib/Settings/register.d/mapping-woo-index-field-mapping.json adds callableBy to the mapping schema and seeds woo-index-publication (publisher, officieleTitel, informatiecategorie, soortHandeling; callableBy opencatalogi). src/components/mapping/MappingCallableByField.vue edits callableBy on the mapping detail page. MappingService::findMapping() now reaches the slug/reference fallback when find() throws. Tests: tests/Unit/EventListener/MappingExecutionRequestedListenerTest.php (real MappingService, the seed read from the fragment and validated against the merged mapping schema), tests/vitest/mappingCallableBy.spec.js. Built by change mapping-woo-index-field-mapping (archived 2026-09-29)."
 			},
-			"reachedOn": "nothing reaches it",
-			"note": "Sibling row names decidiq:pub-05; integriq's own PublicationGateway is unwired scaffolding with a real method body but no production caller, so if this capability is delivered anywhere it is not from integriq today.",
+			"reachedOn": "Mappings > woo-index-publication: the rules and Run by other apps; opencatalogi reaches it by dispatching MappingExecutionRequestedEvent",
+			"note": "Built on integriq's side 2026-09-29, rated partial: integriq maps a publication onto the Woo-index fields, but the sitemap that feeds the national index is opencatalogi's, and opencatalogi does not dispatch the event yet (opencatalogi issue filed with the event contract, docs/developers/run-a-mapping-from-another-app.md). PublicationGateway (Wet elektronisch publiceren) is a separate route, opencatalogi#1671.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",

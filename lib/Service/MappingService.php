@@ -222,7 +222,7 @@ class MappingService {
 	 *
 	 * @return ObjectEntity|null The mapping object, or null when nothing matches.
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
 	public function findMapping(string $reference): ?ObjectEntity {
 		try {

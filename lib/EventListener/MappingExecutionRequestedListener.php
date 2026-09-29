@@ -17,7 +17,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+ * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
  * `callableBy` may run it. An empty or absent list lets no app in, which is
  * every mapping that existed before this listener.
  *
- * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+ * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
  *
  * @template-implements IEventListener<Event>
  */
@@ -74,7 +74,7 @@ class MappingExecutionRequestedListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof MappingExecutionRequestedEvent) === false) {

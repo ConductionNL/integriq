@@ -481,7 +481,7 @@ export default {
 		 * @param {string[]} next The normalised app ids.
 		 * @return {Promise<void>} Resolves once the patch has been persisted.
 		 *
-		 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+		 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
 		 */
 		onUpdateCallableBy(next) {
 			return this.persistPatch({ callableBy: next })

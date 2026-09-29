@@ -6,7 +6,7 @@
   (mapping-woo-index-field-mapping REQ-WOOM-002). An empty list lets no app
   in. Saved with the mapping, so it needs the same right as its rules.
 
-  @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+  @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
 -->
 <template>
 	<div class="callable-by" data-testid="mapping-callable-by">
@@ -57,7 +57,7 @@ export default {
 		 * The stored list, normalised.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+		 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
 		 */
 		apps() {
 			return normaliseCallableBy(this.value)
@@ -71,7 +71,7 @@ export default {
 		 * Emit the edited list, normalised.
 		 *
 		 * @param {Array} next The selection.
-		 * @spec openspec/changes/mapping-woo-index-field-mapping/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
+		 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-mapping-names-the-apps-allowed-to-run-it-by-event-req-woom-002
 		 */
 		onChange(next) {
 			this.$emit('update', normaliseCallableBy(next))
