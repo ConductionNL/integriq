@@ -199,15 +199,60 @@ class EventsController extends Controller {
 		}
 
 		try {
-			// Create subscription.
+			// Create subscription. SubscriptionSigningDefaultListener gives a
+			// push subscription its signing secret on OpenRegister's create path.
 			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
 
-			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
+			$response = $this->redactSubscription(subscription: $subscription->getObject());
+			$secret = $this->generatedSecret(request: $data, subscriptionId: (string)$subscription->getUuid());
+			if ($secret !== null) {
+				$response['signingSecret'] = $secret;
+			}
+
+			return new JSONResponse($response);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}
 
 	}//end subscribe()
+
+	/**
+	 * The secret the signing default generated for a new subscription, for the one reveal.
+	 *
+	 * REQ-SOW-001: the create response returns the full secret exactly once.
+	 * `protocolSettings` is writeOnly, so the saved object comes back without
+	 * it; the stored row is read unrendered, the way the delivery engine reads
+	 * it. A caller that supplied its own secret already has it and gets nothing.
+	 *
+	 * @param array<string,mixed> $request The create request.
+	 * @param string $subscriptionId The new subscription's uuid.
+	 *
+	 * @return string|null The secret, or null when none was generated.
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 */
+	private function generatedSecret(array $request, string $subscriptionId): ?string {
+		$supplied = (array)($request['protocolSettings'] ?? []);
+		if (($request['style'] ?? '') !== 'push' || isset($supplied['signingSecret']) === true || isset($supplied['unsigned']) === true) {
+			return null;
+		}
+
+		$stored = $this->orObjectService->find(
+			id: $subscriptionId,
+			register: 'integriq',
+			schema: 'event_subscription',
+			_rbac: false,
+			_multitenancy: false,
+			_render: false
+		);
+		$secret = (string)(($stored?->getObject()['protocolSettings']['signingSecret'] ?? ''));
+		if ($secret === '') {
+			return null;
+		}
+
+		return $secret;
+
+	}//end generatedSecret()
 
 	/**
 	 * Update an existing subscription.
@@ -484,8 +529,10 @@ class EventsController extends Controller {
 
 		$secret = $this->signatureService->generateSecret();
 		$protocolSettings['signingSecret'] = $secret;
-		// A first generate clears any rotation remnants.
-		unset($protocolSettings['previousSigningSecret'], $protocolSettings['secretRotatedAt']);
+		// A first generate clears any rotation remnants, and generating a
+		// secret is choosing to sign: an earlier `unsigned` decision ends here
+		// (REQ-SOW-001), or the policy would keep reading it as unsigned.
+		unset($protocolSettings['previousSigningSecret'], $protocolSettings['secretRotatedAt'], $protocolSettings['unsigned']);
 		$data['protocolSettings'] = $protocolSettings;
 
 		$saved = $this->orObjectService->saveObject(

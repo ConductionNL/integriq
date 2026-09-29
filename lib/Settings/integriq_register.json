@@ -876,7 +876,7 @@
         },
         "title": "EventMessage",
         "icon": "EmailFast",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A delivery record for an Event-to-Subscription match",
         "description": "An EventMessage is created when an Event matches an EventSubscription. It tracks delivery state per (Event × Subscription × Consumer) tuple. See local ADR-013.",
         "required": [],
@@ -988,6 +988,11 @@
                   "type": "string",
                   "description": "Transport/exception message, or null on an HTTP-level outcome",
                   "title": "Error Message"
+                },
+                "signed": {
+                  "type": "boolean",
+                  "description": "Whether this attempt carried an X-OpenConnector-Signature header",
+                  "title": "Signed"
                 }
               }
             },
@@ -1036,7 +1041,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -1095,7 +1100,7 @@
           },
           "protocolSettings": {
             "type": "object",
-            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted).",
+            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface. A new push subscription is created with one unless `unsigned` is set; later it changes only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted); `unsigned` (object `{reason, setBy, setAt}`: deliver without a signature; refused without a reason).",
             "title": "Protocol Settings"
           },
           "style": {
@@ -1242,6 +1247,17 @@
             "type": "string",
             "description": "Nextcloud user id that owns the subscription",
             "title": "User ID"
+          },
+          "signingPosture": {
+            "type": "string",
+            "enum": ["signed", "unsigned"],
+            "description": "Whether a push delivery carries a signature. Written on save from protocolSettings, which is hidden on every read.",
+            "title": "Signature"
+          },
+          "unsignedReason": {
+            "type": "string",
+            "description": "Why this subscription delivers unsigned, as the person who turned signing off wrote it.",
+            "title": "Reason for unsigned delivery"
           },
           "created": {
             "type": "string",

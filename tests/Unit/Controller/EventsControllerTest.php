@@ -246,6 +246,81 @@ class EventsControllerTest extends TestCase {
 	}//end testSubscribeSucceedsWhenFamilyActionGranted()
 
 	/**
+	 * REQ-SOW-001: the create response carries the generated secret once, and
+	 * nothing else in it shows the secret.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 */
+	public function testSubscribeRevealsTheGeneratedSecretOnce(): void {
+		$this->request->method('getParams')->willReturn(['style' => 'push', 'sink' => 'https://ontvanger.example.nl/hook']);
+		$this->actionAuth->method('requireAction');
+
+		$stored = ['style' => 'push', 'sink' => 'https://ontvanger.example.nl/hook', 'protocolSettings' => ['signingSecret' => 'whsec_generated']];
+		$saved = ObjectServiceMockBuilder::objectEntity($this, ['style' => 'push', 'sink' => 'https://ontvanger.example.nl/hook'], 'sub-uuid');
+		$this->orObjectService->method('saveObject')->willReturn($saved);
+		$this->orObjectService->method('find')->willReturn(ObjectServiceMockBuilder::objectEntity($this, $stored, 'sub-uuid'));
+
+		$data = $this->controller->subscribe()->getData();
+
+		// The response stays the subscription (existing callers read it at the
+		// root) with the secret beside it, once.
+		$this->assertSame('whsec_generated', $data['signingSecret']);
+		unset($data['signingSecret']);
+		$this->assertSame('https://ontvanger.example.nl/hook', $data['sink']);
+		$this->assertStringNotContainsString('whsec_generated', json_encode($data));
+	}//end testSubscribeRevealsTheGeneratedSecretOnce()
+
+	/**
+	 * REQ-SOW-001: a caller that brought its own secret is not handed it back.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 */
+	public function testSubscribeDoesNotEchoASuppliedSecret(): void {
+		$this->request->method('getParams')->willReturn(['style' => 'push', 'protocolSettings' => ['signingSecret' => 'whsec_mine']]);
+		$this->actionAuth->method('requireAction');
+
+		$saved = ObjectServiceMockBuilder::objectEntity($this, ['style' => 'push'], 'sub-uuid');
+		$this->orObjectService->method('saveObject')->willReturn($saved);
+		$this->orObjectService->expects($this->never())->method('find');
+
+		$data = $this->controller->subscribe()->getData();
+
+		$this->assertArrayNotHasKey('signingSecret', $data);
+	}//end testSubscribeDoesNotEchoASuppliedSecret()
+
+	/**
+	 * REQ-SOW-001: generating a secret on an unsigned subscription ends the unsigned decision.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 */
+	public function testGeneratingASecretEndsAnUnsignedDecision(): void {
+		$stored = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['style' => 'push', 'protocolSettings' => ['unsigned' => ['reason' => 'receiver cannot verify HMAC yet']]],
+			'sub-uuid'
+		);
+		$this->orObjectService->method('find')->willReturn($stored);
+		$written = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$written, $stored) {
+				$written = ($args['object'] ?? $args[0]);
+				return $stored;
+			}
+		);
+
+		$this->controller->generateSigningSecret('sub-uuid');
+
+		$this->assertArrayNotHasKey('unsigned', $written['protocolSettings']);
+		$this->assertArrayHasKey('signingSecret', $written['protocolSettings']);
+	}//end testGeneratingASecretEndsAnUnsignedDecision()
+
+	/**
 	 * TC-11 / REQ-005 regression: subscribing to ONLY a non-NC-native
 	 * (OR-object) type triggers no per-family check — the pre-existing
 	 * coarse-action-only posture is unchanged.

@@ -23,6 +23,7 @@ use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -497,6 +498,101 @@ class EventServiceTest extends TestCase {
 
 		$this->assertArrayNotHasKey('X-OpenConnector-Signature', $capturedHeaders);
 	}//end testDeliverMessageUnsignedWhenNoSecret()
+
+	/**
+	 * Deliver one message for a subscription and capture what was sent and saved.
+	 *
+	 * @param array<string,mixed> $protocolSettings The subscription's protocol settings.
+	 * @param int $status The status the sink answers.
+	 *
+	 * @return array{headers: array<string,mixed>, saved: array<string,mixed>}
+	 */
+	private function deliverCapturing(array $protocolSettings, int $status): array {
+		$message = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'event' => '6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+				'subscription' => '7b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e',
+				'payload' => ['a' => 1],
+				'status' => 'pending',
+			],
+			'msg-uuid'
+		);
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['style' => 'push', 'sink' => 'https://sink.example/hook', 'protocolSettings' => $protocolSettings],
+			'sub-uuid'
+		);
+		$this->objectService->method('find')->willReturn($subscription);
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$saved, $message) {
+				$saved = ($args['object'] ?? $args[0]);
+				return $message;
+			}
+		);
+
+		$headers = [];
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn($status);
+		$response->method('getBody')->willReturn('ok');
+		$response->method('getHeader')->willReturn('');
+		$client = $this->createMock(IClient::class);
+		$client->method('post')->willReturnCallback(
+			function (string $url, array $opts) use (&$headers, $response) {
+				$headers = $opts['headers'];
+				return $response;
+			}
+		);
+		$this->clientService->method('newClient')->willReturn($client);
+
+		$this->service->deliverMessage($message);
+
+		return ['headers' => $headers, 'saved' => $saved];
+	}//end deliverCapturing()
+
+	/**
+	 * REQ-SOW-003: a signed attempt records that it was signed, in a payload the register accepts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+	 */
+	public function testASignedAttemptRecordsThatItWasSigned(): void {
+		$result = $this->deliverCapturing(protocolSettings: ['signingSecret' => 'whsec_testsecret'], status: 200);
+
+		$this->assertArrayHasKey('X-OpenConnector-Signature', $result['headers']);
+		$this->assertTrue(end($result['saved']['attempts'])['signed']);
+		// OpenRegister widens a non-required property's type to accept null
+		// (ValidateObject's null-type widening); the helper does not, so the
+		// success path's `nextAttempt: null` is dropped before validating.
+		$this->assertSame([], RegisterSchemaValidator::errors('event_message', array_filter($result['saved'], static fn ($value): bool => $value !== null)));
+	}//end testASignedAttemptRecordsThatItWasSigned()
+
+	/**
+	 * REQ-SOW-001/003: `unsigned` wins over a stored secret, and the failed attempt says it was unsigned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/signed-outbound-webhooks/specs/webhook-signing/spec.md#requirement-an-unsigned-subscription-and-an-unsigned-attempt-are-marked-req-sow-003
+	 */
+	public function testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo(): void {
+		$result = $this->deliverCapturing(
+			protocolSettings: [
+				'signingSecret' => 'whsec_left_from_before',
+				'unsigned' => ['reason' => 'receiver cannot verify HMAC yet', 'setBy' => 'beheerder', 'setAt' => '2026-09-29T08:00:00+02:00'],
+			],
+			status: 500
+		);
+
+		$this->assertArrayNotHasKey('X-OpenConnector-Signature', $result['headers']);
+		$this->assertFalse(end($result['saved']['attempts'])['signed']);
+		// OpenRegister widens a non-required property's type to accept null
+		// (ValidateObject's null-type widening); the helper does not, so the
+		// success path's `nextAttempt: null` is dropped before validating.
+		$this->assertSame([], RegisterSchemaValidator::errors('event_message', array_filter($result['saved'], static fn ($value): bool => $value !== null)));
+	}//end testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo()
 
 	/**
 	 * Configure the HTTP client mock to return a response with the given status,

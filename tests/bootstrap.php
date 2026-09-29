@@ -395,6 +395,14 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletingEvent.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectCreatingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectCreatingEvent.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectUpdatingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectUpdatingEvent.php';
+		}
+
 		// nextcloud-event-hub: the four OCP\Calendar\Events\* stubs that used to
 		// be required here are GONE, along with tests/stubs/OCP/Calendar/ (#1174).
 		// They existed because those classes are `@since 32.0.0` and this repo

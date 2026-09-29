@@ -80,6 +80,7 @@ use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\EventListener\RosterImportRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
+use OCA\Integriq\EventListener\SubscriptionSigningDefaultListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
 use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
@@ -162,6 +163,8 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
@@ -284,6 +287,12 @@ class Application extends App implements IBootstrap {
 		// OpenRegister's stoppable ObjectDeletingEvent, so the refusal of a
 		// source-owned record holds whichever page or app deletes it.
 		$dispatcher->addServiceListener(eventName: ObjectDeletingEvent::class, className: SourceOwnedDeleteGuardListener::class);
+		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a
+		// subscription through OpenRegister's object API, so the signing
+		// default and the unsigned-needs-a-reason refusal run on its stoppable
+		// creating/updating events, whichever page or app saves it.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: SubscriptionSigningDefaultListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: SubscriptionSigningDefaultListener::class);
 		// Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
 		// CloudEvents (register `openconnector` — the OpenRegister register slug,
 		// frozen across the app-id rename; schema event) created by any app.
