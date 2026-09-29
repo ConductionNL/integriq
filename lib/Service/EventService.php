@@ -185,7 +185,7 @@ class EventService {
 	 *                                      defaulted for the same test-compatibility reason as above;
 	 *                                      null means a guard without an allowlist, never no guard.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
@@ -1078,7 +1078,7 @@ class EventService {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	private function attemptDeliveryDispatch(ObjectEntity $message, ?ObjectEntity $subscription, ExecutionTraceContext $trace): bool {
 		if ($subscription === null) {
@@ -1847,8 +1847,8 @@ class EventService {
 	 *
 	 * @return boolean True when the broker took the message and routed it.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
 	 */
 	private function dispatchBrokerAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
 		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
@@ -1945,7 +1945,7 @@ class EventService {
 	 *
 	 * @return BrokerPublication The publication.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	private function brokerPublication(array $cloudEvent, array $subscriptionData, array $action): BrokerPublication {
 		$contentMode = trim((string)($action['contentMode'] ?? ''));
@@ -1981,7 +1981,7 @@ class EventService {
 	 *
 	 * @return array The settings, empty when the subscription configures none.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
 	 */
 	private function brokerSettings(array $subscriptionData): array {
 		$settings = ($subscriptionData['protocolSettings']['broker'] ?? []);

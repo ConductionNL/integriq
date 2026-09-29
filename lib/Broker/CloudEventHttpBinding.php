@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md
+ * @spec openspec/specs/events-cloudevents/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\Integriq\Broker;
 /**
  * The CloudEvents HTTP protocol binding, both content modes.
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
  */
 class CloudEventHttpBinding {
 
@@ -73,7 +73,7 @@ class CloudEventHttpBinding {
 	 *
 	 * @return array{headers: array<string,string>, body: string} The headers and the serialised body.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
 	 */
 	public function render(array $cloudEvent, string $contentMode = self::MODE_STRUCTURED): array {
 		if ($contentMode !== self::MODE_BINARY) {

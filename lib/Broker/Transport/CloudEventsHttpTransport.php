@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md
+ * @spec openspec/specs/events-cloudevents/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Publishes to a CloudEvents HTTP sink.
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
  */
 class CloudEventsHttpTransport implements BrokerTransportInterface {
 
@@ -66,7 +66,7 @@ class CloudEventsHttpTransport implements BrokerTransportInterface {
 	 *
 	 * @return string The broker id.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	public function getId(): string {
 		return self::BROKER_ID;
@@ -78,7 +78,7 @@ class CloudEventsHttpTransport implements BrokerTransportInterface {
 	 *
 	 * @return array<string,mixed> The description.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	public function describe(): array {
 		return [
@@ -98,7 +98,7 @@ class CloudEventsHttpTransport implements BrokerTransportInterface {
 	 *
 	 * @return BrokerResult What happened.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
 	 */
 	public function publish(BrokerPublication $publication, array $configuration): BrokerResult {
 		$baseUrl = trim((string)($configuration['baseUrl'] ?? ''));

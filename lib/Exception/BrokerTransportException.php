@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md
+ * @spec openspec/specs/events-cloudevents/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use Exception;
 /**
  * Thrown when no broker transport answers to a broker id.
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md
+ * @spec openspec/specs/events-cloudevents/spec.md
  */
 class BrokerTransportException extends Exception {
 }//end class
