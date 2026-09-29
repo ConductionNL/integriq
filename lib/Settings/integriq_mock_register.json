@@ -365,6 +365,12 @@
         "icon": "TableArrowRight",
         "version": "1.0.0",
         "summary": "How the columns of a delivered file map onto the fields of a schema",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
         "description": "Write a column mapping once and pick it again for every delivery with the same columns. Each save raises the version by one. A migration test run reads a file through it and writes nothing.",
         "required": [
           "name",

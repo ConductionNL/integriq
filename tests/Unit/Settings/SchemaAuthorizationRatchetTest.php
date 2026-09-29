@@ -50,6 +50,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 */
 	private const CLOSED = [
 		'app_connection',
+		'column_mapping',
 		'consumer',
 		'digitalPostMessage',
 		'event',

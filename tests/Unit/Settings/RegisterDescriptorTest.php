@@ -98,6 +98,9 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 52 — `uwlr_eduv_message` added by openspec/changes/integriq-adapter-uwlr-eduv,
 	 * bringing the count to 53.
 	 *
+	 * Was 53: `column_mapping` added by migration-source-adapters (the stored
+	 * mapping a delivered file is read through), bringing the count to 54.
+	 *
 	 * @var array<string, string>
 	 */
 	private const SCHEMA_SLUGS = [
@@ -109,6 +112,7 @@ class RegisterDescriptorTest extends TestCase {
 		'EventSubscription' => 'event_subscription',
 		'Job' => 'job',
 		'Mapping' => 'mapping',
+		'ColumnMapping' => 'column_mapping',
 		'Message' => 'mail_message',
 		'IntakeMessage' => 'intake_message',
 		'IntakeRoutingRule' => 'intake_routing_rule',
