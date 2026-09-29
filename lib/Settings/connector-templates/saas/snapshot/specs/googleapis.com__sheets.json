@@ -1,0 +1,41 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Google Sheets API",
+        "version": "v4",
+        "x-apisguru-categories": [
+            "analytics",
+            "media"
+        ],
+        "x-providerName": "googleapis.com"
+    },
+    "externalDocs": {
+        "url": "https://developers.google.com/sheets/"
+    },
+    "servers": [
+        {
+            "url": "https://sheets.googleapis.com/"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "Oauth2": {
+                "flows": {
+                    "implicit": {
+                        "authorizationUrl": "https://accounts.google.com/o/oauth2/auth"
+                    }
+                },
+                "type": "oauth2"
+            },
+            "Oauth2c": {
+                "flows": {
+                    "authorizationCode": {
+                        "authorizationUrl": "https://accounts.google.com/o/oauth2/auth",
+                        "tokenUrl": "https://accounts.google.com/o/oauth2/token"
+                    }
+                },
+                "type": "oauth2"
+            }
+        }
+    }
+}

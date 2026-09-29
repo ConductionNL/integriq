@@ -1,0 +1,7 @@
+{
+	"_comment": "The reviewed list of directory entries that become generated Store templates (connectors-catalogue-expansion design D3). Add an entry by pull request, then run `php scripts/generate-connector-templates.php refresh` and `generate`. Salesforce is not here: the directory's only Salesforce entry is Einstein Vision and Language, not the CRM API, so Salesforce ships as a curated template (salesforce-rest.json).",
+	"entries": [
+		{ "key": "googleapis.com:sheets", "slug": "google-sheets", "name": "Google Sheets", "category": "Spreadsheets" },
+		{ "key": "slack.com", "slug": "slack", "name": "Slack", "category": "Messaging" }
+	]
+}
