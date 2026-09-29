@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the S3-compatible reference adapter (REQ-DIC-001).
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
  */
 class S3AdapterTest extends TestCase {
 

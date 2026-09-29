@@ -78,7 +78,7 @@
       describing the resolved scaffolding pattern, the reference adapter, and
       how to add the next vendor adapter (including the two documented
       known-gaps above).
-- [ ] `hydra-gate-redundant-controller` / `hydra-gate-spdx` NOT RUN via the
+- [x] Run on 29 Sep 2026 over the whole tree (`run-hydra-gates.sh --full`): `[gate-1] spdx-headers: PASS`, `[gate-17] redundant-controller: PASS`. Originally: `hydra-gate-redundant-controller` / `hydra-gate-spdx` NOT RUN via the
       hydra harness itself (out of this worktree's scope per task instructions
       — "Do NOT touch any other app or the hydra/ repo"). Manually verified the
       equivalent: every new file carries `@license`/`@copyright` in its main

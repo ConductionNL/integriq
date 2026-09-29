@@ -1639,7 +1639,7 @@ class Application extends App implements IBootstrap {
 	 *     S3Adapter — one reference adapter per connector-category spec
 	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
 	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
-	 *     (openspec/changes/connector-category-adapter-scaffolding).
+	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
 	 *
 	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
 	 * integriq is loaded but openregister isn't enabled yet) so boot
@@ -1650,7 +1650,7 @@ class Application extends App implements IBootstrap {
 	 * @return void
 	 *
 	 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-integrationprovider-boot-time-registration-with-or-integrationregistry-req-002
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	private function registerIntegrationProviders(IBootContext $context): void {
 		if (class_exists(IntegrationRegistry::class) === false) {

@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use OCP\IUserSession;
  * or `docudesk/lib/Controller/`) — wiring that hand-off is deferred as a
  * follow-up gap rather than invented against a route that doesn't exist.
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
  */
 class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 
@@ -91,7 +91,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function getId(): string {
 		return 'sharepoint-online';
@@ -102,7 +102,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function getLabel(): string {
 		return $this->l10n->t('SharePoint Online');
@@ -113,7 +113,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function getIcon(): string {
 		return 'FileDocumentMultiple';
@@ -124,7 +124,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function getRequiredApp(): ?string {
 		return null;
@@ -135,7 +135,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function getCapabilities(): array {
 		return ['document-fetch', 'document-list'];
@@ -148,7 +148,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,array<string,mixed>> Normalised document summaries.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function listDocuments(string $siteId): array {
 		$path = sprintf('/v1.0/sites/%s/drive/root/children', rawurlencode($siteId));
@@ -190,7 +190,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 * @return array{path: ?string, size: int}|null Persisted-file descriptor, or null on failure
 	 *                                              (unconfigured credential, upstream error, or no active user session).
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function fetchDocument(string $siteId, string $itemId, string $name): ?array {
 		$path = sprintf('/v1.0/sites/%s/drive/items/%s/content', rawurlencode($siteId), rawurlencode($itemId));
@@ -244,7 +244,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
 	 *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.
