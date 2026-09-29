@@ -86,6 +86,34 @@ class SynchronizationRunProgressService {
 	public const THROTTLE_SECONDS = 2.0;
 
 	/**
+	 * The scheduler started the run.
+	 *
+	 * @var string
+	 */
+	public const TRIGGER_CRON = 'cron';
+
+	/**
+	 * An administrator started the run.
+	 *
+	 * @var string
+	 */
+	public const TRIGGER_MANUAL = 'manual';
+
+	/**
+	 * Run again on a failed run started it.
+	 *
+	 * @var string
+	 */
+	public const TRIGGER_RERUN = 'rerun';
+
+	/**
+	 * Every value `triggeredBy` may hold, as the register's enum lists them.
+	 *
+	 * @var array<int, string>
+	 */
+	public const TRIGGERS = [self::TRIGGER_CRON, self::TRIGGER_MANUAL, self::TRIGGER_RERUN];
+
+	/**
 	 * The run record's uuid, once started; null when progress is not being
 	 * recorded for this run.
 	 *
@@ -140,6 +168,14 @@ class SynchronizationRunProgressService {
 	private float $writeMillis = 0.0;
 
 	/**
+	 * The uuid of the last run this service opened, kept after finish() so the
+	 * caller can link the run it just started.
+	 *
+	 * @var string|null
+	 */
+	private ?string $lastRunUuid = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OrObjectService $objectService The OpenRegister object service.
@@ -161,6 +197,9 @@ class SynchronizationRunProgressService {
 	 * @param string $synchronizationId The synchronization being run.
 	 * @param bool $enabled False leaves the run unrecorded, and every
 	 *                      later tick/finish a no-op.
+	 * @param string|null $sourceId The source the synchronization reads, as it
+	 *                              is at the start of this run.
+	 * @param string $triggeredBy What started the run: cron, manual or rerun.
 	 *
 	 * @return void
 	 *
@@ -172,8 +211,14 @@ class SynchronizationRunProgressService {
 	 *   and hand callers a way to start a run they then never tick.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
+	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
 	 */
-	public function start(string $synchronizationId, bool $enabled = true): void {
+	public function start(
+		string $synchronizationId,
+		bool $enabled = true,
+		?string $sourceId = null,
+		string $triggeredBy = self::TRIGGER_MANUAL,
+	): void {
 		if ($enabled === false) {
 			return;
 		}
@@ -182,6 +227,7 @@ class SynchronizationRunProgressService {
 
 		$this->counters = [
 			'synchronizationId' => $synchronizationId,
+			'triggeredBy' => self::resolveTrigger(requested: $triggeredBy, traceTrigger: null),
 			'status' => 'running',
 			'startedAt' => $now,
 			'updatedAt' => $now,
@@ -196,9 +242,16 @@ class SynchronizationRunProgressService {
 			'progressWriteFailures' => 0,
 		];
 
+		// The source as it is NOW. Joining through the synchronization at read
+		// time would move past runs to another source once it is edited.
+		if ($sourceId !== null && $sourceId !== '') {
+			$this->counters['sourceId'] = $sourceId;
+		}
+
 		$saved = $this->write(object: $this->counters);
 		if ($saved !== null) {
 			$this->runUuid = $saved;
+			$this->lastRunUuid = $saved;
 			// Count the opening write against the throttle so a run whose first
 			// page is fast does not immediately write twice.
 			$this->lastWrite = microtime(true);
@@ -268,6 +321,43 @@ class SynchronizationRunProgressService {
 		$this->write(object: $this->counters, uuid: $this->runUuid);
 		$this->runUuid = null;
 	}//end finish()
+
+	/**
+	 * The uuid of the last run record this service opened, also after it finished.
+	 *
+	 * @return string|null The run record's uuid, or null when none was written.
+	 *
+	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+	 */
+	public function lastRunId(): ?string {
+		return $this->lastRunUuid;
+	}//end lastRunId()
+
+	/**
+	 * What started a run.
+	 *
+	 * A caller that asks for a known trigger gets it (Run again asks for
+	 * `rerun`). Otherwise a run inside a cron-started trace is `cron`, and
+	 * everything else was started by a person, so `manual`.
+	 *
+	 * @param string|null $requested The trigger the caller asked for, if any.
+	 * @param string|null $traceTrigger The active execution trace's triggeredBy.
+	 *
+	 * @return string One of cron, manual or rerun.
+	 *
+	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
+	 */
+	public static function resolveTrigger(?string $requested, ?string $traceTrigger): string {
+		if ($requested !== null && in_array($requested, self::TRIGGERS, true) === true) {
+			return $requested;
+		}
+
+		if ($traceTrigger === self::TRIGGER_CRON) {
+			return self::TRIGGER_CRON;
+		}
+
+		return self::TRIGGER_MANUAL;
+	}//end resolveTrigger()
 
 	/**
 	 * How many progress writes were actually issued this run.

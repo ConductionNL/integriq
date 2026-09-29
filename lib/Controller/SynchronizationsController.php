@@ -24,6 +24,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SynchronizationRunProgressService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -68,6 +69,7 @@ class SynchronizationsController extends Controller {
 	 * @param LoggerInterface $logger The logger.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param SynchronizationRunProgressService|null $runProgress The run progress service, for the id of the run just started.
 	 */
 	public function __construct(
 		$appName,
@@ -78,6 +80,7 @@ class SynchronizationsController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
+		private readonly ?SynchronizationRunProgressService $runProgress = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -362,6 +365,13 @@ class SynchronizationsController extends Controller {
 		// bypass the guard.
 		$forceDeletion = filter_var(($parameters['forceDeletion'] ?? false), FILTER_VALIDATE_BOOLEAN);
 
+		// Only Run again may name the trigger. Anything else is left to the
+		// engine, which reads it from the trace: a browser cannot claim `cron`.
+		$triggeredBy = null;
+		if (($parameters['triggeredBy'] ?? null) === SynchronizationRunProgressService::TRIGGER_RERUN) {
+			$triggeredBy = SynchronizationRunProgressService::TRIGGER_RERUN;
+		}
+
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: $id,
@@ -382,8 +392,16 @@ class SynchronizationsController extends Controller {
 				force: $force,
 				source: $source,
 				data: $data,
-				forceDeletion: $forceDeletion
+				forceDeletion: $forceDeletion,
+				triggeredBy: $triggeredBy
 			);
+
+			// Run again links the run it started (connection-run-monitoring
+			// REQ-CRUN-003), so the answer names the run record's id.
+			$runId = $this->runProgress?->lastRunId();
+			if ($runId !== null && is_array($logAndContractArray) === true) {
+				$logAndContractArray['runId'] = $runId;
+			}
 
 			// Return the result as a JSON response.
 			return new JSONResponse(data: $logAndContractArray, statusCode: 200);

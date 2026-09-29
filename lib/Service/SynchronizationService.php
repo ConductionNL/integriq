@@ -3121,6 +3121,9 @@ class SynchronizationService {
 	 *                                          already-traced endpoint pipeline),
 	 *                                          reused instead (execution-trace
 	 *                                          REQ-001).
+	 * @param string|null $triggeredBy What started the run, for the run record:
+	 *                                 `rerun` from Run again; null reads the
+	 *                                 trace (cron or manual).
 	 *
 	 * @return array|array|null
 	 *
@@ -3157,6 +3160,7 @@ class SynchronizationService {
 		?bool $forceDeletion = false,
 		?string $approvalRequestId = null,
 		?ExecutionTraceContext $trace = null,
+		?string $triggeredBy = null,
 	): ?array {
 		// Controllers and cron jobs fetch the synchronization as an OpenRegister
 		// object (register `openconnector`, schema `synchronization`); hydrate it
@@ -3272,7 +3276,15 @@ class SynchronizationService {
 			// Opt-out per synchronization. Defaults ON: a run nobody can watch
 			// is the defect being fixed, so invisibility should be the choice,
 			// not the default. Also the arm-switch for the overhead control.
-			enabled: (bool)($synchronization['sourceConfig']['recordRunProgress'] ?? true)
+			enabled: (bool)($synchronization['sourceConfig']['recordRunProgress'] ?? true),
+			// The source as it is now, and what started the run, so a summary
+			// per source per day never has to guess (connection-run-monitoring
+			// REQ-CRUN-001).
+			sourceId: $this->runSourceId(synchronization: $synchronization),
+			triggeredBy: SynchronizationRunProgressService::resolveTrigger(
+				requested: $triggeredBy,
+				traceTrigger: $trace?->getTriggeredBy()
+			)
 		);
 
 		// Handle full extern-to-intern sync.
@@ -3330,6 +3342,24 @@ class SynchronizationService {
 
 		return $log->jsonSerialize();
 	}//end synchronize()
+
+	/**
+	 * The source id a run records: the synchronization's `sourceId` as it is now.
+	 *
+	 * @param array $synchronization The hydrated synchronization.
+	 *
+	 * @return string|null The source id, or null when the synchronization names none.
+	 *
+	 * @spec openspec/changes/observability-connection-run-summary/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
+	 */
+	private function runSourceId(array $synchronization): ?string {
+		$sourceId = ($synchronization['sourceId'] ?? null);
+		if (is_scalar($sourceId) === false || (string)$sourceId === '') {
+			return null;
+		}
+
+		return (string)$sourceId;
+	}//end runSourceId()
 
 	/**
 	 * Project a run-log's object counters onto the progress record's scalars.
