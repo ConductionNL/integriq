@@ -149,7 +149,15 @@ class MaterializeCatalogItems implements IRepairStep {
 					'status' => $status,
 					'standards' => (array)($entry['standards'] ?? []),
 					'icon' => (string)($entry['icon'] ?? ''),
+					'tier' => (string)($entry['tier'] ?? 'adapter'),
 				];
+				// Where a template was checked, and the directory snapshot a
+				// generated one came from (connectors-catalogue-expansion).
+				foreach (['verifiedAgainst', 'snapshotDate'] as $key) {
+					if (empty($entry[$key]) === false) {
+						$payload[$key] = (string)$entry[$key];
+					}
+				}
 
 				try {
 					$orObjectService->saveObject(
@@ -168,6 +176,12 @@ class MaterializeCatalogItems implements IRepairStep {
 				}
 			}//end foreach
 
+			$this->removeStaleCards(
+				orObjectService: $orObjectService,
+				existingBySlug: $existingBySlug,
+				entries: $entries
+			);
+
 			return $upserted;
 		};
 
@@ -178,6 +192,35 @@ class MaterializeCatalogItems implements IRepairStep {
 		$output->info('Integriq: materialized ' . $upserted . ' of ' . count($entries) . ' catalog_item entries.');
 
 	}//end run()
+
+	/**
+	 * Remove the cards the registry no longer lists: environment
+	 * placeholders and duplicates an earlier version materialised, so an
+	 * upgraded install counts what a fresh one counts (REQ-CCX-004).
+	 *
+	 * @param OrObjectService $orObjectService The OR object service.
+	 * @param array<string,string> $existingBySlug The stored cards, slug => uuid.
+	 * @param array<int,array<string,mixed>> $entries The collected entries.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 */
+	private function removeStaleCards(OrObjectService $orObjectService, array $existingBySlug, array $entries): void {
+		$listed = array_flip(array_map(static fn (array $entry): string => (string)($entry['slug'] ?? ''), $entries));
+		foreach ($existingBySlug as $slug => $uuid) {
+			if (isset($listed[$slug]) === true) {
+				continue;
+			}
+
+			try {
+				$orObjectService->deleteObject(uuid: $uuid);
+			} catch (\Throwable $e) {
+				$this->logger->warning('Integriq: could not remove stale catalog_item', ['slug' => $slug, 'exception' => $e->getMessage()]);
+			}
+		}
+
+	}//end removeStaleCards()
 
 	/**
 	 * Build a slug => uuid index of every existing catalog_item object, so

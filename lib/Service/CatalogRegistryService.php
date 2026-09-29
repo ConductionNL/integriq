@@ -59,6 +59,25 @@ class CatalogRegistryService {
 	private const FRAGMENT_DIR = __DIR__ . '/../Settings/register.d';
 
 	/**
+	 * The connector template library: listed in the Store, never imported
+	 * as source objects (connectors-catalogue-expansion design D1).
+	 */
+	private const TEMPLATE_DIR = __DIR__ . '/../Settings/connector-templates';
+
+	/**
+	 * Seeded sources that are not connectors: promotion targets seeded by
+	 * environments-and-promotion.json (design D4).
+	 */
+	private const PLACEHOLDER_SLUG_PREFIX = 'environment-';
+
+	/**
+	 * The library directory this instance reads.
+	 *
+	 * @var string
+	 */
+	private readonly string $templateDir;
+
+	/**
 	 * Human-readable category labels keyed by the source schema's free-form
 	 * `type` field (lib/Settings/integriq_register.json's documented
 	 * vocabulary: api, database, file, soap, dso, peppol, psd2, sms, payment).
@@ -127,13 +146,16 @@ class CatalogRegistryService {
 	 * @param OrObjectService $orObjectService OR object service, used to resolve seeded Source objects.
 	 * @param IAppConfig $appConfig App config, used to resolve flag-gated mechanism status.
 	 * @param LoggerInterface $logger Logger for malformed seed-fragment warnings.
+	 * @param string|null $templateDir The template library to read; the shipped one when null.
 	 */
 	public function __construct(
 		private readonly IntegrationRegistry $integrationRegistry,
 		private readonly OrObjectService $orObjectService,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		?string $templateDir = null,
 	) {
+		$this->templateDir = ($templateDir ?? self::TEMPLATE_DIR);
 	}//end __construct()
 
 	/**
@@ -146,24 +168,116 @@ class CatalogRegistryService {
 	 * @return array<int, array<string,mixed>>
 	 *
 	 * @spec openspec/specs/connector-catalog/spec.md#scenario-materialization-is-idempotent
+	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
 	 */
 	public function collect(): array {
 		$entries = [];
 
 		foreach ($this->collectFromIntegrationRegistry() as $entry) {
-			$entries[] = $entry;
+			$entries[] = $entry + ['tier' => 'adapter'];
 		}
 
+		// A system with an adapter and a seeded source is listed once, as the
+		// adapter; the seeded source is what its Instantiate enables (D4).
+		$adapterTemplates = [];
 		foreach ($this->collectStaticDescriptors() as $entry) {
-			$entries[] = $entry;
+			$entries[] = $entry + ['tier' => 'adapter'];
+			if ((string)$entry['sourceTemplateSlug'] !== '') {
+				$adapterTemplates[(string)$entry['sourceTemplateSlug']] = true;
+			}
 		}
 
 		foreach ($this->collectFromSeedFragments() as $entry) {
+			if (isset($adapterTemplates[$entry['sourceTemplateSlug']]) === true) {
+				continue;
+			}
+
+			$entries[] = $entry + ['tier' => 'curated'];
+		}
+
+		foreach ($this->collectFromTemplates() as $entry) {
 			$entries[] = $entry;
 		}
 
 		return $entries;
 	}//end collect()
+
+	/**
+	 * (d) One entry per template in the connector template library.
+	 *
+	 * A template is a `source` payload plus an `x-template` block naming the
+	 * vendor, the system, the standard it is reached over, where it was
+	 * checked and its tier. It becomes a source only when an administrator
+	 * instantiates it (design D1).
+	 *
+	 * @return array<int, array<string,mixed>>
+	 *
+	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	private function collectFromTemplates(): array {
+		$entries = [];
+		foreach ($this->readTemplates() as $template) {
+			$meta = $template['x-template'];
+			$source = $template['source'];
+			$slug = (string)$meta['slug'];
+			$type = (string)($source['type'] ?? 'api');
+
+			$entry = [
+				'slug' => 'template:' . $slug,
+				'name' => (string)($source['name'] ?? $meta['system'] ?? $slug),
+				'description' => (string)($source['description'] ?? ''),
+				'category' => (string)($meta['category'] ?? self::TYPE_CATEGORY_LABELS[$type] ?? 'Integrations'),
+				'kind' => 'source-template',
+				'mechanism' => 'mock-seeded',
+				'flagKey' => '',
+				'sourceTemplateSlug' => $slug,
+				'standards' => [(string)($meta['standard'] ?? 'REST API')],
+				'icon' => $this->iconForType(type: $type),
+				'tier' => (string)($meta['tier'] ?? 'curated'),
+				'verifiedAgainst' => (string)($meta['verifiedAgainst'] ?? ''),
+			];
+			if (empty($meta['snapshotDate']) === false) {
+				$entry['snapshotDate'] = (string)$meta['snapshotDate'];
+			}
+
+			$entries[] = $entry;
+		}//end foreach
+
+		return $entries;
+	}//end collectFromTemplates()
+
+	/**
+	 * Read every well-formed template in the library, one folder deep.
+	 *
+	 * @return array<int, array{x-template: array, source: array}>
+	 *
+	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	private function readTemplates(): array {
+		$files = glob($this->templateDir . '/*/*.json');
+		if ($files === false) {
+			return [];
+		}
+
+		sort($files);
+
+		$templates = [];
+		foreach ($files as $file) {
+			$data = json_decode((string)file_get_contents($file), true);
+			if (is_array($data) === false
+				|| is_array($data['x-template'] ?? null) === false
+				|| is_array($data['source'] ?? null) === false
+				|| (string)($data['x-template']['slug'] ?? '') === ''
+			) {
+				// allow-list.json and the snapshot are not templates.
+				continue;
+			}
+
+			$templates[] = $data;
+		}
+
+		return $templates;
+	}//end readTemplates()
 
 	/**
 	 * (a) Read every provider registered with OR's IntegrationRegistry.
@@ -361,7 +475,7 @@ class CatalogRegistryService {
 				}
 
 				$slug = (string)($self['slug'] ?? '');
-				if ($slug === '') {
+				if ($slug === '' || str_starts_with($slug, self::PLACEHOLDER_SLUG_PREFIX) === true) {
 					continue;
 				}
 
@@ -446,8 +560,17 @@ class CatalogRegistryService {
 	 * @return array<string,mixed>|null The raw source object payload (minus `@self`), or null when not found.
 	 *
 	 * @spec openspec/specs/connector-catalog/spec.md#scenario-instantiate-action-creates-a-source-from-a-seeded-template
+	 * @spec openspec/changes/connectors-catalogue-expansion/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function findSeedSourcePayload(string $slug): ?array {
+		foreach ($this->readTemplates() as $template) {
+			if ((string)$template['x-template']['slug'] === $slug) {
+				$payload = $template['source'];
+				$payload['slug'] = $slug;
+				return $payload;
+			}
+		}
+
 		if (is_dir(self::FRAGMENT_DIR) === false) {
 			return null;
 		}
