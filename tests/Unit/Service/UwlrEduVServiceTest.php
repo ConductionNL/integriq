@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  */
 class UwlrEduVServiceTest extends TestCase {
 
@@ -305,7 +305,7 @@ class UwlrEduVServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-failed-send-persists-and-is-retried-in-isolation
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-failed-send-persists-and-is-retried-in-isolation
 	 */
 	public function testRetryFailedRetriesOnlyFailedRows(): void {
 		$this->sources[] = $this->sourceEntity();

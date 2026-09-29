@@ -31,7 +31,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use SimpleXMLElement;
 /**
  * Retour XML envelope -> plain acknowledgement status update.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
  */
 class UwlrEduVAcknowledgementTranslator {
 
@@ -76,7 +76,7 @@ class UwlrEduVAcknowledgementTranslator {
 	 *
 	 * @throws UwlrEduVTranslationException When the XML is malformed or the `kenmerk` is missing/empty.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-an-accepted-acknowledgement-dispatches-the-event-as-accepted
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-an-accepted-acknowledgement-dispatches-the-event-as-accepted
 	 */
 	public function translate(string $xml): array {
 		$root = $this->parseXml(xml: $xml);

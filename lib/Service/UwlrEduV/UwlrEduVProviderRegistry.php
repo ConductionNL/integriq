@@ -27,7 +27,7 @@ use RuntimeException;
  * provider id nothing answers to fails naming itself and the ids that do
  * exist (mirrors OsoProviderRegistry).
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
  */
 class UwlrEduVProviderRegistry {
 	/**
@@ -59,7 +59,7 @@ class UwlrEduVProviderRegistry {
 	 *
 	 * @return bool True when one is registered.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function has(string $providerId): bool {
 		return isset($this->providers[$providerId]);
@@ -74,7 +74,7 @@ class UwlrEduVProviderRegistry {
 	 *
 	 * @throws RuntimeException When nothing answers to a non-empty, unrecognised id.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function get(string $providerId): UwlrEduVProviderInterface {
 		$resolved = $providerId;
@@ -105,7 +105,7 @@ class UwlrEduVProviderRegistry {
 	 *
 	 * @return array<int,string> Provider ids.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function ids(): array {
 		return array_keys($this->providers);

@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Exception;
  * Thrown on any UWLR/Edu-V/Basispoort/Entree-content provider/transport or
  * configuration failure.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  */
 class UwlrEduVProviderException extends Exception {
 }//end class

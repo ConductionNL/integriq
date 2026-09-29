@@ -6309,7 +6309,7 @@
         "icon": "CloudSyncOutline",
         "version": "1.0.0",
         "summary": "Audit record for one outbound UWLR, Edu-V, Basispoort or Entree-content export/sync send, or one inbound acknowledgement, produced by the integriq-adapter-uwlr-eduv connector",
-        "description": "A UWLR/Edu-V Message tracks one outbound send (uwlr pupil/group/teacher export, edu-v onderwijsdeelnemers/onderwijsgroepen/onderwijsmedewerkers export, basispoort or entree-content sync) or one inbound acknowledgement/retour, tagged by target and (where applicable) subtype. See openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md.",
+        "description": "A UWLR/Edu-V Message tracks one outbound send (uwlr pupil/group/teacher export, edu-v onderwijsdeelnemers/onderwijsgroepen/onderwijsmedewerkers export, basispoort or entree-content sync) or one inbound acknowledgement/retour, tagged by target and (where applicable) subtype. See openspec/specs/uwlr-eduv-adapter/spec.md.",
         "required": [
           "target",
           "direction",

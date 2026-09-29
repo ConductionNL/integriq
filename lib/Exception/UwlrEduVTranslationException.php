@@ -22,7 +22,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Exception;
  * Thrown when a translator cannot produce a complete, leak-free envelope
  * or acknowledgement event.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
  */
 class UwlrEduVTranslationException extends Exception {
 }//end class

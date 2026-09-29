@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the shared UWLR/Edu-V/Basispoort/Entree-content acknowledgement translator.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-006-shared-acknowledgement-translation-and-event-dispatch
  */
 class UwlrEduVAcknowledgementTranslatorTest extends TestCase {
 
@@ -63,7 +63,7 @@ class UwlrEduVAcknowledgementTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-an-accepted-acknowledgement-dispatches-the-event-as-accepted
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-an-accepted-acknowledgement-dispatches-the-event-as-accepted
 	 */
 	public function testAcceptedAcknowledgementTranslatesAcceptedTrue(): void {
 		$update = $this->translator->translate($this->fixture('retour-accepted.xml'));
@@ -79,7 +79,7 @@ class UwlrEduVAcknowledgementTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-retour-with-no-kenmerk-is-rejected-before-any-dispatch
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-retour-with-no-kenmerk-is-rejected-before-any-dispatch
 	 */
 	public function testMissingKenmerkRaisesBeforeAnyUpdate(): void {
 		$this->expectException(UwlrEduVTranslationException::class);

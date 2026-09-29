@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the Edu-V export envelope translator.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-003-edu-v-export-envelope-translation-across-three-qualified-data-services
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-003-edu-v-export-envelope-translation-across-three-qualified-data-services
  */
 class EduVExportEnvelopeTranslatorTest extends TestCase {
 
@@ -52,7 +52,7 @@ class EduVExportEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-each-edu-v-subtype-names-its-own-targetschema
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-each-edu-v-subtype-names-its-own-targetschema
 	 */
 	public function testEachDataServiceNamesItsOwnTargetSchema(): void {
 		$seen = [];
@@ -71,7 +71,7 @@ class EduVExportEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-an-unknown-data-service-is-rejected-before-any-envelope-is-built
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-an-unknown-data-service-is-rejected-before-any-envelope-is-built
 	 */
 	public function testUnqualifiedDataServiceIsRejected(): void {
 		$this->expectException(UwlrEduVTranslationException::class);

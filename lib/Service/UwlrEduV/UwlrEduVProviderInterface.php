@@ -24,7 +24,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCA\Integriq\Exception\UwlrEduVProviderException;
  * already-translated envelope for a given target and report the
  * transport-assigned reference.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
  */
 interface UwlrEduVProviderInterface {
 	/**
@@ -46,7 +46,7 @@ interface UwlrEduVProviderInterface {
 	 *
 	 * @return string The provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function getProviderId(): string;
 
@@ -55,7 +55,7 @@ interface UwlrEduVProviderInterface {
 	 *
 	 * @return array<string, mixed> A JSON Schema (object) fragment.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function getConfigSchema(): array;
 
@@ -71,7 +71,7 @@ interface UwlrEduVProviderInterface {
 	 *
 	 * @throws UwlrEduVProviderException When the endpoint is unreachable, errors, or is misconfigured.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function send(array $sourceConfiguration, string $target, string $kenmerk, string $envelopeXml): string;
 }//end interface

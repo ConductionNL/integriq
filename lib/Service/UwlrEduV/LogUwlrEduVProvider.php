@@ -20,7 +20,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\Integriq\Service\UwlrEduV;
 /**
  * Sandbox UWLR/Edu-V provider: no network call, synthetic reference.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
  */
 class LogUwlrEduVProvider implements UwlrEduVProviderInterface {
 
@@ -46,7 +46,7 @@ class LogUwlrEduVProvider implements UwlrEduVProviderInterface {
 	 *
 	 * @return string The stable `log` provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function getProviderId(): string {
 		return 'log';
@@ -57,7 +57,7 @@ class LogUwlrEduVProvider implements UwlrEduVProviderInterface {
 	 *
 	 * @return array<string, mixed> An empty schema — the log provider needs no configuration.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function getConfigSchema(): array {
 		return ['type' => 'object', 'properties' => []];
@@ -73,7 +73,7 @@ class LogUwlrEduVProvider implements UwlrEduVProviderInterface {
 	 *
 	 * @return string The synthetic `MOCK-UWLREDUV-<n>` reference.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
 	 */
 	public function send(array $sourceConfiguration, string $target, string $kenmerk, string $envelopeXml): string {
 		self::$counter++;

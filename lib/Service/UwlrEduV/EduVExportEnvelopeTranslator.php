@@ -30,7 +30,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-003-edu-v-export-envelope-translation-across-three-qualified-data-services
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-003-edu-v-export-envelope-translation-across-three-qualified-data-services
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 /**
  * Edu-V export payload -> Edu-V XML envelope.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-003-edu-v-export-envelope-translation-across-three-qualified-data-services
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-003-edu-v-export-envelope-translation-across-three-qualified-data-services
  */
 class EduVExportEnvelopeTranslator {
 
@@ -92,7 +92,7 @@ class EduVExportEnvelopeTranslator {
 	 *                                      is missing/empty, or the rendered envelope still carries
 	 *                                      an unresolved template marker.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-each-edu-v-subtype-names-its-own-targetschema
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-each-edu-v-subtype-names-its-own-targetschema
 	 */
 	public function translate(string $kenmerk, string $dataService, array $payload): string {
 		if (trim($kenmerk) === '') {

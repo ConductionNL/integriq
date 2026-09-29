@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  */
 class UwlrEduVController extends Controller {
 	/**
@@ -88,7 +88,7 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @return JSONResponse `{ref, target, status}` on success, or a 400/503/502 error envelope.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-export-endpoint-returns-a-ref-on-success
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-export-endpoint-returns-a-ref-on-success
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -123,7 +123,7 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @return JSONResponse `{ref, target, status}` on success, or a 400/503/502 error envelope.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-each-edu-v-subtype-names-its-own-targetschema
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-each-edu-v-subtype-names-its-own-targetschema
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -158,7 +158,7 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @return JSONResponse `{ref, target, status}` on success, or a 400/503/502 error envelope.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-004-basispoort-sync-translation-with-sso-hand-off
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-004-basispoort-sync-translation-with-sso-hand-off
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -192,7 +192,7 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @return JSONResponse `{ref, target, status}` on success, or a 400/503/502 error envelope.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-005-entree-content-sso-hand-off-translation
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -226,7 +226,7 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-processing
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-processing
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]

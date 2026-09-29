@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-004-basispoort-sync-translation-with-sso-hand-off
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-004-basispoort-sync-translation-with-sso-hand-off
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 /**
  * Basispoort sync payload -> Basispoort XML envelope.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-004-basispoort-sync-translation-with-sso-hand-off
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-004-basispoort-sync-translation-with-sso-hand-off
  */
 class BasispoortSyncTranslator {
 
@@ -72,7 +72,7 @@ class BasispoortSyncTranslator {
 	 * @throws UwlrEduVTranslationException When a required field is missing/empty, or the
 	 *                                      rendered envelope still carries an unresolved template marker.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-basispoort-sync-payload-carries-the-sso-audience
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-basispoort-sync-payload-carries-the-sso-audience
 	 */
 	public function translate(string $kenmerk, array $payload): string {
 		if (trim($kenmerk) === '') {
@@ -117,7 +117,7 @@ class BasispoortSyncTranslator {
 	 *
 	 * @throws UwlrEduVTranslationException Naming the first missing/empty required field found.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-ssoaudience-never-reaches-the-envelope
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-ssoaudience-never-reaches-the-envelope
 	 */
 	private function assertRequiredFieldsPresent(array $payload): void {
 		foreach (self::REQUIRED_FIELDS as $field) {

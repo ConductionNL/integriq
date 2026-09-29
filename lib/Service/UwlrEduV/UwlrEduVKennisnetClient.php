@@ -29,7 +29,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Kennisnet UWLR/Edu-V/Basispoort/Entree-content provider: signed envelope dispatch.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
  */
 class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface {
 
@@ -76,7 +76,7 @@ class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface {
 	 *
 	 * @return string The stable `uwlr-eduv` provider identifier.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function getProviderId(): string {
 		return 'uwlr-eduv';
@@ -87,7 +87,7 @@ class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface {
 	 *
 	 * @return array<string, mixed> The UWLR/Edu-V Kennisnet source configuration JSON Schema.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function getConfigSchema(): array {
 		return [
@@ -122,7 +122,7 @@ class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface {
 	 * @throws UwlrEduVProviderException When no certificate reference resolves, the endpoint is missing,
 	 *                                   or the transport fails.
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public function send(array $sourceConfiguration, string $target, string $kenmerk, string $envelopeXml): string {
 		$certificateRef = (string)($sourceConfiguration['certificateRef'] ?? '');

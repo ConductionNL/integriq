@@ -95,7 +95,7 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 51 — `oso_message` added by openspec/changes/integriq-adapter-oso,
 	 * bringing the count to 52.
 	 *
-	 * Was 52 — `uwlr_eduv_message` added by openspec/changes/integriq-adapter-uwlr-eduv,
+	 * Was 52 — `uwlr_eduv_message` added by openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv,
 	 * bringing the count to 53.
 	 *
 	 * Was 53: `column_mapping` added by migration-source-adapters (the stored

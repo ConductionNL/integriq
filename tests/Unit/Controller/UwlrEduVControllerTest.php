@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -40,7 +40,7 @@ use RuntimeException;
  * Tests for the four UWLR/Edu-V/Basispoort/Entree-content push/sync
  * endpoints and the shared signed inbound retour receiver.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-008-pushsync-endpoints-and-a-shared-signed-retour-endpoint
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-008-pushsync-endpoints-and-a-shared-signed-retour-endpoint
  */
 class UwlrEduVControllerTest extends TestCase {
 
@@ -179,7 +179,7 @@ class UwlrEduVControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-export-endpoint-returns-a-ref-on-success
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-export-endpoint-returns-a-ref-on-success
 	 */
 	public function testUwlrReturnsResult(): void {
 		$this->request->method('getParams')->willReturn(['kenmerk' => 'k1', 'subtype' => 'pupil', 'payload' => []]);
@@ -308,7 +308,7 @@ class UwlrEduVControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-processing
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-processing
 	 */
 	public function testRetourInvalidSignatureReturns401BeforeAnySideEffect(): void {
 		$source = new ObjectEntity();

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -30,7 +30,7 @@ use RuntimeException;
 /**
  * Tests for the scheduled UWLR/Edu-V/Basispoort/Entree-content retry background job.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-007-per-target-audit-persistence-and-isolated-retry
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-007-per-target-audit-persistence-and-isolated-retry
  */
 class UwlrEduVRetryJobTest extends TestCase {
 

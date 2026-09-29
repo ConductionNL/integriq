@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/tasks.md
+ * @spec openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the UWLR export envelope translator.
  *
- * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
+ * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-002-uwlr-export-envelope-translation-across-three-subtypes
  */
 class UwlrExportEnvelopeTranslatorTest extends TestCase {
 
@@ -52,7 +52,7 @@ class UwlrExportEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-pupil-export-payload-translates-to-a-valid-envelope
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-complete-pupil-export-payload-translates-to-a-valid-envelope
 	 */
 	public function testEachSubtypeCarriesEckId(): void {
 		foreach (UwlrExportEnvelopeTranslator::SUBTYPES as $subtype) {
@@ -81,7 +81,7 @@ class UwlrExportEnvelopeTranslatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/integriq-adapter-uwlr-eduv/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-eckid-never-reaches-the-envelope
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-a-missing-eckid-never-reaches-the-envelope
 	 */
 	public function testMissingEckIdNeverReachesTheEnvelope(): void {
 		$this->expectException(UwlrEduVTranslationException::class);
