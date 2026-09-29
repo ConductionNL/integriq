@@ -255,7 +255,7 @@ export default {
 	text-align: start;
 	padding: 4px 8px;
 	vertical-align: top;
-	word-break: break-word;
+	overflow-wrap: anywhere;
 }
 
 .changeSet__fields {
