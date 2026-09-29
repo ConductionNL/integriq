@@ -57,7 +57,8 @@ vi.mock('@nextcloud/vue', async () => {
 				return h('input', {
 					value: this.modelValue,
 					'aria-label': this.label,
-					onInput: (event) => this.$emit('update:modelValue', event.target.value),
+					onInput: (event) =>
+						this.$emit('update:modelValue', event.target.value),
 				})
 			},
 		}),
@@ -91,8 +92,29 @@ function aWeek() {
 		sourceId: 'src-kvk',
 		days,
 		runs: [
-			{ id: 'run-2', synchronizationId: 'sync-1', status: 'failed', triggeredBy: 'cron', startedAt: '2026-09-27T02:00:00+02:00', found: 5, created: 1, updated: 0, invalid: 1, message: 'Source answered 500' },
-			{ id: 'run-1', synchronizationId: 'sync-1', status: 'success', triggeredBy: 'cron', startedAt: '2026-09-27T14:00:00+02:00', found: 10, created: 2, updated: 3, invalid: 0 },
+			{
+				id: 'run-2',
+				synchronizationId: 'sync-1',
+				status: 'failed',
+				triggeredBy: 'cron',
+				startedAt: '2026-09-27T02:00:00+02:00',
+				found: 5,
+				created: 1,
+				updated: 0,
+				invalid: 1,
+				message: 'Source answered 500',
+			},
+			{
+				id: 'run-1',
+				synchronizationId: 'sync-1',
+				status: 'success',
+				triggeredBy: 'cron',
+				startedAt: '2026-09-27T14:00:00+02:00',
+				found: 10,
+				created: 2,
+				updated: 3,
+				invalid: 0,
+			},
 		],
 	}
 }
@@ -105,7 +127,11 @@ function aWeek() {
 function mountWidget() {
 	return mount(SourceRunSummaryWidget, {
 		global: {
-			provide: { cnSectionContext: { value: { objectId: 'src-kvk', object: { name: 'KVK' } } } },
+			provide: {
+				cnSectionContext: {
+					value: { objectId: 'src-kvk', object: { name: 'KVK' } },
+				},
+			},
 		},
 	})
 }
@@ -123,11 +149,15 @@ describe('the pulls per day on the source page', () => {
 		const wrapper = mountWidget()
 		await flushPromises()
 
-		expect(get).toHaveBeenCalledWith('/index.php/apps/integriq/api/sources/src-kvk/run-summary')
+		expect(get).toHaveBeenCalledWith(
+			'/index.php/apps/integriq/api/sources/src-kvk/run-summary',
+		)
 		const rows = wrapper.findAll('[data-testid="run-summary-days"] tbody tr')
 		expect(rows).toHaveLength(7)
 		const runs = rows.map((row) => Number(row.find('[data-col="runs"]').text()))
-		const failed = rows.map((row) => Number(row.find('[data-col="failed"]').text()))
+		const failed = rows.map((row) =>
+			Number(row.find('[data-col="failed"]').text()),
+		)
 		expect(runs.reduce((a, b) => a + b, 0)).toBe(14)
 		expect(failed.reduce((a, b) => a + b, 0)).toBe(2)
 	})
@@ -164,11 +194,15 @@ describe('the pulls per day on the source page', () => {
 	})
 
 	it('says so when the summary cannot be read', async () => {
-		get.mockRejectedValue({ response: { data: { error: 'Action requires admin rights' } } })
+		get.mockRejectedValue({
+			response: { data: { error: 'Action requires admin rights' } },
+		})
 		const wrapper = mountWidget()
 		await flushPromises()
 
-		expect(wrapper.find('[role="alert"]').text()).toContain('Action requires admin rights')
+		expect(wrapper.find('[role="alert"]').text()).toContain(
+			'Action requires admin rights',
+		)
 	})
 })
 
@@ -184,22 +218,34 @@ describe('Run again as a row action', () => {
 		setRouter({ push })
 		post.mockResolvedValue({ data: { runId: 'run-3' } })
 
-		await rerunFailedRunHandler({ actionId: 'run-again', item: { id: 'run-2', synchronizationId: 'sync-1', status: 'failed' } })
+		await rerunFailedRunHandler({
+			actionId: 'run-again',
+			item: { id: 'run-2', synchronizationId: 'sync-1', status: 'failed' },
+		})
 
 		expect(post).toHaveBeenCalledTimes(1)
 		expect(post.mock.calls[0][1]).toEqual({ triggeredBy: 'rerun' })
 		expect(showSuccess).toHaveBeenCalledTimes(1)
 		const options = showSuccess.mock.calls[0][1]
 		options.onClick()
-		expect(push).toHaveBeenCalledWith({ name: 'SynchronizationRuns', query: { run: 'run-3' } })
+		expect(push).toHaveBeenCalledWith({
+			name: 'SynchronizationRuns',
+			query: { run: 'run-3' },
+		})
 	})
 
 	it('reports the refusal and starts nothing else', async () => {
-		post.mockRejectedValue({ response: { data: { error: 'Action requires admin rights' } } })
+		post.mockRejectedValue({
+			response: { data: { error: 'Action requires admin rights' } },
+		})
 
-		await rerunFailedRunHandler({ item: { synchronizationId: 'sync-1', status: 'failed' } })
+		await rerunFailedRunHandler({
+			item: { synchronizationId: 'sync-1', status: 'failed' },
+		})
 
-		expect(showError).toHaveBeenCalledWith(expect.stringContaining('Action requires admin rights'))
+		expect(showError).toHaveBeenCalledWith(
+			expect.stringContaining('Action requires admin rights'),
+		)
 		expect(showSuccess).not.toHaveBeenCalled()
 	})
 
@@ -207,34 +253,54 @@ describe('Run again as a row action', () => {
 		const page = manifest.pages.find((p) => p.id === 'SynchronizationRuns')
 		const action = page.config.actions.find((a) => a.id === 'run-again')
 		expect(action.handler).toBe('rerunFailedRunHandler')
-		expect(evaluateVisibleWhenLocal(action.visibleWhen, { status: 'failed' })).toBe(true)
-		expect(evaluateVisibleWhenLocal(action.visibleWhen, { status: 'success' })).toBe(false)
+		expect(
+			evaluateVisibleWhenLocal(action.visibleWhen, { status: 'failed' }),
+		).toBe(true)
+		expect(
+			evaluateVisibleWhenLocal(action.visibleWhen, { status: 'success' }),
+		).toBe(false)
 	})
 
 	it('the source page mounts the pulls per day widget', () => {
 		const page = manifest.pages.find((p) => p.id === 'SourceDetail')
-		const widget = page.config.bodyWidgets.find((w) => w.component === 'SourceRunSummaryWidget')
+		const widget = page.config.bodyWidgets.find(
+			(w) => w.component === 'SourceRunSummaryWidget',
+		)
 		expect(widget).toBeTruthy()
 	})
 })
 
 describe('the connection alerts page', () => {
 	it('lists the alerts with their state under Operations', async () => {
-		const { buildManifest } = await import('@conduction/nextcloud-vue/src/utils/buildManifest.js')
-		const read = (relative) => JSON.parse(readFileSync(join(__dirname, '../..', relative), 'utf8'))
+		const { buildManifest } =
+			await import('@conduction/nextcloud-vue/src/utils/buildManifest.js')
+		const read = (relative) =>
+			JSON.parse(readFileSync(join(__dirname, '../..', relative), 'utf8'))
 		const merged = buildManifest(
 			read('src/manifest.json'),
 			[read('src/manifest.d/observability-connection-run-summary.json')],
 			read('src/menu-layout.json'),
 		)
-		const page = merged.pages.find((candidate) => candidate.id === 'ConnectionAlerts')
+		const page = merged.pages.find(
+			(candidate) => candidate.id === 'ConnectionAlerts',
+		)
 		expect(page.config.schema).toBe('connection_alert')
 		const keys = page.config.columns.map((column) => column.key)
-		expect(keys).toEqual(expect.arrayContaining(['subjectName', 'rule', 'count', 'threshold', 'state']))
+		expect(keys).toEqual(
+			expect.arrayContaining([
+				'subjectName',
+				'rule',
+				'count',
+				'threshold',
+				'state',
+			]),
+		)
 		const state = page.config.columns.find((column) => column.key === 'state')
 		expect(state.widgetProps.colorMap.open).toBe('error')
 		const operations = merged.menu.find((item) => item.id === 'OperationsGroup')
-		expect(operations.children.map((child) => child.id)).toContain('ConnectionAlerts')
+		expect(operations.children.map((child) => child.id)).toContain(
+			'ConnectionAlerts',
+		)
 	})
 })
 
@@ -249,8 +315,14 @@ describe('the group that hears about connection alerts', () => {
 		const wrapper = mount(ConnectionAlertSettings)
 		await flushPromises()
 
-		expect(get).toHaveBeenCalledWith('/index.php/apps/integriq/api/admin/connection-alert-group')
-		expect(wrapper.find('[data-testid="admin-connection-alert-group-none"]').exists()).toBe(true)
+		expect(get).toHaveBeenCalledWith(
+			'/index.php/apps/integriq/api/admin/connection-alert-group',
+		)
+		expect(
+			wrapper
+				.find('[data-testid="admin-connection-alert-group-none"]')
+				.exists(),
+		).toBe(true)
 	})
 
 	it('saves the group an administrator names', async () => {
@@ -260,21 +332,36 @@ describe('the group that hears about connection alerts', () => {
 		await flushPromises()
 
 		await wrapper.find('input').setValue('koppelbeheer ')
-		await wrapper.find('[data-testid="admin-connection-alert-group-save"]').trigger('click')
+		await wrapper
+			.find('[data-testid="admin-connection-alert-group-save"]')
+			.trigger('click')
 		await flushPromises()
 
-		expect(put).toHaveBeenCalledWith('/index.php/apps/integriq/api/admin/connection-alert-group', { group: 'koppelbeheer' })
-		expect(wrapper.find('[data-testid="admin-connection-alert-group-none"]').exists()).toBe(false)
+		expect(put).toHaveBeenCalledWith(
+			'/index.php/apps/integriq/api/admin/connection-alert-group',
+			{ group: 'koppelbeheer' },
+		)
+		expect(
+			wrapper
+				.find('[data-testid="admin-connection-alert-group-none"]')
+				.exists(),
+		).toBe(false)
 	})
 
 	it('shows the refusal of a group that does not exist', async () => {
 		get.mockResolvedValue({ data: { group: '' } })
-		put.mockRejectedValue({ response: { data: { error: 'There is no group called openconnector-ops.' } } })
+		put.mockRejectedValue({
+			response: {
+				data: { error: 'There is no group called openconnector-ops.' },
+			},
+		})
 		const wrapper = mount(ConnectionAlertSettings)
 		await flushPromises()
 
 		await wrapper.find('input').setValue('openconnector-ops')
-		await wrapper.find('[data-testid="admin-connection-alert-group-save"]').trigger('click')
+		await wrapper
+			.find('[data-testid="admin-connection-alert-group-save"]')
+			.trigger('click')
 		await flushPromises()
 
 		expect(wrapper.find('[role="alert"]').text()).toContain('openconnector-ops')

@@ -91,7 +91,9 @@ export default {
 			this.group = data?.group || ''
 			this.saved = this.group
 		} catch (e) {
-			this.error = e?.response?.data?.error || t('integriq', 'The setting could not be read.')
+			this.error =
+				e?.response?.data?.error
+				|| t('integriq', 'The setting could not be read.')
 		} finally {
 			this.loading = false
 		}
@@ -110,12 +112,16 @@ export default {
 			this.busy = true
 			this.error = ''
 			try {
-				const { data } = await axios.put(generateUrl(URL), { group: this.group.trim() })
+				const { data } = await axios.put(generateUrl(URL), {
+					group: this.group.trim(),
+				})
 				this.saved = data?.group || ''
 				this.group = this.saved
 				showSuccess(t('integriq', 'Saved.'))
 			} catch (e) {
-				this.error = e?.response?.data?.error || t('integriq', 'The setting could not be saved.')
+				this.error =
+					e?.response?.data?.error
+					|| t('integriq', 'The setting could not be saved.')
 			} finally {
 				this.busy = false
 			}

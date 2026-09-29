@@ -22,19 +22,32 @@ import { getRouter } from './routerRef.js'
 export async function runAgain(run) {
 	const synchronizationId = run && run.synchronizationId
 	if (!synchronizationId) {
-		showError(t('integriq', 'This run names no synchronization, so it cannot run again.'))
+		showError(
+			t(
+				'integriq',
+				'This run names no synchronization, so it cannot run again.',
+			),
+		)
 		return null
 	}
 
 	try {
 		const { data } = await axios.post(
-			generateUrl(`/apps/integriq/api/synchronizations/${encodeURIComponent(synchronizationId)}/run`),
+			generateUrl(
+				`/apps/integriq/api/synchronizations/${encodeURIComponent(synchronizationId)}/run`,
+			),
 			{ triggeredBy: 'rerun' },
 		)
 		const runId = (data && data.runId) || null
-		showSuccess(t('integriq', 'The pull ran again. Select this notice to open the new run.'), {
-			onClick: () => openRun(runId),
-		})
+		showSuccess(
+			t(
+				'integriq',
+				'The pull ran again. Select this notice to open the new run.',
+			),
+			{
+				onClick: () => openRun(runId),
+			},
+		)
 		return runId
 	} catch (error) {
 		const reason = error?.response?.data?.error || error?.message || ''
@@ -55,6 +68,9 @@ export function openRun(runId) {
 	if (!router) {
 		return
 	}
-	const location = { name: 'SynchronizationRuns', query: runId ? { run: runId } : {} }
+	const location = {
+		name: 'SynchronizationRuns',
+		query: runId ? { run: runId } : {},
+	}
 	router.push(location).catch(() => {})
 }

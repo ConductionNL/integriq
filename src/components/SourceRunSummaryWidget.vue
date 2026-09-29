@@ -30,7 +30,10 @@
 						<th scope="col">
 							{{ t('integriq', 'Day') }}
 						</th>
-						<th v-for="column in dayColumns" :key="column.key" scope="col">
+						<th
+							v-for="column in dayColumns"
+							:key="column.key"
+							scope="col">
 							{{ column.label }}
 						</th>
 					</tr>
@@ -52,10 +55,7 @@
 			<p v-if="runs.length === 0" data-testid="run-summary-no-runs">
 				{{ t('integriq', 'This source has no pulls in this period.') }}
 			</p>
-			<table
-				v-else
-				class="runSummary__table"
-				data-testid="run-summary-runs">
+			<table v-else class="runSummary__table" data-testid="run-summary-runs">
 				<thead>
 					<tr>
 						<th scope="col">
@@ -74,7 +74,9 @@
 							{{ t('integriq', 'Invalid') }}
 						</th>
 						<th scope="col">
-							<span class="hidden-visually">{{ t('integriq', 'Actions') }}</span>
+							<span class="hidden-visually">{{
+								t('integriq', 'Actions')
+							}}</span>
 						</th>
 					</tr>
 				</thead>
@@ -201,14 +203,17 @@ export default {
 			this.error = ''
 			try {
 				const { data } = await axios.get(
-					generateUrl(`/apps/integriq/api/sources/${encodeURIComponent(this.objectId)}/run-summary`),
+					generateUrl(
+						`/apps/integriq/api/sources/${encodeURIComponent(this.objectId)}/run-summary`,
+					),
 				)
 				this.days = Array.isArray(data?.days) ? data.days : []
 				this.runs = Array.isArray(data?.runs) ? data.runs : []
 			} catch (e) {
 				this.days = []
 				this.runs = []
-				this.error = e?.response?.data?.error
+				this.error =
+					e?.response?.data?.error
 					|| t('integriq', 'The pulls of this source could not be read.')
 			} finally {
 				this.loading = false
@@ -276,7 +281,9 @@ export default {
 				return ''
 			}
 			const date = new Date(value)
-			return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString()
+			return Number.isNaN(date.getTime())
+				? String(value)
+				: date.toLocaleString()
 		},
 	},
 }
@@ -296,7 +303,8 @@ export default {
 
 .runSummary__table th,
 .runSummary__table td {
-	padding: calc(var(--default-grid-baseline) * 1) calc(var(--default-grid-baseline) * 2);
+	padding: calc(var(--default-grid-baseline) * 1)
+		calc(var(--default-grid-baseline) * 2);
 	border-bottom: 1px solid var(--color-border);
 	text-align: start;
 }
