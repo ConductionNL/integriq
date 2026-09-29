@@ -25,7 +25,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
  *
  * @psalm-suppress UnusedClass Nextcloud instantiates repair steps from the
  *  `<repair-steps>` block in appinfo/info.xml, which psalm does not read.
@@ -43,7 +43,7 @@ use OCP\Migration\IRepairStep;
 /**
  * Seeds the disabled portaliq consumer once.
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
  */
 class SeedIdpBrokerConsumers implements IRepairStep {
 
@@ -70,7 +70,7 @@ class SeedIdpBrokerConsumers implements IRepairStep {
 	 *
 	 * @return string The name.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getName(): string {
 		return 'Seed the disabled identity broker consumers';
@@ -84,7 +84,7 @@ class SeedIdpBrokerConsumers implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function run(IOutput $output): void {
 		foreach (self::SEEDED as $consumer) {

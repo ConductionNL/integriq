@@ -25,7 +25,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\IMemcache;
 /**
  * Signed, single-use initiation states.
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
  */
 class IdpLoginStateStore {
 
@@ -93,7 +93,7 @@ class IdpLoginStateStore {
 	 *
 	 * @return string The id, as url-safe base64.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function newNonce(): string {
 		return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
@@ -112,7 +112,7 @@ class IdpLoginStateStore {
 	 *
 	 * @throws IdpAssertionException When no shared cache is available or the entry cannot be written.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function store(string $requestId, array $state, string $signingKey, ?int $now = null): void {
 		if ($this->cache === null) {
@@ -152,7 +152,7 @@ class IdpLoginStateStore {
 	 *
 	 * @throws IdpAssertionException When there is no such state, it was used, it expired, or its signature fails.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 */
 	public function consume(string $requestId, string $signingKey, ?int $now = null): array {
 		if ($this->cache === null || trim($requestId) === '') {

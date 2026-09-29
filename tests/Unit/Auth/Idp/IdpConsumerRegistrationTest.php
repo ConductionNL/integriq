@@ -11,7 +11,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
  */
 
 declare(strict_types=1);
@@ -106,7 +106,7 @@ class IdpConsumerRegistrationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function testAnAdministratorEnablesPortaliq(): void {
 		(new SeedIdpBrokerConsumers(config: $this->config()))->run($this->createMock(IOutput::class));

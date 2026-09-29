@@ -14,7 +14,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
  */
 
 declare(strict_types=1);
@@ -295,7 +295,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testAnUnregisteredReturnAddressIsRefused(): void {
 		$this->assertStartRefused($this->digid(), 'digid', $this->startParams(['returnUrl' => 'https://evil.example/steal']));
@@ -308,7 +308,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function testUnknownDisabledAndOlderFormConsumersCannotStart(): void {
 		$this->assertStartRefused($this->digid(), 'digid', $this->startParams(['consumer' => 'nobody']));
@@ -325,7 +325,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testADisabledOrKeylessBrokerStartsNothing(): void {
 		$this->settings[IdpBrokerConfig::KEY_ENABLED] = '0';
@@ -341,7 +341,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testAnUnconfiguredOrUnknownProviderStartsNothing(): void {
 		// The bound adapter is DigiD, so eHerkenning gets the dormant one.
@@ -359,7 +359,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testMalformedStartParametersAreRefused(): void {
 		$this->assertStartRefused($this->digid(), 'digid', $this->startParams(['trust' => 'medium']));
@@ -372,7 +372,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 */
 	public function testAnIdentityProviderInitiatedResponseIsRefused(): void {
 		$adapter = $this->digid();
@@ -394,7 +394,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testAStateAnswersOneCallback(): void {
 		$adapter = $this->digid();
@@ -412,7 +412,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testAnExpiredStateIsRefused(): void {
 		$adapter = $this->digid();
@@ -433,7 +433,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testATamperedStateIsRefused(): void {
 		$adapter = $this->digid();
@@ -455,7 +455,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 */
 	public function testAFailedCallbackReturnsOneGenericError(): void {
 		$cases = [
@@ -489,7 +489,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function testAConsumerDisabledMidLoginGetsNoCode(): void {
 		$adapter = $this->digid();
@@ -511,7 +511,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 */
 	public function testTheResidentComesBackSignedIn(): void {
 		$adapter = $this->digid();
@@ -550,7 +550,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public function testAnEherkenningLoginCarriesItsBranch(): void {
 		$adapter = new ScriptedGovernmentIdpAdapter(
@@ -584,7 +584,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public function testAMalformedBranchEndsTheLogin(): void {
 		$adapter = new ScriptedGovernmentIdpAdapter(
@@ -612,7 +612,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public function testADigidAssertionNeverCarriesABranch(): void {
 		$adapter = $this->digid(['branch' => '000012345678']);
@@ -630,7 +630,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function testAnOlderFormConsumerStillRedeems(): void {
 		$exchange = $this->exchange();
@@ -647,7 +647,7 @@ class IdpBrowserLoginTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function testADisabledOrUnresolvableConsumerCannotRedeem(): void {
 		$this->settings[IdpBrokerConfig::KEY_CONSUMERS] = (string)json_encode(

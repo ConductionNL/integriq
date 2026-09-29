@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
 /**
  * One adapter per provider.
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
  */
 class IdpAdapterRegistry {
 
@@ -70,7 +70,7 @@ class IdpAdapterRegistry {
 	 *
 	 * @throws IdpAssertionException When the provider is not one this broker knows.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function forProvider(string $provider): GovernmentIdpAdapterInterface {
 		if (in_array($provider, self::PROVIDERS, true) === false) {

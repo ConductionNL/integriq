@@ -149,7 +149,7 @@ final class SubjectEnvelope {
 	 *
 	 * @return string The vestigingsnummer, or an empty string.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public function getBranch(): string {
 		if ($this->provider !== TrustLevelMapper::PROVIDER_EHERKENNING) {
@@ -169,7 +169,7 @@ final class SubjectEnvelope {
 	 * @return array<string,string> The claims.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-one-time-signed-subject-envelope-handoff
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public function toClaims(): array {
 		$claims = [
@@ -201,7 +201,7 @@ final class SubjectEnvelope {
 	 *
 	 * @return self The envelope.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public static function fromClaims(array $claims): self {
 		return new self(

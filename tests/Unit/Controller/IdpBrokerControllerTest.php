@@ -199,7 +199,7 @@ class IdpBrokerControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testARefusedStartShowsTheErrorPageAndRedirectsNowhere(): void {
 		$service = $this->createMock(IdpLoginService::class);
@@ -221,7 +221,7 @@ class IdpBrokerControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function testAnAcceptedStartRedirectsToTheIdentityProvider(): void {
 		$params = [
@@ -246,7 +246,7 @@ class IdpBrokerControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 */
 	public function testTheCallbackRedirectsOnlyWhenTheServiceNamesAnAddress(): void {
 		$refused = $this->createMock(IdpLoginService::class);

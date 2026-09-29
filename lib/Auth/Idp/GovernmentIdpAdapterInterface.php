@@ -59,7 +59,7 @@ interface GovernmentIdpAdapterInterface {
 	 *
 	 * @throws \OCA\Integriq\Exception\IdpAssertionException When the broker is not configured.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function beginAuthentication(array $context): array;
 
@@ -83,7 +83,7 @@ interface GovernmentIdpAdapterInterface {
 	 *
 	 * @throws \OCA\Integriq\Exception\IdpAssertionException When the broker is not configured or the callback is unreadable.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public function readAssertion(array $callback): array;
 

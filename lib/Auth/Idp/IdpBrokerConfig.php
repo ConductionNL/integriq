@@ -156,7 +156,7 @@ class IdpBrokerConfig {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) IdpConsumer::fromConfig is the value object's named constructor.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function consumer(string $consumer): ?IdpConsumer {
 		$consumers = $this->map(key: self::KEY_CONSUMERS);
@@ -175,7 +175,7 @@ class IdpBrokerConfig {
 	 *
 	 * @return boolean True when an entry exists.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function hasConsumer(string $consumer): bool {
 		return array_key_exists($consumer, $this->map(key: self::KEY_CONSUMERS));
@@ -189,7 +189,7 @@ class IdpBrokerConfig {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function saveConsumer(IdpConsumer $consumer): void {
 		$consumers = $this->map(key: self::KEY_CONSUMERS);

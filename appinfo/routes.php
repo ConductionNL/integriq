@@ -387,7 +387,7 @@ return [
 		// The browser half of the same login. The start checks the consumer and
 		// its registered return address before anything leaves integriq; the
 		// callback sends the browser back only to the address kept in the
-		// signed state (openspec/changes/identity-broker-browser-login).
+		// signed state (openspec/changes/archive/2026-09-29-identity-broker-browser-login).
 		['name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
 		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
 		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST', 'requirements' => ['provider' => 'digid|eherkenning|eidas'], 'postfix' => 'post'],

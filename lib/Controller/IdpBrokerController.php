@@ -139,7 +139,7 @@ class IdpBrokerController extends Controller {
 	 *
 	 * @return RedirectResponse|TemplateResponse The redirect to the identity provider, or the error page.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -184,7 +184,7 @@ class IdpBrokerController extends Controller {
 	 *
 	 * @return RedirectResponse|TemplateResponse The redirect to the consumer, or the error page.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]

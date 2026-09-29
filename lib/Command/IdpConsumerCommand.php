@@ -25,7 +25,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) IdpConsumer::isAcceptableReturnUrl is a pure check with no state to inject.
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
  */
 class IdpConsumerCommand extends Command {
 
@@ -66,7 +66,7 @@ class IdpConsumerCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'integriq:idp:consumer')
@@ -99,7 +99,7 @@ class IdpConsumerCommand extends Command {
 	 *
 	 * @return integer 0 on success, 1 when the consumer cannot be written as asked.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$id = trim((string)$input->getArgument('consumer'));

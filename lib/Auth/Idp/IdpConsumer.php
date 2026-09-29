@@ -24,7 +24,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\Integriq\Auth\Idp;
 /**
  * One registered consuming app.
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
  */
 final class IdpConsumer {
 
@@ -67,7 +67,7 @@ final class IdpConsumer {
 	 *
 	 * @return self|null The consumer, or null when the entry is unreadable.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public static function fromConfig(string $id, mixed $entry): ?self {
 		if (is_string($entry) === true) {
@@ -102,7 +102,7 @@ final class IdpConsumer {
 	 *
 	 * @return array{enabled: bool, returnUrls: array<int,string>, secretRef: string, secretOrganisation: string} The entry.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function toConfig(): array {
 		return [
@@ -119,7 +119,7 @@ final class IdpConsumer {
 	 *
 	 * @return string The id.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getId(): string {
 		return $this->id;
@@ -131,7 +131,7 @@ final class IdpConsumer {
 	 *
 	 * @return boolean True when enabled.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function isEnabled(): bool {
 		return $this->enabled;
@@ -143,7 +143,7 @@ final class IdpConsumer {
 	 *
 	 * @return array<int,string> The addresses.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getReturnUrls(): array {
 		return $this->returnUrls;
@@ -155,7 +155,7 @@ final class IdpConsumer {
 	 *
 	 * @return string The reference, or an empty string.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getSecretRef(): string {
 		return $this->secretRef;
@@ -167,7 +167,7 @@ final class IdpConsumer {
 	 *
 	 * @return string The organisation, or an empty string.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getSecretOrganisation(): string {
 		return $this->secretOrganisation;
@@ -179,7 +179,7 @@ final class IdpConsumer {
 	 *
 	 * @return string The secret, or an empty string for the current form.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function getLegacySecret(): string {
 		return $this->legacySecret;
@@ -191,7 +191,7 @@ final class IdpConsumer {
 	 *
 	 * @return boolean True for the older form.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public function isLegacy(): bool {
 		return $this->legacySecret !== '';
@@ -209,7 +209,7 @@ final class IdpConsumer {
 	 *
 	 * @return boolean True only for an enabled consumer and a registered address.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function mayReturnTo(string $returnUrl): bool {
 		if ($this->enabled === false || $this->isLegacy() === true || $returnUrl === '') {
@@ -231,7 +231,7 @@ final class IdpConsumer {
 	 *
 	 * @return boolean True when it may be registered.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	public static function isAcceptableReturnUrl(string $url): bool {
 		$parts = parse_url($url);

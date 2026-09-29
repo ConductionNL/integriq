@@ -26,7 +26,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Starts a government login and finishes it.
  *
- * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+ * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The callback composes every broker guard by design.
  */
@@ -109,7 +109,7 @@ class IdpLoginService {
 	 *
 	 * @throws IdpAssertionException When anything about the request or the broker is not in order.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function start(string $provider, array $params): string {
 		$organisation = strtolower(trim((string)($params['organisation'] ?? '')));
@@ -179,7 +179,7 @@ class IdpLoginService {
 	 *
 	 * @throws IdpAssertionException When the response answers no stored state (an IdP-initiated flow included).
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 */
 	public function callback(string $provider, array $callback, ?int $now = null): string {
 		$adapter = $this->adapters->forProvider(provider: $provider);
@@ -317,7 +317,7 @@ class IdpLoginService {
 	 *
 	 * @throws IdpAssertionException When an eHerkenning assertion carries a branch that is not a vestigingsnummer.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	private function branchOf(string $provider, array $assertion): string {
 		if ($provider !== TrustLevelMapper::PROVIDER_EHERKENNING) {

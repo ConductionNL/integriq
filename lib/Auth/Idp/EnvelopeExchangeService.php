@@ -147,7 +147,7 @@ class EnvelopeExchangeService {
 	 *
 	 * @throws IdpAssertionException When the consumer is unknown or disabled, or the secret does not match.
 	 *
-	 * @spec openspec/changes/identity-broker-browser-login/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	private function assertConsumer(string $consumer, string $presentedSecret): void {
 		$entry = $this->config->consumer(consumer: $consumer);

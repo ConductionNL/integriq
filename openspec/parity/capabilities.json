@@ -6102,9 +6102,9 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
-				"change": "identity-broker-browser-login",
+				"change": "2026-09-29-identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Auth/Idp/GovernmentIdpAdapterInterface.php:60 beginAuthentication(), :75 readAssertion(), `grep -rln beginAuthentication lib/` shows no caller anywhere except lib/AppInfo/Application.php's DI binding. lib/Auth/Idp/LogGovernmentIdpAdapter.php:43 is the only class implementing the interface (spec: openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-dormant-seam-adapters-ship-config-flag-gated-and-inert). No route in appinfo/routes.php starts or completes a DigiD authentication; the only related route is idpBroker#exchange (line 333), which only redeems a code, see id-envelope for why that never succeeds either."
+				"evidence": "Browser half built in 2026-09-29-identity-broker-browser-login: GET /api/idp/digid/start and GET|POST .../callback (lib/Controller/IdpBrokerController.php, lib/Auth/Idp/IdpLoginService.php) call beginAuthentication() and readAssertion() on the adapter the container binds. Still missing: the vendor SAML Service Provider or OIDC Relying Party behind GovernmentIdpAdapterInterface; LogGovernmentIdpAdapter is still the only production implementation, so a start refuses. That half waits on Open Decision D1 (broker vendor and contract, openspec/changes/archive/2026-07-15-portal-idp-broker/proposal.md), which is Ruben's."
 			},
 			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete a DigiD authentication",
 			"note": "The spec calls this a deliberately dormant seam, but even the wiring around it (issuing the code the exchange step redeems) has no caller, see id-envelope for the specific dead path.",
@@ -6138,9 +6138,9 @@
 			"integriq": "no",
 			"built": {
 				"state": "building",
-				"change": "identity-broker-browser-login",
+				"change": "2026-09-29-identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Same GovernmentIdpAdapterInterface as id-digid; lib/Auth/Idp/TrustLevelMapper.php:73 const PROVIDER_EHERKENNING exists and maps trust levels, but the adapter it would classify is never invoked (LogGovernmentIdpAdapter is the only implementation, called from nowhere but DI)."
+				"evidence": "Browser half built in 2026-09-29-identity-broker-browser-login: GET /api/idp/eherkenning/start and GET|POST .../callback (lib/Controller/IdpBrokerController.php, lib/Auth/Idp/IdpLoginService.php) call beginAuthentication() and readAssertion() on the adapter the container binds, and an eHerkenning envelope carries the vestigingsnummer as branch. Still missing: the vendor SAML Service Provider or OIDC Relying Party behind GovernmentIdpAdapterInterface; LogGovernmentIdpAdapter is still the only production implementation, so a start refuses. That half waits on Open Decision D1 (broker vendor and contract, openspec/changes/archive/2026-07-15-portal-idp-broker/proposal.md), which is Ruben's."
 			},
 			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete an eHerkenning authentication",
 			"note": "Same dormant/unwired seam as id-digid.",
@@ -6203,12 +6203,12 @@
 			"area": "identity",
 			"name": "Pass a logged-in person on to another app as a short-lived pseudonym without handing over the BSN.",
 			"source": "own-code",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
-				"change": "identity-broker-browser-login",
+				"state": "built",
+				"change": "2026-09-29-identity-broker-browser-login",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Auth/Idp/EnvelopeExchangeService.php:67 issueCode() has zero callers anywhere in lib/ (`grep -rln issueCode lib/` only matches its own declaration); lib/Auth/Idp/SubjectPseudonymService.php:74 fromPolymorphic(), :108 pseudonymFor() are also never called outside their own file. Only :96 redeemCode() is reachable, via appinfo/routes.php:372 idpBroker#exchange -> lib/Controller/IdpBrokerController.php:84 exchange()."
+				"evidence": "The code now has a caller: lib/Auth/Idp/IdpLoginService.php callback() reads the assertion, consumes the signed single-use state (IdpLoginStateStore), runs AssertionGuard, maps trust, pseudonymises a BSN through SubjectPseudonymService::pseudonymFor() or takes a polymorphic pseudonym through fromPolymorphic(), mints the envelope (with branch for eHerkenning) and calls EnvelopeExchangeService::issueCode(); the browser goes back to the consumer's registered address with code and relayState. Routes idpBroker#start and idpBroker#callback in appinfo/routes.php. Consumers carry returnUrls, enabled and a secret by broker reference (IdpConsumer, IdpConsumerSecretResolver, occ integriq:idp:consumer, seeded disabled portaliq). Tests: tests/Unit/Auth/Idp/IdpBrowserLoginTest.php (17, start, callback and exchange round trip against a scripted provider), IdpConsumerRegistrationTest.php (6), IdpBrokerControllerTest.php (+3). Rated partial: a live login still needs the vendor SAML SP or OIDC RP (Open Decision D1), so on an instance the start ends on the error page."
 			},
 			"reachedOn": "machine route POST /api/idp/envelope/exchange exists, but nothing in the repository ever issues a code for it to redeem",
 			"note": "Live-defect candidate: a consuming app calling exchange today would always get a 401, because issueCode() and the BSN-pseudonymisation step are never invoked by any controller, listener or job in this codebase.",
