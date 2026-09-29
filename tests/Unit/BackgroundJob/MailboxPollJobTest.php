@@ -149,11 +149,39 @@ class MailboxPollJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheJobIsRegisteredInInfoXml(): void {
-		$info = simplexml_load_file(dirname(__DIR__, 3) . '/appinfo/info.xml');
-		$jobs = array_map('strval', iterator_to_array($info->{'background-jobs'}->job, false));
+		// A booted Nextcloud (what CI runs the suite in) pins libxml's
+		// external-entity loader to null (lib/base.php). Pin it here too, so a
+		// bare local run sees the same thing CI sees.
+		$previous = libxml_get_external_entity_loader();
+		libxml_set_external_entity_loader(static fn (): null => null);
+
+		try {
+			$jobs = $this->registeredBackgroundJobs();
+		} finally {
+			libxml_set_external_entity_loader($previous);
+		}
 
 		$this->assertContains(MailboxPollJob::class, $jobs);
 	}//end testTheJobIsRegisteredInInfoXml()
+
+	/**
+	 * The background jobs appinfo/info.xml declares.
+	 *
+	 * Read the bytes, then parse. simplexml_load_file() resolves the file
+	 * itself through the external-entity loader, so under the null loader it
+	 * returns false and the test would claim the job is missing.
+	 *
+	 * @return string[] The declared job classes.
+	 */
+	private function registeredBackgroundJobs(): array {
+		$raw = file_get_contents(dirname(__DIR__, 3) . '/appinfo/info.xml');
+		$this->assertIsString($raw, 'appinfo/info.xml is not readable');
+
+		$info = simplexml_load_string($raw);
+		$this->assertNotFalse($info, 'appinfo/info.xml does not parse');
+
+		return array_map('strval', iterator_to_array($info->{'background-jobs'}->job, false));
+	}//end registeredBackgroundJobs()
 
 	/**
 	 * A run polls every enabled mailbox source and asks only for those.
