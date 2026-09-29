@@ -1426,7 +1426,7 @@ OC.L10N.register(
         "Variable name": "Naam van de variabele",
         "{key} added to the allowlist.": "{key} is aan de lijst toegevoegd.",
         "{key} removed from the allowlist.": "{key} is van de lijst verwijderd.",
-        "Turning off signing needs a reason. Say why this receiver gets unsigned deliveries, so whoever reads the subscription later knows whether that was meant to change.": "Ondertekening uitzetten vraagt om een reden. Schrijf op waarom deze ontvanger niet-ondertekende leveringen krijgt, zodat wie de abonnering later leest weet of dat nog moest veranderen.",
+        "Turning off signing needs a reason. Say why this receiver gets unsigned deliveries.": "Ondertekening uitzetten vraagt om een reden. Schrijf op waarom deze ontvanger niet-ondertekende leveringen krijgt.",
         "Copy this secret now. It is shown only once.": "Kopieer dit geheim nu. Het wordt maar één keer getoond.",
         "How a receiver checks the signature": "Zo controleert een ontvanger de ondertekening",
         "Each delivery carries the header {header}.": "Elke levering heeft de header {header}.",

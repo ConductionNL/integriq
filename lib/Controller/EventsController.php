@@ -27,6 +27,7 @@ use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -203,10 +204,20 @@ class EventsController extends Controller {
 			// push subscription its signing secret on OpenRegister's create path.
 			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
 
+			// REQ-SOW-001: the one reveal of a generated secret. protocolSettings is
+			// writeOnly, so the stored row is read unrendered, as delivery reads it.
 			$response = $this->redactSubscription(subscription: $subscription->getObject());
-			$secret = $this->generatedSecret(request: $data, subscriptionId: (string)$subscription->getUuid());
-			if ($secret !== null) {
-				$response['signingSecret'] = $secret;
+			$policy = new SubscriptionSigningPolicy(signatures: $this->signatureService);
+			if ($policy->generatesSecret(subscription: $data) === true) {
+				$stored = $this->orObjectService->find(
+					id: (string)$subscription->getUuid(),
+					register: 'integriq',
+					schema: 'event_subscription',
+					_rbac: false,
+					_multitenancy: false,
+					_render: false
+				);
+				$response += $policy->reveal(stored: (array)$stored?->getObject());
 			}
 
 			return new JSONResponse($response);
@@ -215,44 +226,6 @@ class EventsController extends Controller {
 		}
 
 	}//end subscribe()
-
-	/**
-	 * The secret the signing default generated for a new subscription, for the one reveal.
-	 *
-	 * REQ-SOW-001: the create response returns the full secret exactly once.
-	 * `protocolSettings` is writeOnly, so the saved object comes back without
-	 * it; the stored row is read unrendered, the way the delivery engine reads
-	 * it. A caller that supplied its own secret already has it and gets nothing.
-	 *
-	 * @param array<string,mixed> $request The create request.
-	 * @param string $subscriptionId The new subscription's uuid.
-	 *
-	 * @return string|null The secret, or null when none was generated.
-	 *
-	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
-	 */
-	private function generatedSecret(array $request, string $subscriptionId): ?string {
-		$supplied = (array)($request['protocolSettings'] ?? []);
-		if (($request['style'] ?? '') !== 'push' || isset($supplied['signingSecret']) === true || isset($supplied['unsigned']) === true) {
-			return null;
-		}
-
-		$stored = $this->orObjectService->find(
-			id: $subscriptionId,
-			register: 'integriq',
-			schema: 'event_subscription',
-			_rbac: false,
-			_multitenancy: false,
-			_render: false
-		);
-		$secret = (string)(($stored?->getObject()['protocolSettings']['signingSecret'] ?? ''));
-		if ($secret === '') {
-			return null;
-		}
-
-		return $secret;
-
-	}//end generatedSecret()
 
 	/**
 	 * Update an existing subscription.

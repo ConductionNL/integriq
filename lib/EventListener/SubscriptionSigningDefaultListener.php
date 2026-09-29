@@ -108,14 +108,20 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
 	 */
 	public function handle(Event $event): void {
+		if (($event instanceof ObjectCreatingEvent) === false && ($event instanceof ObjectUpdatingEvent) === false) {
+			return;
+		}
+
+		$isCreate = $event instanceof ObjectCreatingEvent;
+		$old = null;
+		$entity = null;
 		if ($event instanceof ObjectCreatingEvent) {
 			$entity = $event->getObject();
-			$old = null;
-		} else if ($event instanceof ObjectUpdatingEvent) {
+		}
+
+		if ($event instanceof ObjectUpdatingEvent) {
 			$entity = $event->getNewObject();
 			$old = $event->getOldObject();
-		} else {
-			return;
 		}
 
 		if ($this->isSubscription(object: $entity) === false) {
@@ -131,9 +137,7 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 			$event->setErrors(
 				[
 					'code' => 'unsigned_without_reason',
-					'message' => $this->l10n->t(
-						'Turning off signing needs a reason. Say why this receiver gets unsigned deliveries, so whoever reads the subscription later knows whether that was meant to change.'
-					),
+					'message' => $this->l10n->t('Turning off signing needs a reason. Say why this receiver gets unsigned deliveries.'),
 					'status' => 400,
 				]
 			);
@@ -141,7 +145,7 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 			return;
 		}
 
-		$event->setModifiedData($this->modifiedData(data: $data, old: $old, isCreate: $old === null && $event instanceof ObjectCreatingEvent));
+		$event->setModifiedData($this->modifiedData(data: $data, old: $old, isCreate: $isCreate));
 
 	}//end handle()
 
@@ -158,29 +162,28 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 	 */
 	private function modifiedData(array $data, ?ObjectEntity $old, bool $isCreate): array {
 		$user = $this->currentUid();
-		$modified = [];
+		$existing = [];
+		if ($old !== null) {
+			$existing = (array)$old->getObject();
+		}
 
+		// An edit that does not send protocolSettings leaves them as they are;
+		// the posture is then read from what is stored.
+		$modified = [];
+		$settings = (array)($existing['protocolSettings'] ?? []);
 		if ($isCreate === true) {
 			$settings = $this->policy->settingsForNew(subscription: $data, user: $user);
 			$modified['protocolSettings'] = $settings;
-		} else if (array_key_exists('protocolSettings', $data) === true) {
-			$existing = [];
-			if ($old !== null) {
-				$existing = (array)$old->getObject();
-			}
+		}
 
+		if ($isCreate === false && array_key_exists('protocolSettings', $data) === true) {
 			$settings = $this->policy->settingsForExisting(existing: $existing, incoming: $data, user: $user);
 			$modified['protocolSettings'] = $settings;
-		} else {
-			// An edit that does not send protocolSettings leaves them as they
-			// are; the posture is read from what is stored.
-			$settings = [];
-			if ($old !== null) {
-				$settings = (array)(((array)$old->getObject())['protocolSettings'] ?? []);
-			}
-		}//end if
+		}
 
-		$read = $this->policy->forReading(subscription: ['style' => SubscriptionSigningPolicy::STYLE_PUSH, 'protocolSettings' => $settings]);
+		$read = $this->policy->forReading(
+			subscription: ['style' => SubscriptionSigningPolicy::STYLE_PUSH, 'protocolSettings' => $settings]
+		);
 		$modified['signingPosture'] = $read['signingPosture'];
 		$modified['unsignedReason'] = (string)($read['unsignedReason'] ?? '');
 

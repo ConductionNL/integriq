@@ -48,6 +48,8 @@ use OCA\Integriq\Service\WebhookSignatureService;
 
 /**
  * Decides a push subscription's signing posture, and refuses the requests that hide it.
+ *
+ * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
  */
 class SubscriptionSigningPolicy {
 
@@ -292,6 +294,44 @@ class SubscriptionSigningPolicy {
 
 		return self::ATTEMPT_UNSIGNED;
 	}//end posture()
+
+	/**
+	 * Whether a create request leaves the secret to the default, so there is one to reveal.
+	 *
+	 * A caller that supplied its own secret already has it, and an unsigned
+	 * one has none.
+	 *
+	 * @param array<string, mixed> $subscription The create request.
+	 *
+	 * @return bool True when the create generates a secret.
+	 *
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 */
+	public function generatesSecret(array $subscription): bool {
+		$settings = (array)($subscription['protocolSettings'] ?? []);
+
+		return (string)($subscription['style'] ?? '') === self::STYLE_PUSH
+			&& array_key_exists('signingSecret', $settings) === false
+			&& array_key_exists('unsigned', $settings) === false;
+	}//end generatesSecret()
+
+	/**
+	 * The one reveal of a stored secret, for the create response only.
+	 *
+	 * @param array<string, mixed> $stored The subscription as stored, unrendered.
+	 *
+	 * @return array<string, string> `['signingSecret' => ...]`, or nothing when there is none.
+	 *
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
+	 */
+	public function reveal(array $stored): array {
+		$secret = (string)(((array)($stored['protocolSettings'] ?? []))['signingSecret'] ?? '');
+		if ($secret === '') {
+			return [];
+		}
+
+		return ['signingSecret' => $secret];
+	}//end reveal()
 
 	/**
 	 * The recipe a receiver needs, shown whether or not the secret is revealed.

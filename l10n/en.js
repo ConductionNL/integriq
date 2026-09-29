@@ -2767,7 +2767,7 @@ OC.L10N.register(
         "Variable name": "Variable name",
         "{key} added to the allowlist.": "{key} added to the allowlist.",
         "{key} removed from the allowlist.": "{key} removed from the allowlist.",
-        "Turning off signing needs a reason. Say why this receiver gets unsigned deliveries, so whoever reads the subscription later knows whether that was meant to change.": "Turning off signing needs a reason. Say why this receiver gets unsigned deliveries, so whoever reads the subscription later knows whether that was meant to change.",
+        "Turning off signing needs a reason. Say why this receiver gets unsigned deliveries.": "Turning off signing needs a reason. Say why this receiver gets unsigned deliveries.",
         "Copy this secret now. It is shown only once.": "Copy this secret now. It is shown only once.",
         "How a receiver checks the signature": "How a receiver checks the signature",
         "Each delivery carries the header {header}.": "Each delivery carries the header {header}.",
