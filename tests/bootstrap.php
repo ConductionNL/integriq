@@ -239,6 +239,16 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/SystemOperationContext.php';
 		}
 
+		// The abstract base is a copy of OpenRegister's: it implements the
+		// interface and throws its NotImplementedException, so both load first.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationProvider.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Exception\\NotImplementedException') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Exception/NotImplementedException.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\Integration\\AbstractIntegrationProvider') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/AbstractIntegrationProvider.php';
 		}

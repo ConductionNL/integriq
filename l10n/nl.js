@@ -1555,7 +1555,12 @@ OC.L10N.register(
         "Snapshot date": "Datum momentopname",
         "The date of the API directory snapshot a generated template was made from.": "De datum van de momentopname van de API-catalogus waaruit een gegenereerd sjabloon is gemaakt.",
         "The published interface description the template was checked against.": "De gepubliceerde koppelvlakbeschrijving waartegen het sjabloon is gecontroleerd.",
-        "Where the connector comes from: an adapter integriq ships, a template a person checked against a published interface, or a template generated from a pinned API directory.": "Waar de koppeling vandaan komt: een adapter die integriq meelevert, een sjabloon dat iemand tegen een gepubliceerd koppelvlak heeft gecontroleerd, of een sjabloon gegenereerd uit een vastgelegde API-catalogus."
+        "Where the connector comes from: an adapter integriq ships, a template a person checked against a published interface, or a template generated from a pinned API directory.": "Waar de koppeling vandaan komt: een adapter die integriq meelevert, een sjabloon dat iemand tegen een gepubliceerd koppelvlak heeft gecontroleerd, of een sjabloon gegenereerd uit een vastgelegde API-catalogus.",
+        "Synced from": "Gesynchroniseerd vanuit",
+        "Synchronization %s": "Synchronisatie %s",
+        "Last synced %1$s · %2$s": "Laatst gesynchroniseerd %1$s · %2$s",
+        "Last synced %s": "Laatst gesynchroniseerd %s",
+        "The storage migration has not run on this instance yet. The \"Synced from\" panel appears once occ upgrade has run it.": "De opslagmigratie is op deze installatie nog niet uitgevoerd. Het paneel \"Gesynchroniseerd vanuit\" verschijnt zodra occ upgrade die heeft uitgevoerd."
     },
     "nplurals=2; plural=(n != 1);"
 )

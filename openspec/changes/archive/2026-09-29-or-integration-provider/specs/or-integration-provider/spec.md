@@ -30,7 +30,7 @@ strategy `query-time`.
 #### Scenario: Provider is discoverable in the registry
 
 - **GIVEN** an instance with a compatible OpenRegister and
-  `openconnector.storage_migrated = true`
+  `integriq.storage_migrated = true`
 - **WHEN** OR's `IntegrationRegistry` enumerates providers for an object that
   Integriq has synced
 - **THEN** the `sync-contract` provider is returned with its declared metadata
@@ -64,7 +64,7 @@ storage for `synchronization_contract` objects whose `targetId` equals the
 object id, setting register/schema context through `setRegister()`/`setSchema()`
 and filtering on `targetId` ONLY — register and schema MUST NOT be passed inside
 the `filters` array (doing so leaks slug strings as property filters that match
-nothing). It MUST map `_limit`/`_page` onto `limit`/`offset` (page size 50) and
+nothing). It MUST map `_limit`/`_page` onto `limit`/`offset` (a page is `_limit` rows, default 50, so page n starts at (n - 1) x `_limit`) and
 project each contract to a generic-card row (`id`, `title` = resolved
 synchronization name, `subtitle` = last-sync summary, `url` = deep-link into the
 Integriq synchronization detail page) plus raw provenance fields
@@ -82,9 +82,15 @@ unreadable, so the leaf never fails on name resolution.
   with the last-sync time, deep-linking to the sync detail page
 - **AND** an object with no contract returns an empty list.
 
+#### Scenario: A page of its own size
+
+- **GIVEN** an object with more contracts than one page holds
+- **WHEN** the sidebar asks for `_limit=10` and `_page=3`
+- **THEN** the query asks for 10 rows starting at row 20.
+
 ### Requirement: Availability gated on storage migration (REQ-OCIP-004)
 
-`isEnabled()` and `health()` MUST read the `openconnector.storage_migrated`
+`isEnabled()` and `health()` MUST read the `integriq.storage_migrated`
 app-config flag and treat the provider as available only when it equals
 `'true'`. Before cutover, `list()` MUST return `[]` and `health()` MUST report
 `status: unavailable` with an operator-facing message, so the leaf appears only
@@ -92,7 +98,7 @@ once synchronization contracts actually live in OR storage.
 
 #### Scenario: Hidden before cutover
 
-- **GIVEN** `openconnector.storage_migrated = false`
+- **GIVEN** `integriq.storage_migrated = false`
 - **WHEN** the sidebar renders and `health()` is polled
 - **THEN** `list()` returns `[]` and `health()` reports `unavailable`.
 

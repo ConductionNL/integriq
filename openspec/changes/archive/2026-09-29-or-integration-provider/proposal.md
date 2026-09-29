@@ -47,7 +47,7 @@ fulfils.
   `NotImplementedException` — contracts are managed by the sync engine, not by
   end users.
 - Availability is gated on the chain-C OR-cutover: `isEnabled()` and `health()`
-  read the `openconnector.storage_migrated` app-config flag so the leaf only
+  read the `integriq.storage_migrated` app-config flag so the leaf only
   appears once SyncContract objects actually live in OR storage.
 - Registration soft-fails: if OR's `IntegrationRegistry` class is unavailable
   the boot hook is a no-op, so integriq still boots on an instance without
@@ -84,7 +84,7 @@ proposal.
 ## Caveats
 
 - **Gated on the storage migration.** The leaf is invisible until
-  `openconnector.storage_migrated === 'true'` (set by the chain-C cutover
+  `integriq.storage_migrated === 'true'` (set by the chain-C cutover
   migration). Before that, `list()` returns `[]` and `health()` reports
   `status: unavailable` with a message pointing at `occ upgrade`.
 - **RBAC is inherited, not re-checked.** `requiresPermission()` returns null:

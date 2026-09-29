@@ -7794,12 +7794,13 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/AppInfo/Application.php:1463-1475 registers SynchronizationContractProvider plus AzureVirtualDesktopAdapter, SharePointOnlineAdapter, Microsoft365Adapter and S3Adapter with OR's IntegrationRegistry; lib/Service/Integration/SynchronizationContractProvider.php:51 (list :163, isEnabled :388); lib/Service/Adapter/AbstractCategoryAdapterProvider.php:220 isEnabled only when app config '<id>_credential_id' is set, brokered calls via OR CredentialBrokerService. Covered by openspec/changes/or-integration-provider/ (0 of 7 tasks ticked; OpenSpec pass 2026-09-27): The open change (0 of 7) specifies the provider registration."
+				"evidence": "lib/Service/Integration/SynchronizationContractProvider.php extends OpenRegister's AbstractIntegrationProvider (sync-contract, Synced from, query-time, read-only) and lib/AppInfo/Application.php::registerIntegrationProviders() registers it with the four category adapters behind a class_exists guard and a try/catch. Verified against openregister development 4abd834344 by tests/Unit/Service/Integration/SynchronizationContractProviderContractTest.php (stubs are copies of OR's IntegrationProvider, AbstractIntegrationProvider and NotImplementedException): whole contract implemented, metadata, four mutation verbs refused, targetId-only query, paging by _limit (fixed: the offset used 50 per page), empty before storage_migrated, boot carries on when the registry cannot be resolved, every leaf text in nl.json (five added).",
+				"change": "2026-09-29-or-integration-provider"
 			},
 			"reachedOn": "OR object sidebars and detail pages in any app (Synced from leaf); category adapters also listed on integriq's Store page",
-			"note": "Registration code is real. The one live provider is the Synced from provenance leaf; the four connector adapters stay disabled until an admin sets '<id>_credential_id' with occ, since no screen writes that key (grep '_credential_id' src: 0). openspec/changes/or-integration-provider is spec-only with 0 of 7 tasks ticked.",
+			"note": "Registration code is real. The one live provider is the Synced from provenance leaf (built, 2026-09-29-or-integration-provider); the four connector adapters stay disabled until an admin sets '<id>_credential_id' with occ, since no screen writes that key (grep '_credential_id' src: 0), which is why integriq stays partial.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "synced-from-tab",

@@ -15,7 +15,7 @@ app's bootstrap.
 
 Integriq's synchronization engine writes a `SynchronizationContract` per
 (source-object → target-object) pairing. Post chain-B/C cutover these contracts
-live as OR objects under register `openconnector`, schema
+live as OR objects under register `integriq`, schema
 `synchronization_contract`, carrying `targetId` (the OR object that was synced
 into), `synchronizationId`, `originId`/`originHash`, and `targetLast*`
 timestamps. The provenance is fully present in OR storage — it just wasn't
@@ -81,7 +81,7 @@ and the `findAll()` `filters` carry **only** `targetId => $objectId`. Passing
 `register`/`schema` *inside* `filters` sets context but *also* leaks them as
 object-property filters — slug strings compared against the numeric
 register/schema columns — which silently matches nothing. Pagination maps
-`_limit` / `_page` onto `limit` / `offset` (page size 50). Each contract is
+`_limit` / `_page` onto `limit` / `offset` (a page is `_limit` rows, default 50; page n starts at (n - 1) x `_limit`). Each contract is
 projected to a generic-card row (`id`, `title` = sync name, `subtitle` = last-sync
 summary, `url` = SPA deep-link) plus raw provenance fields
 (`synchronizationId`, `originId`, `originHash`, `targetLast*`, `sourceLastChecked`)
@@ -115,3 +115,14 @@ symbol must never brick the app.
 - **Coupling to OR internals** (`ObjectService`, `IntegrationRegistry`,
   `AbstractIntegrationProvider`) — inherent to the fleet leaf pattern; the
   `class_exists` guard keeps it non-fatal.
+
+## Changed while building (29 Sep 2026)
+
+Verifying the shipped provider against this design found three things, fixed in the same PR:
+
+- The offset was `(page - 1) x 50` whatever `_limit` said, so `_limit=10&_page=3` skipped to row 100 instead of row 20. The offset now uses the page's own size.
+- None of the provider's user-facing texts had a Dutch translation, and the health message was two concatenated literals the extractor cannot read. The message is now one literal and all six texts are in `l10n/en.json` and `l10n/nl.json`.
+- The test stub of OpenRegister's `IntegrationProvider` named a `getIntegriqSource()` method the real interface calls `getOpenConnectorSource()` (a rename that reached another app's contract). The stubs are now copies of openregister development, so the drift pin in task 1.1 reads the real interface.
+
+The flag the provider reads is the `storage_migrated` app value of `integriq` (the app id moved); the register slug is `integriq`.
+

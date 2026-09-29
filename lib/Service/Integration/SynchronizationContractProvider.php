@@ -172,7 +172,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 
 		$offset = 0;
 		if (isset($filters['_page']) === true) {
-			$offset = (((int)$filters['_page']) - 1) * 50;
+			$offset = (max((int)$filters['_page'], 1) - 1) * $limit;
 		}
 
 		// Pre-set the register/schema context, then filter by targetId only.
@@ -359,8 +359,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 				'status' => 'unavailable',
 				'authStatus' => 'configured',
 				'message' => $this->l10n->t(
-					'Integriq storage migration has not yet run on this instance.'
-					. ' Sync contract leaves will appear after `occ upgrade` runs the chain-C cutover.'
+					'The storage migration has not run on this instance yet. The "Synced from" panel appears once occ upgrade has run it.'
 				),
 			];
 		}
