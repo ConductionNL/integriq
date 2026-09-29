@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Catalog\ConnectorTemplateLibrary;
+
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -71,11 +73,11 @@ class CatalogRegistryService {
 	private const PLACEHOLDER_SLUG_PREFIX = 'environment-';
 
 	/**
-	 * The library directory this instance reads.
+	 * The connector template library this instance reads.
 	 *
-	 * @var string
+	 * @var ConnectorTemplateLibrary
 	 */
-	private readonly string $templateDir;
+	private readonly ConnectorTemplateLibrary $templates;
 
 	/**
 	 * Human-readable category labels keyed by the source schema's free-form
@@ -155,7 +157,7 @@ class CatalogRegistryService {
 		private readonly LoggerInterface $logger,
 		?string $templateDir = null,
 	) {
-		$this->templateDir = ($templateDir ?? self::TEMPLATE_DIR);
+		$this->templates = new ConnectorTemplateLibrary(directory: ($templateDir ?? self::TEMPLATE_DIR));
 	}//end __construct()
 
 	/**
@@ -171,113 +173,35 @@ class CatalogRegistryService {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
 	 */
 	public function collect(): array {
-		$entries = [];
+		$withTier = static fn (string $tier): \Closure => static fn (array $entry): array => $entry + ['tier' => $tier];
 
-		foreach ($this->collectFromIntegrationRegistry() as $entry) {
-			$entries[] = $entry + ['tier' => 'adapter'];
-		}
+		$adapters = array_map($withTier('adapter'), [...$this->collectFromIntegrationRegistry(), ...$this->collectStaticDescriptors()]);
 
 		// A system with an adapter and a seeded source is listed once, as the
 		// adapter; the seeded source is what its Instantiate enables (D4).
-		$adapterTemplates = [];
-		foreach ($this->collectStaticDescriptors() as $entry) {
-			$entries[] = $entry + ['tier' => 'adapter'];
-			if ((string)$entry['sourceTemplateSlug'] !== '') {
-				$adapterTemplates[(string)$entry['sourceTemplateSlug']] = true;
-			}
-		}
+		$backedByAdapter = array_flip(array_filter(array_column($adapters, 'sourceTemplateSlug')));
+		$seeded = array_filter(
+			$this->collectFromSeedFragments(),
+			static fn (array $entry): bool => isset($backedByAdapter[$entry['sourceTemplateSlug']]) === false
+		);
 
-		foreach ($this->collectFromSeedFragments() as $entry) {
-			if (isset($adapterTemplates[$entry['sourceTemplateSlug']]) === true) {
-				continue;
-			}
-
-			$entries[] = $entry + ['tier' => 'curated'];
-		}
-
-		foreach ($this->collectFromTemplates() as $entry) {
-			$entries[] = $entry;
-		}
-
-		return $entries;
+		return [...$adapters, ...array_map($withTier('curated'), array_values($seeded)), ...$this->collectFromTemplates()];
 	}//end collect()
 
 	/**
-	 * (d) One entry per template in the connector template library.
-	 *
-	 * A template is a `source` payload plus an `x-template` block naming the
-	 * vendor, the system, the standard it is reached over, where it was
-	 * checked and its tier. It becomes a source only when an administrator
-	 * instantiates it (design D1).
+	 * (d) One entry per template in the connector template library, which
+	 * the Store lists and the register import never installs (design D1).
 	 *
 	 * @return array<int, array<string,mixed>>
 	 *
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	private function collectFromTemplates(): array {
-		$entries = [];
-		foreach ($this->readTemplates() as $template) {
-			$meta = $template['x-template'];
-			$source = $template['source'];
-			$slug = (string)$meta['slug'];
-			$type = (string)($source['type'] ?? 'api');
-
-			$entry = [
-				'slug' => 'template:' . $slug,
-				'name' => (string)($source['name'] ?? $meta['system'] ?? $slug),
-				'description' => (string)($source['description'] ?? ''),
-				'category' => (string)($meta['category'] ?? self::TYPE_CATEGORY_LABELS[$type] ?? 'Integrations'),
-				'kind' => 'source-template',
-				'mechanism' => 'mock-seeded',
-				'flagKey' => '',
-				'sourceTemplateSlug' => $slug,
-				'standards' => [(string)($meta['standard'] ?? 'REST API')],
-				'icon' => $this->iconForType(type: $type),
-				'tier' => (string)($meta['tier'] ?? 'curated'),
-				'verifiedAgainst' => (string)($meta['verifiedAgainst'] ?? ''),
-			];
-			if (empty($meta['snapshotDate']) === false) {
-				$entry['snapshotDate'] = (string)$meta['snapshotDate'];
-			}
-
-			$entries[] = $entry;
-		}//end foreach
-
-		return $entries;
+		return array_map(
+			fn (array $card): array => ['icon' => $this->iconForType(type: (string)$card['sourceType'])] + array_diff_key($card, ['sourceType' => true]),
+			$this->templates->cards()
+		);
 	}//end collectFromTemplates()
-
-	/**
-	 * Read every well-formed template in the library, one folder deep.
-	 *
-	 * @return array<int, array{x-template: array, source: array}>
-	 *
-	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
-	 */
-	private function readTemplates(): array {
-		$files = glob($this->templateDir . '/*/*.json');
-		if ($files === false) {
-			return [];
-		}
-
-		sort($files);
-
-		$templates = [];
-		foreach ($files as $file) {
-			$data = json_decode((string)file_get_contents($file), true);
-			if (is_array($data) === false
-				|| is_array($data['x-template'] ?? null) === false
-				|| is_array($data['source'] ?? null) === false
-				|| (string)($data['x-template']['slug'] ?? '') === ''
-			) {
-				// allow-list.json and the snapshot are not templates.
-				continue;
-			}
-
-			$templates[] = $data;
-		}
-
-		return $templates;
-	}//end readTemplates()
 
 	/**
 	 * (a) Read every provider registered with OR's IntegrationRegistry.
@@ -563,12 +487,9 @@ class CatalogRegistryService {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function findSeedSourcePayload(string $slug): ?array {
-		foreach ($this->readTemplates() as $template) {
-			if ((string)$template['x-template']['slug'] === $slug) {
-				$payload = $template['source'];
-				$payload['slug'] = $slug;
-				return $payload;
-			}
+		$templatePayload = $this->templates->payload(slug: $slug);
+		if ($templatePayload !== null) {
+			return $templatePayload;
 		}
 
 		if (is_dir(self::FRAGMENT_DIR) === false) {
