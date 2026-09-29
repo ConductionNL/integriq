@@ -9,7 +9,7 @@
  * SLO's JSON-LD typed-query responses (one level projected): a child that
  * arrives as a bare reference is expanded through `/uuid/{id}`.
  *
- * Profile rules (openspec/changes/slo-kerndoelen-import/design.md, D2 and D12):
+ * Profile rules (openspec/changes/archive/2026-09-29-slo-kerndoelen-import/design.md, D2 and D12):
  * depth first in the profile's key order, so a 2006 kerndoel that hangs both
  * under a domein and directly under its vakleergebied lands under the domein;
  * an entity seen twice keeps its first parent; `deprecated` and `unreleased`

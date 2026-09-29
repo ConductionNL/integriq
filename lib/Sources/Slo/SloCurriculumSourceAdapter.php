@@ -9,7 +9,7 @@
  * `competency` records, parents first, with stable ids, the school years SLO
  * itself names and the CC BY 4.0 attribution. It writes nothing: the write
  * step into learniq is a Synchronization that lands after learniq's
- * `competency-year-scope` (openspec/changes/slo-kerndoelen-import/design.md, D7).
+ * `competency-year-scope` (openspec/changes/archive/2026-09-29-slo-kerndoelen-import/design.md, D7).
  *
  * Ships dormant: DI resolves the recorded-fixture mock until
  * `slo.curriculum.feature_flag` is `1`, and the seeded source stays disabled
