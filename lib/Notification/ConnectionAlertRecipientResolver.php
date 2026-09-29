@@ -35,11 +35,10 @@ use Psr\Log\LoggerInterface;
  *
  * The `threshold-passed` rule on `connection_alert` names this class as an
  * `expression` recipient, so OpenRegister's engine sends the notification and
- * integriq never calls the notification manager. There is no default group:
- * the group the change first named, `openconnector-ops`, exists on no
- * instance, and which group looks after connections is each organisation's
- * call. Until an administrator names one, an opened alert notifies nobody and
- * shows on the alerts page only.
+ * integriq never calls the notification manager. Until an administrator names
+ * another group, the members of `admin` are told (Ruben, 29 Sep 2026): every
+ * instance has that group, where the `openconnector-ops` the change first
+ * named exists on none. An empty setting counts as unset.
  *
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
  */
@@ -51,6 +50,13 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 	 * @var string
 	 */
 	public const CONFIG_KEY = 'connection_alert_group';
+
+	/**
+	 * The group told when no other group is named.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_GROUP = 'admin';
 
 	/**
 	 * Constructor.
@@ -67,7 +73,7 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 	}//end __construct()
 
 	/**
-	 * The uids of the named group's members, or none.
+	 * The uids of the named group's members, or none when that group does not exist.
 	 *
 	 * @param ObjectEntity $object The alert.
 	 * @param array<string, mixed> $context The trigger's extras.
@@ -81,11 +87,7 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 	 */
 	public function resolve(ObjectEntity $object, array $context): array {
-		$groupId = trim($this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, ''));
-		if ($groupId === '') {
-			return [];
-		}
-
+		$groupId = self::namedGroup(appConfig: $this->appConfig);
 		$group = $this->groupManager->get($groupId);
 		if ($group === null) {
 			$this->logger->warning(
@@ -102,4 +104,22 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 
 		return array_values(array_unique($uids));
 	}//end resolve()
+
+	/**
+	 * The group named for connection alerts, or the admin group when none is.
+	 *
+	 * @param IAppConfig $appConfig The app configuration.
+	 *
+	 * @return string A group id, never empty.
+	 *
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+	 */
+	public static function namedGroup(IAppConfig $appConfig): string {
+		$groupId = trim($appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, ''));
+		if ($groupId === '') {
+			return self::DEFAULT_GROUP;
+		}
+
+		return $groupId;
+	}//end namedGroup()
 }//end class

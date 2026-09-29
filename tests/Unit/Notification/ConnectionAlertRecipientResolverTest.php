@@ -41,10 +41,10 @@ final class ConnectionAlertRecipientResolverTest extends TestCase {
 	 *
 	 * @return ConnectionAlertRecipientResolver
 	 */
-	private function makeResolver(string $setting): ConnectionAlertRecipientResolver {
+	private function makeResolver(?string $setting): ConnectionAlertRecipientResolver {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(
-			static fn (string $app, string $key, string $default = ''): string => ($app === 'integriq' && $key === ConnectionAlertRecipientResolver::CONFIG_KEY) ? $setting : $default
+			static fn (string $app, string $key, string $default = ''): string => ($app === 'integriq' && $key === ConnectionAlertRecipientResolver::CONFIG_KEY && $setting !== null) ? $setting : $default
 		);
 
 		$users = [];
@@ -57,9 +57,18 @@ final class ConnectionAlertRecipientResolverTest extends TestCase {
 		$group = $this->createMock(IGroup::class);
 		$group->method('getUsers')->willReturn($users);
 
+		$admin = $this->createMock(IUser::class);
+		$admin->method('getUID')->willReturn('admin');
+		$adminGroup = $this->createMock(IGroup::class);
+		$adminGroup->method('getUsers')->willReturn([$admin]);
+
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('get')->willReturnCallback(
-			static fn (string $gid): ?IGroup => ($gid === 'koppelbeheer') ? $group : null
+			static fn (string $gid): ?IGroup => match ($gid) {
+				'koppelbeheer' => $group,
+				'admin' => $adminGroup,
+				default => null,
+			}
 		);
 
 		return new ConnectionAlertRecipientResolver($appConfig, $groups, $this->createMock(LoggerInterface::class));
@@ -71,17 +80,29 @@ final class ConnectionAlertRecipientResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testItImplementsTheResolverContract(): void {
-		$this->assertInstanceOf(RecipientResolverInterface::class, $this->makeResolver(''));
+		$this->assertInstanceOf(RecipientResolverInterface::class, $this->makeResolver(null));
 	}//end testItImplementsTheResolverContract()
 
 	/**
-	 * No group named: nobody is notified.
+	 * No group named: the members of the admin group are told.
 	 *
 	 * @return void
 	 */
-	public function testNoGroupNamedNotifiesNobody(): void {
-		$this->assertSame([], $this->makeResolver('')->resolve(new ObjectEntity(), []));
-	}//end testNoGroupNamedNotifiesNobody()
+	public function testWithNoSettingTheAdminGroupIsTold(): void {
+		$this->assertSame(['admin'], $this->makeResolver(null)->resolve(new ObjectEntity(), []));
+	}//end testWithNoSettingTheAdminGroupIsTold()
+
+	/**
+	 * A setting cleared to an empty value (as the admin page did before admin
+	 * became the default) falls back to the admin group as well.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+	 */
+	public function testAnEmptySettingFallsBackToTheAdminGroup(): void {
+		$this->assertSame(['admin'], $this->makeResolver('')->resolve(new ObjectEntity(), []));
+	}//end testAnEmptySettingFallsBackToTheAdminGroup()
 
 	/**
 	 * A named group: its members.

@@ -5,9 +5,9 @@
 
 <!--
   ConnectionAlertSettings: the group whose members hear about an opened
-  connection alert (app setting connection_alert_group). No group is named on
-  a fresh install, so an alert shows on the Connection alerts page only until
-  an administrator names one.
+  connection alert (app setting connection_alert_group). Until an
+  administrator names another group, the admin group is told; clearing the
+  field puts the admin group back.
 
   @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 -->
@@ -20,7 +20,7 @@
 			{{
 				t(
 					'integriq',
-					'When a source or synchronization passes one of its alert thresholds, the members of this group get a notification. Leave it empty and nobody is notified; the alert still shows on the Connection alerts page.',
+					'Members of this group get a notification when a source or synchronization passes an alert threshold. Leave it empty to tell the admin group.',
 				)
 			}}
 		</p>
@@ -46,12 +46,6 @@
 				{{ t('integriq', 'Save') }}
 			</NcButton>
 		</div>
-		<p
-			v-if="!loading && saved === ''"
-			class="integriq-admin__hint"
-			data-testid="admin-connection-alert-group-none">
-			{{ t('integriq', 'No group is named, so nobody is notified.') }}
-		</p>
 	</section>
 </template>
 
@@ -103,7 +97,7 @@ export default {
 		t,
 
 		/**
-		 * Store the group, or clear it; the server refuses a group that does not exist.
+		 * Store the group, or clear it to go back to the admin group; the server refuses a group that does not exist.
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
