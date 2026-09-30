@@ -507,6 +507,10 @@
 		     surfaced, never silently removed, so this is human-invoked and dry-run by
 		     default. -->
 		<command>OCA\Integriq\Command\DedupeContracts</command>
+		<!-- stop-cloudevent-recursion section 5: deletes the CloudEvents generated from
+		     other CloudEvents (source /objects/com.nextcloud.openregister.object.*) and the
+		     event messages whose event is gone. Dry run unless --apply. -->
+		<command>OCA\Integriq\Command\PurgeEventRecursion</command>
 		<!-- flow-native-synchronization task 3.3: renders one job as a generated
 		     trigger schedule flow document, or names the features no flow node can
 		     express. Same contract as the synchronization renderer above: the

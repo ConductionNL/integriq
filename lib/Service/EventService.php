@@ -22,6 +22,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
+use OCA\Integriq\BackgroundJob\ProcessEventJob;
 use OCA\Integriq\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerTransportRegistry;
@@ -41,6 +42,7 @@ use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
@@ -188,6 +190,9 @@ class EventService {
 	 *                                      null means a guard without an allowlist, never no guard.
 	 * @param BrokerCredentialResolver|null $brokerCredentials Resolves a broker subscription's credentialRef at
 	 *                                                        publish (REQ-EBSC-003). Null leaves the settings as stored.
+	 * @param IJobList|null                 $jobList           Queues the fan-out of an object write's CloudEvent
+	 *                                                        ({@see ProcessEventJob}). Null (unit tests that
+	 *                                                        predate it) fans out inline as before.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -212,6 +217,7 @@ class EventService {
 		private readonly ?BrokerTransportRegistry $brokerRegistry = null,
 		?EgressGuard $egressGuard = null,
 		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
+		private readonly ?IJobList $jobList = null,
 	) {
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
@@ -301,7 +307,9 @@ class EventService {
 	/**
 	 * Process a new event and create messages for all matching subscriptions.
 	 *
-	 * @param ObjectEntity $event The event ObjectEntity to process.
+	 * @param ObjectEntity                   $event         The event ObjectEntity to process.
+	 * @param array<int, ObjectEntity>|null $subscriptions The active subscriptions when the caller already
+	 *                                                      holds them; null fetches them.
 	 *
 	 * @return array<ObjectEntity> Array of created message ObjectEntities.
 	 *
@@ -310,19 +318,11 @@ class EventService {
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevent-fan-out-to-matching-subscriptions-req-001
 	 */
-	public function processEvent(ObjectEntity $event): array {
+	public function processEvent(ObjectEntity $event, ?array $subscriptions = null): array {
 		try {
-			// Find all active subscriptions.
-			$matches = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => 'integriq',
-						'schema' => 'event_subscription',
-						'status' => 'active',
-					],
-				]
-			);
-			$subscriptions = ($matches['results'] ?? $matches);
+			// A queued run passes the set it fetched once for all its events
+			// (stop-cloudevent-recursion section 4); a direct call fetches it.
+			$subscriptions = ($subscriptions ?? $this->activeSubscriptions());
 			$messages = [];
 
 			foreach ($subscriptions as $subscription) {
@@ -353,6 +353,100 @@ class EventService {
 		}//end try
 
 	}//end processEvent()
+
+	/**
+	 * The active `event_subscription` objects.
+	 *
+	 * @return array<int, ObjectEntity>
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-active-subscriptions-shall-be-resolved-once-per-processing-run
+	 */
+	private function activeSubscriptions(): array {
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => 'integriq',
+					'schema' => 'event_subscription',
+					'status' => 'active',
+				],
+			]
+		);
+
+		return array_values(($matches['results'] ?? $matches));
+	}//end activeSubscriptions()
+
+	/**
+	 * Fan out queued CloudEvents, fetching the active subscriptions once.
+	 *
+	 * Runs on the cron worker ({@see ProcessEventJob}), never in the request
+	 * that wrote the object. An event that is gone by now (purged, or deleted
+	 * by an admin) is skipped.
+	 *
+	 * @param array<int, string> $eventIds Uuids of stored `event` objects.
+	 *
+	 * @return integer The number of `event_message` objects created.
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-active-subscriptions-shall-be-resolved-once-per-processing-run
+	 */
+	public function processQueuedEvents(array $eventIds): int {
+		$events = [];
+		foreach ($eventIds as $eventId) {
+			try {
+				$event = $this->objectService->find(
+					id: $eventId,
+					register: 'integriq',
+					schema: 'event',
+					_rbac: false,
+					_multitenancy: false
+				);
+			} catch (Exception $e) {
+				$event = null;
+			}
+
+			if ($event instanceof ObjectEntity === false) {
+				$this->logger->info('[EventService] queued event ' . $eventId . ' no longer exists; skipped');
+				continue;
+			}
+
+			$events[] = $event;
+		}//end foreach
+
+		if ($events === []) {
+			return 0;
+		}
+
+		$subscriptions = $this->activeSubscriptions();
+		$created = 0;
+		foreach ($events as $event) {
+			$created += count($this->processEvent(event: $event, subscriptions: $subscriptions));
+		}
+
+		return $created;
+	}//end processQueuedEvents()
+
+	/**
+	 * Queue the fan-out of an object write's CloudEvent.
+	 *
+	 * The request that wrote someone else's object pays for one `event` save
+	 * and one queued job, not for matching, `event_message` rows or a push
+	 * delivery to a subscriber that may never answer.
+	 *
+	 * @param ObjectEntity $event The stored CloudEvent.
+	 *
+	 * @return array<ObjectEntity> Nothing when queued; the messages when no job list is wired.
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 */
+	private function queueFanOut(ObjectEntity $event): array {
+		if ($this->jobList === null) {
+			return $this->processEvent(event: $event);
+		}
+
+		$this->jobList->add(ProcessEventJob::class, ['eventId' => (string)$event->getUuid()]);
+
+		return [];
+	}//end queueFanOut()
 
 	/**
 	 * Check if an event matches a subscription's criteria.
@@ -2836,12 +2930,13 @@ class EventService {
 	 *
 	 * @param ObjectEntity $object The created object.
 	 *
-	 * @return ObjectEntity[] The created CloudEvent messages.
+	 * @return ObjectEntity[] Empty: the fan-out is queued ({@see queueFanOut}).
 	 *
 	 * @throws Exception On event processing failure.
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
 	 */
 	public function handleObjectCreated(ObjectEntity $object): array {
 		$objectData = $object->getObject();
@@ -2871,7 +2966,7 @@ class EventService {
 			_multitenancy: false
 		);
 
-		return $this->processEvent(event: $event);
+		return $this->queueFanOut(event: $event);
 	}//end handleObjectCreated()
 
 	/**
@@ -2880,12 +2975,13 @@ class EventService {
 	 * @param ObjectEntity $oldObject The previous state of the object.
 	 * @param ObjectEntity $newObject The new state of the object.
 	 *
-	 * @return ObjectEntity[] The created CloudEvent messages.
+	 * @return ObjectEntity[] Empty: the fan-out is queued ({@see queueFanOut}).
 	 *
 	 * @throws Exception On event processing failure.
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
 	 */
 	public function handleObjectUpdated(ObjectEntity $oldObject, ObjectEntity $newObject): array {
 		$oldData = $oldObject->getObject();
@@ -2920,7 +3016,7 @@ class EventService {
 			_multitenancy: false
 		);
 
-		return $this->processEvent(event: $event);
+		return $this->queueFanOut(event: $event);
 	}//end handleObjectUpdated()
 
 	/**
@@ -2928,12 +3024,13 @@ class EventService {
 	 *
 	 * @param ObjectEntity $object The deleted object.
 	 *
-	 * @return ObjectEntity[] The created CloudEvent messages.
+	 * @return ObjectEntity[] Empty: the fan-out is queued ({@see queueFanOut}).
 	 *
 	 * @throws Exception On event processing failure.
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
 	 */
 	public function handleObjectDeleted(ObjectEntity $object): array {
 		$objectData = $object->getObject();
@@ -2963,6 +3060,6 @@ class EventService {
 			_multitenancy: false
 		);
 
-		return $this->processEvent(event: $event);
+		return $this->queueFanOut(event: $event);
 	}//end handleObjectDeleted()
 }//end class
