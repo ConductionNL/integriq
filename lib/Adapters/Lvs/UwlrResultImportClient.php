@@ -14,7 +14,7 @@
  *     mapping (learniq's `lvs-import-contract`) can be developed and
  *     tested without ever contacting a supplier.
  *   - A live HTTP/SFTP binding is intentionally NOT built in this
- *     change — see `openspec/changes/integriq-adapter-lvs-imports/proposal.md`
+ *     change — see `openspec/changes/archive/2026-09-30-integriq-adapter-lvs-imports/proposal.md`
  *     "Out of Scope". Each supplier requires its own commercial
  *     koppelpartner onboarding that this change cannot complete.
  *
