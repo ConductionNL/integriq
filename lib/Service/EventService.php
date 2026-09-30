@@ -243,7 +243,11 @@ class EventService {
 					'status' => 'active',
 				],
 				'limit' => 1,
-			]
+			],
+			// System context: see processEvent(). The gate runs in sessionless
+			// listeners too, and must not report "no subscriptions" there.
+			_rbac: false,
+			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
 
@@ -280,7 +284,11 @@ class EventService {
 							'schema' => $slug,
 						],
 						'limit' => 1,
-					]
+					],
+					// System context: see processEvent(). A sessionless caller that
+					// read no rows would fail to recognise integriq's own writes.
+					_rbac: false,
+					_multitenancy: false
 				);
 				$results = ($matches['results'] ?? $matches);
 				foreach ($results as $row) {
@@ -312,7 +320,13 @@ class EventService {
 	 */
 	public function processEvent(ObjectEntity $event): array {
 		try {
-			// Find all active subscriptions.
+			// Find all active subscriptions, in system context. Events are
+			// raised in requests without a session too (the LTI AGS score route
+			// and webhooks are public pages); OpenRegister filters such a
+			// request as anonymous, and its tenant scope then hides every
+			// subscription, so the event reached none (0 messages). Who may
+			// raise an event is decided where it is raised, not here, the same
+			// way emitCloudEvent() saves the event in system context (#2224).
 			$matches = $this->objectService->findAll(
 				config: [
 					'filters' => [
@@ -320,7 +334,9 @@ class EventService {
 						'schema' => 'event_subscription',
 						'status' => 'active',
 					],
-				]
+				],
+				_rbac: false,
+				_multitenancy: false
 			);
 			$subscriptions = ($matches['results'] ?? $matches);
 			$messages = [];
@@ -513,7 +529,10 @@ class EventService {
 				'updated' => (new DateTime())->format('c'),
 			],
 			register: 'integriq',
-			schema: 'event_message'
+			schema: 'event_message',
+			// System context: see processEvent().
+			_rbac: false,
+			_multitenancy: false
 		);
 
 	}//end createEventMessage()
@@ -695,7 +714,10 @@ class EventService {
 					object: $messageData,
 					register: 'integriq',
 					schema: 'event_message',
-					uuid: $message->getUuid()
+					uuid: $message->getUuid(),
+					// System context: see processEvent().
+					_rbac: false,
+					_multitenancy: false
 				);
 				return true;
 			}//end if
@@ -896,7 +918,10 @@ class EventService {
 			object: $messageData,
 			register: 'integriq',
 			schema: 'event_message',
-			uuid: $message->getUuid()
+			uuid: $message->getUuid(),
+			// System context: see processEvent().
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		if ($messageData['status'] === 'abandoned') {
@@ -2148,7 +2173,10 @@ class EventService {
 			object: $messageData,
 			register: 'integriq',
 			schema: 'event_message',
-			uuid: $message->getUuid()
+			uuid: $message->getUuid(),
+			// System context: see processEvent().
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->dispatchDeliveryConcluded(
@@ -2269,7 +2297,10 @@ class EventService {
 			object: $messageData,
 			register: 'integriq',
 			schema: 'event_message',
-			uuid: $message->getUuid()
+			uuid: $message->getUuid(),
+			// System context: see processEvent().
+			_rbac: false,
+			_multitenancy: false
 		);
 
 	}//end recordConfigurationError()
@@ -2642,11 +2673,17 @@ class EventService {
 			$filters['id'] = ['>' => $cursor];
 		}
 
+		// System context: the messages were written in system context (see
+		// processEvent()), so the caller's tenant scope need not include them.
+		// Access is decided before this runs: EventsController::pull() requires
+		// the `event.pull` action and reads only the named subscription's messages.
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => $filters,
 				'limit' => ($limit ?? 100),
-			]
+			],
+			_rbac: false,
+			_multitenancy: false
 		);
 		$messages = ($matches['results'] ?? $matches);
 		if (count($messages) > 0) {
