@@ -110,6 +110,7 @@ class EndpointIdFetchGuardTest extends TestCase {
 		];
 
 		$this->assertSame([], RegisterSchemaValidator::errors('endpoint', $endpoint));
-		$this->assertSame('1.2.0', RegisterSchemaValidator::descriptor()['components']['schemas']['endpoint']['version']);
+		// 1.2.0 introduced fixedFilters; a later fragment may only move it up.
+		$this->assertTrue(version_compare(RegisterSchemaValidator::descriptor()['components']['schemas']['endpoint']['version'], '1.2.0', '>='));
 	}//end testAnEndpointWithFixedFiltersValidatesAgainstTheRegister()
 }//end class
