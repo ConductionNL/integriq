@@ -1,0 +1,1435 @@
+{
+  "$comment": "ADR-037 register fragment (ori-public-serving Task 1). Seeds the eleven ORI resources decidiq's OriController serves as integriq endpoints under the validation prefix ori-parity/v1, each with an item mapping (OriSerializer's field table) and a list mapping (the ORI envelope), run by two after rules. Anonymous: no authentication rule, with decidiq's AnonRateLimit ceiling of 120 requests a minute per client address (anonymousRateLimit, endpoint 1.3.0, REQ-EP-013). The endpoints name decidiq's register and schemas by slug (REQ-EP-011) and gate lists and single objects with one fixedFilters set (REQ-EP-010, REQ-EP-012). Seed objects are created once and never overwrite an administrator's edit. See openspec/changes/ori-public-serving/design.md D1-D4 and Gap 1.",
+  "components": {
+    "schemas": {
+      "endpoint": {
+        "version": "1.3.0",
+        "properties": {
+          "anonymousRateLimit": {
+            "type": "object",
+            "title": "Anonymous rate limit",
+            "description": "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.",
+            "properties": {
+              "requestsPerWindow": {
+                "type": "integer",
+                "minimum": 1,
+                "title": "Requests per window",
+                "description": "How many requests one client address may make before it is refused until the window ends."
+              },
+              "windowSeconds": {
+                "type": "integer",
+                "minimum": 1,
+                "title": "Window in seconds",
+                "description": "How long the window lasts. The count starts again after it."
+              }
+            },
+            "required": [
+              "requestsPerWindow",
+              "windowSeconds"
+            ]
+          }
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-organizations"
+        },
+        "name": "ORI organizations item",
+        "slug": "ori-item-organizations",
+        "description": "Projects one decidiq governance-body object onto the ORI Organization fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Organization",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text",
+          "email": "email"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text",
+          "email": "unsetIfValue==email"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-organizations"
+        },
+        "name": "ORI organizations list",
+        "slug": "ori-envelope-organizations",
+        "description": "Wraps the projected organizations in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Organization",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-organizations"
+        },
+        "name": "ORI organizations item fields",
+        "slug": "ori-item-organizations",
+        "description": "Runs the ori-item-organizations mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-organizations"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-organizations"
+        },
+        "name": "ORI organizations list shape",
+        "slug": "ori-envelope-organizations",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-organizations",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-organizations"
+        },
+        "name": "ORI organizations (parity)",
+        "slug": "ori-parity-organizations",
+        "description": "Serves decidiq's governance-body as the ORI Organization resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/organizations keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/organizations/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "organizations",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/organizations(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/governance-body",
+        "rules": [
+          "ori-item-organizations",
+          "ori-envelope-organizations"
+        ],
+        "fixedFilters": {
+          "lifecycle": "published"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-persons"
+        },
+        "name": "ORI persons item",
+        "slug": "ori-item-persons",
+        "description": "Projects one decidiq person object onto the ORI Person fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Person",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text",
+          "email": "email"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text",
+          "email": "unsetIfValue==email"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-persons"
+        },
+        "name": "ORI persons list",
+        "slug": "ori-envelope-persons",
+        "description": "Wraps the projected persons in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Person",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-persons"
+        },
+        "name": "ORI persons item fields",
+        "slug": "ori-item-persons",
+        "description": "Runs the ori-item-persons mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-persons"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-persons"
+        },
+        "name": "ORI persons list shape",
+        "slug": "ori-envelope-persons",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-persons",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-persons"
+        },
+        "name": "ORI persons (parity)",
+        "slug": "ori-parity-persons",
+        "description": "Serves decidiq's person as the ORI Person resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/persons keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/persons/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "persons",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/persons(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/person",
+        "rules": [
+          "ori-item-persons",
+          "ori-envelope-persons"
+        ],
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-memberships"
+        },
+        "name": "ORI memberships item",
+        "slug": "ori-item-memberships",
+        "description": "Projects one decidiq membership object onto the ORI Membership fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Membership",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-memberships"
+        },
+        "name": "ORI memberships list",
+        "slug": "ori-envelope-memberships",
+        "description": "Wraps the projected memberships in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Membership",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-memberships"
+        },
+        "name": "ORI memberships item fields",
+        "slug": "ori-item-memberships",
+        "description": "Runs the ori-item-memberships mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-memberships"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-memberships"
+        },
+        "name": "ORI memberships list shape",
+        "slug": "ori-envelope-memberships",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-memberships",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-memberships"
+        },
+        "name": "ORI memberships (parity)",
+        "slug": "ori-parity-memberships",
+        "description": "Serves decidiq's membership as the ORI Membership resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/memberships keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/memberships/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "memberships",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/memberships(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/membership",
+        "rules": [
+          "ori-item-memberships",
+          "ori-envelope-memberships"
+        ],
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-events"
+        },
+        "name": "ORI events item",
+        "slug": "ori-item-events",
+        "description": "Projects one decidiq meeting object onto the ORI Event fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Event",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-events"
+        },
+        "name": "ORI events list",
+        "slug": "ori-envelope-events",
+        "description": "Wraps the projected events in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Event",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-events"
+        },
+        "name": "ORI events item fields",
+        "slug": "ori-item-events",
+        "description": "Runs the ori-item-events mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-events"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-events"
+        },
+        "name": "ORI events list shape",
+        "slug": "ori-envelope-events",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-events",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-events"
+        },
+        "name": "ORI events (parity)",
+        "slug": "ori-parity-events",
+        "description": "Serves decidiq's meeting as the ORI Event resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/events keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/events/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "events",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/events(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/meeting",
+        "rules": [
+          "ori-item-events",
+          "ori-envelope-events"
+        ],
+        "fixedFilters": {
+          "lifecycle": "published"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-agendaitems"
+        },
+        "name": "ORI agendaitems item",
+        "slug": "ori-item-agendaitems",
+        "description": "Projects one decidiq agenda-item object onto the ORI AgendaItem fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "AgendaItem",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-agendaitems"
+        },
+        "name": "ORI agendaitems list",
+        "slug": "ori-envelope-agendaitems",
+        "description": "Wraps the projected agendaitems in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "AgendaItem",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-agendaitems"
+        },
+        "name": "ORI agendaitems item fields",
+        "slug": "ori-item-agendaitems",
+        "description": "Runs the ori-item-agendaitems mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-agendaitems"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-agendaitems"
+        },
+        "name": "ORI agendaitems list shape",
+        "slug": "ori-envelope-agendaitems",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-agendaitems",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-agendaitems"
+        },
+        "name": "ORI agendaitems (parity)",
+        "slug": "ori-parity-agendaitems",
+        "description": "Serves decidiq's agenda-item as the ORI AgendaItem resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/agendaitems keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/agendaitems/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "agendaitems",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/agendaitems(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/agenda-item",
+        "rules": [
+          "ori-item-agendaitems",
+          "ori-envelope-agendaitems"
+        ],
+        "fixedFilters": {
+          "lifecycle": "published"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-motions"
+        },
+        "name": "ORI motions item",
+        "slug": "ori-item-motions",
+        "description": "Projects one decidiq decision object onto the ORI Motion fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Motion",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-motions"
+        },
+        "name": "ORI motions list",
+        "slug": "ori-envelope-motions",
+        "description": "Wraps the projected motions in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Motion",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-motions"
+        },
+        "name": "ORI motions item fields",
+        "slug": "ori-item-motions",
+        "description": "Runs the ori-item-motions mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-motions"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-motions"
+        },
+        "name": "ORI motions list shape",
+        "slug": "ori-envelope-motions",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-motions",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-motions"
+        },
+        "name": "ORI motions (parity)",
+        "slug": "ori-parity-motions",
+        "description": "Serves decidiq's decision as the ORI Motion resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/motions keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/motions/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "motions",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/motions(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/decision",
+        "rules": [
+          "ori-item-motions",
+          "ori-envelope-motions"
+        ],
+        "fixedFilters": {
+          "isPublished": "public",
+          "decisionType": "motion"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-amendments"
+        },
+        "name": "ORI amendments item",
+        "slug": "ori-item-amendments",
+        "description": "Projects one decidiq decision object onto the ORI Amendment fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Amendment",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-amendments"
+        },
+        "name": "ORI amendments list",
+        "slug": "ori-envelope-amendments",
+        "description": "Wraps the projected amendments in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Amendment",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-amendments"
+        },
+        "name": "ORI amendments item fields",
+        "slug": "ori-item-amendments",
+        "description": "Runs the ori-item-amendments mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-amendments"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-amendments"
+        },
+        "name": "ORI amendments list shape",
+        "slug": "ori-envelope-amendments",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-amendments",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-amendments"
+        },
+        "name": "ORI amendments (parity)",
+        "slug": "ori-parity-amendments",
+        "description": "Serves decidiq's decision as the ORI Amendment resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/amendments keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/amendments/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "amendments",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/amendments(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/decision",
+        "rules": [
+          "ori-item-amendments",
+          "ori-envelope-amendments"
+        ],
+        "fixedFilters": {
+          "isPublished": "public",
+          "decisionType": "amendment"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-voteevents"
+        },
+        "name": "ORI voteevents item",
+        "slug": "ori-item-voteevents",
+        "description": "Projects one decidiq voting-round object onto the ORI VoteEvent fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "VoteEvent",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-voteevents"
+        },
+        "name": "ORI voteevents list",
+        "slug": "ori-envelope-voteevents",
+        "description": "Wraps the projected voteevents in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "VoteEvent",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-voteevents"
+        },
+        "name": "ORI voteevents item fields",
+        "slug": "ori-item-voteevents",
+        "description": "Runs the ori-item-voteevents mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-voteevents"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-voteevents"
+        },
+        "name": "ORI voteevents list shape",
+        "slug": "ori-envelope-voteevents",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-voteevents",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-voteevents"
+        },
+        "name": "ORI voteevents (parity)",
+        "slug": "ori-parity-voteevents",
+        "description": "Serves decidiq's voting-round as the ORI VoteEvent resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/voteevents keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/voteevents/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "voteevents",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/voteevents(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/voting-round",
+        "rules": [
+          "ori-item-voteevents",
+          "ori-envelope-voteevents"
+        ],
+        "fixedFilters": {
+          "lifecycle": "published"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-votes"
+        },
+        "name": "ORI votes item",
+        "slug": "ori-item-votes",
+        "description": "Projects one decidiq vote object onto the ORI Vote fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Vote",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-votes"
+        },
+        "name": "ORI votes list",
+        "slug": "ori-envelope-votes",
+        "description": "Wraps the projected votes in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Vote",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-votes"
+        },
+        "name": "ORI votes item fields",
+        "slug": "ori-item-votes",
+        "description": "Runs the ori-item-votes mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-votes"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-votes"
+        },
+        "name": "ORI votes list shape",
+        "slug": "ori-envelope-votes",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-votes",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-votes"
+        },
+        "name": "ORI votes (parity)",
+        "slug": "ori-parity-votes",
+        "description": "Serves decidiq's vote as the ORI Vote resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/votes keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/votes/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "votes",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/votes(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/vote",
+        "rules": [
+          "ori-item-votes",
+          "ori-envelope-votes"
+        ],
+        "fixedFilters": {
+          "lifecycle": "published"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-reports"
+        },
+        "name": "ORI reports item",
+        "slug": "ori-item-reports",
+        "description": "Projects one decidiq minutes object onto the ORI Report fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Report",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-reports"
+        },
+        "name": "ORI reports list",
+        "slug": "ori-envelope-reports",
+        "description": "Wraps the projected reports in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Report",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-reports"
+        },
+        "name": "ORI reports item fields",
+        "slug": "ori-item-reports",
+        "description": "Runs the ori-item-reports mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-reports"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-reports"
+        },
+        "name": "ORI reports list shape",
+        "slug": "ori-envelope-reports",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-reports",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-reports"
+        },
+        "name": "ORI reports (parity)",
+        "slug": "ori-parity-reports",
+        "description": "Serves decidiq's minutes as the ORI Report resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/reports keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/reports/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "reports",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/reports(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/minutes",
+        "rules": [
+          "ori-item-reports",
+          "ori-envelope-reports"
+        ],
+        "fixedFilters": {
+          "lifecycle": "published"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-item-publications"
+        },
+        "name": "ORI publications item",
+        "slug": "ori-item-publications",
+        "description": "Projects one decidiq publication-payload object onto the ORI Publication fields, the way decidiq's OriSerializer does.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "{{ oriType|default('Publication') }}",
+          "id": "{{ uuid|default(id) }}",
+          "name": "{{ title|default(name) }}",
+          "start_date": "scheduledDate",
+          "end_date": "endDate",
+          "location": "location",
+          "status": "lifecycle",
+          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
+          "text": "text",
+          "oriType": "oriType",
+          "schemaOrgType": "schemaOrgType",
+          "body": "bodyName",
+          "outcome": "outcome",
+          "decision_date": "decisionDate",
+          "legal_basis": "legalBasis",
+          "legal_remedy_clause": "legalRemedyClause",
+          "vote_totals": "voteTotals",
+          "meeting_date": "meetingDate",
+          "agenda_items": "agendaItems",
+          "content": "content",
+          "attendance": "attendance",
+          "published_at": "publicationDate"
+        },
+        "cast": {
+          "name": "unsetIfValue==",
+          "start_date": "unsetIfValue==scheduledDate",
+          "end_date": "unsetIfValue==endDate",
+          "location": "unsetIfValue==location",
+          "status": "unsetIfValue==lifecycle",
+          "classification": "unsetIfValue==",
+          "text": "unsetIfValue==text",
+          "oriType": "unsetIfValue==oriType",
+          "schemaOrgType": "unsetIfValue==schemaOrgType",
+          "body": "unsetIfValue==bodyName",
+          "outcome": "unsetIfValue==outcome",
+          "decision_date": "unsetIfValue==decisionDate",
+          "legal_basis": "unsetIfValue==legalBasis",
+          "legal_remedy_clause": "unsetIfValue==legalRemedyClause",
+          "vote_totals": "unsetIfValue==voteTotals",
+          "meeting_date": "unsetIfValue==meetingDate",
+          "agenda_items": "unsetIfValue==agendaItems",
+          "content": "unsetIfValue==content",
+          "attendance": "unsetIfValue==attendance",
+          "published_at": "unsetIfValue==publicationDate"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ori-envelope-publications"
+        },
+        "name": "ORI publications list",
+        "slug": "ori-envelope-publications",
+        "description": "Wraps the projected publications in the ORI list shape: @context, @type, count and items.",
+        "mapping": {
+          "@context": "https://argu.co/ns/core",
+          "@type": "Publication",
+          "count": "count",
+          "items": "results"
+        },
+        "passThrough": false
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-item-publications"
+        },
+        "name": "ORI publications item fields",
+        "slug": "ori-item-publications",
+        "description": "Runs the ori-item-publications mapping over the answer, over each item of a list.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "ori-item-publications"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "ori-envelope-publications"
+        },
+        "name": "ORI publications list shape",
+        "slug": "ori-envelope-publications",
+        "description": "On a list answer only, replaces the paging envelope with the ORI list shape.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "ori-envelope-publications",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ori-parity-publications"
+        },
+        "name": "ORI publications (parity)",
+        "slug": "ori-parity-publications",
+        "description": "Serves decidiq's publication-payload as the ORI Publication resource, anonymously, under the validation prefix ori-parity. decidiq's own /api/ori/v1/publications keeps serving until the parity test plan passes.",
+        "endpoint": "ori-parity/v1/publications/{{id}}",
+        "endpointArray": [
+          "ori-parity",
+          "v1",
+          "publications",
+          "{{id}}"
+        ],
+        "endpointRegex": "#^ori-parity/v1/publications(/[^/]+)?$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "decidiq/publication-payload",
+        "rules": [
+          "ori-item-publications",
+          "ori-envelope-publications"
+        ],
+        "anonymousRateLimit": {
+          "requestsPerWindow": 120,
+          "windowSeconds": 60
+        }
+      }
+    ]
+  }
+}
