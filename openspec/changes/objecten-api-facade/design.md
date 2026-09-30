@@ -48,6 +48,35 @@ The token's material resolves through the OpenRegister credential broker
 (ADR-064). No key in a method argument, a log line, an endpoint
 configuration export or the objecttype configuration.
 
+## D7. Every seam is wired in one place, and a read carries the principal
+
+The handlers take their OpenRegister access as callables so each is
+testable alone. `OpenRegisterObjectenGateway` is the production side of all
+six: `objectRead` and `objectWrite`/`objectDelete` go through OpenRegister's
+object service, `schemaRead` through the schema mapper, `credentialRead`
+through the credential broker by reference, and `announce` through
+`EventService::emitCloudEvent()` (type `nl.vng.objecten.object.<actie>`), so
+a subscription whose action forwards to a Notificaties API carries the
+change on. `ObjectenWiring` registers one factory per facade service, called
+from `Application::register()`; without it the container autowired every
+handler with its seams at null and every route answered 401 or 404.
+
+The read seam originally took no principal, while D3 says a request runs as
+the token's principal. It now takes one: `index`, `show` and `search` pass
+the principal the token check resolved, and the gateway runs the read as
+that user (a volatile session user, restored after). A principal that is no
+user of the instance reads and writes nothing, and a warning is logged.
+Two reads are NOT made as the principal, on purpose: the objecttype and
+token declarations (integriq's own admin-only configuration; no token may
+choose which tokens exist) and a schema's definition for the Objecttypen
+API (configuration the objecttype publishes, read after the token check).
+
+The declarations live in two admin-only schemas in the integriq register,
+`objecttype` and `objecten_token` (fragment
+`lib/Settings/register.d/objecten-api-facade.json`). The published uuid is
+the `publishedUuid` property, not the configuration object's own id, so a
+reseed does not move it.
+
 ## Risks
 
 - **A national uuid that must survive a register rebuild.** The uuid lives

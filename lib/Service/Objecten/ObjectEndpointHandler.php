@@ -73,7 +73,7 @@ class ObjectEndpointHandler {
 	 *
 	 * @param ObjecttypeRegistry      $objecttypes The declared mappings.
 	 * @param ObjectRecordTranslator  $translator  The record shape.
-	 * @param callable|null           $objectRead  Lists objects of a register and schema.
+	 * @param callable|null           $objectRead  Lists objects of a register and schema, as a principal.
 	 */
 	public function __construct(
 		private readonly ObjecttypeRegistry $objecttypes,
@@ -85,14 +85,15 @@ class ObjectEndpointHandler {
 	/**
 	 * `GET /api/v2/objects`.
 	 *
-	 * @param array<string, mixed> $query   The query parameters.
-	 * @param string               $baseUrl The API base.
+	 * @param array<string, mixed> $query     The query parameters.
+	 * @param string               $baseUrl   The API base.
+	 * @param string               $principal The token's principal, whom the read runs as.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The response.
 	 *
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
-	public function index(array $query, string $baseUrl = ''): array {
+	public function index(array $query, string $baseUrl = '', string $principal = ''): array {
 		$type = trim((string)($query['type'] ?? ''));
 		if ($type === '') {
 			return $this->problem(
@@ -108,7 +109,7 @@ class ObjectEndpointHandler {
 			return $this->problem(status: 404, title: 'Not found', detail: sprintf('No objecttype "%s" is published here.', $type));
 		}
 
-		$objects = $this->readObjects(declaration: $declaration);
+		$objects = $this->readObjects(declaration: $declaration, principal: $principal);
 
 		$objects = $this->filterByDataAttrs(objects: $objects, dataAttrs: (string)($query['data_attrs'] ?? ''));
 		$objects = $this->filterByDate(objects: $objects, query: $query);
@@ -120,21 +121,22 @@ class ObjectEndpointHandler {
 	/**
 	 * `GET /api/v2/objects/{uuid}`.
 	 *
-	 * @param string $type    The objecttype the token was checked against.
-	 * @param string $uuid    The object.
-	 * @param string $baseUrl The API base.
+	 * @param string $type      The objecttype the token was checked against.
+	 * @param string $uuid      The object.
+	 * @param string $baseUrl   The API base.
+	 * @param string $principal The token's principal, whom the read runs as.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The response.
 	 *
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
-	public function show(string $type, string $uuid, string $baseUrl = ''): array {
+	public function show(string $type, string $uuid, string $baseUrl = '', string $principal = ''): array {
 		$declaration = $this->objecttypes->find(uuid: $type);
 		if ($declaration === null) {
 			return $this->problem(status: 404, title: 'Not found', detail: sprintf('No objecttype "%s" is published here.', $type));
 		}
 
-		foreach ($this->readObjects(declaration: $declaration) as $object) {
+		foreach ($this->readObjects(declaration: $declaration, principal: $principal) as $object) {
 			$rendered = $this->translator->toRecord(object: $object, objecttype: $type, baseUrl: $baseUrl);
 			if ($rendered['uuid'] === $uuid) {
 				return ['status' => 200, 'body' => $rendered];
@@ -151,15 +153,16 @@ class ObjectEndpointHandler {
 	/**
 	 * `POST /api/v2/objects/search` — the geometry search.
 	 *
-	 * @param string               $type    The objecttype.
-	 * @param array<string, mixed> $body    The search body.
-	 * @param string               $baseUrl The API base.
+	 * @param string               $type      The objecttype.
+	 * @param array<string, mixed> $body      The search body.
+	 * @param string               $baseUrl   The API base.
+	 * @param string               $principal The token's principal, whom the read runs as.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The response.
 	 *
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
-	public function search(string $type, array $body, string $baseUrl = ''): array {
+	public function search(string $type, array $body, string $baseUrl = '', string $principal = ''): array {
 		$declaration = $this->objecttypes->find(uuid: $type);
 		if ($declaration === null) {
 			return $this->problem(status: 404, title: 'Not found', detail: sprintf('No objecttype "%s" is published here.', $type));
@@ -188,7 +191,7 @@ class ObjectEndpointHandler {
 		}
 
 		$matched = [];
-		foreach ($this->readObjects(declaration: $declaration) as $object) {
+		foreach ($this->readObjects(declaration: $declaration, principal: $principal) as $object) {
 			$point = $this->pointOf(geometry: ($object['geometry'] ?? null));
 			if ($point === null) {
 				continue;
@@ -230,17 +233,21 @@ class ObjectEndpointHandler {
 	/**
 	 * The objects of one objecttype, or an empty list.
 	 *
+	 * The principal goes to the seam, so the read runs as the token's principal
+	 * and OpenRegister's RBAC and multitenancy decide what it sees (design D3).
+	 *
 	 * @param array<string, mixed> $declaration The declaration.
+	 * @param string               $principal   The token's principal.
 	 *
 	 * @return array<int, array<string, mixed>> The objects.
 	 */
-	private function readObjects(array $declaration): array {
+	private function readObjects(array $declaration, string $principal): array {
 		if ($this->objectRead === null) {
 			return [];
 		}
 
 		try {
-			$objects = ($this->objectRead)((string)$declaration['register'], (string)$declaration['schema']);
+			$objects = ($this->objectRead)((string)$declaration['register'], (string)$declaration['schema'], $principal);
 		} catch (Throwable $e) {
 			return [];
 		}

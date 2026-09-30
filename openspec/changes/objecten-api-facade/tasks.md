@@ -35,9 +35,10 @@
       list means every version, which is a declared default; a list that IS
       present is closed, because answering with a newer version answers a
       different question than the consumer asked.
-- [ ] The `objecttype` schema in `lib/Settings/integriq_register.json`, so a
-      declaration has somewhere to live. The registry takes declarations as
-      data precisely so the storage decision is separable.
+- [x] The `objecttype` schema, so a declaration has somewhere to live. It
+      lives in the fragment `lib/Settings/register.d/objecten-api-facade.json`
+      (ADR-037) beside `objecten_token`, both admin-only, three seeded mock
+      objects each (design D7).
 - [x] Test
 
 ### Task 2: The Objecttypen API v2
@@ -97,10 +98,13 @@
       are one contract: an object that changed without an announcement is an
       object the landscape does not know changed. A loud temporary refusal
       beats a quiet permanent divergence.
-- [ ] Wiring the announcer to `EventService::publishNotificatiesAction()`. The
-      handler takes it as a seam and refuses without it, so this cannot ship
-      as an unannounced write by accident.
-- [ ] Test
+- [x] Wiring the announcer. `EventService::publishNotificatiesAction()` does
+      not exist; the announcer is `EventService::emitCloudEvent()` through
+      `OpenRegisterObjectenGateway::announce()` (design D7), so a subscription
+      with a notifications action carries the change to a Notificaties API.
+- [x] Test (`tests/Unit/Service/Objecten/ObjectenWriteTest.php`, and
+      `ObjectenWiringTest::testACreateIsWrittenAsThePrincipalAndAnnounced`
+      through the registered factories)
 
 ### Task 5: Tokens with a permission per objecttype
 - **spec_ref**: `openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-token-carries-a-permission-per-objecttype-req-oaf-005`
@@ -126,6 +130,14 @@
       refused.
 - [ ] The log assertion, which wants a logger on a request path that does not
       exist yet.
+
+### Task 5b: Every seam wired (design D7)
+- [x] `OpenRegisterObjectenGateway` answers all six seams; `ObjectenWiring`
+      registers the facade services with them, called from
+      `Application::register()`. The read seam carries the token's principal.
+- [x] Test (`tests/Unit/Service/Objecten/ObjectenWiringTest.php`: builds the
+      controller from the registered factories over a fake OpenRegister; red
+      on development because nothing registered the seams)
 
 ### Task 6: Declaration, throttling, catalog entry, docs
 - **spec_ref**: `openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-leaf-app-declares-the-objecttypes-it-publishes-req-oaf-006`
