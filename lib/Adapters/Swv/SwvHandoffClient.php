@@ -12,7 +12,7 @@
  *     Returns a canned acknowledgement so downstream code can be
  *     developed and tested without ever contacting a receiver.
  *   - A live OSO-shaped binding is intentionally NOT built in this
- *     change — see `openspec/changes/integriq-adapter-swv/proposal.md`
+ *     change — see `openspec/changes/archive/2026-09-30-integriq-adapter-swv/proposal.md`
  *     "Out of Scope". Both receivers require the same governance
  *     chain (Privacyconvenant verwerkersovereenkomst, per-SWV
  *     aansluiting) this change cannot complete.
