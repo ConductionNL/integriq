@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/stop-cloudevent-recursion/tasks.md
+ * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
  */
 
 declare(strict_types=1);

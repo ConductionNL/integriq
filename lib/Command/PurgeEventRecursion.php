@@ -35,7 +35,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * instance held 45,715 events, 45,398 of them of that kind. A genuine event is
  * never touched. Dry run unless --apply is given, like integriq:contracts:dedupe.
  *
- * @spec openspec/changes/stop-cloudevent-recursion/tasks.md
+ * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
  */
 class PurgeEventRecursion extends Command {
 
@@ -55,6 +55,8 @@ class PurgeEventRecursion extends Command {
 	 *
 	 * @param OrObjectService $objects  OpenRegister's object service.
 	 * @param int             $pageSize Rows per read and per delete batch.
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	public function __construct(
 		private readonly OrObjectService $objects,
@@ -67,6 +69,8 @@ class PurgeEventRecursion extends Command {
 	 * Configure the command.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'integriq:events:purge-recursion')
@@ -88,6 +92,8 @@ class PurgeEventRecursion extends Command {
 	 * @param array<string, mixed> $event The event object.
 	 *
 	 * @return boolean
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	public static function isRecursion(array $event): bool {
 		return in_array(($event['source'] ?? null), self::RECURSION_SOURCES, true);
@@ -100,6 +106,8 @@ class PurgeEventRecursion extends Command {
 	 * @param array<string, true>  $kept    Uuids of the events that remain.
 	 *
 	 * @return boolean
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	public static function isOrphan(array $message, array $kept): bool {
 		$eventUuid = ($message['event'] ?? '');
@@ -117,6 +125,8 @@ class PurgeEventRecursion extends Command {
 	 * @param OutputInterface $output The output.
 	 *
 	 * @return integer 0 on success; 1 when OpenRegister removed fewer rows than planned.
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$apply = (bool)$input->getOption('apply');
@@ -154,6 +164,8 @@ class PurgeEventRecursion extends Command {
 	 * Scan both schemas and decide what goes.
 	 *
 	 * @return array{events: int, messages: int, doomedEvents: array<int, string>, doomedMessages: array<int, string>}
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	private function plan(): array {
 		$kept = [];
@@ -193,6 +205,8 @@ class PurgeEventRecursion extends Command {
 	 * @param OutputInterface                                                                                          $output The output.
 	 *
 	 * @return integer 0 when everything planned was removed, else 1.
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	private function apply(array $plan, OutputInterface $output): int {
 		$deletedEvents = $this->delete(uuids: $plan['doomedEvents']);
@@ -217,6 +231,8 @@ class PurgeEventRecursion extends Command {
 	 * @param string $schema The schema slug.
 	 *
 	 * @return \Generator<string, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	private function rows(string $schema): \Generator {
 		$offset = 0;
@@ -248,6 +264,8 @@ class PurgeEventRecursion extends Command {
 	 * @param array<int, string> $uuids The uuids to delete.
 	 *
 	 * @return integer
+	 *
+	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-the-storm-s-rows-shall-be-removable-without-touching-genuine-events
 	 */
 	private function delete(array $uuids): int {
 		$deleted = 0;
