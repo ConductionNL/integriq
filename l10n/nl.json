@@ -1593,7 +1593,9 @@
         "Warning": "Waarschuwing",
         "Test runs": "Testruns",
         "Real runs": "Echte runs",
-        "Short-circuited": "Voortijdig gestopt"
+        "Short-circuited": "Voortijdig gestopt",
+        "Fixed filters": "Vaste filters",
+        "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.": "Velden die een object moet hebben om op id te worden beantwoord, bijvoorbeeld lifecycle published. Een object dat niet past, geeft niet gevonden. Geef één waarde, of een lijst waarvan er één moet passen."
     },
     "plurals": {}
 }

@@ -230,6 +230,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Service\\ObjectServiceMapperAdapter') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectServiceMapperAdapter.php';
+		}
+
 		// A stub file that nothing requires is a stub that does not exist.
 		// `SynchronizationContractService::persist()` calls
 		// `SystemOperationContext::run()` unguarded, so without this line three

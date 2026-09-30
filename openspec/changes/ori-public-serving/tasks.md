@@ -19,8 +19,18 @@
   - GIVEN an Endpoint with a declared fixed filter set WHEN `getObjects()`'s id-branch resolves an object that fails that filter set THEN it returns HTTP 404 instead of the object (TC-8, TC-9 in test-plan.md — both MUST fail before this task starts and MUST pass after, proving the guard is load-bearing, not vacuous)
   - GIVEN an Endpoint with no declared fixed filter set WHEN the same code path runs THEN behaviour is unchanged from pre-change (existing Endpoints are unaffected — regression check)
   - GIVEN TC-10 (publish-window, publications resource) WHEN run against both `OriController` (control) and the new Endpoint THEN the two responses agree; if the new Endpoint returns 200 where the control returns 404, Risk 3 does not hold and the publish-window field must be added to the same declarative guard (do not assume RBAC propagation without this empirical check)
-- [ ] Implement
-- [ ] Test
+- [x] Implement. The endpoint declares the set as `fixedFilters` (endpoint
+      schema 1.2.0, fragment `lib/Settings/register.d/endpoint-id-fetch-guard.json`),
+      explicitly rather than derived from the `inputMapping`, because a mapping's
+      output depends on its input and cannot be read as a filter set.
+      `EndpointIdFetchGuard` checks the object's own fields; a mismatch, or a
+      missing field, answers the same 404 as a missing object.
+- [ ] Test. PHPUnit covers TC-8 and TC-9's shape
+      (`tests/Unit/Service/EndpointIdFetchGuardTest.php`,
+      `EndpointServiceTest::testASingleObjectFailingTheEndpointsFixedFiltersAnswersNotFound`,
+      `::testADraftAnswersTheSameNotFoundAsAMissingObject`, red before the guard).
+      Still open: TC-8/TC-9 in Newman against the ORI endpoints (Task 1) and
+      the TC-10 publish-window comparison (Risk 3), which needs an instance.
 
 ### Task 3: Wire anonymous rate-limiting and CORS parity for the ORI Endpoints
 - **spec_ref**: `openspec/changes/ori-public-serving/contract.md#error-codes`, `openspec/changes/ori-public-serving/design.md#security-considerations`

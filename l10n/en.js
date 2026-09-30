@@ -2932,7 +2932,9 @@ OC.L10N.register(
         "Info": "Info",
         "Test runs": "Test runs",
         "Real runs": "Real runs",
-        "Short-circuited": "Short-circuited"
+        "Short-circuited": "Short-circuited",
+        "Fixed filters": "Fixed filters",
+        "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.": "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes."
     },
     "nplurals=2; plural=(n != 1);"
 )
