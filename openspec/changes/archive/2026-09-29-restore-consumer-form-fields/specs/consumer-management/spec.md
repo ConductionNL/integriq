@@ -44,6 +44,7 @@ enforced on save and would make existing rows unsaveable.
 - THEN the form renders name, description, allowed domains, allowed IPs, authorization type,
   authorization configuration, rate limit and quota — in that order, taken from the schema's
   `order`, not alphabetically
+- @e2e exclude asserted on the schema order — covered by tests/vitest/consumerDraft.spec.js
 
 #### Scenario: a consumer created without an allowlist is unrestricted
 
@@ -67,6 +68,7 @@ enforced on save and would make existing rows unsaveable.
 - WHEN the operator enters two domains as separate entries and saves
 - THEN `domains` persists as a two-element array of strings, which is the shape
   `ConsumerScopeService::isAllowed()` reads
+- @e2e exclude asserted on the persisted shape — covered by vitest
 
 #### Scenario: a legacy comma-joined allowlist is repaired on save
 
@@ -81,6 +83,7 @@ enforced on save and would make existing rows unsaveable.
 - WHEN a consumer holds an authorization type the picker does not offer
 - THEN the select displays that stored value instead of reading as unset, and saving the
   consumer does not silently replace it
+- @e2e exclude asserted on the draft seeding — covered by vitest
 
 ### Requirement: Rate-limit and quota configuration UI (REQ-CON-RL-005)
 
@@ -100,6 +103,7 @@ explicit null, which is what removes it on update.
 - **GIVEN** the Consumer editor for an existing consumer
 - **WHEN** the operator enters a requests-per-window and window-seconds value and saves
 - **THEN** the consumer's `rateLimit` SHALL be persisted and enforced on subsequent inbound calls
+- @e2e exclude consumer editor rate-limit UI — Playwright regression added in the implementation phase alongside the existing Consumers journey
 
 #### Scenario: a half-filled rate limit persists as unlimited
 
