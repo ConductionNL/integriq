@@ -409,6 +409,15 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/RecipientResolverInterface.php';
 		}
 
+		// OpenRegister's scheduled-notification grammar, copied verbatim from
+		// openregister development (a5832f2498) so the register's scheduled
+		// rules are parsed and matched by the code that runs them live.
+		foreach (['ScheduledFilterGrammar', 'ScheduledFilterParser', 'ScheduledFilterEvaluator', 'ForcedChannelPolicy', 'NotificationAnnotationValidator'] as $notificationClass) {
+			if (class_exists('OCA\\OpenRegister\\Service\\Notification\\'.$notificationClass) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/'.$notificationClass.'.php';
+			}
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Event\\ObjectCreatingEvent') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectCreatingEvent.php';
 		}
