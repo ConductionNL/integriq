@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -103,6 +104,13 @@ class ObjectenWiringTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private array $warnings = [];
+
+	/**
+	 * What the fake broker throws instead of answering, when set.
+	 *
+	 * @var RuntimeException|null
+	 */
+	private ?RuntimeException $brokerThrows = null;
 
 	/**
 	 * What went out as a CloudEvent.
@@ -260,6 +268,56 @@ class ObjectenWiringTest extends TestCase {
 		$gateway->tokens();
 		$this->assertSame([], $this->warnings);
 	}//end testTheSeededDeclarationsValidateAndLoad()
+
+	/**
+	 * A broker refusal that quotes the reference and the key leaves neither in the log.
+	 *
+	 * The broker's exception message is not ours to trust: it can name the
+	 * reference, and a careless one the key. The gateway logs the exception
+	 * class only, so the request is refused and the log says why without
+	 * either.
+	 *
+	 * @return void
+	 */
+	public function testNoKeyMaterialReachesTheLogWhenTheBrokerRefuses(): void {
+		$this->brokerThrows = new RuntimeException('credential cred-1 holding the-key is not admitted for integriq');
+
+		$response = $this->controller(authorization: 'Token the-key', type: 'aaa-published')->objects();
+
+		$this->assertSame(401, $response->getStatus());
+		$this->assertNotSame([], $this->warnings, 'Control: the refusal must be logged at all, or the assertion below proves nothing.');
+		foreach ($this->warnings as $warning) {
+			$this->assertStringNotContainsString('the-key', $warning);
+			$this->assertStringNotContainsString('cred-1', $warning);
+		}
+
+		$this->assertStringNotContainsString('the-key', (string)json_encode($response->getData()));
+	}//end testNoKeyMaterialReachesTheLogWhenTheBrokerRefuses()
+
+	/**
+	 * Every routed facade method is throttled.
+	 *
+	 * The routes are public, so Nextcloud's anonymous rate limit is the
+	 * throttle (ADR-082); it counts per client address, not per token.
+	 *
+	 * @return void
+	 */
+	public function testEveryRouteIsThrottled(): void {
+		$routes = require __DIR__ . '/../../../../appinfo/routes.php';
+		$methods = [];
+		foreach ($routes['routes'] as $route) {
+			if (str_starts_with((string)$route['name'], 'objectenApi#') === true) {
+				$methods[] = substr((string)$route['name'], strlen('objectenApi#'));
+			}
+		}
+
+		$this->assertCount(10, $methods);
+		foreach ($methods as $method) {
+			$attributes = (new \ReflectionMethod(ObjectenApiController::class, $method))->getAttributes(AnonRateLimit::class);
+			$this->assertCount(1, $attributes, $method . ' is not throttled.');
+			$this->assertLessThanOrEqual(600, $attributes[0]->newInstance()->getLimit(), $method);
+		}
+	}//end testEveryRouteIsThrottled()
 
 	/**
 	 * The controller, built from the registered factories.
@@ -489,7 +547,13 @@ class ObjectenWiringTest extends TestCase {
 	private function broker(): CredentialBrokerService {
 		$broker = $this->createMock(CredentialBrokerService::class);
 		$broker->method('resolveInjectable')->willReturnCallback(
-			static fn (string $reference): ?string => ($reference === 'cred-1' ? 'the-key' : null)
+			function (string $reference): ?string {
+				if ($this->brokerThrows !== null) {
+					throw $this->brokerThrows;
+				}
+
+				return ($reference === 'cred-1' ? 'the-key' : null);
+			}
 		);
 
 		return $broker;

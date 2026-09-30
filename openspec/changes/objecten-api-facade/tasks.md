@@ -128,8 +128,10 @@
       case-insensitively and the key exactly, an unresolvable credential
       authenticating nobody, and a refusal that does not echo the key it
       refused.
-- [ ] The log assertion, which wants a logger on a request path that does not
-      exist yet.
+- [x] The log assertion. The request path has a logger since the seams were
+      wired: `ObjectenWiringTest::testNoKeyMaterialReachesTheLogWhenTheBrokerRefuses`
+      makes the broker throw a message quoting the reference and the key; the
+      request is refused, a warning is logged, and neither appears in it.
 
 ### Task 5b: Every seam wired (design D7)
 - [x] `OpenRegisterObjectenGateway` answers all six seams; `ObjectenWiring`
@@ -142,6 +144,11 @@
 ### Task 6: Declaration, throttling, catalog entry, docs
 - **spec_ref**: `openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-leaf-app-declares-the-objecttypes-it-publishes-req-oaf-006`
 - **files**: the endpoint declaration reader, the throttle configuration (ADR-082), `lib/Settings/catalog.seed.json`, Dutch and English strings, docs
+- Throttling is in place and asserted: every one of the ten routes carries
+  Nextcloud's `AnonRateLimit` (600 a minute to read, 120 to write),
+  `ObjectenWiringTest::testEveryRouteIsThrottled`. It counts per client
+  address, not per token. The declaration reader, catalogue entry, docs and
+  the e2e and Newman runs are still open.
 - [ ] Implement
 - [ ] Test (`tests/e2e/objecten-api-facade.spec.ts`, Newman over the two APIs)
 
