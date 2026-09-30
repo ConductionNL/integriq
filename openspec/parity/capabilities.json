@@ -4926,11 +4926,12 @@
 			"area": "observability",
 			"name": "Get a message when an integration starts failing.",
 			"source": "competitor-derived",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "`grep -rln 'INotificationManager|createNotification' lib/ --include=*.php` returns only lib/Service/ApprovalService.php (approver notification for HITL approvals, unrelated to integration failure). No code sends a notification/email/message when a circuit breaker opens, a dead-letter queue grows, or a synchronization starts failing. Covered by openspec/changes/integriq-notifications/ (7 of 9 tasks ticked; OpenSpec pass 2026-09-27): Re-read: the call-failed, job-error, sync-failed and delivery-retries-exhausted declarations are in lib/Settings/integriq_register.json, so the evidence that nothing notifies was wrong; matrix corrected to building, rating kept no under the fleet rule that a declaration alone is no."
+				"evidence": "Built by openspec/changes/archive/2026-09-30-integriq-notifications: lib/Settings/integriq_register.json declares x-openregister-notifications rules on call_log (call-failed), job_log (job-error), synchronization_log (sync-failed, off by default), event_message (delivery-retries-exhausted) and job (job-overdue, off by default), which OpenRegister's notification engine delivers. Every rule names the ConnectionAlertRecipientResolver expression recipient: the app setting connection_alert_group, default admin (DECISIONS 29 Sep row 7). Tests: tests/Unit/Settings/IntegrationAlertRecipientsTest.php, tests/Unit/Settings/JobOverdueRuleTest.php. Rated partial: a circuit breaker opening has no rule of its own, and two rules ship switched off.",
+				"change": "2026-09-30-integriq-notifications"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",

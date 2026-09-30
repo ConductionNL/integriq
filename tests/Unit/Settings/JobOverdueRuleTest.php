@@ -13,7 +13,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/integriq-notifications/specs/openconnector-notifications/spec.md
+ * @spec openspec/specs/openconnector-notifications/spec.md
  */
 
 declare(strict_types=1);
