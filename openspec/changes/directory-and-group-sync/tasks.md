@@ -44,8 +44,8 @@ Number 7 of the twenty-five loudest, four driven passers. Waits on nothing.
 
 ### Task 7: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, the catalogue entry, this change's row in `competitor-parity-2026-09`
-- [x] Tell dossiq that `roleType.ncGroupId` groups can now be filled from the directory, and that `lib/Repair/ProvisionAssignedGroups.php` keeps seeding and stops being the only writer
-- [x] Ask dossiq to answer the open-work query for an account, so a leaver's case list is reported rather than guessed
+- [x] Tell dossiq that `roleType.ncGroupId` groups can now be filled from the directory, and that `lib/Repair/ProvisionAssignedGroups.php` keeps seeding and stops being the only writer (filed as ConductionNL/dossiq#3226)
+- [x] Ask dossiq to answer the open-work query for an account, so a leaver's case list is reported rather than guessed (filed as ConductionNL/dossiq#3226)
 - [x] Record C-integrations-21 as recorded and not built, with the lane's reason, so it is not rediscovered
 - [x] Test (`tests/e2e/directory-sync.spec.ts`, `openspec validate directory-and-group-sync --type change --strict`)
 
@@ -63,7 +63,8 @@ seeded credential: every SCIM route rejects an unauthenticated call before any
 user is read, and says nothing about which check failed. Create, change and
 deactivate are covered by PHPUnit over `ScimProvisioningService`.
 
-Task 7's hand-offs are written down rather than sent: dossiq's
+Task 7's hand-offs were written down first and then sent: the coordinator
+filed them as ConductionNL/dossiq#3226 on 30 September 2026. dossiq's
 `roleType.ncGroupId` groups can now be filled from the directory, and
 `lib/Repair/ProvisionAssignedGroups.php` keeps seeding while it stops being the
 only writer. The open-work query dossiq is asked to answer is
