@@ -47,12 +47,15 @@ class OpenRegisterObjectenGateway {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectenOpenRegisterAccess $access OpenRegister, as the seams need it.
-	 * @param LoggerInterface            $logger Records a refused declaration.
+	 * @param ObjectenOpenRegisterAccess       $access       OpenRegister, as the seams need it.
+	 * @param LoggerInterface                  $logger       Records a refused declaration.
+	 * @param ObjecttypeDeclarationReader|null $declarations The objecttypes leaf apps declare (design D8);
+	 *                                                       null reads none.
 	 */
 	public function __construct(
 		private readonly ObjectenOpenRegisterAccess $access,
 		private readonly LoggerInterface $logger,
+		private readonly ?ObjecttypeDeclarationReader $declarations = null,
 	) {
 	}//end __construct()
 
@@ -72,7 +75,12 @@ class OpenRegisterObjectenGateway {
 		$this->registry->load(declarations: $this->objecttypeDeclarations());
 
 		foreach ($this->registry->refused() as $refusal) {
-			$this->logger->warning('Integriq objecten: an objecttype declaration was refused: ' . $refusal['reason']);
+			$declaredBy = '';
+			if (is_array($refusal['declaration']) === true && isset($refusal['declaration']['declaredBy']) === true) {
+				$declaredBy = ' (declared by ' . (string)$refusal['declaration']['declaredBy'] . ')';
+			}
+
+			$this->logger->warning('Integriq objecten: an objecttype declaration was refused' . $declaredBy . ': ' . $refusal['reason']);
 		}
 
 		return $this->registry;
@@ -166,9 +174,13 @@ class OpenRegisterObjectenGateway {
 	 *
 	 * The published uuid is `publishedUuid`, not the configuration object's own
 	 * id: a counterparty registers the published one, and a reseed that gives the
-	 * configuration object a new id must not move it (design D1, Risks).
+	 * configuration object a new id must not move it (design D1, Risks). The
+	 * objecttypes leaf apps declare in their own `lib/Settings/objecttypes.json`
+	 * follow the configured ones (design D8).
 	 *
-	 * @return array<int, array<string, mixed>> The declarations.
+	 * @return array<int, mixed> The declarations.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-leaf-app-declares-the-objecttypes-it-publishes-req-oaf-006
 	 */
 	private function objecttypeDeclarations(): array {
 		$declarations = [];
@@ -176,6 +188,12 @@ class OpenRegisterObjectenGateway {
 			$row['uuid'] = (string)($row['publishedUuid'] ?? '');
 			unset($row['publishedUuid']);
 			$declarations[] = $row;
+		}
+
+		// Configured first, declared after: for one uuid the administrator's
+		// objecttype wins and the app's declaration is refused (design D8).
+		if ($this->declarations !== null) {
+			$declarations = array_merge($declarations, $this->declarations->read());
 		}
 
 		return $declarations;

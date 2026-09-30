@@ -270,6 +270,7 @@ class EndpointsController extends Controller {
 	 * @return boolean True if the endpoint qualifies for the optimised simple path.
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoints-fixed-filters-narrow-its-collection-and-no-path-skips-them-req-ep-012
 	 */
 	private function isSimpleEndpoint(ObjectEntity $endpoint): bool {
 		$data = $endpoint->getObject();
@@ -286,8 +287,12 @@ class EndpointsController extends Controller {
 			return false;
 		}
 
-		// Check if endpoint has no complex processing requirements.
+		// Check if endpoint has no complex processing requirements. Fixed
+		// filters count as one: the fast path answers a single object without
+		// the id-fetch guard (REQ-EP-012).
 		return empty($data['rules']) === true
+			&& empty($data['fixedFilters']) === true
+			&& empty($data['anonymousRateLimit']) === true
 			&& empty($data['conditions']) === true
 			&& empty($data['inputMapping']) === true
 			&& empty($data['outputMapping']) === true
