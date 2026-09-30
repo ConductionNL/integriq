@@ -79,3 +79,43 @@ integriq's file store.
 - WHEN intake runs
 - THEN the message is `unassigned` and one `IntakeDocumentReceivedEvent` carried the attachment
 - @e2e exclude event hand-off; covered by PHPUnit with a recording dispatcher
+
+### Requirement: A message is not readable by everyone who can log in (REQ-MAIL-010)
+
+Integriq MUST declare an `authorization` block that denies reads by default on
+every schema holding message content, routing configuration or recipient key
+material. A schema MUST NOT rely on instance configuration to become private, because
+OpenRegister's `enforce_default_closed` setting governs only `create`, `update`,
+`delete` and `destroy` — never `read`.
+
+The block MUST be declared as a non-empty object whose rule lists are empty. An
+empty block (`{}`) is NOT equivalent and MUST NOT be used: it is indistinguishable
+from an absent block and leaves the schema open.
+
+Reads MUST remain available to administrators, and to the owner of an individual
+object, both of which are evaluated before the declared rule lists.
+
+#### Scenario: an ordinary account cannot read an intercepted message
+- GIVEN an account that is not an administrator and owns no messages
+- WHEN it reads `mail_message` over the generic object API
+- THEN no message is returned
+- @e2e exclude covered by PHPUnit asserting the declared blocks
+
+#### Scenario: an administrator can still read
+- GIVEN an administrator
+- WHEN it reads `mail_message`
+- THEN messages are returned, because the admin check precedes the rule lists
+- @e2e exclude covered by PHPUnit on PermissionHandler's documented precedence
+
+#### Scenario: the declaration is a rule list, not an empty block
+- GIVEN any schema this requirement covers
+- WHEN its declared `authorization` block is inspected
+- THEN the block is non-empty
+- AND every rule list it declares is present and empty
+- @e2e exclude a structural claim about a declaration; covered by PHPUnit
+
+#### Scenario: a schema added later is not silently open
+- GIVEN a schema holding message content added after this change
+- WHEN it declares no `authorization` block
+- THEN the omission is detectable rather than defaulting to readable
+- @e2e exclude covered by the fragment coverage test
