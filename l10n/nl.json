@@ -1609,7 +1609,9 @@
         "The slug of the schema the objects follow.": "De slug van het schema dat de objecten volgen.",
         "The user every read and write with this token runs as.": "De gebruiker namens wie elke lees- en schrijfactie met dit token loopt.",
         "The uuid counterparties use for this objecttype. Keep it when the register is rebuilt.": "De uuid waarmee andere partijen dit objecttype aanspreken. Houd hem gelijk als het register opnieuw wordt opgebouwd.",
-        "Who the token belongs to.": "Van wie het token is."
+        "Who the token belongs to.": "Van wie het token is.",
+        "Fixed filters": "Vaste filters",
+        "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.": "Velden die een object moet hebben om op id te worden beantwoord, bijvoorbeeld lifecycle published. Een object dat niet past, geeft niet gevonden. Geef één waarde, of een lijst waarvan er één moet passen."
     },
     "plurals": {}
 }

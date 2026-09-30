@@ -1764,6 +1764,7 @@ class EndpointService {
 	 * @param array $parameters The parameters from the request.
 	 * @param array $pathParams The parameters in the path.
 	 * @param int $status The HTTP status to return.
+	 * @param array $fixedFilters The endpoint's fixed filters: a single object that fails them is not found (REQ-EP-010).
 	 *
 	 * @return Entity|array The object(s) confirming to the request.
 	 *
@@ -1776,6 +1777,7 @@ class EndpointService {
 		array $parameters,
 		array $pathParams,
 		int &$status = 200,
+		array $fixedFilters = [],
 	): Entity|array {
 		if (isset($pathParams['id']) === true && $pathParams['id'] === end($pathParams)) {
 			try {
@@ -1784,6 +1786,16 @@ class EndpointService {
 					extend: ($parameters['extend'] ?? $parameters['_extend'] ?? null)
 				)->jsonSerialize();
 			} catch (DoesNotExistException $e) {
+				$status = 404;
+				return ['error' => 'not found', 'message' => "the object with id {$pathParams['id']} does not exist"];
+			}
+
+			// REQ-EP-010: the collection path is narrowed by the filters the
+			// endpoint's inputMapping injects; the single-object path fetched by
+			// id with none, so /motions/{id} answered an amendment. An object
+			// that fails the endpoint's declared fixed filters gets the SAME 404
+			// as a missing one, so the answer says nothing about what it is.
+			if ($fixedFilters !== [] && (new EndpointIdFetchGuard())->admits(object: $serializedObject, fixedFilters: $fixedFilters) === false) {
 				$status = 404;
 				return ['error' => 'not found', 'message' => "the object with id {$pathParams['id']} does not exist"];
 			}
@@ -1972,7 +1984,13 @@ class EndpointService {
 						$parameters = array_merge($systemFilters, $this->mappingService->translateVngFilterOperators(filters: $lookupFilters));
 					}
 
-					$objects = $this->getObjects(mapper: $mapper, parameters: $parameters, pathParams: $pathParams, status: $status);
+					$objects = $this->getObjects(
+						mapper: $mapper,
+						parameters: $parameters,
+						pathParams: $pathParams,
+						status: $status,
+						fixedFilters: (array)($endpointData['fixedFilters'] ?? [])
+					);
 					if ($expand !== [] && isset($objects['results']) === true && is_array($objects['results']) === true) {
 						$objects['results'] = array_map(
 							fn (array $result) => $this->mappingService->expandRelations(data: $result, expand: $expand),

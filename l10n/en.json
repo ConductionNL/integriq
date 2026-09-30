@@ -2950,7 +2950,9 @@
         "The slug of the schema the objects follow.": "The slug of the schema the objects follow.",
         "The user every read and write with this token runs as.": "The user every read and write with this token runs as.",
         "The uuid counterparties use for this objecttype. Keep it when the register is rebuilt.": "The uuid counterparties use for this objecttype. Keep it when the register is rebuilt.",
-        "Who the token belongs to.": "Who the token belongs to."
+        "Who the token belongs to.": "Who the token belongs to.",
+        "Fixed filters": "Fixed filters",
+        "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.": "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes."
     },
     "plurals": {}
 }

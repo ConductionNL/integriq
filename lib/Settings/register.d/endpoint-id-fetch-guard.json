@@ -1,0 +1,18 @@
+{
+  "$comment": "ADR-037 register fragment (ori-public-serving, REQ-EP-010). Adds fixedFilters to endpoint: the fields a single object fetched by id must carry for the endpoint to answer it. An object that fails them answers the same 404 as a missing one (EndpointIdFetchGuard). Optional; an endpoint without it behaves as before.",
+  "components": {
+    "schemas": {
+      "endpoint": {
+        "version": "1.2.0",
+        "properties": {
+          "fixedFilters": {
+            "type": "object",
+            "title": "Fixed filters",
+            "description": "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}
