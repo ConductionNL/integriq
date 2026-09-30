@@ -132,7 +132,7 @@
       exist yet.
 
 ### Task 5b: Every seam wired (design D7)
-- [x] `OpenRegisterObjectenGateway` answers all six seams; `ObjectenWiring`
+- [x] `ObjectenOpenRegisterAccess` answers all six seams, `OpenRegisterObjectenGateway` builds the handlers with them; `ObjectenWiring`
       registers the facade services with them, called from
       `Application::register()`. The read seam carries the token's principal.
 - [x] Test (`tests/Unit/Service/Objecten/ObjectenWiringTest.php`: builds the

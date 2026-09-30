@@ -30,6 +30,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Objecten;
 use OCA\Integriq\Controller\ObjectenApiController;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
+use OCA\Integriq\Service\Objecten\ObjectenOpenRegisterAccess;
 use OCA\Integriq\Service\Objecten\ObjectenTokenService;
 use OCA\Integriq\Service\Objecten\ObjectenWiring;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
@@ -224,10 +225,10 @@ class ObjectenWiringTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPrincipalThatIsNoUserReadsNothing(): void {
-		$gateway = $this->container()->get(OpenRegisterObjectenGateway::class);
+		$access = $this->container()->get(ObjectenOpenRegisterAccess::class);
 
 		$this->expectException(RuntimeException::class);
-		$gateway->readObjects(register: 'meldingen', schema: 'melding', principal: 'nobody');
+		$access->readObjects(register: 'meldingen', schema: 'melding', principal: 'nobody');
 	}//end testAPrincipalThatIsNoUserReadsNothing()
 
 	/**
@@ -352,13 +353,17 @@ class ObjectenWiringTest extends TestCase {
 
 		$service = match ($id) {
 			OpenRegisterObjectenGateway::class => new OpenRegisterObjectenGateway(
+				access: $container->get(ObjectenOpenRegisterAccess::class),
+				logger: $this->logger()
+			),
+			ObjectenOpenRegisterAccess::class => new ObjectenOpenRegisterAccess(
 				container: $container,
 				userManager: $this->userManager(),
 				userSession: $this->userSession(),
 				logger: $this->logger()
 			),
-			OpenRegisterObjectenGateway::OBJECT_SERVICE => $this->objectService(),
-			OpenRegisterObjectenGateway::BROKER => $this->broker(),
+			ObjectenOpenRegisterAccess::OBJECT_SERVICE => $this->objectService(),
+			ObjectenOpenRegisterAccess::BROKER => $this->broker(),
 			EventService::class => $this->eventService(),
 			default => ($this->factories[$id])($container),
 		};
@@ -440,14 +445,14 @@ class ObjectenWiringTest extends TestCase {
 				}
 
 				return match ($schema) {
-					OpenRegisterObjectenGateway::OBJECTTYPE_SCHEMA => ['results' => [[
+					ObjectenOpenRegisterAccess::OBJECTTYPE_SCHEMA => ['results' => [[
 						'@self' => ['id' => 'config-1'],
 						'publishedUuid' => 'aaa-published',
 						'name' => 'melding',
 						'register' => 'meldingen',
 						'schema' => 'melding',
 					]]],
-					OpenRegisterObjectenGateway::TOKEN_SCHEMA => ['results' => [[
+					ObjectenOpenRegisterAccess::TOKEN_SCHEMA => ['results' => [[
 						'@self' => ['id' => 'token-1'],
 						'name' => 'Leverancier meldingen',
 						'credential' => 'cred-1',

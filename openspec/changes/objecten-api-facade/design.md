@@ -51,8 +51,8 @@ configuration export or the objecttype configuration.
 ## D7. Every seam is wired in one place, and a read carries the principal
 
 The handlers take their OpenRegister access as callables so each is
-testable alone. `OpenRegisterObjectenGateway` is the production side of all
-six: `objectRead` and `objectWrite`/`objectDelete` go through OpenRegister's
+testable alone. `ObjectenOpenRegisterAccess` is the production side of all
+six, and `OpenRegisterObjectenGateway` hands them to the handlers: `objectRead` and `objectWrite`/`objectDelete` go through OpenRegister's
 object service, `schemaRead` through the schema mapper, `credentialRead`
 through the credential broker by reference, and `announce` through
 `EventService::emitCloudEvent()` (type `nl.vng.objecten.object.<actie>`), so
