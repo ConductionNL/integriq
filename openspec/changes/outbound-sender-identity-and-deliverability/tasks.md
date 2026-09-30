@@ -65,5 +65,13 @@
 ## 10. Handover
 
 - [ ] 10.1 Give the dossiq lane its half: the sender identity declared per team on the case type, replacing the single `EmailSettings` address.
-- [ ] 10.2 Confirm with the Nextcloud Mail boundary that an identity only references an account, per decision D12.
-- [ ] 10.3 Add this change to the integriq umbrella index and tick it there when it archives.
+- [x] 10.2 Confirm with the Nextcloud Mail boundary that an identity only references an account, per decision D12.
+      Confirmed from the code on development: `sender_identity.mailAccount`
+      is a string reference, the identity has no password, token, OAuth or
+      SMTP/IMAP property (the S/MIME private key signs and is write-only),
+      and `SenderIdentityService` hands only the account id to the send path.
+      Guarded by `tests/Unit/Settings/SenderIdentityHoldsNoMailCredentialTest.php`,
+      which reads the merged register.
+- [x] 10.3 Add this change to the integriq umbrella index and tick it there when it archives.
+      Listed as task 8.1 of `competitor-parity-2026-09`; that tick waits for
+      this change's archive, which waits for 10.1.
