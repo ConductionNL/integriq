@@ -119,3 +119,31 @@ endpoints, which answers a single object without the id-fetch guard.
 - **GIVEN** an Endpoint with `isPublic: true`, no rules and `fixedFilters` `{decisionType: "motion"}`
 - **WHEN** a GET reaches it
 - **THEN** it is handled by the full endpoint pipeline, where the id-fetch guard runs
+
+### Requirement: A public endpoint may declare its own anonymous rate limit (REQ-EP-013)
+
+An Endpoint MAY declare `anonymousRateLimit` (`{requestsPerWindow,
+windowSeconds}`). When a request resolves no consumer (the endpoint has no
+authentication rule, or the rule authenticates no consumer), the system MUST
+count the request per endpoint and per client address, and MUST answer HTTP
+429 once the count passes `requestsPerWindow` within the window. An
+identified consumer keeps its own consumer or tier limit (REQ-CON-RL-002).
+An Endpoint without `anonymousRateLimit` is unchanged: an unidentified
+caller is not throttled by the endpoint. An Endpoint that declares it MUST
+NOT be served by the fast path for simple public endpoints, which runs no
+rate limit.
+
+@e2e exclude backend throttle, covered by PHPUnit (OriPublicEndpointsTest) and TC-12 in the parity run, not browser UI
+
+#### Scenario: The 121st anonymous request in a minute is refused
+
+- **GIVEN** an Endpoint with `anonymousRateLimit` `{requestsPerWindow: 120, windowSeconds: 60}`
+- **WHEN** one client address sends 121 requests within the minute
+- **THEN** the first 120 are served and the 121st answers HTTP 429
+- **AND** another client address, or another endpoint, is counted separately
+
+#### Scenario: An endpoint without the setting is not throttled
+
+- **GIVEN** an Endpoint without `anonymousRateLimit`
+- **WHEN** an unidentified caller sends a request
+- **THEN** the endpoint applies no rate limit of its own

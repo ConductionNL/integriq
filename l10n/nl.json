@@ -1611,7 +1611,10 @@
         "The uuid counterparties use for this objecttype. Keep it when the register is rebuilt.": "De uuid waarmee andere partijen dit objecttype aanspreken. Houd hem gelijk als het register opnieuw wordt opgebouwd.",
         "Who the token belongs to.": "Van wie het token is.",
         "Fixed filters": "Vaste filters",
-        "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.": "Velden die een object moet hebben om op id te worden beantwoord, bijvoorbeeld lifecycle published. Een object dat niet past, geeft niet gevonden. Geef één waarde, of een lijst waarvan er één moet passen."
+        "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.": "Velden die een object moet hebben om op id te worden beantwoord, bijvoorbeeld lifecycle published. Een object dat niet past, geeft niet gevonden. Geef één waarde, of een lijst waarvan er één moet passen.",
+        "Anonymous rate limit": "Anonieme limiet",
+        "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "Hoeveel verzoeken één clientadres in een venster mag doen als geen afnemer het herkent. Laat het leeg en een openbaar endpoint heeft geen eigen limiet.",
+        "Window in seconds": "Venster in seconden"
     },
     "plurals": {}
 }

@@ -223,6 +223,10 @@ class EndpointsControllerTest extends TestCase {
 		$endpoint['fixedFilters'] = ['decisionType' => 'motion'];
 		$this->assertFalse($this->takesTheFastPath($endpoint));
 
+		unset($endpoint['fixedFilters']);
+		$endpoint['anonymousRateLimit'] = ['requestsPerWindow' => 120, 'windowSeconds' => 60];
+		$this->assertFalse($this->takesTheFastPath($endpoint), 'The fast path would skip the anonymous rate limit too (REQ-EP-013).');
+
 	}//end testAnEndpointWithFixedFiltersNeverTakesTheFastPath()
 
 }//end class

@@ -2952,7 +2952,10 @@
         "The uuid counterparties use for this objecttype. Keep it when the register is rebuilt.": "The uuid counterparties use for this objecttype. Keep it when the register is rebuilt.",
         "Who the token belongs to.": "Who the token belongs to.",
         "Fixed filters": "Fixed filters",
-        "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.": "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes."
+        "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.": "Fields an object must carry to be answered by id, for example lifecycle published. An object that does not match answers not found. Give one value, or a list of which any one passes.",
+        "Anonymous rate limit": "Anonymous rate limit",
+        "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.",
+        "Window in seconds": "Window in seconds"
     },
     "plurals": {}
 }

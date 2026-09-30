@@ -37,6 +37,7 @@ use OCA\Integriq\Service\EndpointTargetResolver;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationContractService;
@@ -46,7 +47,10 @@ use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IConfig;
+use OCP\IRequest;
 use OCP\IRequestId;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -126,11 +130,12 @@ class OriPublicEndpointsTest extends TestCase {
 	/**
 	 * Build the service with a real MappingService reading the seeded mappings.
 	 *
-	 * @param EndpointTargetResolver|null $resolver The target resolver.
+	 * @param EndpointTargetResolver|null $resolver  The target resolver.
+	 * @param InboundRateLimitService|null $rateLimit The inbound rate limiter.
 	 *
 	 * @return EndpointService The service.
 	 */
-	private function service(?EndpointTargetResolver $resolver = null): EndpointService {
+	private function service(?EndpointTargetResolver $resolver = null, ?InboundRateLimitService $rateLimit = null): EndpointService {
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
@@ -190,7 +195,7 @@ class OriPublicEndpointsTest extends TestCase {
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
 			new \OCA\Integriq\Service\WebhookSignatureService($logger),
-			$this->createMock(\OCA\Integriq\Service\RateLimit\InboundRateLimitService::class),
+			($rateLimit ?? $this->createMock(InboundRateLimitService::class)),
 			new CompositeFanoutRule(ObjectServiceMockBuilder::make($this), $logger),
 			new ReferenceNumberRule(),
 			new AvgBsnPolicyRule(),
@@ -564,4 +569,74 @@ class OriPublicEndpointsTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame('published', $requested['lifecycle'], 'The fixed filter wins over the caller.');
 	}//end testTheEventsListReachesDecidiqsMeetingsAndOnlyPublishedOnes()
+	/**
+	 * REQ-EP-013 (TC-12's shape): the 121st anonymous request in a minute from
+	 * one address answers 429, as decidiq's AnonRateLimit(120, 60) does;
+	 * another address, and another ORI endpoint, keep their own count.
+	 *
+	 * Red before: a caller no consumer identifies was never throttled.
+	 *
+	 * @return void
+	 */
+	public function testThe121stAnonymousRequestInAMinuteIsRefused(): void {
+		$store = [];
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(
+			function (string $key) use (&$store) {
+				return ($store[$key] ?? null);
+			}
+		);
+		$cache->method('set')->willReturnCallback(
+			function (string $key, $value) use (&$store) {
+				$store[$key] = $value;
+				return true;
+			}
+		);
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('createDistributed')->willReturn($cache);
+		$service = $this->service(null, new InboundRateLimitService($cacheFactory, $this->createMock(LoggerInterface::class)));
+
+		$enforce = new ReflectionMethod(EndpointService::class, 'enforceInboundRateLimit');
+		$enforce->setAccessible(true);
+		$call = function (string $slug, string $address) use ($service, $enforce) {
+			$endpoint = self::seed(schema: 'endpoint', slug: $slug);
+			unset($endpoint['@self']);
+			$request = $this->createMock(IRequest::class);
+			$request->method('getRemoteAddress')->willReturn($address);
+			return $enforce->invoke($service, $request, ObjectServiceMockBuilder::objectEntity($this, $endpoint, $slug));
+		};
+
+		for ($i = 1; $i <= 120; $i++) {
+			$this->assertNull($call('ori-parity-events', '192.0.2.10'), 'Request ' . $i . ' is within the ceiling.');
+		}
+
+		$refused = $call('ori-parity-events', '192.0.2.10');
+		$this->assertNotNull($refused);
+		$this->assertSame(429, $refused->getStatus());
+		$this->assertNull($call('ori-parity-events', '192.0.2.11'), 'Another address has its own count.');
+		$this->assertNull($call('ori-parity-motions', '192.0.2.10'), 'Another endpoint has its own count.');
+	}//end testThe121stAnonymousRequestInAMinuteIsRefused()
+
+	/**
+	 * An endpoint without anonymousRateLimit keeps today's behaviour: an
+	 * unidentified caller is not throttled and the limiter is not asked.
+	 *
+	 * @return void
+	 */
+	public function testAnEndpointWithoutAnAnonymousLimitIsNotThrottled(): void {
+		$rateLimit = $this->createMock(InboundRateLimitService::class);
+		$rateLimit->expects($this->never())->method('enforce');
+		$service = $this->service(null, $rateLimit);
+
+		$enforce = new ReflectionMethod(EndpointService::class, 'enforceInboundRateLimit');
+		$enforce->setAccessible(true);
+
+		$this->assertNull(
+			$enforce->invoke(
+				$service,
+				$this->createMock(IRequest::class),
+				ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Zaken', 'targetType' => 'register/schema'], 'ep-1')
+			)
+		);
+	}//end testAnEndpointWithoutAnAnonymousLimitIsNotThrottled()
 }//end class

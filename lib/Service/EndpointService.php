@@ -1023,8 +1023,9 @@ class EndpointService {
 	private function enforceInboundRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
 		$consumer = $this->authorizationService->getResolvedConsumer();
 		if ($consumer === null) {
-			// No per-consumer identity resolved — nothing to throttle.
-			return null;
+			// No per-consumer identity resolved: only the endpoint's own
+			// anonymous ceiling, when it declares one, applies (REQ-EP-013).
+			return $this->enforceAnonymousRateLimit(request: $request, endpoint: $endpoint);
 		}
 
 		$consumerData = $consumer->getObject();
@@ -1081,6 +1082,51 @@ class EndpointService {
 		);
 
 	}//end enforceInboundRateLimit()
+
+	/**
+	 * Apply an endpoint's `anonymousRateLimit` to a caller no consumer identifies.
+	 *
+	 * A public endpoint has no authentication rule, so no consumer is resolved
+	 * and no consumer limit applies; the router's own ceiling is shared by
+	 * every endpoint. An endpoint that declares `anonymousRateLimit`
+	 * (`{requestsPerWindow, windowSeconds}`) gets its own ceiling per client
+	 * address, as decidiq's `AnonRateLimit(limit: 120, period: 60)` gave the
+	 * ORI feed. No declaration keeps today's behaviour: unlimited here.
+	 *
+	 * @param IRequest     $request  The incoming request.
+	 * @param ObjectEntity $endpoint The dispatched endpoint.
+	 *
+	 * @return JSONResponse|null A 429 response when over the ceiling, null otherwise.
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-a-public-endpoint-may-declare-its-own-anonymous-rate-limit-req-ep-013
+	 */
+	private function enforceAnonymousRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
+		$rateLimit = ($endpoint->getObject()['anonymousRateLimit'] ?? null);
+		if (is_array($rateLimit) === false || $rateLimit === []) {
+			return null;
+		}
+
+		$decision = $this->rateLimitService->enforce(
+			consumerKey: 'endpoint:' . (string)$endpoint->getUuid() . ':ip:' . $request->getRemoteAddress(),
+			rateLimit: $rateLimit,
+			quota: null
+		);
+
+		$this->rateLimitHeaders = $decision->toHeaders();
+		if ($decision->allowed === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			[
+				'error' => 'rate_limited',
+				'message' => 'Too Many Requests',
+				'reason' => $decision->reason,
+			],
+			Http::STATUS_TOO_MANY_REQUESTS,
+			$decision->toHeaders()
+		);
+	}//end enforceAnonymousRateLimit()
 
 	/**
 	 * Reject a request whose source falls outside the resolved consumer's allowlist.

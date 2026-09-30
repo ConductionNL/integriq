@@ -292,6 +292,7 @@ class EndpointsController extends Controller {
 		// the id-fetch guard (REQ-EP-012).
 		return empty($data['rules']) === true
 			&& empty($data['fixedFilters']) === true
+			&& empty($data['anonymousRateLimit']) === true
 			&& empty($data['conditions']) === true
 			&& empty($data['inputMapping']) === true
 			&& empty($data['outputMapping']) === true
