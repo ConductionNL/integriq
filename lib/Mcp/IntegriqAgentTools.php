@@ -34,9 +34,8 @@ namespace OCA\Integriq\Mcp;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\AgentTools\AgentActionRefusedException;
 use OCA\Integriq\Service\AgentTools\AgentActionStore;
-use OCA\Integriq\Service\AgentTools\ApprovalVerdictVerifier;
+use OCA\Integriq\Service\AgentTools\AgentBatchGate;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\SourceTestService;
@@ -51,6 +50,8 @@ use Throwable;
 
 /**
  * Scanned by OpenRegister through IntegriqScannableServices.
+ *
+ * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-105--exactly-six-curated-tools-must-exist-each-an-action-over-existing-configuration-or-a-payload-free-read-with-honest-scope-and-reach
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One delegate per existing service path is the point (REQ-MCP-106).
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Same reason: the constructor lists those delegates.
@@ -89,9 +90,13 @@ class IntegriqAgentTools {
 	public const BATCH_CAP = 100;
 
 	/**
-	 * How long a staged batch waits for its approval, in seconds.
+	 * The schema each target kind lives in.
 	 */
-	public const PROPOSAL_TTL = 86400;
+	private const STORE_SCHEMAS = [
+		'synchronization' => 'synchronization',
+		'sync'            => 'sync_item_dead_letter',
+		'event'           => 'event_message',
+	];
 
 	/**
 	 * The agent name recorded when the caller names none.
@@ -108,8 +113,8 @@ class IntegriqAgentTools {
 	 * @param SourceTestService         $sourceTest      The source test path.
 	 * @param SyncItemDeadLetterService $syncDeadLetters The audited sync replay and discard.
 	 * @param EventService              $events          The audited event replay and discard.
-	 * @param AgentActionStore          $store           Staged batches and invocation records.
-	 * @param ApprovalVerdictVerifier   $verifier        Hermiq's verdict, checked.
+	 * @param AgentActionStore          $store           Invocation records.
+	 * @param AgentBatchGate            $gate            Stages and admits gated batches.
 	 * @param DeadLetterProjection      $projection      The payload-free dead-letter row.
 	 */
 	public function __construct(
@@ -121,7 +126,7 @@ class IntegriqAgentTools {
 		private readonly SyncItemDeadLetterService $syncDeadLetters,
 		private readonly EventService $events,
 		private readonly AgentActionStore $store,
-		private readonly ApprovalVerdictVerifier $verifier,
+		private readonly AgentBatchGate $gate,
 		private readonly DeadLetterProjection $projection,
 	) {
 	}//end __construct()
@@ -143,7 +148,9 @@ class IntegriqAgentTools {
 	 */
 	#[McpTool(
 		name: 'runSynchronization',
-		description: 'Run one synchronization once, with its safety guards. Needs approval: the first call stages the run and nothing runs; a person approves it in Hermiq; the second call with proposalId and approvalId runs it. Reach: external. forceDeletion is not available.',
+		description: 'Run one synchronization once, with its safety guards. Needs approval: the first call '
+			. 'stages the run and nothing runs; a person approves it in Hermiq; the second call with '
+			. 'proposalId and approvalId runs it. Reach: external. forceDeletion is not available.',
 		readOnlyHint: false,
 		destructiveHint: false,
 		idempotentHint: false,
@@ -185,7 +192,10 @@ class IntegriqAgentTools {
 	 */
 	#[McpTool(
 		name: 'replayDeadLetters',
-		description: 'Replay a batch of dead letters by id through the audited replay path. Needs approval: the first call stages the batch and nothing runs; a person reviews the payloads in the Dead letters page and approves the batch in Hermiq; the second call with proposalId and approvalId replays it. Reach: external.',
+		description: 'Replay a batch of dead letters by id through the audited replay path. Needs approval: the '
+			. 'first call stages the batch and nothing runs; a person reviews the payloads in the Dead '
+			. 'letters page and approves the batch in Hermiq; the second call with proposalId and '
+			. 'approvalId replays it. Reach: external.',
 		readOnlyHint: false,
 		destructiveHint: false,
 		idempotentHint: false,
@@ -223,7 +233,9 @@ class IntegriqAgentTools {
 	 */
 	#[McpTool(
 		name: 'discardDeadLetters',
-		description: 'Discard a batch of dead letters by id; a discarded dead letter cannot be replayed. Needs approval: the first call stages the batch and nothing is discarded; a person approves it in Hermiq; the second call with proposalId and approvalId discards it. Reach: instance.',
+		description: 'Discard a batch of dead letters by id; a discarded dead letter cannot be replayed. Needs '
+			. 'approval: the first call stages the batch and nothing is discarded; a person approves it '
+			. 'in Hermiq; the second call with proposalId and approvalId discards it. Reach: instance.',
 		readOnlyHint: false,
 		destructiveHint: true,
 		idempotentHint: false,
@@ -258,7 +270,8 @@ class IntegriqAgentTools {
 	 */
 	#[McpTool(
 		name: 'testSynchronization',
-		description: 'Test one synchronization: it fetches from the source and reports what it would create, update or skip, and writes nothing. Reach: external.',
+		description: 'Test one synchronization: it fetches from the source and reports what it would create, '
+			. 'update or skip, and writes nothing. Reach: external.',
 		readOnlyHint: true,
 		destructiveHint: false,
 		idempotentHint: true,
@@ -271,7 +284,8 @@ class IntegriqAgentTools {
 		try {
 			$result = $this->synchronization->synchronize(synchronization: $found, isTest: true, force: false);
 		} catch (Throwable $e) {
-			$this->recordSingle(tool: $tool, user: $user, agentId: $agentId, ids: [$synchronizationId], outcome: 'failed', reason: DeadLetterProjection::truncate(value: $e->getMessage()));
+			$reason = $this->projection->truncate(value: $e->getMessage());
+			$this->recordSingle(tool: $tool, user: $user, agentId: $agentId, ids: [$synchronizationId], outcome: 'failed', reason: $reason);
 			throw $e;
 		}
 
@@ -291,7 +305,8 @@ class IntegriqAgentTools {
 	 */
 	#[McpTool(
 		name: 'testSource',
-		description: 'Call one source once and report whether it answered, with its status code. The response body is not returned. Reach: external.',
+		description: 'Call one source once and report whether it answered, with its status code. The response '
+			. 'body is not returned. Reach: external.',
 		readOnlyHint: true,
 		destructiveHint: false,
 		idempotentHint: true,
@@ -312,7 +327,7 @@ class IntegriqAgentTools {
 			'outcome'       => $outcome['outcome'],
 			'statusCode'    => $outcome['statusCode'],
 			'statusMessage' => $outcome['statusMessage'],
-			'error'         => DeadLetterProjection::truncate(value: (string)$outcome['error']),
+			'error'         => $this->projection->truncate(value: (string)$outcome['error']),
 		];
 	}//end testSource()
 
@@ -331,7 +346,9 @@ class IntegriqAgentTools {
 	 */
 	#[McpTool(
 		name: 'listDeadLetters',
-		description: 'List dead letters by id, synchronization or subscription, phase, a shortened error, attempts, status and dates. Payloads are never shown; a person reviews them in the Dead letters page. Reach: instance.',
+		description: 'List dead letters by id, synchronization or subscription, phase, a shortened error, '
+			. 'attempts, status and dates. Payloads are never shown; a person reviews them in the Dead '
+			. 'letters page. Reach: instance.',
 		readOnlyHint: true,
 		destructiveHint: false,
 		idempotentHint: true,
@@ -373,153 +390,48 @@ class IntegriqAgentTools {
 	/**
 	 * Stage a batch (phase 1) or run it on a verified approval (phase 2).
 	 *
-	 * @param string            $tool       The tool name.
-	 * @param string            $store      `synchronization`, `sync` or `event`.
-	 * @param array<int,mixed>  $ids        The target ids.
-	 * @param string|null       $agentId    The acting agent.
-	 * @param string|null       $proposalId The staged batch, in phase 2.
-	 * @param string|null       $approvalId The Hermiq approval, in phase 2.
+	 * @param string           $tool       The tool name.
+	 * @param string           $store      `synchronization`, `sync` or `event`.
+	 * @param array<int,mixed> $ids        The target ids.
+	 * @param string|null      $agentId    The acting agent.
+	 * @param string|null      $proposalId The staged batch, in phase 2.
+	 * @param string|null      $approvalId The Hermiq approval, in phase 2.
 	 *
 	 * @return array<string,mixed> The staged batch, or the outcomes.
 	 *
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
 	 */
 	private function twoPhase(string $tool, string $store, array $ids, ?string $agentId, ?string $proposalId, ?string $approvalId): array {
-		$ids  = $this->validIds(ids: $ids);
-		$user = $this->authorize(tool: $tool, agentId: $agentId, ids: $ids);
+		$ids             = $this->validIds(ids: $ids);
+		$user            = $this->authorize(tool: $tool, agentId: $agentId, ids: $ids);
+		$record          = $this->record(tool: $tool, user: $user, agentId: $agentId, ids: $ids, outcome: 'staged');
+		$record['store'] = $store;
 		if ($proposalId === null || $proposalId === '') {
-			return $this->stage(tool: $tool, store: $store, ids: $ids, user: $user, agentId: $agentId);
+			foreach ($ids as $id) {
+				$this->findObject(schema: self::STORE_SCHEMAS[$store], id: $id);
+			}
+
+			$staged = $this->gate->stage(record: $record);
+			return [
+				'status'    => 'staged',
+				'proposal'  => $staged['proposal'],
+				'tool'      => $record['tool'],
+				'targetIds' => $ids,
+				'binding'   => $staged['binding'],
+				'message'   => 'Nothing ran. A person must approve this batch in Hermiq; then call again with proposalId and approvalId.',
+			];
 		}
 
-		$proposal = $this->store->find(uuid: $proposalId);
-		$base     = $this->record(tool: $tool, user: $user, agentId: $agentId, ids: $ids, outcome: 'refused');
-		$base['proposal'] = $proposalId;
-		$base['approval'] = (string)$approvalId;
-		try {
-			$this->checkProposal(proposal: $proposal, tool: $tool, store: $store, ids: $ids, user: $user, agentId: $agentId);
-			$approvedBy = $this->verifier->verify(
-				approvalId: (string)$approvalId,
-				toolId: 'integriq.' . $tool,
-				binding: (string)($proposal['binding'] ?? ''),
-				actingAgent: $this->agent(agentId: $agentId)
-			);
-		} catch (AgentActionRefusedException $e) {
-			$base['reason'] = $e->reason;
-			$this->store->record(record: $base);
-			throw $e;
-		}
-
-		// Close the batch before running it, so the same approval can never run it twice.
-		$proposal['outcome']    = 'executed';
-		$proposal['approval']   = (string)$approvalId;
-		$proposal['approvedBy'] = $approvedBy;
-		$proposal['executedAt'] = (new DateTimeImmutable())->format(DATE_ATOM);
-		$this->store->update(uuid: $proposalId, record: $proposal);
-
-		$results = [];
+		$admitted = $this->gate->admit(proposalId: $proposalId, approvalId: (string)$approvalId, record: $record);
+		$results  = [];
 		foreach ($ids as $id) {
 			$results[] = $this->execute(tool: $tool, store: $store, id: $id, actorUid: $user->getUID());
 		}
 
-		$proposal['results'] = $results;
-		$this->store->update(uuid: $proposalId, record: $proposal);
+		$this->gate->finish(proposalId: $proposalId, proposal: $admitted['proposal'], results: $results);
 
-		return ['status' => 'executed', 'proposal' => $proposalId, 'approvedBy' => $approvedBy, 'results' => $results];
+		return ['status' => 'executed', 'proposal' => $proposalId, 'approvedBy' => $admitted['approvedBy'], 'results' => $results];
 	}//end twoPhase()
-
-	/**
-	 * Phase 1: record the batch and its binding; run nothing.
-	 *
-	 * @param string            $tool    The tool name.
-	 * @param string            $store   The target store.
-	 * @param array<int,string> $ids     The validated ids.
-	 * @param IUser             $user    The granting user.
-	 * @param string|null       $agentId The acting agent.
-	 *
-	 * @return array<string,mixed> The staged batch.
-	 *
-	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
-	 */
-	private function stage(string $tool, string $store, array $ids, IUser $user, ?string $agentId): array {
-		$schemas = ['synchronization' => 'synchronization', 'sync' => 'sync_item_dead_letter', 'event' => 'event_message'];
-		foreach ($ids as $id) {
-			$this->findObject(schema: $schemas[$store], id: $id);
-		}
-
-		$record          = $this->record(tool: $tool, user: $user, agentId: $agentId, ids: $ids, outcome: 'staged');
-		$record['store'] = $store;
-		$proposalId      = $this->store->record(record: $record);
-
-		$record['binding'] = self::binding(proposalId: $proposalId, toolId: 'integriq.' . $tool, ids: $ids);
-		$this->store->update(uuid: $proposalId, record: $record);
-
-		return [
-			'status'    => 'staged',
-			'proposal'  => $proposalId,
-			'tool'      => 'integriq.' . $tool,
-			'targetIds' => $ids,
-			'binding'   => $record['binding'],
-			'message'   => 'Nothing ran. A person must approve this batch in Hermiq; then call again with proposalId and approvalId.',
-		];
-	}//end stage()
-
-	/**
-	 * The hash that ties an approval to one staged batch.
-	 *
-	 * @param string            $proposalId The staged batch.
-	 * @param string            $toolId     The full tool id.
-	 * @param array<int,string> $ids        The target ids.
-	 *
-	 * @return string The sha256 hex binding.
-	 *
-	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
-	 */
-	public static function binding(string $proposalId, string $toolId, array $ids): string {
-		sort($ids);
-		return hash('sha256', 'integriq:' . $proposalId . ':' . $toolId . ':' . implode(',', $ids));
-	}//end binding()
-
-	/**
-	 * Refuse a phase 2 call that does not match its staged batch.
-	 *
-	 * @param array<string,mixed>|null $proposal The staged record.
-	 * @param string                   $tool     The tool name.
-	 * @param string                   $store    The target store.
-	 * @param array<int,string>        $ids      The ids of this call.
-	 * @param IUser                    $user     The granting user.
-	 * @param string|null              $agentId  The acting agent.
-	 *
-	 * @return void
-	 *
-	 * @throws AgentActionRefusedException When it does not match.
-	 */
-	private function checkProposal(?array $proposal, string $tool, string $store, array $ids, IUser $user, ?string $agentId): void {
-		if ($proposal === null) {
-			throw new AgentActionRefusedException(reason: 'unknown-proposal');
-		}
-
-		if (($proposal['outcome'] ?? '') !== 'staged') {
-			throw new AgentActionRefusedException(reason: 'proposal-not-staged');
-		}
-
-		$staged = (array)($proposal['targetIds'] ?? []);
-		sort($staged);
-		$asked = $ids;
-		sort($asked);
-		$same = (($proposal['tool'] ?? '') === 'integriq.' . $tool)
-			&& (($proposal['store'] ?? '') === $store)
-			&& ($staged === $asked)
-			&& (($proposal['agent'] ?? '') === $this->agent(agentId: $agentId))
-			&& (($proposal['grantingUser'] ?? '') === $user->getUID());
-		if ($same === false) {
-			throw new AgentActionRefusedException(reason: 'batch-mismatch');
-		}
-
-		$stagedAt = strtotime((string)($proposal['at'] ?? ''));
-		if ($stagedAt === false || (time() - $stagedAt) > self::PROPOSAL_TTL) {
-			throw new AgentActionRefusedException(reason: 'proposal-expired');
-		}
-	}//end checkProposal()
 
 	/**
 	 * Run one target through its existing service path.
@@ -541,17 +453,19 @@ class IntegriqAgentTools {
 				return ['id' => $id, 'outcome' => 'done', 'objects' => ($result['result']['objects'] ?? [])];
 			}
 
-			if ($tool === 'replayDeadLetters' && $store === 'event') {
-				$this->events->replayMessage(id: $id, actorUid: $actorUid);
-			} else if ($tool === 'replayDeadLetters') {
-				$this->syncDeadLetters->replayMessage(id: $id, actorUid: $actorUid);
-			} else if ($store === 'event') {
-				$this->events->discardMessage(id: $id, actorUid: $actorUid);
-			} else {
-				$this->syncDeadLetters->discardMessage(id: $id, actorUid: $actorUid);
+			$service = $this->syncDeadLetters;
+			if ($store === 'event') {
+				$service = $this->events;
 			}
+
+			if ($tool === 'replayDeadLetters') {
+				$service->replayMessage(id: $id, actorUid: $actorUid);
+				return ['id' => $id, 'outcome' => 'done'];
+			}
+
+			$service->discardMessage(id: $id, actorUid: $actorUid);
 		} catch (Throwable $e) {
-			return ['id' => $id, 'outcome' => 'failed', 'message' => DeadLetterProjection::truncate(value: $e->getMessage())];
+			return ['id' => $id, 'outcome' => 'failed', 'message' => $this->projection->truncate(value: $e->getMessage())];
 		}//end try
 
 		return ['id' => $id, 'outcome' => 'done'];

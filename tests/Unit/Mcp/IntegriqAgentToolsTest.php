@@ -34,6 +34,7 @@ use OCA\Integriq\Mcp\IntegriqScannableServices;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\AgentTools\AgentActionRefusedException;
 use OCA\Integriq\Service\AgentTools\AgentActionStore;
+use OCA\Integriq\Service\AgentTools\AgentBatchGate;
 use OCA\Integriq\Service\AgentTools\ApprovalVerdictVerifier;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\EventService;
@@ -198,7 +199,10 @@ class IntegriqAgentToolsTest extends TestCase {
 			syncDeadLetters: $this->syncDeadLetters,
 			events: $this->events,
 			store: new AgentActionStore(objectService: $this->objects),
-			verifier: new ApprovalVerdictVerifier(client: $this->hermiq, appConfig: $config),
+			gate: new AgentBatchGate(
+				store: new AgentActionStore(objectService: $this->objects),
+				verifier: new ApprovalVerdictVerifier(client: $this->hermiq, appConfig: $config)
+			),
 			projection: new DeadLetterProjection()
 		);
 	}
@@ -343,7 +347,7 @@ class IntegriqAgentToolsTest extends TestCase {
 
 		$this->assertSame('staged', $staged['status']);
 		$this->assertSame([self::DL_A, self::DL_B], $staged['targetIds']);
-		$this->assertSame(IntegriqAgentTools::binding(proposalId: $staged['proposal'], toolId: 'integriq.replayDeadLetters', ids: [self::DL_B, self::DL_A]), $staged['binding']);
+		$this->assertSame(AgentBatchGate::binding(proposalId: $staged['proposal'], toolId: 'integriq.replayDeadLetters', ids: [self::DL_B, self::DL_A]), $staged['binding']);
 		$this->assertSame('staged', $this->objects->objects['agent_action'][$staged['proposal']]['outcome']);
 		$this->assertEveryRecordValidates();
 	}

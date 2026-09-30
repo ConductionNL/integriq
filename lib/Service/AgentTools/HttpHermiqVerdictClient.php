@@ -30,6 +30,8 @@ use Throwable;
 /**
  * The HTTP transport of the verification contract (design D7). Without Hermiq
  * enabled there is nobody to ask, so every approval is refused.
+ *
+ * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
  */
 class HttpHermiqVerdictClient implements HermiqVerdictClient {
 

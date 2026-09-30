@@ -16,6 +16,10 @@
     </projectFiles>
     <stubs>
         <file name="vendor/nextcloud/ocp/OCP/Capabilities/ICapability.php" preloadClasses="true" />
+        <!-- hermiq-ai-tooling: OpenRegister's MCP attribute and opt-in interface, the real
+             files copied from openregister development 8e001f4ec1 (peer app, absent here). -->
+        <file name="tests/stubs/OCA/OpenRegister/Mcp/Attribute/McpTool.php" />
+        <file name="tests/stubs/OCA/OpenRegister/Mcp/IMcpScannableServices.php" />
     </stubs>
     <issueHandlers>
         <UndefinedDocblockClass errorLevel="suppress"/>
@@ -87,9 +91,6 @@
                      which the listener test runs against. -->
                 <referencedClass name="OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
-                <!-- hermiq-ai-tooling: OpenRegister's MCP attribute surface (peer app). -->
-                <referencedClass name="OCA\OpenRegister\Mcp\Attribute\McpTool"/>
-                <referencedClass name="OCA\OpenRegister\Mcp\IMcpScannableServices"/>
                 <!-- hitl-on-shared-tasks: the shared task service the HITL
                      mirror writes through, resolved at runtime like
                      ObjectService above. -->

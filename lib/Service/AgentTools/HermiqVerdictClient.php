@@ -26,6 +26,8 @@ namespace OCA\Integriq\Service\AgentTools;
  * The transport half of the Hermiq verification contract (design D7). The
  * answer is not trusted for what it says: ApprovalVerdictVerifier checks its
  * signature and every echoed field, so a transport may be swapped freely.
+ *
+ * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
  */
 interface HermiqVerdictClient {
 

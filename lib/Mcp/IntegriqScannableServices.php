@@ -27,6 +27,8 @@ use OCA\OpenRegister\Mcp\IMcpScannableServices;
 /**
  * Registered as `IMcpScannableServices::integriq`; no IMcpToolProvider alias
  * exists, so the read surface stays schema-declared (REQ-MCP-101).
+ *
+ * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-105--exactly-six-curated-tools-must-exist-each-an-action-over-existing-configuration-or-a-payload-free-read-with-honest-scope-and-reach
  */
 class IntegriqScannableServices implements IMcpScannableServices {
 

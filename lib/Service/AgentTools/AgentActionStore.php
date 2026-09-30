@@ -30,6 +30,8 @@ use Throwable;
  * One `agent_action` object per invocation (design D8). A staged batch is the
  * record whose outcome is `staged`; its uuid is the proposal reference the
  * agent passes back in phase 2, and later records name it in `proposal`.
+ *
+ * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-108--every-invocation-including-refusals-must-be-attributed-to-the-agent-principal-in-the-audit-trail
  */
 class AgentActionStore {
 

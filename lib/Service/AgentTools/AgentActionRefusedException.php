@@ -27,6 +27,8 @@ use RuntimeException;
 /**
  * Carries a short machine reason (for example `binding-mismatch`) so the audit
  * record and the agent both see why, and nothing about what was not run.
+ *
+ * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
  */
 class AgentActionRefusedException extends RuntimeException {
 

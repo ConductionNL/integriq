@@ -33,6 +33,8 @@ use OCP\IAppConfig;
 
 /**
  * Verifies one approval against one staged batch.
+ *
+ * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
  */
 class ApprovalVerdictVerifier {
 
@@ -87,11 +89,6 @@ class ApprovalVerdictVerifier {
 			throw new AgentActionRefusedException(reason: 'no-token');
 		}
 
-		$publicKey = base64_decode($this->appConfig->getValueString(app: self::PUBLIC_KEY_APP, key: self::PUBLIC_KEY_NAME), true);
-		if ($publicKey === false || strlen($publicKey) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
-			throw new AgentActionRefusedException(reason: 'no-verifier-key');
-		}
-
 		$request = [
 			'approvalId'  => $approvalId,
 			'toolId'      => $toolId,
@@ -100,7 +97,41 @@ class ApprovalVerdictVerifier {
 			'nonce'       => bin2hex(random_bytes(16)),
 		];
 
-		$answer    = $this->client->requestVerdict(request: $request);
+		$verdict = $this->signedVerdict(answer: $this->client->requestVerdict(request: $request), publicKey: $this->publicKey());
+		$this->assertAnswers(verdict: $verdict, request: $request);
+
+		return $this->approver(verdict: $verdict, actingAgent: $actingAgent);
+	}//end verify()
+
+	/**
+	 * Hermiq's published verdict key.
+	 *
+	 * @return string The raw Ed25519 public key.
+	 *
+	 * @throws AgentActionRefusedException When none is published.
+	 */
+	private function publicKey(): string {
+		$publicKey = base64_decode($this->appConfig->getValueString(app: self::PUBLIC_KEY_APP, key: self::PUBLIC_KEY_NAME), true);
+		if ($publicKey === false || strlen($publicKey) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
+			throw new AgentActionRefusedException(reason: 'no-verifier-key');
+		}
+
+		return $publicKey;
+	}//end publicKey()
+
+	/**
+	 * The verdict, when its signature verifies against the key.
+	 *
+	 * @param array<string,mixed> $answer    Hermiq's decoded answer.
+	 * @param string              $publicKey The raw public key.
+	 *
+	 * @return array<string,mixed> The verdict.
+	 *
+	 * @throws AgentActionRefusedException When it is unsigned or the signature fails.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function signedVerdict(array $answer, string $publicKey): array {
 		$verdict   = ($answer['verdict'] ?? null);
 		$signature = base64_decode((string)($answer['signature'] ?? ''), true);
 		if (is_array($verdict) === false || $signature === false || strlen($signature) !== SODIUM_CRYPTO_SIGN_BYTES) {
@@ -111,6 +142,22 @@ class ApprovalVerdictVerifier {
 			throw new AgentActionRefusedException(reason: 'bad-signature');
 		}
 
+		return $verdict;
+	}//end signedVerdict()
+
+	/**
+	 * Refuse a verdict for another request, or an old one.
+	 *
+	 * @param array<string,mixed>  $verdict The signed verdict.
+	 * @param array<string,string> $request What was asked.
+	 *
+	 * @return void
+	 *
+	 * @throws AgentActionRefusedException When it does not answer this request now.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function assertAnswers(array $verdict, array $request): void {
 		foreach (self::ECHOED as $field) {
 			if (($verdict[$field] ?? null) !== $request[$field]) {
 				throw new AgentActionRefusedException(reason: 'verdict-for-another-request');
@@ -121,7 +168,21 @@ class ApprovalVerdictVerifier {
 		if ($issuedAt === false || abs(time() - $issuedAt) > self::MAX_AGE_SECONDS) {
 			throw new AgentActionRefusedException(reason: 'stale-verdict');
 		}
+	}//end assertAnswers()
 
+	/**
+	 * The human approver, when the verdict says approved by someone other than the agent.
+	 *
+	 * @param array<string,mixed> $verdict     The signed verdict.
+	 * @param string              $actingAgent The agent.
+	 *
+	 * @return string The approver's uid.
+	 *
+	 * @throws AgentActionRefusedException When it is not approved, or approved by the agent.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function approver(array $verdict, string $actingAgent): string {
 		if (($verdict['approved'] ?? false) !== true) {
 			throw new AgentActionRefusedException(reason: 'not-approved:' . (string)($verdict['reason'] ?? 'unknown'));
 		}
@@ -132,7 +193,7 @@ class ApprovalVerdictVerifier {
 		}
 
 		return $decidedBy;
-	}//end verify()
+	}//end approver()
 
 	/**
 	 * The bytes Hermiq signs: the verdict with its keys sorted, as JSON.

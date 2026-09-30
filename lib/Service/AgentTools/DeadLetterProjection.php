@@ -26,6 +26,8 @@ namespace OCA\Integriq\Service\AgentTools;
  * Builds each row from named fields only (design Decision 3). Nothing is
  * copied wholesale, so a property added to either schema later never reaches
  * an agent by accident; `payload` and `lastResponse` are never read.
+ *
+ * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-109--the-dead-letter-read-must-be-payload-free-and-no-tool-may-return-or-accept-payload-content
  */
 class DeadLetterProjection {
 
@@ -56,7 +58,7 @@ class DeadLetterProjection {
 	public function project(string $store, string $id, array $data): array {
 		$error = null;
 		if ($store === 'sync' && is_string($data['error'] ?? null) === true) {
-			$error = self::truncate(value: $data['error']);
+			$error = $this->truncate(value: $data['error']);
 		}
 
 		$attempts = null;
@@ -89,7 +91,7 @@ class DeadLetterProjection {
 	 *
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-109--the-dead-letter-read-must-be-payload-free-and-no-tool-may-return-or-accept-payload-content
 	 */
-	public static function truncate(string $value): string {
+	public function truncate(string $value): string {
 		if (mb_strlen($value) <= self::ERROR_LENGTH) {
 			return $value;
 		}

@@ -740,7 +740,7 @@ class Application extends App implements IBootstrap {
 		$context->registerServiceAlias(DnsResolverInterface::class, SystemDnsResolver::class);
 		$context->registerServiceAlias(CallDispatcherInterface::class, CallServiceDispatcher::class);
 
-		// hermiq-ai-tooling: the verdict transport, and the opt-in alias under
+		// The hermiq-ai-tooling change: the verdict transport, and the opt-in alias under
 		// which OpenRegister's AttributeToolScanner finds the six curated agent
 		// tools (OpenRegister Application, IMcpScannableServices::<appId>).
 		$context->registerServiceAlias(HermiqVerdictClient::class, HttpHermiqVerdictClient::class);
