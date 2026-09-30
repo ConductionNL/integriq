@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * named exists on none. An empty setting counts as unset.
  *
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
- * @spec openspec/changes/integriq-notifications/specs/openconnector-notifications/spec.md
+ * @spec openspec/specs/openconnector-notifications/spec.md
  */
 class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 

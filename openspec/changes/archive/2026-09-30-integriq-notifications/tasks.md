@@ -8,7 +8,7 @@
 - [x] Add nl + en `subject` strings to every rule (already specified in proposal.md)
 - [x] Validate the register JSON still parses (e.g. `python3 -c "import json;json.load(open('lib/Settings/integriq_register.json'))"`)
 - [x] Confirm the `openconnector-ops` group exists or remap `groups` recipients to a real NC group before enabling. It exists on no instance; Ruben decided on 29 Sep 2026 that alerts go to `admin` unless an administrator names another group. Every rule (10 in `integriq_register.json` and its mock copy, 1 in `register.d/hitl-approval-rule-action.json`) now names the `ConnectionAlertRecipientResolver` expression recipient, which reads `connection_alert_group` and falls back to `admin` (tests/Unit/Settings/IntegrationAlertRecipientsTest.php).
-- [ ] Confirm engine support for `scheduled` `"now"`-relative date filter before enabling `job-overdue`
+- [x] Confirm engine support for `scheduled` `"now"`-relative date filter before enabling `job-overdue`. Confirmed against OpenRegister development a5832f2498: `ScheduledFilterGrammar` has `before`/`after`, `ScheduledFilterEvaluator::resolveInstant()` reads `now` as the scan pass's logical now (tests/Unit/Settings/JobOverdueRuleTest.php, #2388). The rule still ships disabled.
 
 ## Acceptance criteria
 
