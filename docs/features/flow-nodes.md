@@ -37,6 +37,18 @@ Add a `source-call` step. Pick a Source, give it a path and a method:
 
 The step runs once per item. `{{dotted.path}}` placeholders resolve from each item's record, and the response lands under the key you name in `output`. The call goes through `CallService`, so the Source's enablement, host guard, rate limits and call logging all apply unchanged.
 
+## Try it on a fresh install
+
+Integriq seeds three demo Sources so the step has something to call. All three point at `example.org` and hold no secret. Each says it is demo data and is safe to delete.
+
+| Source | State | Use |
+| --- | --- | --- |
+| `demo-echo-api` | enabled | An echo endpoint: `GET /get` returns what you sent |
+| `demo-forge-api` | disabled | An issue tracker that needs a credential: create the credential `demo-forge-token`, then enable the Source |
+| `demo-registry-api` | enabled | A read-only register to enrich an item from |
+
+To see a call land on an item, make a flow with a manual trigger in the flow builder, add a `source-call` step with `source` set to `demo-echo-api`, `endpoint` set to `/get` and `output` set to `echo`, and run it. The seeded hosts do not answer, so on a fresh install the step reports the failed call; point `demo-echo-api` at an echo service you run to see a response.
+
 ## Why there is no raw-URL node
 
 You cannot type a URL into a flow step. The step names a Source, and the endpoint is a path inside that Source's location. An absolute URL, a `//host` path or a `../` escape is rejected before any request goes out.

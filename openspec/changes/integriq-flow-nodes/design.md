@@ -385,7 +385,7 @@ values at seed time. No real hosts, no real tokens.
 | `name` | Demo Echo API | Demo Forge API | Demo Registry API |
 | `description` | Public echo endpoint used to demonstrate a flow making an outbound call. | Issue tracker used by the flow-node demo to update a label. | Read-only reference register used to enrich an item. |
 | `location` | `https://echo.example.org` | `https://forge.example.org/api/v1` | `https://registry.example.org/api` |
-| `type` | `json` | `json` | `json` |
+| `type` | `api` | `api` | `api` |
 | `isEnabled` | `true` | `false` (enable after configuring a credential) | `true` |
 | `auth` | `none` | `none` (see `authentication.credentialRef` below) | `none` |
 | `configuration.authentication.credentialRef` | — | `{"credentialName": "demo-forge-token"}` | — |
@@ -487,8 +487,11 @@ object; a run over the ceiling raises rather than truncating (Decision 5).
 
 ### Example flow document using the node
 
-Seeded as a demo flow so the capability is exercisable on install. Trigger is
-manual so nothing fires by itself.
+Corrected 2026-09-30: this flow is NOT seeded. It belongs in OpenRegister's
+flow register, which integriq's register import cannot write; the three demo
+Sources are seeded (`register.d/flow-node-demo-sources.json`) and the feature
+doc says how to build this flow in the flow builder. Trigger is manual so
+nothing fires by itself.
 
 ```json
 {

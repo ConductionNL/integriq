@@ -104,6 +104,18 @@ confirm a real response lands on the item.
 - [ ] Implement
 - [ ] Test
 
+> Status 2026-09-30: the three demo Sources are seeded through
+> `lib/Settings/register.d/flow-node-demo-sources.json` (the register.d
+> `components.objects` path), proven by `tests/Unit/Settings/FlowNodeDemoSourcesTest.php`
+> (merged `source` schema via Opis, `demo-forge-api` disabled with a
+> credential reference by name, no real host or secret). Two corrections to
+> design.md: a Source's `type` is `api` (CallService has no `json` type), and
+> the demo flow is not seeded, because it belongs in OpenRegister's flow
+> register, which integriq's register import cannot write; docs/features/flow-nodes.md
+> says how to build it in the flow builder. `openregister.set-fields` was
+> confirmed against OpenRegister's `SetFieldsNode::getType()`. What still keeps
+> the boxes open is the live end-to-end run on an instance.
+>
 > Status 2026-09-02: the node itself and its unit tests are merged
 > (`lib/Flow/SynchronizationRunNode.php`, `tests/Unit/Flow/SynchronizationRunNodeTest.php`,
 > incl. the rate-limit suspension), so the node half of this task is done. What
