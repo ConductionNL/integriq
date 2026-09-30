@@ -25,6 +25,7 @@ use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Reads and sets connection_alert_group; refuses a group that does not exist.
@@ -38,7 +39,7 @@ final class ConnectionAlertSettingsControllerTest extends TestCase {
 	 *
 	 * @var string
 	 */
-	private string $stored = '';
+	private ?string $stored = null;
 
 	/**
 	 * Build the controller for one request.
@@ -54,7 +55,16 @@ final class ConnectionAlertSettingsControllerTest extends TestCase {
 		);
 
 		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturnCallback(fn (): string => $this->stored);
+		$appConfig->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = ''): string => $this->stored ?? $default
+		);
+		$appConfig->method('deleteKey')->willReturnCallback(
+			function (string $app, string $key): void {
+				$this->assertSame('integriq', $app);
+				$this->assertSame(ConnectionAlertRecipientResolver::CONFIG_KEY, $key);
+				$this->stored = null;
+			}
+		);
 		$appConfig->method('setValueString')->willReturnCallback(
 			function (string $app, string $key, string $value): bool {
 				$this->assertSame('integriq', $app);
@@ -72,17 +82,19 @@ final class ConnectionAlertSettingsControllerTest extends TestCase {
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnCallback(static fn (string $text, array $args = []): string => vsprintf($text, $args));
 
-		return new ConnectionAlertSettingsController($request, $appConfig, $groups, $l);
+		$recipients = new ConnectionAlertRecipientResolver($appConfig, $groups, $this->createMock(LoggerInterface::class));
+
+		return new ConnectionAlertSettingsController($request, $appConfig, $groups, $l, $recipients);
 	}//end makeController()
 
 	/**
-	 * Nothing is named on a fresh install.
+	 * On a fresh install the admin group is named.
 	 *
 	 * @return void
 	 */
-	public function testNoGroupIsNamedByDefault(): void {
-		$this->assertSame(['group' => ''], $this->makeController()->getConfig()->getData());
-	}//end testNoGroupIsNamedByDefault()
+	public function testTheAdminGroupIsNamedByDefault(): void {
+		$this->assertSame(['group' => 'admin'], $this->makeController()->getConfig()->getData());
+	}//end testTheAdminGroupIsNamedByDefault()
 
 	/**
 	 * An existing group is stored.
@@ -106,19 +118,20 @@ final class ConnectionAlertSettingsControllerTest extends TestCase {
 
 		$this->assertSame(400, $response->getStatus());
 		$this->assertStringContainsString('openconnector-ops', $response->getData()['error']);
-		$this->assertSame('', $this->stored);
+		$this->assertNull($this->stored);
 	}//end testAGroupThatDoesNotExistIsRefused()
 
 	/**
-	 * An empty group clears the setting, so nobody is notified.
+	 * An empty group clears the setting, which puts the admin group back.
 	 *
 	 * @return void
 	 */
-	public function testAnEmptyGroupClearsTheSetting(): void {
+	public function testAnEmptyGroupGoesBackToTheAdminGroup(): void {
 		$this->stored = 'koppelbeheer';
 		$response = $this->makeController('')->setConfig();
 
 		$this->assertSame(200, $response->getStatus());
-		$this->assertSame('', $this->stored);
-	}//end testAnEmptyGroupClearsTheSetting()
+		$this->assertNull($this->stored);
+		$this->assertSame(['group' => 'admin'], $response->getData());
+	}//end testAnEmptyGroupGoesBackToTheAdminGroup()
 }//end class

@@ -351,19 +351,21 @@ describe('the group that hears about connection alerts', () => {
 		put.mockReset()
 	})
 
-	it('says nobody is notified while no group is named', async () => {
-		get.mockResolvedValue({ data: { group: '' } })
+	it('shows the admin group while no other group is named', async () => {
+		get.mockResolvedValue({ data: { group: 'admin' } })
 		const wrapper = mount(ConnectionAlertSettings)
 		await flushPromises()
 
 		expect(get).toHaveBeenCalledWith(
 			'/index.php/apps/integriq/api/admin/connection-alert-group',
 		)
+		expect(wrapper.find('input').element.value).toBe('admin')
 		expect(
 			wrapper
 				.find('[data-testid="admin-connection-alert-group-none"]')
 				.exists(),
-		).toBe(true)
+		).toBe(false)
+		expect(wrapper.text()).not.toContain('nobody is notified')
 	})
 
 	it('saves the group an administrator names', async () => {
@@ -382,11 +384,7 @@ describe('the group that hears about connection alerts', () => {
 			'/index.php/apps/integriq/api/admin/connection-alert-group',
 			{ group: 'koppelbeheer' },
 		)
-		expect(
-			wrapper
-				.find('[data-testid="admin-connection-alert-group-none"]')
-				.exists(),
-		).toBe(false)
+		expect(wrapper.find('input').element.value).toBe('koppelbeheer')
 	})
 
 	it('shows the refusal of a group that does not exist', async () => {

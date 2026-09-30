@@ -78,10 +78,11 @@ NOT open a second one.
 The `connection_alert` schema MUST declare an `x-openregister-notifications`
 rule with a `created` trigger whose recipients are the members of the group
 named in the app setting `connection_alert_group`, naming the subject, the
-rule, the count and the threshold. No group MUST be named by default: with
-none named nobody is notified and the alert shows on the alerts page only.
-Setting the group MUST be admin only and MUST refuse a group that does not
-exist. Integriq MUST NOT call the notification manager directly for this.
+rule, the count and the threshold. Until an administrator names another
+group, the members of the `admin` group MUST be told, and clearing the setting
+MUST put `admin` back (Ruben's decision of 29 Sep 2026: default `admin`,
+changeable in settings). Setting the group MUST be admin only and MUST refuse a
+group that does not exist. Integriq MUST NOT call the notification manager directly for this.
 The alerts page MUST list alerts with their state.
 
 #### Scenario: the named group is told
@@ -90,8 +91,8 @@ The alerts page MUST list alerts with their state.
 - THEN the members of `koppelbeheer` receive a Nextcloud notification naming `KVK`, the rule and the count, and the alerts page lists the alert as open
 - e2e: tests/e2e/connection-run-summary.spec.ts
 
-#### Scenario: nobody is named
+#### Scenario: no group is named
 - GIVEN a fresh install where no group is named for connection alerts
 - WHEN an alert opens
-- THEN nobody is notified and the alerts page lists the alert as open
+- THEN the members of the `admin` group are notified and the alerts page lists the alert as open
 - @e2e exclude a recipient resolution; covered by PHPUnit on ConnectionAlertRecipientResolver

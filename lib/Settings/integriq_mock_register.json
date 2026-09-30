@@ -809,10 +809,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -1256,10 +1254,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2057,10 +2053,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2336,10 +2330,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2559,10 +2551,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3356,10 +3346,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3499,10 +3487,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3696,10 +3682,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3870,10 +3854,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -4412,10 +4394,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {

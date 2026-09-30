@@ -87,7 +87,7 @@ class RegisterSchemaValidator {
 	 *
 	 * @return array<string,mixed> The descriptor.
 	 */
-	private static function descriptor(): array {
+	public static function descriptor(): array {
 		if (self::$descriptor !== null) {
 			return self::$descriptor;
 		}

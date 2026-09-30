@@ -49,18 +49,20 @@ class ConnectionAlertSettingsController extends Controller {
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param IGroupManager $groupManager The group manager.
 	 * @param IL10N $l The localization service.
+	 * @param ConnectionAlertRecipientResolver $recipients Reads the group in force.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly IAppConfig $appConfig,
 		private readonly IGroupManager $groupManager,
 		private readonly IL10N $l,
+		private readonly ConnectionAlertRecipientResolver $recipients,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
-	 * The group named for connection alerts, empty when none is.
+	 * The group named for connection alerts, `admin` when none is.
 	 *
 	 * @return JSONResponse `{group}`.
 	 *
@@ -69,12 +71,12 @@ class ConnectionAlertSettingsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getConfig(): JSONResponse {
 		return new JSONResponse(
-			['group' => $this->appConfig->getValueString(Application::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY, '')]
+			['group' => $this->recipients->namedGroup()]
 		);
 	}//end getConfig()
 
 	/**
-	 * Name the group, or clear it with an empty value.
+	 * Name the group, or clear it with an empty value, which puts `admin` back.
 	 *
 	 * @return JSONResponse `{group}`, or 400 naming a group that does not exist.
 	 *
@@ -88,6 +90,11 @@ class ConnectionAlertSettingsController extends Controller {
 				['error' => $this->l->t('There is no group called %s.', [$group])],
 				Http::STATUS_BAD_REQUEST
 			);
+		}
+
+		if ($group === '') {
+			$this->appConfig->deleteKey(Application::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY);
+			return new JSONResponse(['group' => ConnectionAlertRecipientResolver::DEFAULT_GROUP]);
 		}
 
 		$this->appConfig->setValueString(Application::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY, $group);
