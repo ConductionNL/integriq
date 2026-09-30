@@ -13,12 +13,14 @@
               "requestsPerWindow": {
                 "type": "integer",
                 "minimum": 1,
-                "title": "Requests per window"
+                "title": "Requests per window",
+                "description": "How many requests one client address may make before it is refused until the window ends."
               },
               "windowSeconds": {
                 "type": "integer",
                 "minimum": 1,
-                "title": "Window in seconds"
+                "title": "Window in seconds",
+                "description": "How long the window lasts. The count starts again after it."
               }
             },
             "required": [
