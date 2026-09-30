@@ -11855,6 +11855,82 @@
         "windowMinutes": 1440,
         "state": "open",
         "openedAt": "2026-09-29T02:30:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-melding-openbare-ruimte"
+        },
+        "publishedUuid": "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01",
+        "name": "melding openbare ruimte",
+        "register": "meldingen",
+        "schema": "melding",
+        "versions": ["1"]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-boom"
+        },
+        "publishedUuid": "8a2d4c61-1e3f-4a5b-8c7d-9e0f1a2b3c02",
+        "name": "boom",
+        "register": "openbare-ruimte",
+        "schema": "boom",
+        "versions": []
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-parkeervergunning"
+        },
+        "publishedUuid": "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03",
+        "name": "parkeervergunning",
+        "register": "vergunningen",
+        "schema": "parkeervergunning",
+        "versions": ["1", "2"]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-meldingen-app"
+        },
+        "name": "Meldingen app",
+        "credential": "objecten-token-meldingen-app",
+        "principal": "svc-meldingen",
+        "permissions": {
+          "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01": "read_write"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-bomenbeheer"
+        },
+        "name": "Bomenbeheer",
+        "credential": "objecten-token-bomenbeheer",
+        "principal": "svc-bomen",
+        "permissions": {
+          "8a2d4c61-1e3f-4a5b-8c7d-9e0f1a2b3c02": "read_write",
+          "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01": "read"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-dashboard"
+        },
+        "name": "Dashboard gemeente",
+        "credential": "objecten-token-dashboard",
+        "principal": "svc-dashboard",
+        "permissions": {
+          "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03": "read"
+        }
       }
     ]
   }

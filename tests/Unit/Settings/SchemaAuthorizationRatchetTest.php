@@ -61,6 +61,8 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'lti_tool',
 		'mail_message',
 		'mapping_version',
+		'objecten_token',
+		'objecttype',
 		'outbound_message',
 		'payment_intent',
 		'recipient_key',

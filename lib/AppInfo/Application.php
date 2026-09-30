@@ -115,6 +115,7 @@ use OCA\Integriq\Service\Forms\FormsClientInterface;
 use OCA\Integriq\Service\Forms\FormsOcsClient;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
+use OCA\Integriq\Service\Objecten\ObjectenWiring;
 use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\Tables\TablesClientInterface;
 use OCA\Integriq\Service\Tables\TablesOcsClient;
@@ -358,6 +359,9 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ExchangeJobRequestedEvent::class, ExchangeJobRequestedListener::class);
 		$context->registerEventListener(ExchangeMappingRequestedEvent::class, ExchangeMappingRequestedListener::class);
 		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);
+		// The Objecten and Objecttypen APIs: every facade service is built with
+		// its OpenRegister seams wired, or every route answers 401 or 404.
+		ObjectenWiring::register(context: $context);
 		// Rostering into planninq (rostering-adapter-targets-planninq,
 		// decision D10): learniq's timetable-import job asks integriq to
 		// deliver a rostering source; the listener always answers on the

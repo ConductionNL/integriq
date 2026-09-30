@@ -178,7 +178,11 @@ class ObjectenApiController extends Controller {
 		}
 
 		return $this->answer(answer:
-			$this->objects->index(query: $this->queryParameters(), baseUrl: $this->baseUrl())
+			$this->objects->index(
+				query: $this->queryParameters(),
+				baseUrl: $this->baseUrl(),
+				principal: $this->principalFor(objecttype: $type, writing: false)
+			)
 		);
 	}//end objects()
 
@@ -211,7 +215,14 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		return $this->answer(answer: $this->objects->show(type: $type, uuid: $uuid, baseUrl: $this->baseUrl()));
+		return $this->answer(answer:
+			$this->objects->show(
+				type: $type,
+				uuid: $uuid,
+				baseUrl: $this->baseUrl(),
+				principal: $this->principalFor(objecttype: $type, writing: false)
+			)
+		);
 	}//end object()
 
 	/**
@@ -239,7 +250,8 @@ class ObjectenApiController extends Controller {
 			$this->objects->search(
 				type: $type,
 				body: ['geometry' => (array)$this->request->getParam('geometry', [])],
-				baseUrl: $this->baseUrl()
+				baseUrl: $this->baseUrl(),
+				principal: $this->principalFor(objecttype: $type, writing: false)
 			)
 		);
 	}//end search()
@@ -337,7 +349,7 @@ class ObjectenApiController extends Controller {
 			return $refusal;
 		}
 
-		$current = $this->objects->show(type: $type, uuid: $uuid);
+		$current = $this->objects->show(type: $type, uuid: $uuid, principal: $this->principalFor(objecttype: $type));
 		if ($current['status'] !== 200) {
 			return $this->answer(answer: $current);
 		}
@@ -387,7 +399,7 @@ class ObjectenApiController extends Controller {
 
 		$principal = $this->principalFor(objecttype: $type);
 
-		$current = $this->objects->show(type: $type, uuid: $uuid);
+		$current = $this->objects->show(type: $type, uuid: $uuid, principal: $principal);
 		if ($current['status'] !== 200) {
 			return $this->answer(answer: $current);
 		}
@@ -400,15 +412,19 @@ class ObjectenApiController extends Controller {
 	/**
 	 * The principal this token's writes are attributed to.
 	 *
+	 * A read runs as the principal too (design D3), so OpenRegister's RBAC and
+	 * multitenancy still decide what the token's holder sees.
+	 *
 	 * @param string $objecttype The objecttype, so the verdict is the same one.
+	 * @param bool   $writing    Whether the request writes.
 	 *
 	 * @return string The principal.
 	 */
-	private function principalFor(string $objecttype): string {
+	private function principalFor(string $objecttype, bool $writing = true): string {
 		$verdict = $this->tokens->verdictFor(
 			authorization: $this->request->getHeader('Authorization'),
 			objecttype: $objecttype,
-			writing: true
+			writing: $writing
 		);
 
 		return (string)$verdict['principal'];
