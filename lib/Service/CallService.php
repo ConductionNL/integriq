@@ -53,6 +53,7 @@ use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Flow\FlowConfigGuard;
+use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
@@ -207,6 +208,7 @@ class CallService {
 		private readonly LoggerInterface $logger,
 		private readonly BrokeredCallService $brokeredCallService,
 		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
+		private readonly ?CaseSystemOperations $caseSystemOperations = null,
 	) {
 		$this->client = new Client([]);
 		// NO AUTOESCAPE: this environment renders headers/query/body values for
@@ -1215,17 +1217,11 @@ class CallService {
 			);
 		}
 
-		$sourceData = $source->getObject();
-		$sourceType = ($sourceData['type'] ?? null);
+		// A soap or case-system source is answered in-process; every other
+		// source goes out over HTTP below.
+		$response = $this->dispatchInProcess(source: $source, endpoint: $endpoint, config: $config, asynchronous: $asynchronous);
 
-		if ($sourceType === 'soap') {
-			// If the source type is SOAP, use the soap service.
-			// Warning: This functionality requires ext-soap and ext-xsd.
-			$soapService = new SOAPService($this->cookieJar);
-			$response = $soapService->callSoapSource(source: $source, soapAction: $endpoint, config: $config);
-		}
-
-		if ($sourceType !== 'soap') {
+		if ($response === null) {
 			// Stream the response body straight into the caller's sink resource when
 			// one is supplied (stream-file-content #110). The sink is added only to the
 			// options handed to Guzzle — never to $config, which is logged/redacted/
@@ -1278,6 +1274,54 @@ class CallService {
 
 		return $response;
 	}//end dispatchRequest()
+
+	/**
+	 * Answer a source that needs no HTTP request of its own, or null for any other.
+	 *
+	 * A soap source is answered by SOAPService; a case-system source by
+	 * {@see CaseSystemOperations} (case-system-operations-for-decidiq, design
+	 * D1). Both answer a PSR-7 response, so the call log, redaction and rate
+	 * limit run as for any source. An asynchronous caller receives the
+	 * case-system answer as a fulfilled promise.
+	 *
+	 * @param ObjectEntity $source The source.
+	 * @param string $endpoint The endpoint (the SOAPAction, or /case-system/<operation>).
+	 * @param array $config The request configuration.
+	 * @param boolean $asynchronous Whether the caller expects a promise.
+	 *
+	 * @return mixed A response, a promise, or null when the source goes out over HTTP.
+	 *
+	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-case-system-source-answers-five-operations-in-process-req-cso-001
+	 */
+	private function dispatchInProcess(ObjectEntity $source, string $endpoint, array $config, bool $asynchronous): mixed {
+		$sourceType = ($source->getObject()['type'] ?? null);
+
+		if ($sourceType === 'soap') {
+			// Warning: This functionality requires ext-soap and ext-xsd.
+			$soapService = new SOAPService($this->cookieJar);
+
+			return $soapService->callSoapSource(source: $source, soapAction: $endpoint, config: $config);
+		}
+
+		if ($sourceType !== CaseSystemOperations::SOURCE_TYPE) {
+			return null;
+		}
+
+		$response = new Response(
+			status: 503,
+			headers: ['Content-Type' => 'application/json'],
+			body: '{"message":"Case-system operations are not available on this instance."}'
+		);
+		if ($this->caseSystemOperations !== null) {
+			$response = $this->caseSystemOperations->handle(source: $source, endpoint: $endpoint, config: $config);
+		}
+
+		if ($asynchronous === true) {
+			return new FulfilledPromise($response);
+		}
+
+		return $response;
+	}//end dispatchInProcess()
 
 	/**
 	 * Assemble the options handed to Guzzle from the persisted request config

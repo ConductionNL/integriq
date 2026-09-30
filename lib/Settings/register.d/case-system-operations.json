@@ -1,0 +1,23 @@
+{
+  "$comment": "ADR-037 register fragment (case-system-operations-for-decidiq). Seeds the `zgw-zaken` source of type `case-system`, which a connection declaring sourceTemplate zgw-zaken (decidiq's case-system connection) links to. CallService answers it in-process (CaseSystemOperations): read-case, list-documents, read-document, add-document and create-case, mapped onto the ZGW Zaken and Documenten APIs through two ordinary sources the administrator names in its configuration (zakenSource, documentenSource, kinds, meetingZaaktype, bronorganisatie; optional confidentialAs, publicAs, auteur), or answered from lib/Settings/case-system-mock.json with configuration.mock true. Ships disabled and unconfigured. The location is a label: nothing is ever sent to it.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "zgw-zaken"
+        },
+        "name": "Zaken en Documenten (ZGW)",
+        "description": "Case system for meeting apps: reads cases, lists, reads and adds documents, and creates a case per meeting, through the ZGW Zaken and Documenten APIs. Name the two ZGW sources, the document type per kind, the meeting case type and your organisation's RSIN in its configuration, then enable it.",
+        "type": "case-system",
+        "location": "case-system://zgw-zaken",
+        "auth": "none",
+        "configuration": {},
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
