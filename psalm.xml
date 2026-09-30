@@ -87,6 +87,9 @@
                      which the listener test runs against. -->
                 <referencedClass name="OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <!-- hermiq-ai-tooling: OpenRegister's MCP attribute surface (peer app). -->
+                <referencedClass name="OCA\OpenRegister\Mcp\Attribute\McpTool"/>
+                <referencedClass name="OCA\OpenRegister\Mcp\IMcpScannableServices"/>
                 <!-- hitl-on-shared-tasks: the shared task service the HITL
                      mirror writes through, resolved at runtime like
                      ObjectService above. -->

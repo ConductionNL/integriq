@@ -28,6 +28,9 @@ use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
 use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\Forms\Events\FormSubmittedEvent;
+use OCA\Integriq\Mcp\IntegriqScannableServices;
+use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
+use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientUnavailable;
@@ -736,6 +739,15 @@ class Application extends App implements IBootstrap {
 		// instances, so the next bare interface fails a test instead of a route.
 		$context->registerServiceAlias(DnsResolverInterface::class, SystemDnsResolver::class);
 		$context->registerServiceAlias(CallDispatcherInterface::class, CallServiceDispatcher::class);
+
+		// hermiq-ai-tooling: the verdict transport, and the opt-in alias under
+		// which OpenRegister's AttributeToolScanner finds the six curated agent
+		// tools (OpenRegister Application, IMcpScannableServices::<appId>).
+		$context->registerServiceAlias(HermiqVerdictClient::class, HttpHermiqVerdictClient::class);
+		$context->registerService(
+			'OCA\\OpenRegister\\Mcp\\IMcpScannableServices::integriq',
+			static fn ($c) => $c->get(IntegriqScannableServices::class)
+		);
 
 		// Explicit factories for the *ClientHttp flavours so the Guzzle
 		// ClientInterface is injected via a shared singleton; NC's

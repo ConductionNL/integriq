@@ -67,6 +67,8 @@
     "environment.promote": ["admin"],
     "exchange.read": ["admin", "coordinators", "compliance-officers"],
     "exchange.resubmit": ["admin"],
-    "exchange.waive": ["admin"]
+    "exchange.waive": ["admin"],
+    "sync-dead-letter.replay": ["admin"],
+    "sync-dead-letter.discard": ["admin"]
   }
 }

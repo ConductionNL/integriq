@@ -11931,6 +11931,36 @@
         "permissions": {
           "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03": "read"
         }
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-staged-replay"},
+        "tool": "integriq.replayDeadLetters",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "admin",
+        "outcome": "staged",
+        "store": "sync",
+        "targetIds": ["5d1e2f30-0000-4000-8000-00000000d001", "5d1e2f30-0000-4000-8000-00000000d002"],
+        "binding": "9f2c4c0b7c1e5d8a3b6f0e2d4c6a8b0d1e3f5a7c9b1d3f5e7a9c1b3d5f7e9a1c",
+        "at": "2026-09-30T02:40:00+02:00"
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-denied-run"},
+        "tool": "integriq.runSynchronization",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "griffie",
+        "outcome": "denied",
+        "reason": "synchronization.run",
+        "targetIds": ["7b3c4d50-0000-4000-8000-00000000s001"],
+        "at": "2026-09-30T02:41:00+02:00"
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-list"},
+        "tool": "integriq.listDeadLetters",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "admin",
+        "outcome": "executed",
+        "targetIds": [],
+        "at": "2026-09-30T02:39:00+02:00"
       }
     ]
   }
