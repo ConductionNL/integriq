@@ -2977,7 +2977,12 @@ OC.L10N.register(
         "When the approved batch ran.": "When the approved batch ran.",
         "Results": "Results",
         "One outcome per target id.": "One outcome per target id.",
-        "When the call was made.": "When the call was made."
+        "When the call was made.": "When the call was made.",
+        "Anonymous rate limit": "Anonymous rate limit",
+        "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.",
+        "Window in seconds": "Window in seconds",
+        "How many requests one client address may make before it is refused until the window ends.": "How many requests one client address may make before it is refused until the window ends.",
+        "How long the window lasts. The count starts again after it.": "How long the window lasts. The count starts again after it."
     },
     "nplurals=2; plural=(n != 1);"
 )

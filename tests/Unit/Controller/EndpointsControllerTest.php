@@ -177,4 +177,56 @@ class EndpointsControllerTest extends TestCase {
 
 	}//end testPreflightedCorsReturnsAnEmptyOkResponse()
 
+	/**
+	 * Whether the fast path would serve this endpoint on a GET.
+	 *
+	 * @param array $endpointData The endpoint.
+	 *
+	 * @return boolean True when the fast path serves it.
+	 */
+	private function takesTheFastPath(array $endpointData): bool {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getMethod')->willReturn('GET');
+		$controller = new EndpointsController(
+			'integriq',
+			$request,
+			$this->createMock(EndpointService::class),
+			$this->createMock(AuthorizationService::class),
+			$this->createMock(ObjectService::class),
+			$this->createMock(EndpointCacheService::class),
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IL10N::class)
+		);
+		$endpoint = new \OCA\OpenRegister\Db\ObjectEntity();
+		$endpoint->setObject($endpointData);
+
+		$method = new \ReflectionMethod(EndpointsController::class, 'isSimpleEndpoint');
+		$method->setAccessible(true);
+
+		return $method->invoke($controller, $endpoint);
+
+	}//end takesTheFastPath()
+
+	/**
+	 * REQ-EP-012: a public endpoint with fixed filters never takes the fast
+	 * path, which answers a single object without the id-fetch guard.
+	 *
+	 * Red before: an isPublic endpoint whose only extra was fixedFilters went
+	 * the fast path, so /motions/{id} answered an amendment again.
+	 *
+	 * @return void
+	 */
+	public function testAnEndpointWithFixedFiltersNeverTakesTheFastPath(): void {
+		$endpoint = ['isPublic' => true, 'targetType' => 'register/schema', 'targetId' => '1/2'];
+		$this->assertTrue($this->takesTheFastPath($endpoint), 'Control: without fixed filters the fast path serves it.');
+
+		$endpoint['fixedFilters'] = ['decisionType' => 'motion'];
+		$this->assertFalse($this->takesTheFastPath($endpoint));
+
+		unset($endpoint['fixedFilters']);
+		$endpoint['anonymousRateLimit'] = ['requestsPerWindow' => 120, 'windowSeconds' => 60];
+		$this->assertFalse($this->takesTheFastPath($endpoint), 'The fast path would skip the anonymous rate limit too (REQ-EP-013).');
+
+	}//end testAnEndpointWithFixedFiltersNeverTakesTheFastPath()
+
 }//end class

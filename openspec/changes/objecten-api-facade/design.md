@@ -77,6 +77,57 @@ The declarations live in two admin-only schemas in the integriq register,
 the `publishedUuid` property, not the configuration object's own id, so a
 reseed does not move it.
 
+## D8. A leaf app declares its objecttypes in a file of its own
+
+A leaf app (dossiq for its case objects) publishes objecttypes by shipping
+`lib/Settings/objecttypes.json` in its own app directory:
+
+```json
+{
+  "objecttypes": [
+    {
+      "uuid": "<the published VNG uuid>",
+      "name": "Melding openbare ruimte",
+      "register": "<the app's register slug>",
+      "schema": "<the schema slug>",
+      "versions": ["1"]
+    }
+  ]
+}
+```
+
+The four required fields and the version rule are the ones
+`ObjecttypeRegistry` already applies to a configured objecttype (D1, Task 1).
+`ObjecttypeDeclarationReader` reads the file of every enabled app, in app id
+order, and tags each declaration with `declaredBy: <app id>`. The gateway
+loads the objecttypes an administrator configured in integriq's register
+FIRST and the declared ones after, so for one uuid the administrator's
+configuration wins, and the losing declaration is refused and logged, never
+merged. The file is read on each request that builds the registry; there is
+no copy to go stale, the same reason D4 renders `jsonSchema` instead of
+storing it. A file that is not valid JSON, or has no `objecttypes` list, is
+skipped whole and logged; the app's other declarations are not guessed at.
+
+Why a file, and not the two other places a declaration could live:
+
+- **Seed objects into integriq's register from the leaf app's register
+  import** (`@self.register: integriq`). That is a write into another app's
+  admin-only schema, and on an instance without integriq the leaf app's own
+  import turns partial. The declaration would also become a stored copy an
+  administrator can edit away from what the app ships.
+- **An annotation on the leaf app's schema** (`x-openregister-objecttype`).
+  OpenRegister drops every schema annotation outside its vocabulary
+  (`Schema::ANNOTATION_VOCABULARY`) on save, so it would need an
+  openregister change first, and it would bind a VNG-specific concept into
+  OpenRegister's vocabulary.
+
+The file follows the precedent the connection registry set
+(`lib/Settings/connections.json`, `ConnectionRegistryService`): an app's own
+file, read by integriq, never inferred. What the file does NOT do: it does not
+grant any token access. A token still needs its own permission per
+objecttype (D3, REQ-OAF-005), so a declared objecttype answers no one until
+an administrator gives a token that permission.
+
 ## Risks
 
 - **A national uuid that must survive a register rebuild.** The uuid lives
