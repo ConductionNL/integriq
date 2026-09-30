@@ -197,6 +197,7 @@ class CallService {
 	 * @param LoggerInterface $logger Nextcloud logger used for security-policy warnings (#1011).
 	 * @param BrokeredCallService $brokeredCallService Brokered (credentialRef) dispatch through the OpenRegister credential broker.
 	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
+	 * @param CaseSystemOperations|null $caseSystemOperations Answers case-system sources in-process (case-system-operations-for-decidiq).
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
 	 */

@@ -74,7 +74,7 @@ class ZgwCaseSystem {
 			'read-document' => $this->readDocument(body: $body, configuration: $configuration),
 			'add-document' => $this->addDocument(body: $body, configuration: $configuration, sourceName: $sourceName),
 			'create-case' => $this->createCase(body: $body, configuration: $configuration),
-			default => throw new CaseSystemRefusal(status: 404, message: CaseSystemOperations::unknownOperationMessage(operation: $operation)),
+			default => throw new CaseSystemRefusal(status: 404, message: 'The case system has no operation "' . $operation . '".'),
 		};
 	}//end run()
 
@@ -98,7 +98,7 @@ class ZgwCaseSystem {
 				return ['url' => '', 'identification' => '', 'title' => ''];
 			}
 
-			return self::caseOf(zaak: (array)self::ok(answer: $answer, api: 'Zaken API'));
+			return self::caseOf(zaak: (array)self::accepted(answer: $answer, api: 'Zaken API'));
 		}
 
 		$answer = $this->transport->send(
@@ -107,7 +107,7 @@ class ZgwCaseSystem {
 			address: '/zaken',
 			options: ['query' => ['identificatie' => $reference], 'headers' => self::CRS]
 		);
-		$found = self::listOf(data: self::ok(answer: $answer, api: 'Zaken API'));
+		$found = self::listOf(data: self::accepted(answer: $answer, api: 'Zaken API'));
 		if ($found === []) {
 			return ['url' => '', 'identification' => '', 'title' => ''];
 		}
@@ -131,7 +131,7 @@ class ZgwCaseSystem {
 		$documenten = self::setting(configuration: $configuration, key: 'documentenSource');
 
 		$links = self::listOf(
-			data: self::ok(
+			data: self::accepted(
 				answer: $this->transport->send(sourceId: $zaken, method: 'GET', address: '/zaakinformatieobjecten', options: ['query' => ['zaak' => $case]]),
 				api: 'Zaken API'
 			)
@@ -144,7 +144,7 @@ class ZgwCaseSystem {
 				continue;
 			}
 
-			$document = (array)self::ok(
+			$document = (array)self::accepted(
 				answer: $this->transport->send(sourceId: $documenten, method: 'GET', address: $url),
 				api: 'Documenten API'
 			);
@@ -168,14 +168,14 @@ class ZgwCaseSystem {
 		$url = self::text(body: $body, key: 'document', operation: 'read-document');
 		$documenten = self::setting(configuration: $configuration, key: 'documentenSource');
 
-		$document = (array)self::ok(answer: $this->transport->send(sourceId: $documenten, method: 'GET', address: $url), api: 'Documenten API');
+		$document = (array)self::accepted(answer: $this->transport->send(sourceId: $documenten, method: 'GET', address: $url), api: 'Documenten API');
 		$download = (string)($document['inhoud'] ?? '');
 		if ($download === '') {
 			throw new CaseSystemRefusal(status: 502, message: 'The document ' . $url . ' has no content to download.');
 		}
 
 		$content = $this->transport->send(sourceId: $documenten, method: 'GET', address: $download);
-		self::ok(answer: $content, api: 'Documenten API');
+		self::accepted(answer: $content, api: 'Documenten API');
 
 		return ['name' => (string)($document['titel'] ?? ''), 'content' => base64_encode($content['raw'])];
 	}//end readDocument()
@@ -216,7 +216,7 @@ class ZgwCaseSystem {
 			sourceName: $sourceName
 		);
 
-		$created = (array)self::ok(
+		$created = (array)self::accepted(
 			answer: $this->transport->send(sourceId: $documenten, method: 'POST', address: '/enkelvoudiginformatieobjecten', options: ['json' => $payload]),
 			api: 'Documenten API'
 		);
@@ -235,7 +235,7 @@ class ZgwCaseSystem {
 			$this->removeOrphan(documenten: $documenten, url: $url);
 		}
 
-		self::ok(answer: $link, api: 'Zaken API');
+		self::accepted(answer: $link, api: 'Zaken API');
 
 		return ['url' => $url];
 	}//end addDocument()
@@ -329,7 +329,7 @@ class ZgwCaseSystem {
 		}
 
 		$date = (string)($body['date'] ?? '');
-		$parsed = DateTime::createFromFormat('!Y-m-d', $date);
+		$parsed = date_create_immutable_from_format('!Y-m-d', $date);
 		if ($parsed === false || $parsed->format('Y-m-d') !== $date) {
 			throw new CaseSystemRefusal(status: 422, message: 'create-case needs its date as year-month-day, for example 2026-11-12.');
 		}
@@ -343,7 +343,7 @@ class ZgwCaseSystem {
 			'startdatum' => $date,
 		];
 
-		$created = (array)self::ok(
+		$created = (array)self::accepted(
 			answer: $this->transport->send(
 				sourceId: self::setting(configuration: $configuration, key: 'zakenSource'),
 				method: 'POST',
@@ -368,7 +368,7 @@ class ZgwCaseSystem {
 	 *
 	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-adding-a-document-maps-kind-and-confidentiality-onto-zgw-req-cso-002
 	 */
-	private static function ok(array $answer, string $api): mixed {
+	private static function accepted(array $answer, string $api): mixed {
 		$status = $answer['status'];
 		if ($status >= 200 && $status < 300) {
 			return $answer['data'];
@@ -390,7 +390,7 @@ class ZgwCaseSystem {
 		}
 
 		throw new CaseSystemRefusal(status: $status, message: $message);
-	}//end ok()
+	}//end accepted()
 
 	/**
 	 * The items of a ZGW list answer, paginated or plain.

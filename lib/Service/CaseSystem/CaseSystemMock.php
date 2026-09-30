@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\CaseSystem;
 
-use DateTime;
 
 /**
  * Mock mode (design D4): two cases with documents from
@@ -70,7 +69,7 @@ class CaseSystemMock {
 			'read-document' => $this->readDocument(url: (string)($body['document'] ?? '')),
 			'add-document' => $this->addDocument(body: $body),
 			'create-case' => $this->createCase(body: $body),
-			default => throw new CaseSystemRefusal(status: 404, message: CaseSystemOperations::unknownOperationMessage(operation: $operation)),
+			default => throw new CaseSystemRefusal(status: 404, message: 'The case system has no operation "' . $operation . '".'),
 		};
 	}//end run()
 
@@ -185,7 +184,7 @@ class CaseSystemMock {
 	 */
 	private function createCase(array $body): array {
 		$date = (string)($body['date'] ?? '');
-		$parsed = DateTime::createFromFormat('!Y-m-d', $date);
+		$parsed = date_create_immutable_from_format('!Y-m-d', $date);
 		if (($body['kind'] ?? '') !== 'meeting' || $parsed === false || $parsed->format('Y-m-d') !== $date) {
 			throw new CaseSystemRefusal(status: 422, message: 'create-case needs kind "meeting" and a date as year-month-day.');
 		}
