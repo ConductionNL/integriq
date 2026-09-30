@@ -579,12 +579,15 @@ class LtiAgsService {
 			$config['json'] = $body;
 		}
 
+		// Ad-hoc, never-persisted source: see LtiJwksResolverService::fetchJwks()
+		// for why its call is not written as a call log.
 		$callLog = $this->callService->call(
 			source: $source,
 			endpoint: $endpoint,
 			method: $method,
 			config: $config,
-			read: ($method === 'GET')
+			read: ($method === 'GET'),
+			persistLog: false
 		);
 
 		$logData = $callLog->getObject();
