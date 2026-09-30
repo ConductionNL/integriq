@@ -1,10 +1,11 @@
 <?php
 
 /**
- * Test stub: the find() half of OpenRegister's ObjectServiceMapperAdapter.
+ * Test stub: the find(), getSchema() and findAllPaginated() part of
+ * OpenRegister's ObjectServiceMapperAdapter.
  *
  * Copied from openregister development lib/Service/ObjectServiceMapperAdapter.php
- * (signature of find() verbatim) so EndpointService's mapper union type accepts a
+ * (signatures verbatim) so EndpointService's mapper union type accepts a
  * double of it. The real class delegates to ObjectService::find with the bound
  * register and schema.
  *
@@ -33,5 +34,25 @@ class ObjectServiceMapperAdapter {
 	 */
 	public function find(int|string $identifier, ?array $extend = null): ?ObjectEntity {
 		return null;
+	}
+
+	/**
+	 * The schema id this adapter is scoped to, or null for unconstrained.
+	 *
+	 * @return int|null
+	 */
+	public function getSchema(): ?int {
+		return null;
+	}
+
+	/**
+	 * Search objects with pagination, scoped to the adapter's register and schema.
+	 *
+	 * @param array $requestParams The query.
+	 *
+	 * @return array{results: array, total: int, page: int, pages: int}
+	 */
+	public function findAllPaginated(array $requestParams = []): array {
+		return ['results' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
 	}
 }

@@ -63,3 +63,59 @@ only the ORI ones.
   decidesk's schemas today), matching the distinction drawn in
   `ori-public-serving`'s design.md between Gap 2's RBAC-covered and
   application-logic-covered sub-cases.
+
+### Requirement: An endpoint may name its target register and schema by slug (REQ-EP-011)
+
+An Endpoint's `targetId` MAY name its register and schema by slug
+(`decidiq/meeting`) as well as by id (`20/111`). Ids differ per instance, so
+an endpoint shipped as seed configuration, such as the ORI endpoints over
+decidiq's register, can only name its target by slug. The system MUST
+resolve the register by id or slug, and the schema by id or slug AMONG THE
+REGISTER'S OWN SCHEMAS, because a schema slug such as `person` exists in more
+than one register. A target that names no register, or a schema the register
+does not hold, MUST NOT resolve to any other register's schema. A `targetId`
+of two ids is used as it is, without a lookup.
+
+@e2e exclude backend dispatch resolution, covered by PHPUnit (OriPublicEndpointsTest), not browser UI
+
+#### Scenario: A target named by slug reaches the register's own schema
+
+- **GIVEN** decidiq's register holds a schema with slug `meeting`
+- **AND** an Endpoint with `targetId: "decidiq/meeting"`
+- **WHEN** a request reaches the endpoint
+- **THEN** it reads decidiq's `meeting` schema
+
+#### Scenario: A schema outside the register does not resolve
+
+- **GIVEN** an Endpoint with `targetId: "decidiq/vote"` and decidiq's register holds no `vote` schema
+- **WHEN** the target is resolved
+- **THEN** it is not found, even when another register holds a `vote` schema
+
+#### Scenario: A target of two ids is unchanged
+
+- **GIVEN** an Endpoint with `targetId: "20/111"`
+- **WHEN** the target is resolved
+- **THEN** it is register 20 and schema 111, with no lookup
+
+### Requirement: An endpoint's fixed filters narrow its collection, and no path skips them (REQ-EP-012)
+
+An Endpoint's `fixedFilters` (REQ-EP-010) MUST also narrow its collection
+GET: each fixed filter is added to the query and wins over any value the
+caller sent for the same field. One declaration then gates the list and the
+single objects in it, so the two cannot drift apart. An Endpoint that
+declares `fixedFilters` MUST NOT be served by the fast path for simple public
+endpoints, which answers a single object without the id-fetch guard.
+
+@e2e exclude backend dispatch guard, covered by PHPUnit (OriPublicEndpointsTest, EndpointsControllerTest), not browser UI
+
+#### Scenario: The collection is narrowed over the caller's own filter
+
+- **GIVEN** an Endpoint whose `fixedFilters` are `{lifecycle: "published"}`
+- **WHEN** a caller requests the collection with `lifecycle=draft`
+- **THEN** the query asks for `lifecycle` `published`
+
+#### Scenario: A public endpoint with fixed filters is not served by the fast path
+
+- **GIVEN** an Endpoint with `isPublic: true`, no rules and `fixedFilters` `{decisionType: "motion"}`
+- **WHEN** a GET reaches it
+- **THEN** it is handled by the full endpoint pipeline, where the id-fetch guard runs

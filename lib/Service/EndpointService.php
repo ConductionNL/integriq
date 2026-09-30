@@ -158,6 +158,8 @@ class EndpointService {
 	 *                                                          positional test instantiations keep
 	 *                                                          working unmodified; a real request always
 	 *                                                          gets the DI container's instance.
+	 * @param EndpointTargetResolver|null $targetResolver Resolves a `targetId` named by slug (REQ-EP-011);
+	 *                                                    nullable for the same reason.
 	 *
 	 * @return void
 	 */
@@ -186,6 +188,7 @@ class EndpointService {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ORFileService $orFileService,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
+		private readonly ?EndpointTargetResolver $targetResolver = null,
 	) {
 	}//end __construct()
 
@@ -1771,6 +1774,7 @@ class EndpointService {
 	 * @throws Exception
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoints-fixed-filters-narrow-its-collection-and-no-path-skips-them-req-ep-012
 	 */
 	private function getObjects(
 		ORObjectService|ObjectServiceMapperAdapter|QBMapper $mapper,
@@ -1857,6 +1861,13 @@ class EndpointService {
 			return $returnArray;
 		}//end if
 
+		// REQ-EP-012: the endpoint's fixed filters narrow the collection too,
+		// over whatever the caller sent for the same field, so a list and the
+		// single objects in it are gated by one declaration and cannot drift.
+		if ($fixedFilters !== []) {
+			$parameters = array_merge($parameters, $fixedFilters);
+		}
+
 		$parameters = $this->rewriteExternalReferences(parameters: $parameters, mapper: $mapper);
 
 		if (isset($parameters['_limit']) === false && isset($parameters['limit']) === false) {
@@ -1915,6 +1926,33 @@ class EndpointService {
 	}//end getObjects()
 
 	/**
+	 * Resolve an endpoint's `targetId` to its register and schema ids.
+	 *
+	 * Ids are used as they are. A target named by slug (`decidiq/meeting`) is
+	 * looked up, so an endpoint can ship as seed configuration whatever ids
+	 * the instance gave the register (REQ-EP-011).
+	 *
+	 * @param string $targetId The endpoint's `targetId`.
+	 *
+	 * @return array{0: int, 1: int} The register id and the schema id.
+	 *
+	 * @throws DoesNotExistException When a slug names no register, or no schema in it.
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-name-its-target-register-and-schema-by-slug-req-ep-011
+	 */
+	private function resolveTarget(string $targetId): array {
+		$target = explode('/', $targetId);
+		$register = ($target[0] ?? '');
+		$schema = ($target[1] ?? '');
+
+		if ($this->targetResolver === null || (ctype_digit($register) === true && ctype_digit($schema) === true)) {
+			return [(int)$register, (int)$schema];
+		}
+
+		return $this->targetResolver->resolve(targetId: $targetId);
+	}//end resolveTarget()
+
+	/**
 	 * Handles requests for schema-based endpoints.
 	 *
 	 * @param ObjectEntity $endpoint The endpoint configuration.
@@ -1927,18 +1965,16 @@ class EndpointService {
 	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-name-its-target-register-and-schema-by-slug-req-ep-011
 	 */
 	private function handleSchemaRequest(ObjectEntity $endpoint, FlowToken &$flowToken, string $path): JSONResponse {
 		$endpointData = $endpoint->getObject();
 		// @TODO: CONVERT TO FLOWTOKENS
 		// Get request method
 		$method = $flowToken->getRequestAmended()['method'];
-		$target = explode('/', $endpointData['targetId'] ?? '');
+		[$register, $schema] = $this->resolveTarget(targetId: (string)($endpointData['targetId'] ?? ''));
 
-		$register = $target[0];
-		$schema = $target[1];
-
-		$mapper = $this->objectService->getMapper(schema: (int)$schema, register: (int)$register);
+		$mapper = $this->objectService->getMapper(schema: $schema, register: $register);
 
 		$parameters = $flowToken->getRequestAmended()['parameters'];
 
