@@ -41,7 +41,7 @@
 - [x] All tasks checked off
 - [x] `openspec validate` passes
 - [x] Manual testing against acceptance criteria (unit-level, mock client only)
-- [ ] Code review against spec requirements (pending PR review)
+- [x] Code review against spec requirements (done in the archive PR: named files present, tests green)
 
 ## Tests (company-wide ADR-009)
 
