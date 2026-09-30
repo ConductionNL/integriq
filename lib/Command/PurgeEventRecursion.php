@@ -120,26 +120,7 @@ class PurgeEventRecursion extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$apply = (bool)$input->getOption('apply');
-
-		$kept = [];
-		$doomedEvents = [];
-		foreach ($this->rows(schema: 'event') as $uuid => $event) {
-			if (self::isRecursion(event: $event) === true) {
-				$doomedEvents[] = $uuid;
-				continue;
-			}
-
-			$kept[$uuid] = true;
-		}
-
-		$messageCount = 0;
-		$doomedMessages = [];
-		foreach ($this->rows(schema: 'event_message') as $uuid => $message) {
-			$messageCount++;
-			if (self::isOrphan(message: $message, kept: $kept) === true) {
-				$doomedMessages[] = $uuid;
-			}
-		}
+		$plan = $this->plan();
 
 		$mode = '<comment>DRY RUN</comment>: nothing will be deleted';
 		if ($apply === true) {
@@ -150,37 +131,85 @@ class PurgeEventRecursion extends Command {
 		$output->writeln(
 			sprintf(
 				'Events:          %d (%d generated from events, %d genuine)',
-				(count($doomedEvents) + count($kept)),
-				count($doomedEvents),
-				count($kept)
+				$plan['events'],
+				count($plan['doomedEvents']),
+				($plan['events'] - count($plan['doomedEvents']))
 			)
 		);
-		$output->writeln(sprintf('Messages:        %d', $messageCount));
-		$output->writeln(sprintf('Orphan messages: %d', count($doomedMessages)));
+		$output->writeln(sprintf('Messages:        %d', $plan['messages']));
+		$output->writeln(sprintf('Orphan messages: %d', count($plan['doomedMessages'])));
 
 		if ($apply === false) {
-			if ($doomedEvents !== [] || $doomedMessages !== []) {
+			if ($plan['doomedEvents'] !== [] || $plan['doomedMessages'] !== []) {
 				$output->writeln('<comment>Re-run with --apply to delete them.</comment>');
 			}
 
 			return 0;
 		}
 
-		$deletedEvents = $this->delete(uuids: $doomedEvents);
-		$deletedMessages = $this->delete(uuids: $doomedMessages);
+		return $this->apply(plan: $plan, output: $output);
+	}//end execute()
+
+	/**
+	 * Scan both schemas and decide what goes.
+	 *
+	 * @return array{events: int, messages: int, doomedEvents: array<int, string>, doomedMessages: array<int, string>}
+	 */
+	private function plan(): array {
+		$kept = [];
+		$events = 0;
+		$doomedEvents = [];
+		foreach ($this->rows(schema: 'event') as $uuid => $event) {
+			$events++;
+			if (self::isRecursion(event: $event) === true) {
+				$doomedEvents[] = $uuid;
+				continue;
+			}
+
+			$kept[$uuid] = true;
+		}
+
+		$messages = 0;
+		$doomedMessages = [];
+		foreach ($this->rows(schema: 'event_message') as $uuid => $message) {
+			$messages++;
+			if (self::isOrphan(message: $message, kept: $kept) === true) {
+				$doomedMessages[] = $uuid;
+			}
+		}
+
+		return [
+			'events' => $events,
+			'messages' => $messages,
+			'doomedEvents' => $doomedEvents,
+			'doomedMessages' => $doomedMessages,
+		];
+	}//end plan()
+
+	/**
+	 * Delete the plan and report what OpenRegister actually removed.
+	 *
+	 * @param array{events: int, messages: int, doomedEvents: array<int, string>, doomedMessages: array<int, string>} $plan   The plan.
+	 * @param OutputInterface                                                                                          $output The output.
+	 *
+	 * @return integer 0 when everything planned was removed, else 1.
+	 */
+	private function apply(array $plan, OutputInterface $output): int {
+		$deletedEvents = $this->delete(uuids: $plan['doomedEvents']);
+		$deletedMessages = $this->delete(uuids: $plan['doomedMessages']);
 		$output->writeln(sprintf('Deleted:         %d event(s), %d message(s)', $deletedEvents, $deletedMessages));
-		$output->writeln(sprintf('Events left:     %d', (count($doomedEvents) + count($kept) - $deletedEvents)));
+		$output->writeln(sprintf('Events left:     %d', ($plan['events'] - $deletedEvents)));
 
 		// Count the result, never the plan: a run that plans N deletions and
 		// removes fewer must not read as a finished cleanup.
-		if ($deletedEvents !== count($doomedEvents) || $deletedMessages !== count($doomedMessages)) {
+		if ($deletedEvents !== count($plan['doomedEvents']) || $deletedMessages !== count($plan['doomedMessages'])) {
 			$output->writeln('<error>OpenRegister removed fewer rows than planned. Do not treat this run as a cleanup.</error>');
 
 			return 1;
 		}
 
 		return 0;
-	}//end execute()
+	}//end apply()
 
 	/**
 	 * Every object of one integriq schema, page by page, keyed by uuid.
@@ -209,7 +238,8 @@ class PurgeEventRecursion extends Command {
 			}
 
 			$offset += $this->pageSize;
-		} while (count($page) === $this->pageSize);
+			$full = (count($page) === $this->pageSize);
+		} while ($full === true);
 	}//end rows()
 
 	/**

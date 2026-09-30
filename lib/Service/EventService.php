@@ -307,9 +307,9 @@ class EventService {
 	/**
 	 * Process a new event and create messages for all matching subscriptions.
 	 *
-	 * @param ObjectEntity                   $event         The event ObjectEntity to process.
+	 * @param ObjectEntity                  $event         The event ObjectEntity to process.
 	 * @param array<int, ObjectEntity>|null $subscriptions The active subscriptions when the caller already
-	 *                                                      holds them; null fetches them.
+	 *                                                     holds them; null fetches them.
 	 *
 	 * @return array<ObjectEntity> Array of created message ObjectEntities.
 	 *
