@@ -10,7 +10,7 @@
       "agent_action": {
         "slug": "agent_action",
         "title": "Agent action",
-        "icon": "RobotOutline",
+        "icon": "History",
         "version": "1.0.0",
         "summary": "One call of an agent tool, with the agent, the user it acted for and the outcome",
         "description": "Written for every call of an integriq agent tool, also a refused one. A batch that waits for approval is kept here until a person approves it in Hermiq.",
