@@ -10,6 +10,12 @@ includes:
     - phpstan-baseline.neon
 
 parameters:
+    # hermiq-ai-tooling: OpenRegister's MCP attribute and opt-in interface are
+    # peer-app types. scanFiles makes them known from the real files copied from
+    # openregister development 8e001f4ec1, without analysing them.
+    scanFiles:
+        - tests/stubs/OCA/OpenRegister/Mcp/Attribute/McpTool.php
+        - tests/stubs/OCA/OpenRegister/Mcp/IMcpScannableServices.php
     # App-specific only. The base already sets level, paths, bootstrapFiles,
     # excludePaths, scanDirectories and every fleet-wide ignore.
     excludePaths:

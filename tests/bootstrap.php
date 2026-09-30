@@ -234,6 +234,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectServiceMapperAdapter.php';
 		}
 
+		// OpenRegister's MCP attribute surface, copied from openregister
+		// development 8e001f4ec1 (hermiq-ai-tooling): the attribute, the opt-in
+		// interface, and the REAL scanner and validator, so the catalogue test
+		// reads IntegriqAgentTools the way OpenRegister does.
+		foreach (['Mcp/Attribute/McpTool', 'Mcp/IMcpScannableServices', 'Service/Mcp/McpAnnotationValidator', 'Mcp/AttributeToolScanner'] as $mcpStub) {
+			$mcpClass = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $mcpStub);
+			if (class_exists($mcpClass) === false && interface_exists($mcpClass) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/' . $mcpStub . '.php';
+			}
+		}
+
 		// A stub file that nothing requires is a stub that does not exist.
 		// `SynchronizationContractService::persist()` calls
 		// `SystemOperationContext::run()` unguarded, so without this line three

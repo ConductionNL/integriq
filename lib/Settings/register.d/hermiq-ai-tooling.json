@@ -1,0 +1,106 @@
+{
+  "$comment": "ADR-037 register fragment (hermiq-ai-tooling, design D8). One agent_action object per call of a curated agent tool: who asked (agent), for whom (grantingUser), what, and what came of it. A staged batch is the record whose outcome is staged; phase 2 names it in proposal. Admin-only, like the dead letters it points at. Written by lib/Service/AgentTools/AgentActionStore.php.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": ["agent_action"]
+      }
+    },
+    "schemas": {
+      "agent_action": {
+        "slug": "agent_action",
+        "title": "Agent action",
+        "icon": "History",
+        "version": "1.0.0",
+        "summary": "One call of an agent tool, with the agent, the user it acted for and the outcome",
+        "description": "Written for every call of an integriq agent tool, also a refused one. A batch that waits for approval is kept here until a person approves it in Hermiq.",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "required": ["tool", "agent", "grantingUser", "outcome", "at"],
+        "type": "object",
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool",
+            "description": "The tool the agent called, for example integriq.replayDeadLetters."
+          },
+          "agent": {
+            "type": "string",
+            "title": "Agent",
+            "description": "The agent that called the tool, as Hermiq names it."
+          },
+          "grantingUser": {
+            "type": "string",
+            "title": "On behalf of",
+            "description": "The user the agent acted for. The action check ran as this user."
+          },
+          "outcome": {
+            "type": "string",
+            "enum": ["denied", "staged", "refused", "executed", "failed"],
+            "title": "Outcome",
+            "description": "denied by the action check, staged and waiting for approval, refused at approval, executed, or failed."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why a call was denied, refused or failed."
+          },
+          "store": {
+            "type": "string",
+            "enum": ["synchronization", "sync", "event"],
+            "title": "Target kind",
+            "description": "What the target ids are: a synchronization, sync dead letters or event dead letters."
+          },
+          "targetIds": {
+            "type": "array",
+            "items": {"type": "string"},
+            "title": "Targets",
+            "description": "The ids the call was about. Never their content."
+          },
+          "binding": {
+            "type": "string",
+            "title": "Binding",
+            "description": "The hash that ties an approval to exactly this batch."
+          },
+          "proposal": {
+            "type": "string",
+            "title": "Batch",
+            "description": "The staged batch a later call refers to."
+          },
+          "approval": {
+            "type": "string",
+            "title": "Approval",
+            "description": "The Hermiq approval the agent presented."
+          },
+          "approvedBy": {
+            "type": "string",
+            "title": "Approved by",
+            "description": "The person who approved the batch in Hermiq."
+          },
+          "executedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Run at",
+            "description": "When the approved batch ran."
+          },
+          "results": {
+            "type": "array",
+            "items": {"type": "object"},
+            "title": "Results",
+            "description": "One outcome per target id."
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At",
+            "description": "When the call was made."
+          }
+        }
+      }
+    }
+  }
+}

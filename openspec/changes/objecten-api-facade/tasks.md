@@ -149,6 +149,16 @@
   `ObjectenWiringTest::testEveryRouteIsThrottled`. It counts per client
   address, not per token. The declaration reader, catalogue entry, docs and
   the e2e and Newman runs are still open.
+- Declaration reader DONE (design D8): a leaf app ships
+  `lib/Settings/objecttypes.json`; `ObjecttypeDeclarationReader` reads it
+  from every enabled app and the gateway loads the declared objecttypes
+  after the configured ones (configured wins, the losing declaration is
+  refused and logged with the app's name). Test:
+  `tests/Unit/Service/Objecten/ObjecttypeDeclarationReaderTest.php` (real
+  files on disk, real gateway and registry; red on development, the gateway
+  took no declarations). The dossiq half is drafted for Ruben in
+  `for-ruben/dossiq-declare-objecttypes.md`. Catalogue entry, docs, e2e and
+  Newman still open.
 - [ ] Implement
 - [ ] Test (`tests/e2e/objecten-api-facade.spec.ts`, Newman over the two APIs)
 
