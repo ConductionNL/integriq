@@ -29,15 +29,15 @@
 ## Verification
 - [x] All tasks checked off
 - [x] `openspec validate` passes
-- [ ] Manual testing against acceptance criteria — for the contributor, on a live instance
+- For the contributor: manual testing against acceptance criteria on a live instance (not an agent task; the recipe is in the archive PR body)
 - [x] Code review against spec requirements
 
 ## Tests (company-wide ADR-009)
 
 - [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/`)
-- [ ] Newman/Postman tests for new/changed API endpoints — N/A, no endpoint changes; the effect is on the generic OpenRegister object API this app does not own
-- [ ] Vitest tests for new/changed frontend logic — N/A, no frontend change
-- [ ] Playwright e2e for new/changed user journeys — N/A, asserting an absence of rows for a non-admin needs a seeded multi-user instance; the declaration is asserted structurally instead
+- N/A Newman/Postman tests for new/changed API endpoints —, no endpoint changes; the effect is on the generic OpenRegister object API this app does not own
+- N/A Vitest tests for new/changed frontend logic —, no frontend change
+- N/A Playwright e2e for new/changed user journeys —, asserting an absence of rows for a non-admin needs a seeded multi-user instance; the declaration is asserted structurally instead
 
 ## Notes
 
