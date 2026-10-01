@@ -25,7 +25,7 @@ Kind: code. Size M. Half for opencatalogi `publiccode-github-harvest`.
 - **spec_ref**: `openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003`
 - **files**: `lib/Flow/SourceCallNode.php`, `lib/Flow/SourceCallConfigGuard.php`
 - **acceptance_criteria**:
-  - GIVEN three files, one malformed, and `onError: continue` WHEN the step runs THEN two items carry a body and one carries `_error` kind `decode`
+  - GIVEN three files, one malformed, and `onError: continue` WHEN the step runs THEN two items carry a body and one carries `__error` kind `decode`
 - [x] Implement
 - [x] Test (PHPUnit)
 

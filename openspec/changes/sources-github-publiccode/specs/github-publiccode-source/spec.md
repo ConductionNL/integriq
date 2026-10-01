@@ -41,7 +41,7 @@ A response that does not decode in the asked mode MUST fail that item with kind 
 #### Scenario: a malformed publiccode.yml among good ones
 - GIVEN three items whose files are a valid v0.2, a malformed file and a valid v0.4, and `onError: continue`
 - WHEN the step runs
-- THEN two items carry a parsed body and the second carries `_error` with kind `decode`
+- THEN two items carry a parsed body and the second carries `__error` with kind `decode`
 - @e2e exclude backend flow node; covered by PHPUnit
 
 ### Requirement: A spent quota suspends the run (REQ-GHP-004)

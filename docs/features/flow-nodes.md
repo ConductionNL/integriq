@@ -66,7 +66,7 @@ Fetch each `publiccode.yml` a code search found:
 }
 ```
 
-The parsed file lands in `publiccode.body`. A file that does not parse fails its own item: with `onError: continue` the item carries `_error` with kind `decode` and the parser's line number, and has no `publiccode` key. It never turns into an empty object.
+The parsed file lands in `publiccode.body`. A file that does not parse fails its own item: with `onError: continue` the item carries `__error` with kind `decode` and the parser's line number, and has no `publiccode` key. It never turns into an empty object.
 
 YAML is read without PHP object, constant or custom tags. Dates stay text, so `releaseDate: 2024-01-31` reads as `"2024-01-31"`.
 

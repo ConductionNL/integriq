@@ -49,7 +49,7 @@ A decode failure throws `ResponseDecodeException` with the mode, the reason and,
 
 ## D3. `decode` on `openconnector.source-call`
 
-`decode` joins `configKeys()` and the config form. `validateConfig()` refuses an unknown mode. In `outcomeOf()` the decoder runs inside the per-item `try`, so a `ResponseDecodeException` becomes a `FlowNodeException` of kind `decode` and follows the step's `onError`: `stop` raises, `continue` writes `_error` on the item and leaves the output key unset. That is the same failure shape a bad status has today. Unset `decode` behaves exactly as now.
+`decode` joins `configKeys()` and the config form. `validateConfig()` refuses an unknown mode. In `outcomeOf()` the decoder runs inside the per-item `try`, so a `ResponseDecodeException` becomes a `FlowNodeException` of kind `decode` and follows the step's `onError`: `stop` raises, `continue` writes `__error` on the item and leaves the output key unset. That is the same failure shape a bad status has today. Unset `decode` behaves exactly as now.
 
 A body that `CallService` stored as transport base64 (`encoding: base64`) is decoded to bytes first when a mode other than `auto` or `text` is asked for.
 
