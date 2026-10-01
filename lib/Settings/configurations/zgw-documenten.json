@@ -31,6 +31,7 @@
     "chosenBy": "operator"
   },
   "source": {
+    "slug": "zgw-set-documenten",
     "name": "Documenten API",
     "type": "api",
     "location": "",

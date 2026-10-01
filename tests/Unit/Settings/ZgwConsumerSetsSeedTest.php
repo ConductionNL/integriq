@@ -150,8 +150,15 @@ class ZgwConsumerSetsSeedTest extends TestCase {
 		foreach (self::DATA_SETS as $slug) {
 			$source = $seeds['source'][$this->set($slug)['source']['slug']];
 			$this->assertFalse($source['isEnabled']);
-			$this->assertSame('Bearer {{ jwtToken(source) }}', $source['configuration']['headers']['Authorization']);
-			$this->assertArrayHasKey('credentialRef', $source['configuration']['authentication']['secret']);
+			$this->assertSame(ZgwSetCatalogue::authFor($slug), $this->set($slug)['auth']);
+			if (ZgwSetCatalogue::authFor($slug) === ZgwSetCatalogue::TOKEN_AUTH) {
+				$this->assertSame('Token {{ source.configuration.authentication.token }}', $source['configuration']['headers']['Authorization']);
+				$this->assertArrayHasKey('credentialRef', $source['configuration']['authentication']['token']);
+			} else {
+				$this->assertSame('Bearer {{ jwtToken(source) }}', $source['configuration']['headers']['Authorization']);
+				$this->assertArrayHasKey('credentialRef', $source['configuration']['authentication']['secret']);
+			}
+
 			$this->assertSame($this->set($slug)['apiVersion'], $source['configuration']['apiVersion']);
 		}
 

@@ -66,11 +66,27 @@ final class ZgwSetCatalogue {
 	public const WRITE_BACK_SETS = ['zgw-zaken', 'zgw-documenten', 'zgw-besluiten', 'zgw-objecten'];
 
 	/**
-	 * The auth scheme every set's source template declares.
+	 * The auth scheme a set's source template declares, unless TOKEN_AUTH_SETS names it.
 	 *
 	 * @var string
 	 */
 	public const AUTH = 'jwt-zgw';
+
+	/**
+	 * The auth scheme of the Objecten API: a static token, not a ZGW JWT.
+	 *
+	 * @var string
+	 */
+	public const TOKEN_AUTH = 'token';
+
+	/**
+	 * Sets whose store answers a static token rather than a ZGW JWT. The
+	 * Objecten API is not a ZGW component in that respect, and a set that
+	 * signs a JWT for it installs, runs, and gets 401 on every call.
+	 *
+	 * @var string[]
+	 */
+	public const TOKEN_AUTH_SETS = ['zgw-objecten'];
 
 	/**
 	 * The storage strategy a bound schema is written with.
@@ -126,6 +142,23 @@ final class ZgwSetCatalogue {
 	public static function isPackaged(string $slug): bool {
 		return array_key_exists($slug, self::SETS);
 	}//end isPackaged()
+
+	/**
+	 * The auth scheme this set's source template must declare.
+	 *
+	 * @param string $slug The set slug.
+	 *
+	 * @return string The auth scheme.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001
+	 */
+	public static function authFor(string $slug): string {
+		if (in_array($slug, self::TOKEN_AUTH_SETS, true) === true) {
+			return self::TOKEN_AUTH;
+		}
+
+		return self::AUTH;
+	}//end authFor()
 
 	/**
 	 * Whether this set pushes local changes back to the store.
