@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 ### Added
+- Governed agent actions. A Hermiq agent can now run a synchronization, test a
+  synchronization or a source, list dead letters, and replay or discard them.
+  It can never create, edit or delete configuration. Run, replay and discard
+  each take two calls: the agent stages a batch, a person approves it in Hermiq,
+  and Integriq runs it only on Hermiq's signed verdict for that exact batch.
+  One approval runs one batch once. `listDeadLetters` returns no payloads, and
+  replay and discard take ids only. Two new rows in the action authorization
+  matrix, `sync-dead-letter.replay` and `sync-dead-letter.discard`, are seeded
+  for `admin` only. Every agent call writes one `agent_action` record.
+  See docs/features/ai-agent-tools.md. (hermiq-ai-tooling)
 - `eolProduct` and `eolCycle` are now `eol_product` and `eol_cycle`. They were
   the only two camelCase slugs among the fifty-five this app declares, which
   made their object URLs the only ones an operator could not guess from the
