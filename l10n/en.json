@@ -2992,7 +2992,25 @@
         "Allowed methods": "Allowed methods",
         "The request methods a browser may use. Leave it empty for GET and OPTIONS.": "The request methods a browser may use. Leave it empty for GET and OPTIONS.",
         "Allowed headers": "Allowed headers",
-        "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With.": "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With."
+        "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With.": "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With.",
+        "Read the response as": "Read the response as",
+        "How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, and base64+yaml for a file API that returns the file base64-encoded in \"content\".": "How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, and base64+yaml for a file API that returns the file base64-encoded in \"content\".",
+        "The response of source \"%1$s\" endpoint \"%2$s\" could not be read as %3$s: %4$s": "The response of source \"%1$s\" endpoint \"%2$s\" could not be read as %3$s: %4$s",
+        "The \"decode\" field must be one of %1$s.": "The \"decode\" field must be one of %1$s.",
+        "What a failed call does to the run: stop, continue or dead_letter. With continue, the failed item carries the error and the other items go on.": "What a failed call does to the run: stop, continue or dead_letter. With continue, the failed item carries the error and the other items go on.",
+        "Field ownership": "Field ownership",
+        "Existing record path": "Existing record path",
+        "inbound or outbound: on an update, keep only the fields the sending side owns. Leave empty to keep every field.": "inbound or outbound: on an update, keep only the fields the sending side owns. Leave empty to keep every field.",
+        "Dot-path within the item that holds the record id on the writing side. Empty there means a create, which keeps every field.": "Dot-path within the item that holds the record id on the writing side. Empty there means a create, which keeps every field.",
+        "The \"bodyFrom\" field must be a dot-path to an object on the item.": "The \"bodyFrom\" field must be a dot-path to an object on the item.",
+        "The \"exists\" field only applies together with \"ownership\".": "The \"exists\" field only applies together with \"ownership\".",
+        "The \"ownership\" field must be inbound or outbound.": "The \"ownership\" field must be inbound or outbound.",
+        "The \"ownership\" field needs \"exists\": the dot-path of the record id on the writing side.": "The \"ownership\" field needs \"exists\": the dot-path of the record id on the writing side.",
+        "The mapping \"%1$s\" could not be found.": "The mapping \"%1$s\" could not be found.",
+        "Use \"body\" or \"bodyFrom\", not both.": "Use \"body\" or \"bodyFrom\", not both.",
+        "The \"bodyFrom\" path \"%1$s\" did not resolve to an object on item %2$s; nothing was sent.": "The \"bodyFrom\" path \"%1$s\" did not resolve to an object on item %2$s; nothing was sent.",
+        "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership.": "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership.",
+        "Who owns each mapped field: source (the outside system) or the name of the local app, such as stackiq. On an update the apply-mapping step keeps only the fields the writing side does not own, so the owner of a field is never overwritten.": "Who owns each mapped field: source (the outside system) or the name of the local app, such as stackiq. On an update the apply-mapping step keeps only the fields the writing side does not own, so the owner of a field is never overwritten."
     },
     "plurals": {}
 }

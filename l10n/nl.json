@@ -1651,7 +1651,25 @@
         "Allowed methods": "Toegestane methoden",
         "The request methods a browser may use. Leave it empty for GET and OPTIONS.": "De verzoekmethoden die een browser mag gebruiken. Laat het leeg voor GET en OPTIONS.",
         "Allowed headers": "Toegestane headers",
-        "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With.": "De verzoekheaders die een browser mag meesturen. Laat het leeg voor Authorization, Content-Type en X-Requested-With."
+        "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With.": "De verzoekheaders die een browser mag meesturen. Laat het leeg voor Authorization, Content-Type en X-Requested-With.",
+        "Read the response as": "Lees het antwoord als",
+        "How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, and base64+yaml for a file API that returns the file base64-encoded in \"content\".": "Hoe het antwoord wordt gelezen: auto, json, yaml, base64+yaml, base64+json of text. Auto leest JSON, en YAML als de server zegt dat het YAML is. Kies yaml voor een los YAML-bestand, en base64+yaml voor een bestands-API die het bestand base64-gecodeerd in \"content\" teruggeeft.",
+        "The response of source \"%1$s\" endpoint \"%2$s\" could not be read as %3$s: %4$s": "Het antwoord van bron \"%1$s\" endpoint \"%2$s\" kon niet worden gelezen als %3$s: %4$s",
+        "The \"decode\" field must be one of %1$s.": "Het veld \"decode\" moet een van deze waarden zijn: %1$s.",
+        "What a failed call does to the run: stop, continue or dead_letter. With continue, the failed item carries the error and the other items go on.": "Wat een mislukte aanroep met de run doet: stop, continue of dead_letter. Met continue draagt het mislukte item de fout en gaan de andere items door.",
+        "Field ownership": "Eigenaarschap van velden",
+        "Existing record path": "Pad naar bestaand record",
+        "inbound or outbound: on an update, keep only the fields the sending side owns. Leave empty to keep every field.": "inbound of outbound: houd bij een wijziging alleen de velden over waar de verzendende kant eigenaar van is. Laat leeg om elk veld te houden.",
+        "Dot-path within the item that holds the record id on the writing side. Empty there means a create, which keeps every field.": "Puntpad in het item naar het record-id aan de schrijvende kant. Is het daar leeg, dan is het een nieuw record en blijven alle velden staan.",
+        "The \"bodyFrom\" field must be a dot-path to an object on the item.": "Het veld \"bodyFrom\" moet een puntpad naar een object in het item zijn.",
+        "The \"exists\" field only applies together with \"ownership\".": "Het veld \"exists\" werkt alleen samen met \"ownership\".",
+        "The \"ownership\" field must be inbound or outbound.": "Het veld \"ownership\" moet inbound of outbound zijn.",
+        "The \"ownership\" field needs \"exists\": the dot-path of the record id on the writing side.": "Het veld \"ownership\" heeft \"exists\" nodig: het puntpad naar het record-id aan de schrijvende kant.",
+        "The mapping \"%1$s\" could not be found.": "De mapping \"%1$s\" is niet gevonden.",
+        "Use \"body\" or \"bodyFrom\", not both.": "Gebruik \"body\" of \"bodyFrom\", niet allebei.",
+        "The \"bodyFrom\" path \"%1$s\" did not resolve to an object on item %2$s; nothing was sent.": "Het pad \"%1$s\" in \"bodyFrom\" leverde bij item %2$s geen object op; er is niets verstuurd.",
+        "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership.": "De mapping \"%1$s\" zegt niet wie eigenaar is van %2$s, dus een wijziging kan ze overschrijven. Voeg ze toe aan het eigenaarschap.",
+        "Who owns each mapped field: source (the outside system) or the name of the local app, such as stackiq. On an update the apply-mapping step keeps only the fields the writing side does not own, so the owner of a field is never overwritten.": "Wie eigenaar is van elk gemapt veld: source (het externe systeem) of de naam van de lokale app, zoals stackiq. Bij een wijziging houdt de stap apply-mapping alleen de velden over waar de schrijvende kant geen eigenaar van is, zodat de eigenaar van een veld nooit wordt overschreven."
     },
     "plurals": {}
 }

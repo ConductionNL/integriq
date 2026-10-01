@@ -111,6 +111,10 @@ class CatalogRegistryService {
 		'kvk' => 'Government registers',
 		'opencorporates' => 'Company data',
 		'xwiki' => 'Document / CMS',
+		// Service desks with application records (connectors-service-desk-templates).
+		'topdesk' => 'Service management',
+		'servicenow' => 'Service management',
+		'glpi' => 'Service management',
 		'cmcom-sms' => 'Messaging',
 		'messagebird-sms' => 'Messaging',
 		'twilio-sms' => 'Messaging',
@@ -123,6 +127,9 @@ class CatalogRegistryService {
 		// Text translation for sibling apps (connectors-translation-service).
 		'deepl-translation' => 'Language',
 		'libretranslate' => 'Language',
+		// GitHub for the publiccode harvest (sources-github-publiccode).
+		'github-api' => 'Code hosting',
+		'github-raw' => 'Code hosting',
 	];
 
 	/**

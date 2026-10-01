@@ -124,7 +124,7 @@ class ApplyMappingNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testConfigVocabularyIsPinned(): void {
-		$this->assertSame(['mapping', 'input', 'output', 'onError'], $this->node->configKeys());
+		$this->assertSame(['mapping', 'input', 'output', 'onError', 'ownership', 'exists'], $this->node->configKeys());
 
 		foreach ($this->node->configForm() as $field) {
 			$this->assertContains($field['key'], $this->node->configKeys());

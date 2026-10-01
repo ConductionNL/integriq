@@ -1,0 +1,86 @@
+{
+    "columns": [
+        {
+            "fieldName": "id",
+            "displayName": "id",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "name",
+            "displayName": "name",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "application",
+            "displayName": "application",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "supplier",
+            "displayName": "supplier",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "contractNumber",
+            "displayName": "contractNumber",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "vendorReference",
+            "displayName": "vendorReference",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "startDate",
+            "displayName": "startDate",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "endDate",
+            "displayName": "endDate",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "cost",
+            "displayName": "cost",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "costPeriod",
+            "displayName": "costPeriod",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "currency",
+            "displayName": "currency",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "licenceMetric",
+            "displayName": "licenceMetric",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "licencesBought",
+            "displayName": "licencesBought",
+            "fieldType": "text"
+        }
+    ],
+    "dataSet": [
+        {
+            "id": "0b6f4d2e-1a2b-4c3d-8e9f-000000000101",
+            "name": "LIC-2026-001",
+            "application": "0b6f4d2e-1a2b-4c3d-8e9f-000000000001",
+            "supplier": "Dimpact",
+            "contractNumber": "LIC-2026-001",
+            "vendorReference": "DIM-88213",
+            "startDate": "2026-01-01T00:00:00.000",
+            "endDate": "2028-12-31T00:00:00.000",
+            "cost": "48000.00",
+            "costPeriod": "Jaarlijks",
+            "currency": "EUR",
+            "licenceMetric": "Per named user",
+            "licencesBought": "350"
+        }
+    ]
+}

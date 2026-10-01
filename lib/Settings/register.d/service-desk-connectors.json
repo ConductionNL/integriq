@@ -1,0 +1,939 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-service-desk-templates). Adds `ownership` to the mapping schema and seeds the dormant TOPdesk, ServiceNow and GLPI sources, their two-way mapping presets for stackiq (applications, relations, licences, contracts), a spreadsheet preset, and the dormant synchronizations stackiq's flows key their contracts on. Every source ships isEnabled:false with a placeholder host and its secret as a broker reference (ADR-064 injection path: a per-tenant host cannot be host-locked in OpenRegister's provider catalogue). Response shapes: TOPdesk Assets API spec 1.91.3, ServiceNow Table API. See openspec/changes/connectors-service-desk-templates/design.md.",
+  "components": {
+    "schemas": {
+      "mapping": {
+        "version": "1.3.0",
+        "properties": {
+          "ownership": {
+            "type": "object",
+            "title": "Field ownership",
+            "description": "Who owns each mapped field: source (the outside system) or the name of the local app, such as stackiq. On an update the apply-mapping step keeps only the fields the writing side does not own, so the owner of a field is never overwritten.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {}
+          }
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "topdesk"
+        },
+        "name": "TOPdesk",
+        "description": "Application, licence and contract records in TOPdesk Asset Management, for the CMDB exchange with stackiq. Set the address of your TOPdesk environment, the operator login name and a credential named topdesk-application-password that holds the application password, then enable the source.",
+        "type": "api",
+        "location": "https://your-environment.topdesk.net/tas/api",
+        "auth": "none",
+        "documentation": "https://developers.topdesk.com/explorer/?page=assets",
+        "configuration": {
+          "headers": {
+            "Accept": "application/x.topdesk-am-assets-v2+json, application/json"
+          },
+          "authentication": {
+            "username": "",
+            "password": {
+              "credentialRef": {
+                "credentialName": "topdesk-application-password"
+              }
+            }
+          },
+          "auth": [
+            "{{ source.configuration.authentication.username }}",
+            "{{ source.configuration.authentication.password }}"
+          ]
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "servicenow"
+        },
+        "name": "ServiceNow",
+        "description": "Business applications, application relations, software licences and contracts in the ServiceNow CMDB, through the Table API, for the CMDB exchange with stackiq. Set the address of your instance, the integration user and a credential named servicenow-integration-password that holds its password, then enable the source.",
+        "type": "api",
+        "location": "https://your-instance.service-now.com",
+        "auth": "none",
+        "documentation": "https://www.servicenow.com/docs/bundle/zurich-api-reference/page/integrate/inbound-rest/concept/c_TableAPI.html",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "authentication": {
+            "username": "",
+            "password": {
+              "credentialRef": {
+                "credentialName": "servicenow-integration-password"
+              }
+            }
+          },
+          "auth": [
+            "{{ source.configuration.authentication.username }}",
+            "{{ source.configuration.authentication.password }}"
+          ]
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "glpi"
+        },
+        "name": "GLPI",
+        "description": "Appliances (applications) in GLPI, through its REST API. Set the address of your GLPI server, a credential named glpi-app-token for the application token and one named glpi-user-token for the user token, then enable the source.",
+        "type": "api",
+        "location": "https://your-glpi-server/apirest.php",
+        "auth": "none",
+        "documentation": "https://github.com/glpi-project/glpi/blob/main/apirest.md",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "App-Token": "{{ source.configuration.authentication.appToken }}",
+            "Authorization": "user_token {{ source.configuration.authentication.userToken }}"
+          },
+          "authentication": {
+            "appToken": {
+              "credentialRef": {
+                "credentialName": "glpi-app-token"
+              }
+            },
+            "userToken": {
+              "credentialRef": {
+                "credentialName": "glpi-user-token"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-topdesk-application-inbound"
+        },
+        "name": "TOPdesk application to stackiq",
+        "slug": "itsm-topdesk-application-inbound",
+        "description": "Maps a TOPdesk asset of the Application template onto the stackiq application fields. TOPdesk owns every field it maps. Put the address of your TOPdesk environment in _desk.baseUrl to get the record link.",
+        "mapping": {
+          "recordId": "{{ id }}",
+          "recordUrl": "{% if _desk.baseUrl|default('') != '' %}{{ _desk.baseUrl|trim('/', 'right') }}/tas/secure/assetmgmt/card.html?unid={{ id }}{% endif %}",
+          "name": "{{ name }}",
+          "supplierName": "{{ supplier|default('') }}",
+          "installedVersion": "{{ version|default('') }}",
+          "status": "{% set s = (lifecycleStatus)|default('')|trim %}{% set m = {'aanschaf': 'Acquisition', 'gepland': 'Planned', 'in gebruik': 'In production', 'in productie': 'In production', 'uit te faseren': 'To be phased out', 'uitgefaseerd': 'Phased out', 'acquisition': 'Acquisition', 'planned': 'Planned', 'in production': 'In production', 'to be phased out': 'To be phased out', 'phased out': 'Phased out'} %}{{ m[s|lower]|default('In production') }}",
+          "description": "{{ description|default('') }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "recordUrl": "source",
+          "name": "source",
+          "supplierName": "source",
+          "installedVersion": "source",
+          "status": "source",
+          "description": "source"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-topdesk-application-outbound"
+        },
+        "name": "stackiq application to TOPdesk",
+        "slug": "itsm-topdesk-application-outbound",
+        "description": "Maps a stackiq application in use onto a TOPdesk asset of the Application template. On a create every field is sent; on an update only the fields stackiq owns. Put the id of the Application template in _desk.templateId.",
+        "mapping": {
+          "type_id": "{{ _desk.templateId|default('') }}",
+          "name": "{{ name }}",
+          "supplier": "{{ supplierName|default('') }}",
+          "version": "{{ installedVersion|default('') }}",
+          "lifecycleStatus": "{{ status|default('') }}",
+          "stackiqId": "{{ uuid }}",
+          "catalogueUrl": "{{ catalogueUrl|default('') }}",
+          "bbnLevel": "{{ bbnLevel|default('') }}",
+          "timeClassification": "{{ timeClassification|default('') }}",
+          "publicationDate": "{{ publicationDate|default('') }}",
+          "licencesBought": "{{ licencesBought|default('') }}",
+          "licencesInUse": "{{ licencesInUse|default('') }}",
+          "licenceMetric": "{{ licenceMetric|default('') }}",
+          "contractNumber": "{{ contractNumber|default('') }}",
+          "contractEndDate": "{{ contractEndDate|default('') }}"
+        },
+        "ownership": {
+          "type_id": "source",
+          "name": "source",
+          "supplier": "source",
+          "version": "source",
+          "lifecycleStatus": "source",
+          "stackiqId": "stackiq",
+          "catalogueUrl": "stackiq",
+          "bbnLevel": "stackiq",
+          "timeClassification": "stackiq",
+          "publicationDate": "stackiq",
+          "licencesBought": "stackiq",
+          "licencesInUse": "stackiq",
+          "licenceMetric": "stackiq",
+          "contractNumber": "stackiq",
+          "contractEndDate": "stackiq"
+        },
+        "unset": [],
+        "cast": {
+          "type_id": "unsetIfValue==",
+          "supplier": "unsetIfValue==",
+          "version": "unsetIfValue==",
+          "lifecycleStatus": "unsetIfValue==",
+          "catalogueUrl": "unsetIfValue==",
+          "bbnLevel": "unsetIfValue==",
+          "timeClassification": "unsetIfValue==",
+          "publicationDate": "unsetIfValue==",
+          "licencesBought": "unsetIfValue==",
+          "licencesInUse": "unsetIfValue==",
+          "licenceMetric": "unsetIfValue==",
+          "contractNumber": "unsetIfValue==",
+          "contractEndDate": "unsetIfValue=="
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-topdesk-relation-inbound"
+        },
+        "name": "TOPdesk asset link to stackiq connection",
+        "slug": "itsm-topdesk-relation-inbound",
+        "description": "Maps one TOPdesk asset link, read with GET /assetmgmt/assetLinks?sourceId=<application id>, onto a stackiq connection. Input: applicationRecordId (the source asset) and link (one LinkedAsset from the answer). TOPdesk owns every field.",
+        "mapping": {
+          "recordId": "{{ link.linkId }}",
+          "fromRecordId": "{{ applicationRecordId }}",
+          "toRecordId": "{{ link.assetId }}",
+          "name": "{{ link.capabilityName|default(link.type|default('')) }}",
+          "type": "n/a",
+          "direction": "{{ link.linkType|default('child') == 'parent' ? 'BtoA' : 'AtoB' }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "fromRecordId": "source",
+          "toRecordId": "source",
+          "name": "source",
+          "type": "source",
+          "direction": "source"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-topdesk-licence-inbound"
+        },
+        "name": "TOPdesk licence to stackiq contract",
+        "slug": "itsm-topdesk-licence-inbound",
+        "description": "Maps a TOPdesk asset of the Licence template onto a stackiq contract. TOPdesk owns the record reference, the application and the supplier; stackiq owns the contract terms, which are filled in once when the contract is created and never overwritten.",
+        "mapping": {
+          "recordId": "{{ id }}",
+          "recordUrl": "{% if _desk.baseUrl|default('') != '' %}{{ _desk.baseUrl|trim('/', 'right') }}/tas/secure/assetmgmt/card.html?unid={{ id }}{% endif %}",
+          "applicationRecordId": "{{ application|default('') }}",
+          "supplierName": "{{ supplier|default('') }}",
+          "contractNumber": "{{ contractNumber|default(name|default('')) }}",
+          "vendorReference": "{{ vendorReference|default('') }}",
+          "contractType": "Licence",
+          "startDate": "{% if (startDate)|default('') != '' %}{{ (startDate)|date('Y-m-d') }}{% endif %}",
+          "endDate": "{% if (endDate)|default('') != '' %}{{ (endDate)|date('Y-m-d') }}{% endif %}",
+          "cost": "{{ cost|default('') }}",
+          "costPeriod": "{% set p = costPeriod|default('')|lower %}{{ {'monthly': 'Monthly', 'maandelijks': 'Monthly', 'annually': 'Annually', 'jaarlijks': 'Annually', 'one-off': 'One-off', 'eenmalig': 'One-off'}[p]|default('') }}",
+          "currency": "{{ currency|default('EUR')|upper }}",
+          "licenceMetric": "{% set lm = licenceMetric|default('') %}{{ lm in ['Per named user', 'Per concurrent user', 'Per device', 'Per inhabitant', 'Per organisation', 'Other'] ? lm : 'Other' }}",
+          "licencesBought": "{{ licencesBought|default('') }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "recordUrl": "source",
+          "applicationRecordId": "source",
+          "supplierName": "source",
+          "contractNumber": "stackiq",
+          "vendorReference": "stackiq",
+          "contractType": "stackiq",
+          "startDate": "stackiq",
+          "endDate": "stackiq",
+          "cost": "stackiq",
+          "costPeriod": "stackiq",
+          "currency": "stackiq",
+          "licenceMetric": "stackiq",
+          "licencesBought": "stackiq"
+        },
+        "unset": [],
+        "cast": {
+          "contractNumber": "unsetIfValue==",
+          "vendorReference": "unsetIfValue==",
+          "startDate": "unsetIfValue==",
+          "endDate": "unsetIfValue==",
+          "cost": "unsetIfValue==,float",
+          "costPeriod": "unsetIfValue==",
+          "licencesBought": "unsetIfValue==,integer"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-topdesk-contract-inbound"
+        },
+        "name": "TOPdesk contract to stackiq contract",
+        "slug": "itsm-topdesk-contract-inbound",
+        "description": "Maps a TOPdesk asset of the Contract template onto a stackiq contract. TOPdesk owns the record reference, the application and the supplier; stackiq owns the contract terms, which are filled in once when the contract is created and never overwritten.",
+        "mapping": {
+          "recordId": "{{ id }}",
+          "recordUrl": "{% if _desk.baseUrl|default('') != '' %}{{ _desk.baseUrl|trim('/', 'right') }}/tas/secure/assetmgmt/card.html?unid={{ id }}{% endif %}",
+          "applicationRecordId": "{{ application|default('') }}",
+          "supplierName": "{{ supplier|default('') }}",
+          "contractNumber": "{{ contractNumber|default(name|default('')) }}",
+          "vendorReference": "{{ vendorReference|default('') }}",
+          "contractType": "{% set t = contractType|default('')|lower %}{{ t in ['licence', 'license', 'licentie'] ? 'Licence' : (t in ['sla', 'service level agreement'] ? 'SLA' : 'Maintenance') }}",
+          "startDate": "{% if (startDate)|default('') != '' %}{{ (startDate)|date('Y-m-d') }}{% endif %}",
+          "endDate": "{% if (endDate)|default('') != '' %}{{ (endDate)|date('Y-m-d') }}{% endif %}",
+          "cost": "{{ cost|default('') }}",
+          "costPeriod": "{% set p = costPeriod|default('')|lower %}{{ {'monthly': 'Monthly', 'maandelijks': 'Monthly', 'annually': 'Annually', 'jaarlijks': 'Annually', 'one-off': 'One-off', 'eenmalig': 'One-off'}[p]|default('') }}",
+          "currency": "{{ currency|default('EUR')|upper }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "recordUrl": "source",
+          "applicationRecordId": "source",
+          "supplierName": "source",
+          "contractNumber": "stackiq",
+          "vendorReference": "stackiq",
+          "contractType": "stackiq",
+          "startDate": "stackiq",
+          "endDate": "stackiq",
+          "cost": "stackiq",
+          "costPeriod": "stackiq",
+          "currency": "stackiq"
+        },
+        "unset": [],
+        "cast": {
+          "contractNumber": "unsetIfValue==",
+          "vendorReference": "unsetIfValue==",
+          "startDate": "unsetIfValue==",
+          "endDate": "unsetIfValue==",
+          "cost": "unsetIfValue==,float",
+          "costPeriod": "unsetIfValue=="
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-servicenow-application-inbound"
+        },
+        "name": "ServiceNow application to stackiq",
+        "slug": "itsm-servicenow-application-inbound",
+        "description": "Maps a ServiceNow cmdb_ci_appl record, read with sysparm_display_value=all, onto the stackiq application fields. ServiceNow owns every field it maps. Put the address of your instance in _desk.baseUrl to get the record link.",
+        "mapping": {
+          "recordId": "{{ sys_id.value }}",
+          "recordUrl": "{% if _desk.baseUrl|default('') != '' %}{{ _desk.baseUrl|trim('/', 'right') }}/cmdb_ci_appl.do?sys_id={{ sys_id.value }}{% endif %}",
+          "name": "{{ name.value }}",
+          "supplierName": "{{ vendor.display_value|default('') }}",
+          "installedVersion": "{{ version.value|default('') }}",
+          "status": "{{ {'1': 'In production', '2': 'Acquisition', '3': 'In production', '4': 'Planned', '6': 'Planned', '7': 'Phased out'}[install_status.value|default('')]|default('In production') }}",
+          "description": "{{ short_description.value|default('') }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "recordUrl": "source",
+          "name": "source",
+          "supplierName": "source",
+          "installedVersion": "source",
+          "status": "source",
+          "description": "source"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-servicenow-application-outbound"
+        },
+        "name": "stackiq application to ServiceNow",
+        "slug": "itsm-servicenow-application-outbound",
+        "description": "Maps a stackiq application in use onto a ServiceNow cmdb_ci_appl record. On a create every field is sent; on an update only the fields stackiq owns, which live in u_ columns your instance adds to the table. Send it with sysparm_input_display_value=true so the vendor can be given by name.",
+        "mapping": {
+          "name": "{{ name }}",
+          "vendor": "{{ supplierName|default('') }}",
+          "version": "{{ installedVersion|default('') }}",
+          "install_status": "{{ {'Acquisition': '2', 'Planned': '4', 'In production': '1', 'To be phased out': '1', 'Phased out': '7'}[status|default('')]|default('1') }}",
+          "u_stackiq_id": "{{ uuid }}",
+          "u_catalogue_url": "{{ catalogueUrl|default('') }}",
+          "u_bbn_level": "{{ bbnLevel|default('') }}",
+          "u_time_classification": "{{ timeClassification|default('') }}",
+          "u_publication_date": "{{ publicationDate|default('') }}",
+          "u_licences_bought": "{{ licencesBought|default('') }}",
+          "u_licences_in_use": "{{ licencesInUse|default('') }}",
+          "u_licence_metric": "{{ licenceMetric|default('') }}",
+          "u_contract_number": "{{ contractNumber|default('') }}",
+          "u_contract_end_date": "{{ contractEndDate|default('') }}"
+        },
+        "ownership": {
+          "name": "source",
+          "vendor": "source",
+          "version": "source",
+          "install_status": "source",
+          "u_stackiq_id": "stackiq",
+          "u_catalogue_url": "stackiq",
+          "u_bbn_level": "stackiq",
+          "u_time_classification": "stackiq",
+          "u_publication_date": "stackiq",
+          "u_licences_bought": "stackiq",
+          "u_licences_in_use": "stackiq",
+          "u_licence_metric": "stackiq",
+          "u_contract_number": "stackiq",
+          "u_contract_end_date": "stackiq"
+        },
+        "unset": [],
+        "cast": {
+          "vendor": "unsetIfValue==",
+          "version": "unsetIfValue==",
+          "u_catalogue_url": "unsetIfValue==",
+          "u_bbn_level": "unsetIfValue==",
+          "u_time_classification": "unsetIfValue==",
+          "u_publication_date": "unsetIfValue==",
+          "u_licences_bought": "unsetIfValue==",
+          "u_licences_in_use": "unsetIfValue==",
+          "u_licence_metric": "unsetIfValue==",
+          "u_contract_number": "unsetIfValue==",
+          "u_contract_end_date": "unsetIfValue=="
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-servicenow-relation-inbound"
+        },
+        "name": "ServiceNow CI relation to stackiq connection",
+        "slug": "itsm-servicenow-relation-inbound",
+        "description": "Maps a ServiceNow cmdb_rel_ci record, read with sysparm_display_value=all, onto a stackiq connection. ServiceNow owns every field.",
+        "mapping": {
+          "recordId": "{{ sys_id.value }}",
+          "fromRecordId": "{{ parent.value }}",
+          "toRecordId": "{{ child.value }}",
+          "name": "{{ type.display_value|default('') }}",
+          "type": "n/a",
+          "direction": "{{ {'Receives data from::Sends data to': 'BtoA', 'Exchanges data with::Exchanges data with': 'bi-directional'}[type.display_value|default('')]|default('AtoB') }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "fromRecordId": "source",
+          "toRecordId": "source",
+          "name": "source",
+          "type": "source",
+          "direction": "source"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-servicenow-licence-inbound"
+        },
+        "name": "ServiceNow software licence to stackiq contract",
+        "slug": "itsm-servicenow-licence-inbound",
+        "description": "Maps a ServiceNow alm_license record, read with sysparm_display_value=all, onto a stackiq contract. ServiceNow owns the record reference, the application (the ci column) and the vendor; stackiq owns the contract terms, filled in once on create.",
+        "mapping": {
+          "recordId": "{{ sys_id.value }}",
+          "recordUrl": "{% if _desk.baseUrl|default('') != '' %}{{ _desk.baseUrl|trim('/', 'right') }}/alm_license.do?sys_id={{ sys_id.value }}{% endif %}",
+          "applicationRecordId": "{{ ci.value|default('') }}",
+          "supplierName": "{{ vendor.display_value|default('') }}",
+          "contractNumber": "{{ asset_tag.value|default(display_name.value|default('')) }}",
+          "vendorReference": "{{ po_number.value|default('') }}",
+          "contractType": "Licence",
+          "startDate": "{% if (start_date.value)|default('') != '' %}{{ (start_date.value)|date('Y-m-d') }}{% endif %}",
+          "endDate": "{% if (end_date.value)|default('') != '' %}{{ (end_date.value)|date('Y-m-d') }}{% endif %}",
+          "cost": "{{ cost.value|default('') }}",
+          "costPeriod": "One-off",
+          "currency": "{{ _desk.currency|default('EUR') }}",
+          "licenceMetric": "Other",
+          "licencesBought": "{{ rights.value|default('') }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "recordUrl": "source",
+          "applicationRecordId": "source",
+          "supplierName": "source",
+          "contractNumber": "stackiq",
+          "vendorReference": "stackiq",
+          "contractType": "stackiq",
+          "startDate": "stackiq",
+          "endDate": "stackiq",
+          "cost": "stackiq",
+          "costPeriod": "stackiq",
+          "currency": "stackiq",
+          "licenceMetric": "stackiq",
+          "licencesBought": "stackiq"
+        },
+        "unset": [],
+        "cast": {
+          "contractNumber": "unsetIfValue==",
+          "vendorReference": "unsetIfValue==",
+          "startDate": "unsetIfValue==",
+          "endDate": "unsetIfValue==",
+          "cost": "unsetIfValue==,float",
+          "licencesBought": "unsetIfValue==,integer"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-servicenow-contract-inbound"
+        },
+        "name": "ServiceNow contract to stackiq contract",
+        "slug": "itsm-servicenow-contract-inbound",
+        "description": "Maps a ServiceNow ast_contract record, read with sysparm_display_value=all, onto a stackiq contract. ServiceNow ties a contract to applications through contract_rel_ci; this preset reads the application from a u_application reference column and leaves it empty when the instance has none. stackiq owns the contract terms, filled in once on create.",
+        "mapping": {
+          "recordId": "{{ sys_id.value }}",
+          "recordUrl": "{% if _desk.baseUrl|default('') != '' %}{{ _desk.baseUrl|trim('/', 'right') }}/ast_contract.do?sys_id={{ sys_id.value }}{% endif %}",
+          "applicationRecordId": "{{ u_application.value|default('') }}",
+          "supplierName": "{{ vendor.display_value|default('') }}",
+          "contractNumber": "{{ number.value|default('') }}",
+          "vendorReference": "{{ vendor_contract.value|default('') }}",
+          "contractType": "{% set t = contract_model.display_value|default('')|lower %}{{ 'licen' in t ? 'Licence' : ('maint' in t ? 'Maintenance' : 'SLA') }}",
+          "startDate": "{% if (starts.value)|default('') != '' %}{{ (starts.value)|date('Y-m-d') }}{% endif %}",
+          "endDate": "{% if (ends.value)|default('') != '' %}{{ (ends.value)|date('Y-m-d') }}{% endif %}",
+          "cost": "{{ payment_amount.value|default('') }}",
+          "costPeriod": "{% set p = payment_schedule.display_value|default('')|lower %}{{ p == 'monthly' ? 'Monthly' : (p in ['annually', 'yearly'] ? 'Annually' : 'One-off') }}",
+          "currency": "{{ _desk.currency|default('EUR') }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "recordUrl": "source",
+          "applicationRecordId": "source",
+          "supplierName": "source",
+          "contractNumber": "stackiq",
+          "vendorReference": "stackiq",
+          "contractType": "stackiq",
+          "startDate": "stackiq",
+          "endDate": "stackiq",
+          "cost": "stackiq",
+          "costPeriod": "stackiq",
+          "currency": "stackiq"
+        },
+        "unset": [],
+        "cast": {
+          "contractNumber": "unsetIfValue==",
+          "vendorReference": "unsetIfValue==",
+          "startDate": "unsetIfValue==",
+          "endDate": "unsetIfValue==",
+          "cost": "unsetIfValue==,float"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-glpi-appliance-inbound"
+        },
+        "name": "GLPI appliance to stackiq",
+        "slug": "itsm-glpi-appliance-inbound",
+        "description": "Maps a GLPI Appliance, read with expand_dropdowns=true, onto the stackiq application fields. GLPI owns every field it maps.",
+        "mapping": {
+          "recordId": "{{ id }}",
+          "recordUrl": "{% if _desk.baseUrl|default('') != '' %}{{ _desk.baseUrl|trim('/', 'right') }}/front/appliance.form.php?id={{ id }}{% endif %}",
+          "name": "{{ name }}",
+          "supplierName": "{{ manufacturers_id|default('') }}",
+          "installedVersion": "",
+          "status": "{% set s = (states_id)|default('')|trim %}{% set m = {'aanschaf': 'Acquisition', 'gepland': 'Planned', 'in gebruik': 'In production', 'in productie': 'In production', 'uit te faseren': 'To be phased out', 'uitgefaseerd': 'Phased out', 'acquisition': 'Acquisition', 'planned': 'Planned', 'in production': 'In production', 'to be phased out': 'To be phased out', 'phased out': 'Phased out'} %}{{ m[s|lower]|default('In production') }}",
+          "description": "{{ comment|default('') }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "recordUrl": "source",
+          "name": "source",
+          "supplierName": "source",
+          "installedVersion": "source",
+          "status": "source",
+          "description": "source"
+        },
+        "unset": [],
+        "cast": {
+          "installedVersion": "unsetIfValue=="
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-glpi-appliance-outbound"
+        },
+        "name": "stackiq application to GLPI",
+        "slug": "itsm-glpi-appliance-outbound",
+        "description": "Maps a stackiq application in use onto a GLPI Appliance. GLPI owns the name; the comment carries the stackiq catalogue link and is owned by stackiq.",
+        "mapping": {
+          "name": "{{ name }}",
+          "comment": "{{ catalogueUrl|default('') }}"
+        },
+        "ownership": {
+          "name": "source",
+          "comment": "stackiq"
+        },
+        "unset": [],
+        "cast": {
+          "comment": "unsetIfValue=="
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "itsm-file-application-inbound"
+        },
+        "name": "Spreadsheet row to stackiq application",
+        "slug": "itsm-file-application-inbound",
+        "description": "Maps one row of a CSV or XLSX import whose column names are the stackiq field names. The file is the source, so it owns every field.",
+        "mapping": {
+          "recordId": "{{ recordId }}",
+          "recordUrl": "{{ recordUrl|default('') }}",
+          "name": "{{ name }}",
+          "supplierName": "{{ supplierName|default('') }}",
+          "installedVersion": "{{ installedVersion|default('') }}",
+          "status": "{% set s = (status)|default('')|trim %}{% set m = {'aanschaf': 'Acquisition', 'gepland': 'Planned', 'in gebruik': 'In production', 'in productie': 'In production', 'uit te faseren': 'To be phased out', 'uitgefaseerd': 'Phased out', 'acquisition': 'Acquisition', 'planned': 'Planned', 'in production': 'In production', 'to be phased out': 'To be phased out', 'phased out': 'Phased out'} %}{{ m[s|lower]|default('In production') }}",
+          "description": "{{ description|default('') }}"
+        },
+        "ownership": {
+          "recordId": "source",
+          "recordUrl": "source",
+          "name": "source",
+          "supplierName": "source",
+          "installedVersion": "source",
+          "status": "source",
+          "description": "source"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-topdesk-applications"
+        },
+        "name": "TOPdesk applications",
+        "slug": "itsm-topdesk-applications",
+        "description": "Pages over TOPdesk assets of the Application template for stackiq's inbound flow. Rename templateName when your template has another name.",
+        "sourceId": "topdesk",
+        "sourceType": "api",
+        "sourceConfig": {
+          "endpoint": "/assetmgmt/assets",
+          "idPosition": "id",
+          "resultsPosition": "dataSet",
+          "paginationQuery": "pageStart",
+          "paginationMode": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 500,
+          "query": {
+            "templateName": "Application",
+            "pageSize": 500,
+            "archived": "false",
+            "fields": "name,supplier,version,lifecycleStatus,description"
+          }
+        },
+        "configurations": [
+          "itsm",
+          "itsm-topdesk-application-inbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-topdesk-licences"
+        },
+        "name": "TOPdesk licences",
+        "slug": "itsm-topdesk-licences",
+        "description": "Pages over TOPdesk assets of the Licence template for stackiq's inbound contract flow.",
+        "sourceId": "topdesk",
+        "sourceType": "api",
+        "sourceConfig": {
+          "endpoint": "/assetmgmt/assets",
+          "idPosition": "id",
+          "resultsPosition": "dataSet",
+          "paginationQuery": "pageStart",
+          "paginationMode": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 500,
+          "query": {
+            "templateName": "Licence",
+            "pageSize": 500,
+            "archived": "false",
+            "fields": "name,application,supplier,contractNumber,vendorReference,startDate,endDate,cost,costPeriod,currency,licenceMetric,licencesBought"
+          }
+        },
+        "configurations": [
+          "itsm",
+          "itsm-topdesk-licence-inbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-topdesk-contracts"
+        },
+        "name": "TOPdesk contracts",
+        "slug": "itsm-topdesk-contracts",
+        "description": "Pages over TOPdesk assets of the Contract template for stackiq's inbound contract flow.",
+        "sourceId": "topdesk",
+        "sourceType": "api",
+        "sourceConfig": {
+          "endpoint": "/assetmgmt/assets",
+          "idPosition": "id",
+          "resultsPosition": "dataSet",
+          "paginationQuery": "pageStart",
+          "paginationMode": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 500,
+          "query": {
+            "templateName": "Contract",
+            "pageSize": 500,
+            "archived": "false",
+            "fields": "name,application,supplier,contractNumber,vendorReference,contractType,startDate,endDate,cost,costPeriod,currency"
+          }
+        },
+        "configurations": [
+          "itsm",
+          "itsm-topdesk-contract-inbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-servicenow-applications"
+        },
+        "name": "ServiceNow applications",
+        "slug": "itsm-servicenow-applications",
+        "description": "Pages over ServiceNow cmdb_ci_appl records for stackiq's inbound flow.",
+        "sourceId": "servicenow",
+        "sourceType": "api",
+        "sourceConfig": {
+          "endpoint": "/api/now/table/cmdb_ci_appl",
+          "idPosition": "sys_id.value",
+          "resultsPosition": "result",
+          "paginationQuery": "sysparm_offset",
+          "paginationMode": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 500,
+          "query": {
+            "sysparm_limit": 500,
+            "sysparm_display_value": "all",
+            "sysparm_exclude_reference_link": "true",
+            "sysparm_fields": "sys_id,name,vendor,version,install_status,short_description"
+          }
+        },
+        "configurations": [
+          "itsm",
+          "itsm-servicenow-application-inbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-servicenow-relations"
+        },
+        "name": "ServiceNow application relations",
+        "slug": "itsm-servicenow-relations",
+        "description": "Pages over ServiceNow cmdb_rel_ci records between applications for stackiq's inbound relation flow.",
+        "sourceId": "servicenow",
+        "sourceType": "api",
+        "sourceConfig": {
+          "endpoint": "/api/now/table/cmdb_rel_ci",
+          "idPosition": "sys_id.value",
+          "resultsPosition": "result",
+          "paginationQuery": "sysparm_offset",
+          "paginationMode": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 500,
+          "query": {
+            "sysparm_limit": 500,
+            "sysparm_display_value": "all",
+            "sysparm_exclude_reference_link": "true",
+            "sysparm_query": "parent.sys_class_name=cmdb_ci_appl^child.sys_class_name=cmdb_ci_appl",
+            "sysparm_fields": "sys_id,parent,child,type"
+          }
+        },
+        "configurations": [
+          "itsm",
+          "itsm-servicenow-relation-inbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-servicenow-licences"
+        },
+        "name": "ServiceNow software licences",
+        "slug": "itsm-servicenow-licences",
+        "description": "Pages over ServiceNow alm_license records for stackiq's inbound contract flow.",
+        "sourceId": "servicenow",
+        "sourceType": "api",
+        "sourceConfig": {
+          "endpoint": "/api/now/table/alm_license",
+          "idPosition": "sys_id.value",
+          "resultsPosition": "result",
+          "paginationQuery": "sysparm_offset",
+          "paginationMode": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 500,
+          "query": {
+            "sysparm_limit": 500,
+            "sysparm_display_value": "all",
+            "sysparm_exclude_reference_link": "true"
+          }
+        },
+        "configurations": [
+          "itsm",
+          "itsm-servicenow-licence-inbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-servicenow-contracts"
+        },
+        "name": "ServiceNow contracts",
+        "slug": "itsm-servicenow-contracts",
+        "description": "Pages over ServiceNow ast_contract records for stackiq's inbound contract flow.",
+        "sourceId": "servicenow",
+        "sourceType": "api",
+        "sourceConfig": {
+          "endpoint": "/api/now/table/ast_contract",
+          "idPosition": "sys_id.value",
+          "resultsPosition": "result",
+          "paginationQuery": "sysparm_offset",
+          "paginationMode": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 500,
+          "query": {
+            "sysparm_limit": 500,
+            "sysparm_display_value": "all",
+            "sysparm_exclude_reference_link": "true"
+          }
+        },
+        "configurations": [
+          "itsm",
+          "itsm-servicenow-contract-inbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-topdesk-outbound"
+        },
+        "name": "stackiq applications to TOPdesk",
+        "slug": "itsm-topdesk-outbound",
+        "description": "Keeps track of what stackiq's outbound flow sent to TOPdesk, one contract per application in use. Nothing runs it on its own.",
+        "sourceId": "stackiq/usage",
+        "sourceType": "register/schema",
+        "targetId": "topdesk",
+        "targetType": "api",
+        "configurations": [
+          "itsm",
+          "itsm-topdesk-application-outbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-servicenow-outbound"
+        },
+        "name": "stackiq applications to ServiceNow",
+        "slug": "itsm-servicenow-outbound",
+        "description": "Keeps track of what stackiq's outbound flow sent to ServiceNow, one contract per application in use. Nothing runs it on its own.",
+        "sourceId": "stackiq/usage",
+        "sourceType": "register/schema",
+        "targetId": "servicenow",
+        "targetType": "api",
+        "configurations": [
+          "itsm",
+          "itsm-servicenow-application-outbound"
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "itsm-file-applications"
+        },
+        "name": "Spreadsheet applications",
+        "slug": "itsm-file-applications",
+        "description": "Keeps track of the rows stackiq's file import wrote, so a second upload of the same file updates instead of duplicating. Nothing runs it on its own.",
+        "sourceType": "file",
+        "configurations": [
+          "itsm",
+          "itsm-file-application-inbound"
+        ],
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
