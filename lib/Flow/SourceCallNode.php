@@ -287,7 +287,20 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configKeys(): array {
-		return ['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency', 'decode'];
+		return [
+			'source',
+			'endpoint',
+			'method',
+			'query',
+			'headers',
+			'body',
+			'output',
+			'concurrency',
+			'decode',
+			'onError',
+			'acceptStatuses',
+			'responseMapping',
+		];
 	}//end configKeys()
 
 	/**
@@ -343,6 +356,15 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 					'How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. '
 					. 'Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, '
 					. 'and base64+yaml for a file API that returns the file base64-encoded in "content".'
+				),
+			],
+			[
+				'key' => 'onError',
+				'label' => $this->l10n->t('On error'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'What a failed call does to the run: stop, continue or dead_letter. With continue, '
+					. 'the failed item carries the error and the other items go on.'
 				),
 			],
 			[

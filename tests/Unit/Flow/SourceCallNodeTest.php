@@ -160,7 +160,20 @@ class SourceCallNodeTest extends TestCase {
 	 */
 	public function testConfigKeysNameTheVocabularyTheNodeReads(): void {
 		$this->assertSame(
-			['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency', 'decode'],
+			[
+				'source',
+				'endpoint',
+				'method',
+				'query',
+				'headers',
+				'body',
+				'output',
+				'concurrency',
+				'decode',
+				'onError',
+				'acceptStatuses',
+				'responseMapping',
+			],
 			$this->node->configKeys()
 		);
 
@@ -1181,6 +1194,41 @@ class SourceCallNodeTest extends TestCase {
 		$this->node->validateConfig(array_merge($this->config(), ['decode' => 'yml']));
 
 	}//end testValidateRejectsUnknownDecodeMode()
+
+	/**
+	 * Every key the node reads is declared, so a preflight that refuses
+	 * undeclared keys accepts a step that sets `onError`, `acceptStatuses` or
+	 * `responseMapping`. Before, `onError: continue` was refused at save and one
+	 * failed file cost the whole page.
+	 *
+	 * @return void
+	 */
+	public function testKeysTheNodeReadsAreDeclared(): void {
+		$config = array_merge(
+			$this->config(),
+			['onError' => 'continue', 'acceptStatuses' => [404], 'responseMapping' => ['n' => 'id'], 'decode' => 'yaml']
+		);
+
+		$this->assertSame([], array_values(array_diff(array_keys($config), $this->node->configKeys())));
+		$this->node->validateConfig($config);
+
+		$form = array_column($this->node->configForm(), null, 'key');
+		$this->assertArrayHasKey('onError', $form);
+
+	}//end testKeysTheNodeReadsAreDeclared()
+
+	/**
+	 * An unknown onError policy is refused at save.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsUnknownOnErrorPolicy(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/onError/');
+
+		$this->node->validateConfig(array_merge($this->config(), ['onError' => 'skip']));
+
+	}//end testValidateRejectsUnknownOnErrorPolicy()
 
 	/**
 	 * Read a test fixture.
