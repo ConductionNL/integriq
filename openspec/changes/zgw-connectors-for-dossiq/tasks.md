@@ -18,6 +18,7 @@
 ### Task 3: Notification-triggered pull and write-back
 - **spec_ref**: `openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003`
 - **files**: `lib/Service/Zgw/ZgwNotificationPullListener.php`, the push synchronizations in the sets
+- Pull half done (design D3): `ZgwNotificationPullListener` (called from `NotificatiesSubscriberService::handleInboundNotification()` after the CloudEvent) pulls the main object of an installed set's kanaal through `getObjectFromSource()` + `replaySynchronizationItem()`, refusing a url off the set's source; `zgw-notificaties` installs without a register and schema as a subscription set (`ZgwSetInstaller::subscribe()`, one abonnement per installed data set, recorded in `zgw_set_subscriptions`; seeded source `zgw-set-notificaties`). Tests: `tests/Unit/Service/Zgw/ZgwNotificationPullListenerTest.php`, `tests/Unit/Service/Zgw/ZgwNotificatiesInstallTest.php` (real `NotificatiesSubscriberService`, every save validated against the register; it found that a registered abonnement saved `lastError: null`, which the schema refuses, now `''`), `NotificatiesSubscriberServiceTest::testHandleInboundNotificationHandsItToTheZgwPull`. Open: the write-back half (D4).
 - [ ] Implement
 - [ ] Test
 

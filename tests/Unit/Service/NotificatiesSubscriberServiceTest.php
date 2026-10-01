@@ -421,6 +421,57 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 	}//end testHandleInboundNotificationEmitsCloudEvent()
 
 	/**
+	 * An inbound notification reaches the ZGW pull listener after its CloudEvent, unchanged.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	public function testHandleInboundNotificationHandsItToTheZgwPull(): void {
+		$order    = [];
+		$listener = $this->createMock(\OCA\Integriq\Service\Zgw\ZgwNotificationPullListener::class);
+		$listener->expects($this->once())->method('handle')->willReturnCallback(
+			function (array $notification) use (&$order) {
+				$order[] = 'pull';
+				$this->assertSame('https://zaken.example/api/v1/zaken/uuid-1', $notification['hoofdObject']);
+				$this->assertArrayNotHasKey('abonnementId', $notification);
+				return $notification['hoofdObject'];
+			}
+		);
+		$this->eventService->method('emitCloudEvent')->willReturnCallback(
+			function () use (&$order) {
+				$order[] = 'cloudevent';
+				return [];
+			}
+		);
+		$logger  = $this->createMock(LoggerInterface::class);
+		$service = new NotificatiesSubscriberService(
+			$this->objectService,
+			$this->callService,
+			$this->eventService,
+			new WebhookSignatureService($logger),
+			$this->urlGenerator,
+			$logger,
+			$listener
+		);
+
+		$service->handleInboundNotification(
+			'abon-1',
+			[
+				'kanaal' => 'zaken',
+				'hoofdObject' => 'https://zaken.example/api/v1/zaken/uuid-1',
+				'resource' => 'status',
+				'resourceUrl' => 'https://zaken.example/api/v1/statussen/uuid-2',
+				'actie' => 'create',
+				'aanmaakdatum' => '2026-10-02T09:12:44Z',
+				'kenmerken' => [],
+			]
+		);
+
+		$this->assertSame(['cloudevent', 'pull'], $order);
+	}//end testHandleInboundNotificationHandsItToTheZgwPull()
+
+	/**
 	 * TC-8/REQ-003: a malformed notification body (missing kanaal) is
 	 * rejected before emitCloudEvent is called.
 	 *

@@ -69,6 +69,23 @@ class ZgwSetInstallGuard {
 			);
 		}
 
+		if (ZgwSetCatalogue::isSubscriptionSet(slug: $slug) === true) {
+			// A subscription set writes no records, so it needs no target; it
+			// needs something to subscribe to. An abonnement with no data set
+			// installed is a live remote subscription whose every notification
+			// pulls nothing.
+			if ($bindings === []) {
+				return sprintf(
+					'Install a set that carries data (%s) first. "%s" subscribes those sets to their store\'s '
+					.'notifications, and with none installed every notification would change nothing here.',
+					implode(', ', array_values(array_unique(ZgwSetCatalogue::KANAAL_SETS))),
+					$slug
+				);
+			}
+
+			return null;
+		}
+
 		$register = trim((string)($target['register'] ?? ''));
 		$schema = trim((string)($target['schema'] ?? ''));
 

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Zgw;
 
+use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallRefusedException;
@@ -106,11 +107,12 @@ class ZgwSetInstallerTest extends TestCase {
 			}
 		);
 
+		$subscriber = $this->createMock(NotificatiesSubscriberService::class);
 		if ($setDirectory !== null) {
-			return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard(), $setDirectory);
+			return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard(), $subscriber, $setDirectory);
 		}
 
-		return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard());
+		return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard(), $subscriber);
 	}//end installer()
 
 	/**

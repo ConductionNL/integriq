@@ -25,8 +25,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Zgw;
 
 use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
+use stdClass;
 
 /**
  * Binds a set's seeded synchronizations (register.d/zgw-consumer-sets.json) to a
@@ -38,6 +40,9 @@ use OCP\IAppConfig;
  * while every screen showed the set as installed.
  *
  * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a catalogue of constants with no
+ * state to instantiate, the same reason ZgwSetInstallGuard gives.
  */
 class ZgwSetInstaller {
 
@@ -45,6 +50,11 @@ class ZgwSetInstaller {
 	 * App config key holding the bindings, as JSON {"register/schema": "set slug"}.
 	 */
 	public const BINDINGS_KEY = 'zgw_set_bindings';
+
+	/**
+	 * App config key holding the notification abonnementen, as JSON {"data set slug": "abonnement uuid"}.
+	 */
+	public const SUBSCRIPTIONS_KEY = 'zgw_set_subscriptions';
 
 	/**
 	 * Where the packaged set files live.
@@ -56,8 +66,9 @@ class ZgwSetInstaller {
 	 *
 	 * @param ObjectService      $objectService OpenRegister objects, for the seeded synchronizations.
 	 * @param IAppConfig         $appConfig     Holds the bindings.
-	 * @param ZgwSetInstallGuard $guard         The template and binding refusals.
-	 * @param string             $setDirectory  Where the packaged set files are read from.
+	 * @param ZgwSetInstallGuard            $guard        The template and binding refusals.
+	 * @param NotificatiesSubscriberService $subscriber   Registers the abonnementen a subscription set installs.
+	 * @param string                        $setDirectory Where the packaged set files are read from.
 	 *
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
@@ -65,6 +76,7 @@ class ZgwSetInstaller {
 		private readonly ObjectService $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly ZgwSetInstallGuard $guard,
+		private readonly NotificatiesSubscriberService $subscriber,
 		private readonly string $setDirectory = self::SET_DIR,
 	) {
 	}//end __construct()
@@ -76,7 +88,8 @@ class ZgwSetInstaller {
 	 * @param string $register The target register (id or slug).
 	 * @param string $schema   The target schema (id or slug).
 	 *
-	 * @return array{set: string, binding: string, synchronizations: list<string>}
+	 * @return array<string, mixed> The set, its binding (null for a subscription set) and the bound
+	 *                              synchronizations; a subscription set adds subscriptions and refused.
 	 *
 	 * @throws ZgwSetInstallRefusedException When a guard refuses or a seeded synchronization is missing.
 	 *
@@ -99,6 +112,10 @@ class ZgwSetInstaller {
 			throw new ZgwSetInstallRefusedException(implode(' ', $refusals));
 		}
 
+		if (ZgwSetCatalogue::isSubscriptionSet(slug: $slug) === true) {
+			return $this->subscribe(slug: $slug, template: $template, bindings: $bindings);
+		}
+
 		$binding = $this->guard->bindingKey(register: trim($register), schema: trim($schema));
 		$bound   = [];
 		foreach ($this->seededSynchronizations(slugs: (array)($template['synchronizations'] ?? [])) as $syncSlug => $sync) {
@@ -117,6 +134,104 @@ class ZgwSetInstaller {
 
 		return ['set' => $slug, 'binding' => $binding, 'synchronizations' => array_keys($bound)];
 	}//end install()
+
+	/**
+	 * Install a subscription set: one abonnement per installed data set that has none yet.
+	 *
+	 * A registration the store refuses is reported and not recorded, so
+	 * installing the set again retries it (design D3).
+	 *
+	 * @param string                $slug     The subscription set.
+	 * @param array<string, mixed>  $template Its packaged file.
+	 * @param array<string, string> $bindings The data set bindings.
+	 *
+	 * @return array{set: string, binding: null, synchronizations: list<string>, subscriptions: array<string, string>, refused: array<string, string>}
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	private function subscribe(string $slug, array $template, array $bindings): array {
+		$subscriptions = $this->subscriptions();
+		$refused       = [];
+		$sourceId      = $this->sourceUuid(slug: (string)($template['source']['slug'] ?? ''));
+		foreach (array_values(array_unique($bindings)) as $dataSet) {
+			if (isset($subscriptions[$dataSet]) === true) {
+				continue;
+			}
+
+			$kanalen = array_map(
+				// The Notificaties API takes filters as an object; [] would encode as a list.
+				fn (string $kanaal): array => ['naam' => $kanaal, 'filters' => new stdClass()],
+				array_keys(ZgwSetCatalogue::KANAAL_SETS, $dataSet, true)
+			);
+
+			$abonnement = $this->subscriber->createAbonnement(
+				config: [
+					'name'     => sprintf('%s notifications (%s)', (ZgwSetCatalogue::SETS[$dataSet] ?? $dataSet), $dataSet),
+					'sourceId' => $sourceId,
+					'kanalen'  => $kanalen,
+				]
+			);
+			$data       = $abonnement->getObject();
+			if (($data['status'] ?? null) !== 'active') {
+				$refused[$dataSet] = (string)($data['lastError'] ?? 'The store did not register the abonnement.');
+				continue;
+			}
+
+			$subscriptions[$dataSet] = (string)$abonnement->getUuid();
+		}//end foreach
+
+		$this->appConfig->setValueString(Application::APP_ID, self::SUBSCRIPTIONS_KEY, (string)json_encode($subscriptions));
+
+		return ['set' => $slug, 'binding' => null, 'synchronizations' => [], 'subscriptions' => $subscriptions, 'refused' => $refused];
+	}//end subscribe()
+
+	/**
+	 * The uuid of a seeded source: an abonnement names its source by uuid, not by slug.
+	 *
+	 * @param string $slug The source slug from the set file.
+	 *
+	 * @return string The uuid.
+	 *
+	 * @throws ZgwSetInstallRefusedException When this instance lacks the source.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	private function sourceUuid(string $slug): string {
+		$source = null;
+		try {
+			$source = $this->objectService->find(id: $slug, register: 'integriq', schema: 'source');
+		} catch (\Throwable) {
+			$source = null;
+		}
+
+		if ($source === null || (string)$source->getUuid() === '') {
+			throw new ZgwSetInstallRefusedException(
+				sprintf(
+					'The source "%s" this set registers its abonnementen on is not on this instance. '
+					.'Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
+					$slug
+				)
+			);
+		}
+
+		return (string)$source->getUuid();
+	}//end sourceUuid()
+
+	/**
+	 * The recorded abonnementen, {"data set slug": "abonnement uuid"}.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	public function subscriptions(): array {
+		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::SUBSCRIPTIONS_KEY, '{}'), true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return array_filter($decoded, fn ($uuid, $key): bool => is_string($uuid) && is_string($key), ARRAY_FILTER_USE_BOTH);
+	}//end subscriptions()
 
 	/**
 	 * The recorded bindings, {"register/schema": "set slug"}.

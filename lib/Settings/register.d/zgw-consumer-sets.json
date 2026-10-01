@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (zgw-connectors-for-dossiq). Seeds what the packaged ZGW consumer sets in lib/Settings/configurations name by slug: one disabled source per component, the inbound and write-back mappings, and the pull and write-back synchronizations, all unbound. POST /api/zgw-sets/{slug}/install (ZgwSetInstaller) binds a set to the register and schema an operator chooses. zgw-notificaties seeds with the notification-pull half.",
+  "$comment": "ADR-037 register fragment (zgw-connectors-for-dossiq). Seeds what the packaged ZGW consumer sets in lib/Settings/configurations name by slug: one disabled source per component, the inbound and write-back mappings, and the pull and write-back synchronizations, all unbound. POST /api/zgw-sets/{slug}/install (ZgwSetInstaller) binds a set to the register and schema an operator chooses. zgw-notificaties seeds only its source: it installs abonnementen, not synchronizations (design D3).",
   "components": {
     "objects": [
       {
@@ -510,6 +510,38 @@
           "idPosition": "url",
           "updateMethod": "PATCH"
         },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "zgw-set-notificaties"
+        },
+        "name": "Notificaties API (ZGW set)",
+        "description": "The Notificaties API the zgw-notificaties set registers its abonnementen on. Set the address of your store, replace zgw-client in the token payload with the client id the store knows you by, store the shared secret as a credential named zgw-set-notificaties-client-secret, then enable the source. Install the set after at least one data set: it subscribes each installed set to the store's notifications.",
+        "type": "api",
+        "location": "https://your-open-notificaties.example.nl/api/v1",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ jwtToken(source) }}"
+          },
+          "authentication": {
+            "algorithm": "HS256",
+            "secret": {
+              "credentialRef": {
+                "credentialName": "zgw-set-notificaties-client-secret"
+              }
+            },
+            "payload": "{\"iss\":\"zgw-client\",\"iat\":{{ 'now'|date('U') }},\"client_id\":\"zgw-client\",\"user_id\":\"zgw-client\",\"user_representation\":\"zgw-client\"}"
+          },
+          "apiVersion": "1.6"
+        },
+        "isEnabled": false,
+        "test": false,
         "version": "1.0.0"
       }
     ]
