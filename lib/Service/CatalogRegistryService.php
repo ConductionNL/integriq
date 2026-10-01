@@ -111,6 +111,10 @@ class CatalogRegistryService {
 		'kvk' => 'Government registers',
 		'opencorporates' => 'Company data',
 		'xwiki' => 'Document / CMS',
+		// Service desks with application records (connectors-service-desk-templates).
+		'topdesk' => 'Service management',
+		'servicenow' => 'Service management',
+		'glpi' => 'Service management',
 		'cmcom-sms' => 'Messaging',
 		'messagebird-sms' => 'Messaging',
 		'twilio-sms' => 'Messaging',

@@ -179,6 +179,8 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 			'input',
 			'output',
 			'onError',
+			'ownership',
+			'exists',
 		];
 	}//end configKeys()
 
@@ -223,6 +225,22 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 					'What a failed item does to the run: stop, continue or dead_letter.'
 				),
 			],
+			[
+				'key' => 'ownership',
+				'label' => $this->l10n->t('Field ownership'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'inbound or outbound: on an update, keep only the fields the sending side owns. Leave empty to keep every field.'
+				),
+			],
+			[
+				'key' => 'exists',
+				'label' => $this->l10n->t('Existing record path'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Dot-path within the item that holds the record id on the writing side. Empty there means a create, which keeps every field.'
+				),
+			],
 		];
 	}//end configForm()
 
@@ -254,6 +272,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 		}
 
 		FlowNodeSupport::assertOnError(config: $config, l10n: $this->l10n);
+		MappingOwnership::assertConfig(config: $config, l10n: $this->l10n);
 
 	}//end validateConfig()
 
@@ -310,6 +329,8 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 		$reference = trim((string)$config['mapping']);
 		$inputPath = trim((string)($config['input'] ?? ''));
 		$outputKey = trim((string)($config['output'] ?? ''));
+		$ownershipMode = trim((string)($config['ownership'] ?? ''));
+		$existsPath = trim((string)($config['exists'] ?? ''));
 		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 
@@ -318,7 +339,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 			$json = (array)($item['json'] ?? []);
 
 			try {
-				$mapped = $this->mapOne(json: $json, reference: $reference, inputPath: $inputPath);
+				$mapped = $this->mapOne(json: $json, reference: $reference, inputPath: $inputPath, ownershipMode: $ownershipMode, existsPath: $existsPath);
 				$json = $this->applyResult(json: $json, mapped: $mapped, outputKey: $outputKey);
 			} catch (Throwable $exception) {
 				$failure = $this->asNodeFailure(exception: $exception, reference: $reference);
@@ -385,17 +406,32 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	/**
 	 * Map one item's input through the configured mapping.
 	 *
+	 * With an `ownership` mode the mapping object is read first, so its
+	 * field owners travel with the very definition that is executed, and the
+	 * result is narrowed to the writing side's fields when the item names an
+	 * existing record (see {@see MappingOwnership}).
+	 *
 	 * @param array $json The item's record.
 	 * @param string $reference The authored mapping reference.
 	 * @param string $inputPath Dot-path to the input, or empty for the whole record.
+	 * @param string $ownershipMode `inbound`, `outbound`, or empty for no ownership rule.
+	 * @param string $existsPath Dot-path to the writing side's record id on the item.
 	 *
 	 * @return array The mapped result.
 	 *
-	 * @throws FlowNodeException When the input path resolves to no object.
+	 * @throws FlowNodeException When the input path resolves to no object, or
+	 *                           the mapping does not declare an owner for
+	 *                           every field.
 	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 * @spec openspec/changes/connectors-service-desk-templates/specs/service-desk-connectors/spec.md#requirement-every-mapped-field-has-an-owner-and-an-update-never-overwrites-the-other-sides-fields-req-sdc-002
 	 */
-	private function mapOne(array $json, string $reference, string $inputPath): array {
+	private function mapOne(
+		array $json,
+		string $reference,
+		string $inputPath,
+		string $ownershipMode='',
+		string $existsPath=''
+	): array {
 		$input = $json;
 		if ($inputPath !== '') {
 			$value = FlowTemplate::lookup(path: $inputPath, json: $json);
@@ -412,7 +448,32 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 			$input = $value;
 		}
 
-		return $this->mappingService->executeMapping(mapping: $reference, input: $input);
+		if ($ownershipMode === '') {
+			return $this->mappingService->executeMapping(mapping: $reference, input: $input);
+		}
+
+		$mappingObject = $this->mappingService->findMapping(reference: $reference);
+		if ($mappingObject === null) {
+			throw new FlowNodeException(
+				message: $this->l10n->t('The mapping "%1$s" could not be found.', [$reference]),
+				details: ['kind' => 'mapping', 'mapping' => $reference]
+			);
+		}
+
+		$definition = (array)$mappingObject->getObject();
+		$ownership = MappingOwnership::ownersOf(definition: $definition, reference: $reference, l10n: $this->l10n);
+		$mapped = $this->mappingService->executeMapping(mapping: $mappingObject, input: $input);
+
+		$existing = '';
+		if ($existsPath !== '') {
+			$existing = FlowTemplate::lookup(path: $existsPath, json: $json);
+		}
+
+		if (MappingOwnership::isEmpty(value: $existing) === true) {
+			return $mapped;
+		}
+
+		return MappingOwnership::keepWriterFields(mapped: $mapped, ownership: $ownership, mode: $ownershipMode);
 	}//end mapOne()
 
 	/**

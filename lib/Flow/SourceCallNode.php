@@ -283,7 +283,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configKeys(): array {
-		return ['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency'];
+		return ['source', 'endpoint', 'method', 'query', 'headers', 'body', 'bodyFrom', 'output', 'concurrency'];
 	}//end configKeys()
 
 	/**
@@ -559,6 +559,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			$json = (array)($item['json'] ?? []);
 
 			$records[$index] = $json;
+			$this->assertBodyFromResolves(config: $config, json: $json, index: $index);
 			$endpoints[$index] = FlowTemplate::renderString(
 				template: (string)$config['endpoint'],
 				json: $json
@@ -575,6 +576,42 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 
 		return [$endpoints, $records];
 	}//end renderAndGuardEndpoints()
+
+	/**
+	 * Refuse the step before any call when `bodyFrom` names no object.
+	 *
+	 * A body that silently went out empty would create or overwrite a record
+	 * in the outside system with nothing, and report success. Checked in the
+	 * guard pass, with the endpoints, so no item of the page is sent when one
+	 * of them has nothing to send.
+	 *
+	 * @param array $config The step's authored configuration.
+	 * @param array $json The item's record.
+	 * @param int $index The item's position in the page.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowNodeException When the path does not resolve to an object.
+	 *
+	 * @spec openspec/changes/connectors-service-desk-templates/specs/service-desk-connectors/spec.md#requirement-a-source-call-sends-a-mapped-object-whole-req-sdc-003
+	 */
+	private function assertBodyFromResolves(array $config, array $json, int $index): void {
+		$path = trim((string)($config['bodyFrom'] ?? ''));
+		if ($path === '') {
+			return;
+		}
+
+		if (is_array(FlowTemplate::lookup(path: $path, json: $json)) === false) {
+			throw new FlowNodeException(
+				message: $this->l10n->t(
+					'The "bodyFrom" path "%1$s" did not resolve to an object on item %2$s; nothing was sent.',
+					[$path, (string)$index]
+				),
+				details: ['kind' => 'body', 'bodyFrom' => $path, 'item' => $index]
+			);
+		}
+
+	}//end assertBodyFromResolves()
 
 	/**
 	 * How many calls this step may have in flight at once.
@@ -779,7 +816,8 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * Build the request configuration handed to `CallService`.
 	 *
 	 * An array body travels as `json` (the Guzzle option that encodes it); a
-	 * string body travels as `body`. Nothing here sets an authentication
+	 * string body travels as `body`. `bodyFrom` sends the object at that item
+	 * path as `json`, untouched. Nothing here sets an authentication
 	 * header — `FlowConfigGuard` has already refused any attempt to.
 	 *
 	 * @param array $config The step's authored configuration.
@@ -800,6 +838,15 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$headers = ($config['headers'] ?? null);
 		if (is_array($headers) === true && $headers !== []) {
 			$requestConfig['headers'] = FlowTemplate::renderValue(value: $headers, json: $json);
+		}
+
+		$bodyFrom = trim((string)($config['bodyFrom'] ?? ''));
+		if ($bodyFrom !== '') {
+			// Sent whole and as it is: the object was already shaped by a
+			// mapping step, so rendering it again could only change it.
+			$requestConfig['json'] = (array)FlowTemplate::lookup(path: $bodyFrom, json: $json);
+
+			return $requestConfig;
 		}
 
 		$body = ($config['body'] ?? null);

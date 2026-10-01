@@ -177,6 +177,20 @@ final class SourceCallConfigGuard {
 			);
 		}
 
+		if (array_key_exists('bodyFrom', $config) === true) {
+			if (is_string($config['bodyFrom']) === false || trim($config['bodyFrom']) === '') {
+				throw new UnexpectedValueException(
+					$l10n->t('The "bodyFrom" field must be a dot-path to an object on the item.')
+				);
+			}
+
+			if (array_key_exists('body', $config) === true) {
+				throw new UnexpectedValueException(
+					$l10n->t('Use "body" or "bodyFrom", not both.')
+				);
+			}
+		}
+
 		if (array_key_exists('responseMapping', $config) === true && is_array($config['responseMapping']) === false) {
 			throw new UnexpectedValueException(
 				$l10n->t('The "responseMapping" field must be an object of target key to selector.')
