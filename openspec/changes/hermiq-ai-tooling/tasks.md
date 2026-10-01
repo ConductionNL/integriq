@@ -68,6 +68,7 @@
   - GIVEN the e2e suite WHEN it runs THEN the nightly-triage flow passes: dead letters listed payload-free → batch staged → approved in Hermiq → replayed (visible in the DeadLetters UI); a rejected batch replays nothing
   - GIVEN `docs/` WHEN read THEN it records the tool table (scope × reach × gate × action id), the payload firewall, the refused/deferred action list with reasons, and the three chat scenarios
   - GIVEN `CHANGELOG.md` WHEN read THEN it records the governed action surface and the two new action-matrix rows
+  - Contract half (DECISIONS 31/40, hermiq#1045 built in hermiq PR #1048), done: `tests/Unit/Mcp/HermiqVerdictContractTest.php` runs integriq's `ApprovalVerdictVerifier` against Hermiq's real `ApprovalVerdictService` and `ApprovalVerdictSigner` (copied unchanged but for spec tags into `tests/stubs/Hermiq/`), through JSON, with the public key read from the app value Hermiq writes (`hermiq/approval_verdict_public_key`). It covers an approved batch, all six Hermiq refusal reasons, a verdict re-signed by another key and a replayed verdict. The live classification check, the e2e spec and the docs remain open.
 - [ ] Implement
 - [ ] Test
 
