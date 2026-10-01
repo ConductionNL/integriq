@@ -151,7 +151,8 @@
               "psd2",
               "sms",
               "soap",
-              "dso"
+              "dso",
+              "case-system"
             ],
             "title": "Type"
           },
