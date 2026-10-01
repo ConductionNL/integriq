@@ -690,6 +690,9 @@ return [
 		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
+		// Packaged ZGW consumer sets (zgw-connectors-for-dossiq): list, and install against a register/schema.
+		['name' => 'zgwSets#index',   'url' => '/api/zgw-sets', 'verb' => 'GET'],
+		['name' => 'zgwSets#install', 'url' => '/api/zgw-sets/{slug}/install', 'verb' => 'POST', 'requirements' => ['slug' => 'zgw-[a-z]+']],
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
 		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The engine generic is
