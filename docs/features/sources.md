@@ -281,6 +281,21 @@ Logs are accessible via the Logs section in the Integriq UI and the `/api/logs` 
 
 Integriq detects rate limiting responses (HTTP 429, `Retry-After` headers, and common rate limit headers). When detected, the service throws a `TooManyRequestsHttpException` which causes the calling synchronization or job to back off and reschedule.
 
+A page that answers 403 or 429 with `X-RateLimit-Remaining: 0` or a `Retry-After` counts as a spent quota. This is how GitHub says it. A flow step that runs the synchronization then waits until `X-RateLimit-Reset`, at least 60 seconds and at most one hour, and carries on. A 403 without those headers is a real refusal and fails the page.
+
+## GitHub
+
+Two GitHub sources come with integriq:
+
+- **GitHub API** (`github-api`) calls `https://api.github.com`. It starts disabled. Create a credential named `github-publiccode` with provider `github` for your token, then enable the source. The token stays in the credential broker; the source only names it.
+- **GitHub raw files** (`github-raw`) reads public files from `https://raw.githubusercontent.com`. It needs no account and does not count against your API limit.
+
+GitHub code search allows 10 requests a minute and returns at most 1,000 results per query. To cover all of GitHub, split the search into shards, for example by file size (`size:0..500`, `size:501..1000`), and hang every shard's step directly off the trigger. Do not chain them: a chained step runs once per item of the step before it.
+
+## YAML sources
+
+Set `configuration.format` to `yaml` on a source whose pages are YAML. A page served with a YAML content type is read as YAML without it. A page that does not parse fails, so the run never mistakes it for an empty source.
+
 ## Implementation
 
 - `lib/Service/CallService.php` — HTTP execution, template rendering, error handling

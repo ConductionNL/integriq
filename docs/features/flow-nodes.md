@@ -37,6 +37,39 @@ Add a `source-call` step. Pick a Source, give it a path and a method:
 
 The step runs once per item. `{{dotted.path}}` placeholders resolve from each item's record, and the response lands under the key you name in `output`. The call goes through `CallService`, so the Source's enablement, host guard, rate limits and call logging all apply unchanged.
 
+## Read a YAML or base64 file
+
+By default the step reads JSON. Set `decode` to read anything else:
+
+| `decode` | Reads |
+|---|---|
+| `auto` | JSON, and YAML when the server sends a YAML content type. This is the default. |
+| `yaml` | A YAML file, such as a raw `publiccode.yml` from GitHub. |
+| `base64+yaml` | A file API answer with the file base64-encoded in `content`, such as GitHub's contents API. |
+| `base64+json` | The same, for a JSON file. |
+| `json` | JSON, and fail when it is not. |
+| `text` | The body as text, unparsed. |
+
+Fetch each `publiccode.yml` a code search found:
+
+```json
+{
+  "id": "step-fetch-publiccode",
+  "type": "openconnector.source-call",
+  "config": {
+    "source": "github-raw",
+    "endpoint": "/{{repository.full_name}}/HEAD/{{path}}",
+    "decode": "yaml",
+    "output": "publiccode",
+    "onError": "continue"
+  }
+}
+```
+
+The parsed file lands in `publiccode.body`. A file that does not parse fails its own item: with `onError: continue` the item carries `_error` with kind `decode` and the parser's line number, and has no `publiccode` key. It never turns into an empty object.
+
+YAML is read without PHP object, constant or custom tags. Dates stay text, so `releaseDate: 2024-01-31` reads as `"2024-01-31"`.
+
 ## Try it on a fresh install
 
 Integriq seeds three demo Sources so the step has something to call. All three point at `example.org` and hold no secret. Each says it is demo data and is safe to delete.

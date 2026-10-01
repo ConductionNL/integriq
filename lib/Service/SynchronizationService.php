@@ -7081,9 +7081,13 @@ class SynchronizationService {
 		}
 
 		$limit = ResponseDecoder::headerValue(headers: $headers, name: 'X-RateLimit-Limit');
+		$limitValue = null;
+		if ($limit !== null) {
+			$limitValue = (int)$limit;
+		}
 
 		return [
-			'X-RateLimit-Limit' => ($limit !== null ? (int)$limit : null),
+			'X-RateLimit-Limit' => $limitValue,
 			'X-RateLimit-Remaining' => 0,
 			'X-RateLimit-Reset' => $resetAt,
 		];
