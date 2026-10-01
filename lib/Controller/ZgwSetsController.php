@@ -62,6 +62,8 @@ class ZgwSetsController extends Controller {
 	 *
 	 * @return JSONResponse {results: list<{slug, title, writesBack, binding}>}
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a final table of constants with pure lookups; there is nothing to inject.
+	 *
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]

@@ -144,8 +144,11 @@ class ZgwSetInstaller {
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001
 	 */
 	private function template(string $slug): array {
-		$raw      = @file_get_contents(self::SET_DIR . '/' . basename($slug) . '.json');
-		$template = json_decode((string)$raw, true);
+		$path     = self::SET_DIR . '/' . basename($slug) . '.json';
+		$template = null;
+		if (is_readable($path) === true) {
+			$template = json_decode((string)file_get_contents($path), true);
+		}
 		if (is_array($template) === false) {
 			throw new ZgwSetInstallRefusedException(sprintf('The set file for "%s" is missing from this installation.', $slug));
 		}
