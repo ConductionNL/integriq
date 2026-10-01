@@ -66,6 +66,32 @@ final class ZgwSetCatalogue {
 	public const WRITE_BACK_SETS = ['zgw-zaken', 'zgw-documenten', 'zgw-besluiten', 'zgw-objecten'];
 
 	/**
+	 * Sets that carry subscriptions, not records: installed without a register and schema.
+	 *
+	 * The guard keeps asking every other set for a target, because a data set
+	 * installed against nothing still runs and writes nowhere while reporting
+	 * success (zgw-connectors-for-dossiq design D3).
+	 *
+	 * @var string[]
+	 */
+	public const SUBSCRIPTION_SETS = ['zgw-notificaties'];
+
+	/**
+	 * The data set each Notificaties API kanaal belongs to.
+	 *
+	 * @var array<string, string>
+	 */
+	public const KANAAL_SETS = [
+		'zaken'                 => 'zgw-zaken',
+		'documenten'            => 'zgw-documenten',
+		'besluiten'             => 'zgw-besluiten',
+		'objecten'              => 'zgw-objecten',
+		'zaaktypen'             => 'zgw-catalogi',
+		'informatieobjecttypen' => 'zgw-catalogi',
+		'besluittypen'          => 'zgw-catalogi',
+	];
+
+	/**
 	 * The auth scheme a set's source template declares, unless TOKEN_AUTH_SETS names it.
 	 *
 	 * @var string
@@ -159,6 +185,19 @@ final class ZgwSetCatalogue {
 
 		return self::AUTH;
 	}//end authFor()
+
+	/**
+	 * Whether this set carries subscriptions rather than records.
+	 *
+	 * @param string $slug The set slug.
+	 *
+	 * @return bool True for a subscription set.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	public static function isSubscriptionSet(string $slug): bool {
+		return in_array($slug, self::SUBSCRIPTION_SETS, true);
+	}//end isSubscriptionSet()
 
 	/**
 	 * Whether this set pushes local changes back to the store.

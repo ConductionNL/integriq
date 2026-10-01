@@ -18,8 +18,9 @@
 ### Task 3: Notification-triggered pull and write-back
 - **spec_ref**: `openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003`
 - **files**: `lib/Service/Zgw/ZgwNotificationPullListener.php`, the push synchronizations in the sets
-- [ ] Implement
-- [ ] Test
+- Pull half done (design D3): `ZgwNotificationPullListener` (called from `NotificatiesSubscriberService::handleInboundNotification()` after the CloudEvent) pulls the main object of an installed set's kanaal through `getObjectFromSource()` + `replaySynchronizationItem()`, refusing a url off the set's source; `zgw-notificaties` installs without a register and schema as a subscription set (`ZgwSetInstaller::subscribe()`, one abonnement per installed data set, recorded in `zgw_set_subscriptions`; seeded source `zgw-set-notificaties`). Tests: `tests/Unit/Service/Zgw/ZgwNotificationPullListenerTest.php`, `tests/Unit/Service/Zgw/ZgwNotificatiesInstallTest.php` (real `NotificatiesSubscriberService`, every save validated against the register; it found that a registered abonnement saved `lastError: null`, which the schema refuses, now `''`), `NotificatiesSubscriberServiceTest::testHandleInboundNotificationHandsItToTheZgwPull`. Write-back half done (design D4): the four push synchronizations declare `targetConfig.targetIdPosition: url` (a pulled object is PATCHed where it lives instead of POSTed again; a url off the target source is refused) and `targetConfig.conflictStatusProperty: syncStatus` (a 4xx raises `TargetWriteRefusedException`; the object handler keeps the edit and silently records `syncStatus = conflict`, cleared to `synced` by the next accepted push; a 5xx and any synchronization without the key behave as before). Tests: `tests/Unit/Service/SynchronizationWriteBackTest.php` (the real seeded `zgw-zaken-push`, the real engine write path and object handler).
+- [x] Implement
+- [x] Test
 
 ### Task 4: Docs and i18n
 - Install guide per set, Dutch and English strings on the installer.

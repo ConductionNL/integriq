@@ -40,6 +40,7 @@ use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
+use OCA\Integriq\Exception\TargetWriteRefusedException;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -144,6 +145,15 @@ class SynchronizationService {
 	 * @var int
 	 */
 	private const WRITE_BUFFER_FLUSH_SIZE = 500;
+
+	/**
+	 * The write-back states a push records on its local object (zgw-connectors-for-dossiq D4).
+	 *
+	 * @var string
+	 */
+	private const WRITE_BACK_CONFLICT = 'conflict';
+
+	private const WRITE_BACK_SYNCED = 'synced';
 
 	/**
 	 * How many contracts a run will inline into `_embed.contracts`.
@@ -1907,15 +1917,12 @@ class SynchronizationService {
 						mutationType: 'delete'
 					);
 				} else {
-					$eventObjectArray = $objectArray;
-					$this->synchronize(
-						synchronization: $synchronization,
-						force: true,
-						object: $eventObjectArray
-					);
+					$this->pushOnObjectEvent(synchronization: $synchronization, object: $object, objectArray: $objectArray);
 				}
 
 				$processedSynchronizationIds[] = ($synchronization['id'] ?? null);
+			} catch (TargetWriteRefusedException $e) {
+				$this->recordWriteBackRefusal(synchronization: $synchronization, object: $object, refusal: $e);
 			} catch (\Exception $e) {
 				$this->logger->error(
 					'Failed to process object event: ' . $e->getMessage() . ' for synchronization ' . ($synchronization['id'] ?? null),
@@ -1975,6 +1982,175 @@ class SynchronizationService {
 			}//end try
 		}//end foreach
 	}//end doHandleObjectEventSynchronization()
+
+	/**
+	 * Push a created or updated object, and clear a recorded conflict once the target accepts it.
+	 *
+	 * @param array                                $synchronization The push synchronization.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $object          The local object.
+	 * @param array                                $objectArray     Its serialised form.
+	 *
+	 * @return void
+	 *
+	 * @throws TargetWriteRefusedException When the target refused the write.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	private function pushOnObjectEvent(array $synchronization, \OCA\OpenRegister\Db\ObjectEntity $object, array $objectArray): void {
+		$this->synchronize(synchronization: $synchronization, force: true, object: $objectArray);
+		$this->markWriteBack(
+			object: $object,
+			property: (string)($synchronization['targetConfig']['conflictStatusProperty'] ?? ''),
+			from: self::WRITE_BACK_CONFLICT,
+			to: self::WRITE_BACK_SYNCED
+		);
+	}//end pushOnObjectEvent()
+
+	/**
+	 * Keep the local edit and mark the object: the target refused the write.
+	 *
+	 * The edit stays because the push runs after the local save and nothing on
+	 * this path writes the object's data back.
+	 *
+	 * @param array                                $synchronization The push synchronization.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $object          The local object.
+	 * @param TargetWriteRefusedException          $refusal         What the target answered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	private function recordWriteBackRefusal(
+		array $synchronization,
+		\OCA\OpenRegister\Db\ObjectEntity $object,
+		TargetWriteRefusedException $refusal,
+	): void {
+		$this->logger->warning(
+			'Write-back refused for synchronization ' . ($synchronization['id'] ?? '') . ': ' . $refusal->getMessage(),
+			['statusCode' => $refusal->getStatusCode(), 'objectId' => $object->getUuid()]
+		);
+		$this->markWriteBack(object: $object, property: $refusal->getStatusProperty(), from: null, to: self::WRITE_BACK_CONFLICT);
+	}//end recordWriteBackRefusal()
+
+	/**
+	 * The remote id a push target already has for this object, read at `targetConfig.targetIdPosition`.
+	 *
+	 * @param array $targetConfig The synchronization's target configuration.
+	 * @param array $object       The mapped object about to be written.
+	 *
+	 * @return string|null The remote id, or null when none is declared or present.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	private function targetIdFromObject(array $targetConfig, array $object): ?string {
+		$position = ($targetConfig['targetIdPosition'] ?? null);
+		if (is_string($position) === false || $position === '') {
+			return null;
+		}
+
+		$value = (new Dot($object))->get($position);
+		if (is_scalar($value) === false || (string)$value === '') {
+			return null;
+		}
+
+		return (string)$value;
+	}//end targetIdFromObject()
+
+	/**
+	 * The endpoint for an absolute remote id, relative to the target's location.
+	 *
+	 * The call carries the target's credentials, so an id on another host is
+	 * refused rather than called.
+	 *
+	 * @param string $url            The absolute remote id.
+	 * @param string $targetLocation The target source's location.
+	 *
+	 * @return string The endpoint relative to the location.
+	 *
+	 * @throws Exception When the url is not under the location.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	private function endpointUnderTarget(string $url, string $targetLocation): string {
+		$location = rtrim($targetLocation, '/');
+		if ($location === '' || str_starts_with($url, $location . '/') === false) {
+			throw new Exception(
+				'Refused to write to ' . $url . ': it is not under the target source location. '
+				. 'A remote id may only address the store the synchronization writes to.'
+			);
+		}
+
+		return substr($url, strlen($location));
+	}//end endpointUnderTarget()
+
+	/**
+	 * Raise a refusal for a 4xx answer, when the synchronization records conflicts.
+	 *
+	 * A target is called with `http_errors` off, so a refusal otherwise reads as
+	 * a success. Only a synchronization declaring
+	 * `targetConfig.conflictStatusProperty` changes; a 5xx is an outage, not a
+	 * conflict.
+	 *
+	 * @param ObjectEntity $callLog      The call log of the write.
+	 * @param array        $targetConfig The synchronization's target configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws TargetWriteRefusedException When the target answered 4xx.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	private function refuseOnTargetConflict(ObjectEntity $callLog, array $targetConfig): void {
+		$property = ($targetConfig['conflictStatusProperty'] ?? null);
+		if (is_string($property) === false || $property === '') {
+			return;
+		}
+
+		$status = (int)$this->callLogStatusCode(callLog: $callLog);
+		if ($status >= 400 && $status < 500) {
+			throw new TargetWriteRefusedException(statusCode: $status, statusProperty: $property);
+		}
+	}//end refuseOnTargetConflict()
+
+	/**
+	 * Record the write-back state on the local object, silently.
+	 *
+	 * Silent because a normal save fires the object event, which runs the push
+	 * again: a refused push would be refused again and loop.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $object   The local object.
+	 * @param string                           $property The property recording the state ('' = none).
+	 * @param string|null                      $from     Only change it from this value (null = from any).
+	 * @param string                           $to       The value to record.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	private function markWriteBack(\OCA\OpenRegister\Db\ObjectEntity $object, string $property, ?string $from, string $to): void {
+		$data    = $object->getObject();
+		$current = ($data[$property] ?? null);
+		if ($property === '' || $current === $to || ($from !== null && $current !== $from)) {
+			return;
+		}
+
+		$data[$property] = $to;
+		try {
+			$this->orObjectService->saveObject(
+				object: $data,
+				register: $object->getRegister(),
+				schema: $object->getSchema(),
+				uuid: $object->getUuid(),
+				silent: true
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Could not record ' . $property . ' = ' . $to . ' on object ' . $object->getUuid()
+				. ' (schema ' . $object->getSchema() . '): add a string property "' . $property . '" to that schema. '
+				. $e->getMessage()
+			);
+		}
+	}//end markWriteBack()
 
 	/**
 	 * Resolve and fetch the parent object for a related-object trigger.
@@ -8475,15 +8651,25 @@ class SynchronizationService {
 		// @TODO For now only JSON APIs are supported
 		$targetConfig['json'] = $object;
 
+		// A pulled object already exists in the store and carries its remote id
+		// (zgw-connectors-for-dossiq D4). Without this the first local edit of a
+		// pulled zaak POSTed a second zaak.
+		if ($targetId === null) {
+			$targetId = $this->targetIdFromObject(targetConfig: $targetConfig, object: $object);
+			if ($targetId !== null) {
+				$contract['targetId'] = $targetId;
+			}
+		}
+
 		if ($targetId === null) {
 			if (isset($targetConfig['idInRequestBody']) === true) {
 				$targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
 			}
 
 			$this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
-			$response = $this->callLogResponse(
-				callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig, trace: $trace)
-			);
+			$callLog = $this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig, trace: $trace);
+			$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $targetConfig);
+			$response = $this->callLogResponse(callLog: $callLog);
 
 			$body = json_decode($response['body'], true);
 
@@ -8510,6 +8696,8 @@ class SynchronizationService {
 			$endpoint = $targetConfig['updateEndpoint'];
 			$endpoint = str_replace(search: '{{ originId }}', replace: $targetId, subject: $endpoint);
 			$endpoint = str_replace(search: '{{originId}}', replace: $targetId, subject: $endpoint);
+		} elseif (preg_match('#^https?://#i', (string)$targetId) === 1) {
+			$endpoint = $this->endpointUnderTarget(url: (string)$targetId, targetLocation: (string)$targetLocation);
 		} else {
 			$endpoint .= "/$targetId";
 		}
@@ -8524,9 +8712,9 @@ class SynchronizationService {
 		}
 
 		$this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
-		$response = $this->callLogResponse(
-			callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace)
-		);
+		$callLog = $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace);
+		$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $targetConfig);
+		$response = $this->callLogResponse(callLog: $callLog);
 
 		$decodedResponseBody = json_decode($response['body'] ?? '', true);
 		if (is_array($decodedResponseBody) === false) {
