@@ -1,0 +1,53 @@
+{
+  "$comment": "ADR-037 register fragment (sources-github-publiccode). Seeds two GitHub sources for the publiccode harvest that opencatalogi's publiccode-github-harvest flow runs. github-api: the REST API at https://api.github.com, DORMANT (isEnabled false). It holds no token: configuration.authentication.credentialRef names the broker credential github-publiccode (ADR-064), which the OpenRegister broker injects as `Authorization: token <secret>` through its host-locked `github` provider. To go live: create a credential named github-publiccode with provider github (a fine-grained token with public read access is enough), then enable the source. Code search (`GET /search/code`) also needs that path in the provider's allowRules. github-raw: https://raw.githubusercontent.com, credential-free and enabled, used to fetch each publiccode.yml without spending API quota; read it with the source-call option decode: yaml. See openspec/changes/sources-github-publiccode/design.md D1.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "github-api"
+        },
+        "name": "GitHub API",
+        "description": "The GitHub REST API, for code search and repository data. Create a credential named github-publiccode for your GitHub token, then enable this source.",
+        "type": "api",
+        "location": "https://api.github.com",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28"
+          },
+          "authentication": {
+            "credentialRef": {
+              "credentialName": "github-publiccode"
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "github-raw"
+        },
+        "name": "GitHub raw files",
+        "description": "Reads public files from GitHub repositories, such as publiccode.yml. Needs no account and does not count against your GitHub API limit.",
+        "type": "api",
+        "location": "https://raw.githubusercontent.com",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "text/plain"
+          }
+        },
+        "isEnabled": true,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

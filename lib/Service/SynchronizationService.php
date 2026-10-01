@@ -38,6 +38,7 @@ use JWadhams\JsonLogic;
 use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
 use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
+use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
@@ -7042,6 +7043,53 @@ class SynchronizationService {
 	}//end resolvePageSize()
 
 	/**
+	 * The rate-limit headers of a response that says the quota is spent, or null.
+	 *
+	 * A 403 or 429 counts when it carries `X-RateLimit-Remaining: 0` or a
+	 * `Retry-After`. Header names are matched case-insensitively: Guzzle keeps
+	 * the server's casing and HTTP/2 servers send lower case. The returned map
+	 * uses the spelling {@see \OCA\Integriq\Flow\FlowRateLimit} reads, with
+	 * a `Retry-After` in seconds turned into an absolute `X-RateLimit-Reset`.
+	 *
+	 * @param int|null             $statusCode The page's status.
+	 * @param array<string, mixed> $headers    The page's response headers.
+	 *
+	 * @return array<string, int|null>|null The headers to raise with, or null when this is no rate limit.
+	 *
+	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
+	 */
+	private function rateLimitHeadersFromResponse(?int $statusCode, array $headers): ?array {
+		if ($statusCode !== 403 && $statusCode !== 429) {
+			return null;
+		}
+
+		$remaining = ResponseDecoder::headerValue(headers: $headers, name: 'X-RateLimit-Remaining');
+		$retryAfter = ResponseDecoder::headerValue(headers: $headers, name: 'Retry-After');
+		$spent = ($remaining !== null && trim($remaining) === '0');
+		if ($spent === false && $retryAfter === null) {
+			return null;
+		}
+
+		$reset = ResponseDecoder::headerValue(headers: $headers, name: 'X-RateLimit-Reset');
+		$resetAt = null;
+		if ($reset !== null && ctype_digit(trim($reset)) === true) {
+			$resetAt = (int)trim($reset);
+		} elseif ($retryAfter !== null && ctype_digit(trim($retryAfter)) === true) {
+			$resetAt = (time() + (int)trim($retryAfter));
+		} elseif ($retryAfter !== null && strtotime($retryAfter) !== false) {
+			$resetAt = (int)strtotime($retryAfter);
+		}
+
+		$limit = ResponseDecoder::headerValue(headers: $headers, name: 'X-RateLimit-Limit');
+
+		return [
+			'X-RateLimit-Limit' => ($limit !== null ? (int)$limit : null),
+			'X-RateLimit-Remaining' => 0,
+			'X-RateLimit-Reset' => $resetAt,
+		];
+	}//end rateLimitHeadersFromResponse()
+
+	/**
 	 * Read the total page count from an RFC 5988 `Link` header.
 	 *
 	 * @param array $headers The response headers.
@@ -7054,11 +7102,15 @@ class SynchronizationService {
 		$link = null;
 		foreach ($headers as $name => $value) {
 			if (strtolower((string)$name) === 'link') {
-				$link = (string)$value;
+				// Guzzle hands every header over as a list of values; casting
+				// that list to a string first raised "Array to string
+				// conversion" on every GitHub page.
 				if (is_array($value) === true) {
 					$link = implode(', ', $value);
+					break;
 				}
 
+				$link = (string)$value;
 				break;
 			}
 		}
@@ -7119,6 +7171,25 @@ class SynchronizationService {
 				message: 'Rate Limit on Source exceeded.',
 				code: 429,
 				headers: $this->getRateLimitHeaders(source: $source)
+			);
+		}
+
+		// A spent quota answered WITH a body. GitHub says "you are out of
+		// requests" as a 403 carrying `X-RateLimit-Remaining: 0`; others send a
+		// 429 with `Retry-After`. Both used to end as a failed page, so a crawl
+		// that ran out of quota on page 3 ended instead of waiting. Raising the
+		// same refusal as above lets the flow node suspend the run until the
+		// reset. A 403 without these headers is a real refusal (a private
+		// repository, a missing scope) and stays an ordinary failed page.
+		$rateLimitHeaders = $this->rateLimitHeadersFromResponse(
+			statusCode: $statusCode,
+			headers: (array)($response['headers'] ?? [])
+		);
+		if ($response !== null && $rateLimitHeaders !== null) {
+			throw new TooManyRequestsHttpException(
+				message: sprintf('Rate limit on source exceeded (status %d).', (int)$statusCode),
+				code: 429,
+				headers: $rateLimitHeaders
 			);
 		}
 
@@ -7241,6 +7312,43 @@ class SynchronizationService {
 				'result' => $result,
 			];
 		}
+
+		// YAML: declared on the source like markdown and html, or announced by
+		// the response's Content-Type. Parsed by the same decoder the
+		// source-call step uses, so a file reads the same on either path. A
+		// page that does not parse is FAILED, never an empty page: an empty
+		// page ends pagination and lets the stale sweep delete what it did not
+		// see.
+		$contentType = ResponseDecoder::headerValue(headers: (array)($response['headers'] ?? []), name: 'Content-Type');
+		$decoder = new ResponseDecoder();
+		if ($sourceFormat === 'yaml' || $decoder->isYamlContentType(contentType: $contentType) === true) {
+			try {
+				$result = $decoder->decode(body: $body, mode: ResponseDecoder::MODE_YAML);
+			} catch (ResponseDecodeException $exception) {
+				$this->logger->error(
+					'SynchronizationService: source {endpoint} answered {status} with YAML that does not parse '
+					. '({reason}). Treating the page as FAILED rather than empty.',
+					[
+						'endpoint' => $endpoint,
+						'status' => ($statusCode ?? 200),
+						'reason' => $exception->getReason(),
+					]
+				);
+
+				return ['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => $statusCode];
+			}
+
+			if (is_array($result) === false) {
+				$result = [$result];
+			}
+
+			$this->recordLastPageFromBody(body: $result, synchronization: $synchronization);
+
+			return [
+				'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
+				'result' => $result,
+			];
+		}//end if
 
 		// Try parsing the response body in different formats, starting with JSON.
 		//
