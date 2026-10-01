@@ -2452,6 +2452,24 @@ class CallServiceTest extends TestCase {
 	}//end testRedactSecretsFromConfigRedactsSecretQueryAndFormParams()
 
 	/**
+	 * Basic auth scrubs the password from logs and bodies, never the user name.
+	 *
+	 * A user name such as `stackiq` is not a secret, and scrubbing it rewrote
+	 * the response a flow reads (`stackiqId` became `***REDACTED***Id`).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-service-desk-templates/design.md
+	 */
+	public function testBasicAuthScrubsThePasswordAndNotTheUserName(): void {
+		$values = $this->callPrivate('collectSecretValues', ['auth' => ['stackiq', 'mock-password']], 'https://desk.example.org/api');
+
+		$this->assertContains('mock-password', $values);
+		$this->assertNotContains('stackiq', $values);
+
+	}//end testBasicAuthScrubsThePasswordAndNotTheUserName()
+
+	/**
 	 * A URL keeps its non-secret query parameters and loses only the secret ones.
 	 *
 	 * Guards the key-only iteration in redactSecretsFromUrl(), which writes back

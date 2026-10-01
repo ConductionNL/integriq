@@ -203,6 +203,21 @@ class CatalogRegistryServiceTest extends TestCase {
 	}//end testSeedEntriesAreMockSeededWithCategoryOverride()
 
 	/**
+	 * The three service desk templates show under Service management.
+	 *
+	 * @return void
+	 */
+	public function testServiceDeskTemplatesAreServiceManagement(): void {
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		foreach (['topdesk', 'servicenow', 'glpi'] as $slug) {
+			$entry = $bySlug['source-template:' . $slug];
+			$this->assertSame('Service management', $entry['category'], $slug);
+			$this->assertSame('mock-seeded', $entry['mechanism'], $slug);
+		}
+	}//end testServiceDeskTemplatesAreServiceManagement()
+
+	/**
 	 * resolveStatus(): a flag-gated entry is dormant while its app-config
 	 * flag is unset and available once it is '1' (REQ-001 scenario).
 	 *

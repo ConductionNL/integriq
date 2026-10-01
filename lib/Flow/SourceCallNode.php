@@ -294,6 +294,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			'query',
 			'headers',
 			'body',
+			'bodyFrom',
 			'output',
 			'concurrency',
 			'decode',
@@ -411,6 +412,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		SourceCallConfigGuard::assertMethod(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertAcceptStatuses(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertRequestParts(config: $config, l10n: $this->l10n);
+		SourceCallConfigGuard::assertBodyFrom(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertOnError(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertDecode(config: $config, l10n: $this->l10n);
 
@@ -496,7 +498,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 					source: $source,
 					endpoint: $endpoints[$index],
 					method: $method,
-					config: $this->buildRequestConfig(config: $config, json: $records[$index])
+					config: SourceCallRequest::build(config: $config, json: $records[$index])
 				);
 			},
 			$this->concurrencyLimit(config: $config)
@@ -598,6 +600,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			$json = (array)($item['json'] ?? []);
 
 			$records[$index] = $json;
+			SourceCallRequest::assertBodyFromResolves(config: $config, json: $json, index: $index, l10n: $this->l10n);
 			$endpoints[$index] = FlowTemplate::renderString(
 				template: (string)$config['endpoint'],
 				json: $json
@@ -815,43 +818,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 
 		return $source;
 	}//end resolveSource()
-
-	/**
-	 * Build the request configuration handed to `CallService`.
-	 *
-	 * An array body travels as `json` (the Guzzle option that encodes it); a
-	 * string body travels as `body`. Nothing here sets an authentication
-	 * header — `FlowConfigGuard` has already refused any attempt to.
-	 *
-	 * @param array $config The step's authored configuration.
-	 * @param array $json The current item's record.
-	 *
-	 * @return array The request configuration.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	private function buildRequestConfig(array $config, array $json): array {
-		$requestConfig = [];
-
-		$query = ($config['query'] ?? null);
-		if (is_array($query) === true && $query !== []) {
-			$requestConfig['query'] = FlowTemplate::renderValue(value: $query, json: $json);
-		}
-
-		$headers = ($config['headers'] ?? null);
-		if (is_array($headers) === true && $headers !== []) {
-			$requestConfig['headers'] = FlowTemplate::renderValue(value: $headers, json: $json);
-		}
-
-		$body = ($config['body'] ?? null);
-		if (is_array($body) === true && $body !== []) {
-			$requestConfig['json'] = FlowTemplate::renderValue(value: $body, json: $json);
-		} elseif (is_string($body) === true && $body !== '') {
-			$requestConfig['body'] = FlowTemplate::renderString(template: $body, json: $json);
-		}
-
-		return $requestConfig;
-	}//end buildRequestConfig()
 
 	/**
 	 * Decode the response body in the step's `decode` mode.

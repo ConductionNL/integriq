@@ -167,6 +167,7 @@ class SourceCallNodeTest extends TestCase {
 				'query',
 				'headers',
 				'body',
+				'bodyFrom',
 				'output',
 				'concurrency',
 				'decode',
@@ -1303,5 +1304,76 @@ class SourceCallNodeTest extends TestCase {
 
 		return $callLog;
 	}//end callLog()
+
+	/**
+	 * `bodyFrom` sends the mapped object at that item path whole, as JSON.
+	 *
+	 * @return void
+	 */
+	public function testBodyFromSendsTheObjectAtThatPathWhole(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$captured = [];
+		$this->callService->method('callAsync')->willReturnCallback(
+			function (...$arguments) use (&$captured) {
+				$captured = $arguments;
+				return $this->promisedLog(statusCode: 201, body: '{"result":{"sys_id":"abc"}}');
+			}
+		);
+
+		$send = ['name' => 'Zaaksysteem', 'u_bbn_level' => '2', 'install_status' => '1'];
+		$this->node->execute(
+			[['json' => ['usage' => ['uuid' => 'u-1'], 'send' => $send]]],
+			[
+				'source' => 'servicenow',
+				'endpoint' => '/api/now/table/cmdb_ci_appl',
+				'method' => 'POST',
+				'bodyFrom' => 'send',
+				'output' => 'created',
+			],
+			$this->context()
+		);
+
+		$this->assertSame($send, $captured[3]['json']);
+		$this->assertArrayNotHasKey('body', $captured[3]);
+
+	}//end testBodyFromSendsTheObjectAtThatPathWhole()
+
+	/**
+	 * A `bodyFrom` path with no object refuses the step before any call.
+	 *
+	 * @return void
+	 */
+	public function testBodyFromWithoutAnObjectSendsNothing(): void {
+		$this->givenSource();
+		$this->givenOwner();
+		$this->callService->expects($this->never())->method('callAsync');
+
+		$this->expectException(FlowNodeException::class);
+		$this->expectExceptionMessage('did not resolve to an object');
+
+		$this->node->execute(
+			[['json' => ['send' => 'not an object']]],
+			['source' => 'servicenow', 'endpoint' => '/api/now/table/cmdb_ci_appl', 'method' => 'POST', 'bodyFrom' => 'send'],
+			$this->context()
+		);
+
+	}//end testBodyFromWithoutAnObjectSendsNothing()
+
+	/**
+	 * `body` and `bodyFrom` together are refused at save.
+	 *
+	 * @return void
+	 */
+	public function testBodyAndBodyFromTogetherAreRefused(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('Use "body" or "bodyFrom", not both.');
+
+		$this->node->validateConfig(
+			['source' => 'servicenow', 'endpoint' => '/x', 'method' => 'POST', 'body' => ['a' => 1], 'bodyFrom' => 'send']
+		);
+
+	}//end testBodyAndBodyFromTogetherAreRefused()
 
 }//end class
