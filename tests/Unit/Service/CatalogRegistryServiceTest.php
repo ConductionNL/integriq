@@ -144,6 +144,11 @@ class CatalogRegistryServiceTest extends TestCase {
 		// @spec openspec/specs/slo-curriculum-import/spec.md#requirement-a-dormant-slo-source-template-carries-the-set-profiles-and-the-attribution-req-001
 		$this->assertContains('source-template:slo-curriculum', $slugs);
 
+		// sources-github-publiccode: the GitHub API (dormant, broker credential) and raw files.
+		// @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-github-is-a-source-template-that-holds-only-a-credential-reference-req-ghp-001
+		$this->assertContains('source-template:github-api', $slugs);
+		$this->assertContains('source-template:github-raw', $slugs);
+
 		// No duplicates — slugs are the upsert keys.
 		$this->assertSame(count($slugs), count(array_unique($slugs)));
 	}//end testCollectAssemblesFromAllThreeSources()
@@ -189,10 +194,28 @@ class CatalogRegistryServiceTest extends TestCase {
 		$this->assertSame('brp-haalcentraal', $brp['sourceTemplateSlug']);
 		$this->assertSame('source-template', $brp['kind']);
 
+		$this->assertSame('Code hosting', $bySlug['source-template:github-api']['category']);
+		$this->assertSame('Code hosting', $bySlug['source-template:github-raw']['category']);
+
 		$pdok = $bySlug['adapter:pdok'];
 		$this->assertSame('flag-gated', $pdok['mechanism']);
 		$this->assertSame('pdok.feature_flag', $pdok['flagKey']);
 	}//end testSeedEntriesAreMockSeededWithCategoryOverride()
+
+	/**
+	 * The three service desk templates show under Service management.
+	 *
+	 * @return void
+	 */
+	public function testServiceDeskTemplatesAreServiceManagement(): void {
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		foreach (['topdesk', 'servicenow', 'glpi'] as $slug) {
+			$entry = $bySlug['source-template:' . $slug];
+			$this->assertSame('Service management', $entry['category'], $slug);
+			$this->assertSame('mock-seeded', $entry['mechanism'], $slug);
+		}
+	}//end testServiceDeskTemplatesAreServiceManagement()
 
 	/**
 	 * resolveStatus(): a flag-gated entry is dormant while its app-config

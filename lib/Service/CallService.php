@@ -1605,9 +1605,18 @@ class CallService {
 			}
 		}
 
-		// Basic-auth credentials.
+		// Basic-auth credentials: the password only. The user name is not a
+		// secret, and scrubbing it rewrote every occurrence of it in the
+		// response a flow goes on to read (a service desk user `stackiq`
+		// turned the field `stackiqId` into `***REDACTED***Id`). The request
+		// log still drops the whole `auth` pair, see redactSecretsFromConfig().
 		if (isset($config['auth']) === true) {
-			$values = array_merge($values, $this->flattenSecretValue(value: $config['auth']));
+			$auth = $config['auth'];
+			if (is_array($auth) === true && array_key_exists(1, $auth) === true) {
+				$auth = $auth[1];
+			}
+
+			$values = array_merge($values, $this->flattenSecretValue(value: $auth));
 		}
 
 		// Secret query / form parameters from the config.

@@ -19,3 +19,5 @@ The rule editor stops offering `javascript`. The runtime throws for a `javascrip
 ## Open question for the product owner
 
 Whether integriq should ever run tenant scripts. This change assumes not (D3). If the answer changes, D3 is the only part to revisit.
+
+Answered 30 Sep 2026 (build-all DECISIONS row 36): later, sandboxed, and not in this change. D3 stands: the `javascript` rule stays refused. The future work is recorded as the change `sandboxed-tenant-scripts` (an isolated runtime outside the PHP process).

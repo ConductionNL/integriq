@@ -1,0 +1,10 @@
+# A publiccode.yml with two real-world mistakes: a key indented one space
+# deeper than its siblings, and an unclosed quote. Derived from the v0.2
+# fixture next to it; kept small so the parser's line number is checkable.
+publiccodeYmlVersion: '0.2'
+name: Signalen frontend
+url: 'https://github.com/Amsterdam/signals-frontend
+ landingURL: 'https://signalen.org/'
+releaseDate: '2021-05-20'
+platforms:
+  - web
