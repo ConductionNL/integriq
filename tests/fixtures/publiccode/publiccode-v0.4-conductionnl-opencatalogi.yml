@@ -1,0 +1,61 @@
+publiccodeYmlVersion: "0.4"
+
+name: OpenCatalogi
+url: "https://github.com/ConductionNL/opencatalogi"
+softwareVersion: "0.7.34"
+releaseDate: "2026-05-26"
+developmentStatus: stable
+
+platforms:
+  - nextcloud
+
+categories:
+  - content-management
+  - knowledge-management
+
+description:
+  nl:
+    shortDescription: "Framework voor gefedereerde catalogi in Nextcloud"
+    longDescription: |
+      OpenCatalogi biedt een framework waarmee gefedereerde catalogi samenwerken
+      in een open data ecosysteem. De app synchroniseert bronnen met meerdere
+      catalogi en ondersteunt automatische publicatie van open data conform het
+      DIWOO-standaard.
+    features:
+      - Gefedereerde catalogi
+      - Automatische publicatie van open data
+      - DIWOO-sitemaps voor WOO-documenten
+      - Integratie met OpenRegister
+  en:
+    shortDescription: "Framework for federated catalogs in Nextcloud"
+    longDescription: |
+      OpenCatalogi provides a framework for federated catalogs to work together
+      in an open data ecosystem. The app synchronises sources with multiple
+      catalogs and supports automatic publication of open data following the
+      DIWOO metadata standard.
+    features:
+      - Federated catalogs
+      - Automatic open data publication
+      - DIWOO sitemaps for WOO documents
+      - OpenRegister integration
+
+legal:
+  license: EUPL-1.2
+
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - nl
+    - en
+
+maintenance:
+  type: internal
+  contacts:
+    - name: Conduction Development Team
+      email: info@conduction.nl
+      affiliation: Conduction B.V.
+
+dependsOn:
+  open:
+    - name: OpenRegister
+      versionMin: "0.1.0"

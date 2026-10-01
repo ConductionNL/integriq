@@ -127,6 +127,9 @@ class CatalogRegistryService {
 		// Text translation for sibling apps (connectors-translation-service).
 		'deepl-translation' => 'Language',
 		'libretranslate' => 'Language',
+		// GitHub for the publiccode harvest (sources-github-publiccode).
+		'github-api' => 'Code hosting',
+		'github-raw' => 'Code hosting',
 	];
 
 	/**

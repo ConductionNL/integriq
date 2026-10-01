@@ -62,7 +62,9 @@ namespace OCA\Integriq\Flow;
 
 use GuzzleHttp\Promise\PromiseInterface;
 use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\ResponseDecoder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -132,6 +134,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
+	 * @param ResponseDecoder $decoder Reads the response body in the step's `decode` mode.
 	 */
 	public function __construct(
 		private readonly CallService $callService,
@@ -141,6 +144,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
+		private readonly ResponseDecoder $decoder,
 	) {
 
 	}//end __construct()
@@ -283,7 +287,21 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configKeys(): array {
-		return ['source', 'endpoint', 'method', 'query', 'headers', 'body', 'bodyFrom', 'output', 'concurrency'];
+		return [
+			'source',
+			'endpoint',
+			'method',
+			'query',
+			'headers',
+			'body',
+			'bodyFrom',
+			'output',
+			'concurrency',
+			'decode',
+			'onError',
+			'acceptStatuses',
+			'responseMapping',
+		];
 	}//end configKeys()
 
 	/**
@@ -332,6 +350,25 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				),
 			],
 			[
+				'key' => 'decode',
+				'label' => $this->l10n->t('Read the response as'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. '
+					. 'Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, '
+					. 'and base64+yaml for a file API that returns the file base64-encoded in "content".'
+				),
+			],
+			[
+				'key' => 'onError',
+				'label' => $this->l10n->t('On error'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'What a failed call does to the run: stop, continue or dead_letter. With continue, '
+					. 'the failed item carries the error and the other items go on.'
+				),
+			],
+			[
 				'key' => 'concurrency',
 				'label' => $this->l10n->t('Concurrent calls'),
 				'type' => 'number',
@@ -377,6 +414,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		SourceCallConfigGuard::assertRequestParts(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertBodyFrom(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertOnError(config: $config, l10n: $this->l10n);
+		SourceCallConfigGuard::assertDecode(config: $config, l10n: $this->l10n);
 
 		// Output keys stay here rather than moving to SourceCallConfigGuard
 		// with their four siblings: this one is not the node's own vocabulary
@@ -443,6 +481,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 		$accepted = $this->acceptedStatuses(config: $config);
+		$decode = strtolower(trim((string)($config['decode'] ?? ResponseDecoder::MODE_AUTO)));
 		$outputList = [];
 		$indexed = array_values($items);
 
@@ -481,7 +520,8 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 					method: $method,
 					accepted: $accepted,
 					reference: $reference,
-					source: $source
+					source: $source,
+					decode: $decode
 				);
 			} catch (FlowNodeException $exception) {
 				$this->logger->error(
@@ -648,10 +688,11 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @param array $accepted Statuses the author opted into.
 	 * @param string $reference The authored source reference.
 	 * @param ObjectEntity $source The resolved Source object.
+	 * @param string $decode The step's decode mode.
 	 *
 	 * @return array The response result written onto the item.
 	 *
-	 * @throws FlowNodeException On a non-accepted status or a transport failure.
+	 * @throws FlowNodeException On a non-accepted status, a transport failure or a body that does not decode.
 	 *
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-node-that-calls-a-source-once-per-item-dispatches-those-calls-concurrently-req-015
 	 */
@@ -662,6 +703,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		array $accepted,
 		string $reference,
 		ObjectEntity $source,
+		string $decode=ResponseDecoder::MODE_AUTO,
 	): array {
 		if ($settled['ok'] === false) {
 			// A transport-level failure (DNS, TLS, timeout, connection
@@ -744,7 +786,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			'status' => $statusCode,
 			'statusMessage' => $statusMessage,
 			'headers' => (array)($response['headers'] ?? []),
-			'body' => $this->decodeBody(response: $response),
+			'body' => $this->decodeBody(response: $response, decode: $decode, context: [$reference, $endpoint, $method, $statusCode]),
 			'source' => $reference,
 			'sourceId' => $source->getUuid(),
 			'endpoint' => $endpoint,
@@ -878,36 +920,74 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	}//end requestBody()
 
 	/**
-	 * Decode the response body, keeping a non-UTF-8 payload untouched.
+	 * Decode the response body in the step's `decode` mode.
+	 *
+	 * Unset or `auto` keeps the behaviour this node always had: JSON when it
+	 * parses, otherwise the body as it came, and a non-UTF-8 body that
+	 * `CallService` stored as base64 is handed on untouched. A named mode asks
+	 * for a specific reading, so the stored base64 is undone first and a body
+	 * that does not decode FAILS the item rather than becoming an empty value.
 	 *
 	 * @param array $response The CallLog's response array.
+	 * @param string $decode The decode mode.
+	 * @param array $context The source reference, endpoint, method and status, for a decode failure.
 	 *
 	 * @return mixed The decoded payload, or the raw string.
 	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 * @throws FlowNodeException When a named mode cannot decode the body.
+	 *
+	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
 	 */
-	private function decodeBody(array $response): mixed {
+	private function decodeBody(array $response, string $decode, array $context): mixed {
 		$body = ($response['body'] ?? null);
+		$transportBase64 = ((string)($response['encoding'] ?? 'UTF-8') !== 'UTF-8');
+
+		if ($decode === ResponseDecoder::MODE_AUTO || $decode === ResponseDecoder::MODE_TEXT) {
+			// `CallService` base64-encodes a body that is not valid UTF-8;
+			// handing that to a parser would only produce noise.
+			if (is_string($body) === false || $transportBase64 === true) {
+				return $body;
+			}
+		}
+
 		if (is_string($body) === false) {
-			return $body;
+			$body = '';
 		}
 
-		// `CallService` base64-encodes a body that is not valid UTF-8; handing
-		// that to json_decode would only produce noise.
-		if ((string)($response['encoding'] ?? 'UTF-8') !== 'UTF-8') {
-			return $body;
+		if ($transportBase64 === true) {
+			$bytes = base64_decode($body, true);
+			if ($bytes !== false) {
+				$body = $bytes;
+			}
 		}
 
-		if (trim($body) === '') {
-			return $body;
+		$contentType = ResponseDecoder::headerValue(
+			headers: (array)($response['headers'] ?? []),
+			name: 'Content-Type'
+		);
+
+		[$reference, $endpoint, $method, $statusCode] = array_pad($context, 4, null);
+
+		try {
+			return $this->decoder->decode(body: $body, mode: $decode, contentType: $contentType);
+		} catch (ResponseDecodeException $exception) {
+			throw new FlowNodeException(
+				message: $this->l10n->t(
+					'The response of source "%1$s" endpoint "%2$s" could not be read as %3$s: %4$s',
+					[(string)$reference, (string)$endpoint, $exception->getMode(), $exception->getReason()]
+				),
+				details: [
+					'kind' => 'decode',
+					'decode' => $exception->getMode(),
+					'status' => $statusCode,
+					'source' => $reference,
+					'endpoint' => $endpoint,
+					'method' => $method,
+				],
+				previous: $exception
+			);
 		}
 
-		$decoded = json_decode($body, true);
-		if (json_last_error() !== JSON_ERROR_NONE) {
-			return $body;
-		}
-
-		return $decoded;
 	}//end decodeBody()
 
 	/**

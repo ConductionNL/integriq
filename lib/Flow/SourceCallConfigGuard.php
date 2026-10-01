@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
+use OCA\Integriq\Service\ResponseDecoder;
 use OCP\IL10N;
 use UnexpectedValueException;
 
@@ -244,4 +245,36 @@ final class SourceCallConfigGuard {
 		}
 
 	}//end assertOnError()
+
+	/**
+	 * Reject a `decode` mode the response decoder does not know.
+	 *
+	 * Refused at save time rather than at the first call, so a typo such as
+	 * `yml` is reported to the author instead of failing every item of a run.
+	 *
+	 * @param array $config The step's authored configuration.
+	 * @param IL10N $l10n Translations for the rejection message.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the mode is unknown.
+	 *
+	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+	 */
+	public static function assertDecode(array $config, IL10N $l10n): void {
+		if (array_key_exists('decode', $config) === false) {
+			return;
+		}
+
+		$mode = strtolower(trim((string)$config['decode']));
+		if (in_array($mode, ResponseDecoder::MODES, true) === false) {
+			throw new UnexpectedValueException(
+				$l10n->t(
+					'The "decode" field must be one of %1$s.',
+					[implode(', ', ResponseDecoder::MODES)]
+				)
+			);
+		}
+
+	}//end assertDecode()
 }//end class
