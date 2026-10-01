@@ -676,7 +676,6 @@
       "integer",
       "null"
      ],
-     "maximum": 9223372036854775807,
      "minimum": 0,
      "format": "int64",
      "description": "Aantal bytes dat de inhoud van INFORMATIEOBJECT in beslag neemt.",
@@ -900,7 +899,6 @@
       "integer",
       "null"
      ],
-     "maximum": 9223372036854775807,
      "minimum": 0,
      "format": "int64",
      "description": "Aantal bytes dat de inhoud van INFORMATIEOBJECT in beslag neemt.",
@@ -1126,7 +1124,6 @@
       "integer",
       "null"
      ],
-     "maximum": 9223372036854775807,
      "minimum": 0,
      "format": "int64",
      "description": "Aantal bytes dat de inhoud van INFORMATIEOBJECT in beslag neemt.",
@@ -1350,7 +1347,6 @@
       "integer",
       "null"
      ],
-     "maximum": 9223372036854775807,
      "minimum": 0,
      "format": "int64",
      "description": "Aantal bytes dat de inhoud van INFORMATIEOBJECT in beslag neemt.",
@@ -1998,7 +1994,6 @@
       "integer",
       "null"
      ],
-     "maximum": 9223372036854775807,
      "minimum": 0,
      "format": "int64",
      "description": "Aantal bytes dat de inhoud van INFORMATIEOBJECT in beslag neemt.",
@@ -2453,7 +2448,6 @@
       "integer",
       "null"
      ],
-     "maximum": 9223372036854775807,
      "minimum": 0,
      "format": "int64",
      "description": "Aantal bytes dat de inhoud van INFORMATIEOBJECT in beslag neemt.",
