@@ -177,20 +177,6 @@ final class SourceCallConfigGuard {
 			);
 		}
 
-		if (array_key_exists('bodyFrom', $config) === true) {
-			if (is_string($config['bodyFrom']) === false || trim($config['bodyFrom']) === '') {
-				throw new UnexpectedValueException(
-					$l10n->t('The "bodyFrom" field must be a dot-path to an object on the item.')
-				);
-			}
-
-			if (array_key_exists('body', $config) === true) {
-				throw new UnexpectedValueException(
-					$l10n->t('Use "body" or "bodyFrom", not both.')
-				);
-			}
-		}
-
 		if (array_key_exists('responseMapping', $config) === true && is_array($config['responseMapping']) === false) {
 			throw new UnexpectedValueException(
 				$l10n->t('The "responseMapping" field must be an object of target key to selector.')
@@ -198,6 +184,37 @@ final class SourceCallConfigGuard {
 		}
 
 	}//end assertRequestParts()
+
+	/**
+	 * Reject a `bodyFrom` that is not a path, or that competes with `body`.
+	 *
+	 * @param array $config The step's authored configuration.
+	 * @param IL10N $l10n Translations for the rejection message.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When `bodyFrom` is unusable.
+	 *
+	 * @spec openspec/changes/connectors-service-desk-templates/specs/service-desk-connectors/spec.md#requirement-a-source-call-sends-a-mapped-object-whole-req-sdc-003
+	 */
+	public static function assertBodyFrom(array $config, IL10N $l10n): void {
+		if (array_key_exists('bodyFrom', $config) === false) {
+			return;
+		}
+
+		if (is_string($config['bodyFrom']) === false || trim($config['bodyFrom']) === '') {
+			throw new UnexpectedValueException(
+				$l10n->t('The "bodyFrom" field must be a dot-path to an object on the item.')
+			);
+		}
+
+		if (array_key_exists('body', $config) === true) {
+			throw new UnexpectedValueException(
+				$l10n->t('Use "body" or "bodyFrom", not both.')
+			);
+		}
+
+	}//end assertBodyFrom()
 
 	/**
 	 * Reject an unknown `onError` policy mirrored into node configuration.

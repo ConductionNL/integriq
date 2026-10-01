@@ -375,6 +375,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		SourceCallConfigGuard::assertMethod(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertAcceptStatuses(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertRequestParts(config: $config, l10n: $this->l10n);
+		SourceCallConfigGuard::assertBodyFrom(config: $config, l10n: $this->l10n);
 		SourceCallConfigGuard::assertOnError(config: $config, l10n: $this->l10n);
 
 		// Output keys stay here rather than moving to SourceCallConfigGuard
@@ -840,24 +841,41 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			$requestConfig['headers'] = FlowTemplate::renderValue(value: $headers, json: $json);
 		}
 
+		return array_merge($requestConfig, $this->requestBody(config: $config, json: $json));
+	}//end buildRequestConfig()
+
+	/**
+	 * The body part of the request configuration.
+	 *
+	 * `bodyFrom` sends the object at that item path whole and as it is: it
+	 * was already shaped by a mapping step, so rendering it again could only
+	 * change it. Otherwise an array `body` travels as `json` and a string
+	 * `body` as `body`, both rendered against the item.
+	 *
+	 * @param array $config The step's authored configuration.
+	 * @param array $json The current item's record.
+	 *
+	 * @return array `['json' => ...]`, `['body' => ...]` or nothing.
+	 *
+	 * @spec openspec/changes/connectors-service-desk-templates/specs/service-desk-connectors/spec.md#requirement-a-source-call-sends-a-mapped-object-whole-req-sdc-003
+	 */
+	private function requestBody(array $config, array $json): array {
 		$bodyFrom = trim((string)($config['bodyFrom'] ?? ''));
 		if ($bodyFrom !== '') {
-			// Sent whole and as it is: the object was already shaped by a
-			// mapping step, so rendering it again could only change it.
-			$requestConfig['json'] = (array)FlowTemplate::lookup(path: $bodyFrom, json: $json);
-
-			return $requestConfig;
+			return ['json' => (array)FlowTemplate::lookup(path: $bodyFrom, json: $json)];
 		}
 
 		$body = ($config['body'] ?? null);
 		if (is_array($body) === true && $body !== []) {
-			$requestConfig['json'] = FlowTemplate::renderValue(value: $body, json: $json);
-		} elseif (is_string($body) === true && $body !== '') {
-			$requestConfig['body'] = FlowTemplate::renderString(template: $body, json: $json);
+			return ['json' => FlowTemplate::renderValue(value: $body, json: $json)];
 		}
 
-		return $requestConfig;
-	}//end buildRequestConfig()
+		if (is_string($body) === true && $body !== '') {
+			return ['body' => FlowTemplate::renderString(template: $body, json: $json)];
+		}
+
+		return [];
+	}//end requestBody()
 
 	/**
 	 * Decode the response body, keeping a non-UTF-8 payload untouched.
