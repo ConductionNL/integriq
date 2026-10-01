@@ -110,7 +110,9 @@
         "targetConfig": {
           "endpoint": "/zaken",
           "idPosition": "url",
-          "updateMethod": "PATCH"
+          "updateMethod": "PATCH",
+          "targetIdPosition": "url",
+          "conflictStatusProperty": "syncStatus"
         },
         "version": "1.0.0"
       },
@@ -220,7 +222,9 @@
         "targetConfig": {
           "endpoint": "/enkelvoudiginformatieobjecten",
           "idPosition": "url",
-          "updateMethod": "PATCH"
+          "updateMethod": "PATCH",
+          "targetIdPosition": "url",
+          "conflictStatusProperty": "syncStatus"
         },
         "version": "1.0.0"
       },
@@ -400,7 +404,9 @@
         "targetConfig": {
           "endpoint": "/besluiten",
           "idPosition": "url",
-          "updateMethod": "PATCH"
+          "updateMethod": "PATCH",
+          "targetIdPosition": "url",
+          "conflictStatusProperty": "syncStatus"
         },
         "version": "1.0.0"
       },
@@ -508,7 +514,9 @@
         "targetConfig": {
           "endpoint": "/objects",
           "idPosition": "url",
-          "updateMethod": "PATCH"
+          "updateMethod": "PATCH",
+          "targetIdPosition": "url",
+          "conflictStatusProperty": "syncStatus"
         },
         "version": "1.0.0"
       },
