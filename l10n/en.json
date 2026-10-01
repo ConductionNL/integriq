@@ -2996,7 +2996,8 @@
         "The mapping \"%1$s\" could not be found.": "The mapping \"%1$s\" could not be found.",
         "Use \"body\" or \"bodyFrom\", not both.": "Use \"body\" or \"bodyFrom\", not both.",
         "The \"bodyFrom\" path \"%1$s\" did not resolve to an object on item %2$s; nothing was sent.": "The \"bodyFrom\" path \"%1$s\" did not resolve to an object on item %2$s; nothing was sent.",
-        "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership.": "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership."
+        "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership.": "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership.",
+        "Who owns each mapped field: source (the outside system) or the name of the local app, such as stackiq. On an update the apply-mapping step keeps only the fields the writing side does not own, so the owner of a field is never overwritten.": "Who owns each mapped field: source (the outside system) or the name of the local app, such as stackiq. On an update the apply-mapping step keeps only the fields the writing side does not own, so the owner of a field is never overwritten."
     },
     "plurals": {}
 }
