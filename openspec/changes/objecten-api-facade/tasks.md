@@ -157,8 +157,18 @@
   `tests/Unit/Service/Objecten/ObjecttypeDeclarationReaderTest.php` (real
   files on disk, real gateway and registry; red on development, the gateway
   took no declarations). The dossiq half is drafted for Ruben in
-  `for-ruben/dossiq-declare-objecttypes.md`. Catalogue entry, docs, e2e and
-  Newman still open.
+  `for-ruben/dossiq-declare-objecttypes.md`.
+- Catalogue entry DONE: one adapter card `adapter:objecten-api` in
+  `CatalogRegistryService::collectStaticDescriptors()`, always available,
+  standards Objecten API 2 and Objecttypen API 2. The task named
+  `lib/Settings/catalog.seed.json`, which does not exist: catalogue cards are
+  collected by `CatalogRegistryService` and written by the
+  `MaterializeCatalogItems` repair step. Test:
+  `CatalogRegistryServiceTest::testTheObjectenApiIsOneAdapterCard` (red on
+  development; the written card validated against the `catalog_item` schema).
+- Docs DONE: `docs/features/objecten-api.md` and a row in
+  `docs/features/README.md`. The e2e and Newman runs are still open (they
+  need an instance).
 - [ ] Implement
 - [ ] Test (`tests/e2e/objecten-api-facade.spec.ts`, Newman over the two APIs)
 

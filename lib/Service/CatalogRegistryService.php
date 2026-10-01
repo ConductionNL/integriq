@@ -133,6 +133,33 @@ class CatalogRegistryService {
 	];
 
 	/**
+	 * The Objecten API and Objecttypen API facade as one adapter card
+	 * (objecten-api-facade Task 6). The routes exist on every install and
+	 * answer once an administrator creates a token, so it is always available.
+	 * A constant rather than a method: the class sits at its complexity limit.
+	 *
+	 * @var array<string,mixed>
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-leaf-app-declares-the-objecttypes-it-publishes-req-oaf-006
+	 */
+	private const OBJECTEN_DESCRIPTOR = [
+		'slug' => 'adapter:objecten-api',
+		'name' => 'Objecten API and Objecttypen API',
+		'description' => 'Serves the VNG Objecten API and Objecttypen API (version 2) over your registers, at /api/v2/objects '
+			. 'and /api/v2/objecttypes. An objecttype is a schema you name by configuration, or one a leaf app declares in '
+			. 'its own lib/Settings/objecttypes.json. A caller sends Authorization: Token, the token names read or read_write '
+			. 'per objecttype, and every request then runs as the token\'s user, so the register\'s own rights still apply. '
+			. 'It answers nobody until an administrator creates a token.',
+		'category' => 'Common Ground APIs',
+		'kind' => 'adapter',
+		'mechanism' => 'always-available',
+		'flagKey' => '',
+		'sourceTemplateSlug' => '',
+		'standards' => ['Objecten API 2', 'Objecttypen API 2'],
+		'icon' => 'Api',
+	];
+
+	/**
 	 * Category overrides for IntegrationRegistry providers whose getGroup()
 	 * is null (all four category adapters today), keyed by provider id.
 	 * An unknown provider falls back to its group (when set) or the
@@ -350,6 +377,7 @@ class CatalogRegistryService {
 				'standards' => ['STAM'],
 				'icon' => 'CityVariantOutline',
 			],
+			self::OBJECTEN_DESCRIPTOR,
 		];
 
 	}//end collectStaticDescriptors()

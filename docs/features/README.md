@@ -24,6 +24,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [iBabs & NotuBiz Connector](ibabs-notubiz-connector.md) | RIS integration for bestuurlijke besluitvorming | Implemented |
 | [Integration leaves](integration-leaves.md) | Files, Deck, Talk and Calendar linked to sources and synchronizations | Implemented |
 | [Timetables into planninq](rostering-to-planninq.md) | Zermelo, Untis, Xedule and TimeEdit lessons delivered into planninq's school timetable | Dormant |
+| [Objecten API](objecten-api.md) | The VNG Objecten and Objecttypen APIs over your registers, one token per caller | Implemented |
 
 ## Architecture Overview
 
