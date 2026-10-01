@@ -180,7 +180,8 @@ class ZgwSetInstaller {
 			if ($entity === null) {
 				throw new ZgwSetInstallRefusedException(
 					sprintf(
-						'The synchronization "%s" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
+						'The synchronization "%s" this set needs is not on this instance. '
+						.'Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
 						(string)$syncSlug
 					)
 				);
