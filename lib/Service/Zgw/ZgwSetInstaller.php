@@ -57,6 +57,7 @@ class ZgwSetInstaller {
 	 * @param ObjectService      $objectService OpenRegister objects, for the seeded synchronizations.
 	 * @param IAppConfig         $appConfig     Holds the bindings.
 	 * @param ZgwSetInstallGuard $guard         The template and binding refusals.
+	 * @param string             $setDirectory  Where the packaged set files are read from.
 	 *
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
@@ -64,6 +65,7 @@ class ZgwSetInstaller {
 		private readonly ObjectService $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly ZgwSetInstallGuard $guard,
+		private readonly string $setDirectory = self::SET_DIR,
 	) {
 	}//end __construct()
 
@@ -144,7 +146,7 @@ class ZgwSetInstaller {
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001
 	 */
 	private function template(string $slug): array {
-		$path     = self::SET_DIR . '/' . basename($slug) . '.json';
+		$path     = $this->setDirectory . '/' . basename($slug) . '.json';
 		$template = null;
 		if (is_readable($path) === true) {
 			$template = json_decode((string)file_get_contents($path), true);

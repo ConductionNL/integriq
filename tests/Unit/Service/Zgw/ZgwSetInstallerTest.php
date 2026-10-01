@@ -64,10 +64,16 @@ class ZgwSetInstallerTest extends TestCase {
 	 *
 	 * @return ZgwSetInstaller
 	 */
-	private function installer(): ZgwSetInstaller {
+	private bool $findThrows = false;
+
+	private function installer(?string $setDirectory=null): ZgwSetInstaller {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
 			function ($id, ?string $register=null, ?string $schema=null) {
+				if ($this->findThrows === true) {
+					throw new \RuntimeException('Object not found');
+				}
+
 				if ($register !== 'integriq' || $schema !== 'synchronization' || isset($this->syncs[$id]) === false) {
 					return null;
 				}
@@ -99,6 +105,10 @@ class ZgwSetInstallerTest extends TestCase {
 				return true;
 			}
 		);
+
+		if ($setDirectory !== null) {
+			return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard(), $setDirectory);
+		}
 
 		return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard());
 	}//end installer()
@@ -206,4 +216,78 @@ class ZgwSetInstallerTest extends TestCase {
 		$this->assertSame('cases/zaak', $this->syncs['zgw-zaken-pull']['targetId']);
 		$this->assertNull($this->refusal('zgw-objecten', 'cases', 'case'));
 	}//end testInstallingAgainMovesTheBinding()
+	/**
+	 * A lookup that throws (OpenRegister answers "not found" that way too) is read as a missing synchronization.
+	 *
+	 * @return void
+	 */
+	public function testALookupThatThrowsIsReadAsAMissingSynchronization(): void {
+		$this->findThrows = true;
+
+		$refusal = $this->refusal('zgw-zaken', 'cases', 'case');
+
+		$this->assertStringContainsString('"zgw-zaken-pull"', (string)$refusal);
+		$this->assertSame([], $this->saved);
+	}//end testALookupThatThrowsIsReadAsAMissingSynchronization()
+
+	/**
+	 * A bindings value that is not a JSON object is read as no bindings, not as a crash.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableBindingsValueReadsAsNoBindings(): void {
+		$this->config['integriq/' . ZgwSetInstaller::BINDINGS_KEY] = '"not an object"';
+
+		$this->assertSame([], $this->installer()->bindings());
+	}//end testAnUnreadableBindingsValueReadsAsNoBindings()
+
+	/**
+	 * A packaged set whose file is missing from the installation is refused by name.
+	 *
+	 * @return void
+	 */
+	public function testASetFileMissingFromTheInstallationIsRefused(): void {
+		$directory = sys_get_temp_dir() . '/zgw-sets-empty-' . bin2hex(random_bytes(4));
+		mkdir($directory);
+
+		try {
+			$this->installer($directory)->install(slug: 'zgw-zaken', register: 'cases', schema: 'case');
+			$this->fail('The install must be refused when the set file is missing.');
+		} catch (ZgwSetInstallRefusedException $e) {
+			$this->assertStringContainsString('"zgw-zaken" is missing', $e->getMessage());
+		} finally {
+			rmdir($directory);
+		}
+
+		$this->assertSame([], $this->saved);
+	}//end testASetFileMissingFromTheInstallationIsRefused()
+
+	/**
+	 * A set file the guard refuses (here: one naming a fleet app) installs nothing.
+	 *
+	 * @return void
+	 */
+	public function testATemplateTheGuardRefusesInstallsNothing(): void {
+		$directory = sys_get_temp_dir() . '/zgw-sets-bad-' . bin2hex(random_bytes(4));
+		mkdir($directory);
+		$template = json_decode(
+			(string)file_get_contents(dirname(__DIR__, 4) . '/lib/Settings/configurations/zgw-zaken.json'),
+			true
+		);
+		$template['description'] = 'Feeds dossiq directly.';
+		file_put_contents($directory . '/zgw-zaken.json', (string)json_encode($template));
+
+		try {
+			$this->installer($directory)->install(slug: 'zgw-zaken', register: 'cases', schema: 'case');
+			$this->fail('The install must be refused when the template names a fleet app.');
+		} catch (ZgwSetInstallRefusedException $e) {
+			$this->assertStringContainsString('"dossiq"', $e->getMessage());
+		} finally {
+			unlink($directory . '/zgw-zaken.json');
+			rmdir($directory);
+		}
+
+		$this->assertSame([], $this->saved);
+		$this->assertSame([], $this->installer()->bindings());
+	}//end testATemplateTheGuardRefusesInstallsNothing()
 }//end class
