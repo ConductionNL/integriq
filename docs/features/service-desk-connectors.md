@@ -17,7 +17,7 @@ The licence and contract terms are filled in from the desk once, when stackiq fi
 ## Connect TOPdesk
 
 1. In TOPdesk, create an operator for the exchange with read and write rights on the Application, Licence and Contract asset templates, and give it an application password (Modules, Supporting files, Application passwords).
-2. In OpenRegister, add a credential named `topdesk-application-password` that holds that application password.
+2. In OpenRegister, add a credential named `topdesk-application-password` of the type **Generic HTTP Basic password** (`generic-basic`) that holds that application password, and allow the app `openconnector` to use it. That is the name the credential broker knows Integriq by.
 3. In Integriq, open the source **TOPdesk** and set:
    - the location to `https://<your environment>/tas/api`;
    - `configuration.authentication.username` to the operator's login name.
@@ -30,12 +30,12 @@ The life cycle field may hold stackiq's values (`Acquisition`, `Planned`, `In pr
 
 1. Create an integration user with the roles to read and write `cmdb_ci_appl`, and to read `cmdb_rel_ci`, `alm_license` and `ast_contract`.
 2. Add these string columns to `cmdb_ci_appl` for the fields stackiq owns: `u_stackiq_id`, `u_catalogue_url`, `u_bbn_level`, `u_time_classification`, `u_publication_date`, `u_licences_bought`, `u_licences_in_use`, `u_licence_metric`, `u_contract_number`, `u_contract_end_date`. To link contracts to applications, add a reference column `u_application` to `ast_contract`.
-3. In OpenRegister, add a credential named `servicenow-integration-password` with the user's password.
+3. In OpenRegister, add a credential named `servicenow-integration-password` of the type `generic-basic` with the user's password, and allow the app `openconnector` to use it.
 4. In Integriq, open the source **ServiceNow**, set the location to `https://<your instance>.service-now.com` and `configuration.authentication.username` to the integration user, and enable it.
 
 ## Connect GLPI
 
-Add the credentials `glpi-app-token` and `glpi-user-token`, set the location of the source **GLPI** to `https://<your server>/apirest.php`, and enable it. GLPI has application presets only.
+Add the credentials `glpi-app-token` and `glpi-user-token` (type `generic-apikey`, app `openconnector`), set the location of the source **GLPI** to `https://<your server>/apirest.php`, and enable it. GLPI has application presets only.
 
 ## What is seeded
 
@@ -52,6 +52,7 @@ Everything ships switched off, with no secret on the source. Nothing runs until 
 
 - `openconnector.apply-mapping` with `ownership` (`inbound` or `outbound`) and `exists` (the path to the record id on the writing side) applies the ownership rule. Without them the step maps every field, as before.
 - `openconnector.source-call` with `bodyFrom` sends the mapped object at that path as the request body.
+- A page that could not be read (a wrong password, a desk that is down) does not fail the step: `source-paginate` hands on an empty page with `fetchInfo.complete` false and a `failureReason`. Check it before you treat an empty page as "nothing in the desk".
 
 See [Flow nodes](flow-nodes.md).
 
