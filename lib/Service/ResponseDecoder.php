@@ -57,6 +57,7 @@ namespace OCA\Integriq\Service;
 use DateTimeInterface;
 use OCA\Integriq\Exception\ResponseDecodeException;
 use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -298,7 +299,7 @@ class ResponseDecoder {
 		$this->assertReadable(body: $body, mode: $mode);
 
 		try {
-			$parsed = Yaml::parse($body, (Yaml::PARSE_DATETIME | Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE));
+			$parsed = (new Parser())->parse($body, (Yaml::PARSE_DATETIME | Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE));
 		} catch (ParseException $exception) {
 			throw new ResponseDecodeException(mode: $mode, reason: $exception->getMessage(), previous: $exception);
 		}

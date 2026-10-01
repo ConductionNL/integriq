@@ -7070,15 +7070,10 @@ class SynchronizationService {
 			return null;
 		}
 
-		$reset = ResponseDecoder::headerValue(headers: $headers, name: 'X-RateLimit-Reset');
-		$resetAt = null;
-		if ($reset !== null && ctype_digit(trim($reset)) === true) {
-			$resetAt = (int)trim($reset);
-		} elseif ($retryAfter !== null && ctype_digit(trim($retryAfter)) === true) {
-			$resetAt = (time() + (int)trim($retryAfter));
-		} elseif ($retryAfter !== null && strtotime($retryAfter) !== false) {
-			$resetAt = (int)strtotime($retryAfter);
-		}
+		$resetAt = $this->rateLimitResetAt(
+			reset: ResponseDecoder::headerValue(headers: $headers, name: 'X-RateLimit-Reset'),
+			retryAfter: $retryAfter
+		);
 
 		$limit = ResponseDecoder::headerValue(headers: $headers, name: 'X-RateLimit-Limit');
 		$limitValue = null;
@@ -7092,6 +7087,40 @@ class SynchronizationService {
 			'X-RateLimit-Reset' => $resetAt,
 		];
 	}//end rateLimitHeadersFromResponse()
+
+	/**
+	 * When a spent quota lifts, as an epoch timestamp, or null when the response does not say.
+	 *
+	 * `X-RateLimit-Reset` is already epoch seconds. `Retry-After` is either a
+	 * number of seconds or an HTTP date.
+	 *
+	 * @param string|null $reset      The X-RateLimit-Reset header.
+	 * @param string|null $retryAfter The Retry-After header.
+	 *
+	 * @return int|null The reset time.
+	 *
+	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
+	 */
+	private function rateLimitResetAt(?string $reset, ?string $retryAfter): ?int {
+		if ($reset !== null && ctype_digit(trim($reset)) === true) {
+			return (int)trim($reset);
+		}
+
+		if ($retryAfter === null) {
+			return null;
+		}
+
+		if (ctype_digit(trim($retryAfter)) === true) {
+			return (time() + (int)trim($retryAfter));
+		}
+
+		$parsed = strtotime($retryAfter);
+		if ($parsed === false) {
+			return null;
+		}
+
+		return $parsed;
+	}//end rateLimitResetAt()
 
 	/**
 	 * Read the total page count from an RFC 5988 `Link` header.

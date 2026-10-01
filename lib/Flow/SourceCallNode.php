@@ -725,17 +725,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			'status' => $statusCode,
 			'statusMessage' => $statusMessage,
 			'headers' => (array)($response['headers'] ?? []),
-			'body' => $this->decodeBody(
-				response: $response,
-				decode: $decode,
-				context: [
-					'source' => $reference,
-					'endpoint' => $endpoint,
-					'method' => $method,
-					'status' => $statusCode,
-					'callLog' => $callLog->getUuid(),
-				]
-			),
+			'body' => $this->decodeBody(response: $response, decode: $decode, context: [$reference, $endpoint, $method, $statusCode]),
 			'source' => $reference,
 			'sourceId' => $source->getUuid(),
 			'endpoint' => $endpoint,
@@ -852,7 +842,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @param array $response The CallLog's response array.
 	 * @param string $decode The decode mode.
-	 * @param array $context Secret-free detail placed on a decode failure.
+	 * @param array $context The source reference, endpoint, method and status, for a decode failure.
 	 *
 	 * @return mixed The decoded payload, or the raw string.
 	 *
@@ -888,20 +878,24 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			name: 'Content-Type'
 		);
 
+		[$reference, $endpoint, $method, $statusCode] = array_pad($context, 4, null);
+
 		try {
 			return $this->decoder->decode(body: $body, mode: $decode, contentType: $contentType);
 		} catch (ResponseDecodeException $exception) {
 			throw new FlowNodeException(
 				message: $this->l10n->t(
 					'The response of source "%1$s" endpoint "%2$s" could not be read as %3$s: %4$s',
-					[
-						(string)($context['source'] ?? ''),
-						(string)($context['endpoint'] ?? ''),
-						$exception->getMode(),
-						$exception->getReason(),
-					]
+					[(string)$reference, (string)$endpoint, $exception->getMode(), $exception->getReason()]
 				),
-				details: array_merge(['kind' => 'decode', 'decode' => $exception->getMode()], $context),
+				details: [
+					'kind' => 'decode',
+					'decode' => $exception->getMode(),
+					'status' => $statusCode,
+					'source' => $reference,
+					'endpoint' => $endpoint,
+					'method' => $method,
+				],
 				previous: $exception
 			);
 		}
