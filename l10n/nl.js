@@ -1641,7 +1641,19 @@ OC.L10N.register(
         "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "Hoeveel verzoeken één clientadres in een venster mag doen als geen afnemer het herkent. Laat het leeg en een openbaar endpoint heeft geen eigen limiet.",
         "Window in seconds": "Venster in seconden",
         "How many requests one client address may make before it is refused until the window ends.": "Hoeveel verzoeken één clientadres mag doen voordat het tot het einde van het venster wordt geweigerd.",
-        "How long the window lasts. The count starts again after it.": "Hoe lang het venster duurt. Daarna begint de telling opnieuw."
+        "How long the window lasts. The count starts again after it.": "Hoe lang het venster duurt. Daarna begint de telling opnieuw.",
+        "Field ownership": "Eigenaarschap van velden",
+        "Existing record path": "Pad naar bestaand record",
+        "inbound or outbound: on an update, keep only the fields the sending side owns. Leave empty to keep every field.": "inbound of outbound: houd bij een wijziging alleen de velden over waar de verzendende kant eigenaar van is. Laat leeg om elk veld te houden.",
+        "Dot-path within the item that holds the record id on the writing side. Empty there means a create, which keeps every field.": "Puntpad in het item naar het record-id aan de schrijvende kant. Is het daar leeg, dan is het een nieuw record en blijven alle velden staan.",
+        "The \"bodyFrom\" field must be a dot-path to an object on the item.": "Het veld \"bodyFrom\" moet een puntpad naar een object in het item zijn.",
+        "The \"exists\" field only applies together with \"ownership\".": "Het veld \"exists\" werkt alleen samen met \"ownership\".",
+        "The \"ownership\" field must be inbound or outbound.": "Het veld \"ownership\" moet inbound of outbound zijn.",
+        "The \"ownership\" field needs \"exists\": the dot-path of the record id on the writing side.": "Het veld \"ownership\" heeft \"exists\" nodig: het puntpad naar het record-id aan de schrijvende kant.",
+        "The mapping \"%1$s\" could not be found.": "De mapping \"%1$s\" is niet gevonden.",
+        "Use \"body\" or \"bodyFrom\", not both.": "Gebruik \"body\" of \"bodyFrom\", niet allebei.",
+        "The \"bodyFrom\" path \"%1$s\" did not resolve to an object on item %2$s; nothing was sent.": "Het pad \"%1$s\" in \"bodyFrom\" leverde bij item %2$s geen object op; er is niets verstuurd.",
+        "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership.": "De mapping \"%1$s\" zegt niet wie eigenaar is van %2$s, dus een wijziging kan ze overschrijven. Voeg ze toe aan het eigenaarschap."
     },
     "nplurals=2; plural=(n != 1);"
 )

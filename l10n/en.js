@@ -2982,7 +2982,19 @@ OC.L10N.register(
         "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.",
         "Window in seconds": "Window in seconds",
         "How many requests one client address may make before it is refused until the window ends.": "How many requests one client address may make before it is refused until the window ends.",
-        "How long the window lasts. The count starts again after it.": "How long the window lasts. The count starts again after it."
+        "How long the window lasts. The count starts again after it.": "How long the window lasts. The count starts again after it.",
+        "Field ownership": "Field ownership",
+        "Existing record path": "Existing record path",
+        "inbound or outbound: on an update, keep only the fields the sending side owns. Leave empty to keep every field.": "inbound or outbound: on an update, keep only the fields the sending side owns. Leave empty to keep every field.",
+        "Dot-path within the item that holds the record id on the writing side. Empty there means a create, which keeps every field.": "Dot-path within the item that holds the record id on the writing side. Empty there means a create, which keeps every field.",
+        "The \"bodyFrom\" field must be a dot-path to an object on the item.": "The \"bodyFrom\" field must be a dot-path to an object on the item.",
+        "The \"exists\" field only applies together with \"ownership\".": "The \"exists\" field only applies together with \"ownership\".",
+        "The \"ownership\" field must be inbound or outbound.": "The \"ownership\" field must be inbound or outbound.",
+        "The \"ownership\" field needs \"exists\": the dot-path of the record id on the writing side.": "The \"ownership\" field needs \"exists\": the dot-path of the record id on the writing side.",
+        "The mapping \"%1$s\" could not be found.": "The mapping \"%1$s\" could not be found.",
+        "Use \"body\" or \"bodyFrom\", not both.": "Use \"body\" or \"bodyFrom\", not both.",
+        "The \"bodyFrom\" path \"%1$s\" did not resolve to an object on item %2$s; nothing was sent.": "The \"bodyFrom\" path \"%1$s\" did not resolve to an object on item %2$s; nothing was sent.",
+        "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership.": "The mapping \"%1$s\" does not say who owns %2$s, so an update could overwrite them. Add them to its ownership."
     },
     "nplurals=2; plural=(n != 1);"
 )
