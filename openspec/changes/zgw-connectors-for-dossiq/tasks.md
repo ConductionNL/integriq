@@ -5,7 +5,7 @@
 ### Task 1: The six packaged sets
 - **spec_ref**: `openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001`
 - **files**: `lib/Settings/configurations/zgw-zaken.json`, `zgw-documenten.json`, `zgw-catalogi.json`, `zgw-besluiten.json`, `zgw-objecten.json`, `zgw-notificaties.json`
-- Seed half done: `lib/Settings/register.d/zgw-consumer-sets.json` seeds every source, mapping and synchronization the five data sets name (`tests/Unit/Settings/ZgwConsumerSetsSeedTest.php`, every seed validated against the register). Open: routing the mappings through `ZgwResourceTranslatorInterface` (D5; the sync engine has no translator hook yet) and the mock-mode pull of a fixture.
+- Seed half done: `lib/Settings/register.d/zgw-consumer-sets.json` seeds every source, mapping and synchronization the five data sets name (`tests/Unit/Settings/ZgwConsumerSetsSeedTest.php`, every seed validated against the register). Mock-mode pull done (design D1): `tests/Unit/Service/Zgw/ZgwSetPullFixtureTest.php` installs each of the five data sets with the real installer and pulls a recorded page of three resources through the real synchronization and mapping engines into the bound schema, contracts keyed by url, idempotent on a second run. Open: routing the mappings through `ZgwResourceTranslatorInterface` (D5), which waits on the question in design D5.
 - [ ] Implement
 - [ ] Test (each set installs against a mock-mode source and pulls the fixture)
 
