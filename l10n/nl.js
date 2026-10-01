@@ -1641,7 +1641,12 @@ OC.L10N.register(
         "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "Hoeveel verzoeken één clientadres in een venster mag doen als geen afnemer het herkent. Laat het leeg en een openbaar endpoint heeft geen eigen limiet.",
         "Window in seconds": "Venster in seconden",
         "How many requests one client address may make before it is refused until the window ends.": "Hoeveel verzoeken één clientadres mag doen voordat het tot het einde van het venster wordt geweigerd.",
-        "How long the window lasts. The count starts again after it.": "Hoe lang het venster duurt. Daarna begint de telling opnieuw."
+        "How long the window lasts. The count starts again after it.": "Hoe lang het venster duurt. Daarna begint de telling opnieuw.",
+        "Read the response as": "Lees het antwoord als",
+        "How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, and base64+yaml for a file API that returns the file base64-encoded in \"content\".": "Hoe het antwoord wordt gelezen: auto, json, yaml, base64+yaml, base64+json of text. Auto leest JSON, en YAML als de server zegt dat het YAML is. Kies yaml voor een los YAML-bestand, en base64+yaml voor een bestands-API die het bestand base64-gecodeerd in \"content\" teruggeeft.",
+        "The response of source \"%1$s\" endpoint \"%2$s\" could not be read as %3$s: %4$s": "Het antwoord van bron \"%1$s\" endpoint \"%2$s\" kon niet worden gelezen als %3$s: %4$s",
+        "The \"decode\" field must be one of %1$s.": "Het veld \"decode\" moet een van deze waarden zijn: %1$s.",
+        "What a failed call does to the run: stop, continue or dead_letter. With continue, the failed item carries the error and the other items go on.": "Wat een mislukte aanroep met de run doet: stop, continue of dead_letter. Met continue draagt het mislukte item de fout en gaan de andere items door."
     },
     "nplurals=2; plural=(n != 1);"
 )

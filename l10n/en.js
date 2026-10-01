@@ -2982,7 +2982,12 @@ OC.L10N.register(
         "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.",
         "Window in seconds": "Window in seconds",
         "How many requests one client address may make before it is refused until the window ends.": "How many requests one client address may make before it is refused until the window ends.",
-        "How long the window lasts. The count starts again after it.": "How long the window lasts. The count starts again after it."
+        "How long the window lasts. The count starts again after it.": "How long the window lasts. The count starts again after it.",
+        "Read the response as": "Read the response as",
+        "How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, and base64+yaml for a file API that returns the file base64-encoded in \"content\".": "How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, and base64+yaml for a file API that returns the file base64-encoded in \"content\".",
+        "The response of source \"%1$s\" endpoint \"%2$s\" could not be read as %3$s: %4$s": "The response of source \"%1$s\" endpoint \"%2$s\" could not be read as %3$s: %4$s",
+        "The \"decode\" field must be one of %1$s.": "The \"decode\" field must be one of %1$s.",
+        "What a failed call does to the run: stop, continue or dead_letter. With continue, the failed item carries the error and the other items go on.": "What a failed call does to the run: stop, continue or dead_letter. With continue, the failed item carries the error and the other items go on."
     },
     "nplurals=2; plural=(n != 1);"
 )
