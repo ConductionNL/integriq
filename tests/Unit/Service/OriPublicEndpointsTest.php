@@ -313,6 +313,51 @@ class OriPublicEndpointsTest extends TestCase {
 	}//end testElevenAnonymousEndpointsCarryOriControllersFilters()
 
 	/**
+	 * TC-13 (DECISIONS row 39): every ORI endpoint declares decidiq's CORS
+	 * values, so its preflight and its answers allow only the instance's own
+	 * origin, GET and OPTIONS, and OriController::applyCorsHeaders()'s headers.
+	 *
+	 * Red before: the ORI endpoints declared no CORS policy and answered with
+	 * integriq's default, which echoes any caller's origin.
+	 *
+	 * @return void
+	 */
+	public function testEveryOriEndpointDeclaresDecidiqsCorsValues(): void {
+		foreach (array_keys(self::RESOURCES) as $resource) {
+			$endpoint = self::seed(schema: 'endpoint', slug: 'ori-parity-' . $resource);
+			$this->assertSame(
+				[
+					'allowedOrigin' => 'self',
+					'allowedMethods' => ['GET', 'OPTIONS'],
+					'allowedHeaders' => ['Authorization', 'Content-Type', 'X-Requested-With'],
+				],
+				($endpoint['cors'] ?? null),
+				$resource
+			);
+		}
+	}//end testEveryOriEndpointDeclaresDecidiqsCorsValues()
+
+	/**
+	 * REQ-EP-014: the endpoint schema types the CORS policy, so a policy that
+	 * would grant credentials or name methods as one string is refused.
+	 *
+	 * @return void
+	 */
+	public function testTheEndpointSchemaRefusesAMalformedCorsPolicy(): void {
+		$endpoint = self::seed(schema: 'endpoint', slug: 'ori-parity-motions');
+		unset($endpoint['@self']);
+		$this->assertSame([], RegisterSchemaValidator::errors('endpoint', $endpoint), 'Control: the seed itself is accepted.');
+
+		$asString = $endpoint;
+		$asString['cors']['allowedMethods'] = 'GET, OPTIONS';
+		$this->assertNotSame([], RegisterSchemaValidator::errors('endpoint', $asString));
+
+		$withCredentials = $endpoint;
+		$withCredentials['cors']['allowCredentials'] = true;
+		$this->assertNotSame([], RegisterSchemaValidator::errors('endpoint', $withCredentials));
+	}//end testTheEndpointSchemaRefusesAMalformedCorsPolicy()
+
+	/**
 	 * TC-7 (Gap 1): a list answers exactly @context, @type, count and items,
 	 * each item in OriSerializer's shape; no paging key leaks through.
 	 *
