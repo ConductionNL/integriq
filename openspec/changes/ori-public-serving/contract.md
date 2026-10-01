@@ -72,9 +72,11 @@ resource's discriminator/lifecycle/publish-window gate (design.md Gap 2).
 ### `OPTIONS /api/ori/v1/{resource}` and `/api/ori/v1/{resource}/{id}`
 **Auth**: none
 
-**Response (200):** empty body, `Access-Control-Allow-*` headers per
-integriq's existing `preflightedCors` (REQ-EP-001) — no per-resource
-configuration needed.
+**Response (200):** empty body, `Access-Control-Allow-*` headers from the
+endpoint's own `cors` policy (REQ-EP-014, DECISIONS row 39): origin
+`self` (the instance's `overwrite.cli.url` origin), methods `GET, OPTIONS`,
+headers `Authorization, Content-Type, X-Requested-With`, credentials
+`false`, the values decidiq's `OriController::applyCorsHeaders()` answers.
 
 ## Per-resource filter and type reference
 

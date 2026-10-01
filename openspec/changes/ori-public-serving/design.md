@@ -309,8 +309,8 @@ discriminator/lifecycle/publish-window gate (Gap 2), matching
 anonymous caller cannot distinguish "unknown" from "hidden").
 
 ### `OPTIONS /api/ori/v1/{resource}` and `/api/ori/v1/{resource}/{id}`
-CORS preflight — integriq's existing `preflightedCors` (REQ-EP-001)
-covers this without per-resource configuration.
+CORS preflight — `preflightedCors` answers the endpoint's own `cors`
+policy (REQ-EP-014): decidiq's values, set per endpoint.
 
 ## Database Changes
 
@@ -339,9 +339,14 @@ code, not new tables/columns.
   wrong-discriminator, or (pending Risk 3 verification) not-yet-published
   object by UUID. This change treats Gap 2 as a blocking item for the parity
   test plan, not an accepted limitation.
-- **CORS** — reuses integriq's existing preflight/CORS machinery;
-  decidesk's current `applyCorsHeaders()` reads `overwrite.cli.url`, which
-  integriq's own CORS config should mirror (task in `tasks.md`).
+- **CORS** — decided 30 Sep (DECISIONS row 39): a per-endpoint `cors`
+  setting (endpoint 1.4.0, REQ-EP-014), and the ORI endpoints carry
+  decidiq's values: origin `self` (scheme, host and port of
+  `overwrite.cli.url`; decidiq answers the raw value, but an Origin never
+  carries a path), `GET, OPTIONS`, `Authorization, Content-Type,
+  X-Requested-With`. Seeds are created once, so an instance that already
+  imported the ORI endpoints gets the policy only on a fresh import or by
+  setting it on each endpoint.
 - **Rate limiting** — decidesk's `AnonRateLimit(limit: 120, period: 60)` maps
   onto integriq's consumer-management rate-limit config for these
   Endpoints (sized in `tasks.md`).

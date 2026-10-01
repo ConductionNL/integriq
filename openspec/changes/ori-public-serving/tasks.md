@@ -50,23 +50,26 @@
 - **acceptance_criteria**:
   - GIVEN 121 requests in 60 seconds to one ORI Endpoint WHEN the ceiling is exceeded THEN request 121 returns 429 (TC-12), matching `OriController`'s current `AnonRateLimit(limit: 120, period: 60)`
   - GIVEN an `OPTIONS` preflight to an ORI Endpoint WHEN it is served THEN `Access-Control-Allow-*` headers match `OriController::applyCorsHeaders()`'s current values (TC-13)
-- [ ] Implement. Rate limit DONE: consumer-management's limit only applies to
+- [x] Implement. Rate limit DONE: consumer-management's limit only applies to
       a resolved consumer, so an anonymous endpoint had none of its own. The
       endpoint now declares `anonymousRateLimit` (endpoint 1.3.0,
       REQ-EP-013), counted per endpoint and client address; the eleven ORI
-      endpoints carry 120 per 60 s. CORS OPEN, a decision for Ruben:
-      integriq's preflight echoes the caller's Origin, allows
-      `PUT, POST, GET, DELETE, PATCH` and `Authorization, Content-Type,
-      Accept`, credentials false; decidiq allows only its own
-      `overwrite.cli.url` origin, `GET, OPTIONS` and `Authorization,
-      Content-Type, X-Requested-With`. contract.md says the existing
-      preflight needs no per-resource configuration; this task says match
-      decidiq. Matching decidiq means a per-endpoint CORS setting.
-- [ ] Test. Rate limit:
+      endpoints carry 120 per 60 s. CORS DONE per DECISIONS row 39 (Ruben,
+      30 Sep): an endpoint declares `cors` (endpoint 1.4.0, REQ-EP-014,
+      `EndpointCorsPolicy`), answered on its preflight and on its answers;
+      the eleven ORI endpoints carry decidiq's values (`self`, `GET,
+      OPTIONS`, `Authorization, Content-Type, X-Requested-With`). Every other
+      endpoint keeps the echo-origin preflight.
+- [x] Test. Rate limit:
       `OriPublicEndpointsTest::testThe121stAnonymousRequestInAMinuteIsRefused`
       (real InboundRateLimitService; red before),
       `::testAnEndpointWithoutAnAnonymousLimitIsNotThrottled`,
       `EndpointsControllerTest::testAnEndpointWithFixedFiltersNeverTakesTheFastPath`.
+      CORS: `EndpointsControllerTest::testAPreflightAnswersTheEndpointsOwnCorsPolicy`,
+      `::testAPreflightForAnEndpointWithoutAPolicyIsUnchanged`,
+      `::testAServedAnswerCarriesTheEndpointsOwnCorsPolicy`,
+      `EndpointCorsPolicyTest`, `OriPublicEndpointsTest::testEveryOriEndpointDeclaresDecidiqsCorsValues`,
+      `::testTheEndpointSchemaRefusesAMalformedCorsPolicy` (all red before).
       TC-12/TC-13 live are Task 4.
 
 ### Task 4: Run the full parity test plan; fix diffs; file the notubiz-ibabs-griffie-koppeling fold/close recommendation

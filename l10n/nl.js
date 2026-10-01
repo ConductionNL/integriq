@@ -1641,7 +1641,15 @@ OC.L10N.register(
         "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "Hoeveel verzoeken één clientadres in een venster mag doen als geen afnemer het herkent. Laat het leeg en een openbaar endpoint heeft geen eigen limiet.",
         "Window in seconds": "Venster in seconden",
         "How many requests one client address may make before it is refused until the window ends.": "Hoeveel verzoeken één clientadres mag doen voordat het tot het einde van het venster wordt geweigerd.",
-        "How long the window lasts. The count starts again after it.": "Hoe lang het venster duurt. Daarna begint de telling opnieuw."
+        "How long the window lasts. The count starts again after it.": "Hoe lang het venster duurt. Daarna begint de telling opnieuw.",
+        "Cross-origin policy": "Cross-originbeleid",
+        "Which other websites may call this endpoint from a browser. Leave it empty and any website may call it without credentials.": "Welke andere websites dit endpoint vanuit een browser mogen aanroepen. Laat je het leeg, dan mag elke website het aanroepen, zonder inloggegevens.",
+        "Allowed origin": "Toegestane herkomst",
+        "self for this Nextcloud's own address, * for any website, or one address such as https://www.example.nl.": "self voor het eigen adres van deze Nextcloud, * voor elke website, of één adres zoals https://www.example.nl.",
+        "Allowed methods": "Toegestane methoden",
+        "The request methods a browser may use. Leave it empty for GET and OPTIONS.": "De verzoekmethoden die een browser mag gebruiken. Laat het leeg voor GET en OPTIONS.",
+        "Allowed headers": "Toegestane headers",
+        "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With.": "De verzoekheaders die een browser mag meesturen. Laat het leeg voor Authorization, Content-Type en X-Requested-With."
     },
     "nplurals=2; plural=(n != 1);"
 )

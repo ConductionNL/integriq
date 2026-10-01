@@ -2982,7 +2982,15 @@ OC.L10N.register(
         "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.": "How many requests one client address may make in a window when no consumer identifies it. Leave it empty and a public endpoint has no limit of its own.",
         "Window in seconds": "Window in seconds",
         "How many requests one client address may make before it is refused until the window ends.": "How many requests one client address may make before it is refused until the window ends.",
-        "How long the window lasts. The count starts again after it.": "How long the window lasts. The count starts again after it."
+        "How long the window lasts. The count starts again after it.": "How long the window lasts. The count starts again after it.",
+        "Cross-origin policy": "Cross-origin policy",
+        "Which other websites may call this endpoint from a browser. Leave it empty and any website may call it without credentials.": "Which other websites may call this endpoint from a browser. Leave it empty and any website may call it without credentials.",
+        "Allowed origin": "Allowed origin",
+        "self for this Nextcloud's own address, * for any website, or one address such as https://www.example.nl.": "self for this Nextcloud's own address, * for any website, or one address such as https://www.example.nl.",
+        "Allowed methods": "Allowed methods",
+        "The request methods a browser may use. Leave it empty for GET and OPTIONS.": "The request methods a browser may use. Leave it empty for GET and OPTIONS.",
+        "Allowed headers": "Allowed headers",
+        "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With.": "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With."
     },
     "nplurals=2; plural=(n != 1);"
 )
