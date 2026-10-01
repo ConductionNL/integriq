@@ -1,0 +1,80 @@
+{
+    "columns": [
+        {
+            "fieldName": "id",
+            "displayName": "id",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "name",
+            "displayName": "name",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "application",
+            "displayName": "application",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "supplier",
+            "displayName": "supplier",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "contractNumber",
+            "displayName": "contractNumber",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "vendorReference",
+            "displayName": "vendorReference",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "contractType",
+            "displayName": "contractType",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "startDate",
+            "displayName": "startDate",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "endDate",
+            "displayName": "endDate",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "cost",
+            "displayName": "cost",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "costPeriod",
+            "displayName": "costPeriod",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "currency",
+            "displayName": "currency",
+            "fieldType": "text"
+        }
+    ],
+    "dataSet": [
+        {
+            "id": "0b6f4d2e-1a2b-4c3d-8e9f-000000000201",
+            "name": "CON-2025-014",
+            "application": "0b6f4d2e-1a2b-4c3d-8e9f-000000000002",
+            "supplier": "Centric",
+            "contractNumber": "CON-2025-014",
+            "vendorReference": "CEN-SLA-7781",
+            "contractType": "SLA",
+            "startDate": "2025-03-01T00:00:00.000",
+            "endDate": "2027-02-28T00:00:00.000",
+            "cost": "1250.00",
+            "costPeriod": "Maandelijks",
+            "currency": "EUR"
+        }
+    ]
+}

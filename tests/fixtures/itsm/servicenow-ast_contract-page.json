@@ -1,0 +1,58 @@
+{
+    "result": [
+        {
+            "sys_id": {
+                "display_value": "00000000000000000000000000000191",
+                "value": "00000000000000000000000000000191"
+            },
+            "number": {
+                "display_value": "CNTR0010014",
+                "value": "CNTR0010014"
+            },
+            "vendor": {
+                "display_value": "Centric",
+                "value": "00000000000000000000000000000002"
+            },
+            "vendor_contract": {
+                "display_value": "CEN-SLA-7781",
+                "value": "CEN-SLA-7781"
+            },
+            "contract_model": {
+                "display_value": "Service Level Agreement",
+                "value": "00000000000000000000000000000017"
+            },
+            "starts": {
+                "display_value": "2025-03-01",
+                "value": "2025-03-01"
+            },
+            "ends": {
+                "display_value": "2027-02-28",
+                "value": "2027-02-28"
+            },
+            "payment_amount": {
+                "display_value": "1250",
+                "value": "1250"
+            },
+            "payment_schedule": {
+                "display_value": "Monthly",
+                "value": "monthly"
+            },
+            "u_application": {
+                "display_value": "Burgerzaken",
+                "value": "00000000000000000000000000000066"
+            },
+            "sys_class_name": {
+                "display_value": "ast_contract",
+                "value": "ast_contract"
+            },
+            "sys_created_on": {
+                "display_value": "2026-09-01 08:00:00",
+                "value": "2026-09-01 08:00:00"
+            },
+            "sys_updated_on": {
+                "display_value": "2026-09-01 08:00:00",
+                "value": "2026-09-01 08:00:00"
+            }
+        }
+    ]
+}
