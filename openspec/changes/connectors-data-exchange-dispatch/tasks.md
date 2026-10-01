@@ -1,67 +1,48 @@
 # Tasks: connectors-data-exchange-dispatch
 
-Kind: code. Size M. Rows `learniq:gov-push-data-to-another-system`,
-`planninq:sib-learniq-att-import-a-timetable`, `learniq:att-import-a-timetable`
-and `learniq:att-report-absence-to-authority`.
+Kind: code. Size S since 2 October 2026 (see the proposal's Status). Rows
+`learniq:gov-push-data-to-another-system`, `planninq:sib-learniq-att-import-a-timetable`,
+`learniq:att-import-a-timetable` and `learniq:att-report-absence-to-authority` are carried by
+`2026-09-29-learniq-exchange-jobs-native` (and, for the timetable, by
+`2026-09-28-rostering-adapter-targets-planninq`), not by this change.
 
-### Task 1: The two events
-- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/data-exchange-dispatch/spec.md#requirement-a-data-exchange-job-reaches-its-adapter-through-one-typed-event-req-dxd-001
-- **files**: `lib/Event/DataExchangeRequestedEvent.php`, `lib/Event/DataExchangeConcludedEvent.php`
+## Superseded, not built
+
+The original Tasks 1 to 4 and 6 (`DataExchangeRequestedEvent`, its dispatcher, the import
+handlers, the refusals and the learniq hand-off for that event) are superseded by
+`learniq-exchange-jobs-native`: `ExchangeJobRequestedEvent`, `ExchangeTargetDispatcher`, the
+`no-handler` refusal and `ExchangeTargetCatalogue` cover them, and learniq already raises that
+event. Building them would give the same adapters a second entrance.
+
+### Task 1: The acknowledged event
+- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/exchange-jobs/spec.md#requirement-req-013-the-authority-acknowledgement-for-a-record-is-reported-against-its-job
+- **files**: `lib/Event/ExchangeJobAcknowledgedEvent.php`
 - **acceptance_criteria**:
-  - GIVEN the event WHEN a listener writes a result THEN `getResult()` returns the learniq keys and `isHandled()` is true
-  - GIVEN the event WHEN a listener refuses THEN `getRefusal()` returns the code and reason and `getResult()` stays null
+  - GIVEN the event WHEN read THEN it returns the owning app, job, record, target, accepted, signaalcode, description and receivedAt it was built with
 - [ ] Implement
-- [ ] Test (PHPUnit on both event classes)
+- [ ] Test
 
-### Task 2: The dispatcher and the export handlers
-- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/data-exchange-dispatch/spec.md#requirement-a-data-exchange-job-reaches-its-adapter-through-one-typed-event-req-dxd-001
-- **files**: `lib/Service/DataExchange/DataExchangeDispatcher.php`, `lib/Service/DataExchange/Handler/*.php` (ROD, Verzuimloket, OSO, SWV, UWLR and Edu-V), `lib/Listener/DataExchangeRequestedListener.php`, `lib/AppInfo/Application.php`
+### Task 2: The acknowledgement listener
+- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/exchange-jobs/spec.md#requirement-req-013-the-authority-acknowledgement-for-a-record-is-reported-against-its-job
+- **files**: `lib/EventListener/ExchangeAcknowledgementListener.php`, `lib/AppInfo/Application.php`
 - **acceptance_criteria**:
-  - GIVEN a `leerplicht` event with one record WHEN it is handled THEN `VerzuimloketService::sendMelding()` is called once with the job id as kenmerk
-  - GIVEN a `bron-rod` event with one bad record of three WHEN it is handled THEN two are sent and the result counts one rejected with its reason
+  - GIVEN a `bron-rod` job owned by learniq WHEN a rejecting ROD retour with kenmerk `<jobId>:lp-9` arrives THEN one acknowledged event names the job, `lp-9` and the signaalcode, and one rejection of `lp-9` is stored, valid against the `sync_item_dead_letter` schema
+  - GIVEN a `leerplicht` job WHEN an accepted Verzuimloket acknowledgement arrives THEN the event says accepted and no rejection is stored
+  - GIVEN a kenmerk without a job, a job another adapter carries, or a job without an owning app WHEN the retour arrives THEN nothing is dispatched or stored
 - [ ] Implement
-- [ ] Test (integration test raising a real event against mock-mode sources)
+- [ ] Test (real acknowledgement event classes, real `ExchangeRejectionService`)
 
-### Task 3: The import handlers
-- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/data-exchange-dispatch/spec.md#requirement-a-data-exchange-job-reaches-its-adapter-through-one-typed-event-req-dxd-001
-- **files**: `lib/Service/DataExchange/Handler/TimetableImportHandler.php`, `lib/Service/DataExchange/Handler/LvsImportHandler.php`
+### Task 3: Hand learniq its half
+- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/exchange-jobs/spec.md#requirement-req-013-the-authority-acknowledgement-for-a-record-is-reported-against-its-job
+- **files**: a learniq issue (drafted for Ruben; lanes file nothing on another repo)
 - **acceptance_criteria**:
-  - GIVEN `scope.systemId` `roster-zermelo` WHEN a `timetable-import` event is handled THEN `records` holds the mock lessons
-  - GIVEN an `lvs-import-contract` event WHEN it is handled THEN `records` holds the mock results
-- [ ] Implement
-- [ ] Test (integration test on the listener)
-
-### Task 4: Refusals
-- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/data-exchange-dispatch/spec.md#requirement-a-target-integriq-cannot-handle-is-refused-with-its-reason-req-dxd-002
-- **files**: `lib/Service/DataExchange/DataExchangeDispatcher.php`
-- **acceptance_criteria**:
-  - GIVEN target `surfconext` WHEN the event is handled THEN it is refused naming the target
-  - GIVEN the SWV feature flag off WHEN an `swv` event is handled THEN it is refused naming the flag
-  - GIVEN two enabled roster sources and no `systemId` WHEN an import is handled THEN it is refused naming both
-- [ ] Implement
-- [ ] Test (PHPUnit on the dispatcher)
-
-### Task 5: The concluded event
-- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/data-exchange-dispatch/spec.md#requirement-the-authoritys-acknowledgement-is-reported-against-the-job-req-dxd-003
-- **files**: `lib/Listener/DataExchangeAcknowledgementListener.php`, `lib/AppInfo/Application.php`, a record of dispatched job ids (the adapters' own audit records carry the kenmerk)
-- **acceptance_criteria**:
-  - GIVEN a ROD retour whose kenmerk is a dispatched job id WHEN it arrives THEN one concluded event names the job and the signaalcode
-  - GIVEN a retour whose kenmerk is not a dispatched job WHEN it arrives THEN no concluded event is raised
-- [ ] Implement
-- [ ] Test (integration test on `RodService::receiveReturn()` with a signed fixture)
-
-### Task 6: Hand learniq its half
-- **spec_ref**: openspec/changes/connectors-data-exchange-dispatch/specs/data-exchange-dispatch/spec.md#requirement-a-data-exchange-job-reaches-its-adapter-through-one-typed-event-req-dxd-001
-- **files**: an issue on ConductionNL/learniq naming the D2 contract, the two call sites and the `connections.json` entries
-- **acceptance_criteria**:
-  - GIVEN the merged integriq change WHEN the issue is opened THEN it quotes the event's constructor and result keys and links this change
+  - GIVEN the merged integriq change WHEN the issue is filed THEN it names the event's getters and asks learniq to listen, filter on `getOwnerApp() === 'learniq'`, and record the outcome on the record idempotently
 - [ ] Implement
 - [ ] Test (the learniq issue exists and links back)
 
 ## Verification
 
 - `openspec validate connectors-data-exchange-dispatch --type change --strict`
-- On one instance with learniq's half applied: run a `leerplicht` job and a
-  `timetable-import` job against mock sources, and read both results on the
-  job.
-- `composer check:strict` and `npm run lint` once before push.
+- On one instance: run a `bron-rod` job against the mock ROD source, post a rejecting retour
+  with its kenmerk, and read the rejection on the job.
+- `composer check:strict` once before push.

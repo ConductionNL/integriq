@@ -5,6 +5,25 @@ depends_on: []
 
 # Proposal: connectors-data-exchange-dispatch
 
+## Status, 2 October 2026: superseded except for the acknowledgement
+
+`learniq-exchange-jobs-native` (archived 2026-09-29, decision D7) moved learniq's exchange jobs
+into integriq, and built the routing this proposal sketched: learniq raises
+`ExchangeJobRequestedEvent` (learniq `lib/Service/IntegriqExchangeClient.php`), and
+`ExchangeTargetDispatcher` hands each record to the ROD, Verzuimloket, OSO, SWV, UWLR and Edu-V
+adapters with the kenmerk `<jobId>:<recordId>`. Import landing followed in
+`exchange-import-landing`, and the timetable import travels as `RosterImportRequestedEvent`
+(`rostering-adapter-targets-planninq`, learniq `lib/Timetabling/PlanninqTimetableImport.php`).
+learniq's `DataExchangeRunHandler` and the HTTP post this proposal describes no longer exist on
+learniq `development`. So the event `DataExchangeRequestedEvent`, the dispatcher and the
+refusals below are not built: they would be a second entrance to the same adapters.
+
+What stays is D4, which `learniq-exchange-jobs-native` left to this change by name: an
+authority's acknowledgement, which arrives later, is reported against the job and record it
+answers. That is the only requirement of this change now (REQ-013 in `exchange-jobs`). The
+text below is the original proposal, kept for its reading of the code at the time.
+
+
 ## Summary
 
 learniq runs every data exchange by posting to

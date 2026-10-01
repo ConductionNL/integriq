@@ -73,6 +73,7 @@ use OCA\Integriq\EventListener\SourceRequestedListener;
 use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
 use OCA\Integriq\EventListener\GatewayDeliveryRequestedListener;
 use OCA\Integriq\EventListener\MappingExecutionRequestedListener;
+use OCA\Integriq\EventListener\ExchangeAcknowledgementListener;
 use OCA\Integriq\EventListener\ExchangeJobRequestedListener;
 use OCA\Integriq\EventListener\ExchangeMappingRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
@@ -362,6 +363,13 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ExchangeJobRequestedEvent::class, ExchangeJobRequestedListener::class);
 		$context->registerEventListener(ExchangeMappingRequestedEvent::class, ExchangeMappingRequestedListener::class);
 		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);
+		// An authority's later retour on an exchange job's record
+		// (connectors-data-exchange-dispatch REQ-013): one listener on the
+		// four adapters' acknowledgement events.
+		foreach (array_keys(ExchangeAcknowledgementListener::ADAPTER_OF) as $acknowledgement) {
+			$context->registerEventListener($acknowledgement, ExchangeAcknowledgementListener::class);
+		}
+
 		// The Objecten and Objecttypen APIs: every facade service is built with
 		// its OpenRegister seams wired, or every route answers 401 or 404.
 		ObjectenWiring::register(context: $context);
