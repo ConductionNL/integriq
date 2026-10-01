@@ -1,0 +1,517 @@
+{
+  "$comment": "ADR-037 register fragment (zgw-connectors-for-dossiq). Seeds what the packaged ZGW consumer sets in lib/Settings/configurations name by slug: one disabled source per component, the inbound and write-back mappings, and the pull and write-back synchronizations, all unbound. POST /api/zgw-sets/{slug}/install (ZgwSetInstaller) binds a set to the register and schema an operator chooses. zgw-notificaties seeds with the notification-pull half.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "zgw-set-zaken"
+        },
+        "name": "Zaken API (ZGW set)",
+        "description": "The Zaken API store the zgw-zaken set reads cases from. Set the address of your store, replace zgw-client in the token payload with the client id the store knows you by, store the shared secret as a credential named zgw-set-zaken-client-secret, then enable the source. Install the set to choose the register and schema it writes into.",
+        "type": "api",
+        "location": "https://your-open-zaak.example.nl/zaken/api/v1",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ jwtToken(source) }}",
+            "Accept-Crs": "EPSG:4326",
+            "Content-Crs": "EPSG:4326"
+          },
+          "authentication": {
+            "algorithm": "HS256",
+            "secret": {
+              "credentialRef": {
+                "credentialName": "zgw-set-zaken-client-secret"
+              }
+            },
+            "payload": "{\"iss\":\"zgw-client\",\"iat\":{{ 'now'|date('U') }},\"client_id\":\"zgw-client\",\"user_id\":\"zgw-client\",\"user_representation\":\"zgw-client\"}"
+          },
+          "apiVersion": "1.6"
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "zgw-zaak-to-object"
+        },
+        "name": "Zaken API cases as objects",
+        "slug": "zgw-zaak-to-object",
+        "description": "Keeps each Zaken API resource as it is, so the bound schema holds the remote fields and the remote url. The url is also the synchronization contract's origin id.",
+        "mapping": {},
+        "unset": [],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "object-to-zgw-zaak"
+        },
+        "name": "Objects back to the Zaken API",
+        "slug": "object-to-zgw-zaak",
+        "description": "Sends a local change back to the Zaken API with the fields as they are, without the object metadata OpenRegister adds.",
+        "mapping": {},
+        "unset": [
+          "@self",
+          "id",
+          "uuid"
+        ],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-zaken-pull"
+        },
+        "name": "Zaken API: pull",
+        "slug": "zgw-zaken-pull",
+        "description": "Pages over the cases in the Zaken API into the schema the zgw-zaken set is installed against. Unbound until an operator installs the set.",
+        "sourceId": "zgw-set-zaken",
+        "sourceType": "api",
+        "sourceTargetMapping": "zgw-zaak-to-object",
+        "sourceConfig": {
+          "endpoint": "/zaken",
+          "idPosition": "url",
+          "resultsPosition": "results",
+          "usesPagination": true,
+          "paginationQuery": "page"
+        },
+        "targetId": "",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-zaken-push"
+        },
+        "name": "Zaken API: write back",
+        "slug": "zgw-zaken-push",
+        "description": "Writes a local change on a bound object back to the Zaken API. Unbound until an operator installs the set.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceTargetMapping": "object-to-zgw-zaak",
+        "targetId": "zgw-set-zaken",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/zaken",
+          "idPosition": "url",
+          "updateMethod": "PATCH"
+        },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "zgw-set-documenten"
+        },
+        "name": "Documenten API (ZGW set)",
+        "description": "The Documenten API store the zgw-documenten set reads documents from. Set the address of your store, replace zgw-client in the token payload with the client id the store knows you by, store the shared secret as a credential named zgw-set-documenten-client-secret, then enable the source. Install the set to choose the register and schema it writes into.",
+        "type": "api",
+        "location": "https://your-open-zaak.example.nl/documenten/api/v1",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ jwtToken(source) }}"
+          },
+          "authentication": {
+            "algorithm": "HS256",
+            "secret": {
+              "credentialRef": {
+                "credentialName": "zgw-set-documenten-client-secret"
+              }
+            },
+            "payload": "{\"iss\":\"zgw-client\",\"iat\":{{ 'now'|date('U') }},\"client_id\":\"zgw-client\",\"user_id\":\"zgw-client\",\"user_representation\":\"zgw-client\"}"
+          },
+          "apiVersion": "1.6"
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "zgw-document-to-object"
+        },
+        "name": "Documenten API documents as objects",
+        "slug": "zgw-document-to-object",
+        "description": "Keeps each Documenten API resource as it is, so the bound schema holds the remote fields and the remote url. The url is also the synchronization contract's origin id.",
+        "mapping": {},
+        "unset": [],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "object-to-zgw-document"
+        },
+        "name": "Objects back to the Documenten API",
+        "slug": "object-to-zgw-document",
+        "description": "Sends a local change back to the Documenten API with the fields as they are, without the object metadata OpenRegister adds.",
+        "mapping": {},
+        "unset": [
+          "@self",
+          "id",
+          "uuid"
+        ],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-documenten-pull"
+        },
+        "name": "Documenten API: pull",
+        "slug": "zgw-documenten-pull",
+        "description": "Pages over the documents in the Documenten API into the schema the zgw-documenten set is installed against. Unbound until an operator installs the set.",
+        "sourceId": "zgw-set-documenten",
+        "sourceType": "api",
+        "sourceTargetMapping": "zgw-document-to-object",
+        "sourceConfig": {
+          "endpoint": "/enkelvoudiginformatieobjecten",
+          "idPosition": "url",
+          "resultsPosition": "results",
+          "usesPagination": true,
+          "paginationQuery": "page"
+        },
+        "targetId": "",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-documenten-push"
+        },
+        "name": "Documenten API: write back",
+        "slug": "zgw-documenten-push",
+        "description": "Writes a local change on a bound object back to the Documenten API. Unbound until an operator installs the set.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceTargetMapping": "object-to-zgw-document",
+        "targetId": "zgw-set-documenten",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/enkelvoudiginformatieobjecten",
+          "idPosition": "url",
+          "updateMethod": "PATCH"
+        },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "zgw-set-catalogi"
+        },
+        "name": "Catalogi API (ZGW set)",
+        "description": "The Catalogi API store the zgw-catalogi set reads case types from. Set the address of your store, replace zgw-client in the token payload with the client id the store knows you by, store the shared secret as a credential named zgw-set-catalogi-client-secret, then enable the source. Install the set to choose the register and schema it writes into.",
+        "type": "api",
+        "location": "https://your-open-zaak.example.nl/catalogi/api/v1",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ jwtToken(source) }}"
+          },
+          "authentication": {
+            "algorithm": "HS256",
+            "secret": {
+              "credentialRef": {
+                "credentialName": "zgw-set-catalogi-client-secret"
+              }
+            },
+            "payload": "{\"iss\":\"zgw-client\",\"iat\":{{ 'now'|date('U') }},\"client_id\":\"zgw-client\",\"user_id\":\"zgw-client\",\"user_representation\":\"zgw-client\"}"
+          },
+          "apiVersion": "1.6"
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "zgw-zaaktype-to-object"
+        },
+        "name": "Catalogi API case types as objects",
+        "slug": "zgw-zaaktype-to-object",
+        "description": "Keeps each Catalogi API resource as it is, so the bound schema holds the remote fields and the remote url. The url is also the synchronization contract's origin id.",
+        "mapping": {},
+        "unset": [],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-catalogi-pull"
+        },
+        "name": "Catalogi API: pull",
+        "slug": "zgw-catalogi-pull",
+        "description": "Pages over the case types in the Catalogi API into the schema the zgw-catalogi set is installed against. Unbound until an operator installs the set.",
+        "sourceId": "zgw-set-catalogi",
+        "sourceType": "api",
+        "sourceTargetMapping": "zgw-zaaktype-to-object",
+        "sourceConfig": {
+          "endpoint": "/zaaktypen",
+          "idPosition": "url",
+          "resultsPosition": "results",
+          "usesPagination": true,
+          "paginationQuery": "page"
+        },
+        "targetId": "",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "zgw-set-besluiten"
+        },
+        "name": "Besluiten API (ZGW set)",
+        "description": "The Besluiten API store the zgw-besluiten set reads decisions from. Set the address of your store, replace zgw-client in the token payload with the client id the store knows you by, store the shared secret as a credential named zgw-set-besluiten-client-secret, then enable the source. Install the set to choose the register and schema it writes into.",
+        "type": "api",
+        "location": "https://your-open-zaak.example.nl/besluiten/api/v1",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ jwtToken(source) }}"
+          },
+          "authentication": {
+            "algorithm": "HS256",
+            "secret": {
+              "credentialRef": {
+                "credentialName": "zgw-set-besluiten-client-secret"
+              }
+            },
+            "payload": "{\"iss\":\"zgw-client\",\"iat\":{{ 'now'|date('U') }},\"client_id\":\"zgw-client\",\"user_id\":\"zgw-client\",\"user_representation\":\"zgw-client\"}"
+          },
+          "apiVersion": "1.6"
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "zgw-besluit-to-object"
+        },
+        "name": "Besluiten API decisions as objects",
+        "slug": "zgw-besluit-to-object",
+        "description": "Keeps each Besluiten API resource as it is, so the bound schema holds the remote fields and the remote url. The url is also the synchronization contract's origin id.",
+        "mapping": {},
+        "unset": [],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "object-to-zgw-besluit"
+        },
+        "name": "Objects back to the Besluiten API",
+        "slug": "object-to-zgw-besluit",
+        "description": "Sends a local change back to the Besluiten API with the fields as they are, without the object metadata OpenRegister adds.",
+        "mapping": {},
+        "unset": [
+          "@self",
+          "id",
+          "uuid"
+        ],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-besluiten-pull"
+        },
+        "name": "Besluiten API: pull",
+        "slug": "zgw-besluiten-pull",
+        "description": "Pages over the decisions in the Besluiten API into the schema the zgw-besluiten set is installed against. Unbound until an operator installs the set.",
+        "sourceId": "zgw-set-besluiten",
+        "sourceType": "api",
+        "sourceTargetMapping": "zgw-besluit-to-object",
+        "sourceConfig": {
+          "endpoint": "/besluiten",
+          "idPosition": "url",
+          "resultsPosition": "results",
+          "usesPagination": true,
+          "paginationQuery": "page"
+        },
+        "targetId": "",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-besluiten-push"
+        },
+        "name": "Besluiten API: write back",
+        "slug": "zgw-besluiten-push",
+        "description": "Writes a local change on a bound object back to the Besluiten API. Unbound until an operator installs the set.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceTargetMapping": "object-to-zgw-besluit",
+        "targetId": "zgw-set-besluiten",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/besluiten",
+          "idPosition": "url",
+          "updateMethod": "PATCH"
+        },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "zgw-set-objecten"
+        },
+        "name": "Objecten API (ZGW set)",
+        "description": "The Objecten API store the zgw-objecten set reads objects from. Set the address of your store, a credential named zgw-set-objecten-token that holds the Objecten API token, then enable the source. Install the set to choose the register and schema it writes into.",
+        "type": "api",
+        "location": "https://your-objecten.example.nl/api/v2",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Token {{ source.configuration.authentication.token }}"
+          },
+          "authentication": {
+            "token": {
+              "credentialRef": {
+                "credentialName": "zgw-set-objecten-token"
+              }
+            }
+          },
+          "apiVersion": "1.6"
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "zgw-object-to-object"
+        },
+        "name": "Objecten API objects as objects",
+        "slug": "zgw-object-to-object",
+        "description": "Keeps each Objecten API resource as it is, so the bound schema holds the remote fields and the remote url. The url is also the synchronization contract's origin id.",
+        "mapping": {},
+        "unset": [],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "object-to-zgw-object"
+        },
+        "name": "Objects back to the Objecten API",
+        "slug": "object-to-zgw-object",
+        "description": "Sends a local change back to the Objecten API with the fields as they are, without the object metadata OpenRegister adds.",
+        "mapping": {},
+        "unset": [
+          "@self",
+          "id",
+          "uuid"
+        ],
+        "cast": {},
+        "passThrough": true,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-objecten-pull"
+        },
+        "name": "Objecten API: pull",
+        "slug": "zgw-objecten-pull",
+        "description": "Pages over the objects in the Objecten API into the schema the zgw-objecten set is installed against. Unbound until an operator installs the set.",
+        "sourceId": "zgw-set-objecten",
+        "sourceType": "api",
+        "sourceTargetMapping": "zgw-object-to-object",
+        "sourceConfig": {
+          "endpoint": "/objects",
+          "idPosition": "url",
+          "resultsPosition": "results",
+          "usesPagination": true,
+          "paginationQuery": "page"
+        },
+        "targetId": "",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "zgw-objecten-push"
+        },
+        "name": "Objecten API: write back",
+        "slug": "zgw-objecten-push",
+        "description": "Writes a local change on a bound object back to the Objecten API. Unbound until an operator installs the set.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceTargetMapping": "object-to-zgw-object",
+        "targetId": "zgw-set-objecten",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/objects",
+          "idPosition": "url",
+          "updateMethod": "PATCH"
+        },
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

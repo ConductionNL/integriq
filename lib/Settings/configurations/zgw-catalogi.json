@@ -29,6 +29,7 @@
     "chosenBy": "operator"
   },
   "source": {
+    "slug": "zgw-set-catalogi",
     "name": "Catalogi API",
     "type": "api",
     "location": "",

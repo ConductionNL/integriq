@@ -127,8 +127,8 @@ class ZgwSetInstallGuard {
 			);
 		}
 
-		if ((string)($template['auth'] ?? '') !== ZgwSetCatalogue::AUTH) {
-			$refusals[] = sprintf('The set "%s" must declare "%s" auth.', $slug, ZgwSetCatalogue::AUTH);
+		if ((string)($template['auth'] ?? '') !== ZgwSetCatalogue::authFor(slug: $slug)) {
+			$refusals[] = sprintf('The set "%s" must declare "%s" auth.', $slug, ZgwSetCatalogue::authFor(slug: $slug));
 		}
 
 		if (trim((string)($template['apiVersion'] ?? '')) === '') {
