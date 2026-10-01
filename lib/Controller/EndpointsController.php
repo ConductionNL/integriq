@@ -27,6 +27,7 @@ use Exception;
 use OCA\Integriq\Http\XMLResponse;
 use OCA\Integriq\Service\AuthorizationService;
 use OCA\Integriq\Service\EndpointCacheService;
+use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SearchService;
@@ -95,6 +96,7 @@ class EndpointsController extends Controller {
 	 * @param EndpointCacheService $endpointCacheService Service for cached endpoint lookups.
 	 * @param LoggerInterface $logger Service for logging.
 	 * @param IL10N $l The localization service.
+	 * @param EndpointCorsPolicy $corsPolicy An endpoint's own CORS policy (REQ-EP-014).
 	 * @param string $corsMethods Allowed CORS methods.
 	 * @param string $corsAllowedHeaders Allowed CORS headers.
 	 * @param integer $corsMaxAge CORS max age in seconds.
@@ -108,6 +110,7 @@ class EndpointsController extends Controller {
 		private EndpointCacheService $endpointCacheService,
 		private LoggerInterface $logger,
 		private IL10N $l,
+		private EndpointCorsPolicy $corsPolicy,
 		$corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		$corsAllowedHeaders = 'Authorization, Content-Type, Accept',
 		$corsMaxAge = 1728000,
@@ -188,7 +191,14 @@ class EndpointsController extends Controller {
 			);
 		}
 
-		return $this->authorizationService->corsAfterController($this->request, $response);
+		$response = $this->authorizationService->corsAfterController($this->request, $response);
+
+		// An endpoint's own CORS policy replaces the echoed origin (REQ-EP-014).
+		foreach (($this->corsPolicy->headersFor($endpoint) ?? []) as $name => $value) {
+			$response->addHeader($name, $value);
+		}
+
+		return $response;
 	}//end handlePath()
 
 	/**
@@ -196,6 +206,11 @@ class EndpointsController extends Controller {
 	 *
 	 * RATE-LIMIT RATIONALE (ADR-082): CORS preflight — the browser sends one
 	 * before each cross-origin call, so it is looser than the call it precedes.
+	 *
+	 * An endpoint that declares its own CORS policy answers that policy
+	 * (REQ-EP-014); every other path keeps the echo of the caller's origin.
+	 *
+	 * @param string $_path The path component appended after /api/endpoint/.
 	 *
 	 * @return Response The CORS response.
 	 *
@@ -206,11 +221,12 @@ class EndpointsController extends Controller {
 	 * @since 7.0.0
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-declare-its-own-cors-policy-req-ep-014
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
 	#[AnonRateLimit(limit: 480, period: 60)]
-	public function preflightedCors(): Response {
+	public function preflightedCors(string $_path=''): Response {
 		// Determine the origin.
 		$origin = ($this->request->server['HTTP_ORIGIN'] ?? '*');
 
@@ -222,8 +238,39 @@ class EndpointsController extends Controller {
 		$response->addHeader('Access-Control-Allow-Headers', $this->corsAllowedHeaders);
 		$response->addHeader('Access-Control-Allow-Credentials', 'false');
 
+		foreach (($this->corsPolicy->headersFor($this->preflightEndpoint(path: $_path)) ?? []) as $name => $value) {
+			$response->addHeader($name, $value);
+		}
+
 		return $response;
 	}//end preflightedCors()
+
+	/**
+	 * The endpoint a preflight asks about, or null when none (or more than one) matches.
+	 *
+	 * @param string $path The path component appended after /api/endpoint/.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-declare-its-own-cors-policy-req-ep-014
+	 */
+	private function preflightEndpoint(string $path): ?ObjectEntity {
+		if ($path === '') {
+			return null;
+		}
+
+		$method = strtoupper(trim($this->request->getHeader('Access-Control-Request-Method')));
+		if ($method === '') {
+			$method = 'GET';
+		}
+
+		try {
+			return $this->endpointCacheService->findByPathRegex(path: $path, method: $method);
+		} catch (Exception $e) {
+			// Several endpoints match: answer the default preflight; the call itself answers 409.
+			return null;
+		}
+	}//end preflightEndpoint()
 
 	/**
 	 * Retrieves endpoint logs with filtering and pagination support.

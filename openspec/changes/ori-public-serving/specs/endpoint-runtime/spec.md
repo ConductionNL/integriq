@@ -147,3 +147,34 @@ rate limit.
 - **GIVEN** an Endpoint without `anonymousRateLimit`
 - **WHEN** an unidentified caller sends a request
 - **THEN** the endpoint applies no rate limit of its own
+
+### Requirement: An endpoint may declare its own CORS policy (REQ-EP-014)
+
+An Endpoint MAY declare `cors` (`{allowedOrigin, allowedMethods,
+allowedHeaders}`). `allowedOrigin` is `self` (the instance's own origin:
+scheme, host and port of `overwrite.cli.url`, or `*` when that is not set),
+`*`, or one origin. When an Endpoint declares it, the preflight (`OPTIONS`)
+for a path that resolves to it and every answer it serves MUST carry that
+origin, those methods (default `GET, OPTIONS`) and those headers (default
+`Authorization, Content-Type, X-Requested-With`), and MUST NOT allow
+credentials. An Endpoint without `cors`, or a path no single endpoint
+matches, keeps the existing preflight: the caller's origin echoed, no
+credentials. The schema MUST refuse a policy that names a credentials
+setting or lists methods as one string.
+
+@e2e exclude HTTP header contract, covered by PHPUnit (EndpointsControllerTest, EndpointCorsPolicyTest) and TC-13 in the parity run, not browser UI
+
+#### Scenario: The ORI endpoints answer decidiq's CORS values
+
+- **GIVEN** an ORI Endpoint with `cors` `{allowedOrigin: self, allowedMethods: [GET, OPTIONS]}`
+- **AND** `overwrite.cli.url` is `https://raad.example.nl/index.php`
+- **WHEN** a browser on another origin sends the preflight for that endpoint's path
+- **THEN** the answer allows origin `https://raad.example.nl`, methods `GET, OPTIONS` and headers `Authorization, Content-Type, X-Requested-With`
+- **AND** `Access-Control-Allow-Credentials` is `false`
+- **AND** the GET it then sends carries the same headers
+
+#### Scenario: An endpoint without the setting keeps the default preflight
+
+- **GIVEN** an Endpoint without `cors`
+- **WHEN** a browser sends the preflight for its path
+- **THEN** the caller's origin is echoed and credentials are not allowed, as before

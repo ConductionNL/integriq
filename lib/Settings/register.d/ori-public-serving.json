@@ -1,9 +1,9 @@
 {
-  "$comment": "ADR-037 register fragment (ori-public-serving Task 1). Seeds the eleven ORI resources decidiq's OriController serves as integriq endpoints under the validation prefix ori-parity/v1, each with an item mapping (OriSerializer's field table) and a list mapping (the ORI envelope), run by two after rules. Anonymous: no authentication rule, with decidiq's AnonRateLimit ceiling of 120 requests a minute per client address (anonymousRateLimit, endpoint 1.3.0, REQ-EP-013). The endpoints name decidiq's register and schemas by slug (REQ-EP-011) and gate lists and single objects with one fixedFilters set (REQ-EP-010, REQ-EP-012). Seed objects are created once and never overwrite an administrator's edit. See openspec/changes/ori-public-serving/design.md D1-D4 and Gap 1.",
+  "$comment": "ADR-037 register fragment (ori-public-serving Task 1). Seeds the eleven ORI resources decidiq's OriController serves as integriq endpoints under the validation prefix ori-parity/v1, each with an item mapping (OriSerializer's field table) and a list mapping (the ORI envelope), run by two after rules. Anonymous: no authentication rule, with decidiq's AnonRateLimit ceiling of 120 requests a minute per client address (anonymousRateLimit, endpoint 1.3.0, REQ-EP-013), and decidiq's CORS values: its own origin, GET and OPTIONS (cors, endpoint 1.4.0, REQ-EP-014, DECISIONS row 39). The endpoints name decidiq's register and schemas by slug (REQ-EP-011) and gate lists and single objects with one fixedFilters set (REQ-EP-010, REQ-EP-012). Seed objects are created once and never overwrite an administrator's edit. See openspec/changes/ori-public-serving/design.md D1-D4 and Gap 1.",
   "components": {
     "schemas": {
       "endpoint": {
-        "version": "1.3.0",
+        "version": "1.4.0",
         "properties": {
           "anonymousRateLimit": {
             "type": "object",
@@ -27,6 +27,39 @@
               "requestsPerWindow",
               "windowSeconds"
             ]
+          },
+          "cors": {
+            "type": "object",
+            "title": "Cross-origin policy",
+            "description": "Which other websites may call this endpoint from a browser. Leave it empty and any website may call it without credentials.",
+            "additionalProperties": false,
+            "properties": {
+              "allowedOrigin": {
+                "type": "string",
+                "pattern": "^(self|\\*|https?://[^/\\s]+)$",
+                "default": "self",
+                "title": "Allowed origin",
+                "description": "self for this Nextcloud's own address, * for any website, or one address such as https://www.example.nl."
+              },
+              "allowedMethods": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+                },
+                "title": "Allowed methods",
+                "description": "The request methods a browser may use. Leave it empty for GET and OPTIONS."
+              },
+              "allowedHeaders": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9-]+$"
+                },
+                "title": "Allowed headers",
+                "description": "The request headers a browser may send. Leave it empty for Authorization, Content-Type and X-Requested-With."
+              }
+            }
           }
         }
       }
@@ -157,6 +190,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -281,6 +326,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -403,6 +460,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -528,6 +597,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -653,6 +734,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -779,6 +872,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -905,6 +1010,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -1030,6 +1147,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -1155,6 +1284,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -1280,6 +1421,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       },
       {
@@ -1428,6 +1581,18 @@
         "anonymousRateLimit": {
           "requestsPerWindow": 120,
           "windowSeconds": 60
+        },
+        "cors": {
+          "allowedOrigin": "self",
+          "allowedMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With"
+          ]
         }
       }
     ]
