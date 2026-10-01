@@ -83,9 +83,11 @@ class HermiqVerdictContractTest extends TestCase {
 	/**
 	 * Integriq's verifier, with Hermiq's real verdict service behind the transport.
 	 *
+	 * @param callable|null $onTheWire Changes Hermiq's answer between the apps, or null.
+	 *
 	 * @return ApprovalVerdictVerifier
 	 */
-	private function verifier(): ApprovalVerdictVerifier {
+	private function verifier(?callable $onTheWire=null): ApprovalVerdictVerifier {
 		$appConfig = $this->appConfig();
 
 		$approvals = $this->createMock(ApprovalService::class);
@@ -111,11 +113,12 @@ class HermiqVerdictContractTest extends TestCase {
 
 		$hermiq = new ApprovalVerdictService($approvals, $objects, new ApprovalVerdictSigner($appConfig), $clock);
 
-		$transport = new class ($hermiq) implements HermiqVerdictClient {
+		$transport = new class ($hermiq, $onTheWire) implements HermiqVerdictClient {
 			/**
-			 * @param ApprovalVerdictService $hermiq Hermiq's real verdict service.
+			 * @param ApprovalVerdictService $hermiq    Hermiq's real verdict service.
+			 * @param callable|null          $onTheWire Changes the answer in transit, or null.
 			 */
-			public function __construct(private ApprovalVerdictService $hermiq) {
+			public function __construct(private ApprovalVerdictService $hermiq, private $onTheWire) {
 			}
 
 			/**
@@ -126,7 +129,12 @@ class HermiqVerdictContractTest extends TestCase {
 			 * @return array<string,mixed>
 			 */
 			public function requestVerdict(array $request): array {
-				return json_decode((string)json_encode($this->hermiq->verify(request: $request)), true);
+				$answer = json_decode((string)json_encode($this->hermiq->verify(request: $request)), true);
+				if ($this->onTheWire !== null) {
+					$answer = ($this->onTheWire)($answer);
+				}
+
+				return $answer;
 			}
 		};
 
@@ -213,15 +221,26 @@ class HermiqVerdictContractTest extends TestCase {
 	}//end testHermiqsRefusalsArriveWithTheirReason()
 
 	/**
-	 * A verdict signed with a key other than the published one is refused.
+	 * Hermiq's real verdict, re-signed by anyone but Hermiq, is refused.
+	 *
+	 * Overwriting the published key would not test this: Hermiq's signer makes a
+	 * new pair when its published half no longer matches its secret, and
+	 * integriq reads the key after the answer, so the forged key would be
+	 * replaced before it was read. An impostor answering in Hermiq's place is
+	 * the case that matters.
 	 *
 	 * @return void
 	 */
 	public function testAVerdictUnderAnotherKeyIsRefused(): void {
 		$this->approval = $this->approval();
-		$verifier = $this->verifier();
-		$this->config['hermiq/' . ApprovalVerdictVerifier::PUBLIC_KEY_NAME] = base64_encode(
-			sodium_crypto_sign_publickey(sodium_crypto_sign_keypair())
+		$impostorKey    = sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair());
+		$verifier       = $this->verifier(
+			onTheWire: fn (array $answer): array => [
+				'verdict'   => $answer['verdict'],
+				'signature' => base64_encode(
+					sodium_crypto_sign_detached(ApprovalVerdictSigner::canonical(verdict: $answer['verdict']), $impostorKey)
+				),
+			]
 		);
 
 		try {
@@ -231,4 +250,28 @@ class HermiqVerdictContractTest extends TestCase {
 			$this->assertSame('bad-signature', $e->reason);
 		}
 	}//end testAVerdictUnderAnotherKeyIsRefused()
+
+	/**
+	 * A verdict Hermiq signed for another request is refused, even though the signature holds.
+	 *
+	 * @return void
+	 */
+	public function testAVerdictReplayedForAnotherRequestIsRefused(): void {
+		$this->approval = $this->approval();
+		$first          = null;
+		$verifier       = $this->verifier(
+			onTheWire: function (array $answer) use (&$first): array {
+				$first ??= $answer;
+				return $first;
+			}
+		);
+
+		$verifier->verify(approvalId: 'approval-1', toolId: self::TOOL, binding: self::BINDING, actingAgent: self::AGENT);
+		try {
+			$verifier->verify(approvalId: 'approval-1', toolId: self::TOOL, binding: self::BINDING, actingAgent: self::AGENT);
+			$this->fail('A replayed verdict must be refused.');
+		} catch (AgentActionRefusedException $e) {
+			$this->assertSame('verdict-for-another-request', $e->reason);
+		}
+	}//end testAVerdictReplayedForAnotherRequestIsRefused()
 }//end class
