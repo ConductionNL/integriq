@@ -25,6 +25,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [AI agent tools](ai-agent-tools.md) | A Hermiq agent runs, tests and replays on a person's approval, and never reconfigures | Implemented |
 | [Integration leaves](integration-leaves.md) | Files, Deck, Talk and Calendar linked to sources and synchronizations | Implemented |
 | [Timetables into planninq](rostering-to-planninq.md) | Zermelo, Untis, Xedule and TimeEdit lessons delivered into planninq's school timetable | Dormant |
+| [Objecten API](objecten-api.md) | The VNG Objecten and Objecttypen APIs over your registers, one token per caller | Implemented |
 
 ## Architecture Overview
 

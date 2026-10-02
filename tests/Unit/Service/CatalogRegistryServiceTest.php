@@ -17,13 +17,16 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Repair\MaterializeCatalogItems;
 use OCA\Integriq\Service\CatalogRegistryService;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -422,4 +425,32 @@ class CatalogRegistryServiceTest extends TestCase {
 		$this->assertSame('generated', $entries['template:example-crm']);
 		$this->assertSame([], array_diff(array_unique(array_values($entries)), ['adapter', 'curated', 'generated']));
 	}//end testEveryCardCarriesItsTier()
+
+	/**
+	 * objecten-api-facade Task 6: the Objecten and Objecttypen APIs are one
+	 * adapter card, always available (the routes answer once a token is
+	 * configured), and the card the repair step writes is a valid
+	 * catalog_item.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-leaf-app-declares-the-objecttypes-it-publishes-req-oaf-006
+	 */
+	public function testTheObjectenApiIsOneAdapterCard(): void {
+		$service = $this->makeService();
+		$entries = array_column($service->collect(), null, 'slug');
+
+		$this->assertArrayHasKey('adapter:objecten-api', $entries);
+		$card = $entries['adapter:objecten-api'];
+		$this->assertSame('adapter', $card['kind']);
+		$this->assertSame('adapter', $card['tier']);
+		$this->assertSame('always-available', $card['mechanism']);
+		$this->assertSame(['Objecten API 2', 'Objecttypen API 2'], $card['standards']);
+		$this->assertSame('available', $service->resolveStatus($card));
+		$this->assertSame(1, count(array_filter(array_keys($entries), static fn (string $slug): bool => str_starts_with($slug, 'adapter:') && str_contains($slug, 'objecten'))));
+
+		$repair = new MaterializeCatalogItems($this->createMock(ContainerInterface::class), new NullLogger());
+		$payload = (new \ReflectionMethod($repair, 'payloadFor'))->invoke($repair, $card, 'adapter:objecten-api', 'available');
+		$this->assertSame([], RegisterSchemaValidator::errors('catalog_item', $payload));
+	}//end testTheObjectenApiIsOneAdapterCard()
 }//end class
