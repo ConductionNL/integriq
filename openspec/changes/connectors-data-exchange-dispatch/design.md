@@ -144,3 +144,27 @@ dispatch reaches.
   event's docblock.
 - learniq's half has to land for any row to move. Until it does, integriq's
   listener exists and nobody raises the event.
+
+## D6. What was built elsewhere, and what D4 became (2 October 2026)
+
+D1 to D3 and D5 were built by `learniq-exchange-jobs-native` in another shape: the job lives in
+integriq, learniq raises `ExchangeJobRequestedEvent`, and `ExchangeTargetDispatcher` is the
+D3 table. They are not built a second time.
+
+D4 is built against that runner, not against a learniq-owned job:
+
+- The kenmerk the dispatcher sends is `<jobId>:<recordId>`, so the listener splits it at the
+  first colon and looks the job up with `ExchangeJobService::findJob()`. No separate record of
+  dispatched job ids is kept: the job row is that record.
+- The job's target must be one the acknowledging adapter carries (`ExchangeTargetCatalogue`
+  adapter `rod`, `verzuimloket`, `oso` or `uwlr-eduv`). A ROD retour never touches an OSO job,
+  even if a kenmerk collides.
+- A rejecting retour becomes a rejection on the job through `ExchangeRejectionService::record()`
+  with the signaalcode as `errorCode`. The record is already counted as sent; the retour is the
+  authority's later no, and the correction loop (resubmit, waive) is where a person acts on it.
+- The event is `ExchangeJobAcknowledgedEvent`, not the `DataExchangeConcludedEvent` of D2: the
+  job concluded when its run ended (`ExchangeJobConcludedEvent`, REQ-009), and an
+  acknowledgement is per record, possibly days later. It carries `recordId` for that reason.
+- No owning app, no event: per ADR-041 a concluded-style event is only raised for a request an
+  app made.
+
