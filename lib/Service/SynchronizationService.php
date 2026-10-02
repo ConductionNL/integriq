@@ -2542,6 +2542,9 @@ class SynchronizationService
 
 			$contract->setTargetId($targetId);
 			$targetObject = array_merge($body, ['targetId' => $targetId]);
+
+			$this->applyFollowUpRequest(synchronization: $synchronization, target: $target, targetConfig: $targetConfig, object: $object, contract: $contract);
+
 			return $contract;
 		}
 
@@ -2577,6 +2580,70 @@ class SynchronizationService
 
 		return $contract;
 	}
+
+	/**
+	 * Fire a second write to the target right after a successful create.
+	 *
+	 * Configured via `targetConfig.followUpRequest` ({endpoint, method, mapping}). Runs once,
+	 * immediately after the first successful write to the target (the create call above).
+	 * Unlike applyCreateResponseMapping() this does not touch the source object, so there is
+	 * no synchronization loop to guard against — it is simply a second call to the same
+	 * target source, e.g. Xxllnc's two-step "upload content" then "set case_number" document
+	 * flow, where both calls need the same reserved document number.
+	 *
+	 * The endpoint is Twig-rendered with the same context the create endpoint uses (so e.g.
+	 * `getTargetIdByOriginId(...)` resolves identically for both calls), and the body is
+	 * built from the configured mapping if one is set, otherwise sent as an empty object.
+	 *
+	 * Best-effort: a missing config is a silent no-op; a request failure is logged and
+	 * swallowed — the create write already succeeded, this is a follow-up on top of it, not
+	 * a condition of it.
+	 *
+	 * @param Synchronization         $synchronization The synchronization that just wrote the target.
+	 * @param Source                  $target          The target source the create call was made to.
+	 * @param array                   $targetConfig    The synchronization's (dot-applied) target config.
+	 * @param array                   $object          The source object data, as used for the create call.
+	 * @param SynchronizationContract $contract        The contract, with the new targetId already set.
+	 *
+	 * @return void
+	 */
+	private function applyFollowUpRequest(Synchronization $synchronization, Source $target, array $targetConfig, array $object, SynchronizationContract $contract): void
+	{
+		$followUpConfig = $targetConfig['followUpRequest'] ?? null;
+		if (is_array($followUpConfig) === false || isset($followUpConfig['endpoint']) === false) {
+			return;
+		}
+
+		try {
+			$endpoint = $followUpConfig['endpoint'];
+			if (str_contains($endpoint, '{{') || str_contains($endpoint, '{%')) {
+				$endpoint = $this->mappingService->renderTemplateString(
+					$endpoint,
+					[
+						'endpoint' => $endpoint,
+						'object' => $object,
+						'originId' => $contract->getOriginId(),
+						'targetId' => $contract->getTargetId(),
+					]
+				);
+			}
+
+			$body = [];
+			if (isset($followUpConfig['mapping']) === true) {
+				$mapping = $this->mappingService->getMapping((string) $followUpConfig['mapping']);
+				$body = $this->processMapping(mapping: $mapping, data: $object);
+			}
+
+			$method = $followUpConfig['method'] ?? 'POST';
+
+			$this->callService->call(source: $target, endpoint: $endpoint, method: $method, config: ['json' => $body]);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Follow-up request failed for synchronization ' . $synchronization->getId()
+				. ' contract ' . $contract->getOriginId() . ': ' . $e->getMessage()
+			);
+		}
+	}//end applyFollowUpRequest()
 
 	/**
 	 * Map a field from a just-created target's response onto the source object it came from.
