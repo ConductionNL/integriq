@@ -10,8 +10,10 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
   - GIVEN an approved tool and a signed-in user WHEN the event is raised THEN the result is a form to the tool's `oidcLoginUrl` with the six fields
   - GIVEN a suspended tool WHEN the event is raised THEN it is refused naming the status
   - GIVEN a hint older than five minutes WHEN it is verified THEN it is rejected as expired
-- [ ] Implement
-- [ ] Test (PHPUnit on the listener and the hint, with a real event object)
+- [x] Implement
+  - Built by #2243 (4ad84c67, 28 Sep): `LtiLaunchRequestedEvent`, `lib/EventListener/LtiLaunchRequestedListener.php` (the task named `lib/Listener/`; the file sits in `lib/EventListener/` beside the other listeners), `LtiPlatformHint` (HMAC through `ICrypto`, five minutes, never stored), registered in `Application::register()`.
+- [x] Test (PHPUnit on the listener and the hint, with a real event object)
+  - `tests/Unit/Service/Lti/LtiPlatformLaunchTest.php` constructs the real event: `testLaunchEventReturnsLoginInitiationToToolOidcLoginUrl`, `testSuspendedToolIsRefusedNamingItsStatus`, `testLaunchForAnotherUserIsRefused`, `testUnknownDeploymentIsRefused`, `testHintOlderThanFiveMinutesIsRejectedAsExpired`, `testTamperedHintIsRejected`.
 
 ### Task 2: The authorization endpoint
 - **spec_ref**: openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-the-platform-authorizes-the-tools-login-redirect-and-posts-the-launch-token-req-ltil-002
@@ -19,8 +21,11 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
 - **acceptance_criteria**:
   - GIVEN a valid redirect from the tool WHEN the endpoint runs THEN the answer is a form posting an id_token with the tool's nonce and its state to the redirect URI
   - GIVEN another user's hint, a bad redirect URI or a missing nonce WHEN the endpoint runs THEN an error page names the check and nothing is posted
-- [ ] Implement
+- [x] Implement
+  - Built by #2243: `LtiPlatformController::authorize()` on GET and POST `/api/lti/platform/authorize`, `LtiPlatformLoginService` (user, hint, client id, redirect URI, nonce and state checks), `templates/lti-autopost.php` and `templates/lti-error.php`, the optional nonce on `initiatePlatformLaunch()`.
+  - Still owed from this task: the error page strings are not in `l10n/en.json` / `l10n/nl.json` yet.
 - [ ] Test (PHPUnit per check; `tests/e2e/lti-platform-launch.spec.ts` against a reference tool fixture)
+  - PHPUnit half done: `testAuthorizePostsIdTokenWithToolNonceAndState`, `testAuthorizeRefusesAnotherUsersHint`, `testAuthorizeRefusesUnregisteredRedirectUri`, `testAuthorizeRefusesMissingNonce`, `testAuthorizeRefusesAnotherClientId` in `LtiPlatformLaunchTest`. Open: the e2e spec and the reference tool fixture do not exist yet.
 
 ### Task 3: The launch claims and the grade service claim
 - **spec_ref**: openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
@@ -40,6 +45,7 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
   - GIVEN a tool with no redirect URIs WHEN a launch uses its `launchUrl` THEN it is accepted
   - GIVEN the tool's detail view WHEN an administrator opens it THEN the six values show with copy actions
 - [ ] Implement
+  - Half built: `LtiPlatformLoginService::isRegisteredRedirectUri()` reads `redirectUris` when present and otherwise allows only the `launchUrl` (`testToolWithoutRedirectUrisMayOnlyUseItsLaunchUrl`). Open: `lti_tool` is still 1.2.0 with no `redirectUris` property, so a value an administrator sets is not part of the schema; and the detail view with the six platform values and copy actions does not exist.
 - [ ] Test (`tests/validate-register.js`; `tests/e2e/lti-platform-launch.spec.ts`)
 
 ### Task 5: Hand learniq its half
@@ -47,8 +53,10 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
 - **files**: an issue on ConductionNL/learniq naming the event, the form rendering, the poll job's `lineItemId` lookup and `lti_ags_subscription_id`
 - **acceptance_criteria**:
   - GIVEN the merged integriq change WHEN the issue is opened THEN it quotes the event constructor and result shape and links this change
-- [ ] Implement
-- [ ] Test (the learniq issue exists and links back)
+- [x] Implement
+  - No issue was needed: learniq built its half on its own. Read on learniq `development` ac27f3f (2 Oct): `lib/Controller/LtiToolPlacementController.php` raises `OCA\Integriq\Event\LtiLaunchRequestedEvent` by name (`LAUNCH_EVENT`), reads the login initiation or the refusal back, and `lib/BackgroundJob/LtiAgsScorePollJob.php` resolves the placement from the score's `lineItemId` with `lti_ags_subscription_id`.
+- [x] Test (the learniq issue exists and links back)
+  - Replaced by the read above: the event name, the accessors learniq calls and the `lineItemId` lookup are on learniq's development branch.
 
 ## Verification
 
