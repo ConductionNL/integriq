@@ -1362,11 +1362,30 @@ class SynchronizationService
 		}
 
 		// Update target and create log when not in test mode
+		$wasCreate = $synchronizationContract->getTargetId() === null;
+
 		$synchronizationContract = $this->updateTarget(
 			synchronizationContract: $synchronizationContract,
 			targetObject: $object,
 			mutationType: $mutationType
 		);
+
+		// The target was just created (targetId went from null to set). Persist that now,
+		// before touching the source object below: a crash or retry between here and the
+		// source write must see targetId already set, so it takes the update path instead
+		// of creating a second target resource.
+		if ($wasCreate === true && $synchronizationContract->getTargetId() !== null) {
+			if ($synchronizationContract->getId()) {
+				$this->synchronizationContractMapper->update($synchronizationContract);
+			} else {
+				if ($synchronizationContract->getUuid() === null) {
+					$synchronizationContract->setUuid(Uuid::v4());
+				}
+				$synchronizationContract = $this->synchronizationContractMapper->insertOrUpdate($synchronizationContract);
+			}
+
+			$this->applyCreateResponseMapping(synchronization: $synchronization, contract: $synchronizationContract, responseObject: $object);
+		}
 
         if ($synchronization->getTargetType() === 'register/schema') {
             [$registerId, $schemaId] = explode(separator: '/', string: $synchronization->getTargetId());
@@ -2522,6 +2541,7 @@ class SynchronizationService
 				}
 
 			$contract->setTargetId($targetId);
+			$targetObject = array_merge($body, ['targetId' => $targetId]);
 			return $contract;
 		}
 
@@ -2557,6 +2577,66 @@ class SynchronizationService
 
 		return $contract;
 	}
+
+	/**
+	 * Map a field from a just-created target's response onto the source object it came from.
+	 *
+	 * Configured via `targetConfig.mapResponseOntoObject.CREATE` (a mapping id). Only
+	 * runs once, right after the first successful write to the target (when the
+	 * contract had no targetId before this call) — the caller already persisted the
+	 * contract's new targetId before calling this, so a retry or a re-triggered event
+	 * takes the update path instead of creating a second target resource. The source
+	 * object is saved silently (no audit trail, no object events), so this write does
+	 * not re-trigger this or any other synchronization.
+	 *
+	 * Best-effort: a missing mapping, a mapping failure or a refused source save is
+	 * logged and swallowed. The target write already succeeded; this is enrichment on
+	 * top of it, not a condition of it.
+	 *
+	 * @param Synchronization         $synchronization The synchronization that just created the target.
+	 * @param SynchronizationContract $contract        Its contract, with the new targetId already persisted.
+	 * @param array                   $responseObject  The target's response (and `targetId`), as captured in writeObjectToTarget().
+	 *
+	 * @return void
+	 */
+	private function applyCreateResponseMapping(Synchronization $synchronization, SynchronizationContract $contract, array $responseObject): void
+	{
+		$targetConfig = $synchronization->getTargetConfig();
+		$mappingId = $targetConfig['mapResponseOntoObject']['CREATE'] ?? null;
+		if ($mappingId === null || $mappingId === '') {
+			return;
+		}
+
+		if ($synchronization->getSourceType() !== 'register/schema' || $contract->getOriginId() === null) {
+			return;
+		}
+
+		try {
+			$mapping = $this->mappingService->getMapping((string) $mappingId);
+			$mappedFields = $this->processMapping($mapping, $responseObject);
+
+			[$registerId, $schemaId] = explode(separator: '/', string: $synchronization->getSourceId());
+
+			$openRegisters = $this->objectService->getOpenRegisters();
+			$openRegisters->setRegister($registerId);
+			$openRegisters->setSchema($schemaId);
+
+			$sourceObject = $openRegisters->find(id: $contract->getOriginId())->jsonSerialize();
+
+			$openRegisters->saveObject(
+				object: array_merge($sourceObject, $mappedFields),
+				register: $registerId,
+				schema: $schemaId,
+				uuid: $contract->getOriginId(),
+				silent: true
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Could not map create response onto source object ' . $contract->getOriginId()
+				. ' for synchronization ' . $synchronization->getId() . ': ' . $e->getMessage()
+			);
+		}
+	}//end applyCreateResponseMapping()
 
 	/**
 	 * Synchronize data to a target.
