@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Zgw;
 
-use OCA\Integriq\Exception\ZgwSetInstallRefusedException;
+use OCA\Integriq\Service\Zgw\ZgwSetInstallRefusedException;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
