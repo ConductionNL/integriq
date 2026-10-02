@@ -58,6 +58,22 @@ class RegisterSchemaValidator {
 			return ['/' => ['No schema "' . $schemaSlug . '" in the integriq register.']];
 		}
 
+		return self::errorsAgainst(schema: $schema, object: $object);
+
+	}//end errors()
+
+	/**
+	 * Validate a payload against any OpenRegister schema, another app's included.
+	 *
+	 * The same two transforms as errors() apply, so a schema copied from a
+	 * sibling app's register is read the way that app's OpenRegister reads it.
+	 *
+	 * @param array<string,mixed> $schema The schema.
+	 * @param array<string,mixed> $object The payload as handed to saveObject().
+	 *
+	 * @return array<string,mixed> Formatted errors, empty when the schema accepts it.
+	 */
+	public static function errorsAgainst(array $schema, array $object): array {
 		$schema = self::stripRelationRefs(schema: $schema);
 		$required = (array)($schema['required'] ?? []);
 		foreach ($object as $key => $value) {
@@ -72,7 +88,7 @@ class RegisterSchemaValidator {
 
 		$result = (new Validator())->validate(
 			json_decode(json_encode($object, JSON_THROW_ON_ERROR)),
-			json_encode($schema, JSON_THROW_ON_ERROR)
+			json_encode(self::emptySubSchemasAsObjects(schema: $schema), JSON_THROW_ON_ERROR)
 		);
 		if ($result->isValid() === true) {
 			return [];
@@ -80,7 +96,7 @@ class RegisterSchemaValidator {
 
 		return (new ErrorFormatter())->format($result->error());
 
-	}//end errors()
+	}//end errorsAgainst()
 
 	/**
 	 * The merged register descriptor.
@@ -112,6 +128,52 @@ class RegisterSchemaValidator {
 		return $descriptor;
 
 	}//end descriptor()
+
+	/**
+	 * Turn an empty sub-schema back into `{}`.
+	 *
+	 * A schema read with json_decode(..., true) turns `"then": {}` into an empty
+	 * PHP array, which encodes back as `[]`, and opis refuses `[]` as a schema.
+	 * learniq's Lesson carries exactly that in its if/then/else.
+	 *
+	 * @param array<string,mixed> $schema The schema or sub-schema.
+	 *
+	 * @return array<string,mixed> The schema with empty sub-schemas as objects.
+	 */
+	private static function emptySubSchemasAsObjects(array $schema): array {
+		foreach (['if', 'then', 'else', 'not', 'items', 'additionalProperties', 'properties'] as $keyword) {
+			if (($schema[$keyword] ?? null) === []) {
+				$schema[$keyword] = new \stdClass();
+			}
+		}
+
+		foreach (['allOf', 'anyOf', 'oneOf'] as $keyword) {
+			if (is_array(($schema[$keyword] ?? null)) === true) {
+				foreach ($schema[$keyword] as $index => $sub) {
+					if (is_array($sub) === true) {
+						$schema[$keyword][$index] = self::emptySubSchemasAsObjects(schema: $sub);
+					}
+				}
+			}
+		}
+
+		foreach (['if', 'then', 'else', 'not', 'items'] as $keyword) {
+			if (is_array(($schema[$keyword] ?? null)) === true) {
+				$schema[$keyword] = self::emptySubSchemasAsObjects(schema: $schema[$keyword]);
+			}
+		}
+
+		if (is_array(($schema['properties'] ?? null)) === true) {
+			foreach ($schema['properties'] as $name => $sub) {
+				if (is_array($sub) === true) {
+					$schema['properties'][$name] = self::emptySubSchemasAsObjects(schema: $sub);
+				}
+			}
+		}
+
+		return $schema;
+
+	}//end emptySubSchemasAsObjects()
 
 	/**
 	 * Drop the relation `$ref` from string properties, recursively.

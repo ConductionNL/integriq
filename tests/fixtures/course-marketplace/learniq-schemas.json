@@ -1,0 +1,1171 @@
+{
+  "$comment": "Copied verbatim from ConductionNL/learniq development ac27f3f (2 Oct 2026), lib/Settings/learniq_register.json components.schemas: the three schemas the course marketplace sets write. Refresh when learniq bumps one of them.",
+  "source": "learniq@ac27f3f",
+  "schemas": {
+    "Course": {
+      "slug": "course",
+      "icon": "BookOpenPageVariantOutline",
+      "version": "0.5.0",
+      "title": "Course",
+      "description": "A course or training program (Schema.org Course). Lifecycle: draft → published → archived.",
+      "type": "object",
+      "x-openregister": {
+        "schemaType": "schema:Course",
+        "active": true,
+        "hardDelete": false,
+        "searchable": true
+      },
+      "required": [
+        "code",
+        "name",
+        "level",
+        "language",
+        "tenant_id"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Course code (e.g. BIO-3H-2026)",
+          "example": "NIS2-AWARENESS-2026",
+          "title": "Course Code"
+        },
+        "name": {
+          "type": "string",
+          "description": "Course name",
+          "example": "NIS2 Awareness Training",
+          "title": "Course Name"
+        },
+        "name_nl": {
+          "type": "string",
+          "nullable": true,
+          "description": "Dutch name",
+          "example": "NIS2 Bewustzijnstraining",
+          "title": "Course Name (Dutch)"
+        },
+        "description": {
+          "type": "string",
+          "nullable": true,
+          "description": "Course description",
+          "title": "Course Description"
+        },
+        "level": {
+          "type": "string",
+          "description": "Education or training level",
+          "enum": [
+            "po",
+            "vo",
+            "mbo",
+            "hbo",
+            "wo",
+            "corporate"
+          ],
+          "example": "corporate",
+          "title": "Education Level"
+        },
+        "language": {
+          "type": "string",
+          "description": "ISO 639-1 language code",
+          "pattern": "^[a-z]{2}$",
+          "example": "nl",
+          "title": "Language"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Searchable tags",
+          "items": {
+            "type": "string"
+          },
+          "title": "Search Tags"
+        },
+        "mandatoryTraining": {
+          "type": "boolean",
+          "description": "Whether this course is mandatory training",
+          "default": false,
+          "title": "Mandatory Training"
+        },
+        "regulationSlug": {
+          "type": "string",
+          "nullable": true,
+          "description": "Regulation identifier (e.g. NIS2, AVG, BIO)",
+          "example": "NIS2",
+          "title": "Regulation Slug"
+        },
+        "renewalCourseSlug": {
+          "type": "string",
+          "nullable": true,
+          "description": "Slug of the renewal/refresher course for this training",
+          "title": "Renewal Course Slug"
+        },
+        "certificateTemplate": {
+          "type": "string",
+          "nullable": true,
+          "description": "nc:files path to PDF certificate template",
+          "title": "Certificate Template"
+        },
+        "lifecycle": {
+          "type": "string",
+          "description": "Course lifecycle state. Managed by OR lifecycle engine; do not set directly.",
+          "enum": [
+            "draft",
+            "published",
+            "archived"
+          ],
+          "default": "draft",
+          "example": "draft",
+          "title": "Lifecycle State"
+        },
+        "parentCourseId": {
+          "type": "string",
+          "nullable": true,
+          "format": "uuid",
+          "$ref": "Course",
+          "description": "UUID of the parent Course. Makes Course recursive — a 'module' is a Course used as a container. Null for top-level courses.",
+          "title": "Parent Course ID"
+        },
+        "order": {
+          "type": "integer",
+          "nullable": true,
+          "description": "course-authoring-ux: display order among sibling modules (child Course rows sharing the same parentCourseId). Additive field — existing rows leave it null, which MUST sort after every sibling with an explicit order value (append-to-end), never as an error or as position zero. Set and maintained by CourseBuilder's drag-and-drop and keyboard-operable reorder controls.",
+          "example": 1,
+          "title": "Module Display Order"
+        },
+        "curriculumPlanId": {
+          "type": "string",
+          "nullable": true,
+          "format": "uuid",
+          "$ref": "CurriculumPlan",
+          "description": "UUID of the CurriculumPlan governing this course. Consumed by the grading spec.",
+          "title": "Curriculum Plan ID"
+        },
+        "programmeIds": {
+          "type": "array",
+          "description": "UUIDs of Programmes that include this Course.",
+          "items": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "Programme"
+          },
+          "title": "Programme IDs"
+        },
+        "ectsCredits": {
+          "type": "number",
+          "nullable": true,
+          "minimum": 0,
+          "description": "Bologna-style ECTS credit value this course/module contributes toward a learner's cumulative EC total. Additive field — existing rows leave it null. Only meaningful for level hbo|wo|mbo; po/vo/corporate courses never set it. A downstream credit-summing calculation (e.g. study-progress's BsaProgressEvaluator) MUST treat null as 0, not as an error.",
+          "example": 6,
+          "title": "ECTS Credits"
+        },
+        "competencyIds": {
+          "type": "array",
+          "default": [],
+          "description": "UUIDs of Competency taxonomy nodes (competency capability) this course teaches. Additive field — existing rows leave it empty.",
+          "items": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "Competency"
+          },
+          "title": "Competency IDs"
+        },
+        "prerequisiteCourseIds": {
+          "type": "array",
+          "default": [],
+          "description": "UUIDs of Course objects a learner MUST hold a completed Enrolment for before they may enrol in this Course. Additive field — existing rows leave it empty/absent and are unaffected. Structurally identical to CurriculumPlan.requiredCourseIds/Course.programmeIds (array-of-$ref idiom). Enforced by the enrolment capability's EnrolmentPrerequisiteListener (ObjectCreatingEvent on enrolment) — not a lifecycle guard, since Enrolment has no transition into its initial pending state for a `requires` guard to attach to.",
+          "items": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "Course"
+          },
+          "title": "Prerequisite Course IDs"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant UUID (multi-tenant isolation)",
+          "title": "Tenant ID"
+        },
+        "competencyAlignments": {
+          "type": "array",
+          "default": [],
+          "widget": "json",
+          "items": {
+            "type": "object",
+            "required": [
+              "competencyId"
+            ],
+            "properties": {
+              "competencyId": {
+                "type": "string",
+                "format": "uuid",
+                "$ref": "Competency",
+                "title": "Goal",
+                "description": "The goal this is aligned to."
+              },
+              "depth": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 64,
+                "title": "Depth",
+                "description": "How far this takes the goal: a level from the goal's framework, such as practise or competent. Leave empty to not say."
+              }
+            }
+          },
+          "description": "The goals this works on, each with a depth from the goal's own framework. Competency IDs is kept in step with this list.",
+          "x-notes": "goal-alignment-depth: depth is a CompetencyFramework.proficiencyLevels[].levelId of the aligned goal's framework (plan A4), enforced by CompetencyAlignmentListener on save (no enum, the allowed set lives on another object). competencyIds stays and is derived: alignments changed -> competencyIds = their ids in order, deduplicated; only competencyIds changed on a row with alignments -> alignments follow (kept depth, new id depth null, removed id dropped); both changed -> alignments win; a row that never had alignments keeps its competencyIds. Readers use CompetencyAlignmentNormaliser::effectiveAlignments(). widget json because the shared form renders an array of objects as tags.",
+          "title": "Goal alignments"
+        },
+        "license": {
+          "type": "string",
+          "enum": [
+            "CC0-1.0",
+            "CC-BY-4.0",
+            "CC-BY-SA-4.0",
+            "CC-BY-NC-4.0",
+            "CC-BY-NC-SA-4.0",
+            "CC-BY-ND-4.0",
+            "CC-BY-NC-ND-4.0",
+            "all-rights-reserved"
+          ],
+          "x-enum-labels": {
+            "CC0-1.0": "CC0 (public domain)",
+            "CC-BY-4.0": "CC BY 4.0 (credit the author)",
+            "CC-BY-SA-4.0": "CC BY-SA 4.0 (credit, share alike)",
+            "CC-BY-NC-4.0": "CC BY-NC 4.0 (credit, no commercial use)",
+            "CC-BY-NC-SA-4.0": "CC BY-NC-SA 4.0 (credit, no commercial use, share alike)",
+            "CC-BY-ND-4.0": "CC BY-ND 4.0 (credit, no changes)",
+            "CC-BY-NC-ND-4.0": "CC BY-NC-ND 4.0 (credit, no commercial use, no changes)",
+            "all-rights-reserved": "All rights reserved"
+          },
+          "title": "Licence",
+          "description": "Under which terms others may reuse this course. Pick an open licence if you want to share it."
+        },
+        "author": {
+          "type": "string",
+          "maxLength": 200,
+          "title": "Author",
+          "description": "The name to credit when someone reuses this: a person, a team or a school."
+        },
+        "subject": {
+          "type": "string",
+          "maxLength": 120,
+          "title": "Subject",
+          "description": "The school subject, as the Onderwijsbegrippenkader (OBK) names it. For example: Rekenen/wiskunde."
+        },
+        "educationalLevels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "po",
+              "so",
+              "vmbo",
+              "havo",
+              "vwo",
+              "mbo-1",
+              "mbo-2",
+              "mbo-3",
+              "mbo-4",
+              "hbo",
+              "wo",
+              "adult-education",
+              "professional-training"
+            ],
+            "x-enum-labels": {
+              "po": "Primary school (PO)",
+              "so": "Special education (SO)",
+              "vmbo": "VMBO",
+              "havo": "HAVO",
+              "vwo": "VWO",
+              "mbo-1": "MBO level 1",
+              "mbo-2": "MBO level 2",
+              "mbo-3": "MBO level 3",
+              "mbo-4": "MBO level 4",
+              "hbo": "HBO",
+              "wo": "WO",
+              "adult-education": "Adult education",
+              "professional-training": "Professional training"
+            }
+          },
+          "default": [],
+          "title": "Education levels",
+          "description": "The levels this fits, using the NL-LOM education levels. Used to find material across schools."
+        },
+        "selfEnrolment": {
+          "type": "string",
+          "enum": [
+            "closed",
+            "open",
+            "on-request"
+          ],
+          "default": "closed",
+          "title": "Sign-up by learners",
+          "description": "Whether learners can sign up themselves from the catalogue: not at all, at once, or on request for a teacher or manager to approve.",
+          "x-enum-labels": {
+            "closed": "Closed",
+            "open": "Open",
+            "on-request": "On request"
+          }
+        }
+      },
+      "x-openregister-lifecycle": {
+        "property": "lifecycle",
+        "initial": "draft",
+        "transitions": {
+          "publish": {
+            "from": "draft",
+            "to": "published",
+            "requires": "OCA\\Learniq\\Lifecycle\\CoursePublishGuard"
+          },
+          "archive": {
+            "from": "published",
+            "to": "archived"
+          },
+          "unarchive": {
+            "from": "archived",
+            "to": "draft"
+          }
+        }
+      },
+      "x-openregister-aggregate-refs": {
+        "lessonCount": {
+          "schema": "lesson",
+          "metric": "count",
+          "filters": {
+            "courseId": "@self.id"
+          }
+        }
+      },
+      "x-openregister-calculations": {
+        "lessonCount": {
+          "type": "integer",
+          "materialise": true,
+          "expression": {
+            "prop": "@aggregate.lessonCount"
+          }
+        },
+        "isPublished": {
+          "type": "boolean",
+          "materialise": true,
+          "expression": {
+            "eq": [
+              {
+                "prop": "lifecycle"
+              },
+              "published"
+            ]
+          }
+        }
+      },
+      "x-openregister-aggregations": {
+        "enrolledLearners": {
+          "from": "enrolment",
+          "metric": "count_distinct",
+          "field": "learnerId",
+          "where": {
+            "courseId": "@self.id"
+          }
+        },
+        "completedLearners": {
+          "from": "enrolment",
+          "metric": "count_distinct",
+          "field": "learnerId",
+          "where": {
+            "courseId": "@self.id",
+            "lifecycle": "completed"
+          }
+        }
+      },
+      "x-openregister-notifications": {
+        "published": {
+          "trigger": {
+            "type": "transition",
+            "action": "publish"
+          },
+          "enabled": true,
+          "channels": [
+            "activity"
+          ],
+          "recipients": [
+            {
+              "kind": "groups",
+              "groups": [
+                "admin",
+                "hr"
+              ]
+            }
+          ],
+          "subject": {
+            "nl": "Cursus '{{title}}' is gepubliceerd",
+            "en": "Course '{{title}}' was published"
+          }
+        },
+        "archived": {
+          "trigger": {
+            "type": "transition",
+            "action": "archive"
+          },
+          "enabled": true,
+          "channels": [
+            "activity"
+          ],
+          "recipients": [
+            {
+              "kind": "groups",
+              "groups": [
+                "admin"
+              ]
+            }
+          ],
+          "subject": {
+            "nl": "Cursus '{{title}}' is gearchiveerd",
+            "en": "Course '{{title}}' was archived"
+          }
+        }
+      },
+      "x-openregister-seed": [],
+      "authorization": {
+        "read": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads",
+          {
+            "group": "authenticated",
+            "match": {
+              "lifecycle": {
+                "$eq": "published"
+              }
+            }
+          }
+        ],
+        "create": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads"
+        ],
+        "update": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads"
+        ]
+      },
+      "configuration": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search published courses by code, level, language, mandatory training or regulation. Staff also see drafts.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "code",
+                "level",
+                "language",
+                "lifecycle",
+                "mandatoryTraining",
+                "regulationSlug"
+              ]
+            },
+            "get": {
+              "description": "Get one course by id: title, level, language, mandatory flag and its regulation.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        }
+      }
+    },
+    "Lesson": {
+      "slug": "lesson",
+      "icon": "FileDocumentOutline",
+      "version": "0.6.0",
+      "title": "Lesson",
+      "description": "A lesson / learning module within a Course (Schema.org LearningResource). Lifecycle: draft → published → retired.",
+      "type": "object",
+      "x-openregister": {
+        "schemaType": "schema:LearningResource",
+        "active": true,
+        "hardDelete": false,
+        "searchable": true
+      },
+      "required": [
+        "courseId",
+        "name",
+        "order",
+        "contentType",
+        "tenant_id"
+      ],
+      "properties": {
+        "courseId": {
+          "type": "string",
+          "format": "uuid",
+          "$ref": "Course",
+          "description": "UUID of the parent Course",
+          "title": "Course ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Lesson name",
+          "example": "Module 1 — NIS2 Scope & Obligations",
+          "title": "Lesson Name"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Position within the course (1-based, contiguous)",
+          "minimum": 1,
+          "example": 1,
+          "title": "Display Order"
+        },
+        "contentType": {
+          "type": "string",
+          "description": "Type of learning content. 'text' denotes a native, block-composed lesson — its body is authored as blocks (see below), not a single packaged reference (course-authoring-ux). Every other value denotes packaged/external content addressed by contentRef exactly as before.",
+          "enum": [
+            "text",
+            "video",
+            "scorm12",
+            "scorm2004",
+            "cmi5",
+            "lti",
+            "quiz"
+          ],
+          "example": "cmi5",
+          "title": "Content Type"
+        },
+        "contentRef": {
+          "type": "string",
+          "nullable": true,
+          "description": "nc:files path or cmi5 launch URL for those content types. For contentType='lti', this MUST be the UUID of an LtiToolPlacement object, not a raw link — a static URL cannot carry a signed OIDC launch; the placement is resolved server-side and the actual launch is delegated to OpenConnector's lti-13-platform adapter. Required for every contentType except 'text' (see the allOf/if/then conditional below) — a contentType='text' lesson carries its body in blocks instead and leaves contentRef unset.",
+          "example": "/Learniq/tenant-uuid/course-uuid/cmi5/lesson-uuid/",
+          "title": "Content Reference"
+        },
+        "blocks": {
+          "type": "array",
+          "default": [],
+          "description": "course-authoring-ux: ordered list of typed content blocks composing this Lesson's body when contentType='text' (native, block-composed lesson). Additive field — existing rows leave it empty/absent. Each block carries exactly one payload matching its type: richText (inline markdown text), media (pointer to an existing Material UUID — image, video, file attachment, or SCORM/cmi5 package reference via Material.kind), quiz (pointer to an existing Assessment UUID), assignment (pointer to an existing Assignment UUID), or ltiTool (pointer to an existing LtiToolPlacement UUID). Structured JSON on Lesson, mirroring the Assessment.itemRefs precedent — never accessed outside this Lesson's own save/load cycle (design.md D1).",
+          "items": {
+            "type": "object",
+            "required": [
+              "blockId",
+              "type",
+              "order"
+            ],
+            "properties": {
+              "blockId": {
+                "type": "string",
+                "description": "Stable identifier for this block within the lesson (client-generated, e.g. a UUID).",
+                "title": "Block ID"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "richText",
+                  "media",
+                  "quiz",
+                  "assignment",
+                  "ltiTool"
+                ],
+                "description": "Block type. It decides which payload field below is filled. Teacher notes are not blocks: they are kept apart, where learners cannot read them.",
+                "title": "Block Type"
+              },
+              "order": {
+                "type": "integer",
+                "description": "Display order of this block within the lesson's blocks array — contiguous, maintained by LessonComposer's drag-and-drop and keyboard-operable reorder controls.",
+                "title": "Block Order"
+              },
+              "text": {
+                "type": "string",
+                "nullable": true,
+                "description": "Markdown text of a rich text block. Empty for every other block type.",
+                "title": "Rich Text Content"
+              },
+              "materialId": {
+                "type": "string",
+                "nullable": true,
+                "format": "uuid",
+                "$ref": "Material",
+                "description": "UUID of the referenced Material for a media block (image, video, file attachment, or SCORM/cmi5 package reference via Material.kind). Never duplicates the Material's fileRef/kind/license — those stay on Material as the single source of truth. Null for every other block type.",
+                "title": "Material ID"
+              },
+              "assessmentId": {
+                "type": "string",
+                "nullable": true,
+                "format": "uuid",
+                "$ref": "Assessment",
+                "description": "UUID of the referenced Assessment for a quiz block. Null for every other block type.",
+                "title": "Assessment ID"
+              },
+              "assignmentId": {
+                "type": "string",
+                "nullable": true,
+                "format": "uuid",
+                "$ref": "Assignment",
+                "description": "UUID of the referenced Assignment for an assignment block. Null for every other block type.",
+                "title": "Assignment ID"
+              },
+              "ltiToolPlacementId": {
+                "type": "string",
+                "nullable": true,
+                "format": "uuid",
+                "$ref": "LtiToolPlacement",
+                "description": "UUID of the referenced LtiToolPlacement for an ltiTool block — the same launch-delegation flow the whole-lesson contentType='lti' branch already uses, scoped to this one block. Null for every other block type.",
+                "title": "LTI Tool Placement ID"
+              }
+            }
+          },
+          "title": "Content Blocks"
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Estimated duration in minutes",
+          "example": 20,
+          "title": "Duration (Minutes)"
+        },
+        "learningObjectives": {
+          "type": "array",
+          "description": "Learning objectives for this lesson, as free text. Superseded (not replaced) by competencyIds for anything that needs to roll up into a learner's CompetencyAttainment or be queried structurally — learningObjectives itself is not linked to the competency taxonomy and never rolls up; free text remains for anything competencyIds can't yet express.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Learning Objectives"
+        },
+        "competencyIds": {
+          "type": "array",
+          "default": [],
+          "description": "UUIDs of Competency taxonomy nodes (competency capability) this lesson teaches. Additive field — existing rows leave it empty.",
+          "items": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "Competency"
+          },
+          "title": "Competency IDs"
+        },
+        "releaseConditions": {
+          "type": "array",
+          "default": [],
+          "description": "Per-learner adaptive-release conditions, AND-combined: this Lesson is available to a learner only once every listed condition is satisfied for THAT learner. Additive field — existing rows leave it empty/absent, matching today's unconditional-on-publish behaviour. Evaluated per-learner at request time by LessonReleaseEvaluator — deliberately NOT materialised as a schema-level calculation, because availability differs per learner while this Lesson row is shared across every learner enrolled in the course (no @self/@aggregate/@ref calc-DSL token carries 'who is asking').",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "lesson-completed",
+                  "assessment-min-score"
+                ],
+                "description": "Condition kind. lesson-completed requires an XapiStatement completion/passed verb for lessonId; assessment-min-score requires a graded AssessmentResult for assessmentId summing to at least minScore.",
+                "title": "Condition Kind"
+              },
+              "lessonId": {
+                "type": "string",
+                "nullable": true,
+                "format": "uuid",
+                "$ref": "Lesson",
+                "description": "UUID of the prerequisite Lesson. Required when kind is lesson-completed.",
+                "title": "Prerequisite Lesson ID"
+              },
+              "assessmentId": {
+                "type": "string",
+                "nullable": true,
+                "format": "uuid",
+                "$ref": "Assessment",
+                "description": "UUID of the prerequisite Assessment. Required when kind is assessment-min-score.",
+                "title": "Prerequisite Assessment ID"
+              },
+              "minScore": {
+                "type": "number",
+                "nullable": true,
+                "description": "Minimum summed score required on the referenced Assessment. Required when kind is assessment-min-score.",
+                "title": "Minimum Score"
+              }
+            }
+          },
+          "title": "Release Conditions"
+        },
+        "availableAfterDays": {
+          "type": "integer",
+          "nullable": true,
+          "minimum": 0,
+          "description": "Drip-release delay: number of days after the learner's OWN Enrolment.created timestamp (for this Lesson's Course) before the lesson becomes available to that learner. Null = no drip delay (today's behaviour). This is the same static duration for every learner (safely declarative); the per-learner RESOLVED instant (enrolment.created + N days) differs per learner sharing this Lesson row, so it is resolved by LessonReleaseEvaluator at request time, never materialised. Applies in addition to any releaseConditions.",
+          "title": "Available After Days (Drip)"
+        },
+        "nextStepRules": {
+          "type": "array",
+          "default": [],
+          "description": "Rules that send a learner to a different lesson depending on how they did. The first rule that applies wins. A rule can only go to a lesson of the same course.",
+          "x-notes": "content-adaptive-next-step-and-preview. Ordered; resolved per learner at request time by NextStepResolver (the first rule whose `when` holds for the caller's own results), else defaultNextLessonId. `when` speaks the releaseConditions language plus score-below (design D1). LessonNextStepGuard refuses a target outside the lesson's course (design D4).",
+          "items": {
+            "type": "object",
+            "required": [
+              "when",
+              "goToLessonId"
+            ],
+            "properties": {
+              "when": {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "score-below",
+                      "assessment-min-score",
+                      "lesson-completed"
+                    ],
+                    "title": "Condition",
+                    "description": "What the learner must have done for this rule to apply."
+                  },
+                  "lessonId": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uuid",
+                    "$ref": "Lesson",
+                    "title": "Lesson",
+                    "description": "The lesson the learner must have completed, for a lesson-completed rule."
+                  },
+                  "assessmentId": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uuid",
+                    "$ref": "Assessment",
+                    "title": "Assessment",
+                    "description": "The test whose best score the rule reads."
+                  },
+                  "minScore": {
+                    "type": "number",
+                    "nullable": true,
+                    "title": "Score at least",
+                    "description": "The rule applies when the best score is this or higher."
+                  },
+                  "belowScore": {
+                    "type": "number",
+                    "nullable": true,
+                    "title": "Score below",
+                    "description": "The rule applies when the best score is lower than this."
+                  }
+                },
+                "title": "When",
+                "description": "The condition that sends the learner to the rule's lesson."
+              },
+              "goToLessonId": {
+                "type": "string",
+                "format": "uuid",
+                "$ref": "Lesson",
+                "title": "Go to lesson",
+                "description": "The lesson of the same course the learner goes to next."
+              }
+            }
+          },
+          "title": "Next step rules"
+        },
+        "defaultNextLessonId": {
+          "type": "string",
+          "nullable": true,
+          "format": "uuid",
+          "$ref": "Lesson",
+          "description": "The lesson that comes next when no next step rule applies. Empty: this is the last lesson.",
+          "title": "Default next lesson"
+        },
+        "mandatoryTraining": {
+          "type": "boolean",
+          "description": "Whether this lesson is tagged as mandatory training",
+          "default": false,
+          "title": "Mandatory Training"
+        },
+        "regulationSlug": {
+          "type": "string",
+          "nullable": true,
+          "description": "Regulation identifier for mandatory-training compliance tracking (e.g. NIS2, AVG, BIO)",
+          "example": "NIS2",
+          "title": "Regulation Slug"
+        },
+        "lifecycle": {
+          "type": "string",
+          "description": "Lesson lifecycle state. Managed by OR lifecycle engine; do not set directly.",
+          "enum": [
+            "draft",
+            "published",
+            "retired"
+          ],
+          "default": "draft",
+          "example": "draft",
+          "title": "Lifecycle State"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant UUID (multi-tenant isolation)",
+          "title": "Tenant ID"
+        },
+        "competencyAlignments": {
+          "type": "array",
+          "default": [],
+          "widget": "json",
+          "items": {
+            "type": "object",
+            "required": [
+              "competencyId"
+            ],
+            "properties": {
+              "competencyId": {
+                "type": "string",
+                "format": "uuid",
+                "$ref": "Competency",
+                "title": "Goal",
+                "description": "The goal this is aligned to."
+              },
+              "depth": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 64,
+                "title": "Depth",
+                "description": "How far this takes the goal: a level from the goal's framework, such as practise or competent. Leave empty to not say."
+              }
+            }
+          },
+          "description": "The goals this works on, each with a depth from the goal's own framework. Competency IDs is kept in step with this list.",
+          "x-notes": "goal-alignment-depth: depth is a CompetencyFramework.proficiencyLevels[].levelId of the aligned goal's framework (plan A4), enforced by CompetencyAlignmentListener on save (no enum, the allowed set lives on another object). competencyIds stays and is derived: alignments changed -> competencyIds = their ids in order, deduplicated; only competencyIds changed on a row with alignments -> alignments follow (kept depth, new id depth null, removed id dropped); both changed -> alignments win; a row that never had alignments keeps its competencyIds. Readers use CompetencyAlignmentNormaliser::effectiveAlignments(). widget json because the shared form renders an array of objects as tags.",
+          "title": "Goal alignments"
+        },
+        "license": {
+          "type": "string",
+          "enum": [
+            "CC0-1.0",
+            "CC-BY-4.0",
+            "CC-BY-SA-4.0",
+            "CC-BY-NC-4.0",
+            "CC-BY-NC-SA-4.0",
+            "CC-BY-ND-4.0",
+            "CC-BY-NC-ND-4.0",
+            "all-rights-reserved"
+          ],
+          "x-enum-labels": {
+            "CC0-1.0": "CC0 (public domain)",
+            "CC-BY-4.0": "CC BY 4.0 (credit the author)",
+            "CC-BY-SA-4.0": "CC BY-SA 4.0 (credit, share alike)",
+            "CC-BY-NC-4.0": "CC BY-NC 4.0 (credit, no commercial use)",
+            "CC-BY-NC-SA-4.0": "CC BY-NC-SA 4.0 (credit, no commercial use, share alike)",
+            "CC-BY-ND-4.0": "CC BY-ND 4.0 (credit, no changes)",
+            "CC-BY-NC-ND-4.0": "CC BY-NC-ND 4.0 (credit, no commercial use, no changes)",
+            "all-rights-reserved": "All rights reserved"
+          },
+          "title": "Licence",
+          "description": "Under which terms others may reuse this lesson. Leave empty to use the course licence."
+        },
+        "author": {
+          "type": "string",
+          "maxLength": 200,
+          "title": "Author",
+          "description": "The name to credit when someone reuses this: a person, a team or a school."
+        },
+        "subject": {
+          "type": "string",
+          "maxLength": 120,
+          "title": "Subject",
+          "description": "The school subject, as the Onderwijsbegrippenkader (OBK) names it. For example: Rekenen/wiskunde."
+        },
+        "educationalLevels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "po",
+              "so",
+              "vmbo",
+              "havo",
+              "vwo",
+              "mbo-1",
+              "mbo-2",
+              "mbo-3",
+              "mbo-4",
+              "hbo",
+              "wo",
+              "adult-education",
+              "professional-training"
+            ],
+            "x-enum-labels": {
+              "po": "Primary school (PO)",
+              "so": "Special education (SO)",
+              "vmbo": "VMBO",
+              "havo": "HAVO",
+              "vwo": "VWO",
+              "mbo-1": "MBO level 1",
+              "mbo-2": "MBO level 2",
+              "mbo-3": "MBO level 3",
+              "mbo-4": "MBO level 4",
+              "hbo": "HBO",
+              "wo": "WO",
+              "adult-education": "Adult education",
+              "professional-training": "Professional training"
+            }
+          },
+          "default": [],
+          "title": "Education levels",
+          "description": "The levels this fits, using the NL-LOM education levels. Used to find material across schools."
+        }
+      },
+      "allOf": [
+        {
+          "_comment": "course-authoring-ux: conditional contentRef requiredness by contentType — second use of the exam-board-case-handling if/then/else precedent (GradeEntry.sourceKind/value). contentType='text' denotes a native, block-composed lesson (its body lives in blocks) — contentRef is not required. Every other contentType keeps contentRef required exactly as before.",
+          "if": {
+            "properties": {
+              "contentType": {
+                "const": "text"
+              }
+            },
+            "required": [
+              "contentType"
+            ]
+          },
+          "then": {},
+          "else": {
+            "required": [
+              "contentRef"
+            ]
+          }
+        }
+      ],
+      "x-openregister-lifecycle": {
+        "property": "lifecycle",
+        "initial": "draft",
+        "transitions": {
+          "publish": {
+            "from": "draft",
+            "to": "published"
+          },
+          "retire": {
+            "from": "published",
+            "to": "retired"
+          }
+        }
+      },
+      "x-openregister-notifications": {
+        "published": {
+          "trigger": {
+            "type": "transition",
+            "action": "publish"
+          },
+          "enabled": true,
+          "channels": [
+            "activity"
+          ],
+          "recipients": [
+            {
+              "kind": "groups",
+              "groups": [
+                "admin"
+              ]
+            }
+          ],
+          "subject": {
+            "nl": "Les '{{title}}' is gepubliceerd",
+            "en": "Lesson '{{title}}' was published"
+          }
+        }
+      },
+      "x-openregister-seed": [],
+      "authorization": {
+        "read": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads",
+          {
+            "group": "authenticated",
+            "match": {
+              "lifecycle": {
+                "$eq": "published"
+              }
+            }
+          }
+        ],
+        "create": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads"
+        ],
+        "update": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads"
+        ]
+      },
+      "configuration": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search lessons, usually by courseId to list a course's modules. Learners see published lessons only.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "courseId",
+                "contentType",
+                "lifecycle",
+                "mandatoryTraining"
+              ]
+            },
+            "get": {
+              "description": "Get one lesson by id: title, content type and its place in the course.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        }
+      }
+    },
+    "LtiToolPlacement": {
+      "slug": "lti-tool-placement",
+      "icon": "ApplicationOutline",
+      "version": "0.1.2",
+      "title": "LtiToolPlacement",
+      "description": "Places an external LTI 1.3 tool inside a Course or Lesson. Stores only the reference to the corresponding lti_deployment registration living in OpenConnector's own register (cross-app, bare UUID — OR relations do not span registers/apps) plus the optional grading-component mapping an AGS score for this placement feeds. Learniq never stores or handles the OIDC/JWT material itself — that lives entirely in OpenConnector's lti-13-platform adapter. Lifecycle: draft → active → retired.",
+      "type": "object",
+      "x-openregister": {
+        "active": true,
+        "hardDelete": false,
+        "searchable": true
+      },
+      "required": [
+        "openconnectorDeploymentId",
+        "launchMode",
+        "tenant_id"
+      ],
+      "authorization": {
+        "read": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads",
+          {
+            "group": "authenticated",
+            "match": {
+              "lifecycle": {
+                "$eq": "active"
+              }
+            }
+          }
+        ],
+        "create": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads"
+        ],
+        "update": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads"
+        ],
+        "delete": [
+          "instructors",
+          "hr",
+          "compliance-officers",
+          "team-leads"
+        ]
+      },
+      "properties": {
+        "lessonId": {
+          "type": "string",
+          "nullable": true,
+          "format": "uuid",
+          "$ref": "Lesson",
+          "description": "UUID of the Lesson this tool is placed in. Null for a course-level placement not tied to one lesson.",
+          "title": "Lesson ID"
+        },
+        "courseId": {
+          "type": "string",
+          "nullable": true,
+          "format": "uuid",
+          "$ref": "Course",
+          "description": "UUID of the Course this tool is placed in. Null for a lesson-level placement.",
+          "title": "Course ID"
+        },
+        "openconnectorDeploymentId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The lti_deployment object identifier living in OpenConnector's own register (a separate app/register set). Deliberately a plain string, not a canonical $ref (ADR-062 rule 7 scopes $ref to relations within the same register set) — mirrors DataExchangeJob.connectorRunId's bare-string cross-app pattern.",
+          "title": "OpenConnector Deployment ID"
+        },
+        "launchMode": {
+          "type": "string",
+          "description": "LTI launch message type for this placement.",
+          "enum": [
+            "resource-link",
+            "deep-linking"
+          ],
+          "default": "resource-link",
+          "example": "resource-link",
+          "title": "Launch Mode"
+        },
+        "curriculumPlanId": {
+          "type": "string",
+          "nullable": true,
+          "format": "uuid",
+          "$ref": "CurriculumPlan",
+          "description": "UUID of the CurriculumPlan an AGS score for this placement feeds. Null when this placement does not feed grade passback.",
+          "title": "Curriculum Plan ID"
+        },
+        "gradeEntryComponentId": {
+          "type": "string",
+          "nullable": true,
+          "description": "The CurriculumPlan.components[].componentId an AGS score for this placement feeds. Mirrors Assessment.gradeEntryComponentId's exact naming. Null when this placement does not feed grade passback.",
+          "title": "Grade Entry Component ID"
+        },
+        "gradeScaleId": {
+          "type": "string",
+          "nullable": true,
+          "format": "uuid",
+          "$ref": "GradeScale",
+          "description": "UUID of the GradeScale used to normalise an incoming AGS score for this placement. Null when this placement does not feed grade passback.",
+          "title": "Grade Scale ID"
+        },
+        "lifecycle": {
+          "type": "string",
+          "description": "Placement lifecycle state. Managed by OR lifecycle engine; do not set directly.",
+          "enum": [
+            "draft",
+            "active",
+            "retired"
+          ],
+          "default": "draft",
+          "example": "draft",
+          "title": "Lifecycle State"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant identifier for multi-tenant isolation.",
+          "title": "Tenant ID"
+        }
+      },
+      "x-openregister-lifecycle": {
+        "property": "lifecycle",
+        "initial": "draft",
+        "transitions": {
+          "activate": {
+            "from": "draft",
+            "to": "active"
+          },
+          "retire": {
+            "from": [
+              "draft",
+              "active"
+            ],
+            "to": "retired"
+          }
+        }
+      },
+      "x-openregister-seed": []
+    }
+  }
+}
