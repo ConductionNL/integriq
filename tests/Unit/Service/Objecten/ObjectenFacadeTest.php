@@ -400,19 +400,19 @@ class ObjectenFacadeTest extends TestCase {
 	 */
 	public function testAnObjecttypeUrlResolvesToItsUuidAndOtherReferencesDoNot(): void {
 		$uuid = 'feeb6e6a-3e1c-4b3a-9b55-7c3f8e3a2d10';
+		$registry = new ObjecttypeRegistry();
 
-		$this->assertSame($uuid, ObjecttypeRegistry::uuidFrom(reference: $uuid));
-		$this->assertSame($uuid, ObjecttypeRegistry::uuidFrom(reference: '  ' . $uuid . ' '));
-		$this->assertSame($uuid, ObjecttypeRegistry::uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/' . $uuid));
-		$this->assertSame($uuid, ObjecttypeRegistry::uuidFrom(reference: 'HTTP://objecttypen.nl/api/v2/objecttypes/' . $uuid . '/'));
-		$this->assertSame($uuid, ObjecttypeRegistry::uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/' . $uuid . '?x=1'));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: $uuid));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: '  ' . $uuid . ' '));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/' . $uuid));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: 'HTTP://objecttypen.nl/api/v2/objecttypes/' . $uuid . '/'));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/' . $uuid . '?x=1'));
 
 		// Not an objecttype URL: returned as given, so it matches no declaration.
 		$objectUrl = 'https://objecten.nl/api/v2/objects/' . $uuid;
-		$this->assertSame($objectUrl, ObjecttypeRegistry::uuidFrom(reference: $objectUrl));
-		$this->assertSame('https://objecttypen.nl/api/v2/objecttypes/', ObjecttypeRegistry::uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/'));
+		$this->assertSame($objectUrl, $registry->uuidFrom(reference: $objectUrl));
+		$this->assertSame('https://objecttypen.nl/api/v2/objecttypes/', $registry->uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/'));
 
-		$registry = new ObjecttypeRegistry();
 		$registry->load([['uuid' => $uuid, 'name' => 'melding', 'register' => 'meldingen', 'schema' => 'melding']]);
 		$this->assertSame($uuid, $registry->find(uuid: 'https://objecttypen.nl/api/v2/objecttypes/' . $uuid)['uuid']);
 		$this->assertNull($registry->find(uuid: $objectUrl));

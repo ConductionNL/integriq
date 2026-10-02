@@ -39,7 +39,6 @@ use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectenTokenService;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
-use OCA\Integriq\Service\Objecten\ObjecttypeRegistry;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -524,7 +523,7 @@ class ObjectenApiController extends Controller {
 	 * @return string The uuid.
 	 */
 	private function typeParam(): string {
-		return ObjecttypeRegistry::uuidFrom(reference: (string)$this->request->getParam('type', ''));
+		return $this->tokens->objecttypeFrom(reference: (string)$this->request->getParam('type', ''));
 	}//end typeParam()
 
 	/**

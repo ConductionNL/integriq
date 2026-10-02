@@ -144,7 +144,7 @@ class ObjecttypeRegistry {
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
 	public function find(string $uuid): ?array {
-		return ($this->byUuid[self::uuidFrom(reference: $uuid)] ?? null);
+		return ($this->byUuid[$this->uuidFrom(reference: $uuid)] ?? null);
 	}//end find()
 
 	/**
@@ -163,7 +163,7 @@ class ObjecttypeRegistry {
 	 *
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
-	public static function uuidFrom(string $reference): string {
+	public function uuidFrom(string $reference): string {
 		$reference = trim($reference);
 		if (preg_match('#^https?://#i', $reference) !== 1) {
 			return $reference;
