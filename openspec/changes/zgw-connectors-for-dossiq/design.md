@@ -11,6 +11,20 @@ holds a `source` template (base URL, auth `jwt-zgw` with client id and
 secret, `apiVersion`), `synchronizations[]` and `mappings[]` referenced by
 slug. Sets never reference each other by id.
 
+Decided at build time (2 Oct 2026), Task 1, the "mock-mode source" of
+REQ-ZGWC-001's scenario. The mock mode lives in OpenRegister's
+`ExternalIntegrationRouter`, not in Integriq's `CallService`, and giving a
+tenant's source a switch that answers canned data is a product capability
+nobody asked for. The scenario is therefore proven by a test double of the
+transport only: `tests/Unit/Service/Zgw/ZgwSetPullFixtureTest.php` installs
+each of the five data sets with the real installer, runs its pull through the
+real synchronization and mapping engines, and has the `CallService` double
+answer the set's list endpoint with a recorded page of three resources. It
+asserts that three objects carrying the remote urls land in the bound schema,
+each with a contract whose origin id is that url, and that a second run updates
+the same three instead of adding three more. Only HTTP and OpenRegister
+storage are faked.
+
 ## D2. Target binding
 
 An operator installs a set against a target `register` and `schema`
@@ -151,6 +165,15 @@ Decided at build time (2 Oct 2026), task 3:
 Every mapping goes through `ZgwResourceTranslatorInterface`
 (`zgw-version-translation`) so one set serves a 1.x and a 1.6 store; the
 `apiVersion` on the source decides.
+
+Open at build time (2 Oct 2026), a question for Ruben, recorded in the lane
+state: the translator seam translates between the fleet's own OpenRegister
+shape (which it calls "1.0") and ZGW 1.6, so it cannot read a real ZGW 1.0 to
+1.5 store payload, and it saves one translation log per payload. Whether a
+bound schema holds the store's own ZGW shape (the sets' passThrough mappings
+today) or the fleet shape decides what a case app reads, so the hook is not
+built until that is answered.
+
 
 ## Risks
 - A remote store with millions of zaken. Initial sync is paged and
