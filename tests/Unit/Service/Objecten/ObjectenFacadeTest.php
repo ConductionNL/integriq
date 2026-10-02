@@ -393,4 +393,28 @@ class ObjectenFacadeTest extends TestCase {
 
 		$this->assertNull($rendered['record']['startAt']);
 	}//end testAnUnreadableDateBecomesNull()
+	/**
+	 * The registry reads the standard's objecttype URL as the uuid it ends in, and nothing else as one.
+	 *
+	 * @return void
+	 */
+	public function testAnObjecttypeUrlResolvesToItsUuidAndOtherReferencesDoNot(): void {
+		$uuid = 'feeb6e6a-3e1c-4b3a-9b55-7c3f8e3a2d10';
+		$registry = new ObjecttypeRegistry();
+
+		$this->assertSame($uuid, $registry->uuidFrom(reference: $uuid));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: '  ' . $uuid . ' '));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/' . $uuid));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: 'HTTP://objecttypen.nl/api/v2/objecttypes/' . $uuid . '/'));
+		$this->assertSame($uuid, $registry->uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/' . $uuid . '?x=1'));
+
+		// Not an objecttype URL: returned as given, so it matches no declaration.
+		$objectUrl = 'https://objecten.nl/api/v2/objects/' . $uuid;
+		$this->assertSame($objectUrl, $registry->uuidFrom(reference: $objectUrl));
+		$this->assertSame('https://objecttypen.nl/api/v2/objecttypes/', $registry->uuidFrom(reference: 'https://objecttypen.nl/api/v2/objecttypes/'));
+
+		$registry->load([['uuid' => $uuid, 'name' => 'melding', 'register' => 'meldingen', 'schema' => 'melding']]);
+		$this->assertSame($uuid, $registry->find(uuid: 'https://objecttypen.nl/api/v2/objecttypes/' . $uuid)['uuid']);
+		$this->assertNull($registry->find(uuid: $objectUrl));
+	}//end testAnObjecttypeUrlResolvesToItsUuidAndOtherReferencesDoNot()
 }//end class

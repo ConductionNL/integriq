@@ -18,7 +18,7 @@ This page is for the administrator who publishes objecttypes and hands out token
 | `/api/v2/objects/{uuid}` | GET, PUT, PATCH, DELETE | One object |
 | `/api/v2/objects/search` | POST | A search with a geometry |
 
-The paths sit under `/index.php/apps/integriq`. A list needs `type`, the objecttype's published uuid: a token holds a permission per objecttype, so a list across every type is refused rather than answered. Lists also take `data_attrs`, `date`, `registrationDate`, `ordering`, `page` and `pageSize` (100 by default, 500 at most).
+The paths sit under `/index.php/apps/integriq`. A list needs `type`: the objecttype's published uuid, or its URL as the standard sends it (`https://<host>/api/v2/objecttypes/<uuid>`), which is read as the uuid it ends in. A token holds a permission per objecttype, so a list across every type is refused rather than answered. Lists also take `data_attrs`, `date`, `registrationDate`, `ordering`, `page` and `pageSize` (100 by default, 500 at most).
 
 ## Publish an objecttype
 
