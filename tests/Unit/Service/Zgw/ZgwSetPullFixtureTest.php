@@ -285,6 +285,12 @@ class ZgwSetPullFixtureTest extends TestCase {
 		$this->assertSame($urls, array_values(array_column($this->store['bound'] ?? [], 'url')), 'Three objects carrying the remote urls in the bound schema.');
 		$this->assertEqualsCanonicalizing($urls, array_values(array_column($this->store['synchronization_contract'] ?? [], 'originId')));
 
+		// Design D5: the bound schema holds the store's own shape, every field as the store sent it.
+		$bound = array_column($this->store['bound'], null, 'url');
+		foreach ($this->fixture($set, $path) as $resource) {
+			$this->assertSame($resource, array_intersect_key($bound[$resource['url']], $resource), 'The store\'s own fields, untranslated.');
+		}
+
 		// Run again, as a caller reads the synchronization back: the url-keyed contracts update the same three.
 		$this->engine($or, $set, $path)->synchronize(synchronization: $this->store['synchronization'][$syncSlug] + ['id' => $syncSlug]);
 		$this->assertCount(3, $this->store['bound']);
