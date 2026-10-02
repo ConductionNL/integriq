@@ -62,4 +62,4 @@ The installer says why in your own language. It refuses when:
 
 ## Writing back
 
-A set that writes back sends a local change to the place the object came from, by its `url`, as a PATCH. A store that refuses the change (a 4xx answer) leaves your edit in place and sets `syncStatus` to `conflict`. The next accepted push sets it back to `synced`. A server error (5xx) is handled like any other synchronization error.
+A set that writes back sends a local change to the place the object came from, by its `url`, as a PATCH. A store that refuses the change (a 4xx answer) leaves your edit in place and sets `syncStatus` to `conflict`. The next accepted push sets it back to `synced`. While it reads `conflict`, the object's "Synced from" tab says the connected system refused your last change. A server error (5xx) is handled like any other synchronization error.

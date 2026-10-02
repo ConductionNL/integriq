@@ -1677,7 +1677,9 @@
         "The store did not register the abonnement.": "De opslag heeft het abonnement niet geregistreerd.",
         "The source \"%s\" this set registers its abonnementen on is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "De bron \"%s\" waarop deze set zijn abonnementen registreert, staat niet op deze instantie. Herstel of herinstalleer Integriq zodat de meegeleverde sets worden geïmporteerd, en installeer de set daarna opnieuw.",
         "The set file for \"%s\" is missing from this installation.": "Het setbestand voor \"%s\" ontbreekt in deze installatie.",
-        "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "De synchronisatie \"%s\" die deze set nodig heeft, staat niet op deze instantie. Herstel of herinstalleer Integriq zodat de meegeleverde sets worden geïmporteerd, en installeer de set daarna opnieuw."
+        "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "De synchronisatie \"%s\" die deze set nodig heeft, staat niet op deze instantie. Herstel of herinstalleer Integriq zodat de meegeleverde sets worden geïmporteerd, en installeer de set daarna opnieuw.",
+        "The connected system refused your last change.": "Het gekoppelde systeem weigerde je laatste wijziging.",
+        "Your change is still here, and the next change it accepts clears this notice.": "Je wijziging staat er nog, en de volgende wijziging die het accepteert haalt deze melding weg."
     },
     "plurals": {}
 }

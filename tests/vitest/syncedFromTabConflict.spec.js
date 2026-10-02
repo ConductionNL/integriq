@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import axios from '@nextcloud/axios'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction / Integriq Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -14,11 +15,12 @@
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import axios from '@nextcloud/axios'
 import SyncedFromTab from '@/integration/SyncedFromTab.vue'
 
 vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn() } }))
-vi.mock('@nextcloud/vue', () => ({ NcLoadingIcon: { name: 'NcLoadingIcon', render: () => null } }))
+vi.mock('@nextcloud/vue', () => ({
+	NcLoadingIcon: { name: 'NcLoadingIcon', render: () => null },
+}))
 vi.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text }))
 vi.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 
@@ -29,16 +31,29 @@ vi.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
  * @return {Promise<object>} The mounted wrapper, settled.
  */
 async function mountWith(rows) {
-	axios.get.mockResolvedValueOnce({ data: { items: rows, results: rows, total: rows.length, nextCursor: null } })
+	axios.get.mockResolvedValueOnce({
+		data: { items: rows, results: rows, total: rows.length, nextCursor: null },
+	})
 	const wrapper = mount(SyncedFromTab, {
-		props: { objectId: 'object-7', register: 'cases', schema: 'case', apiBase: '/api' },
+		props: {
+			objectId: 'object-7',
+			register: 'cases',
+			schema: 'case',
+			apiBase: '/api',
+		},
 		global: { stubs: { NcLoadingIcon: true, SyncIcon: true } },
 	})
 	await flushPromises()
 	return wrapper
 }
 
-const row = { id: 'contract-1', title: 'Zaken API: read', subtitle: '', url: null, originId: 'https://zaken.example/zaken/1' }
+const row = {
+	id: 'contract-1',
+	title: 'Zaken API: read',
+	subtitle: '',
+	url: null,
+	originId: 'https://zaken.example/zaken/1',
+}
 
 describe('SyncedFromTab write-back conflict', () => {
 	it('tells the user the connected system refused the last change', async () => {
@@ -47,14 +62,18 @@ describe('SyncedFromTab write-back conflict', () => {
 		const notice = wrapper.find('[data-testid="oc-synced-from-conflict"]')
 		expect(notice.exists()).toBe(true)
 		expect(notice.attributes('role')).toBe('status')
-		expect(notice.text()).toContain('The connected system refused your last change.')
+		expect(notice.text()).toContain(
+			'The connected system refused your last change.',
+		)
 		expect(wrapper.findAll('.oc-synced-from__row')).toHaveLength(1)
 	})
 
 	it('shows no notice while every change was accepted', async () => {
 		const wrapper = await mountWith([{ ...row, writeBackConflict: false }])
 
-		expect(wrapper.find('[data-testid="oc-synced-from-conflict"]').exists()).toBe(false)
+		expect(
+			wrapper.find('[data-testid="oc-synced-from-conflict"]').exists(),
+		).toBe(false)
 		expect(wrapper.findAll('.oc-synced-from__row')).toHaveLength(1)
 	})
 })

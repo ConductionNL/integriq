@@ -64,17 +64,20 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 	 */
 	private const SCHEMA_SLUG = 'synchronization_contract';
 
+
 	/**
 	 * Constructor.
 	 *
 	 * @param ObjectService $objectService OR object service used to query sync contracts.
 	 * @param IAppConfig $appConfig App config used to check the chain-C cutover flag.
 	 * @param IL10N $l10n Translator for user-facing labels and messages.
+	 * @param WriteBackConflictReader $writeBack Reads a refused write-back on the object.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly IL10N $l10n,
+		private readonly WriteBackConflictReader $writeBack,
 	) {
 
 	}//end __construct()
@@ -215,50 +218,73 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 		// resolve their display name once (avoids N+1 lookups).
 		$syncNameCache = [];
 
+		// Only an object a synchronization wrote is read for a refused
+		// write-back: this list runs on every sidebar of every app.
+		$writeBackConflict = ($rows !== [] && $this->writeBack->hasConflict(register: $register, schema: $schema, objectId: $objectId) === true);
+
 		return array_map(
-			function ($contract) use (&$syncNameCache): array {
-				// ObjectEntity exposes getObject() as a real method but getUuid()
-				// only via the Nextcloud Entity __call magic — so method_exists()
-				// is false for it. Call getUuid() directly inside the object branch
-				// rather than gating it behind method_exists (which would fall
-				// through to `$contract['uuid']` and fatal on the object).
-				if (is_object($contract) === true && method_exists($contract, 'getObject') === true) {
-					$body = $contract->getObject();
-					$uuid = (string)$contract->getUuid();
-				} else {
-					$body = (array)($contract['object'] ?? $contract);
-					$uuid = (string)($contract['uuid'] ?? '');
-				}
-
-				$synchronizationId = ($body['synchronizationId'] ?? null);
-				$syncName = $this->resolveSynchronizationName(synchronizationId: (string)$synchronizationId, cache: $syncNameCache);
-				$lastSynced = ($body['targetLastSynced'] ?? null);
-				$lastAction = ($body['targetLastAction'] ?? null);
-
-				return [
-					'id' => $uuid,
-					// Generic-card display keys (CnIntegrationCard reads
-					// title / subtitle / url). Title is the human sync name;
-					// subtitle summarises the last sync; url deep-links into
-					// the Integriq synchronization detail page.
-					'title' => $syncName,
-					'subtitle' => $this->buildSubtitle(lastSynced: $lastSynced, lastAction: $lastAction),
-					'url' => $this->buildSyncUrl(synchronizationId: (string)$synchronizationId),
-					// Raw provenance fields — preserved for the bespoke
-					// "Synced from" component + any programmatic consumer.
-					'synchronizationId' => $synchronizationId,
-					'synchronizationName' => $syncName,
-					'originId' => $body['originId'] ?? null,
-					'originHash' => $body['originHash'] ?? null,
-					'targetLastAction' => $lastAction,
-					'targetLastSynced' => $lastSynced,
-					'sourceLastChecked' => $body['sourceLastChecked'] ?? null,
-				];
+			// A closure, not an arrow function: the name memo must be shared by reference.
+			function ($contract) use (&$syncNameCache, $writeBackConflict): array {
+				return $this->row(contract: $contract, cache: $syncNameCache, writeBackConflict: $writeBackConflict);
 			},
 			$rows
 		);
 
 	}//end list()
+
+	/**
+	 * One contract as a sidebar row.
+	 *
+	 * @param mixed                $contract          The contract entity or array.
+	 * @param array<string,string> $cache             By-ref synchronization name memo.
+	 * @param bool                 $writeBackConflict Whether the object records a refused write-back.
+	 *
+	 * @return array The row.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function row(mixed $contract, array &$cache, bool $writeBackConflict): array {
+		// ObjectEntity exposes getObject() as a real method but getUuid()
+		// only via the Nextcloud Entity __call magic — so method_exists()
+		// is false for it. Call getUuid() directly inside the object branch
+		// rather than gating it behind method_exists (which would fall
+		// through to `$contract['uuid']` and fatal on the object).
+		if (is_object($contract) === true && method_exists($contract, 'getObject') === true) {
+			$body = $contract->getObject();
+			$uuid = (string)$contract->getUuid();
+		} else {
+			$body = (array)($contract['object'] ?? $contract);
+			$uuid = (string)($contract['uuid'] ?? '');
+		}
+
+		$synchronizationId = ($body['synchronizationId'] ?? null);
+		$syncName = $this->resolveSynchronizationName(synchronizationId: (string)$synchronizationId, cache: $cache);
+		$lastSynced = ($body['targetLastSynced'] ?? null);
+		$lastAction = ($body['targetLastAction'] ?? null);
+
+		return [
+			'id' => $uuid,
+			// Generic-card display keys (CnIntegrationCard reads
+			// title / subtitle / url). Title is the human sync name;
+			// subtitle summarises the last sync; url deep-links into
+			// the Integriq synchronization detail page.
+			'title' => $syncName,
+			'subtitle' => $this->buildSubtitle(lastSynced: $lastSynced, lastAction: $lastAction),
+			'url' => $this->buildSyncUrl(synchronizationId: (string)$synchronizationId),
+			// Raw provenance fields — preserved for the bespoke
+			// "Synced from" component + any programmatic consumer.
+			'synchronizationId' => $synchronizationId,
+			'synchronizationName' => $syncName,
+			'originId' => $body['originId'] ?? null,
+			'originHash' => $body['originHash'] ?? null,
+			'targetLastAction' => $lastAction,
+			'targetLastSynced' => $lastSynced,
+			'sourceLastChecked' => $body['sourceLastChecked'] ?? null,
+			// The connected system refused the last local change; the
+			// object keeps the edit (zgw-connectors-for-dossiq D4).
+			'writeBackConflict' => $writeBackConflict,
+		];
+	}//end row()
 
 	/**
 	 * Resolve a synchronization's human-readable name from its id.

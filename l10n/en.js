@@ -3016,7 +3016,9 @@ OC.L10N.register(
         "The store did not register the abonnement.": "The store did not register the abonnement.",
         "The source \"%s\" this set registers its abonnementen on is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "The source \"%s\" this set registers its abonnementen on is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.",
         "The set file for \"%s\" is missing from this installation.": "The set file for \"%s\" is missing from this installation.",
-        "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again."
+        "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.",
+        "The connected system refused your last change.": "The connected system refused your last change.",
+        "Your change is still here, and the next change it accepts clears this notice.": "Your change is still here, and the next change it accepts clears this notice."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Integration;
 
 use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
+use OCA\Integriq\Service\Integration\WriteBackConflictReader;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
@@ -58,7 +59,8 @@ class SynchronizationContractProviderContractTest extends TestCase {
 			static fn (string $text, array $parameters = []) => vsprintf($text, $parameters)
 		);
 
-		return new SynchronizationContractProvider(($objectService ?? ObjectServiceMockBuilder::make($this)), $appConfig, $l10n);
+		$objectService = ($objectService ?? ObjectServiceMockBuilder::make($this));
+		return new SynchronizationContractProvider($objectService, $appConfig, $l10n, new WriteBackConflictReader($objectService));
 
 	}//end provider()
 
@@ -71,22 +73,24 @@ class SynchronizationContractProviderContractTest extends TestCase {
 	 * @return mixed
 	 */
 	private function recordingObjectService(array $rows, array &$seen) {
+		// The first query is the contract lookup; a later one (the write-back
+		// synchronizations) must not overwrite what it recorded.
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->method('setRegister')->willReturnCallback(
 			function ($register) use ($objectService, &$seen) {
-				$seen['register'] = $register;
+				$seen['register'] ??= $register;
 				return $objectService;
 			}
 		);
 		$objectService->method('setSchema')->willReturnCallback(
 			function ($schema) use ($objectService, &$seen) {
-				$seen['schema'] = $schema;
+				$seen['schema'] ??= $schema;
 				return $objectService;
 			}
 		);
 		$objectService->method('findAll')->willReturnCallback(
 			function (array $config) use ($rows, &$seen) {
-				$seen['config'] = $config;
+				$seen['config'] ??= $config;
 				return ['results' => $rows, 'total' => count($rows)];
 			}
 		);
