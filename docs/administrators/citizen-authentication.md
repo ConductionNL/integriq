@@ -75,14 +75,23 @@ occ config:app:set integriq idp_broker_salts --value '{"gemeente-x":"<32 bytes o
 occ config:app:set integriq idp_broker_trust_aliases --value '{"digid":{"<urn>":"Hoog"}}'
 occ config:app:set integriq idp_broker_entity_ids --value '{"digid":"<your SP EntityID>"}'
 occ integriq:idp:consumer portaliq \
-  --return-url=https://portal.example.nl/portal/api/session/broker/callback \
+  --return-url=https://portal.example.nl/index.php/apps/portaliq/portal/api/session/broker/callback \
   --secret-ref=<credential id in the OpenRegister credential broker>
 occ config:app:set integriq idp_broker_enabled --value "1"
 ```
 
 Integriq ships `portaliq` registered and switched off, without a secret or an
 address, so the command above is all it takes. Repeat `--return-url` for more
-addresses. A return address must be https; plain http works for `localhost`
+addresses.
+
+Register the return address exactly as portaliq sends it: your portal's host,
+then `/index.php/apps/portaliq/portal/api/session/broker/callback`. Leave out
+`/index.php` when your Nextcloud runs with pretty URLs. The comparison is
+character for character, so one missing segment refuses every start.
+
+Integriq takes no sign-out address. Portaliq's sign-out now returns residents
+to `/apps/portaliq/site`, but only an organisation's own OIDC broker hears
+about that. Nothing changes in integriq. A return address must be https; plain http works for `localhost`
 only. Add `--secret-organisation=<organisation>` when the credential belongs to
 an organisation, and `--disable` to switch an app off.
 
