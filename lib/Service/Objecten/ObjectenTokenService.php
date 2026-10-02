@@ -217,6 +217,19 @@ class ObjectenTokenService {
 	}//end load()
 
 	/**
+	 * The objecttype uuid a caller's `type` names, from a bare uuid or the standard's objecttype URL.
+	 *
+	 * @param string $reference The `type` the caller sent.
+	 *
+	 * @return string The uuid the permissions are keyed by.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+	 */
+	public function objecttypeFrom(string $reference): string {
+		return $this->objecttypes->uuidFrom(reference: $reference);
+	}//end objecttypeFrom()
+
+	/**
 	 * What this request may do, as a verdict.
 	 *
 	 * @param string|null $authorization The `Authorization` header.
