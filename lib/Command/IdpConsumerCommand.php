@@ -6,7 +6,7 @@
  * Registers one app that may start a government login at integriq:
  *
  *   occ integriq:idp:consumer portaliq \
- *     --return-url=https://portal.example.nl/portal/api/session/broker/callback \
+ *     --return-url=https://portal.example.nl/index.php/apps/portaliq/portal/api/session/broker/callback \
  *     --secret-ref=<credential uuid in the OpenRegister credential broker>
  *
  * The secret itself never passes through this command or app config: the
