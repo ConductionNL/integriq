@@ -39,6 +39,7 @@ use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectenTokenService;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
+use OCA\Integriq\Service\Objecten\ObjecttypeRegistry;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -170,7 +171,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 600, period: 60)]
 	public function objects(): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type);
 		if ($refusal !== null) {
@@ -208,7 +209,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 600, period: 60)]
 	public function object(string $uuid): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type);
 		if ($refusal !== null) {
@@ -239,7 +240,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 600, period: 60)]
 	public function search(): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type);
 		if ($refusal !== null) {
@@ -270,7 +271,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function createObject(): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type, writing: true);
 		if ($refusal !== null) {
@@ -303,7 +304,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function replaceObject(string $uuid): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type, writing: true);
 		if ($refusal !== null) {
@@ -342,7 +343,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function updateObject(string $uuid): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type, writing: true);
 		if ($refusal !== null) {
@@ -390,7 +391,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function deleteObject(string $uuid): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type, writing: true);
 		if ($refusal !== null) {
@@ -506,8 +507,25 @@ class ObjectenApiController extends Controller {
 			}
 		}
 
+		if (array_key_exists('type', $parameters) === true) {
+			$parameters['type'] = $this->typeParam();
+		}
+
 		return $parameters;
 	}//end queryParameters()
+
+	/**
+	 * The objecttype uuid the request names, from a bare uuid or the standard's objecttype URL.
+	 *
+	 * Resolved once, here, so the token check, the permission lookup and the
+	 * register read all see the same uuid: a URL that reached only one of them
+	 * would be refused by the token check for a type the token does name.
+	 *
+	 * @return string The uuid.
+	 */
+	private function typeParam(): string {
+		return ObjecttypeRegistry::uuidFrom(reference: (string)$this->request->getParam('type', ''));
+	}//end typeParam()
 
 	/**
 	 * The base a returned `url` is built from.

@@ -77,6 +77,13 @@ MUST NOT leak an OpenRegister field name a VNG consumer does not expect.
 - THEN three records are returned in the standard's shape
 - e2e: `tests/e2e/objecten-api-facade.spec.ts`
 
+#### Scenario: a consumer names the objecttype by its URL
+- GIVEN a configured objecttype with uuid `aaa` and a token that may read it
+- WHEN a consumer sends `type` as the objecttype URL the standard uses, `{base}/api/v2/objecttypes/aaa`, with or without a trailing slash
+- THEN it is answered exactly as if it had sent `aaa`, for reads and writes alike
+- AND the URL of a type the token does not name is refused with 403, the URL of a type nobody publishes answers 404, and a URL that is not an objecttype URL is not read as one
+- e2e: `tests/e2e/objecten-api-facade.spec.ts`
+
 #### Scenario: no OpenRegister field reaches the consumer
 - GIVEN an object carrying OpenRegister metadata
 - WHEN it is read through the Objecten API

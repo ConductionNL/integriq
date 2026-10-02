@@ -328,4 +328,61 @@ class ObjectenApiControllerTest extends TestCase {
 
 		$this->assertSame(404, $controller->objects()->getStatus());
 	}//end testAnUnknownObjecttypeAnswers404()
+	/**
+	 * A standard consumer names the objecttype by its URL, and is answered.
+	 *
+	 * The VNG Objecten API's `type` is the objecttype URL on the Objecttypen API
+	 * (`{base}/api/v2/objecttypes/{uuid}`), not the bare uuid. Before this was
+	 * accepted, a consumer built against the standard got 404 for a type this
+	 * instance publishes.
+	 *
+	 * @return void
+	 */
+	public function testAStandardConsumerNamingTheObjecttypeByItsUrlIsAnswered(): void {
+		$url = 'https://objecttypen.example.nl/api/v2/objecttypes/aaa';
+		$controller = $this->controller(request: $this->request(authorization: 'Token the-key', type: $url));
+
+		$list = $controller->objects();
+		$this->assertSame(200, $list->getStatus());
+		$this->assertSame(1, $list->getData()['count']);
+		$this->assertSame(200, $controller->object(uuid: 'm-1')->getStatus());
+	}//end testAStandardConsumerNamingTheObjecttypeByItsUrlIsAnswered()
+
+	/**
+	 * A create naming the objecttype by its URL is checked against the same permission.
+	 *
+	 * @return void
+	 */
+	public function testACreateNamingTheObjecttypeByItsUrlIsWritten(): void {
+		$request = $this->request(
+			authorization: 'Token the-key',
+			type: 'https://objecttypen.example.nl/api/v2/objecttypes/aaa/',
+			params: ['record' => ['data' => ['straatnaam' => 'Kerkstraat']]]
+		);
+
+		$this->assertSame(201, $this->controller(request: $request)->createObject()->getStatus());
+		$this->assertSame('leverancier', $this->written[0]['principal']);
+	}//end testACreateNamingTheObjecttypeByItsUrlIsWritten()
+
+	/**
+	 * A URL is not a way around the per-objecttype permission.
+	 *
+	 * The URL of a type the token does not name is refused with 403, the URL of
+	 * a type nobody publishes answers 404, and a URL that is not an objecttype
+	 * URL is not read as one.
+	 *
+	 * @return void
+	 */
+	public function testAnObjecttypeUrlKeepsThe403And404Split(): void {
+		$base = 'https://objecttypen.example.nl/api/v2/';
+
+		$other = $this->controller(request: $this->request(authorization: 'Token the-key', type: $base . 'objecttypes/bbb'));
+		$this->assertSame(403, $other->objects()->getStatus());
+
+		$unknown = $this->controller(request: $this->request(authorization: 'Token the-key', type: $base . 'objecttypes/zzz'));
+		$this->assertSame(404, $unknown->objects()->getStatus());
+
+		$notAType = $this->controller(request: $this->request(authorization: 'Token the-key', type: $base . 'objects/aaa'));
+		$this->assertSame(404, $notAType->objects()->getStatus());
+	}//end testAnObjecttypeUrlKeepsThe403And404Split()
 }//end class
