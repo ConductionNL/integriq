@@ -112,7 +112,7 @@
           "slug": "course-marketplace-go1-course"
         },
         "name": "Go1 catalogue to learniq (course)",
-        "description": "Writes the selected Go1 courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected Go1 courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-go1",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-go1-course",
@@ -129,7 +129,10 @@
           "paginationQuery": "offset",
           "paginationFirstPage": 1,
           "pageSize": 50,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "archived"
+          }
         },
         "conditions": [],
         "targetId": "learniq/course",
@@ -143,7 +146,7 @@
           "slug": "course-marketplace-go1-placement"
         },
         "name": "Go1 catalogue to learniq (placement)",
-        "description": "Writes the selected Go1 courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected Go1 courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-go1",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-go1-placement",
@@ -160,7 +163,10 @@
           "paginationQuery": "offset",
           "paginationFirstPage": 1,
           "pageSize": 50,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "retired"
+          }
         },
         "conditions": [],
         "targetId": "learniq/lti-tool-placement",
@@ -174,7 +180,7 @@
           "slug": "course-marketplace-go1-lesson"
         },
         "name": "Go1 catalogue to learniq (lesson)",
-        "description": "Writes the selected Go1 courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected Go1 courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-go1",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-go1-lesson",
@@ -191,7 +197,10 @@
           "paginationQuery": "offset",
           "paginationFirstPage": 1,
           "pageSize": 50,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "retired"
+          }
         },
         "conditions": [],
         "targetId": "learniq/lesson",
@@ -308,7 +317,7 @@
           "slug": "course-marketplace-linkedin-learning-course"
         },
         "name": "LinkedIn Learning catalogue to learniq (course)",
-        "description": "Writes the selected LinkedIn Learning courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected LinkedIn Learning courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-linkedin-learning",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-linkedin-learning-course",
@@ -326,7 +335,10 @@
           "paginationQuery": "start",
           "paginationFirstPage": 1,
           "pageSize": 100,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "archived"
+          }
         },
         "conditions": [],
         "targetId": "learniq/course",
@@ -340,7 +352,7 @@
           "slug": "course-marketplace-linkedin-learning-placement"
         },
         "name": "LinkedIn Learning catalogue to learniq (placement)",
-        "description": "Writes the selected LinkedIn Learning courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected LinkedIn Learning courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-linkedin-learning",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-linkedin-learning-placement",
@@ -358,7 +370,10 @@
           "paginationQuery": "start",
           "paginationFirstPage": 1,
           "pageSize": 100,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "retired"
+          }
         },
         "conditions": [],
         "targetId": "learniq/lti-tool-placement",
@@ -372,7 +387,7 @@
           "slug": "course-marketplace-linkedin-learning-lesson"
         },
         "name": "LinkedIn Learning catalogue to learniq (lesson)",
-        "description": "Writes the selected LinkedIn Learning courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected LinkedIn Learning courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-linkedin-learning",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-linkedin-learning-lesson",
@@ -390,7 +405,10 @@
           "paginationQuery": "start",
           "paginationFirstPage": 1,
           "pageSize": 100,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "retired"
+          }
         },
         "conditions": [],
         "targetId": "learniq/lesson",
@@ -506,7 +524,7 @@
           "slug": "course-marketplace-udemy-business-course"
         },
         "name": "Udemy Business catalogue to learniq (course)",
-        "description": "Writes the selected Udemy Business courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected Udemy Business courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-udemy-business",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-udemy-business-course",
@@ -522,7 +540,10 @@
           "paginationQuery": "page",
           "paginationFirstPage": 1,
           "pageSize": 100,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "archived"
+          }
         },
         "conditions": [],
         "targetId": "learniq/course",
@@ -536,7 +557,7 @@
           "slug": "course-marketplace-udemy-business-placement"
         },
         "name": "Udemy Business catalogue to learniq (placement)",
-        "description": "Writes the selected Udemy Business courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected Udemy Business courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-udemy-business",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-udemy-business-placement",
@@ -552,7 +573,10 @@
           "paginationQuery": "page",
           "paginationFirstPage": 1,
           "pageSize": 100,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "retired"
+          }
         },
         "conditions": [],
         "targetId": "learniq/lti-tool-placement",
@@ -566,7 +590,7 @@
           "slug": "course-marketplace-udemy-business-lesson"
         },
         "name": "Udemy Business catalogue to learniq (lesson)",
-        "description": "Writes the selected Udemy Business courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "description": "Writes the selected Udemy Business courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is retired in learniq (the course `archived`, its lesson and placement `retired`) and flagged, never deleted.",
         "sourceId": "course-marketplace-udemy-business",
         "sourceType": "api",
         "sourceTargetMapping": "course-marketplace-udemy-business-lesson",
@@ -582,7 +606,10 @@
           "paginationQuery": "page",
           "paginationFirstPage": 1,
           "pageSize": 100,
-          "disappearancePolicy": "keepAndFlag"
+          "disappearancePolicy": "keepAndFlag",
+          "disappearanceValues": {
+            "lifecycle": "retired"
+          }
         },
         "conditions": [],
         "targetId": "learniq/lesson",

@@ -49,8 +49,10 @@ Kind: code. Size M. Row `learniq:cont-outside-provider-catalogue`. Depends on
 - **acceptance_criteria**:
   - GIVEN a course missing from a complete fetch WHEN the run finishes THEN the course is `archived` and the placement `retired`, and neither is deleted
   - GIVEN an incomplete fetch WHEN the run finishes THEN nothing is retired
-- [ ] Implement
-- [ ] Test (integration test on the synchronization with two fixtures)
+- [x] Implement
+  - REQ-010 could not write a lifecycle value, so the engine gained one: `sourceConfig.disappearanceValues`, read by `DisappearanceApplier::valuesFrom()` (a malformed declaration is refused like an unknown policy) and written by `applyToObject()` under `markEnded` and `keepAndFlag`. Each set declares `archived` for the Course and `retired` for the Lesson and the placement.
+- [x] Test (integration test on the synchronization with two fixtures)
+  - `tests/Unit/Service/SynchronizationServiceRetireValuesTest.php` runs `deleteInvalidObjects()` with two contracts and one course gone: complete fetch archives it and deletes nothing, incomplete fetch writes nothing. `CourseMarketplaceSetsTest::testAWithdrawnCourseIsRetiredToAValueLearniqAccepts` validates each retired object against learniq's schema; `DisappearancePolicyTest` covers the values and their refusal.
 
 ### Task 6: Selection fields on the source form and demo data
 - **spec_ref**: openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-an-administrator-imports-a-selection-not-the-whole-catalogue-req-cmkt-002

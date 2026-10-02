@@ -31,6 +31,8 @@ use JWadhams\JsonLogic;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\Ownership\DisappearanceApplier;
+use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\FileService;
@@ -262,6 +264,42 @@ final class CourseMarketplaceSetsTest extends TestCase {
 			$this->assertCount(1, array_unique(array_map('json_encode', $conditions)), $provider . ': one selection for all three');
 		}
 	}//end testEachSetIsDormantBrokeredAndNeverDeletes()
+
+	/**
+	 * A withdrawn course is retired, not deleted: each set declares the lifecycle
+	 * learniq knows for that object, and the retired object is still one learniq
+	 * accepts (REQ-CMKT-003).
+	 *
+	 * @return void
+	 */
+	public function testAWithdrawnCourseIsRetiredToAValueLearniqAccepts(): void {
+		$expected = ['course' => 'archived', 'placement' => 'retired', 'lesson' => 'retired'];
+		$applier = new DisappearanceApplier();
+		$mapper = $this->mappingService();
+		foreach (self::PROVIDERS as $provider) {
+			$course = $this->catalogue(provider: $provider)[0];
+			foreach (self::SCHEMA_OF as $kind => $schema) {
+				$sync = $this->row(schema: 'synchronization', slug: 'course-marketplace-' . $provider . '-' . $kind);
+				$values = $applier->valuesFrom(sourceConfig: $sync['sourceConfig']);
+				$this->assertSame(['lifecycle' => $expected[$kind]], $values, $provider . ' ' . $kind);
+
+				$mapping = $this->row(schema: 'mapping', slug: 'course-marketplace-' . $provider . '-' . $kind);
+				$mapping['mapping']['openconnectorDeploymentId'] = '6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f';
+				$retired = $applier->applyToObject(
+					policy: $sync['sourceConfig']['disappearancePolicy'],
+					objectData: $mapper->executeMapping(mapping: $mapping, input: $course),
+					runAt: '2026-10-02T08:00:00+00:00',
+					values: $values
+				);
+
+				$this->assertSame($expected[$kind], $retired['lifecycle']);
+				$this->assertTrue($retired[DisappearanceApplier::OBJECT_ABSENT]);
+				$errors = RegisterSchemaValidator::errorsAgainst(schema: $this->learniqSchema(name: $schema), object: $retired);
+				$this->assertSame([], $errors, sprintf('a retired %s %s is refused by learniq %s', $provider, $kind, $schema));
+				$this->assertNotSame(DisappearancePolicy::DELETE, $sync['sourceConfig']['disappearancePolicy']);
+			}
+		}
+	}//end testAWithdrawnCourseIsRetiredToAValueLearniqAccepts()
 
 	/**
 	 * Every seeded row is one integriq's own register accepts.

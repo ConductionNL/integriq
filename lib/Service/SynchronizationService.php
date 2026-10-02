@@ -4218,8 +4218,13 @@ class SynchronizationService {
 		// A value this engine does not know is refused here rather than read as
 		// the default, because silently deleting under a misspelled policy is
 		// the exact failure the declaration exists to prevent.
+		// REQ-CMKT-003: the values a non-deleting policy writes (a learniq
+		// course `archived`, a placement `retired`) are declared beside the
+		// policy and refused the same way when malformed.
+		$disappearanceApplier = new DisappearanceApplier();
 		try {
 			$disappearancePolicy = DisappearancePolicy::fromSourceConfig($sourceConfig);
+			$disappearanceValues = $disappearanceApplier->valuesFrom(sourceConfig: $sourceConfig);
 		} catch (\InvalidArgumentException $policyException) {
 			$guardInfo = [
 				'guarded' => true,
@@ -4241,7 +4246,6 @@ class SynchronizationService {
 			return 0;
 		}//end try
 
-		$disappearanceApplier = new DisappearanceApplier();
 		$policyRunAt = gmdate('c');
 
 		// [NEW] REQ-018 (change cdc-incremental-sync): defense-in-depth —
@@ -4473,7 +4477,8 @@ class SynchronizationService {
 							registerId: $registerId,
 							schemaId: $schemaId,
 							runAt: $policyRunAt,
-							counts: $policyCounts
+							counts: $policyCounts,
+							values: $disappearanceValues
 						);
 						continue;
 					}
@@ -4522,10 +4527,12 @@ class SynchronizationService {
 	 * @param string $schemaId The target schema.
 	 * @param string $runAt ISO timestamp of this run.
 	 * @param array<string,int> $counts Per-policy counts, updated in place.
+	 * @param array<string,scalar|null> $values Declared retirement values written onto the object.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003
+	 * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-withdrawn-course-is-retired-never-deleted-req-cmkt-003
 	 */
 	private function applyDisappearancePolicy(
 		string $policy,
@@ -4536,12 +4543,14 @@ class SynchronizationService {
 		string $schemaId,
 		string $runAt,
 		array &$counts,
+		array $values=[],
 	): void {
 		try {
 			$objectData = $applier->applyToObject(
 				policy: $policy,
 				objectData: $targetObject->getObject(),
-				runAt: $runAt
+				runAt: $runAt,
+				values: $values
 			);
 
 			$this->orObjectService->saveObject(

@@ -151,9 +151,15 @@ and send the provider course id as an LTI custom claim.
 
 The selection is the synchronization's `conditions` (JsonLogic on the
 provider's course), so it is applied the same way for all three providers
-whatever their query language allows. Until Task 5 builds retirement, the
-disappearance policy is `keepAndFlag`: a course the provider stops offering is
-flagged and never deleted.
+whatever their query language allows. A course the provider stops offering
+is retired, never deleted: each synchronization keeps the `keepAndFlag`
+policy and declares `sourceConfig.disappearanceValues`, which the engine
+writes onto the target when the policy runs (`{"lifecycle": "archived"}` on
+the Course, `{"lifecycle": "retired"}` on the Lesson and the placement; those
+are learniq's own enum values). The policy only runs behind the incremental,
+fetch-completeness and ratio guards, so an incomplete fetch retires nothing.
+A course that comes back is unflagged but stays `archived`: the mappings never
+write `lifecycle`, so republishing it is the administrator's choice.
 
 The design's mock mode is not built: a source's `mock` flag is not honoured by
 the synchronization engine's list fetch. Demo data is Task 6's mock register
