@@ -40,6 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Zgw;
 
+use OCP\IL10N;
+
 /**
  * The refusals an operator meets before a set is installed.
  *
@@ -48,6 +50,18 @@ namespace OCA\Integriq\Service\Zgw;
  * the opposite of what a packaged set list is.
  */
 class ZgwSetInstallGuard {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translates the refusals an operator meets; the template refusals are build-time and stay English.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+	) {
+	}//end __construct()
 
 	/**
 	 * Why this set may not be installed against this target, if it may not.
@@ -62,10 +76,9 @@ class ZgwSetInstallGuard {
 	 */
 	public function refuse(string $slug, array $target, array $bindings): ?string {
 		if (ZgwSetCatalogue::isPackaged($slug) === false) {
-			return sprintf(
-				'"%s" is not one of the packaged ZGW sets (%s).',
-				$slug,
-				implode(', ', array_keys(ZgwSetCatalogue::SETS))
+			return $this->l10n->t(
+				'"%1$s" is not one of the packaged ZGW sets (%2$s).',
+				[$slug, implode(', ', array_keys(ZgwSetCatalogue::SETS))]
 			);
 		}
 
@@ -75,11 +88,9 @@ class ZgwSetInstallGuard {
 			// installed is a live remote subscription whose every notification
 			// pulls nothing.
 			if ($bindings === []) {
-				return sprintf(
-					'Install a set that carries data (%s) first. "%s" subscribes those sets to their store\'s '
-					.'notifications, and with none installed every notification would change nothing here.',
-					implode(', ', array_values(array_unique(ZgwSetCatalogue::KANAAL_SETS))),
-					$slug
+				return $this->l10n->t(
+					'Install a set that carries data (%1$s) first. "%2$s" subscribes those sets to their store\'s notifications, and with none installed every notification would change nothing here.',
+					[implode(', ', array_values(array_unique(ZgwSetCatalogue::KANAAL_SETS))), $slug]
 				);
 			}
 
@@ -93,20 +104,16 @@ class ZgwSetInstallGuard {
 			// Installing against nothing would create a synchronization with no
 			// target, which runs, reads the store, and writes its objects
 			// nowhere while reporting a successful run.
-			return 'This set needs a register and a schema to write into. Choose both before installing it.';
+			return $this->l10n->t('This set needs a register and a schema to write into. Choose both before installing it.');
 		}
 
 		$key = $this->bindingKey(register: $register, schema: $schema);
 		$holder = ($bindings[$key] ?? null);
 
 		if ($holder !== null && $holder !== $slug) {
-			return sprintf(
-				'This schema is already bound to "%s". Two sets on one schema overwrite each other every time '
-				.'they run, and both report a healthy synchronization while doing it. Bind "%s" to a schema of '
-				.'its own, or remove the "%s" binding first.',
-				$holder,
-				$slug,
-				$holder
+			return $this->l10n->t(
+				'This schema is already bound to "%1$s". Two sets on one schema overwrite each other every time they run, and both report a healthy synchronization while doing it. Bind "%2$s" to a schema of its own, or remove the "%1$s" binding first.',
+				[$holder, $slug]
 			);
 		}
 
@@ -149,9 +156,9 @@ class ZgwSetInstallGuard {
 		}
 
 		if (trim((string)($template['apiVersion'] ?? '')) === '') {
-			// A store answering an unknown version is the one thing a translator
-			// cannot guess at, and guessing means writing 1.0 shapes into a 1.6
-			// store with the mismatch showing up as missing fields much later.
+			// The bound schema holds the store's own shape (design D5), so the
+			// version the store speaks is what the operator matches the schema
+			// to; a set that does not say it leaves them guessing.
 			$refusals[] = sprintf('The set "%s" must declare the apiVersion it speaks.', $slug);
 		}
 

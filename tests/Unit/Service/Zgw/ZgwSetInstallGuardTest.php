@@ -31,6 +31,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Zgw;
 use OCA\Integriq\Service\Zgw\ZgwSetCatalogue;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Helpers\CatalogueL10n;
 
 /**
  * Tests for ZgwSetInstallGuard and the packaged catalogue.
@@ -45,7 +46,7 @@ class ZgwSetInstallGuardTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->guard = new ZgwSetInstallGuard();
+		$this->guard = new ZgwSetInstallGuard(CatalogueL10n::make($this));
 	}//end setUp()
 
 	/**

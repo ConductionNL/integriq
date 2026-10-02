@@ -32,6 +32,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Helpers\CatalogueL10n;
 
 /**
  * The installer and the REAL synchronization and mapping engines; only HTTP and OpenRegister storage are faked.
@@ -301,8 +302,9 @@ class ZgwSetPullFixtureTest extends TestCase {
 		return new ZgwSetInstaller(
 			objectService: $or,
 			appConfig: $this->appConfig(),
-			guard: new ZgwSetInstallGuard(),
-			subscriber: $this->createMock(NotificatiesSubscriberService::class)
+			guard: new ZgwSetInstallGuard(CatalogueL10n::make($this)),
+			subscriber: $this->createMock(NotificatiesSubscriberService::class),
+			l10n: CatalogueL10n::make($this)
 		);
 	}//end installer()
 }//end class

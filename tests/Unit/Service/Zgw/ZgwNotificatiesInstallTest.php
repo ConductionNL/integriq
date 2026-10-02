@@ -27,6 +27,7 @@ use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Helpers\CatalogueL10n;
 
 /**
  * The installer with the real NotificatiesSubscriberService, every save validated against the register.
@@ -148,8 +149,9 @@ class ZgwNotificatiesInstallTest extends TestCase {
 		return new ZgwSetInstaller(
 			objectService: $objects,
 			appConfig: $appConfig,
-			guard: new ZgwSetInstallGuard(),
-			subscriber: $subscriber
+			guard: new ZgwSetInstallGuard(CatalogueL10n::make($this)),
+			subscriber: $subscriber,
+			l10n: CatalogueL10n::make($this)
 		);
 	}//end installer()
 

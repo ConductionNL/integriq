@@ -160,19 +160,35 @@ Decided at build time (2 Oct 2026), task 3:
   synchronization log. The install guide (task 4) tells the operator to add
   `syncStatus` (string) to the schema they bind.
 
-## D5. Versions
+## D5. Versions and shape (decided 2 Oct 2026, Ruben, DECISIONS row 50)
 
-Every mapping goes through `ZgwResourceTranslatorInterface`
-(`zgw-version-translation`) so one set serves a 1.x and a 1.6 store; the
-`apiVersion` on the source decides.
+A schema bound to a ZGW store holds the store's own ZGW shape. The sets pass
+each resource through as the store sends it, field for field, and send a local
+change back the same way; nothing translates it to the fleet's OpenRegister
+shape or to another ZGW version.
 
-Open at build time (2 Oct 2026), a question for Ruben, recorded in the lane
-state: the translator seam translates between the fleet's own OpenRegister
-shape (which it calls "1.0") and ZGW 1.6, so it cannot read a real ZGW 1.0 to
-1.5 store payload, and it saves one translation log per payload. Whether a
-bound schema holds the store's own ZGW shape (the sets' passThrough mappings
-today) or the fleet shape decides what a case app reads, so the hook is not
-built until that is answered.
+- **What that means for the sets.** Every mapping a set names is a
+  `passThrough` mapping with no field mapping and no casts (the write-back
+  mapping only unsets the metadata OpenRegister adds: `@self`, `id`, `uuid`).
+  The set files no longer name `ZgwResourceTranslatorInterface`; that key was
+  never read by any code, so removing it changes no behaviour.
+- **Versions.** A 1.0 to 1.5 store and a 1.6 store each land in their own
+  shape. `apiVersion` on the source says which version the store speaks, for
+  the operator and the install guide; `supportedApiVersions` lists the versions
+  a set has been written against. A case app that binds a schema reads the
+  shape of the store it bound, so the operator binds a schema whose properties
+  match that store's version (the install guide says so).
+- **The translator seam.** `ZgwResourceTranslatorInterface` and its
+  translators (`zgw-version-translation`) stay where they are and keep serving
+  what they serve today; the consumer sets do not route through them. The
+  seam translates between the fleet shape (which it calls "1.0") and ZGW 1.6,
+  so it could not read a real ZGW 1.0 to 1.5 store payload anyway, and it saves
+  a translation log per payload a pass-through set has no use for.
+- **Tests.** `ZgwConsumerSetsSeedTest::testEveryMappingPassesTheStoresOwnShapeThroughUntranslated`
+  (no set names a translator; every named mapping is a bare pass-through) and
+  `ZgwSetPullFixtureTest::testEachDataSetPullsThreeFixtureResourcesIntoTheBoundSchema`
+  (every field of each recorded resource arrives in the bound schema as the
+  store sent it).
 
 
 ## Risks
