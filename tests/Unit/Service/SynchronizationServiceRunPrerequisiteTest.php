@@ -52,7 +52,7 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 	 *
 	 * @return array|null The run's log.
 	 */
-	private function run(string $deployment, int &$calls, int &$writes): ?array {
+	private function runUdemyCourseSync(string $deployment, int &$calls, int &$writes): ?array {
 		$path     = dirname(__DIR__, 3) . '/lib/Settings/register.d/course-marketplace-connectors.json';
 		$fragment = json_decode((string)file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
 		$seeds    = [];
@@ -135,7 +135,7 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 		} catch (\Throwable $e) {
 			return ['exception' => $e->getMessage()];
 		}
-	}//end run()
+	}//end runUdemyCourseSync()
 
 	/**
 	 * Without a deployment the run calls no provider, writes nothing, and its log names the deployment.
@@ -146,7 +146,7 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 		$calls  = 0;
 		$writes = 0;
 
-		$result = $this->run(deployment: '', calls: $calls, writes: $writes);
+		$result = $this->runUdemyCourseSync(deployment: '', calls: $calls, writes: $writes);
 
 		$this->assertSame(0, $calls, 'The provider was called.');
 		$this->assertSame(0, $writes, 'Something was written.');
@@ -164,7 +164,7 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 		$calls  = 0;
 		$writes = 0;
 
-		$this->run(deployment: 'deployment-uuid-1', calls: $calls, writes: $writes);
+		$this->runUdemyCourseSync(deployment: 'deployment-uuid-1', calls: $calls, writes: $writes);
 
 		$this->assertGreaterThan(0, $calls);
 	}//end testWithTheDeploymentSetTheRunFetches()
