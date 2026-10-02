@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Helpers\CatalogueL10n;
 
 /**
  * The installer runs both guards, then binds the set's seeded synchronizations
@@ -109,10 +110,10 @@ class ZgwSetInstallerTest extends TestCase {
 
 		$subscriber = $this->createMock(NotificatiesSubscriberService::class);
 		if ($setDirectory !== null) {
-			return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard(), $subscriber, $setDirectory);
+			return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard(CatalogueL10n::make($this)), $subscriber, CatalogueL10n::make($this), $setDirectory);
 		}
 
-		return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard(), $subscriber);
+		return new ZgwSetInstaller($objects, $appConfig, new ZgwSetInstallGuard(CatalogueL10n::make($this)), $subscriber, CatalogueL10n::make($this));
 	}//end installer()
 
 	/**

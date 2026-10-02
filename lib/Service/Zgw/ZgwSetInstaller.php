@@ -28,6 +28,7 @@ use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use stdClass;
 
 /**
@@ -68,6 +69,7 @@ class ZgwSetInstaller {
 	 * @param IAppConfig         $appConfig     Holds the bindings.
 	 * @param ZgwSetInstallGuard            $guard        The template and binding refusals.
 	 * @param NotificatiesSubscriberService $subscriber   Registers the abonnementen a subscription set installs.
+	 * @param IL10N                         $l10n         Translates the refusals an operator meets.
 	 * @param string                        $setDirectory Where the packaged set files are read from.
 	 *
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
@@ -77,6 +79,7 @@ class ZgwSetInstaller {
 		private readonly IAppConfig $appConfig,
 		private readonly ZgwSetInstallGuard $guard,
 		private readonly NotificatiesSubscriberService $subscriber,
+		private readonly IL10N $l10n,
 		private readonly string $setDirectory = self::SET_DIR,
 	) {
 	}//end __construct()
@@ -173,7 +176,7 @@ class ZgwSetInstaller {
 			);
 			$data       = $abonnement->getObject();
 			if (($data['status'] ?? null) !== 'active') {
-				$refused[$dataSet] = (string)($data['lastError'] ?? 'The store did not register the abonnement.');
+				$refused[$dataSet] = (string)($data['lastError'] ?? $this->l10n->t('The store did not register the abonnement.'));
 				continue;
 			}
 
@@ -206,10 +209,10 @@ class ZgwSetInstaller {
 
 		if ($source === null || (string)$source->getUuid() === '') {
 			throw new ZgwSetInstallRefusedException(
-				sprintf(
-					'The source "%s" this set registers its abonnementen on is not on this instance. '
-					.'Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
-					$slug
+				$this->l10n->t(
+					// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+					'The source "%s" this set registers its abonnementen on is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
+					[$slug]
 				)
 			);
 		}
@@ -267,7 +270,7 @@ class ZgwSetInstaller {
 			$template = json_decode((string)file_get_contents($path), true);
 		}
 		if (is_array($template) === false) {
-			throw new ZgwSetInstallRefusedException(sprintf('The set file for "%s" is missing from this installation.', $slug));
+			throw new ZgwSetInstallRefusedException($this->l10n->t('The set file for "%s" is missing from this installation.', [$slug]));
 		}
 
 		return $template;
@@ -296,10 +299,10 @@ class ZgwSetInstaller {
 
 			if ($entity === null) {
 				throw new ZgwSetInstallRefusedException(
-					sprintf(
-						'The synchronization "%s" this set needs is not on this instance. '
-						.'Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
-						(string)$syncSlug
+					$this->l10n->t(
+						// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+						'The synchronization "%s" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
+						[(string)$syncSlug]
 					)
 				);
 			}
