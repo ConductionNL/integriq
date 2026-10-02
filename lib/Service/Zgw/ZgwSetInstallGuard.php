@@ -89,6 +89,7 @@ class ZgwSetInstallGuard {
 			// pulls nothing.
 			if ($bindings === []) {
 				return $this->l10n->t(
+					// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 					'Install a set that carries data (%1$s) first. "%2$s" subscribes those sets to their store\'s notifications, and with none installed every notification would change nothing here.',
 					[implode(', ', array_values(array_unique(ZgwSetCatalogue::KANAAL_SETS))), $slug]
 				);
@@ -112,6 +113,7 @@ class ZgwSetInstallGuard {
 
 		if ($holder !== null && $holder !== $slug) {
 			return $this->l10n->t(
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 				'This schema is already bound to "%1$s". Two sets on one schema overwrite each other every time they run, and both report a healthy synchronization while doing it. Bind "%2$s" to a schema of its own, or remove the "%1$s" binding first.',
 				[$holder, $slug]
 			);

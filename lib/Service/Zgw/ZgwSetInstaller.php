@@ -210,6 +210,7 @@ class ZgwSetInstaller {
 		if ($source === null || (string)$source->getUuid() === '') {
 			throw new ZgwSetInstallRefusedException(
 				$this->l10n->t(
+					// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 					'The source "%s" this set registers its abonnementen on is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
 					[$slug]
 				)
@@ -299,6 +300,7 @@ class ZgwSetInstaller {
 			if ($entity === null) {
 				throw new ZgwSetInstallRefusedException(
 					$this->l10n->t(
+						// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 						'The synchronization "%s" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.',
 						[(string)$syncSlug]
 					)
