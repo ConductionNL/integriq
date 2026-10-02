@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Ownership;
 
+use InvalidArgumentException;
+
 /**
  * Under `markEnded` the record keeps its values and gains an end date. Under
  * `keepAndFlag` the values are left alone and the record is marked absent,
@@ -66,19 +68,19 @@ class DisappearanceApplier {
 	 *
 	 * @return array<string,scalar|null> The values to write, keyed by property.
 	 *
-	 * @throws \InvalidArgumentException When the declaration is not such an object.
+	 * @throws InvalidArgumentException When the declaration is not such an object.
 	 *
 	 * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-withdrawn-course-is-retired-never-deleted-req-cmkt-003
 	 */
 	public function valuesFrom(array $sourceConfig): array {
 		$declared = ($sourceConfig[self::VALUES_KEY] ?? []);
 		if (is_array($declared) === false || ($declared !== [] && array_is_list($declared) === true)) {
-			throw new \InvalidArgumentException('sourceConfig.' . self::VALUES_KEY . ' must be an object of property names and values.');
+			throw new InvalidArgumentException('sourceConfig.' . self::VALUES_KEY . ' must be an object of property names and values.');
 		}
 
 		foreach ($declared as $property => $value) {
 			if (is_string($property) === false || trim($property) === '' || (is_scalar($value) === false && $value !== null)) {
-				throw new \InvalidArgumentException('sourceConfig.' . self::VALUES_KEY . '.' . $property . ' must be a scalar value on a named property.');
+				throw new InvalidArgumentException('sourceConfig.' . self::VALUES_KEY . '.' . $property . ' must be a scalar value on a named property.');
 			}
 		}
 

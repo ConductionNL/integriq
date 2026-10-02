@@ -36,6 +36,7 @@
 namespace OCA\Integriq\Twig;
 
 use GuzzleHttp\Exception\GuzzleException;
+use InvalidArgumentException;
 use OC\Files\Node\File;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
@@ -223,13 +224,13 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	 *
 	 * @return string The uuid.
 	 *
-	 * @throws \InvalidArgumentException When the name is empty, which would give every caller the same uuid.
+	 * @throws InvalidArgumentException When the name is empty, which would give every caller the same uuid.
 	 *
 	 * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md
 	 */
 	public function uuidFor(string $name): string {
 		if (trim($name) === '') {
-			throw new \InvalidArgumentException('uuidFor() needs a name: an empty one would give every caller the same uuid.');
+			throw new InvalidArgumentException('uuidFor() needs a name: an empty one would give every caller the same uuid.');
 		}
 
 		// RFC 4122 section 4.3: SHA-1 over the namespace bytes and the name,
