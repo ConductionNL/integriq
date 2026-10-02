@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
+use OCA\Integriq\Service\Integration\WriteBackConflictReader;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Services\IAppConfig;
@@ -70,6 +71,7 @@ class SynchronizationContractProviderTest extends TestCase {
 			$this->objectService,
 			$this->appConfig,
 			$this->l10n,
+			new WriteBackConflictReader($this->objectService),
 		);
 	}//end setUp()
 
@@ -147,17 +149,23 @@ class SynchronizationContractProviderTest extends TestCase {
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
 
-		$this->objectService->expects($this->once())
+		// The first query finds the contracts by target id; the second reads
+		// the write-back synchronizations for a refused change (design D4).
+		$configs = [];
+		$this->objectService->expects($this->exactly(2))
 			->method('findAll')
-			->with(
-				$this->callback(static fn (array $c) => ($c['filters']['targetId'] ?? '') === 'obj-uuid-2')
-			)
-			->willReturn(['results' => [$contractEntity], 'total' => 1]);
+			->willReturnCallback(
+				static function (array $config) use (&$configs, $contractEntity): array {
+					$configs[] = $config;
+					return count($configs) === 1 ? ['results' => [$contractEntity], 'total' => 1] : ['results' => [], 'total' => 0];
+				}
+			);
 
 		$provider = new SynchronizationContractProvider(
 			$this->objectService,
 			$this->appConfig,
 			$this->l10n,
+			new WriteBackConflictReader($this->objectService),
 		);
 
 		// Act
@@ -167,6 +175,8 @@ class SynchronizationContractProviderTest extends TestCase {
 		$this->assertCount(1, $result);
 		$this->assertSame('contract-uuid-1', $result[0]['id']);
 		$this->assertSame('sync-uuid', $result[0]['synchronizationId']);
+		$this->assertSame('obj-uuid-2', ($configs[0]['filters']['targetId'] ?? ''));
+		$this->assertFalse($result[0]['writeBackConflict']);
 	}//end testListQueriesORWithTargetIdWhenEnabled()
 
 	/**
@@ -194,6 +204,7 @@ class SynchronizationContractProviderTest extends TestCase {
 			$this->objectService,
 			$this->appConfig,
 			$this->l10n,
+			new WriteBackConflictReader($this->objectService),
 		);
 
 		// Act
@@ -231,6 +242,7 @@ class SynchronizationContractProviderTest extends TestCase {
 			$this->objectService,
 			$appConfig,
 			$this->l10n,
+			new WriteBackConflictReader($this->objectService),
 		);
 
 		// Act
