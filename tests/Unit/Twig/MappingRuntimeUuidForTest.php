@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Twig;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\SourceMappingService;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Twig\MappingRuntime;
 use OCA\OpenRegister\Service\FileService;
@@ -31,9 +32,24 @@ use PHPUnit\Framework\TestCase;
 use Twig\Loader\ArrayLoader;
 
 /**
- * Covers MappingRuntime::uuidFor() and its registration as a mapping function.
+ * Covers $this->runtime()->uuidFor() and its registration as a mapping function.
  */
 final class MappingRuntimeUuidForTest extends TestCase {
+
+	/**
+	 * The runtime with inert collaborators: uuidFor() uses none of them.
+	 *
+	 * @return MappingRuntime The runtime.
+	 */
+	private function runtime(): MappingRuntime {
+		return new MappingRuntime(
+			$this->createMock(MappingService::class),
+			$this->createMock(CallService::class),
+			$this->createMock(FileService::class),
+			$this->createMock(SourceMappingService::class),
+			$this->createMock(SynchronizationContractService::class),
+		);
+	}//end runtime()
 
 	/**
 	 * The same name gives the same uuid, another name another one, and the value is a UUID v5.
@@ -41,9 +57,9 @@ final class MappingRuntimeUuidForTest extends TestCase {
 	 * @return void
 	 */
 	public function testOneNameGivesOneStableVersion5Uuid(): void {
-		$first = MappingRuntime::uuidFor(name: 'course-marketplace:go1:course:1830612');
-		$again = MappingRuntime::uuidFor(name: 'course-marketplace:go1:course:1830612');
-		$other = MappingRuntime::uuidFor(name: 'course-marketplace:go1:lesson:1830612');
+		$first = $this->runtime()->uuidFor(name: 'course-marketplace:go1:course:1830612');
+		$again = $this->runtime()->uuidFor(name: 'course-marketplace:go1:course:1830612');
+		$other = $this->runtime()->uuidFor(name: 'course-marketplace:go1:lesson:1830612');
 
 		$this->assertSame($first, $again);
 		$this->assertNotSame($first, $other);
@@ -61,7 +77,7 @@ final class MappingRuntimeUuidForTest extends TestCase {
 	 */
 	public function testAnEmptyNameIsRefused(): void {
 		$this->expectException(\InvalidArgumentException::class);
-		MappingRuntime::uuidFor(name: '  ');
+		$this->runtime()->uuidFor(name: '  ');
 	}//end testAnEmptyNameIsRefused()
 
 	/**
@@ -84,6 +100,6 @@ final class MappingRuntimeUuidForTest extends TestCase {
 			input: ['id' => 1830612]
 		);
 
-		$this->assertSame(MappingRuntime::uuidFor(name: 'course-marketplace:go1:course:1830612'), $mapped['id']);
+		$this->assertSame($this->runtime()->uuidFor(name: 'course-marketplace:go1:course:1830612'), $mapped['id']);
 	}//end testAMappingCallsItByName()
 }//end class
