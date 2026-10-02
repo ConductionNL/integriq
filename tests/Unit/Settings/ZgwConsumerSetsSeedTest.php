@@ -168,4 +168,22 @@ class ZgwConsumerSetsSeedTest extends TestCase {
 			$this->assertDoesNotMatchRegularExpression('/\b' . preg_quote($app, '/') . '\b/', $serialised, 'names ' . $app);
 		}
 	}//end testSourcesShipDisabledWithAZgwJwtAndNoFleetApp()
+	/**
+	 * A bound schema holds the store's own ZGW shape: no set names a translator, and every mapping it names passes the resource through as it is (design D5, decided 2 Oct 2026).
+	 *
+	 * @return void
+	 */
+	public function testEveryMappingPassesTheStoresOwnShapeThroughUntranslated(): void {
+		$seeds = $this->seeds();
+		foreach (array_merge(self::DATA_SETS, ['zgw-notificaties']) as $slug) {
+			$set = $this->set($slug);
+			$this->assertArrayNotHasKey('translator', $set, $slug . ' names a translator; a bound schema holds the store\'s own shape.');
+			foreach ($set['mappings'] ?? [] as $mappingSlug) {
+				$mapping = $seeds['mapping'][$mappingSlug];
+				$this->assertTrue($mapping['passThrough'], $mappingSlug . ' passes the resource through.');
+				$this->assertSame([], $mapping['mapping'], $mappingSlug . ' renames or reshapes no field.');
+				$this->assertSame([], $mapping['cast'], $mappingSlug . ' casts no field.');
+			}
+		}
+	}//end testEveryMappingPassesTheStoresOwnShapeThroughUntranslated()
 }//end class

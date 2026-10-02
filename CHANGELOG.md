@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 ### Added
+- An install guide for the ZGW consumer sets (`docs/features/zgw-sets.md`), and
+  the installer's refusals in Dutch and English. A schema bound to a ZGW store
+  holds the store's own shape: the sets no longer name a translator.
 - Governed agent actions. A Hermiq agent can now run a synchronization, test a
   synchronization or a source, list dead letters, and replay or discard them.
   It can never create, edit or delete configuration. Run, replay and discard

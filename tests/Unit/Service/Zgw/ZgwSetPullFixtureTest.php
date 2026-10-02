@@ -32,6 +32,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Helpers\CatalogueL10n;
 
 /**
  * The installer and the REAL synchronization and mapping engines; only HTTP and OpenRegister storage are faked.
@@ -285,6 +286,12 @@ class ZgwSetPullFixtureTest extends TestCase {
 		$this->assertSame($urls, array_values(array_column($this->store['bound'] ?? [], 'url')), 'Three objects carrying the remote urls in the bound schema.');
 		$this->assertEqualsCanonicalizing($urls, array_values(array_column($this->store['synchronization_contract'] ?? [], 'originId')));
 
+		// Design D5: the bound schema holds the store's own shape, every field as the store sent it.
+		$bound = array_column($this->store['bound'], null, 'url');
+		foreach ($this->fixture($set, $path) as $resource) {
+			$this->assertSame($resource, array_intersect_key($bound[$resource['url']], $resource), 'The store\'s own fields, untranslated.');
+		}
+
 		// Run again, as a caller reads the synchronization back: the url-keyed contracts update the same three.
 		$this->engine($or, $set, $path)->synchronize(synchronization: $this->store['synchronization'][$syncSlug] + ['id' => $syncSlug]);
 		$this->assertCount(3, $this->store['bound']);
@@ -295,8 +302,9 @@ class ZgwSetPullFixtureTest extends TestCase {
 		return new ZgwSetInstaller(
 			objectService: $or,
 			appConfig: $this->appConfig(),
-			guard: new ZgwSetInstallGuard(),
-			subscriber: $this->createMock(NotificatiesSubscriberService::class)
+			guard: new ZgwSetInstallGuard(CatalogueL10n::make($this)),
+			subscriber: $this->createMock(NotificatiesSubscriberService::class),
+			l10n: CatalogueL10n::make($this)
 		);
 	}//end installer()
 }//end class

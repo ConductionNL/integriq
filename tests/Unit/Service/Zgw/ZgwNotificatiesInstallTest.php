@@ -27,6 +27,7 @@ use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Helpers\CatalogueL10n;
 
 /**
  * The installer with the real NotificatiesSubscriberService, every save validated against the register.
@@ -148,8 +149,9 @@ class ZgwNotificatiesInstallTest extends TestCase {
 		return new ZgwSetInstaller(
 			objectService: $objects,
 			appConfig: $appConfig,
-			guard: new ZgwSetInstallGuard(),
-			subscriber: $subscriber
+			guard: new ZgwSetInstallGuard(CatalogueL10n::make($this)),
+			subscriber: $subscriber,
+			l10n: CatalogueL10n::make($this)
 		);
 	}//end installer()
 
@@ -220,6 +222,22 @@ class ZgwNotificatiesInstallTest extends TestCase {
 		$this->assertSame('besluiten', $this->remote[1]['json']['kanalen'][0]['naam']);
 		$this->assertSame(['zgw-zaken', 'zgw-besluiten'], array_keys($result['subscriptions']));
 	}//end testReinstallingAddsOnlyTheNewSet()
+
+	/**
+	 * An unreadable subscriptions value reads as none, so every installed set is subscribed again.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableSubscriptionsValueReadsAsNoSubscriptions(): void {
+		$this->config[ZgwSetInstaller::BINDINGS_KEY]      = (string)json_encode(['cases/case' => 'zgw-zaken']);
+		$this->config[ZgwSetInstaller::SUBSCRIPTIONS_KEY] = 'not json';
+
+		$this->assertSame([], $this->installer()->subscriptions());
+
+		$result = $this->installer()->install(slug: 'zgw-notificaties', register: '', schema: '');
+		$this->assertSame(['zgw-zaken'], array_keys($result['subscriptions']));
+		$this->assertCount(1, $this->remote);
+	}//end testAnUnreadableSubscriptionsValueReadsAsNoSubscriptions()
 
 	/**
 	 * A registration the store refuses is reported and not recorded, so installing again retries it.
