@@ -196,6 +196,122 @@ class SynchronizationContractProviderContractTest extends TestCase {
 	}//end testTheQueryFiltersOnTheTargetIdOnly()
 
 	/**
+	 * An object service over the real seeded ZGW write-back synchronizations, bound as the installer binds them.
+	 *
+	 * @param array      $contractRows The contracts naming the object as their target.
+	 * @param string     $syncStatus   The object's recorded write-back state.
+	 * @param array|null $finds        By-ref list of the schemas `find()` was asked for.
+	 *
+	 * @return \PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function writeBackObjectService(array $contractRows, string $syncStatus, ?array &$finds = []) {
+		$fragment = json_decode((string)file_get_contents(__DIR__ . '/../../../../lib/Settings/register.d/zgw-consumer-sets.json'), true, flags: JSON_THROW_ON_ERROR);
+		$synchronizations = [];
+		foreach ($fragment['components']['objects'] as $seed) {
+			if (($seed['@self']['schema'] ?? null) !== 'synchronization') {
+				continue;
+			}
+
+			unset($seed['@self']);
+			if (($seed['sourceType'] ?? null) === 'register/schema') {
+				// ZgwSetInstaller::bind(): a write-back reads the bound schema.
+				$seed['sourceId'] = 'cases/case';
+			}
+
+			$synchronizations[] = ObjectServiceMockBuilder::objectEntity($this, $seed, $seed['slug']);
+		}
+
+		$schema = null;
+		$objectService = ObjectServiceMockBuilder::make($this);
+		$objectService->method('setRegister')->willReturnSelf();
+		$objectService->method('setSchema')->willReturnCallback(
+			function ($name) use ($objectService, &$schema) {
+				$schema = $name;
+				return $objectService;
+			}
+		);
+		$objectService->method('findAll')->willReturnCallback(
+			function () use (&$schema, $contractRows, $synchronizations) {
+				$rows = ($schema === 'synchronization' ? $synchronizations : $contractRows);
+				return ['results' => $rows, 'total' => count($rows)];
+			}
+		);
+		$objectService->method('find')->willReturnCallback(
+			function ($id, $register = null, $schema = null) use ($syncStatus, &$finds) {
+				$finds[] = $schema;
+				if ($schema === 'synchronization') {
+					return ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Zaken API: read'], (string)$id);
+				}
+
+				return ObjectServiceMockBuilder::objectEntity($this, ['identificatie' => 'ZAAK-1', 'syncStatus' => $syncStatus], (string)$id);
+			}
+		);
+
+		return $objectService;
+
+	}//end writeBackObjectService()
+
+	/**
+	 * A refused write-back is on every row, so the tab can say the store kept the old value.
+	 *
+	 * @return void
+	 */
+	public function testARefusedWriteBackIsOnEveryRow(): void {
+		$contract = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'zgw-zaken', 'targetId' => 'object-7'], 'contract-1');
+		$provider = $this->provider('true', $this->writeBackObjectService([$contract], 'conflict'));
+
+		$rows = $provider->list('cases', 'case', 'object-7');
+
+		$this->assertCount(1, $rows);
+		$this->assertTrue($rows[0]['writeBackConflict']);
+
+	}//end testARefusedWriteBackIsOnEveryRow()
+
+	/**
+	 * An accepted write-back shows no conflict.
+	 *
+	 * @return void
+	 */
+	public function testAnAcceptedWriteBackShowsNoConflict(): void {
+		$contract = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'zgw-zaken', 'targetId' => 'object-7'], 'contract-1');
+		$provider = $this->provider('true', $this->writeBackObjectService([$contract], 'synced'));
+
+		$this->assertFalse($provider->list('cases', 'case', 'object-7')[0]['writeBackConflict']);
+
+	}//end testAnAcceptedWriteBackShowsNoConflict()
+
+	/**
+	 * An object no synchronization wrote costs no extra reads: the sidebar loads on every page.
+	 *
+	 * @return void
+	 */
+	public function testAnUnsyncedObjectIsNotReadForAConflict(): void {
+		$finds = [];
+		$provider = $this->provider('true', $this->writeBackObjectService([], 'conflict', $finds));
+
+		$this->assertSame([], $provider->list('cases', 'case', 'object-8'));
+		$this->assertSame([], $finds);
+
+	}//end testAnUnsyncedObjectIsNotReadForAConflict()
+
+	/**
+	 * Without a write-back declaring a conflict property the object is never read.
+	 *
+	 * @return void
+	 */
+	public function testNoConflictPropertyMeansNoObjectRead(): void {
+		$finds = [];
+		$contract = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'a1b2c3d4-0000-4000-8000-000000000001'], 'contract-1');
+		$seen = [];
+		$provider = $this->provider('true', $this->recordingObjectService([$contract], $seen));
+
+		$rows = $provider->list('some-register', 'some-schema', 'object-7');
+
+		$this->assertFalse($rows[0]['writeBackConflict']);
+
+	}//end testNoConflictPropertyMeansNoObjectRead()
+
+	/**
 	 * REQ-OCIP-003: a page asked with its own size starts right after the
 	 * previous page of that size, not after 50 rows per earlier page.
 	 *
