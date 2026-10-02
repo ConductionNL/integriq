@@ -1,0 +1,9 @@
+{
+  "count": 2,
+  "next": null,
+  "previous": null,
+  "results": [
+    {"id": 5678281, "title": "Informatiebeveiliging en de AVG", "headline": "BIO en AVG voor de overheid", "url": "/course/informatiebeveiliging-avg/", "locale": {"locale": "nl_NL"}},
+    {"id": 5678282, "title": "Project management basics", "headline": "Plan, run and close a project", "url": "/course/project-management-basics/", "locale": {"locale": "en_US"}}
+  ]
+}

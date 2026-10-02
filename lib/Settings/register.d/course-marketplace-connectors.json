@@ -1,0 +1,594 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-course-marketplace). Seeds three DORMANT course marketplace sets (Go1, LinkedIn Learning, Udemy Business): per provider one source, three mappings and three synchronizations that write each selected provider course into learniq as one Course, one LTI Lesson and one LtiToolPlacement. The three objects of one course name each other by ids derived from the provider course id with the uuidFor() mapping function (a UUID v5), so they link without a lookup and a second run updates instead of duplicating. Every provider call goes through the source's broker credential. The sets live here, not in lib/Settings/configurations/: that directory is read by ZgwSetCatalogue for the six ZGW sets only, so a file there would never be installed. Selection: the synchronization `conditions`. Retiring a withdrawn course (REQ-CMKT-003) is Task 5; until then the disappearance policy is keepAndFlag, so nothing is ever deleted. See openspec/changes/connectors-course-marketplace/design.md.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "course-marketplace-go1"
+        },
+        "name": "Go1 catalogue",
+        "description": "The Go1 learning object catalogue (https://developers.go1.com). List call: GET https://gateway.go1.com/learning-objects with `type[]=course`, paged by `limit` (at most 50) and `offset`, answering `total` and `hits`. Auth: OAuth 2.0 client credentials against https://auth.go1.com/oauth/token, the client secret held by the credential broker. Off until an administrator fills the client id and the credential.",
+        "type": "api",
+        "location": "https://gateway.go1.com",
+        "auth": "oauth",
+        "documentation": "https://developers.go1.com/api/rest/v2/overview/",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://auth.go1.com/oauth/token",
+            "scope": "",
+            "client_id": "",
+            "client_secret": {
+              "credentialRef": {
+                "credentialName": "course-marketplace-go1-client-secret"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-go1-course"
+        },
+        "name": "Go1 course to learniq Course",
+        "description": "One Go1 course as a learniq Course. The id is derived from the provider course id, so a second run updates the same course and the lesson and placement can name it before it exists. `lifecycle` is not written: learniq starts a new course in `draft` and its lifecycle engine owns the value from there. `tenant_id` is learniq's single-tenant default; on a multi-tenant install set it to the tenant the catalogue belongs to.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:go1:course:' ~ id) }}",
+          "code": "GO1-{{ id }}",
+          "name": "{{ (title)|slice(0, 250) }}",
+          "description": "{{ description|default('') }}",
+          "level": "corporate",
+          "language": "{{ language|default('en')|slice(0, 2)|lower }}",
+          "author": "Go1",
+          "license": "all-rights-reserved",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-go1-placement"
+        },
+        "name": "Go1 course to learniq LtiToolPlacement",
+        "description": "The LTI placement that opens one Go1 course. `openconnectorDeploymentId` is the Go1 `lti_deployment` this install registered with the provider: set it before the synchronization runs. The provider course id is not stored on the placement (learniq's LtiToolPlacement has no field for it); it stays the origin id of this synchronization's contract.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:go1:placement:' ~ id) }}",
+          "courseId": "{{ uuidFor('course-marketplace:go1:course:' ~ id) }}",
+          "lessonId": "{{ uuidFor('course-marketplace:go1:lesson:' ~ id) }}",
+          "openconnectorDeploymentId": "",
+          "launchMode": "resource-link",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-go1-lesson"
+        },
+        "name": "Go1 course to learniq Lesson",
+        "description": "The one LTI lesson of an imported Go1 course. `contentRef` is the placement's id, as learniq requires for `contentType` `lti`.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:go1:lesson:' ~ id) }}",
+          "courseId": "{{ uuidFor('course-marketplace:go1:course:' ~ id) }}",
+          "name": "{{ (title)|slice(0, 250) }}",
+          "order": "1",
+          "contentType": "lti",
+          "contentRef": "{{ uuidFor('course-marketplace:go1:placement:' ~ id) }}",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {
+          "order": "int"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-go1-course"
+        },
+        "name": "Go1 catalogue to learniq (course)",
+        "description": "Writes the selected Go1 courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-go1",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-go1-course",
+        "sourceConfig": {
+          "endpoint": "/learning-objects",
+          "query": {
+            "type[]": "course",
+            "limit": 50
+          },
+          "idPosition": "id",
+          "resultsPosition": "hits",
+          "usesPagination": true,
+          "paginationMode": "offset",
+          "paginationQuery": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 50,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/course",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-go1-placement"
+        },
+        "name": "Go1 catalogue to learniq (placement)",
+        "description": "Writes the selected Go1 courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-go1",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-go1-placement",
+        "sourceConfig": {
+          "endpoint": "/learning-objects",
+          "query": {
+            "type[]": "course",
+            "limit": 50
+          },
+          "idPosition": "id",
+          "resultsPosition": "hits",
+          "usesPagination": true,
+          "paginationMode": "offset",
+          "paginationQuery": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 50,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/lti-tool-placement",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-go1-lesson"
+        },
+        "name": "Go1 catalogue to learniq (lesson)",
+        "description": "Writes the selected Go1 courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-go1",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-go1-lesson",
+        "sourceConfig": {
+          "endpoint": "/learning-objects",
+          "query": {
+            "type[]": "course",
+            "limit": 50
+          },
+          "idPosition": "id",
+          "resultsPosition": "hits",
+          "usesPagination": true,
+          "paginationMode": "offset",
+          "paginationQuery": "offset",
+          "paginationFirstPage": 1,
+          "pageSize": 50,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/lesson",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "course-marketplace-linkedin-learning"
+        },
+        "name": "LinkedIn Learning catalogue",
+        "description": "The LinkedIn Learning asset catalogue (https://learn.microsoft.com/en-us/linkedin/learning/integrations/criteria-api). List call: GET https://api.linkedin.com/v2/learningAssets with `q=criteria` and `assetFilteringCriteria.assetTypes[0]=COURSE`, paged by `start` and `count`, answering `elements` and `paging`. A language selection can also be sent as `assetFilteringCriteria.locales[0].language`. Auth: OAuth 2.0 client credentials against https://www.linkedin.com/oauth/v2/accessToken (https://learn.microsoft.com/en-us/linkedin/learning/getting-started/authentication), the client secret held by the credential broker. Off until an administrator fills the client id and the credential.",
+        "type": "api",
+        "location": "https://api.linkedin.com/v2",
+        "auth": "oauth",
+        "documentation": "https://learn.microsoft.com/en-us/linkedin/learning/integrations/criteria-api",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://www.linkedin.com/oauth/v2/accessToken",
+            "scope": "",
+            "client_id": "",
+            "client_secret": {
+              "credentialRef": {
+                "credentialName": "course-marketplace-linkedin-learning-client-secret"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-linkedin-learning-course"
+        },
+        "name": "LinkedIn Learning course to learniq Course",
+        "description": "One LinkedIn Learning course as a learniq Course. The id is derived from the provider course id, so a second run updates the same course and the lesson and placement can name it before it exists. `lifecycle` is not written: learniq starts a new course in `draft` and its lifecycle engine owns the value from there. `tenant_id` is learniq's single-tenant default; on a multi-tenant install set it to the tenant the catalogue belongs to.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:linkedin-learning:course:' ~ urn) }}",
+          "code": "LIL-{{ urn|split(':')|last }}",
+          "name": "{{ (title.value)|slice(0, 250) }}",
+          "description": "{{ details.description.value|default('') }}",
+          "level": "corporate",
+          "language": "{{ title.locale.language|default('en')|lower }}",
+          "author": "LinkedIn Learning",
+          "license": "all-rights-reserved",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-linkedin-learning-placement"
+        },
+        "name": "LinkedIn Learning course to learniq LtiToolPlacement",
+        "description": "The LTI placement that opens one LinkedIn Learning course. `openconnectorDeploymentId` is the LinkedIn Learning `lti_deployment` this install registered with the provider: set it before the synchronization runs. The provider course id is not stored on the placement (learniq's LtiToolPlacement has no field for it); it stays the origin id of this synchronization's contract.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:linkedin-learning:placement:' ~ urn) }}",
+          "courseId": "{{ uuidFor('course-marketplace:linkedin-learning:course:' ~ urn) }}",
+          "lessonId": "{{ uuidFor('course-marketplace:linkedin-learning:lesson:' ~ urn) }}",
+          "openconnectorDeploymentId": "",
+          "launchMode": "resource-link",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-linkedin-learning-lesson"
+        },
+        "name": "LinkedIn Learning course to learniq Lesson",
+        "description": "The one LTI lesson of an imported LinkedIn Learning course. `contentRef` is the placement's id, as learniq requires for `contentType` `lti`.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:linkedin-learning:lesson:' ~ urn) }}",
+          "courseId": "{{ uuidFor('course-marketplace:linkedin-learning:course:' ~ urn) }}",
+          "name": "{{ (title.value)|slice(0, 250) }}",
+          "order": "1",
+          "contentType": "lti",
+          "contentRef": "{{ uuidFor('course-marketplace:linkedin-learning:placement:' ~ urn) }}",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {
+          "order": "int"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-linkedin-learning-course"
+        },
+        "name": "LinkedIn Learning catalogue to learniq (course)",
+        "description": "Writes the selected LinkedIn Learning courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-linkedin-learning",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-linkedin-learning-course",
+        "sourceConfig": {
+          "endpoint": "/learningAssets",
+          "query": {
+            "q": "criteria",
+            "assetFilteringCriteria.assetTypes[0]": "COURSE",
+            "count": 100
+          },
+          "idPosition": "urn",
+          "resultsPosition": "elements",
+          "usesPagination": true,
+          "paginationMode": "offset",
+          "paginationQuery": "start",
+          "paginationFirstPage": 1,
+          "pageSize": 100,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/course",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-linkedin-learning-placement"
+        },
+        "name": "LinkedIn Learning catalogue to learniq (placement)",
+        "description": "Writes the selected LinkedIn Learning courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-linkedin-learning",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-linkedin-learning-placement",
+        "sourceConfig": {
+          "endpoint": "/learningAssets",
+          "query": {
+            "q": "criteria",
+            "assetFilteringCriteria.assetTypes[0]": "COURSE",
+            "count": 100
+          },
+          "idPosition": "urn",
+          "resultsPosition": "elements",
+          "usesPagination": true,
+          "paginationMode": "offset",
+          "paginationQuery": "start",
+          "paginationFirstPage": 1,
+          "pageSize": 100,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/lti-tool-placement",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-linkedin-learning-lesson"
+        },
+        "name": "LinkedIn Learning catalogue to learniq (lesson)",
+        "description": "Writes the selected LinkedIn Learning courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-linkedin-learning",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-linkedin-learning-lesson",
+        "sourceConfig": {
+          "endpoint": "/learningAssets",
+          "query": {
+            "q": "criteria",
+            "assetFilteringCriteria.assetTypes[0]": "COURSE",
+            "count": 100
+          },
+          "idPosition": "urn",
+          "resultsPosition": "elements",
+          "usesPagination": true,
+          "paginationMode": "offset",
+          "paginationQuery": "start",
+          "paginationFirstPage": 1,
+          "pageSize": 100,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/lesson",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "course-marketplace-udemy-business"
+        },
+        "name": "Udemy Business catalogue",
+        "description": "The Udemy Business course catalogue (Udemy for Business API reference v2.0). List call: GET https://<your-portal>.udemy.com/api-2.0/organizations/<portal-id>/courses/list/, paged by `page` and `page_size`, answering `count`, `next` and `results`. Auth: HTTP Basic with the client id and client secret, the secret held by the credential broker. Set the location to your own portal and portal id before enabling it.",
+        "type": "api",
+        "location": "https://your-portal.udemy.com/api-2.0/organizations/your-portal-id",
+        "auth": "basic",
+        "documentation": "https://s3.amazonaws.com/udemy-images/support/Udemy_for_Business_API_Reference_v2.0.pdf",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "authentication": {
+            "username": "",
+            "password": {
+              "credentialRef": {
+                "credentialName": "course-marketplace-udemy-business-client-secret"
+              }
+            }
+          },
+          "auth": [
+            "{{ source.configuration.authentication.username }}",
+            "{{ source.configuration.authentication.password }}"
+          ]
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-udemy-business-course"
+        },
+        "name": "Udemy Business course to learniq Course",
+        "description": "One Udemy Business course as a learniq Course. The id is derived from the provider course id, so a second run updates the same course and the lesson and placement can name it before it exists. `lifecycle` is not written: learniq starts a new course in `draft` and its lifecycle engine owns the value from there. `tenant_id` is learniq's single-tenant default; on a multi-tenant install set it to the tenant the catalogue belongs to.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:udemy-business:course:' ~ id) }}",
+          "code": "UDB-{{ id }}",
+          "name": "{{ (title)|slice(0, 250) }}",
+          "description": "{{ headline|default('') }}",
+          "level": "corporate",
+          "language": "{{ locale.locale|default('en')|slice(0, 2)|lower }}",
+          "author": "Udemy Business",
+          "license": "all-rights-reserved",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-udemy-business-placement"
+        },
+        "name": "Udemy Business course to learniq LtiToolPlacement",
+        "description": "The LTI placement that opens one Udemy Business course. `openconnectorDeploymentId` is the Udemy Business `lti_deployment` this install registered with the provider: set it before the synchronization runs. The provider course id is not stored on the placement (learniq's LtiToolPlacement has no field for it); it stays the origin id of this synchronization's contract.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:udemy-business:placement:' ~ id) }}",
+          "courseId": "{{ uuidFor('course-marketplace:udemy-business:course:' ~ id) }}",
+          "lessonId": "{{ uuidFor('course-marketplace:udemy-business:lesson:' ~ id) }}",
+          "openconnectorDeploymentId": "",
+          "launchMode": "resource-link",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "course-marketplace-udemy-business-lesson"
+        },
+        "name": "Udemy Business course to learniq Lesson",
+        "description": "The one LTI lesson of an imported Udemy Business course. `contentRef` is the placement's id, as learniq requires for `contentType` `lti`.",
+        "mapping": {
+          "id": "{{ uuidFor('course-marketplace:udemy-business:lesson:' ~ id) }}",
+          "courseId": "{{ uuidFor('course-marketplace:udemy-business:course:' ~ id) }}",
+          "name": "{{ (title)|slice(0, 250) }}",
+          "order": "1",
+          "contentType": "lti",
+          "contentRef": "{{ uuidFor('course-marketplace:udemy-business:placement:' ~ id) }}",
+          "tenant_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "unset": [],
+        "cast": {
+          "order": "int"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-udemy-business-course"
+        },
+        "name": "Udemy Business catalogue to learniq (course)",
+        "description": "Writes the selected Udemy Business courses into learniq as one Course each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-udemy-business",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-udemy-business-course",
+        "sourceConfig": {
+          "endpoint": "/courses/list/",
+          "query": {
+            "page_size": 100
+          },
+          "idPosition": "id",
+          "resultsPosition": "results",
+          "usesPagination": true,
+          "paginationMode": "page",
+          "paginationQuery": "page",
+          "paginationFirstPage": 1,
+          "pageSize": 100,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/course",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-udemy-business-placement"
+        },
+        "name": "Udemy Business catalogue to learniq (placement)",
+        "description": "Writes the selected Udemy Business courses into learniq as one LtiToolPlacement each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-udemy-business",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-udemy-business-placement",
+        "sourceConfig": {
+          "endpoint": "/courses/list/",
+          "query": {
+            "page_size": 100
+          },
+          "idPosition": "id",
+          "resultsPosition": "results",
+          "usesPagination": true,
+          "paginationMode": "page",
+          "paginationQuery": "page",
+          "paginationFirstPage": 1,
+          "pageSize": 100,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/lti-tool-placement",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "course-marketplace-udemy-business-lesson"
+        },
+        "name": "Udemy Business catalogue to learniq (lesson)",
+        "description": "Writes the selected Udemy Business courses into learniq as one Lesson each. Run the course, placement and lesson synchronizations of this provider together; the ids they write are derived from the provider course id, so the order does not matter. The selection is the `conditions` (JsonLogic on the provider's course, for example language and a text filter), and is the same on all three. A course the provider stops offering is flagged, never deleted.",
+        "sourceId": "course-marketplace-udemy-business",
+        "sourceType": "api",
+        "sourceTargetMapping": "course-marketplace-udemy-business-lesson",
+        "sourceConfig": {
+          "endpoint": "/courses/list/",
+          "query": {
+            "page_size": 100
+          },
+          "idPosition": "id",
+          "resultsPosition": "results",
+          "usesPagination": true,
+          "paginationMode": "page",
+          "paginationQuery": "page",
+          "paginationFirstPage": 1,
+          "pageSize": 100,
+          "disappearancePolicy": "keepAndFlag"
+        },
+        "conditions": [],
+        "targetId": "learniq/lesson",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

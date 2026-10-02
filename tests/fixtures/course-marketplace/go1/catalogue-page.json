@@ -1,0 +1,8 @@
+{
+  "total": 3,
+  "hits": [
+    {"id": 1830612, "type": "course", "title": "AVG in de praktijk voor medewerkers", "description": "Wat de AVG van je vraagt als je met persoonsgegevens werkt.", "language": "nl"},
+    {"id": 1830613, "type": "course", "title": "Veilig wachtwoordgebruik", "description": "Sterke wachtwoorden en een wachtwoordmanager.", "language": "nl"},
+    {"id": 1830614, "type": "course", "title": "GDPR essentials", "description": "The GDPR for everyone who handles personal data.", "language": "en"}
+  ]
+}

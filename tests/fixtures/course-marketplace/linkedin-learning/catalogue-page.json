@@ -1,0 +1,8 @@
+{
+  "paging": {"start": 0, "count": 3, "total": 3},
+  "elements": [
+    {"urn": "urn:li:lyndaCourse:2814005", "title": {"value": "De AVG voor leidinggevenden", "locale": {"language": "nl", "country": "NL"}}, "details": {"description": {"value": "Wat een leidinggevende moet regelen onder de AVG.", "locale": {"language": "nl", "country": "NL"}}, "level": "BEGINNER"}},
+    {"urn": "urn:li:lyndaCourse:2814006", "title": {"value": "Excel voor beginners", "locale": {"language": "nl", "country": "NL"}}, "details": {"description": {"value": "Rekenen met tabellen.", "locale": {"language": "nl", "country": "NL"}}, "level": "BEGINNER"}},
+    {"urn": "urn:li:lyndaCourse:2814007", "title": {"value": "AVG and GDPR for managers", "locale": {"language": "en", "country": "US"}}, "details": {"description": {"value": "The manager's duties under the GDPR.", "locale": {"language": "en", "country": "US"}}, "level": "INTERMEDIATE"}}
+  ]
+}
