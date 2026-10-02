@@ -63,18 +63,22 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 		}
 
 		$seeds['mapping']['course-marketplace-udemy-business-placement']['mapping']['openconnectorDeploymentId'] = $deployment;
+		// An administrator turned the source on; the seed ships it off.
+		$seeds['source']['course-marketplace-udemy-business']['isEnabled'] = true;
 
 		$synchronization = $seeds['synchronization']['course-marketplace-udemy-business-course'];
 		$synchronization['id']       = 'sync-uuid-udemy-course';
 		$synchronization['uuid']     = 'sync-uuid-udemy-course';
-		$synchronization['sourceId'] = 'source-uuid-udemy';
+		$synchronization['sourceId'] = 'course-marketplace-udemy-business';
 		$synchronization['targetId'] = '1/2';
 
 		$orObjects = ObjectServiceMockBuilder::make($this);
 		$orObjects->method('find')->willReturnCallback(
 			function ($id, $register = null, $schema = null) use ($seeds) {
+				// An object found by slug comes back with uuid-<slug>; a second lookup uses that.
+				$id = preg_replace('/^uuid-/', '', (string)$id);
 				if (isset($seeds[$schema][$id]) === false) {
-					throw new \RuntimeException('Object not found');
+					throw new \RuntimeException('Object not found: ' . $schema . '/' . $id);
 				}
 
 				return ObjectServiceMockBuilder::objectEntity($this, $seeds[$schema][$id], 'uuid-' . $id);

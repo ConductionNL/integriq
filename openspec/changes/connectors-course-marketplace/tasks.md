@@ -39,8 +39,9 @@ Kind: code. Size M. Row `learniq:cont-outside-provider-catalogue`. Depends on
 - **files**: `lib/Settings/register.d/course-marketplace-connectors.json` (the Udemy Business source, mappings and synchronizations), `tests/fixtures/course-marketplace/udemy-business/`
 - **acceptance_criteria**:
   - GIVEN no `lti_deployment` WHEN the synchronization runs THEN nothing is written and the log names the missing deployment
-- [ ] Implement
-  - The set is built: `GET https://<portal>.udemy.com/api-2.0/organizations/<portal-id>/courses/list/`, paged by `page`/`page_size`, HTTP Basic with the client id and secret. Open: the guard. Today a run without a deployment writes the course and the lesson and learniq refuses the placement (`testASeededPlacementWithoutADeploymentIsRefusedByLearniq`); "nothing is written, the log names the deployment" needs a pre-run check in the engine, built with Task 5's engine piece.
+- [x] Implement
+  - The set is built: `GET https://<portal>.udemy.com/api-2.0/organizations/<portal-id>/courses/list/`, paged by `page`/`page_size`, HTTP Basic with the client id and secret.
+  - The guard: every marketplace synchronization (all three providers, course, lesson and placement) declares `sourceConfig.requiredMappingValues`, naming the provider's placement mapping and its `openconnectorDeploymentId`. `RunPrerequisiteGuard` (`lib/Service/Synchronization/`) reads it in `synchronizeExternToIntern()` right after the source check: with the value empty the run stops before any fetch, the run log's message names the provider's `lti_deployment` and the mapping to set it in, and nothing is written. A synchronization that declares nothing runs as before. Tests: `RunPrerequisiteGuardTest` over the real fragment (nine synchronizations, with and without the deployment, a missing mapping, a malformed declaration) and `SynchronizationServiceRunPrerequisiteTest` (the real engine with the real guard over the seeded Udemy Business course synchronization: no provider call, no write, the saved log names the deployment; with it set, the run fetches).
 - [ ] Test (`tests/e2e/course-marketplace.spec.ts`)
 
 ### Task 5: Retire withdrawn courses
