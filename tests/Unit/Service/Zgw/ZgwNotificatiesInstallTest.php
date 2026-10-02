@@ -224,6 +224,22 @@ class ZgwNotificatiesInstallTest extends TestCase {
 	}//end testReinstallingAddsOnlyTheNewSet()
 
 	/**
+	 * An unreadable subscriptions value reads as none, so every installed set is subscribed again.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableSubscriptionsValueReadsAsNoSubscriptions(): void {
+		$this->config[ZgwSetInstaller::BINDINGS_KEY]      = (string)json_encode(['cases/case' => 'zgw-zaken']);
+		$this->config[ZgwSetInstaller::SUBSCRIPTIONS_KEY] = 'not json';
+
+		$this->assertSame([], $this->installer()->subscriptions());
+
+		$result = $this->installer()->install(slug: 'zgw-notificaties', register: '', schema: '');
+		$this->assertSame(['zgw-zaken'], array_keys($result['subscriptions']));
+		$this->assertCount(1, $this->remote);
+	}//end testAnUnreadableSubscriptionsValueReadsAsNoSubscriptions()
+
+	/**
 	 * A registration the store refuses is reported and not recorded, so installing again retries it.
 	 *
 	 * @return void
