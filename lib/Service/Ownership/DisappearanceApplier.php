@@ -95,6 +95,9 @@ class DisappearanceApplier {
 	 *                                          written under both non-deleting policies.
 	 *
 	 * @return array<string,mixed> The object's data after the policy ran.
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003
+	 * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-withdrawn-course-is-retired-never-deleted-req-cmkt-003
 	 */
 	public function applyToObject(string $policy, array $objectData, string $runAt, array $values = []): array {
 		if ($policy === DisappearancePolicy::MARK_ENDED || $policy === DisappearancePolicy::KEEP_AND_FLAG) {
