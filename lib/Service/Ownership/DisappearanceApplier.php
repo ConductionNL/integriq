@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Ownership;
 
+use InvalidArgumentException;
+
 /**
  * Under `markEnded` the record keeps its values and gains an end date. Under
  * `keepAndFlag` the values are left alone and the record is marked absent,
@@ -50,15 +52,60 @@ class DisappearanceApplier {
 	public const OBJECT_LAST_SEEN = 'sourceLastSeen';
 
 	/**
+	 * The sourceConfig key naming the values a non-deleting policy writes
+	 * onto the record, such as `{"lifecycle": "archived"}`.
+	 */
+	public const VALUES_KEY = 'disappearanceValues';
+
+	/**
+	 * Read the declared retirement values from a synchronization's sourceConfig.
+	 *
+	 * Absent means none. Anything but an object of scalar (or null) values is
+	 * refused rather than ignored: a misspelled retirement would otherwise
+	 * leave a withdrawn record looking current.
+	 *
+	 * @param array<string,mixed> $sourceConfig The synchronization's sourceConfig.
+	 *
+	 * @return array<string,scalar|null> The values to write, keyed by property.
+	 *
+	 * @throws InvalidArgumentException When the declaration is not such an object.
+	 *
+	 * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-withdrawn-course-is-retired-never-deleted-req-cmkt-003
+	 */
+	public function valuesFrom(array $sourceConfig): array {
+		$declared = ($sourceConfig[self::VALUES_KEY] ?? []);
+		if (is_array($declared) === false || ($declared !== [] && array_is_list($declared) === true)) {
+			throw new InvalidArgumentException('sourceConfig.' . self::VALUES_KEY . ' must be an object of property names and values.');
+		}
+
+		foreach ($declared as $property => $value) {
+			if (is_string($property) === false || trim($property) === '' || (is_scalar($value) === false && $value !== null)) {
+				throw new InvalidArgumentException('sourceConfig.' . self::VALUES_KEY . '.' . $property . ' must be a scalar value on a named property.');
+			}
+		}
+
+		return $declared;
+	}//end valuesFrom()
+
+	/**
 	 * Apply a policy to the target object's data.
 	 *
 	 * @param string $policy One of the DisappearancePolicy constants.
 	 * @param array<string,mixed> $objectData The target object's data.
 	 * @param string $runAt ISO timestamp of the run that did not see it.
+	 * @param array<string,scalar|null> $values Declared retirement values ({@see valuesFrom()}),
+	 *                                          written under both non-deleting policies.
 	 *
 	 * @return array<string,mixed> The object's data after the policy ran.
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-an-ended-record-keeps-its-history-and-says-when-the-source-dropped-it-req-sor-003
+	 * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-withdrawn-course-is-retired-never-deleted-req-cmkt-003
 	 */
-	public function applyToObject(string $policy, array $objectData, string $runAt): array {
+	public function applyToObject(string $policy, array $objectData, string $runAt, array $values = []): array {
+		if ($policy === DisappearancePolicy::MARK_ENDED || $policy === DisappearancePolicy::KEEP_AND_FLAG) {
+			$objectData = array_replace($objectData, $values);
+		}
+
 		if ($policy === DisappearancePolicy::MARK_ENDED) {
 			$objectData[self::OBJECT_ENDED_AT] = $runAt;
 			$objectData[self::OBJECT_ABSENT] = true;

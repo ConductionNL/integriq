@@ -79,6 +79,7 @@ class MappingExtension extends AbstractExtension {
 	public function getFunctions(): array {
 		return [
 			new TwigFunction(name: 'generateUuid', callable: [MappingRuntime::class, 'generateUuid']),
+			new TwigFunction(name: 'uuidFor', callable: [MappingRuntime::class, 'uuidFor']),
 			new TwigFunction(name: 'executeMapping', callable: [MappingRuntime::class, 'executeMapping']),
 			new TwigFunction(name: 'getFileContents', callable: [MappingRuntime::class, 'getFileContents']),
 			new TwigFunction(name: 'getFiles', callable: [MappingRuntime::class, 'getFiles']),
