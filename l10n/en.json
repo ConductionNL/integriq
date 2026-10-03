@@ -3031,7 +3031,21 @@
         "Register schema": "Register schema",
         "The partner's version of this schema. Change it when the partner publishes a new one": "The partner's version of this schema. Change it when the partner publishes a new one",
         "What the schema is for and where it came from": "What the schema is for and where it came from",
-        "This message schema was not saved: %s": "This message schema was not saved: %s"
+        "This message schema was not saved: %s": "This message schema was not saved: %s",
+        "Answer schema": "Answer schema",
+        "Check the request and the proxied answer against a message schema. Record writes the errors to the call log. Refuse answers 400 or 502": "Check the request and the proxied answer against a message schema. Record writes the errors to the call log. Refuse answers 400 or 502",
+        "For an OpenAPI message schema: the operation to check against. Empty means the request's method and path": "For an OpenAPI message schema: the operation to check against. Empty means the request's method and path",
+        "Message validation": "Message validation",
+        "Operation": "Operation",
+        "Record lets the message through and logs the errors. Refuse stops it": "Record lets the message through and logs the errors. Refuse stops it",
+        "Request schema": "Request schema",
+        "The schema the request body must match": "The schema the request body must match",
+        "The schema the source's answer must match": "The schema the source's answer must match",
+        "The uuid of the message schema the message must match": "The uuid of the message schema the message must match",
+        "Validation findings": "Validation findings",
+        "What did not match a message schema while this call was let through in record mode": "What did not match a message schema while this call was let through in record mode",
+        "Record": "Record",
+        "Refuse": "Refuse"
     },
     "plurals": {}
 }

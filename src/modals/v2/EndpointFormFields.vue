@@ -219,6 +219,45 @@
 					:error="errors[field.key]" />
 			</template>
 		</div>
+
+		<!-- REQ-MSV-002: the message schemas the request and the proxied
+		     answer must match, and whether a mismatch is refused or recorded. -->
+		<fieldset class="cn-endpoint-form-fields__validation">
+			<legend class="cn-endpoint-form-fields__label">
+				{{ t('integriq', 'Message validation') }}
+			</legend>
+			<NcSelect
+				:inputLabel="t('integriq', 'Mode')"
+				:modelValue="validationModeOption"
+				:options="validationModeOptions"
+				:clearable="false"
+				@update:modelValue="
+					(option) => setValidation('mode', option ? option.id : 'record')
+				" />
+			<NcSelect
+				:inputLabel="t('integriq', 'Request schema')"
+				:modelValue="messageSchemaOption('request')"
+				:options="messageSchemaOptions"
+				:loading="messageSchemasLoading"
+				@update:modelValue="
+					(option) => setValidationSchema('request', option)
+				" />
+			<NcSelect
+				:inputLabel="t('integriq', 'Answer schema')"
+				:modelValue="messageSchemaOption('response')"
+				:options="messageSchemaOptions"
+				:loading="messageSchemasLoading"
+				@update:modelValue="
+					(option) => setValidationSchema('response', option)
+				" />
+			<CnFieldHelper
+				:text="
+					t(
+						'integriq',
+						'Record lets the message through and logs the errors. Refuse stops it',
+					)
+				" />
+		</fieldset>
 	</div>
 </template>
 
@@ -293,6 +332,9 @@ export default {
 			configurationsLoading: false,
 			/** True once the OpenRegister registers endpoint has soft-failed. */
 			registerUnavailable: false,
+			/** Message schemas an endpoint can check its messages against. */
+			messageSchemaOptions: [],
+			messageSchemasLoading: false,
 		}
 	},
 
@@ -304,9 +346,38 @@ export default {
 		 * @return {object[]} The visible field descriptors.
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
+		/**
+		 * @return {object[]} The two validation modes.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 */
+		validationModeOptions() {
+			return [
+				{ id: 'record', label: this.t('integriq', 'Record') },
+				{ id: 'refuse', label: this.t('integriq', 'Refuse') },
+			]
+		},
+
+		/**
+		 * @return {object} The selected mode; record when none is set.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 */
+		validationModeOption() {
+			const mode = this.formData.validation?.mode || 'record'
+			return this.validationModeOptions.find((option) => option.id === mode)
+		},
+
+		/**
+		 * The schema fields drawn in the loop. `targetId` has its own pickers
+		 * and `validation` its own section, so neither is drawn twice.
+		 *
+		 * @return {object[]} The fields to draw.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
-			return this.fields.filter((field) => field.key !== 'targetId')
+			return this.fields.filter(
+				(field) => field.key !== 'targetId' && field.key !== 'validation',
+			)
 		},
 
 		/**
@@ -501,6 +572,7 @@ export default {
 		this.fetchRegisters()
 		this.fetchSchemas()
 		this.fetchConfigurations()
+		this.fetchMessageSchemas()
 	},
 
 	methods: {
@@ -659,6 +731,90 @@ export default {
 		 * @return {Promise<void>} Resolves once loaded.
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
+		/**
+		 * The option for the message schema picked for one direction.
+		 *
+		 * @param {string} direction request or response.
+		 * @return {object|null} The option, or null when none is picked.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 */
+		messageSchemaOption(direction) {
+			const uuid = this.formData.validation?.[direction]?.messageSchema
+			if (!uuid) return null
+			return (
+				this.messageSchemaOptions.find((option) => option.id === uuid) || {
+					id: uuid,
+					label: uuid,
+				}
+			)
+		},
+
+		/**
+		 * Write one key of the validation block.
+		 *
+		 * @param {string} key The key: mode, request or response.
+		 * @param {string|object|null} value The value; null removes the key.
+		 * @return {void}
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 */
+		setValidation(key, value) {
+			const validation = { ...(this.formData.validation || {}) }
+			if (value === null) {
+				delete validation[key]
+			} else {
+				validation[key] = value
+			}
+			this.updateField('validation', validation)
+		},
+
+		/**
+		 * Pick the message schema for one direction, keeping its operation.
+		 *
+		 * @param {string} direction request or response.
+		 * @param {object|null} option The picked option.
+		 * @return {void}
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 */
+		setValidationSchema(direction, option) {
+			if (!option) {
+				this.setValidation(direction, null)
+				return
+			}
+			const current = this.formData.validation?.[direction] || {}
+			this.setValidation(direction, { ...current, messageSchema: option.id })
+		},
+
+		/**
+		 * Load the message schemas. Soft-fails to an empty list.
+		 *
+		 * @return {Promise<void>} Resolves once loaded.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 */
+		async fetchMessageSchemas() {
+			this.messageSchemasLoading = true
+			try {
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/objects/integriq/message_schema',
+					),
+				)
+				this.messageSchemaOptions = (response.data?.results || []).map(
+					(schema) => ({
+						id: schema['@self']?.id || schema.id,
+						label:
+							schema.name
+							+ (schema.version ? ' (' + schema.version + ')' : ''),
+					}),
+				)
+			} catch (err) {
+				this.messageSchemaOptions = []
+				// eslint-disable-next-line no-console
+				console.warn('[EndpointFormFields] message schema fetch failed', err)
+			} finally {
+				this.messageSchemasLoading = false
+			}
+		},
+
 		async fetchConfigurations() {
 			this.configurationsLoading = true
 			try {
@@ -691,6 +847,15 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+}
+
+.cn-endpoint-form-fields__validation {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	padding: 8px 12px;
 }
 
 .cn-endpoint-form-fields__field {

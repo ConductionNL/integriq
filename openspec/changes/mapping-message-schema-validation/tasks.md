@@ -35,8 +35,13 @@ Kind: code. Matrix row `integriq:map-message-validation`.
   - GIVEN mode `refuse` WHEN a request fails THEN 400 problem+json and no dispatch
   - GIVEN mode `refuse` WHEN a proxied answer fails THEN 502
   - GIVEN mode `record` WHEN a request fails THEN it is dispatched and the call log carries the errors
-- [ ] Implement
+- [x] Implement
+  - The fragment merges `validation` onto `endpoint` (`mode` record or refuse, default record; `request` and `response`, each `messageSchema` + optional `operationId`) and a `validation` list onto `call_log`.
+  - `EndpointService::doHandleRequest()` checks the raw request body right after the conditions, before any rule or dispatch; `handleSourceRequest()` checks the proxied answer's body with its status. Both go through `EndpointMessageGate` (`lib/Service/MessageValidation/`), which reads the `message_schema` in system context and runs `MessageValidationService`. Refuse: 400 for the request, 502 for the answer, `application/problem+json` with the first twenty errors. Record: the message passes, the findings go to the server log and onto the proxied call's `call_log.validation`. An endpoint on a register schema has no call log, so record mode's findings go to the server log only. A declared validation is never skipped: without the gate, mode refuse answers 500.
+  - `src/modals/v2/EndpointFormFields.vue` has a message validation section: mode, request schema, answer schema (picked from the `message_schema` objects). The `operationId` is kept when the schema changes; it is not edited on the form yet.
 - [ ] Test (PHPUnit on EndpointService; Newman requests in `tests/postman/`)
+  - Done: `tests/Unit/Service/EndpointServiceMessageValidationTest.php` drives `handleRequest()` of a proxying endpoint with the real gate and the real checkers (refused 400 naming `/bsn` and not dispatched, record dispatched with the finding on the call log, answer refused 502, valid passes, no gate refuses 500, no validation unchanged); `MessageSchemaRegisterFragmentTest` checks the merged `endpoint` and `call_log` properties; `tests/vitest/endpointMessageValidation.spec.js` checks the form writes the block.
+  - Owed: the Newman requests in `tests/postman/` against a live instance.
 
 ### Task 4: Synchronization source and target validation
 - **spec_ref**: openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
