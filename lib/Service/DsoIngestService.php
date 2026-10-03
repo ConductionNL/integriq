@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\Dso\DsoClient;
@@ -52,6 +53,7 @@ use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -126,6 +128,7 @@ class DsoIngestService {
 	 * @param DsoClient $restProvider The generic REST outbound provider binding.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
+	 * @param IJobList $jobList Queues the bijlage download after intake.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -135,6 +138,7 @@ class DsoIngestService {
 		private readonly DsoClient $restProvider,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
+		private readonly IJobList $jobList,
 	) {
 
 	}//end __construct()
@@ -182,14 +186,16 @@ class DsoIngestService {
 				['exception' => $exception->getMessage()]
 			);
 
-			return $this->objectService->saveObject(
-				object: array_merge(
-					$request->getObject(),
-					['status' => 'failed', 'errorDetail' => $exception->getMessage()]
-				),
-				register: self::REGISTER,
-				schema: self::SCHEMA_VERZOEK,
-				uuid: $request->getUuid()
+			return $this->enqueueAttachmentFetch(
+				request: $this->objectService->saveObject(
+					object: array_merge(
+						$request->getObject(),
+						['status' => 'failed', 'errorDetail' => $exception->getMessage()]
+					),
+					register: self::REGISTER,
+					schema: self::SCHEMA_VERZOEK,
+					uuid: $request->getUuid()
+				)
 			);
 		}
 
@@ -201,14 +207,46 @@ class DsoIngestService {
 		$data['requester'] = $mapped['requester'];
 		$data['status'] = 'mapped';
 
-		return $this->objectService->saveObject(
-			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_VERZOEK,
-			uuid: $request->getUuid()
+		return $this->enqueueAttachmentFetch(
+			request: $this->objectService->saveObject(
+				object: $data,
+				register: self::REGISTER,
+				schema: self::SCHEMA_VERZOEK,
+				uuid: $request->getUuid()
+			)
 		);
 
 	}//end ingest()
+
+	/**
+	 * Queue one {@see FetchDsoAttachmentsJob} for a request that has bijlagen.
+	 *
+	 * Queued after the last intake save, so the job never races the intake
+	 * for the request object. The endpoint answers without waiting for it.
+	 * A failure to queue is logged and leaves every entry `pending`.
+	 *
+	 * @param ObjectEntity $request The saved request.
+	 *
+	 * @return ObjectEntity The same request.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 */
+	private function enqueueAttachmentFetch(ObjectEntity $request): ObjectEntity {
+		if (empty($request->getObject()['attachments'] ?? []) === true) {
+			return $request;
+		}
+
+		try {
+			$this->jobList->add(FetchDsoAttachmentsJob::class, ['requestUuid' => $request->getUuid()]);
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				'[DsoIngestService] could not queue the bijlage download for verzoek ' . $request->getUuid(),
+				['exception' => $exception->getMessage()]
+			);
+		}
+
+		return $request;
+	}//end enqueueAttachmentFetch()
 
 	/**
 	 * Turn the parser's bijlage references into `attachments` entries, each
