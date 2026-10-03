@@ -1,6 +1,7 @@
 ## 1. Data
 
-- [ ] 1.1 Add `attachments` (array of `name`, `url`, `status`, `fileId`, `attempts`, `error`) to `dso_verzoek` in `lib/Settings/integriq_register.json`, and verify a save of a request carrying it keeps every field (PHPUnit against the real schema fragment, not a mock)
+- [x] 1.1 Add `attachments` (array of `name`, `url`, `status`, `fileId`, `attempts`, `error`) to `dso_verzoek` in `lib/Settings/integriq_register.json`, and verify a save of a request carrying it keeps every field (PHPUnit against the real schema fragment, not a mock)
+  - Evidence: `tests/Unit/Settings/DsoVerzoekAttachmentsSchemaTest.php` validates through `RegisterSchemaValidator` (the merged register, opis/json-schema). Red on development (2 of 2 fail: field not declared), green after. Same property added to `integriq_mock_register.json`; `dso_verzoek` version 1.0.0 -> 1.1.0. Item schema is `additionalProperties: false`, so an undeclared field is refused, not silently dropped.
 - [ ] 1.2 Have `DSOParserService` return the bijlage references as `name` + `url`, and `DsoIngestService::ingest()` write them as `attachments` with status `pending`, and verify both in PHPUnit
 
 ## 2. Download
