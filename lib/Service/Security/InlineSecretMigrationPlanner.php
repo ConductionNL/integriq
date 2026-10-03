@@ -54,7 +54,7 @@ use Throwable;
 /**
  * Plans (never executes) the inline-secret → credentialRef migration.
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
  */
 class InlineSecretMigrationPlanner {
 
@@ -246,7 +246,7 @@ class InlineSecretMigrationPlanner {
 	 *
 	 * @return array<string, mixed> The raw source data (secrets intact), or [] when unreadable.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-raw-secret-read
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-raw-secret-read
 	 */
 	public function readRawSource(string $uuid, string $schema = self::SCHEMA): array {
 		try {
@@ -284,7 +284,7 @@ class InlineSecretMigrationPlanner {
 	 *
 	 * @return array{field: string, state: string, provider: string|null}
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	private function describeValue(string $field, mixed $value, string $schema = self::SCHEMA): array {
 		// Already a `{credentialRef: {...}}` placeholder → nothing to do. Matches
@@ -323,7 +323,7 @@ class InlineSecretMigrationPlanner {
 	 * @return array{uuid: string, name: string, fields: array<int, array{field: string,
 	 *     state: string, provider: string|null}>, wouldMigrate: int, needsReview: int}
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	public function planSource(string $uuid, string $name, array $rawData, string $schema = self::SCHEMA): array {
 		$fields = [];
@@ -513,7 +513,7 @@ class InlineSecretMigrationPlanner {
 	 *
 	 * @return array{sources: array<int, array<string, mixed>>, totalSources: int, wouldMigrate: int, needsReview: int, clean: bool}
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	public function planAll(int $limit = 1000): array {
 		$uuids = $this->listSourceUuids(limit: $limit);
@@ -566,7 +566,7 @@ class InlineSecretMigrationPlanner {
 	 *
 	 * @return array<string, string> uuid => name.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	public function listSourceUuids(int $limit): array {
 		return $this->listUuids(schema: self::SCHEMA, limit: $limit);

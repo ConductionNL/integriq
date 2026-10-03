@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
  * REQ-MSA-003 and REQ-MSA-004, against a mock-mode fixture rather than a live
  * Redmine, which cannot be staged on CI.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-named-incumbent-has-an-adapter-and-a-supported-path-is-rehearsable-req-msa-003
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-named-incumbent-has-an-adapter-and-a-supported-path-is-rehearsable-req-msa-003
  */
 class RedmineMigrationSourceTest extends TestCase {
 	/**

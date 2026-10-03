@@ -142,6 +142,43 @@ class ObjectEntity extends Entity {
 	}
 
 	/**
+	 * The register this object belongs to.
+	 *
+	 * Declared explicitly because the real OCA\OpenRegister\Db\ObjectEntity
+	 * declares it (`public function getRegister(): ?string`), so
+	 * method_exists($entity, 'getRegister') is TRUE in production. While this
+	 * stub served it through Entity __call, a method_exists() probe was false
+	 * here and true there, so a guard could pass its tests and reject every
+	 * real object (integriq#1222). OpenRegister stores the numeric register id.
+	 *
+	 * @return string|null
+	 */
+	public function getRegister(): ?string {
+		if ($this->register === null) {
+			return null;
+		}
+
+		return (string)$this->register;
+	}
+
+	/**
+	 * The schema this object conforms to.
+	 *
+	 * Declared explicitly for the same reason as getRegister(): the real class
+	 * declares `public function getSchema(): ?string`. OpenRegister stores the
+	 * numeric schema id.
+	 *
+	 * @return string|null
+	 */
+	public function getSchema(): ?string {
+		if ($this->schema === null) {
+			return null;
+		}
+
+		return (string)$this->schema;
+	}
+
+	/**
 	 * Set the uuid of this entity.
 	 *
 	 * @param string $uuid The UUID string.

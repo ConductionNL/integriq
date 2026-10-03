@@ -39,7 +39,7 @@ use PHPUnit\Framework\TestCase;
  * The HTTP surface openregister resolves through, and the resync an ordinary
  * account may not run.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007
  */
 class PropertySourceControllerTest extends TestCase {
 	/**
@@ -255,7 +255,7 @@ class PropertySourceControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
 	 */
 	public function testABrpSuggestionIsRefusedWithoutTheAction(): void {
 		$auth = $this->actionAuthDouble();
@@ -278,7 +278,7 @@ class PropertySourceControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
 	 */
 	public function testABrpResolveIsRefusedWithoutTheAction(): void {
 		$auth = $this->actionAuthDouble();
@@ -310,7 +310,7 @@ class PropertySourceControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
+	 * @spec openspec/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
 	 */
 	public function testAPublicRegistryIsNotGated(): void {
 		$auth = $this->actionAuthDouble();
@@ -338,7 +338,7 @@ class PropertySourceControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
 	 */
 	public function testAProviderNotDeclaredPublicIsGated(): void {
 		$auth = $this->actionAuthDouble();
@@ -360,7 +360,7 @@ class PropertySourceControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
 	 */
 	public function testAnAnonymousCallerIsRefusedAGatedProvider(): void {
 		$resolver = $this->resolverDouble();

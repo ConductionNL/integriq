@@ -171,6 +171,42 @@
 								"
 								@update:modelValue="onCursorComparatorChange" />
 						</template>
+
+						<NcSelect
+							inputId="cn-sync-editor-ownership-mode"
+							:inputLabel="t('integriq', 'Who owns these records')"
+							:modelValue="selectedOwnershipMode"
+							:options="ownershipModeOptions"
+							:clearable="false"
+							:disabled="saving"
+							data-testid="sync-editor-ownership-mode"
+							@update:modelValue="
+								(option) =>
+									updateSourceConfigField(
+										'ownershipMode',
+										option?.id || 'local',
+									)
+							" />
+						<NcSelect
+							inputId="cn-sync-editor-disappearance-policy"
+							:inputLabel="
+								t(
+									'integriq',
+									'When the source stops sending a record',
+								)
+							"
+							:modelValue="selectedDisappearancePolicy"
+							:options="disappearancePolicyOptions"
+							:clearable="false"
+							:disabled="saving"
+							data-testid="sync-editor-disappearance-policy"
+							@update:modelValue="
+								(option) =>
+									updateSourceConfigField(
+										'disappearancePolicy',
+										option?.id || 'delete',
+									)
+							" />
 					</div>
 				</section>
 
@@ -432,6 +468,11 @@ import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
 import { NEXTCLOUD_FORM_KIND } from '../../views/Synchronization/formsBridge.js'
 import {
+	disappearancePolicyError,
+	disappearancePolicyOptions,
+	ownershipModeOptions,
+} from '../../views/Synchronization/ownershipOptions.js'
+import {
 	CURSOR_COMPARATOR_OPTIONS,
 	emptyDraft,
 	fetchBridgeStatus,
@@ -673,6 +714,60 @@ export default {
 			)
 		},
 
+		/**
+		 * The ownership mode options (REQ-SOR-001).
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+		 */
+		ownershipModeOptions() {
+			return ownershipModeOptions()
+		},
+
+		/**
+		 * The declared ownership mode, `local` when none is declared.
+		 *
+		 * @return {{id: string, label: string}}
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+		 */
+		selectedOwnershipMode() {
+			const options = this.ownershipModeOptions
+			const current = this.draft?.sourceConfig?.ownershipMode
+			return options.find((opt) => opt.id === current) || options[0]
+		},
+
+		/**
+		 * The disappearance policy options (REQ-SOR-002).
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+		 */
+		disappearancePolicyOptions() {
+			return disappearancePolicyOptions()
+		},
+
+		/**
+		 * The declared disappearance policy. A value the engine does not know
+		 * is shown as itself rather than as the default, so an administrator
+		 * sees the typo instead of a policy that is not in force.
+		 *
+		 * @return {{id: string, label: string}}
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+		 */
+		selectedDisappearancePolicy() {
+			const options = this.disappearancePolicyOptions
+			const current = this.draft?.sourceConfig?.disappearancePolicy
+			if (current === undefined || current === null || current === '') {
+				return options[0]
+			}
+			return (
+				options.find((opt) => opt.id === current) || {
+					id: current,
+					label: String(current),
+				}
+			)
+		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		rootConditionGroup() {
 			return normaliseConditions(this.draft?.conditions)
@@ -876,6 +971,15 @@ export default {
 			this.saving = true
 			this.saveError = ''
 			try {
+				// REQ-SOR-002: an unknown policy is refused at save, not
+				// discovered at the first run that deletes nothing.
+				const policyError = await disappearancePolicyError(
+					this.draft.sourceConfig,
+				)
+				if (policyError) {
+					this.saveError = policyError
+					return
+				}
 				await this.confirm({
 					...(this.item || {}),
 					...this.draft,

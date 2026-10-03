@@ -29,7 +29,7 @@ use Throwable;
  * No new client: the PDOK connector already normalises the Locatieserver into
  * the canonical address shape, so this binding only adapts its calls.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
  */
 class BagPropertySource implements PropertySourceProviderInterface {
 	/**

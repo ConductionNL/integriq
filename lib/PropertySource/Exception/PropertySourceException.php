@@ -25,7 +25,7 @@ use RuntimeException;
 /**
  * Every property-source failure carries the provider id it happened under.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md
+ * @spec openspec/specs/registry-field-source/spec.md
  */
 class PropertySourceException extends RuntimeException {
 	/**

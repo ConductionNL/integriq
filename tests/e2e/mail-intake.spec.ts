@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * Spec coverage: openspec/specs/mail-intake/spec.md
  *
  * The scenario driven here is the import of a saved Outlook message. The
  * fixture at tests/e2e/fixtures/outlook-message.msg is a real compound file

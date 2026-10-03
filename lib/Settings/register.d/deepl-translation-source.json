@@ -1,0 +1,28 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-translation-service). Seeds the DORMANT `deepl-translation` source that OCA\\Integriq\\Service\\TranslationService tries first when a sibling app (decidiq minutes translation) asks integriq to translate a text. configuration.translationProvider 'deepl' selects the DeepL request shape (POST /translate with text, source_lang, target_lang). To go live: set configuration.authentication.credentialRef to a broker-held DeepL key whose header is `Authorization: DeepL-Auth-Key <key>`, switch location to https://api.deepl.com/v2 for a paid plan, and enable the source.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "deepl-translation"
+        },
+        "name": "DeepL translation",
+        "description": "Translates text for other apps, such as minutes in decidiq, through DeepL. Add a DeepL key through a credential reference and enable the source.",
+        "type": "api",
+        "location": "https://api-free.deepl.com/v2",
+        "auth": "none",
+        "configuration": {
+          "translationProvider": "deepl",
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

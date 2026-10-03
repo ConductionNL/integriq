@@ -182,7 +182,7 @@ class WebhookSignatureServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
 	 */
 	public function testTeamsSchemeAcceptsACorrectlySignedPost(): void {
 		$secret = base64_encode('teams-shared-secret-bytes-0123456789');
@@ -204,7 +204,7 @@ class WebhookSignatureServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
 	 */
 	public function testTeamsSchemeRefusesASignatureMadeUnderTheLiteralSecret(): void {
 		$secret = base64_encode('teams-shared-secret-bytes-0123456789');
@@ -225,7 +225,7 @@ class WebhookSignatureServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
 	 */
 	public function testTeamsSchemeRefusesTamperedBodyAndMissingHeader(): void {
 		$secret = base64_encode('teams-shared-secret-bytes-0123456789');
@@ -261,7 +261,7 @@ class WebhookSignatureServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+	 * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
 	 */
 	public function testTeamsSchemeIgnoresToleranceWithAWarning(): void {
 		$secret = base64_encode('teams-shared-secret-bytes-0123456789');

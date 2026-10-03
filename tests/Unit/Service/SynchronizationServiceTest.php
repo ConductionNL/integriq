@@ -83,7 +83,7 @@ class SynchronizationServiceTest extends TestCase {
 		$synchronizationLogService = $this->createMock(SynchronizationLogService::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
-		$approvalService = $this->createMock(\OCA\Integriq\Service\ApprovalService::class);
+		$approvalService = $this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class);
 		$this->tablesSyncAdapter = $this->createMock(TablesSyncAdapter::class);
 
 		$this->service = new SynchronizationService(
@@ -1401,6 +1401,62 @@ HTML;
 	}//end testGetAllObjectsFromSourceNextcloudTableMissingTableIdThrows()
 
 	/**
+	 * The engine deleting a target the source dropped passes the source-owned
+	 * delete guard, while the same delete made by anybody else is stopped
+	 * (records-owned-by-an-external-source REQ-SOR-005). The object service's
+	 * deleteObject() dispatches OpenRegister's real ObjectDeletingEvent to the
+	 * real listener, as OpenRegister does.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 */
+	public function testTheEnginesDeletePassesTheSourceOwnedGuard(): void {
+		$this->stubSynchronizationAndSource(
+			syncBody: ['uuid' => 'sync-uuid-brp', 'targetType' => 'register/schema', 'targetId' => 'personen/persoon'],
+			sourceBody: ['uuid' => 'source-uuid-brp', 'location' => 'https://brp.example.test']
+		);
+
+		$ownership = $this->getMockBuilder(\OCA\Integriq\Service\Ownership\RecordOwnershipService::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['forObject'])
+			->getMock();
+		$ownership->method('forObject')->willReturn(
+			new \OCA\Integriq\Service\Ownership\OwnershipState('source', 'source-uuid-brp', '999993653', null, true, false, null, 'sync-uuid-brp', 'BRP personen')
+		);
+		$listener = new \OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener(
+			$ownership,
+			new \OCA\Integriq\Service\Ownership\LocalDeleteGuard(),
+			new \Psr\Log\NullLogger()
+		);
+
+		$stopped = [];
+		$this->orObjectService->method('deleteObject')->willReturnCallback(
+			function (string $uuid) use ($listener, &$stopped): bool {
+				$entity = new \OCA\OpenRegister\Db\ObjectEntity();
+				$entity->setUuid($uuid);
+				$entity->setObject(['naam' => 'Jansen']);
+				$event = new \OCA\OpenRegister\Event\ObjectDeletingEvent($entity);
+				$listener->handle($event);
+				$stopped[] = $event->isPropagationStopped();
+
+				return $event->isPropagationStopped() === false;
+			}
+		);
+
+		$targetObject = [];
+		$this->service->updateTarget(
+			synchronizationContract: ['synchronizationId' => 'sync-uuid-brp', 'originId' => '999993653', 'targetId' => 'person-uuid-1'],
+			targetObject: $targetObject,
+			action: 'delete'
+		);
+		$this->orObjectService->deleteObject('person-uuid-1');
+
+		$this->assertSame([false, true], $stopped, 'the engine delete passes; the same delete from elsewhere is stopped');
+
+	}//end testTheEnginesDeletePassesTheSourceOwnedGuard()
+
+	/**
 	 * `updateTarget()` for `targetType: nextcloud-table` with no existing
 	 * contract `targetId` creates a row and records the returned row id as
 	 * the contract's `targetId` (tables-bridge REQ-001).
@@ -1608,7 +1664,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
 	 */
 	public function testFetchFileStreamsRawBinaryDownloadIntoASinkResource(): void {
 		$bytes = 'binary-file-bytes-that-are-not-a-json-envelope';
@@ -1677,7 +1733,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-base64-in-json-content-shall-continue-on-the-existing-string-path
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-base64-in-json-content-shall-continue-on-the-existing-string-path
 	 */
 	public function testFetchFileKeepsBase64InJsonResponsesOffTheStreamingPath(): void {
 		$sinkWasResource = false;
@@ -1931,7 +1987,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testMultipleFilesForOneObjectAreFetchedConcurrently(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -1957,7 +2013,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testEveryConcurrentSinkIsAPathAndEveryTempFileIsRemoved(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -1986,7 +2042,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testInFlightFetchesNeverExceedTheConfiguredCap(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2008,7 +2064,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testConcurrencyIsClampedToTheHardMaximum(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2033,7 +2089,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testAFileLargerThanTheCeilingIsRefusedBeforeDownload(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2054,7 +2110,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testAFileWithinTheCeilingIsUnaffected(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2074,7 +2130,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	public function testThePerFileCeilingIsDisabledByDefault(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2099,7 +2155,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 */
 	public function testResolvedFetchIsSavedBeforeTheLastSiblingIsDispatched(): void {
 		$this->arrangeAsyncFetchTransport();
@@ -2138,7 +2194,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 */
 	public function testSavesAreNeverRunConcurrently(): void {
 		$saveDepth = 0;
@@ -2168,7 +2224,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function testOneFailedFetchDoesNotStopTheOthers(): void {
 		$this->arrangeAsyncFetchTransport(rejectIndexes: [1]);
@@ -2195,7 +2251,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function testOneFailedSaveDoesNotStopTheOthers(): void {
 		$attempts = 0;
@@ -2227,7 +2283,7 @@ HTML;
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	public function testCallSourceObjectStillReturnsAnObjectEntitySynchronously(): void {
 		$callLog = new \OCA\OpenRegister\Db\ObjectEntity();

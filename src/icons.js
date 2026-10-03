@@ -19,6 +19,7 @@ import AccountKeyOutline from 'vue-material-design-icons/AccountKeyOutline.vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import AccountNetworkOutline from 'vue-material-design-icons/AccountNetworkOutline.vue'
 import AccountVoice from 'vue-material-design-icons/AccountVoice.vue'
+import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import Bank from 'vue-material-design-icons/Bank.vue'
@@ -45,7 +46,9 @@ import Cog from 'vue-material-design-icons/Cog.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CreditCardOutline from 'vue-material-design-icons/CreditCardOutline.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
+import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Earth from 'vue-material-design-icons/Earth.vue'
 import Email from 'vue-material-design-icons/Email.vue'
@@ -54,6 +57,7 @@ import EmailFast from 'vue-material-design-icons/EmailFast.vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileCheckOutline from 'vue-material-design-icons/FileCheckOutline.vue'
 import FileCogOutline from 'vue-material-design-icons/FileCogOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -101,6 +105,7 @@ import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import SyncCircle from 'vue-material-design-icons/SyncCircle.vue'
+import TableArrowRight from 'vue-material-design-icons/TableArrowRight.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Timeline from 'vue-material-design-icons/Timeline.vue'
 import TransitConnectionVariant from 'vue-material-design-icons/TransitConnectionVariant.vue'
@@ -121,6 +126,7 @@ export default {
 	AccountMultipleOutline,
 	AccountNetworkOutline,
 	AccountVoice,
+	AlertOutline,
 	Api,
 	ApplicationOutline,
 	Bank,
@@ -147,7 +153,9 @@ export default {
 	CogOutline,
 	CreditCardOutline,
 	DatabaseArrowLeftOutline,
+	DatabaseImportOutline,
 	DatabaseOutline,
+	DatabaseSearchOutline,
 	Download,
 	Earth,
 	Email,
@@ -156,6 +164,7 @@ export default {
 	EmailOffOutline,
 	EmailOutline,
 	EyeOutline,
+	FileCheckOutline,
 	FileCogOutline,
 	FileDocumentMultipleOutline,
 	FileDocumentOutline,
@@ -203,6 +212,7 @@ export default {
 	SwapHorizontal,
 	Sync,
 	SyncCircle,
+	TableArrowRight,
 	TextBoxOutline,
 	Timeline,
 	TransitConnectionVariant,

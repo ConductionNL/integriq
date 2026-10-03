@@ -170,7 +170,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 600, period: 60)]
 	public function objects(): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type);
 		if ($refusal !== null) {
@@ -178,7 +178,11 @@ class ObjectenApiController extends Controller {
 		}
 
 		return $this->answer(answer:
-			$this->objects->index(query: $this->queryParameters(), baseUrl: $this->baseUrl())
+			$this->objects->index(
+				query: $this->queryParameters(),
+				baseUrl: $this->baseUrl(),
+				principal: $this->principalFor(objecttype: $type, writing: false)
+			)
 		);
 	}//end objects()
 
@@ -204,14 +208,21 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 600, period: 60)]
 	public function object(string $uuid): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		return $this->answer(answer: $this->objects->show(type: $type, uuid: $uuid, baseUrl: $this->baseUrl()));
+		return $this->answer(answer:
+			$this->objects->show(
+				type: $type,
+				uuid: $uuid,
+				baseUrl: $this->baseUrl(),
+				principal: $this->principalFor(objecttype: $type, writing: false)
+			)
+		);
 	}//end object()
 
 	/**
@@ -228,7 +239,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 600, period: 60)]
 	public function search(): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type);
 		if ($refusal !== null) {
@@ -239,7 +250,8 @@ class ObjectenApiController extends Controller {
 			$this->objects->search(
 				type: $type,
 				body: ['geometry' => (array)$this->request->getParam('geometry', [])],
-				baseUrl: $this->baseUrl()
+				baseUrl: $this->baseUrl(),
+				principal: $this->principalFor(objecttype: $type, writing: false)
 			)
 		);
 	}//end search()
@@ -258,7 +270,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function createObject(): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type, writing: true);
 		if ($refusal !== null) {
@@ -291,7 +303,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function replaceObject(string $uuid): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type, writing: true);
 		if ($refusal !== null) {
@@ -330,14 +342,14 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function updateObject(string $uuid): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type, writing: true);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		$current = $this->objects->show(type: $type, uuid: $uuid);
+		$current = $this->objects->show(type: $type, uuid: $uuid, principal: $this->principalFor(objecttype: $type));
 		if ($current['status'] !== 200) {
 			return $this->answer(answer: $current);
 		}
@@ -378,7 +390,7 @@ class ObjectenApiController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function deleteObject(string $uuid): JSONResponse {
-		$type = (string)$this->request->getParam('type', '');
+		$type = $this->typeParam();
 
 		$refusal = $this->refuse(objecttype: $type, writing: true);
 		if ($refusal !== null) {
@@ -387,7 +399,7 @@ class ObjectenApiController extends Controller {
 
 		$principal = $this->principalFor(objecttype: $type);
 
-		$current = $this->objects->show(type: $type, uuid: $uuid);
+		$current = $this->objects->show(type: $type, uuid: $uuid, principal: $principal);
 		if ($current['status'] !== 200) {
 			return $this->answer(answer: $current);
 		}
@@ -400,15 +412,19 @@ class ObjectenApiController extends Controller {
 	/**
 	 * The principal this token's writes are attributed to.
 	 *
+	 * A read runs as the principal too (design D3), so OpenRegister's RBAC and
+	 * multitenancy still decide what the token's holder sees.
+	 *
 	 * @param string $objecttype The objecttype, so the verdict is the same one.
+	 * @param bool   $writing    Whether the request writes.
 	 *
 	 * @return string The principal.
 	 */
-	private function principalFor(string $objecttype): string {
+	private function principalFor(string $objecttype, bool $writing = true): string {
 		$verdict = $this->tokens->verdictFor(
 			authorization: $this->request->getHeader('Authorization'),
 			objecttype: $objecttype,
-			writing: true
+			writing: $writing
 		);
 
 		return (string)$verdict['principal'];
@@ -490,8 +506,25 @@ class ObjectenApiController extends Controller {
 			}
 		}
 
+		if (array_key_exists('type', $parameters) === true) {
+			$parameters['type'] = $this->typeParam();
+		}
+
 		return $parameters;
 	}//end queryParameters()
+
+	/**
+	 * The objecttype uuid the request names, from a bare uuid or the standard's objecttype URL.
+	 *
+	 * Resolved once, here, so the token check, the permission lookup and the
+	 * register read all see the same uuid: a URL that reached only one of them
+	 * would be refused by the token check for a type the token does name.
+	 *
+	 * @return string The uuid.
+	 */
+	private function typeParam(): string {
+		return $this->tokens->objecttypeFrom(reference: (string)$this->request->getParam('type', ''));
+	}//end typeParam()
 
 	/**
 	 * The base a returned `url` is built from.

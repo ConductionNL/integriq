@@ -155,7 +155,7 @@ class LtiNrpsServiceTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturnCallback(fn () => new ArrayCache());
 
-		$keyService = new LtiKeyService($this->createMock(ObjectService::class), new NullLogger());
+		$keyService = new LtiKeyService($this->createMock(ObjectService::class), new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$launchService = new LtiLaunchService($resolver, $this->makeAuthorizationService(), $jwksResolver, $keyService, $cacheFactory, new NullLogger());
 
 		$agsService = new LtiAgsService(

@@ -27,6 +27,12 @@
  * placeholder embedded in surrounding text (`"/issues/{{issue.number}}/labels"`)
  * is string interpolation, and arrays interpolate as compact JSON.
  *
+ * THE WHOLE ITEM: `{{ @item }}` resolves to the item's entire record, so a body
+ * of `{"case": "{{ @item }}"}` sends the item itself under a key. It is the only
+ * reserved path, and it wins over an item field literally named `@item`. A
+ * sibling app handing a call to this node (dossiq's retired webhook steps,
+ * which posted the whole case) has no other way to say "the item".
+ *
  * @category Flow
  * @package  OCA\Integriq\Flow
  *
@@ -68,6 +74,13 @@ final class FlowTemplate {
 	 * @var string
 	 */
 	private const WHOLE_PLACEHOLDER = '/^\{\{\s*([A-Za-z0-9_@.\-]+)\s*\}\}$/';
+
+	/**
+	 * The reserved path that resolves to the whole item record.
+	 *
+	 * @var string
+	 */
+	public const WHOLE_ITEM = '@item';
 
 	/**
 	 * Whether a string carries at least one placeholder.
@@ -170,11 +183,16 @@ final class FlowTemplate {
 	 * @param string $path The dotted path.
 	 * @param array $json The current item's record.
 	 *
-	 * @return mixed The resolved value, or null when the path is absent.
+	 * @return mixed The resolved value, the whole record for `@item`, or null when the path is absent.
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/source-requested-event/spec.md
 	 */
 	public static function lookup(string $path, array $json): mixed {
+		if ($path === self::WHOLE_ITEM) {
+			return $json;
+		}
+
 		$value = $json;
 		foreach (explode('.', $path) as $segment) {
 			if (is_array($value) === false || array_key_exists($segment, $value) === false) {

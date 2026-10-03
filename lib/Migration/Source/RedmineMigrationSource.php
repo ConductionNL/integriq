@@ -35,7 +35,7 @@ use OCA\Integriq\PropertySource\RegistrySourceGateway;
  * A second incumbent is a class beside this one and a line in the registry.
  * Nothing in the engine and nothing in a consuming app changes.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-named-incumbent-has-an-adapter-and-a-supported-path-is-rehearsable-req-msa-003
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-named-incumbent-has-an-adapter-and-a-supported-path-is-rehearsable-req-msa-003
  */
 class RedmineMigrationSource implements MigrationSourceAdapterInterface {
 	/**

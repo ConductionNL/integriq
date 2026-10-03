@@ -21,7 +21,7 @@
  * @link https://www.integriq.nl
  * @link https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\Integriq\Exception\MessageParseException;
 /**
  * Reads streams and storages out of a compound file.
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
+ * @spec openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
  */
 final class CompoundFileReader {
 
@@ -183,7 +183,7 @@ final class CompoundFileReader {
 	 *
 	 * @return array<int,int> The children's directory ids.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function getChildren(int $entryId): array {
 		$entry = ($this->entries[$entryId] ?? null);
@@ -206,7 +206,7 @@ final class CompoundFileReader {
 	 *
 	 * @throws MessageParseException When the directory id is unknown.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function readStream(int $entryId): string {
 		$entry = ($this->entries[$entryId] ?? null);

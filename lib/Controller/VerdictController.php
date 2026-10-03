@@ -24,7 +24,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * @spec openspec/specs/outbound-call-log/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md#requirement-an-external-verdict-is-recorded-against-the-record-it-judges-req-ocd-006
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-external-verdict-is-recorded-against-the-record-it-judges-req-ocd-006
  */
 class VerdictController extends Controller {
 
@@ -94,7 +94,7 @@ class VerdictController extends Controller {
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+	 * @spec openspec/specs/outbound-call-log/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -165,7 +165,7 @@ class VerdictController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+	 * @spec openspec/specs/outbound-call-log/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -191,7 +191,7 @@ class VerdictController extends Controller {
 	 *
 	 * @return string The raw request body.
 	 *
-	 * @spec openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+	 * @spec openspec/specs/outbound-call-log/spec.md
 	 */
 	protected function getRawContent(): string {
 		$content = file_get_contents(filename: 'php://input');

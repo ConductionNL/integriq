@@ -49,16 +49,24 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * @var array<int,string>
 	 */
 	private const CLOSED = [
+		'agent_action',
 		'app_connection',
+		'column_mapping',
+		'connection_alert',
 		'consumer',
 		'digitalPostMessage',
+		'event',
 		'intake_message',
 		'intake_routing_rule',
 		'lti_platform',
 		'lti_tool',
 		'mail_message',
 		'mapping_version',
+		'message_schema',
+		'objecten_token',
+		'objecttype',
 		'outbound_message',
+		'payment_intent',
 		'recipient_key',
 		'recipient_opt_out',
 		'rule',
@@ -79,9 +87,9 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * one assertion short of guarding what the PR documents (integriq#2104 review
 	 * 5266971176).
 	 *
-	 * The six closed schemas NOT listed here — app_connection, consumer,
-	 * lti_platform, lti_tool, rule, source — grant deliberately and are covered
-	 * by `CLOSED` only.
+	 * The seven closed schemas NOT listed here — app_connection, consumer,
+	 * event, lti_platform, lti_tool, rule, source — grant deliberately and are
+	 * covered by `CLOSED` only.
 	 *
 	 * @var array<int,string>
 	 */
@@ -92,6 +100,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'mail_message',
 		'mapping_version',
 		'outbound_message',
+		'payment_intent',
 		'recipient_key',
 		'recipient_opt_out',
 		'sender_identity',
@@ -127,7 +136,6 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'eudi_credential_offer',
 		'eudi_issuance_session',
 		'eudi_status_list',
-		'event',
 		'event_message',
 		'event_subscription',
 		'execution_trace',
@@ -146,10 +154,11 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'notificaties_abonnement',
 		'openformulieren_form_mapping',
 		'openformulieren_submission',
-		'payment_intent',
+		'oso_message',
 		'peppol_transmission',
 		'promotion_audit',
 		'ris_sync_record',
+		'rod_message',
 		'sms_message',
 		'stuf_message',
 		'sync_item_dead_letter',
@@ -158,6 +167,8 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'synchronization_contract_log',
 		'synchronization_log',
 		'synchronization_run',
+		'uwlr_eduv_message',
+		'verzuim_message',
 		'zgw_version_translation_log',
 	];
 
@@ -244,7 +255,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testNoSchemaLosesItsAuthorizationBlock(): void {
 		$closed = $this->split()['closed'];
@@ -265,7 +276,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testNoNewSchemaShipsWorldReadable(): void {
 		$open = $this->split()['open'];
@@ -290,7 +301,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testTheAcknowledgedOpenListIsNotStale(): void {
 		$open = $this->split()['open'];
@@ -314,7 +325,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testTheLockedDownSchemasStillDenyToEveryone(): void {
 		$schemas = $this->schemas();
@@ -341,4 +352,29 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		);
 
 	}//end testTheLockedDownSchemasStillDenyToEveryone()
+
+	/**
+	 * Only administrators may create an `event` through the object API.
+	 *
+	 * A created `nl.conduction.peppol.outbound.requested` event makes integriq
+	 * read the file its `payloadFileUri` names and send it to an access point,
+	 * so whoever may create an event may make integriq send any user's file
+	 * (integriq#2224). `create` is an empty list, which grants nobody but the
+	 * `admin` group (the owner bypass does not apply to a create). Reading,
+	 * updating and deleting stay open to signed-in accounts, as they were.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-access-point-receives-the-ubl-document-itself-req-008
+	 */
+	public function testOnlyAdministratorsMayCreateAnEvent(): void {
+		$block = (array)($this->schemas()['event']['authorization'] ?? []);
+
+		$this->assertArrayHasKey('create', $block, 'The event schema must declare who may create an event.');
+		$this->assertSame([], $block['create'], 'Only administrators may create an event through the object API.');
+		foreach (['read', 'update', 'delete'] as $action) {
+			$this->assertSame(['authenticated'], ($block[$action] ?? null), "`event.$action` must stay open to signed-in accounts.");
+		}
+
+	}//end testOnlyAdministratorsMayCreateAnEvent()
 }//end class

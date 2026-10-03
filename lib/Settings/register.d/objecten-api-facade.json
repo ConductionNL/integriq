@@ -1,0 +1,116 @@
+{
+  "$comment": "ADR-037 register fragment (objecten-api-facade). Declares the two configuration schemas the Objecten and Objecttypen APIs read: objecttype (which register and schema a published VNG objecttype uuid stands for, design D1) and objecten_token (a token by credential reference, the principal its requests run as, and a permission per objecttype, design D3 and D6). Both are admin-only: a declaration decides what a counterparty may read and write. OpenRegisterObjectenGateway reads them in the system context.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "objecttype",
+          "objecten_token"
+        ]
+      }
+    },
+    "schemas": {
+      "objecttype": {
+        "slug": "objecttype",
+        "title": "Published objecttype",
+        "icon": "DatabaseOutline",
+        "version": "1.0.0",
+        "summary": "Which register and schema a published objecttype stands for",
+        "description": "Publishes one schema on the Objecttypen and Objecten APIs under a fixed uuid. The mapping is declared, never inferred from a name, and the uuid stays the same when a register is rebuilt.",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "required": [
+          "publishedUuid",
+          "name",
+          "register",
+          "schema"
+        ],
+        "type": "object",
+        "properties": {
+          "publishedUuid": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Published uuid",
+            "description": "The uuid counterparties use for this objecttype. Keep it when the register is rebuilt."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The objecttype's name on the Objecttypen API."
+          },
+          "register": {
+            "type": "string",
+            "title": "Register",
+            "description": "The slug of the register the objects live in."
+          },
+          "schema": {
+            "type": "string",
+            "title": "Schema",
+            "description": "The slug of the schema the objects follow."
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed versions",
+            "description": "The schema versions this objecttype answers for. Leave it empty to answer for every version."
+          }
+        }
+      },
+      "objecten_token": {
+        "slug": "objecten_token",
+        "title": "Objecten API token",
+        "icon": "KeyOutline",
+        "version": "1.0.0",
+        "summary": "A counterparty's token for the Objecten API, with a permission per objecttype",
+        "description": "The key is kept in the credential store and named here by reference. Every request with this token runs as its principal, so the register's own access rules still apply.",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "required": [
+          "name",
+          "credential",
+          "principal"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Who the token belongs to."
+          },
+          "credential": {
+            "type": "string",
+            "title": "Credential reference",
+            "description": "The id of the credential that holds the key. The key itself is never stored here."
+          },
+          "principal": {
+            "type": "string",
+            "title": "Principal",
+            "description": "The user every read and write with this token runs as."
+          },
+          "permissions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "read",
+                "read_write"
+              ]
+            },
+            "title": "Permissions",
+            "description": "Per published objecttype uuid: read, or read_write."
+          }
+        }
+      }
+    }
+  }
+}

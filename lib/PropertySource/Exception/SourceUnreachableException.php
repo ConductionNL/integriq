@@ -23,7 +23,7 @@ namespace OCA\Integriq\PropertySource\Exception;
 /**
  * The source was configured and tried, and it did not answer.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005
  */
 class SourceUnreachableException extends PropertySourceException {
 }//end class

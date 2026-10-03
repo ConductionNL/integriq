@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ namespace OCA\Integriq\Service\DocumentGeneration;
  *   sentence nobody said, and it invites a retry that can produce a second
  *   beschikking. This is reported as what it is.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md
  */
 final class RenderOutcome {
 
@@ -77,7 +77,7 @@ final class RenderOutcome {
 	 *
 	 * @return self
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public static function queued(string $providerJobId, string $detail = ''): self {
 		return new self(status: 'queued', providerJobId: $providerJobId, detail: $detail);
@@ -93,7 +93,7 @@ final class RenderOutcome {
 	 *
 	 * @return self
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public static function rendered(string $providerJobId, string $fileReference, string $detail = ''): self {
 		return new self(
@@ -113,7 +113,7 @@ final class RenderOutcome {
 	 *
 	 * @return self
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public static function failed(string $detail, string $providerJobId = ''): self {
 		return new self(status: 'failed', providerJobId: $providerJobId, detail: $detail);
@@ -128,7 +128,7 @@ final class RenderOutcome {
 	 *
 	 * @return self
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public static function unreachable(string $detail, string $providerJobId = ''): self {
 		return new self(status: 'unreachable', providerJobId: $providerJobId, detail: $detail);
@@ -144,7 +144,7 @@ final class RenderOutcome {
 	 *
 	 * @return boolean True for `rendered` and `failed`.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function isTerminal(): bool {
 		return in_array($this->status, ['rendered', 'failed'], true);
@@ -156,7 +156,7 @@ final class RenderOutcome {
 	 *
 	 * @return array{status: string, providerJobId: string, fileReference: string, detail: string}
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md
 	 */
 	public function toArray(): array {
 		return [

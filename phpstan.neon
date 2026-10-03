@@ -10,6 +10,12 @@ includes:
     - phpstan-baseline.neon
 
 parameters:
+    # hermiq-ai-tooling: OpenRegister's MCP attribute and opt-in interface are
+    # peer-app types. scanFiles makes them known from the real files copied from
+    # openregister development 8e001f4ec1, without analysing them.
+    scanFiles:
+        - tests/stubs/OCA/OpenRegister/Mcp/Attribute/McpTool.php
+        - tests/stubs/OCA/OpenRegister/Mcp/IMcpScannableServices.php
     # App-specific only. The base already sets level, paths, bootstrapFiles,
     # excludePaths, scanDirectories and every fleet-wide ignore.
     excludePaths:
@@ -89,6 +95,13 @@ parameters:
         # "extends unknown class" is a *general* error PHPStan refuses to baseline —
         # same limitation, same remedy, as SynchronizationContractProvider above.
         - lib/BackgroundJob/DeferredViewCascadeJob.php
+        # ConnectionAlertRecipientResolver implements
+        # OCA\OpenRegister\Service\Notification\RecipientResolverInterface, the
+        # contract OpenRegister's notification engine resolves `expression`
+        # recipients through, which exists only at runtime. "implements unknown
+        # interface" is a general error no baseline absorbs; same remedy as
+        # IntegriqMetricsProvider above.
+        - lib/Notification/ConnectionAlertRecipientResolver.php
 
     ignoreErrors:
         # flow-workflowengine-integration: NC's concrete IRequest implementation

@@ -1,0 +1,30 @@
+{
+  "$comment": "Representative UWLR-shaped result batch. Field names are drawn from the Boom Testcentrum manual (versie februari 2020, local PDF text extraction, p33 UWLR ParnasSys / p45 EdeXML import) plus the shared 'UWLR'/'resultatenkoppeling' vocabulary the ParnasSys- and Esis-side koppeling pages use for IEP and Dia (market-intelligence lvs-report/round1/sources.md). This is NOT a payload captured from a live supplier feed -- no supplier in learniq round 1 published an open UWLR XSD and no live credentials exist for this round.",
+  "supplierId": "lvs-boom",
+  "results": [
+    {
+      "leerlingReference": "leerling-mock-0001",
+      "toetscode": "BL-M6",
+      "referentieniveau": "1F",
+      "vaardigheidsscore": 78,
+      "afnamedatum": "2026-06-15",
+      "groep": "6"
+    },
+    {
+      "leerlingReference": "leerling-mock-0002",
+      "toetscode": "BL-M6",
+      "referentieniveau": "1S",
+      "vaardigheidsscore": 92,
+      "afnamedatum": "2026-06-15",
+      "groep": "6"
+    },
+    {
+      "leerlingReference": "leerling-mock-0003",
+      "toetscode": "RK-E5",
+      "referentieniveau": "1F",
+      "vaardigheidsscore": 65,
+      "afnamedatum": "2026-01-20",
+      "groep": "5"
+    }
+  ]
+}

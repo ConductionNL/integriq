@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\IL10N;
  *   `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DesktopVirtualization
  *     /hostPools/{hostPool}/sessionHosts/{sessionHost}/userSessions?api-version=2023-09-05`
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
  */
 class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 
@@ -76,7 +76,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	public function getId(): string {
 		return 'azure-virtual-desktop';
@@ -87,7 +87,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	public function getLabel(): string {
 		return $this->l10n->t('Azure Virtual Desktop');
@@ -98,7 +98,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	public function getIcon(): string {
 		return 'Monitor';
@@ -109,7 +109,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	public function getRequiredApp(): ?string {
 		return null;
@@ -120,7 +120,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	public function getCapabilities(): array {
 		return ['session-enumeration', 'user-mapping', 'audit-event-ingestion'];
@@ -138,7 +138,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 * @return array<int,array<string,mixed>> Normalised session summaries; empty when
 	 *                                        unconfigured or the upstream call fails.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	public function listSessions(
 		string $subscriptionId,
@@ -190,7 +190,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array{userPrincipalName: ?string, displayName: ?string} Normalised mapping.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	public function mapSessionToUser(array $session): array {
 		$upn = ($session['userPrincipalName'] ?? null);
@@ -219,7 +219,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<string,mixed> Normalised audit-event row.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 */
 	public function ingestAuditEvent(array $event): array {
 		return [
@@ -248,7 +248,7 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
 	 *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.

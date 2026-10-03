@@ -24,7 +24,7 @@ namespace OCA\Integriq\Service\Registry;
  * A subscribe either takes or fails, and a failure carries the source's own
  * words. There is no silent third state.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
 final class SubscriptionResult {
 	/**

@@ -94,7 +94,7 @@
         "conduction/coding-standard": "^1.0",
         "conduction/hydra-gates": "^1.18.0",
         "cyclonedx/cyclonedx-php-composer": "^6.2",
-        "nextcloud/ocp": "^34.0",
+        "nextcloud/ocp": "^35.0",
         "phpcsstandards/phpcsextra": "^1.5",
         "phpmd/phpmd": "^2.15",
         "phpmetrics/phpmetrics": "^2.8",

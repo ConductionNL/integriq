@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:o="urn:example:other">
+  <xs:import namespace="urn:example:other" schemaLocation="https://example.org/other.xsd"/>
+  <xs:element name="bericht" type="o:Inhoud"/>
+</xs:schema>

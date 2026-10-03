@@ -28,6 +28,7 @@ use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SourceCallNode;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\ResponseDecoder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
@@ -129,7 +130,8 @@ class SourceCallNodeTest extends TestCase {
 			),
 			l10n: $l10n,
 			urlGenerator: $urlGenerator,
-			logger: $this->logger
+			logger: $this->logger,
+			decoder: new ResponseDecoder()
 		);
 
 	}//end setUp()
@@ -158,7 +160,21 @@ class SourceCallNodeTest extends TestCase {
 	 */
 	public function testConfigKeysNameTheVocabularyTheNodeReads(): void {
 		$this->assertSame(
-			['source', 'endpoint', 'method', 'query', 'headers', 'body', 'output', 'concurrency'],
+			[
+				'source',
+				'endpoint',
+				'method',
+				'query',
+				'headers',
+				'body',
+				'bodyFrom',
+				'output',
+				'concurrency',
+				'decode',
+				'onError',
+				'acceptStatuses',
+				'responseMapping',
+			],
 			$this->node->configKeys()
 		);
 
@@ -461,6 +477,40 @@ class SourceCallNodeTest extends TestCase {
 		$this->assertSame(['labels' => ['needs-triage']], $captured[3]['json']);
 
 	}//end testTemplatedValuesAreResolvedFromTheItem()
+
+	/**
+	 * A body naming `{{ @item }}` posts the whole item, which is what a retired webhook step sent.
+	 *
+	 * @return void
+	 */
+	public function testWholeItemBodyPostsTheItemItself(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$captured = [];
+		$this->callService->method('callAsync')->willReturnCallback(
+			function (...$arguments) use (&$captured) {
+				$captured = $arguments;
+				return $this->promisedLog(statusCode: 204, body: '');
+			}
+		);
+
+		$case = ['id' => 'c-7', 'title' => 'Kapvergunning', 'status' => 'open'];
+		$this->node->execute(
+			[['json' => $case]],
+			[
+				'source' => 'url-https-hooks-example-org',
+				'endpoint' => '/case-events',
+				'method' => 'POST',
+				'body' => ['case' => '{{ @item }}', 'transition' => ['to' => 'closed']],
+			],
+			$this->context()
+		);
+
+		$this->assertSame('/case-events', $captured[1]);
+		$this->assertSame(['case' => $case, 'transition' => ['to' => 'closed']], $captured[3]['json']);
+
+	}//end testWholeItemBodyPostsTheItemItself()
 
 	/**
 	 * The response lands under the author-named key and cannot spoof provenance.
@@ -1005,6 +1055,194 @@ class SourceCallNodeTest extends TestCase {
 	}//end testAnOutOfBoundsEndpointOnALaterItemPreventsEveryCall()
 
 	/**
+	 * A raw publiccode.yml, served as text/plain, becomes an object with `decode: yaml`.
+	 *
+	 * @return void
+	 */
+	public function testDecodeYamlReadsARawPubliccodeFile(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$this->callService->method('callAsync')->willReturn(
+			$this->promisedLog(
+				statusCode: 200,
+				body: $this->fixture(name: 'publiccode-v0.4-conductionnl-opencatalogi.yml'),
+				contentType: 'text/plain; charset=utf-8'
+			)
+		);
+
+		$out = $this->node->execute([['json' => []]], array_merge($this->config(), ['decode' => 'yaml']), $this->context());
+
+		$body = $out[0]['json']['echo']['body'];
+		$this->assertIsArray($body);
+		$this->assertSame('0.4', $body['publiccodeYmlVersion']);
+		$this->assertSame('OpenCatalogi', $body['name']);
+		$this->assertSame('https://github.com/ConductionNL/opencatalogi', $body['url']);
+
+	}//end testDecodeYamlReadsARawPubliccodeFile()
+
+	/**
+	 * A contents API answer becomes the file it carries, not its envelope.
+	 *
+	 * @return void
+	 */
+	public function testDecodeBase64YamlReadsAContentsApiAnswer(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$this->callService->method('callAsync')->willReturn(
+			$this->promisedLog(statusCode: 200, body: $this->fixture(name: 'github-contents-v0.4-opencatalogi.json'))
+		);
+
+		$out = $this->node->execute([['json' => []]], array_merge($this->config(), ['decode' => 'base64+yaml']), $this->context());
+
+		$body = $out[0]['json']['echo']['body'];
+		$this->assertSame('OpenCatalogi', $body['name']);
+		$this->assertArrayNotHasKey('sha', $body, 'The envelope must not leak into the decoded file.');
+
+	}//end testDecodeBase64YamlReadsAContentsApiAnswer()
+
+	/**
+	 * Without `decode`, a YAML file served as text/plain stays a string, as before.
+	 *
+	 * @return void
+	 */
+	public function testAutoDoesNotSniffYamlInPlainText(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$yaml = $this->fixture(name: 'publiccode-v0.2-amsterdam-signals-frontend.yml');
+		$this->callService->method('callAsync')->willReturn(
+			$this->promisedLog(statusCode: 200, body: $yaml, contentType: 'text/plain; charset=utf-8')
+		);
+
+		$out = $this->node->execute([['json' => []]], $this->config(), $this->context());
+
+		$this->assertSame($yaml, $out[0]['json']['echo']['body']);
+
+	}//end testAutoDoesNotSniffYamlInPlainText()
+
+	/**
+	 * One malformed file among good ones fails only its own item, with kind `decode`.
+	 *
+	 * @return void
+	 */
+	public function testMalformedFileFailsOnlyItsItem(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$responses = [
+			$this->promisedLog(200, $this->fixture(name: 'publiccode-v0.2-amsterdam-signals-frontend.yml'), 'OK', 'text/plain'),
+			$this->promisedLog(200, $this->fixture(name: 'publiccode-malformed.yml'), 'OK', 'text/plain'),
+			$this->promisedLog(200, $this->fixture(name: 'publiccode-v0.4-conductionnl-opencatalogi.yml'), 'OK', 'text/plain'),
+		];
+		$this->callService->method('callAsync')->willReturnCallback(
+			static function () use (&$responses) {
+				return array_shift($responses);
+			}
+		);
+
+		$out = $this->node->execute(
+			[['json' => ['n' => 1]], ['json' => ['n' => 2]], ['json' => ['n' => 3]]],
+			array_merge($this->config(), ['decode' => 'yaml', 'onError' => 'continue']),
+			$this->context()
+		);
+
+		$this->assertCount(3, $out);
+		$this->assertSame('0.2', $out[0]['json']['echo']['body']['publiccodeYmlVersion']);
+		$this->assertSame('0.4', $out[2]['json']['echo']['body']['publiccodeYmlVersion']);
+
+		$this->assertArrayNotHasKey('echo', $out[1]['json'], 'An unreadable file must not look like a read one.');
+		$error = $out[1]['json'][FlowNodeSupport::ERROR_KEY];
+		$this->assertSame('decode', $error['kind']);
+		$this->assertSame(200, $error['status']);
+		$this->assertStringContainsString('yaml', $error['message']);
+		$this->assertStringContainsString('line 7', $error['message']);
+
+	}//end testMalformedFileFailsOnlyItsItem()
+
+	/**
+	 * Under the default policy a malformed file raises; it never maps to an empty object.
+	 *
+	 * @return void
+	 */
+	public function testMalformedFileRaisesUnderDefaultPolicy(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$this->callService->method('callAsync')->willReturn(
+			$this->promisedLog(200, $this->fixture(name: 'publiccode-malformed.yml'), 'OK', 'text/plain')
+		);
+
+		try {
+			$this->node->execute([['json' => []]], array_merge($this->config(), ['decode' => 'yaml']), $this->context());
+			$this->fail('A malformed file must raise.');
+		} catch (FlowNodeException $exception) {
+			$this->assertSame('decode', $exception->getDetails()['kind']);
+		}
+
+	}//end testMalformedFileRaisesUnderDefaultPolicy()
+
+	/**
+	 * An unknown decode mode is refused when the flow is saved.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsUnknownDecodeMode(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/decode/');
+
+		$this->node->validateConfig(array_merge($this->config(), ['decode' => 'yml']));
+
+	}//end testValidateRejectsUnknownDecodeMode()
+
+	/**
+	 * Every key the node reads is declared, so a preflight that refuses
+	 * undeclared keys accepts a step that sets `onError`, `acceptStatuses` or
+	 * `responseMapping`. Before, `onError: continue` was refused at save and one
+	 * failed file cost the whole page.
+	 *
+	 * @return void
+	 */
+	public function testKeysTheNodeReadsAreDeclared(): void {
+		$config = array_merge(
+			$this->config(),
+			['onError' => 'continue', 'acceptStatuses' => [404], 'responseMapping' => ['n' => 'id'], 'decode' => 'yaml']
+		);
+
+		$this->assertSame([], array_values(array_diff(array_keys($config), $this->node->configKeys())));
+		$this->node->validateConfig($config);
+
+		$form = array_column($this->node->configForm(), null, 'key');
+		$this->assertArrayHasKey('onError', $form);
+
+	}//end testKeysTheNodeReadsAreDeclared()
+
+	/**
+	 * An unknown onError policy is refused at save.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsUnknownOnErrorPolicy(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessageMatches('/onError/');
+
+		$this->node->validateConfig(array_merge($this->config(), ['onError' => 'skip']));
+
+	}//end testValidateRejectsUnknownOnErrorPolicy()
+
+	/**
+	 * Read a test fixture.
+	 *
+	 * @param string $name The file name under tests/fixtures/publiccode.
+	 *
+	 * @return string The file contents.
+	 */
+	private function fixture(string $name): string {
+		return (string)file_get_contents(__DIR__ . '/../../fixtures/publiccode/' . $name);
+	}//end fixture()
+
+	/**
 	 * The same CallLog, as `callAsync()` hands it back.
 	 *
 	 * `callAsync()` is declared `): PromiseInterface`, and PHPUnit enforces a
@@ -1019,9 +1257,14 @@ class SourceCallNodeTest extends TestCase {
 	 *
 	 * @return FulfilledPromise The CallLog double, already fulfilled.
 	 */
-	private function promisedLog(int $statusCode, string $body, string $statusMessage = 'OK'): FulfilledPromise {
+	private function promisedLog(
+		int $statusCode,
+		string $body,
+		string $statusMessage = 'OK',
+		string $contentType = 'application/json',
+	): FulfilledPromise {
 		return new FulfilledPromise(
-			$this->callLog(statusCode: $statusCode, body: $body, statusMessage: $statusMessage)
+			$this->callLog(statusCode: $statusCode, body: $body, statusMessage: $statusMessage, contentType: $contentType)
 		);
 
 	}//end promisedLog()
@@ -1032,10 +1275,16 @@ class SourceCallNodeTest extends TestCase {
 	 * @param int $statusCode The HTTP status.
 	 * @param string $body The response body.
 	 * @param string $statusMessage The reason phrase.
+	 * @param string $contentType The response Content-Type.
 	 *
 	 * @return ObjectEntity The CallLog double.
 	 */
-	private function callLog(int $statusCode, string $body, string $statusMessage = 'OK'): ObjectEntity {
+	private function callLog(
+		int $statusCode,
+		string $body,
+		string $statusMessage = 'OK',
+		string $contentType = 'application/json',
+	): ObjectEntity {
 		$callLog = new ObjectEntity();
 		$callLog->setUuid('22222222-2222-2222-2222-222222222222');
 		$callLog->setObject(
@@ -1046,7 +1295,7 @@ class SourceCallNodeTest extends TestCase {
 				'response' => [
 					'statusCode' => $statusCode,
 					'statusMessage' => $statusMessage,
-					'headers' => ['Content-Type' => ['application/json']],
+					'headers' => ['Content-Type' => [$contentType]],
 					'body' => $body,
 					'encoding' => 'UTF-8',
 				],
@@ -1055,5 +1304,76 @@ class SourceCallNodeTest extends TestCase {
 
 		return $callLog;
 	}//end callLog()
+
+	/**
+	 * `bodyFrom` sends the mapped object at that item path whole, as JSON.
+	 *
+	 * @return void
+	 */
+	public function testBodyFromSendsTheObjectAtThatPathWhole(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$captured = [];
+		$this->callService->method('callAsync')->willReturnCallback(
+			function (...$arguments) use (&$captured) {
+				$captured = $arguments;
+				return $this->promisedLog(statusCode: 201, body: '{"result":{"sys_id":"abc"}}');
+			}
+		);
+
+		$send = ['name' => 'Zaaksysteem', 'u_bbn_level' => '2', 'install_status' => '1'];
+		$this->node->execute(
+			[['json' => ['usage' => ['uuid' => 'u-1'], 'send' => $send]]],
+			[
+				'source' => 'servicenow',
+				'endpoint' => '/api/now/table/cmdb_ci_appl',
+				'method' => 'POST',
+				'bodyFrom' => 'send',
+				'output' => 'created',
+			],
+			$this->context()
+		);
+
+		$this->assertSame($send, $captured[3]['json']);
+		$this->assertArrayNotHasKey('body', $captured[3]);
+
+	}//end testBodyFromSendsTheObjectAtThatPathWhole()
+
+	/**
+	 * A `bodyFrom` path with no object refuses the step before any call.
+	 *
+	 * @return void
+	 */
+	public function testBodyFromWithoutAnObjectSendsNothing(): void {
+		$this->givenSource();
+		$this->givenOwner();
+		$this->callService->expects($this->never())->method('callAsync');
+
+		$this->expectException(FlowNodeException::class);
+		$this->expectExceptionMessage('did not resolve to an object');
+
+		$this->node->execute(
+			[['json' => ['send' => 'not an object']]],
+			['source' => 'servicenow', 'endpoint' => '/api/now/table/cmdb_ci_appl', 'method' => 'POST', 'bodyFrom' => 'send'],
+			$this->context()
+		);
+
+	}//end testBodyFromWithoutAnObjectSendsNothing()
+
+	/**
+	 * `body` and `bodyFrom` together are refused at save.
+	 *
+	 * @return void
+	 */
+	public function testBodyAndBodyFromTogetherAreRefused(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('Use "body" or "bodyFrom", not both.');
+
+		$this->node->validateConfig(
+			['source' => 'servicenow', 'endpoint' => '/x', 'method' => 'POST', 'body' => ['a' => 1], 'bodyFrom' => 'send']
+		);
+
+	}//end testBodyAndBodyFromTogetherAreRefused()
 
 }//end class

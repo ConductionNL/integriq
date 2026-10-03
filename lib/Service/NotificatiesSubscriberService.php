@@ -32,6 +32,7 @@ namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use InvalidArgumentException;
+use OCA\Integriq\Service\Zgw\ZgwNotificationPullListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IURLGenerator;
@@ -88,6 +89,7 @@ class NotificatiesSubscriberService {
 	 * @param WebhookSignatureService $signatureService Reused for its secret-generation algorithm only (Decision 2 — no `whsec_` prefix).
 	 * @param IURLGenerator $urlGenerator Builds this app's absolute callback URL per abonnement.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics (cascade-delete failures, etc.).
+	 * @param ZgwNotificationPullListener|null $pullListener Pulls the resource an installed ZGW set owns (zgw-connectors-for-dossiq D3).
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -96,6 +98,7 @@ class NotificatiesSubscriberService {
 		private readonly WebhookSignatureService $signatureService,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
+		private readonly ?ZgwNotificationPullListener $pullListener = null,
 	) {
 
 	}//end __construct()
@@ -158,7 +161,7 @@ class NotificatiesSubscriberService {
 		$abonnementData['url'] = $result['url'];
 		if ($result['error'] === null) {
 			$abonnementData['status'] = self::STATUS_ACTIVE;
-			$abonnementData['lastError'] = null;
+			$abonnementData['lastError'] = '';
 		}
 
 		return $this->persistAbonnement(data: $abonnementData, id: $abonnementId);
@@ -201,7 +204,7 @@ class NotificatiesSubscriberService {
 		$data['lastError'] = $this->settlementError(call: $call, verb: 'update');
 		if ($data['lastError'] === null) {
 			$data['status'] = self::STATUS_ACTIVE;
-			$data['lastError'] = null;
+			$data['lastError'] = '';
 		}
 
 		return $this->persistAbonnement(data: $data, id: $id);
@@ -437,7 +440,7 @@ class NotificatiesSubscriberService {
 		}
 
 		$data['status'] = self::STATUS_DELETED;
-		$data['lastError'] = null;
+		$data['lastError'] = '';
 
 		$this->cascadeDeleteConsumer(consumerId: (string)($data['consumerId'] ?? ''), abonnementId: $id);
 
@@ -525,12 +528,19 @@ class NotificatiesSubscriberService {
 		$data = $notification;
 		$data['abonnementId'] = $abonnementId;
 
-		return $this->eventService->emitCloudEvent(
+		$messages = $this->eventService->emitCloudEvent(
 			type: 'nl.conduction.zgw.notificatie.' . $resource,
 			source: '/notificaties-api/' . $channel,
 			subject: ($notification['resourceUrl'] ?? null),
 			data: $data
 		);
+
+		// An installed ZGW set pulls the one resource the notification names
+		// (zgw-connectors-for-dossiq D3). After the CloudEvent, and never
+		// throwing: the notification was received whatever the pull does.
+		$this->pullListener?->handle(notification: $notification);
+
+		return $messages;
 
 	}//end handleInboundNotification()
 

@@ -1,0 +1,58 @@
+{
+    "result": [
+        {
+            "sys_id": {
+                "display_value": "0000000000000000000000000000012d",
+                "value": "0000000000000000000000000000012d"
+            },
+            "display_name": {
+                "display_value": "Zaaksysteem gebruikers",
+                "value": "Zaaksysteem gebruikers"
+            },
+            "asset_tag": {
+                "display_value": "SL-2026-01",
+                "value": "SL-2026-01"
+            },
+            "po_number": {
+                "display_value": "PO-77812",
+                "value": "PO-77812"
+            },
+            "vendor": {
+                "display_value": "Dimpact",
+                "value": "00000000000000000000000000000001"
+            },
+            "ci": {
+                "display_value": "Zaaksysteem",
+                "value": "00000000000000000000000000000065"
+            },
+            "cost": {
+                "display_value": "48000",
+                "value": "48000"
+            },
+            "start_date": {
+                "display_value": "2026-01-01",
+                "value": "2026-01-01"
+            },
+            "end_date": {
+                "display_value": "2028-12-31",
+                "value": "2028-12-31"
+            },
+            "rights": {
+                "display_value": "350",
+                "value": "350"
+            },
+            "sys_class_name": {
+                "display_value": "alm_license",
+                "value": "alm_license"
+            },
+            "sys_created_on": {
+                "display_value": "2026-09-01 08:00:00",
+                "value": "2026-09-01 08:00:00"
+            },
+            "sys_updated_on": {
+                "display_value": "2026-09-01 08:00:00",
+                "value": "2026-09-01 08:00:00"
+            }
+        }
+    ]
+}

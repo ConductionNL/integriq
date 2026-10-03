@@ -35,8 +35,8 @@ use Throwable;
  * recorded a complete run reports its last-seen as unknown rather than
  * borrowing the synchronisation's own `lastSync`.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-the-consuming-app-reads-ownership-through-one-contract-req-sor-006
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-the-consuming-app-reads-ownership-through-one-contract-req-sor-006
  */
 class RecordOwnershipService {
 	/**
@@ -68,7 +68,7 @@ class RecordOwnershipService {
 	 *
 	 * @return OwnershipState The ownership answer. Never null, never an exception for an unknown id.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public function forObject(string $targetId): OwnershipState {
 		$contract = $this->findContract(targetId: $targetId);

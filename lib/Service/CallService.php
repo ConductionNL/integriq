@@ -53,6 +53,7 @@ use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Flow\FlowConfigGuard;
+use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
@@ -196,6 +197,7 @@ class CallService {
 	 * @param LoggerInterface $logger Nextcloud logger used for security-policy warnings (#1011).
 	 * @param BrokeredCallService $brokeredCallService Brokered (credentialRef) dispatch through the OpenRegister credential broker.
 	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
+	 * @param CaseSystemOperations|null $caseSystemOperations Answers case-system sources in-process (case-system-operations-for-decidiq).
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
 	 */
@@ -207,6 +209,7 @@ class CallService {
 		private readonly LoggerInterface $logger,
 		private readonly BrokeredCallService $brokeredCallService,
 		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
+		private readonly ?CaseSystemOperations $caseSystemOperations = null,
 	) {
 		$this->client = new Client([]);
 		// NO AUTOESCAPE: this environment renders headers/query/body values for
@@ -747,14 +750,20 @@ class CallService {
 		string $statusMessage,
 		?\DateTime $expires,
 	): ObjectEntity {
+		$object = [
+			'source' => $source->getUuid(),
+			'direction' => 'outbound',
+			'statusCode' => $statusCode,
+			'statusMessage' => $statusMessage,
+			'created' => (new DateTime())->format('c'),
+		];
+		$formatted = $this->formatExpires(expires: $expires);
+		if ($formatted !== null) {
+			$object['expires'] = $formatted;
+		}
+
 		return $this->objectService->saveObject(
-			object: [
-				'source' => $source->getUuid(),
-				'statusCode' => $statusCode,
-				'statusMessage' => $statusMessage,
-				'created' => (new DateTime())->format('c'),
-				'expires' => $this->formatExpires(expires: $expires),
-			],
+			object: $object,
 			register: 'integriq',
 			schema: 'call_log'
 		);
@@ -1181,7 +1190,7 @@ class CallService {
 	 * @throws GuzzleException On HTTP transport failure.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
 	 */
 	private function dispatchRequest(
 		ObjectEntity $source,
@@ -1209,17 +1218,11 @@ class CallService {
 			);
 		}
 
-		$sourceData = $source->getObject();
-		$sourceType = ($sourceData['type'] ?? null);
+		// A soap or case-system source is answered in-process; every other
+		// source goes out over HTTP below.
+		$response = $this->dispatchInProcess(source: $source, endpoint: $endpoint, config: $config, asynchronous: $asynchronous);
 
-		if ($sourceType === 'soap') {
-			// If the source type is SOAP, use the soap service.
-			// Warning: This functionality requires ext-soap and ext-xsd.
-			$soapService = new SOAPService($this->cookieJar);
-			$response = $soapService->callSoapSource(source: $source, soapAction: $endpoint, config: $config);
-		}
-
-		if ($sourceType !== 'soap') {
+		if ($response === null) {
 			// Stream the response body straight into the caller's sink resource when
 			// one is supplied (stream-file-content #110). The sink is added only to the
 			// options handed to Guzzle — never to $config, which is logged/redacted/
@@ -1274,6 +1277,54 @@ class CallService {
 	}//end dispatchRequest()
 
 	/**
+	 * Answer a source that needs no HTTP request of its own, or null for any other.
+	 *
+	 * A soap source is answered by SOAPService; a case-system source by
+	 * {@see CaseSystemOperations} (case-system-operations-for-decidiq, design
+	 * D1). Both answer a PSR-7 response, so the call log, redaction and rate
+	 * limit run as for any source. An asynchronous caller receives the
+	 * case-system answer as a fulfilled promise.
+	 *
+	 * @param ObjectEntity $source The source.
+	 * @param string $endpoint The endpoint (the SOAPAction, or /case-system/<operation>).
+	 * @param array $config The request configuration.
+	 * @param boolean $asynchronous Whether the caller expects a promise.
+	 *
+	 * @return mixed A response, a promise, or null when the source goes out over HTTP.
+	 *
+	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-case-system-source-answers-five-operations-in-process-req-cso-001
+	 */
+	private function dispatchInProcess(ObjectEntity $source, string $endpoint, array $config, bool $asynchronous): mixed {
+		$sourceType = ($source->getObject()['type'] ?? null);
+
+		if ($sourceType === 'soap') {
+			// Warning: This functionality requires ext-soap and ext-xsd.
+			$soapService = new SOAPService($this->cookieJar);
+
+			return $soapService->callSoapSource(source: $source, soapAction: $endpoint, config: $config);
+		}
+
+		if ($sourceType !== CaseSystemOperations::SOURCE_TYPE) {
+			return null;
+		}
+
+		$response = new Response(
+			status: 503,
+			headers: ['Content-Type' => 'application/json'],
+			body: '{"message":"Case-system operations are not available on this instance."}'
+		);
+		if ($this->caseSystemOperations !== null) {
+			$response = $this->caseSystemOperations->handle(source: $source, endpoint: $endpoint, config: $config);
+		}
+
+		if ($asynchronous === true) {
+			return new FulfilledPromise($response);
+		}
+
+		return $response;
+	}//end dispatchInProcess()
+
+	/**
 	 * Assemble the options handed to Guzzle from the persisted request config
 	 * plus the two transport-only extras.
 	 *
@@ -1290,8 +1341,8 @@ class CallService {
 	 *
 	 * @return array The request options to hand to the Guzzle client.
 	 *
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
 	private function buildRequestOptions(array $config, mixed $sink, ?callable $onHeaders): array {
 		if ($sink !== null) {
@@ -1554,9 +1605,18 @@ class CallService {
 			}
 		}
 
-		// Basic-auth credentials.
+		// Basic-auth credentials: the password only. The user name is not a
+		// secret, and scrubbing it rewrote every occurrence of it in the
+		// response a flow goes on to read (a service desk user `stackiq`
+		// turned the field `stackiqId` into `***REDACTED***Id`). The request
+		// log still drops the whole `auth` pair, see redactSecretsFromConfig().
 		if (isset($config['auth']) === true) {
-			$values = array_merge($values, $this->flattenSecretValue(value: $config['auth']));
+			$auth = $config['auth'];
+			if (is_array($auth) === true && array_key_exists(1, $auth) === true) {
+				$auth = $auth[1];
+			}
+
+			$values = array_merge($values, $this->flattenSecretValue(value: $auth));
 		}
 
 		// Secret query / form parameters from the config.
@@ -1717,15 +1777,25 @@ class CallService {
 			$expiresChosen = $errorExpires;
 		}
 
+		// A call to a source is an outbound call. The source logs page is scoped
+		// to direction outbound, so a row without it would not be listed there.
 		$callLogData = [
 			'source' => $source->getUuid(),
+			'direction' => 'outbound',
 			'statusCode' => $statusCode,
 			'statusMessage' => $data['response']['statusMessage'],
 			'request' => $data['request'],
 			'response' => $responseData,
 			'created' => (new DateTime())->format('c'),
-			'expires' => $this->formatExpires(expires: $expiresChosen),
 		];
+
+		// A call kept for ever (retention 0) has no expiry. `expires` is a
+		// date-time string on call_log, and the register refuses a null in a
+		// string property, so the key is left out rather than written as null.
+		$formattedExpires = $this->formatExpires(expires: $expiresChosen);
+		if ($formattedExpires !== null) {
+			$callLogData['expires'] = $formattedExpires;
+		}
 
 		// Execution-trace REQ-011: repurpose the previously-dead
 		// call_log.sessionId field to carry the active trace's traceId, so
@@ -2467,6 +2537,45 @@ class CallService {
 	}//end hydrateInjectedCredentials()
 
 	/**
+	 * Resolves app-injected TLS client identity placeholders in the merged call configuration.
+	 *
+	 * A `cert` / `ssl_key` held in the credential broker (integriq#2102) is resolved here,
+	 * before Phase 9 writes the certificate files for Guzzle. A resolution failure is a
+	 * synthetic 409 config-error CallLog, like every other brokered credential failure.
+	 *
+	 * @param ObjectEntity $source The source ObjectEntity.
+	 * @param array $config The merged call configuration (Phase 7 output).
+	 * @param \DateTime|null $errorExpires Expiry for error log entries.
+	 *
+	 * @return ObjectEntity|array The hydrated configuration, or an ObjectEntity CallLog on a hard config error.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	private function hydrateInjectedTlsIdentity(
+		ObjectEntity $source,
+		array $config,
+		?\DateTime $errorExpires,
+	): ObjectEntity|array {
+		if ($this->brokeredCallService->hasInjectableTlsIdentity(config: $config) === false) {
+			return $config;
+		}
+
+		try {
+			return $this->brokeredCallService->hydrateInjectableTlsIdentity(config: $config);
+		} catch (BrokeredCallConfigurationException $exception) {
+			return $this->saveEarlyErrorLog(
+				source: $source,
+				statusCode: 409,
+				statusMessage: $exception->getMessage(),
+				expires: $errorExpires,
+			);
+		}
+
+	}//end hydrateInjectedTlsIdentity()
+
+	/**
 	 * Phase 7b+7c combined: resolves brokered/injected credentials for one
 	 * call, or produces the synthetic config-error CallLog the caller must
 	 * return immediately.
@@ -2484,7 +2593,7 @@ class CallService {
 	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
 	 * @param \DateTime|null $errorExpires Expiry for error log entries.
 	 *
-	 * @return array{shortCircuit: ObjectEntity|null, brokeredCredential: array|null, sourceData: array}
+	 * @return array{shortCircuit: ObjectEntity|null, brokeredCredential: array|null, sourceData: array, config: array}
 	 *
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
 	 *
@@ -2510,6 +2619,7 @@ class CallService {
 				'shortCircuit' => $brokeredCredential,
 				'brokeredCredential' => null,
 				'sourceData' => $sourceData,
+				'config' => $config,
 			];
 		}
 
@@ -2524,16 +2634,30 @@ class CallService {
 					'shortCircuit' => $injected,
 					'brokeredCredential' => null,
 					'sourceData' => $sourceData,
+					'config' => $config,
 				];
 			}
 
 			$sourceData = $injected;
-		}
+
+			// The TLS identity was merged into the call configuration at Phase 7, before
+			// hydration, so its placeholders are resolved there too (integriq#2102).
+			$config = $this->hydrateInjectedTlsIdentity(source: $source, config: $config, errorExpires: $errorExpires);
+			if ($config instanceof ObjectEntity) {
+				return [
+					'shortCircuit' => $config,
+					'brokeredCredential' => null,
+					'sourceData' => $sourceData,
+					'config' => [],
+				];
+			}
+		}//end if
 
 		return [
 			'shortCircuit' => null,
 			'brokeredCredential' => $brokeredCredential,
 			'sourceData' => $sourceData,
+			'config' => $config,
 		];
 
 	}//end resolveCallCredentials()
@@ -2663,7 +2787,7 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error.
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	private function prepareCall(
@@ -2742,6 +2866,11 @@ class CallService {
 		// Phase 7: Merge source-level configuration.
 		$config = $this->mergeSourceConfiguration(config: $config, sourceData: $sourceData);
 
+		// Phase 7-auth: the login the source declares on its own fields
+		// (auth basic or apikey). What configuration says still wins, and a
+		// broker source is left to the broker (sources-declared-basic-and-apikey-auth).
+		$config = (new SourceAuthApplier())->apply(sourceData: $sourceData, config: $config);
+
 		// Phase 7a: Resolve HTTP method; strip method-override keys from config.
 		//
 		// oc#94 fix: this used to run as "Phase 2", BEFORE Phase 7's source
@@ -2787,6 +2916,7 @@ class CallService {
 
 		$prepared['brokeredCredential'] = $credentials['brokeredCredential'];
 		$sourceData = $credentials['sourceData'];
+		$config = $credentials['config'];
 
 		// Phase 8: Handle preRequest hook; capture postRequest descriptor.
 		$prepared['postRequest'] = $this->extractAndFirePreRequest(
@@ -2840,7 +2970,7 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error.
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
 	 */
 	private function finalizeCall(
@@ -2949,7 +3079,7 @@ class CallService {
 	 * @spec openspec/specs/http-call-engine/spec.md
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
-	 * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
@@ -2983,7 +3113,7 @@ class CallService {
 			throw new InvalidArgumentException(
 				'CallService::call() is synchronous and returns an ObjectEntity call log. '
 				. 'For concurrent dispatch use CallService::callAsync(), which returns a '
-				. 'GuzzleHttp promise; see openspec/changes/parallel-file-fetch/design.md '
+				. 'GuzzleHttp promise; see openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md '
 				. '("Sibling async methods, not union returns").'
 			);
 		}
@@ -3045,7 +3175,7 @@ class CallService {
 	 * `PromotionService`, `SynchronizationService`, …) that all rely on the
 	 * `ObjectEntity` return. An `ObjectEntity|PromiseInterface` union would ripple
 	 * through static analysis at every one of them for no behavioural gain. See
-	 * `openspec/changes/parallel-file-fetch/design.md` → "Sibling async methods,
+	 * `openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md` → "Sibling async methods,
 	 * not union returns".
 	 *
 	 * ONE consumed shape. The promise always resolves to a persisted `CallLog`
@@ -3093,8 +3223,8 @@ class CallService {
 	 * @throws SyntaxError On Twig syntax error during preparation.
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog during preparation.
 	 *
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
-	 * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	public function callAsync(
 		ObjectEntity $source,
@@ -3119,7 +3249,7 @@ class CallService {
 				'CallService::callAsync() requires a temp-file PATH as its sink, not a stream resource. '
 				. 'Guzzle closes a resource-typed sink when its PSR-7 wrapper is destructed, which under '
 				. 'asynchronous dispatch happens outside the caller\'s control; see '
-				. 'openspec/changes/parallel-file-fetch/design.md ("The sink is a PATH, never a handle").'
+				. 'openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md ("The sink is a PATH, never a handle").'
 			);
 		}
 

@@ -66,6 +66,7 @@ final class SubjectEnvelope {
 	 * @param string $audience The consuming app the envelope is minted for.
 	 * @param string $organisation The tenant the login happened in.
 	 * @param string $trust `low`, `substantial` or `high`.
+	 * @param string $branch The eHerkenning vestigingsnummer the login was restricted to, or empty.
 	 */
 	public function __construct(
 		private readonly string $subject,
@@ -74,6 +75,7 @@ final class SubjectEnvelope {
 		private readonly string $audience,
 		private readonly string $organisation,
 		private readonly string $trust,
+		private readonly string $branch = '',
 	) {
 
 	}//end __construct()
@@ -139,6 +141,26 @@ final class SubjectEnvelope {
 	}//end getTrust()
 
 	/**
+	 * The branch the login was restricted to.
+	 *
+	 * Only an eHerkenning login can carry one. For any other provider this
+	 * answers an empty string, whatever the constructor was given, so a
+	 * DigiD envelope can never claim a vestiging.
+	 *
+	 * @return string The vestigingsnummer, or an empty string.
+	 *
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 */
+	public function getBranch(): string {
+		if ($this->provider !== TrustLevelMapper::PROVIDER_EHERKENNING) {
+			return '';
+		}
+
+		return $this->branch;
+
+	}//end getBranch()
+
+	/**
 	 * The envelope's claims, without the time-bound ones.
 	 *
 	 * `jti`, `iat` and `exp` are added when it is signed, because they belong
@@ -147,9 +169,10 @@ final class SubjectEnvelope {
 	 * @return array<string,string> The claims.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-one-time-signed-subject-envelope-handoff
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public function toClaims(): array {
-		return [
+		$claims = [
 			'sub' => $this->subject,
 			'subType' => $this->subType,
 			'provider' => $this->provider,
@@ -160,6 +183,15 @@ final class SubjectEnvelope {
 			'iss' => self::ISSUER,
 		];
 
+		// Absent rather than empty when there is no branch: a consumer reads
+		// "the key is missing" as "the whole company", and an empty string
+		// would be one more value for it to get wrong.
+		if ($this->getBranch() !== '') {
+			$claims['branch'] = $this->getBranch();
+		}
+
+		return $claims;
+
 	}//end toClaims()
 
 	/**
@@ -168,6 +200,8 @@ final class SubjectEnvelope {
 	 * @param array<string,mixed> $claims The verified claims.
 	 *
 	 * @return self The envelope.
+	 *
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public static function fromClaims(array $claims): self {
 		return new self(
@@ -177,6 +211,7 @@ final class SubjectEnvelope {
 			(string)($claims['audience'] ?? ''),
 			(string)($claims['organisation'] ?? ''),
 			(string)($claims['trust'] ?? ''),
+			(string)($claims['branch'] ?? ''),
 		);
 
 	}//end fromClaims()

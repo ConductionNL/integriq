@@ -11,8 +11,9 @@
   - GIVEN each curated tool WHEN its metadata is read THEN scope/reach/hints match REQ-MCP-105 (run/test/replay = reach `external`; discard = `delete` + `destructiveHint: true`), and the two gated-write descriptions and the destructive one name their approval gate
   - GIVEN `runSynchronization` WHEN called with a `forceDeletion` argument THEN it rejects with invalid-arguments and stages nothing
   - GIVEN the new PHP WHEN `composer check:strict` runs THEN it is clean
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
+      `tests/Unit/Mcp/IntegriqAgentToolsTest.php`: OpenRegister's own `AttributeToolScanner` (copied from openregister development 8e001f4ec1 into tests/stubs) finds exactly the six, with scope, hints and the approval gate in the descriptions; reach is in each description and `IntegriqAgentTools::REACH` (design D9); `forceDeletion` refused before anything is staged.
 
 ### Task 2: ADR-023 layering + delegation to the existing service paths — BLOCKS Task 3
 - **spec_ref**: `openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-106--every-curated-tool-must-run-the-existing-adr-023-action-check-and-delegate-to-the-existing-controller-backed-service-path`
@@ -22,8 +23,9 @@
   - GIVEN a granting user lacking the action WHEN any tool is invoked THEN `ActionAuthService::requireAction()` denies with its forbidden error before staging or execution
   - GIVEN a fixture where the UI path refuses a test run WHEN `testSynchronization` is invoked THEN the same domain error is returned and no remote call is made (gate-parity test)
   - GIVEN any tool WHEN its implementation is reviewed THEN execution goes only through the existing `SynchronizationService`/`CallService`/dead-letter replay-discard paths; no object write, no property argument, no direct ObjectService call
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
+      Real `ActionAuthService` on the real seed: a non-admin is denied before staging and the denial is recorded; a test run the app refuses fails with the same exception through the tool; each id runs through the controller's own service path as the granting user.
 
 ### Task 3: Two-phase batch approval for run/replay/discard, server-enforced
 - **spec_ref**: `openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch`
@@ -33,8 +35,9 @@
   - GIVEN phase 2 WHEN invoked without a token, with an expired token, with a token minted for the acting agent, or with a token bound to another batch THEN it is refused and nothing executes
   - GIVEN phase 2 WHEN invoked with a valid human-approver token bound to the batch THEN each id executes through Task 2's path
   - GIVEN `testSynchronization`, `testSource`, `listDeadLetters` WHEN invoked THEN they are single-phase
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
+      Against a Hermiq fake that answers the verification contract (design D7) with real Ed25519 signatures: phase 1 runs nothing; no token, a token for another batch, a rejected batch, an agent-approved batch, a stale and a forged verdict are refused and the batch stays staged; one approval runs its batch once; another agent cannot run it; an expired batch never runs.
 
 ### Task 4: Agent-principal attribution including refusals
 - **spec_ref**: `openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-108--every-invocation-including-refusals-must-be-attributed-to-the-agent-principal-in-the-audit-trail`
@@ -42,8 +45,9 @@
 - **acceptance_criteria**:
   - GIVEN any invocation (denied / staged / executed / token-refused) WHEN the audit trail is read THEN it carries agent identity, granting user, tool id, outcome, and (where applicable) proposal reference + approval token id
   - GIVEN the same replay performed through the DeadLetters UI WHEN audited THEN it carries no agent fields (control)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
+      Every record written in the tests is validated against the merged register (`agent_action`); the approved replay names agent, granting user, approver, approval and tool.
 
 ### Task 5: Payload-free `listDeadLetters` projection
 - **spec_ref**: `openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-109--the-dead-letter-read-must-be-payload-free-and-no-tool-may-return-or-accept-payload-content`
@@ -52,8 +56,9 @@
   - GIVEN seeded sync and event dead letters WHEN the tool runs THEN each row's key set equals exactly the REQ-MCP-109 projection (assert equality, not presence) and contains no `payload`/`lastResponse`
   - GIVEN `error` longer than the fixed limit WHEN returned THEN it is truncated
   - GIVEN the catalogue WHEN enumerated THEN no `integriq.sync_item_dead_letter.*` or `integriq.event_message.*` tool exists; `lib/Settings/integriq_register.json` carries no dialect on either schema
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
+      Key-set equality with `DeadLetterProjection::KEYS` for sync and event rows; no payload or lastResponse text reaches a row; error cut at 200.
 
 ### Task 6: Hermiq classification check + chat-scenario e2e + docs
 - **spec_ref**: `openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch`
@@ -63,6 +68,8 @@
   - GIVEN the e2e suite WHEN it runs THEN the nightly-triage flow passes: dead letters listed payload-free → batch staged → approved in Hermiq → replayed (visible in the DeadLetters UI); a rejected batch replays nothing
   - GIVEN `docs/` WHEN read THEN it records the tool table (scope × reach × gate × action id), the payload firewall, the refused/deferred action list with reasons, and the three chat scenarios
   - GIVEN `CHANGELOG.md` WHEN read THEN it records the governed action surface and the two new action-matrix rows
+  - Contract half (DECISIONS 31/40, hermiq#1045 built in hermiq PR #1048), done: `tests/Unit/Mcp/HermiqVerdictContractTest.php` runs integriq's `ApprovalVerdictVerifier` against Hermiq's real `ApprovalVerdictService` and `ApprovalVerdictSigner` (copied unchanged but for spec tags into `tests/stubs/Hermiq/`), through JSON, with the public key read from the app value Hermiq writes (`hermiq/approval_verdict_public_key`). It covers an approved batch, all six Hermiq refusal reasons, a verdict re-signed by another key and a replayed verdict. The live classification check and the e2e spec remain open.
+  - Docs half, done: `docs/features/ai-agent-tools.md` (tool table with scope, reach, gate and action id; the payload firewall; the refused and deferred lists with reasons; the three chat scenarios), a row in `docs/features/README.md`, and the governed action surface with the two new action-matrix rows under Unreleased in `CHANGELOG.md`. Facts checked against `IntegriqAgentTools::BATCH_CAP`, `AgentBatchGate::PROPOSAL_TTL`, `DeadLetterProjection::ERROR_LENGTH` and `lib/actions.seed.json`.
 - [ ] Implement
 - [ ] Test
 
@@ -74,14 +81,14 @@
 
 ## Tests (company-wide ADR-009)
 
-- [ ] PHPUnit unit tests for metadata, argument validation, matrix layering, gate parity, two-phase state machine, token binding, attribution, and projection key-set (`tests/Unit/Mcp/`, Tasks 1–5); zero new failures vs a self-measured baseline
+- [x] PHPUnit unit tests for metadata, argument validation, matrix layering, gate parity, two-phase state machine, token binding, attribution, and projection key-set (`tests/Unit/Mcp/`, Tasks 1–5); zero new failures vs a self-measured baseline
 - [ ] Browser tests (Playwright MCP): `tests/e2e/spec-coverage/hermiq-ai-tooling.spec.ts` (Task 6)
 - [ ] All tests pass (`composer test`)
 - Newman/Postman: N/A — no Integriq HTTP endpoint is added; the MCP surface is served by OpenRegister's `/api/mcp`, and the delegated controller paths keep their existing collection coverage.
 
 ## Documentation (company-wide ADR-010)
 
-- [ ] Feature documentation updated in `docs/` (Task 6)
+- [x] Feature documentation updated in `docs/` (Task 6)
 - [ ] Screenshot — N/A for Integriq UI: the approval flow lives in Hermiq; replay results use the existing DeadLetters UI.
 
 ## i18n (company-wide hydra ADR-007)

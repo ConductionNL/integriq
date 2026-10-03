@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * REQ-RFS-001: one contract, keyed by provider id, first registration wins.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
 class PropertySourceRegistryTest extends TestCase {
 	/**

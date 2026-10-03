@@ -14,6 +14,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Rules](rules.md) | Authentication, file handling, locking, and audit trail rules | Implemented |
 | [Jobs](jobs.md) | Cron-based scheduled task execution | Implemented |
 | [Flow nodes](flow-nodes.md) | Contributed step types for OpenRegister's flow engine | Implemented |
+| [Service desk connectors](service-desk-connectors.md) | TOPdesk, ServiceNow and GLPI sources with two-way presets that say who owns each field | Implemented |
 | [Events & Webhooks](events.md) | CloudEvents emission, subscription, and consumer processing | Implemented |
 | [Logging & Monitoring](logging.md) | Call logs, sync logs, and Prometheus metrics | Implemented |
 | [Configuration Management](configuration-management.md) | Import/export, configuration groups, slug-based references | Implemented |
@@ -21,7 +22,11 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Prometheus Metrics](prometheus-metrics.md) | Prometheus exposition format metrics + health endpoint | Implemented |
 | [DSO / Omgevingsloket Adapter](dso-omgevingsloket.md) | DSO-LV STAM koppelvlak integration | Implemented |
 | [iBabs & NotuBiz Connector](ibabs-notubiz-connector.md) | RIS integration for bestuurlijke besluitvorming | Implemented |
+| [AI agent tools](ai-agent-tools.md) | A Hermiq agent runs, tests and replays on a person's approval, and never reconfigures | Implemented |
 | [Integration leaves](integration-leaves.md) | Files, Deck, Talk and Calendar linked to sources and synchronizations | Implemented |
+| [Timetables into planninq](rostering-to-planninq.md) | Zermelo, Untis, Xedule and TimeEdit lessons delivered into planninq's school timetable | Dormant |
+| [Objecten API](objecten-api.md) | The VNG Objecten and Objecttypen APIs over your registers, one token per caller | Implemented |
+| [ZGW consumer sets](zgw-sets.md) | Read a ZGW store (Zaken, Documenten, Catalogi, Besluiten, Objecten) into a schema you choose, in the store's own shape, and write changes back | Partial |
 
 ## Architecture Overview
 

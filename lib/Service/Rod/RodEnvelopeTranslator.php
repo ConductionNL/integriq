@@ -1,0 +1,380 @@
+<?php
+
+/**
+ * Integriq DUO ROD Outbound Envelope Translator.
+ *
+ * Translates a `berichtsoort` (`inschrijving`|`uitschrijving`|
+ * `verblijfsgegevens`|`schooladvies`) plus its field payload, handed over by
+ * the owning app's exchange gate (`bron-rod` target), into an
+ * Edukoppeling-style XML envelope. See design.md "Trade-offs": DUO's XSDs are
+ * not printed in the PvE, so element names follow the PvE field names in
+ * camelCase, isolated behind this one class so a correction against DUO's
+ * real XSD stays local.
+ *
+ * PERSOONSGEBONDEN NUMMER: DUO identifies a pupil by a choice field, either a
+ * `burgerservicenummer` or an `onderwijsnummer` inside `persoonsgebondenNummer`
+ * (PvE ROD-PO 1.14.2, 15-4-2026, section 7.9.1). The payload carries the
+ * number in `persoonsgebondenNummer` and its type in
+ * `persoonsgebondenNummerType`. The legacy `bsn` key still reads as a
+ * burgerservicenummer. An exception message names the field, never the value.
+ *
+ * SCHOOLADVIES: rendered as DUO's `AanleverenAdviesVO_Request` (contract
+ * `DUO_PO_AdviesVO_V1`, PvE section 7.9.1).
+ *
+ * LITERAL-LEAK GUARD: a missing/empty required field raises
+ * {@see RodTranslationException} BEFORE any XML is built. This translator
+ * MUST NEVER emit an empty tag, a null literal, or an unresolved template
+ * marker for a required field. As defense in depth, the fully rendered
+ * envelope is scanned (via the shared
+ * {@see \OCA\Integriq\Service\Stuf\StufLiteralLeakGuard}) for leftover
+ * `{{`/`}}`/`%%UNRESOLVED%%` markers and rejected if any survive.
+ *
+ * @category Service
+ * @package  OCA\Integriq\Service\Rod
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @link https://www.Integriq.nl
+ *
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-007-the-persoonsgebonden-nummer-goes-in-duos-choice-element
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Integriq\Service\Rod;
+
+use DateTime;
+use DOMDocument;
+use DOMElement;
+use OCA\Integriq\Exception\RodTranslationException;
+use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
+
+/**
+ * berichtsoort + field payload -> Edukoppeling XML envelope.
+ *
+ * @spec openspec/specs/rod-adapter/spec.md#requirement-req-002-outbound-envelope-translation-with-a-literal-leak-guard
+ */
+class RodEnvelopeTranslator {
+
+	/**
+	 * Recognised ROD berichtsoort kinds.
+	 *
+	 * @var string
+	 */
+	public const KIND_INSCHRIJVING = 'inschrijving';
+
+	/**
+	 * @var string
+	 */
+	public const KIND_UITSCHRIJVING = 'uitschrijving';
+
+	/**
+	 * @var string
+	 */
+	public const KIND_VERBLIJFSGEGEVENS = 'verblijfsgegevens';
+
+	/**
+	 * @var string
+	 */
+	public const KIND_SCHOOLADVIES = 'schooladvies';
+
+	/**
+	 * The two choices of DUO's persoonsgebonden nummer.
+	 *
+	 * @var array<int, string>
+	 */
+	public const NUMBER_TYPES = ['burgerservicenummer', 'onderwijsnummer'];
+
+	/**
+	 * The DUO contract namespace of AanleverenAdviesVO_Request.
+	 *
+	 * @var string
+	 */
+	public const ADVIES_VO_NAMESPACE = RodAdviesVoBuilder::NAMESPACE;
+
+	/**
+	 * Required fields per berichtsoort besides the persoonsgebonden nummer,
+	 * which every kind requires. See design.md's field table.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const REQUIRED_FIELDS = [
+		self::KIND_INSCHRIJVING => ['inschrijvingsdatum', 'leerjaar', 'groep'],
+		self::KIND_UITSCHRIJVING => ['uitschrijvingsdatum', 'redenUitschrijving'],
+		self::KIND_VERBLIJFSGEGEVENS => ['ingangsdatum', 'leerjaar', 'groep'],
+		self::KIND_SCHOOLADVIES => ['adviesvolgnummer', 'vestigingscode', 'adviesjaar'],
+	];
+
+	/**
+	 * Optional fields appended when present, per berichtsoort: the OPP
+	 * (ontwikkelingsperspectiefplan) dates named in M3-integrations.md row
+	 * I1's field list.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const OPTIONAL_FIELDS = [
+		self::KIND_INSCHRIJVING => ['oppStartdatum', 'oppEinddatum'],
+		self::KIND_VERBLIJFSGEGEVENS => ['oppStartdatum', 'oppEinddatum'],
+	];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param StufLiteralLeakGuard $leakGuard       Shared literal-leak scan.
+	 * @param RodAdviesVoBuilder   $adviesVoBuilder Renders AanleverenAdviesVO_Request.
+	 */
+	public function __construct(
+		private readonly StufLiteralLeakGuard $leakGuard = new StufLiteralLeakGuard(),
+		private readonly RodAdviesVoBuilder $adviesVoBuilder = new RodAdviesVoBuilder(),
+	) {
+
+	}//end __construct()
+
+	/**
+	 * Translate a berichtsoort + payload into an Edukoppeling envelope.
+	 *
+	 * @param string $berichtsoort One of the recognised ROD berichtsoort kinds.
+	 * @param string $kenmerk The caller-supplied correlation id.
+	 * @param array $payload The field payload, see design.md's field table.
+	 *
+	 * @return string The fully rendered envelope XML.
+	 *
+	 * @throws RodTranslationException When `berichtsoort` is unsupported, a required field is
+	 *                                 missing/empty or malformed, or the rendered envelope still
+	 *                                 carries an unresolved template marker. The message names
+	 *                                 fields, never values.
+	 *
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-complete-inschrijving-translates-to-a-valid-envelope
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-007-the-persoonsgebonden-nummer-goes-in-duos-choice-element
+	 */
+	public function translate(string $berichtsoort, string $kenmerk, array $payload): string {
+		if (isset(self::REQUIRED_FIELDS[$berichtsoort]) === false) {
+			throw new RodTranslationException(message: 'Unsupported ROD berichtsoort "'.$berichtsoort.'".');
+		}
+
+		if (trim($kenmerk) === '') {
+			throw new RodTranslationException(message: 'A ROD bericht requires a non-empty kenmerk (correlation id).');
+		}
+
+		$number = $this->personalNumber(payload: $payload);
+		$this->assertRequiredFieldsPresent(payload: $payload, berichtsoort: $berichtsoort);
+
+		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
+		$root     = $document->createElement('RodBericht');
+		$document->appendChild($root);
+
+		$stuurgegevens = $document->createElement('stuurgegevens');
+		$root->appendChild($stuurgegevens);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'berichtsoort', value: $berichtsoort);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'kenmerk', value: $kenmerk);
+		$this->appendText(
+			document: $document,
+			parent: $stuurgegevens,
+			name: 'tijdstipBericht',
+			value: (new DateTime())->format('c')
+		);
+
+		$body = $document->createElement('body');
+		$root->appendChild($body);
+
+		$this->appendBody(document: $document, body: $body, payload: $payload, number: $number, berichtsoort: $berichtsoort);
+
+		$xml = (string) $document->saveXML();
+		$this->assertNoUnresolvedPlaceholder(xml: $xml);
+
+		return $xml;
+	}//end translate()
+
+	/**
+	 * Resolve and check the persoonsgebonden nummer and its type.
+	 *
+	 * @param array $payload The field payload.
+	 *
+	 * @return array{type: string, value: string} The choice element name and the number.
+	 *
+	 * @throws RodTranslationException When the number or its type is missing or malformed.
+	 *
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-007-the-persoonsgebonden-nummer-goes-in-duos-choice-element
+	 */
+	public function personalNumber(array $payload): array {
+		$value = $this->stringOrNull(value: ($payload['persoonsgebondenNummer'] ?? null));
+		$type  = $this->stringOrNull(value: ($payload['persoonsgebondenNummerType'] ?? null));
+
+		if ($value === null) {
+			// Legacy callers of POST /api/rod/send send `bsn`.
+			$value = $this->stringOrNull(value: ($payload['bsn'] ?? null));
+			$type  = 'burgerservicenummer';
+		}
+
+		if ($value === null) {
+			throw new RodTranslationException(
+				message: 'Required field "persoonsgebondenNummer" is missing or empty; refusing to build an envelope.'
+			);
+		}
+
+		if ($type === null || in_array($type, self::NUMBER_TYPES, true) === false) {
+			throw new RodTranslationException(
+				message: 'Field "persoonsgebondenNummerType" must be burgerservicenummer or onderwijsnummer.'
+			);
+		}
+
+		if (preg_match('/^\d{9}$/', $value) !== 1) {
+			throw new RodTranslationException(message: 'Field "persoonsgebondenNummer" must be exactly 9 digits.');
+		}
+
+		return ['type' => $type, 'value' => $value];
+	}//end personalNumber()
+
+	/**
+	 * Append the body the berichtsoort needs.
+	 *
+	 * @param DOMDocument                        $document     The owning document.
+	 * @param DOMElement                         $body         The body element.
+	 * @param array                              $payload      The field payload.
+	 * @param array{type: string, value: string} $number       The persoonsgebonden nummer.
+	 * @param string                             $berichtsoort The ROD berichtsoort kind.
+	 *
+	 * @return void
+	 */
+	private function appendBody(DOMDocument $document, DOMElement $body, array $payload, array $number, string $berichtsoort): void {
+		if ($berichtsoort === self::KIND_SCHOOLADVIES) {
+			$wrapper = $document->createElement('persoonsgebondenNummer');
+			$this->appendText(document: $document, parent: $wrapper, name: $number['type'], value: $number['value']);
+			$this->adviesVoBuilder->append(document: $document, body: $body, payload: $payload, personalNumber: $wrapper);
+			return;
+		}
+
+		$this->appendRegistration(document: $document, body: $body, payload: $payload, number: $number, berichtsoort: $berichtsoort);
+	}//end appendBody()
+
+	/**
+	 * Append the body of an inschrijving, uitschrijving or verblijfsgegevens.
+	 *
+	 * @param DOMDocument                       $document     The owning document.
+	 * @param DOMElement                        $body         The body element.
+	 * @param array                             $payload      The field payload.
+	 * @param array{type: string, value: string} $number       The persoonsgebonden nummer.
+	 * @param string                            $berichtsoort The ROD berichtsoort kind.
+	 *
+	 * @return void
+	 */
+	private function appendRegistration(
+		DOMDocument $document,
+		DOMElement $body,
+		array $payload,
+		array $number,
+		string $berichtsoort
+	): void {
+		$this->appendPersonalNumber(document: $document, parent: $body, number: $number);
+
+		foreach (self::REQUIRED_FIELDS[$berichtsoort] as $field) {
+			$this->appendText(document: $document, parent: $body, name: $field, value: (string) $payload[$field]);
+		}
+
+		foreach ((self::OPTIONAL_FIELDS[$berichtsoort] ?? []) as $field) {
+			if (empty($payload[$field]) === false) {
+				$this->appendText(document: $document, parent: $body, name: $field, value: (string) $payload[$field]);
+			}
+		}
+	}//end appendRegistration()
+
+	/**
+	 * Append the persoonsgebonden nummer as DUO's choice element.
+	 *
+	 * @param DOMDocument                       $document The owning document.
+	 * @param DOMElement                        $parent   The parent element.
+	 * @param array{type: string, value: string} $number   The resolved number.
+	 *
+	 * @return void
+	 */
+	private function appendPersonalNumber(DOMDocument $document, DOMElement $parent, array $number): void {
+		$wrapper = $document->createElement('persoonsgebondenNummer');
+		$parent->appendChild($wrapper);
+		$this->appendText(document: $document, parent: $wrapper, name: $number['type'], value: $number['value']);
+	}//end appendPersonalNumber()
+
+	/**
+	 * Assert every required field for `$berichtsoort` is present and
+	 * non-empty: the literal-leak guard's first line of defence.
+	 *
+	 * @param array $payload The field payload.
+	 * @param string $berichtsoort The ROD berichtsoort kind.
+	 *
+	 * @return void
+	 *
+	 * @throws RodTranslationException Naming the first missing/empty required field found.
+	 *
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
+	 */
+	private function assertRequiredFieldsPresent(array $payload, string $berichtsoort): void {
+		foreach (self::REQUIRED_FIELDS[$berichtsoort] as $field) {
+			if ($this->stringOrNull(value: ($payload[$field] ?? null)) === null) {
+				throw new RodTranslationException(
+					message: 'Required field "'.$field.'" is missing or empty for a "'.$berichtsoort.'" '
+						.'bericht; refusing to build an envelope with unresolved data.'
+				);
+			}
+		}
+
+	}//end assertRequiredFieldsPresent()
+
+	/**
+	 * A scalar as a trimmed non-empty string, or null.
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @return string|null
+	 */
+	private function stringOrNull(mixed $value): ?string {
+		if (is_scalar($value) === false) {
+			return null;
+		}
+
+		$string = trim((string) $value);
+		if ($string === '') {
+			return null;
+		}
+
+		return $string;
+	}//end stringOrNull()
+
+	/**
+	 * Append a text-valued child element.
+	 *
+	 * @param DOMDocument $document The owning document.
+	 * @param DOMElement $parent The parent element.
+	 * @param string $name The child element name.
+	 * @param string $value The text value.
+	 *
+	 * @return void
+	 */
+	private function appendText(DOMDocument $document, DOMElement $parent, string $name, string $value): void {
+		$parent->appendChild($document->createElement($name, htmlspecialchars($value, ENT_XML1 | ENT_QUOTES)));
+
+	}//end appendText()
+
+	/**
+	 * Scan the rendered envelope for leftover unresolved template markers:
+	 * defense in depth beyond the required-fields pre-check.
+	 *
+	 * @param string $xml The fully rendered envelope XML.
+	 *
+	 * @return void
+	 *
+	 * @throws RodTranslationException When any marker survives.
+	 */
+	private function assertNoUnresolvedPlaceholder(string $xml): void {
+		if ($this->leakGuard->hasUnresolvedPlaceholder(xml: $xml) === true) {
+			throw new RodTranslationException(
+				message: 'Rendered envelope still contains an unresolved template marker; refusing to send.'
+			);
+		}
+
+	}//end assertNoUnresolvedPlaceholder()
+}//end class

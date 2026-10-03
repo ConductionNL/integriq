@@ -14,7 +14,6 @@
     "1.5",
     "1.6"
   ],
-  "translator": "ZgwResourceTranslatorInterface",
   "synchronizations": [
     "zgw-zaken-pull",
     "zgw-zaken-push"
@@ -31,6 +30,7 @@
     "chosenBy": "operator"
   },
   "source": {
+    "slug": "zgw-set-zaken",
     "name": "Zaken API",
     "type": "api",
     "location": "",

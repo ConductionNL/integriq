@@ -86,6 +86,21 @@ class RegisterDescriptorTest extends TestCase {
 	 * Was 35 — `stuf_message` added by openspec/changes/stuf-zkn-bridge,
 	 * bringing the count to 36.
 	 *
+	 * Was 49 — `rod_message` added by openspec/changes/integriq-adapter-rod,
+	 * bringing the count to 50.
+	 *
+	 * Was 50 — `verzuim_message` added by openspec/changes/archive/2026-09-28-integriq-adapter-verzuimloket,
+	 * bringing the count to 51.
+	 *
+	 * Was 51 — `oso_message` added by openspec/changes/integriq-adapter-oso,
+	 * bringing the count to 52.
+	 *
+	 * Was 52 — `uwlr_eduv_message` added by openspec/changes/archive/2026-09-29-integriq-adapter-uwlr-eduv,
+	 * bringing the count to 53.
+	 *
+	 * Was 53: `column_mapping` added by migration-source-adapters (the stored
+	 * mapping a delivered file is read through), bringing the count to 54.
+	 *
 	 * @var array<string, string>
 	 */
 	private const SCHEMA_SLUGS = [
@@ -97,6 +112,7 @@ class RegisterDescriptorTest extends TestCase {
 		'EventSubscription' => 'event_subscription',
 		'Job' => 'job',
 		'Mapping' => 'mapping',
+		'ColumnMapping' => 'column_mapping',
 		'Message' => 'mail_message',
 		'IntakeMessage' => 'intake_message',
 		'IntakeRoutingRule' => 'intake_routing_rule',
@@ -143,6 +159,12 @@ class RegisterDescriptorTest extends TestCase {
 		'OpenFormulierenSubmission' => 'openformulieren_submission',
 		// iWMO/iJW (StUF iStandaarden Wmo/Jeugdwet) bridge — added by iwmo-ijw-adapter spec.
 		'IwmoIjwMessage' => 'iwmo_ijw_message',
+		// DUO ROD (Register Onderwijsdeelnemers) adapter — added by integriq-adapter-rod spec.
+		'RodMessage' => 'rod_message',
+		// DUO Verzuimloket (VSV-M2M) adapter — added by integriq-adapter-verzuimloket spec.
+		'VerzuimMessage' => 'verzuim_message',
+		// OSO (Overstapservice Onderwijs) adapter — added by integriq-adapter-oso spec.
+		'OsoMessage' => 'oso_message',
 		// FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.
 		'FscService' => 'fsc_service',
 		'FscCall' => 'fsc_call',
@@ -171,6 +193,9 @@ class RegisterDescriptorTest extends TestCase {
 		// write is wrapped in a catch that logs a warning, so every record of
 		// what was posted was dropped without anything erroring.
 		'DigitalPostMessage' => 'digitalPostMessage',
+		// UWLR/Edu-V/Basispoort/Entree-content adapter — added by
+		// integriq-adapter-uwlr-eduv spec.
+		'UwlrEduVMessage' => 'uwlr_eduv_message',
 	];
 
 	/**

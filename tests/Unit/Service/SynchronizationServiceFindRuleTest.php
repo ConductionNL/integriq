@@ -93,7 +93,7 @@ class SynchronizationServiceFindRuleTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(SynchronizationLogService::class),
 			$this->createMock(IAppConfig::class),
-			$this->createMock(\OCA\Integriq\Service\ApprovalService::class)
+			$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class)
 		);
 
 	}//end setUp()

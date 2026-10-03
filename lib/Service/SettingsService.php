@@ -135,30 +135,23 @@ class SettingsService {
 	public function getSettings(): array {
 		try {
 			$retentionConfig = $this->config->getValueString('integriq', 'retention', '');
-			if (empty($retentionConfig) === true) {
-				return [
-					'retention' => [
-						'successLogRetention' => 3600000,
-						'callLogRetention' => 2592000000,
-						'eventMessageRetention' => 604800000,
-						'jobLogRetention' => 2592000000,
-						'syncContractLogRetention' => 7776000000,
-						'syncLogRetention' => 2592000000,
-					],
-				];
+			$retentionData = [];
+			if (empty($retentionConfig) === false) {
+				$retentionData = json_decode($retentionConfig, true);
 			}
 
-			$retentionData = json_decode($retentionConfig, true) ?? [];
-			return [
-				'retention' => [
-					'successLogRetention' => $retentionData['successLogRetention'] ?? 3600000,
-					'callLogRetention' => $retentionData['callLogRetention'] ?? 2592000000,
-					'eventMessageRetention' => $retentionData['eventMessageRetention'] ?? 604800000,
-					'jobLogRetention' => $retentionData['jobLogRetention'] ?? 2592000000,
-					'syncContractLogRetention' => $retentionData['syncContractLogRetention'] ?? 7776000000,
-					'syncLogRetention' => $retentionData['syncLogRetention'] ?? 2592000000,
-				],
-			];
+			if (is_array($retentionData) === false) {
+				$retentionData = [];
+			}
+
+			// The same table the log writers fall back to, so what this read
+			// reports is what the logs get (integriq#2210).
+			$retention = [];
+			foreach (RetentionDefaults::BY_SETTING as $key => $default) {
+				$retention[$key] = ($retentionData[$key] ?? $default);
+			}
+
+			return ['retention' => $retention];
 		} catch (\Exception $e) {
 			$this->logger->error('Failed to retrieve settings', ['exception' => $e->getMessage()]);
 			throw new \RuntimeException('Failed to retrieve settings: ' . $e->getMessage());

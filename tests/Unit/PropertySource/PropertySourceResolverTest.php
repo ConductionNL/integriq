@@ -34,8 +34,8 @@ use Psr\Log\LoggerInterface;
 /**
  * REQ-RFS-002, REQ-RFS-003, REQ-RFS-004 and REQ-RFS-005.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-live-means-a-stated-staleness-budget-req-rfs-004
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-live-means-a-stated-staleness-budget-req-rfs-004
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005
  */
 class PropertySourceResolverTest extends TestCase {
 	/**

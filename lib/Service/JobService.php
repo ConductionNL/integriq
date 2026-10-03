@@ -471,6 +471,10 @@ class JobService {
 		// of the job's own `arguments` field.
 		$arguments['_executionTrace'] = $trace;
 
+		// The job's own uuid, for actions that load their job (ExchangeJobAction:
+		// learniq-exchange-jobs-native design D1). Like the trace, never persisted.
+		$arguments['_jobId'] = $job->getUuid();
+
 		// H3: wrap execution in a catch so executeJob writes a job_log on any
 		// thrown exception, not just when called from run().  Without this, a
 		// controller-invoked run (JobsController::run/test) swallows the

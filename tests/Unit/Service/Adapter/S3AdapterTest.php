@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the S3-compatible reference adapter (REQ-DIC-001).
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
  */
 class S3AdapterTest extends TestCase {
 
@@ -75,6 +75,23 @@ class S3AdapterTest extends TestCase {
 	public function testCapabilities(): void {
 		$this->assertSame(['object-read', 'object-write', 'object-list'], $this->adapter->getCapabilities());
 	}//end testCapabilities()
+
+	/**
+	 * The label tells an administrator that native AWS S3 is not reachable.
+	 *
+	 * The broker injects one templated header and cannot sign AWS Signature
+	 * Version 4, so every request to AWS S3 is refused. The label said only
+	 * "S3-compatible object storage", which reads as AWS S3 included
+	 * (integriq#2214).
+	 *
+	 * @return void
+	 */
+	public function testTheLabelSaysAwsS3IsNotSupported(): void {
+		$label = $this->adapter->getLabel();
+
+		$this->assertStringContainsString('not AWS S3', $label);
+		$this->assertStringContainsString('API key', $label);
+	}//end testTheLabelSaysAwsS3IsNotSupported()
 
 	/**
 	 * `listObjects()` parses a real `ListObjectsV2` XML response shape.

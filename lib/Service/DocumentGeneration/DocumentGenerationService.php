@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  *    half-generated document: either the job carries a document that was
  *    fetched and verified, or it carries none and says why.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
  *
  * @SuppressWarnings(PHPMD.StaticAccess) RenderOutcome's named constructors, as above.
  */
@@ -114,7 +114,7 @@ class DocumentGenerationService {
 	 *
 	 * @throws DocumentGenerationException When the source or its binding cannot render at all.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function requestRender(
 		string $sourceId,
@@ -168,7 +168,7 @@ class DocumentGenerationService {
 	 *
 	 * @return ObjectEntity The job, updated.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function pollJob(ObjectEntity $job): ObjectEntity {
 		$data = $job->getObject();
@@ -261,7 +261,7 @@ class DocumentGenerationService {
 	 *
 	 * @return ObjectEntity The job, updated.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	private function apply(
 		ObjectEntity $job,

@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * (the S3 adapter is the one category adapter that does, and overrides
  * accordingly).
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
  */
 abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvider {
 	/**
@@ -82,7 +82,7 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 *
 	 * @return array<int,string> Capability slugs.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
 	 */
 	abstract public function getCapabilities(): array;
 
@@ -141,7 +141,7 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 *                                                                              upstream response, or null when no credential is configured yet
 	 *                                                                              (callers treat this as "integration not configured", not an error).
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
 	 */
 	protected function brokeredRequest(string $method, string $path, array $headers = [], ?string $body = null): ?array {
 		$credentialId = $this->getCredentialId();
@@ -178,7 +178,7 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 *
 	 * @return string Always `'query-time'`.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
 	 */
 	public function getStorageStrategy(): string {
 		return 'query-time';
@@ -194,7 +194,7 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 *
 	 * @return array<string,mixed> Auth-requirements descriptor.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
 	 */
 	public function authRequirements(): array {
 		return [
@@ -215,7 +215,7 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 *
 	 * @return bool True once a credential UUID is configured.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
 	 */
 	public function isEnabled(): bool {
 		return $this->getCredentialId() !== null;
@@ -230,7 +230,7 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 *
 	 * @return array<string,mixed> Health + auth descriptor.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
 	 */
 	public function health(): array {
 		if ($this->getCredentialId() === null) {

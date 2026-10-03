@@ -5,7 +5,7 @@
   "description": "Arbitrary registered objects as the Objecten API holds them.",
   "component": "Objecten API",
   "resource": "object",
-  "auth": "jwt-zgw",
+  "auth": "token",
   "apiVersion": "1.6",
   "supportedApiVersions": [
     "1.0",
@@ -14,7 +14,6 @@
     "1.5",
     "1.6"
   ],
-  "translator": "ZgwResourceTranslatorInterface",
   "synchronizations": [
     "zgw-objecten-pull",
     "zgw-objecten-push"
@@ -31,6 +30,7 @@
     "chosenBy": "operator"
   },
   "source": {
+    "slug": "zgw-set-objecten",
     "name": "Objecten API",
     "type": "api",
     "location": "",

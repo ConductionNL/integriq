@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * REQ-MSA-001 and REQ-MSA-004.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001
  */
 class MigrationSourceRegistryTest extends TestCase {
 	/**

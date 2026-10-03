@@ -24,7 +24,7 @@ namespace OCA\Integriq\Migration;
  * The provenance block is the one `registry-backed-field-source` REQ-RFS-003
  * already defines, not a second shape for the same idea.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-every-yielded-record-carries-its-foreign-identity-req-msa-005
+ * @spec openspec/specs/migration-sources/spec.md#requirement-every-yielded-record-carries-its-foreign-identity-req-msa-005
  */
 final class MigrationRecord {
 	/**

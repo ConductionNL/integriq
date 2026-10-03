@@ -29,19 +29,30 @@ use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
 /**
  * Generates, rotates, and publishes LTI signing keys.
  *
- * Custody note (design.md D3): private key material is stored the same way
- * `AuthenticationService::fetchJWTToken`'s `secret` configuration is stored
- * today — plaintext-pending-encryption, per ADR-007's already-accepted,
- * fleet-wide status quo. This is a deliberate, documented divergence from
- * digikoppeling-adapter's fail-closed posture (see design.md D3 for the full
- * reasoning) — NOT an oversight.
+ * Custody note (integriq#2213): the private half of every signing key is
+ * encrypted at rest with Nextcloud's `OCP\Security\ICrypto` (the instance
+ * secret) before it reaches the registration object, and is decrypted only
+ * in {@see getActiveKeyEntry()}, the one read path that hands key material to
+ * signing code. A stored value carries the {@see ENCRYPTED_PREFIX} marker; a
+ * value without it is a row written before this change (plain base64 PEM). It
+ * still reads back unchanged so existing registrations keep signing, and the
+ * next write of the keys through this service (generate, rotate or the
+ * retirement sweep) seals it.
+ *
+ * The broker move ADR-064 asks for (a `credentialRef` resolved at signing
+ * time) is deferred: `CredentialBrokerService::resolveInjectable()` guards on
+ * the SESSION user, and a platform launch or an AGS token request runs in a
+ * learner's session, not the key owner's. Moving the keys needs a scope
+ * decision on who owns them and a migration of existing rows.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
@@ -87,14 +98,24 @@ class LtiKeyService {
 	public const GRACE_WINDOW_SECONDS = 604800;
 
 	/**
+	 * Marker on a `privateKeySecret` that holds ICrypto ciphertext rather than
+	 * a legacy plain base64 PEM.
+	 *
+	 * @var string
+	 */
+	public const ENCRYPTED_PREFIX = 'icrypto:';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OrObjectService $orObjectService OR ObjectService used to read/write registrations.
 	 * @param LoggerInterface $logger Logger for rotation/retirement outcomes (never logs key material).
+	 * @param ICrypto $crypto Encrypts the private key at rest and decrypts it for signing.
 	 */
 	public function __construct(
 		private readonly OrObjectService $orObjectService,
 		private readonly LoggerInterface $logger,
+		private readonly ICrypto $crypto,
 	) {
 
 	}//end __construct()
@@ -136,7 +157,11 @@ class LtiKeyService {
 				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
-				_multitenancy: false
+				_multitenancy: false,
+				// `signingKeys` is writeOnly (register.d/99-lti-*-secrets-writeonly.json)
+				// and the rendered read strips writeOnly unconditionally, also under
+				// `_rbac: false` (openregister#460). Unrendered, the keys are there.
+				_render: false
 			);
 		} catch (DoesNotExistException $exception) {
 			throw new LtiValidationException(
@@ -153,7 +178,7 @@ class LtiKeyService {
 	 *
 	 * @param string $algorithm RS256 or PS256.
 	 *
-	 * @return array The new key entry (`kid`, `algorithm`, `publicJwk`, `privateKeySecret`, `status`, `rotatedAt`).
+	 * @return array The new key entry (`kid`, `algorithm`, `publicJwk`, `privateKeySecret`, `status`; no `rotatedAt` until rotated).
 	 *
 	 * @throws BadRequestException When the algorithm is not supported.
 	 */
@@ -184,16 +209,15 @@ class LtiKeyService {
 			'kid' => $kid,
 			'algorithm' => $algorithm,
 			'publicJwk' => $this->derivePublicJwk(pem: $pem, kid: $kid, algorithm: $algorithm),
-			// Plaintext-pending-encryption per ADR-007 (design.md D3) — a
-			// base64-encoded PEM private key, never logged. Stored as PEM
-			// (not a JSON JWK) so it is directly consumable, unmodified, by
-			// AuthenticationService::fetchJWTToken()'s existing getRSJWK()
-			// path (REQ-LTI-008/009 Tool-role outbound calls reuse
-			// fetchOAuthTokens() unmodified, which requires this exact
-			// base64(PEM) shape) as well as this service's own signing.
-			'privateKeySecret' => base64_encode($pem),
+			// A base64-encoded PEM private key, encrypted at rest (#2213) and
+			// never logged. getActiveKeyEntry() decrypts it back to base64(PEM),
+			// the shape AuthenticationService::getRSJWK() (REQ-LTI-008/009
+			// outbound calls) and this app's own signing consume unmodified.
+			'privateKeySecret' => $this->sealSecret(plainSecret: base64_encode($pem)),
 			'status' => 'active',
-			'rotatedAt' => null,
+			// No `rotatedAt` while active: the lti_tool/lti_platform schemas declare
+			// it as a date-time string ("unset while active") and refuse null
+			// (#2261). rotateKey() stamps it when the key is superseded.
 		];
 
 	}//end createKeyEntry()
@@ -254,6 +278,78 @@ class LtiKeyService {
 	}//end redactEntry()
 
 	/**
+	 * Encrypt a base64(PEM) private key for storage.
+	 *
+	 * @param string $plainSecret The base64(PEM) private key.
+	 *
+	 * @return string The marked ICrypto ciphertext.
+	 *
+	 * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+	 */
+	private function sealSecret(string $plainSecret): string {
+		return self::ENCRYPTED_PREFIX . $this->crypto->encrypt($plainSecret);
+	}//end sealSecret()
+
+	/**
+	 * Encrypt every signing-key entry still holding a legacy plain secret.
+	 *
+	 * Runs before each write of a registration's `signingKeys`, so a row
+	 * written before encryption is sealed the next time this service saves it.
+	 *
+	 * @param array $signingKeys The registration's signingKeys[] entries.
+	 *
+	 * @return array The same entries with every private key encrypted.
+	 *
+	 * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+	 */
+	private function sealLegacyEntries(array $signingKeys): array {
+		foreach ($signingKeys as $index => $entry) {
+			$secret = (string)($entry['privateKeySecret'] ?? '');
+			if ($secret === '' || str_starts_with($secret, self::ENCRYPTED_PREFIX) === true) {
+				continue;
+			}
+
+			$signingKeys[$index]['privateKeySecret'] = $this->sealSecret(plainSecret: $secret);
+		}
+
+		return $signingKeys;
+	}//end sealLegacyEntries()
+
+	/**
+	 * Decrypt a stored private key back to base64(PEM).
+	 *
+	 * A value without the {@see ENCRYPTED_PREFIX} marker is a legacy plain row
+	 * and is returned unchanged, so registrations written before encryption
+	 * keep signing until their next write seals them.
+	 *
+	 * @param string $storedSecret The stored `privateKeySecret`.
+	 *
+	 * @return string The base64(PEM) private key.
+	 *
+	 * @throws LtiValidationException When the ciphertext cannot be decrypted (for example after the instance secret changed).
+	 *
+	 * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+	 */
+	private function openSecret(string $storedSecret): string {
+		if (str_starts_with($storedSecret, self::ENCRYPTED_PREFIX) === false) {
+			return $storedSecret;
+		}
+
+		try {
+			return $this->crypto->decrypt(substr($storedSecret, strlen(self::ENCRYPTED_PREFIX)));
+		} catch (Throwable $exception) {
+			// Class only: the message of a crypto failure is never widened with key material.
+			$this->logger->error('LtiKeyService: stored signing key could not be decrypted (' . $exception::class . ')');
+			throw new LtiValidationException(
+				message: 'Stored signing key material could not be decrypted',
+				details: [],
+				httpStatus: 500
+			);
+		}
+
+	}//end openSecret()
+
+	/**
 	 * Generate the first signing key for a registration.
 	 *
 	 * @param string $registrationType `lti_platform` or `lti_tool`.
@@ -283,7 +379,7 @@ class LtiKeyService {
 		$newEntry = $this->createKeyEntry(algorithm: $algorithm);
 		$signingKeys[] = $newEntry;
 
-		$data['signingKeys'] = $signingKeys;
+		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
 			register: 'integriq',
@@ -344,7 +440,7 @@ class LtiKeyService {
 		$newEntry = $this->createKeyEntry(algorithm: $rotatedAlgorithm);
 		$signingKeys[] = $newEntry;
 
-		$data['signingKeys'] = $signingKeys;
+		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
 			register: 'integriq',
@@ -464,14 +560,15 @@ class LtiKeyService {
 	 * Return the current `active` signing-key entry (private material included).
 	 *
 	 * Used internally by launch/service-token signing — never exposed on a
-	 * controller response.
+	 * controller response. The returned `privateKeySecret` is decrypted back
+	 * to base64(PEM); the stored copy stays encrypted.
 	 *
 	 * @param string $registrationType `lti_platform` or `lti_tool`.
 	 * @param string $registrationUuid The registration's UUID.
 	 *
 	 * @return array|null The active entry, or null when no active key exists.
 	 *
-	 * @throws LtiValidationException When the registration does not exist.
+	 * @throws LtiValidationException When the registration does not exist or its key cannot be decrypted.
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
@@ -480,9 +577,15 @@ class LtiKeyService {
 		$signingKeys = ($registration->getObject()['signingKeys'] ?? []);
 
 		foreach ($signingKeys as $entry) {
-			if (($entry['status'] ?? null) === 'active') {
-				return $entry;
+			if (($entry['status'] ?? null) !== 'active') {
+				continue;
 			}
+
+			if (is_string($entry['privateKeySecret'] ?? null) === true) {
+				$entry['privateKeySecret'] = $this->openSecret(storedSecret: $entry['privateKeySecret']);
+			}
+
+			return $entry;
 		}
 
 		return null;
@@ -546,7 +649,10 @@ class LtiKeyService {
 			);
 			$registrations = ($matches['results'] ?? $matches);
 
-			foreach ($registrations as $registration) {
+			foreach ($registrations as $listed) {
+				// The list is rendered, so its rows carry no writeOnly `signingKeys`:
+				// read each registration again past the render boundary.
+				$registration = $this->findRegistration(registrationType: $registrationType, registrationUuid: $listed->getUuid());
 				$data = $registration->getObject();
 				$signingKeys = ($data['signingKeys'] ?? []);
 				$changed = false;
@@ -568,7 +674,7 @@ class LtiKeyService {
 				}//end foreach
 
 				if ($changed === true) {
-					$data['signingKeys'] = $signingKeys;
+					$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 					$this->orObjectService->saveObject(
 						object: $data,
 						register: 'integriq',

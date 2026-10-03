@@ -1,0 +1,12 @@
+{
+  "name": "Zaken uit het oude systeem",
+  "kind": "case",
+  "targetSchema": "case",
+  "columns": {
+    "zaaknummer": "reference",
+    "naam": "requesterName",
+    "plaats": "city"
+  },
+  "identifierColumn": "zaaknummer",
+  "version": 3
+}

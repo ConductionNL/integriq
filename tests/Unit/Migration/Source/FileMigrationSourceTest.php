@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
 /**
  * REQ-MSA-002 and REQ-MSA-005.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-file-is-read-through-a-stored-column-mapping-req-msa-002
  */
 class FileMigrationSourceTest extends TestCase {
 	/**

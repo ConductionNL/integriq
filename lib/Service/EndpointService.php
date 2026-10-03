@@ -158,6 +158,8 @@ class EndpointService {
 	 *                                                          positional test instantiations keep
 	 *                                                          working unmodified; a real request always
 	 *                                                          gets the DI container's instance.
+	 * @param EndpointTargetResolver|null $targetResolver Resolves a `targetId` named by slug (REQ-EP-011);
+	 *                                                    nullable for the same reason.
 	 *
 	 * @return void
 	 */
@@ -186,6 +188,7 @@ class EndpointService {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ORFileService $orFileService,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
+		private readonly ?EndpointTargetResolver $targetResolver = null,
 	) {
 	}//end __construct()
 
@@ -737,7 +740,12 @@ class EndpointService {
 				$statusCode = $configurations['defaultStatusCode'];
 			}
 
-			return new JSONResponse(data: $ruleResult['body'], statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
+			// The endpoint's output mapping reshapes the answer last, so every
+			// `after` rule sees the register's own shape and the consumer sees
+			// the mapped one (gateway-endpoint-transform-and-plugins D1).
+			$answerBody = $this->applyOutputMapping(endpointData: $endpointData, body: $ruleResult['body']);
+
+			return new JSONResponse(data: $answerBody, statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
 		}//end if
 
 		// Check if endpoint connects to a source.
@@ -749,6 +757,44 @@ class EndpointService {
 		// Invalid endpoint configuration.
 		throw new Exception('Endpoint must specify either a schema or source connection');
 	}//end dispatchAfterBeforeRules()
+
+	/**
+	 * Apply an endpoint's `outputMapping` to the answer body.
+	 *
+	 * A single object is mapped as a whole. A list answer (a `results` array)
+	 * has each item mapped and keeps its other keys, the pagination envelope.
+	 * No mapping, or a body that is not an array (an empty DELETE answer), is
+	 * returned unchanged.
+	 *
+	 * @param array $endpointData The endpoint object.
+	 * @param mixed $body The body the `after` rules produced.
+	 *
+	 * @return mixed The body the consumer receives.
+	 *
+	 * @throws DoesNotExistException When the named mapping does not exist.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-an-endpoints-output-mapping-reshapes-its-answer-req-gtp-001
+	 */
+	private function applyOutputMapping(array $endpointData, mixed $body): mixed {
+		$mappingId = (string)($endpointData['outputMapping'] ?? '');
+		if ($mappingId === '' || is_array($body) === false) {
+			return $body;
+		}
+
+		$mapping = $this->mappingService->getMapping(mappingId: $mappingId);
+
+		if (isset($body['results']) === true && is_array($body['results']) === true) {
+			foreach ($body['results'] as $index => $item) {
+				if (is_array($item) === true) {
+					$body['results'][$index] = $this->mappingService->executeMapping(mapping: $mapping, input: $item);
+				}
+			}
+
+			return $body;
+		}
+
+		return $this->mappingService->executeMapping(mapping: $mapping, input: $body);
+	}//end applyOutputMapping()
 
 	/**
 	 * Resume an endpoint rule-pipeline run suspended by an `approval` rule,
@@ -977,8 +1023,9 @@ class EndpointService {
 	private function enforceInboundRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
 		$consumer = $this->authorizationService->getResolvedConsumer();
 		if ($consumer === null) {
-			// No per-consumer identity resolved — nothing to throttle.
-			return null;
+			// No per-consumer identity resolved: only the endpoint's own
+			// anonymous ceiling, when it declares one, applies (REQ-EP-013).
+			return $this->enforceAnonymousRateLimit(request: $request, endpoint: $endpoint);
 		}
 
 		$consumerData = $consumer->getObject();
@@ -1035,6 +1082,51 @@ class EndpointService {
 		);
 
 	}//end enforceInboundRateLimit()
+
+	/**
+	 * Apply an endpoint's `anonymousRateLimit` to a caller no consumer identifies.
+	 *
+	 * A public endpoint has no authentication rule, so no consumer is resolved
+	 * and no consumer limit applies; the router's own ceiling is shared by
+	 * every endpoint. An endpoint that declares `anonymousRateLimit`
+	 * (`{requestsPerWindow, windowSeconds}`) gets its own ceiling per client
+	 * address, as decidiq's `AnonRateLimit(limit: 120, period: 60)` gave the
+	 * ORI feed. No declaration keeps today's behaviour: unlimited here.
+	 *
+	 * @param IRequest     $request  The incoming request.
+	 * @param ObjectEntity $endpoint The dispatched endpoint.
+	 *
+	 * @return JSONResponse|null A 429 response when over the ceiling, null otherwise.
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-a-public-endpoint-may-declare-its-own-anonymous-rate-limit-req-ep-013
+	 */
+	private function enforceAnonymousRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
+		$rateLimit = ($endpoint->getObject()['anonymousRateLimit'] ?? null);
+		if (is_array($rateLimit) === false || $rateLimit === []) {
+			return null;
+		}
+
+		$decision = $this->rateLimitService->enforce(
+			consumerKey: 'endpoint:' . (string)$endpoint->getUuid() . ':ip:' . $request->getRemoteAddress(),
+			rateLimit: $rateLimit,
+			quota: null
+		);
+
+		$this->rateLimitHeaders = $decision->toHeaders();
+		if ($decision->allowed === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			[
+				'error' => 'rate_limited',
+				'message' => 'Too Many Requests',
+				'reason' => $decision->reason,
+			],
+			Http::STATUS_TOO_MANY_REQUESTS,
+			$decision->toHeaders()
+		);
+	}//end enforceAnonymousRateLimit()
 
 	/**
 	 * Reject a request whose source falls outside the resolved consumer's allowlist.
@@ -1721,18 +1813,21 @@ class EndpointService {
 	 * @param array $parameters The parameters from the request.
 	 * @param array $pathParams The parameters in the path.
 	 * @param int $status The HTTP status to return.
+	 * @param array $fixedFilters The endpoint's fixed filters: a single object that fails them is not found (REQ-EP-010).
 	 *
 	 * @return Entity|array The object(s) confirming to the request.
 	 *
 	 * @throws Exception
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoints-fixed-filters-narrow-its-collection-and-no-path-skips-them-req-ep-012
 	 */
 	private function getObjects(
 		ORObjectService|ObjectServiceMapperAdapter|QBMapper $mapper,
 		array $parameters,
 		array $pathParams,
 		int &$status = 200,
+		array $fixedFilters = [],
 	): Entity|array {
 		if (isset($pathParams['id']) === true && $pathParams['id'] === end($pathParams)) {
 			try {
@@ -1741,6 +1836,16 @@ class EndpointService {
 					extend: ($parameters['extend'] ?? $parameters['_extend'] ?? null)
 				)->jsonSerialize();
 			} catch (DoesNotExistException $e) {
+				$status = 404;
+				return ['error' => 'not found', 'message' => "the object with id {$pathParams['id']} does not exist"];
+			}
+
+			// REQ-EP-010: the collection path is narrowed by the filters the
+			// endpoint's inputMapping injects; the single-object path fetched by
+			// id with none, so /motions/{id} answered an amendment. An object
+			// that fails the endpoint's declared fixed filters gets the SAME 404
+			// as a missing one, so the answer says nothing about what it is.
+			if ($fixedFilters !== [] && (new EndpointIdFetchGuard())->admits(object: $serializedObject, fixedFilters: $fixedFilters) === false) {
 				$status = 404;
 				return ['error' => 'not found', 'message' => "the object with id {$pathParams['id']} does not exist"];
 			}
@@ -1802,6 +1907,13 @@ class EndpointService {
 			return $returnArray;
 		}//end if
 
+		// REQ-EP-012: the endpoint's fixed filters narrow the collection too,
+		// over whatever the caller sent for the same field, so a list and the
+		// single objects in it are gated by one declaration and cannot drift.
+		if ($fixedFilters !== []) {
+			$parameters = array_merge($parameters, $fixedFilters);
+		}
+
 		$parameters = $this->rewriteExternalReferences(parameters: $parameters, mapper: $mapper);
 
 		if (isset($parameters['_limit']) === false && isset($parameters['limit']) === false) {
@@ -1860,6 +1972,33 @@ class EndpointService {
 	}//end getObjects()
 
 	/**
+	 * Resolve an endpoint's `targetId` to its register and schema ids.
+	 *
+	 * Ids are used as they are. A target named by slug (`decidiq/meeting`) is
+	 * looked up, so an endpoint can ship as seed configuration whatever ids
+	 * the instance gave the register (REQ-EP-011).
+	 *
+	 * @param string $targetId The endpoint's `targetId`.
+	 *
+	 * @return array{0: int, 1: int} The register id and the schema id.
+	 *
+	 * @throws DoesNotExistException When a slug names no register, or no schema in it.
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-name-its-target-register-and-schema-by-slug-req-ep-011
+	 */
+	private function resolveTarget(string $targetId): array {
+		$target = explode('/', $targetId);
+		$register = ($target[0] ?? '');
+		$schema = ($target[1] ?? '');
+
+		if ($this->targetResolver === null || (ctype_digit($register) === true && ctype_digit($schema) === true)) {
+			return [(int)$register, (int)$schema];
+		}
+
+		return $this->targetResolver->resolve(targetId: $targetId);
+	}//end resolveTarget()
+
+	/**
 	 * Handles requests for schema-based endpoints.
 	 *
 	 * @param ObjectEntity $endpoint The endpoint configuration.
@@ -1872,18 +2011,16 @@ class EndpointService {
 	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-name-its-target-register-and-schema-by-slug-req-ep-011
 	 */
 	private function handleSchemaRequest(ObjectEntity $endpoint, FlowToken &$flowToken, string $path): JSONResponse {
 		$endpointData = $endpoint->getObject();
 		// @TODO: CONVERT TO FLOWTOKENS
 		// Get request method
 		$method = $flowToken->getRequestAmended()['method'];
-		$target = explode('/', $endpointData['targetId'] ?? '');
+		[$register, $schema] = $this->resolveTarget(targetId: (string)($endpointData['targetId'] ?? ''));
 
-		$register = $target[0];
-		$schema = $target[1];
-
-		$mapper = $this->objectService->getMapper(schema: (int)$schema, register: (int)$register);
+		$mapper = $this->objectService->getMapper(schema: $schema, register: $register);
 
 		$parameters = $flowToken->getRequestAmended()['parameters'];
 
@@ -1929,7 +2066,13 @@ class EndpointService {
 						$parameters = array_merge($systemFilters, $this->mappingService->translateVngFilterOperators(filters: $lookupFilters));
 					}
 
-					$objects = $this->getObjects(mapper: $mapper, parameters: $parameters, pathParams: $pathParams, status: $status);
+					$objects = $this->getObjects(
+						mapper: $mapper,
+						parameters: $parameters,
+						pathParams: $pathParams,
+						status: $status,
+						fixedFilters: (array)($endpointData['fixedFilters'] ?? [])
+					);
 					if ($expand !== [] && isset($objects['results']) === true && is_array($objects['results']) === true) {
 						$objects['results'] = array_map(
 							fn (array $result) => $this->mappingService->expandRelations(data: $result, expand: $expand),
@@ -3893,20 +4036,29 @@ class EndpointService {
 	}//end processFilePartUploadRule()
 
 	/**
-	 * Processes a JavaScript rule
+	 * Refuse a JavaScript rule. Integriq runs no scripts: tenant-written code
+	 * in a Nextcloud PHP process needs a sandbox integriq does not have. This
+	 * rule used to return its input unchanged, which is worse than no rule.
+	 * The register no longer stores the type; a rule saved before that fails
+	 * here, loudly, the first time it runs.
 	 *
-	 * @param ObjectEntity $rule The rule object containing JavaScript execution details
-	 * @param array $data The input data to be processed by the JavaScript rule
+	 * @param ObjectEntity $rule The rule.
+	 * @param array $data The pipeline data (untouched).
 	 *
-	 * @return array The processed data after executing the JavaScript rule
+	 * @return array Never returns.
 	 *
-	 * @spec openspec/specs/rule-pipeline/spec.md
+	 * @throws Exception Always.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-javascript-rule-is-refused-req-gtp-003
 	 */
 	private function processJavaScriptRule(ObjectEntity $rule, array $data): array {
-		$config = $rule->getObject()['configuration'] ?? [];
-		// @todo: Here we need to implement the JavaScript execution logic
-		// For now, just return the data unchanged
-		return $data;
+		unset($data);
+		throw new Exception(
+			sprintf(
+				"Integriq runs no scripts, so the JavaScript rule '%s' was not run. Use a custom rule that names a plug-in, or a flow.",
+				(string)($rule->getObject()['name'] ?? $rule->getUuid())
+			)
+		);
 	}//end processJavaScriptRule()
 
 	/**

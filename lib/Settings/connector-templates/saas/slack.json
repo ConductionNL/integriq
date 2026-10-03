@@ -1,0 +1,26 @@
+{
+    "x-template": {
+        "slug": "slack",
+        "vendor": "slack.com",
+        "system": "Slack",
+        "standard": "OpenAPI 3.0.0",
+        "verifiedAgainst": "https://api.apis.guru/v2/specs/slack.com/1.7.0/openapi.json",
+        "tier": "generated",
+        "snapshotDate": "2026-09-29",
+        "category": "Messaging",
+        "directoryKey": "slack.com"
+    },
+    "source": {
+        "name": "Slack",
+        "description": "Slack, generated from the APIs.guru directory snapshot of 2026-09-29. A starting point: check the base URL and the scopes before use. Authentication: OAuth 2.0 (authorizationCode). Hold the credential in the credential broker and name it by credentialRef; this template carries none. Documentation: https://api.slack.com/web",
+        "type": "api",
+        "location": "https://slack.com/api",
+        "auth": "oauth",
+        "configuration": {
+            "authentication": {
+                "tokenUrl": "https://slack.com/api/oauth.access"
+            }
+        },
+        "isEnabled": false
+    }
+}

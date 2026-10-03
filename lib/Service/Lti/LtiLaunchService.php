@@ -409,12 +409,17 @@ class LtiLaunchService {
 	 * @param string $subject The launched user's subject identifier.
 	 * @param string $messageType `LtiResourceLinkRequest` or `LtiDeepLinkingRequest`.
 	 * @param array $extraClaims Additional LTI claims to merge (e.g. deep-linking settings, roles, context).
+	 * @param string|null $nonce The tool's own nonce from its authorization request (REQ-LTIL-002). A tool
+	 *                           rejects an id_token whose nonce it did not issue, so the platform
+	 *                           authorization endpoint always passes it; null keeps the old behaviour
+	 *                           of minting one.
 	 *
 	 * @return array{formActionUrl: string, idToken: string}
 	 *
 	 * @throws LtiValidationException When the deployment/tool/active key cannot be resolved.
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-the-platform-authorizes-the-tools-login-redirect-and-posts-the-launch-token-req-ltil-002
 	 */
 	public function initiatePlatformLaunch(
 		string $deploymentUuid,
@@ -422,6 +427,7 @@ class LtiLaunchService {
 		string $subject,
 		string $messageType,
 		array $extraClaims = [],
+		?string $nonce = null,
 	): array {
 		$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
 		if ($deployment === null) {
@@ -445,7 +451,7 @@ class LtiLaunchService {
 			throw new LtiValidationException(message: 'lti_tool registration has no active signing key', details: [], httpStatus: 400);
 		}
 
-		$nonce = bin2hex(random_bytes(32));
+		$nonce = ($nonce ?? bin2hex(random_bytes(32)));
 		$now = (new DateTime())->getTimestamp();
 
 		$payload = array_merge(

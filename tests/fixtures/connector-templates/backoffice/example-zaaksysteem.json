@@ -1,0 +1,20 @@
+{
+	"x-template": {
+		"slug": "example-zaaksysteem",
+		"vendor": "Example B.V.",
+		"system": "Example Zaaksysteem",
+		"standard": "CMIS 1.1",
+		"verifiedAgainst": "https://docs.oasis-open.org/cmis/CMIS/v1.1/CMIS-v1.1.html",
+		"tier": "curated",
+		"category": "Document management"
+	},
+	"source": {
+		"name": "Example Zaaksysteem (CMIS 1.1)",
+		"description": "A fixture template for the catalogue tests.",
+		"type": "api",
+		"location": "https://dms.example.org/alfresco/api/-default-/public/cmis/versions/1.1/browser",
+		"auth": "basic",
+		"configuration": {},
+		"isEnabled": false
+	}
+}

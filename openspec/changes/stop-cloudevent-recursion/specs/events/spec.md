@@ -52,3 +52,26 @@ Matching MUST NOT re-query the subscription set for every event.
 #### Scenario: Batch of events queries subscriptions once
 - **WHEN** a processing run handles multiple queued events
 - **THEN** the active subscription set is fetched once and reused
+
+### Requirement: The storm's rows SHALL be removable without touching genuine events
+An administrator MUST be able to delete the CloudEvents generated from other
+CloudEvents (source `/objects/com.nextcloud.openregister.object.created`,
+`.updated` or `.deleted`) and the `event_message` rows whose event is gone,
+through a command that reports before it deletes and counts what was removed.
+
+#### Scenario: A dry run deletes nothing
+- **WHEN** `occ integriq:events:purge-recursion` runs without `--apply`
+- **THEN** it reports the number of events, how many were generated from events, and the orphaned messages
+- **AND** nothing is deleted
+- @e2e exclude occ command with no UI surface, covered by PHPUnit PurgeEventRecursionTest
+
+#### Scenario: Apply removes the storm and keeps genuine events
+- **WHEN** it runs with `--apply`
+- **THEN** exactly the generated events and the orphaned messages are deleted
+- **AND** a genuine event, and a message that names no event, remain
+- @e2e exclude occ command with no UI surface, covered by PHPUnit PurgeEventRecursionTest
+
+#### Scenario: A shortfall is not reported as a cleanup
+- **WHEN** OpenRegister removes fewer rows than planned
+- **THEN** the command exits 1 and says the cleanup did not finish
+- @e2e exclude occ command with no UI surface, covered by PHPUnit PurgeEventRecursionTest

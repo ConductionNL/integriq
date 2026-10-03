@@ -198,3 +198,19 @@ and MUST make a refused registration visible as a failed delivery.
 - WHEN the registration is attempted
 - THEN it is refused naming the reference, and nothing is transmitted
 - @e2e exclude covered by PHPUnit on the gateway
+
+### Requirement: A sibling app sends through a gateway with a typed event (REQ-SG-010)
+
+Integriq MUST answer a `GatewayDeliveryRequestedEvent` naming a gateway (`corv`, `ggk`, `wkpb` or `publicatie`), a request shaped for that gateway, the requesting app and transport settings, by handing the request to that gateway's adapter and setting the resulting delivery on the event. The adapter's own validation MUST decide whether anything is transmitted. An unknown gateway MUST be refused with code `unknown-gateway`, and a message request without a `messageType` with code `invalid-request`; neither may transmit anything.
+
+#### Scenario: dossiq sends a CORV zorgmelding
+- GIVEN a CORV source configured for the instance
+- WHEN dossiq dispatches the event for `corv` with a valid `zorgmelding`
+- THEN the message is sent over that source and the event carries a delivered delivery with the identifier the other side returned
+- @e2e exclude an in-process event between two apps; covered by PHPUnit `GatewayDeliveryRequestedListenerTest::testACorvMessageIsSentAndTheDeliveryReturned`
+
+#### Scenario: a request integriq cannot place is refused
+- GIVEN a request for gateway `digid`, or a CORV request without a `messageType`
+- WHEN it is dispatched
+- THEN the event is refused with `unknown-gateway` or `invalid-request`, and nothing is transmitted
+- @e2e exclude an in-process event; covered by PHPUnit `GatewayDeliveryRequestedListenerTest::testUnknownGatewaysAndIncompleteRequestsAreRefused`

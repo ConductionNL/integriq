@@ -55,10 +55,16 @@ export function emptyRootGroup() {
  * matching backend arm breaks evaluation of every rule using it.
  *
  * Not the full set the backend accepts: `audit_trail`, `override`, `custom`,
- * `composite_fanout`, `referentienummer`, `avg_bsn_policy`, `selfurl_hal` and
- * `flow` also have match arms but no authoring UI, so they are deliberately
- * not offered. Rules of those types are seeded from configurations, and a rule
+ * `composite_fanout`, `referentienummer`, `avg_bsn_policy` and `selfurl_hal`
+ * also have match arms but no authoring UI, so they are deliberately not
+ * offered. (`flow` was in that list until its picker, `actionForms/FlowForm.vue`,
+ * landed with automation-endpoint-flow-trigger.) Rules of those types are seeded from configurations, and a rule
  * carrying one keeps it — nothing here rewrites a type that was not picked.
+ *
+ * `javascript` is not offered either, on purpose: integriq runs no scripts,
+ * the register refuses the type, and the runtime fails a rule that still
+ * carries it (gateway-endpoint-transform-and-plugins REQ-GTP-003). A plug-in
+ * (a `custom` rule) or a flow is the route for your own logic.
  *
  * The reverse gap also exists, in one place — see UNDISPATCHED_ACTION_TYPES.
  */
@@ -66,7 +72,6 @@ export const ACTION_TYPES = [
 	{ id: 'error', label: 'Error' },
 	{ id: 'mapping', label: 'Mapping' },
 	{ id: 'synchronization', label: 'Synchronization' },
-	{ id: 'javascript', label: 'JavaScript' },
 	{ id: 'authentication', label: 'Authentication' },
 	{ id: 'download', label: 'Download' },
 	{ id: 'upload', label: 'Upload' },
@@ -80,7 +85,25 @@ export const ACTION_TYPES = [
 	{ id: 'extend_external_input', label: 'Extend external input' },
 	{ id: 'webhook_signature', label: 'Webhook signature' },
 	{ id: 'approval', label: 'Approval' },
+	{ id: 'flow', label: 'Flow' },
 ]
+
+/**
+ * Whether a rule draft is a `flow` rule that names no flow.
+ *
+ * `EndpointService::processFlowRule()` throws
+ * "flow rule type requires configuration.flow" for such a rule, so the first
+ * failure would be a partner's 500. The editors refuse it at save instead.
+ *
+ * @param {object} draft The rule draft (top-level `type`, `configuration`).
+ * @return {boolean} True when the draft is a flow rule without a flow id.
+ *
+ * @spec openspec/specs/rule-editor-ui/spec.md#requirement-an-administrator-can-start-a-flow-from-an-endpoint-rule-req-aft-001
+ */
+export function flowRuleMissingFlow(draft) {
+	if (draft?.type !== 'flow') return false
+	return String(draft?.configuration?.flow ?? '').trim() === ''
+}
 
 /**
  * Action types this UI offers that NO backend pipeline can dispatch.

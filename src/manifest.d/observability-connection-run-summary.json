@@ -1,0 +1,96 @@
+{
+  "$comment": "ADR-037 manifest fragment (observability-connection-run-summary). The alerts ConnectionThresholdJob opens and clears. An open alert is not green: a source that is still failing has not recovered. Who is notified is the group named in the app setting connection_alert_group (Administration settings > Integriq); with none named, this page is the only place an alert shows.",
+  "pages": [
+    {
+      "id": "ConnectionAlerts",
+      "route": "/connection-alerts",
+      "type": "logs",
+      "title": "Connection alerts",
+      "config": {
+        "register": "integriq",
+        "schema": "connection_alert",
+        "sortKey": "openedAt",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "openedAt",
+            "label": "Opened",
+            "sortable": true,
+            "width": "16%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "subjectName",
+            "label": "Source or synchronization",
+            "sortable": true,
+            "width": "22%"
+          },
+          {
+            "key": "rule",
+            "label": "Rule",
+            "sortable": true,
+            "width": "14%"
+          },
+          {
+            "key": "count",
+            "label": "Count",
+            "sortable": true,
+            "width": "8%"
+          },
+          {
+            "key": "threshold",
+            "label": "More than",
+            "sortable": false,
+            "width": "8%"
+          },
+          {
+            "key": "windowMinutes",
+            "label": "Minutes",
+            "sortable": false,
+            "width": "8%"
+          },
+          {
+            "key": "state",
+            "label": "State",
+            "sortable": true,
+            "width": "10%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "open": "error",
+                "cleared": "success"
+              }
+            }
+          },
+          {
+            "key": "clearedAt",
+            "label": "Cleared",
+            "sortable": true,
+            "width": "14%",
+            "formatter": "datetime"
+          }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "OperationsGroup",
+      "children": [
+        {
+          "id": "ConnectionAlerts",
+          "label": "Connection alerts",
+          "icon": "AlertOutline",
+          "route": "ConnectionAlerts",
+          "order": 12
+        }
+      ]
+    }
+  ]
+}

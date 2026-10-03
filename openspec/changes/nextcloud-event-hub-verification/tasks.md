@@ -27,6 +27,7 @@
 - **files**: `tests/e2e/spec-coverage/nextcloud-event-triggers.spec.ts`
 - **acceptance_criteria**:
   - GIVEN the subscription modal WHEN synchronization, job or webhook is chosen THEN the matching target picker renders and the saved subscription carries the chosen `action`
+  - GIVEN the subscription modal WHEN "Flow" is chosen and a flow is picked THEN the saved subscription carries `action: {kind: "flow", flowId}` (moved here from `nc-events-start-or-flows` task 4 when that change archived on 2026-09-28; the picker itself is covered by `tests/vitest/subscriptionFlowAction.spec.js`)
 - [ ] Implement
 - [ ] Test
 

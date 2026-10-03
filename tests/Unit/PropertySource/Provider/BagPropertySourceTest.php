@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
  * REQ-RFS-006: the BAG binding reuses the PDOK connector and opens no
  * connection of its own.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
  */
 class BagPropertySourceTest extends TestCase {
 	/**

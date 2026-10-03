@@ -124,6 +124,18 @@ class ObjectService {
 	}
 
 	/**
+	 * Delete objects by uuid (signature as OpenRegister development 4abd834344).
+	 *
+	 * @param array $uuids Object uuids.
+	 * @param bool $_rbac Apply RBAC filters when true.
+	 * @param bool $_multitenancy Apply multitenancy filters when true.
+	 * @return array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>}
+	 */
+	public function deleteObjects(array $uuids = [], bool $_rbac = true, bool $_multitenancy = true): array {
+		return ['deleted_uuids' => [], 'skipped_uuids' => []];
+	}
+
+	/**
 	 * Find all objects matching the given config/filters.
 	 *
 	 * @param array $config

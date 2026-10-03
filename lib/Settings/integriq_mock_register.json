@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "integriq demo data",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "description": "Demo data covering every schema this app supplies, offered as the first step of the app's setup walkthrough. Generated from the schemas themselves, so every object satisfies the schema that will validate it."
   },
   "x-openregister": {
@@ -92,7 +92,8 @@
               "psd2",
               "sms",
               "soap",
-              "dso"
+              "dso",
+              "case-system"
             ],
             "title": "Type"
           },
@@ -358,6 +359,62 @@
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
+      },
+      "column_mapping": {
+        "slug": "column_mapping",
+        "title": "Column mapping",
+        "icon": "TableArrowRight",
+        "version": "1.0.0",
+        "summary": "How the columns of a delivered file map onto the fields of a schema",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "description": "Write a column mapping once and pick it again for every delivery with the same columns. Each save raises the version by one. A migration test run reads a file through it and writes nothing.",
+        "required": [
+          "name",
+          "columns",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name you pick the mapping by",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record the mapping produces, such as case",
+            "title": "Record kind"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The schema the columns map onto",
+            "title": "Target schema"
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Each column of the file and the field it fills",
+            "title": "Columns"
+          },
+          "identifierColumn": {
+            "type": "string",
+            "description": "The column that holds each record's number in the old system. Leave it empty when the file has none.",
+            "title": "Identifier column"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Goes up by one each time the mapping is saved",
+            "title": "Version"
+          }
+        }
       },
       "consumer": {
         "slug": "consumer",
@@ -753,10 +810,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -767,7 +822,7 @@
         },
         "title": "EventMessage",
         "icon": "EmailFast",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A delivery record for an Event-to-Subscription match",
         "description": "An EventMessage is created when an Event matches an EventSubscription. It tracks delivery state per (Event × Subscription × Consumer) tuple. See local ADR-013.",
         "required": [],
@@ -879,6 +934,11 @@
                   "type": "string",
                   "description": "Transport/exception message, or null on an HTTP-level outcome",
                   "title": "Error Message"
+                },
+                "signed": {
+                  "type": "boolean",
+                  "description": "Whether this attempt carried an X-OpenConnector-Signature header",
+                  "title": "Signed"
                 }
               }
             },
@@ -927,7 +987,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -986,7 +1046,7 @@
           },
           "protocolSettings": {
             "type": "object",
-            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted).",
+            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface. A new push subscription is created with one unless `unsigned` is set; later it changes only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted); `unsigned` (object `{reason, setBy, setAt}`: deliver without a signature; refused without a reason).",
             "title": "Protocol Settings"
           },
           "style": {
@@ -1142,6 +1202,17 @@
             "description": "Nextcloud user id that owns the subscription",
             "title": "User ID"
           },
+          "signingPosture": {
+            "type": "string",
+            "enum": ["signed", "unsigned"],
+            "description": "Whether a push delivery carries a signature. Written on save from protocolSettings, which is hidden on every read.",
+            "title": "Signature"
+          },
+          "unsignedReason": {
+            "type": "string",
+            "description": "Why this subscription delivers unsigned, as the person who turned signing off wrote it.",
+            "title": "Reason for unsigned delivery"
+          },
           "created": {
             "type": "string",
             "format": "date-time",
@@ -1184,10 +1255,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -1985,10 +2054,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2264,10 +2331,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2424,7 +2489,7 @@
         "icon": "Gavel",
         "version": "1.0.0",
         "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
-        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/specs/outbound-call-log/spec.md.",
         "required": [
           "objectRef",
           "state",
@@ -2487,10 +2552,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3284,10 +3347,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3427,10 +3488,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3624,10 +3683,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3798,10 +3855,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3820,7 +3875,7 @@
         "icon": "SourceBranch",
         "version": "1.0.0",
         "summary": "A snapshot of a mapping as it stood when a call ran under it",
-        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/specs/outbound-call-log/spec.md.",
         "required": [
           "mapping",
           "version"
@@ -3856,7 +3911,7 @@
         "icon": "EmailOutline",
         "version": "1.0.0",
         "summary": "One mail message integriq received, from a mailbox poll or an imported .eml/.msg file",
-        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md.",
+        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/specs/mail-intake/spec.md.",
         "required": [
           "sourceId",
           "messageId",
@@ -4340,10 +4395,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -6797,7 +6850,28 @@
         "ruleId": "00000000-0000-4000-8000-000000000000",
         "timing": "before",
         "resumeOrder": 1,
-        "snapshot": {},
+        "snapshot": {
+          "changeSet": {
+            "created": [
+              {"originId": "zt-parkeervergunning", "fields": {"omschrijving": "Parkeervergunning", "doel": "Een parkeervergunning verlenen"}},
+              {"originId": "zt-standplaatsvergunning", "fields": {"omschrijving": "Standplaatsvergunning", "doel": "Een standplaats toewijzen"}}
+            ],
+            "changed": [
+              {"originId": "zt-evenementenvergunning", "targetId": "00000000-0000-4000-8000-000000000001", "fields": [
+                {"field": "statustypen", "before": ["Ontvangen", "Afgehandeld"], "after": ["Ontvangen", "Besloten", "Afgehandeld"]}
+              ]}
+            ],
+            "removed": [
+              {"originId": "zt-kapvergunning-oud", "targetId": "00000000-0000-4000-8000-000000000002"}
+            ],
+            "unchanged": 14,
+            "counts": {"created": 2, "changed": 1, "removed": 1, "unchanged": 14},
+            "truncated": false,
+            "limit": 500,
+            "fingerprint": "4f2c9a0d8b1e7f3a6c5d2e9b0a1f8c7d6e5b4a3f2e1d0c9b8a7f6e5d4c3b2a19"
+          }
+        },
+        "fingerprint": "4f2c9a0d8b1e7f3a6c5d2e9b0a1f8c7d6e5b4a3f2e1d0c9b8a7f6e5d4c3b2a19",
         "synchronizationId": "00000000-0000-4000-8000-000000000000",
         "requesterUserId": "Voorbeeld Requesteruserid 1",
         "approverUserId": "Voorbeeld Approveruserid 1",
@@ -9354,6 +9428,48 @@
       {
         "@self": {
           "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-go1"
+        },
+        "deploymentId": "demo-go1-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b01",
+        "name": "Go1 (demo deployment)",
+        "description": "Demo deployment of the Go1 tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-go1-placement\" to let the Go1 synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a01",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-linkedin-learning"
+        },
+        "deploymentId": "demo-linkedin-learning-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b02",
+        "name": "LinkedIn Learning (demo deployment)",
+        "description": "Demo deployment of the LinkedIn Learning tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-linkedin-learning-placement\" to let the LinkedIn Learning synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a02",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-udemy-business"
+        },
+        "deploymentId": "demo-udemy-business-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b03",
+        "name": "Udemy Business (demo deployment)",
+        "description": "Demo deployment of the Udemy Business tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-udemy-business-placement\" to let the Udemy Business synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a03",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
           "schema": "lti_identity_link",
           "slug": "lti-identity-link-lti-identity-link-1-1"
         },
@@ -9569,6 +9685,57 @@
         "status": "suspended",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-go1"
+        },
+        "clientId": "demo-go1",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a01",
+        "name": "Go1 (demo tool)",
+        "description": "Demo registration of the Go1 LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values Go1 gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.go1.example/login",
+        "launchUrl": "https://lti.go1.example/launch",
+        "jwksUri": "https://lti.go1.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-linkedin-learning"
+        },
+        "clientId": "demo-linkedin-learning",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a02",
+        "name": "LinkedIn Learning (demo tool)",
+        "description": "Demo registration of the LinkedIn Learning LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values LinkedIn Learning gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.linkedin-learning.example/login",
+        "launchUrl": "https://lti.linkedin-learning.example/launch",
+        "jwksUri": "https://lti.linkedin-learning.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-udemy-business"
+        },
+        "clientId": "demo-udemy-business",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a03",
+        "name": "Udemy Business (demo tool)",
+        "description": "Demo registration of the Udemy Business LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values Udemy Business gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.udemy-business.example/login",
+        "launchUrl": "https://lti.udemy-business.example/launch",
+        "jwksUri": "https://lti.udemy-business.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
       },
       {
         "@self": {
@@ -10544,7 +10711,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 1",
         "conditions": {},
-        "type": "Voorbeeld Type 1",
+        "type": "error",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -10568,7 +10735,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 2",
         "conditions": {},
-        "type": "Voorbeeld Type 2",
+        "type": "mapping",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -10592,7 +10759,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 3",
         "conditions": {},
-        "type": "Voorbeeld Type 3",
+        "type": "custom",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -11453,6 +11620,477 @@
         "translatedAt": "2026-03-03T09:00:00+00:00",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-1-1"
+        },
+        "direction": "outbound",
+        "berichtsoort": "inschrijving",
+        "status": "sent",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "signaalcode": "Voorbeeld Signaalcode 1",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 1",
+        "bsnHash": "Voorbeeld Bsnhash 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-2-2"
+        },
+        "direction": "inbound",
+        "berichtsoort": "uitschrijving",
+        "status": "failed",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "signaalcode": "Voorbeeld Signaalcode 2",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 2",
+        "bsnHash": "Voorbeeld Bsnhash 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-3-3"
+        },
+        "direction": "outbound",
+        "berichtsoort": "verblijfsgegevens",
+        "status": "pending",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "signaalcode": "Voorbeeld Signaalcode 3",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 3",
+        "bsnHash": "Voorbeeld Bsnhash 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-4-4"
+        },
+        "direction": "inbound",
+        "berichtsoort": "schooladvies",
+        "status": "acknowledged",
+        "ref": "Voorbeeld Ref 4",
+        "kenmerk": "Voorbeeld Kenmerk 4",
+        "signaalcode": "Voorbeeld Signaalcode 4",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 4",
+        "bsnHash": "Voorbeeld Bsnhash 4",
+        "error": "Voorbeeld Error 4",
+        "syncedAt": "2026-03-04T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "verzuim_message",
+          "slug": "verzuim-message-verzuim-message-1-1"
+        },
+        "direction": "outbound",
+        "meldingType": "eerste-melding",
+        "status": "sent",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "signaalcode": "Voorbeeld Signaalcode 1",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 1",
+        "bsnHash": "Voorbeeld Bsnhash 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "verzuim_message",
+          "slug": "verzuim-message-verzuim-message-2-2"
+        },
+        "direction": "inbound",
+        "meldingType": "herhaalmelding",
+        "status": "failed",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "signaalcode": "Voorbeeld Signaalcode 2",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 2",
+        "bsnHash": "Voorbeeld Bsnhash 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "verzuim_message",
+          "slug": "verzuim-message-verzuim-message-3-3"
+        },
+        "direction": "outbound",
+        "meldingType": "langdurig-relatief-verzuim",
+        "status": "pending",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "signaalcode": "Voorbeeld Signaalcode 3",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 3",
+        "bsnHash": "Voorbeeld Bsnhash 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-1-1"
+        },
+        "direction": "export",
+        "status": "sent",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 1",
+        "learnerEckId": "Voorbeeld Learnereckid 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-2-2"
+        },
+        "direction": "import",
+        "status": "failed",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 2",
+        "learnerEckId": "Voorbeeld Learnereckid 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-3-3"
+        },
+        "direction": "export",
+        "status": "pending",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 3",
+        "learnerEckId": "Voorbeeld Learnereckid 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-1-1"
+        },
+        "target": "uwlr",
+        "direction": "export",
+        "status": "sent",
+        "subtype": "Voorbeeld Subtype 1",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "eckId": "Voorbeeld Eckid 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-2-2"
+        },
+        "target": "edu-v",
+        "direction": "sync",
+        "status": "failed",
+        "subtype": "Voorbeeld Subtype 2",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "eckId": "Voorbeeld Eckid 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-3-3"
+        },
+        "target": "basispoort",
+        "direction": "export",
+        "status": "pending",
+        "subtype": "Voorbeeld Subtype 3",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "eckId": "Voorbeeld Eckid 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-4-4"
+        },
+        "target": "entree-content",
+        "direction": "sync",
+        "status": "acknowledged",
+        "subtype": "Voorbeeld Subtype 4",
+        "ref": "Voorbeeld Ref 4",
+        "kenmerk": "Voorbeeld Kenmerk 4",
+        "eckId": "Voorbeeld Eckid 4",
+        "error": "Voorbeeld Error 4",
+        "syncedAt": "2026-03-04T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-zaken-uit-het-oude-systeem"
+        },
+        "name": "Zaken uit het oude systeem",
+        "kind": "case",
+        "targetSchema": "case",
+        "columns": {
+          "zaaknummer": "reference",
+          "naam": "requesterName",
+          "plaats": "city"
+        },
+        "identifierColumn": "zaaknummer",
+        "version": 2
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-meldingen-openbare-ruimte"
+        },
+        "name": "Meldingen openbare ruimte",
+        "kind": "melding",
+        "targetSchema": "melding",
+        "columns": {
+          "meldingnummer": "reference",
+          "omschrijving": "description",
+          "straat": "street",
+          "datum": "reportedOn"
+        },
+        "identifierColumn": "meldingnummer",
+        "version": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-contactpersonen-zonder-sleutel"
+        },
+        "name": "Contactpersonen zonder sleutel",
+        "kind": "contact",
+        "targetSchema": "contact",
+        "columns": {
+          "naam": "name",
+          "email": "email",
+          "telefoon": "phone"
+        },
+        "identifierColumn": "",
+        "version": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-kvk-failed-calls"
+        },
+        "subjectType": "source",
+        "subject": "b7d1e2f3-4a5b-4c6d-8e9f-0a1b2c3d4e5f",
+        "subjectName": "KVK Handelsregister",
+        "rule": "failedCalls",
+        "count": 14,
+        "threshold": 10,
+        "windowMinutes": 60,
+        "state": "open",
+        "openedAt": "2026-09-29T07:15:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-brp-failed-runs"
+        },
+        "subjectType": "synchronization",
+        "subject": "c8e2f3a4-5b6c-4d7e-9f0a-1b2c3d4e5f6a",
+        "subjectName": "BRP personen ophalen",
+        "rule": "failedRuns",
+        "count": 3,
+        "threshold": 2,
+        "windowMinutes": 240,
+        "state": "cleared",
+        "openedAt": "2026-09-28T03:05:00+02:00",
+        "clearedAt": "2026-09-28T09:40:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-bag-invalid-objects"
+        },
+        "subjectType": "synchronization",
+        "subject": "c8e2f3a4-5b6c-4d7e-9f0a-1b2c3d4e5f6a",
+        "subjectName": "BAG adressen ophalen",
+        "rule": "invalidObjects",
+        "count": 120,
+        "threshold": 100,
+        "windowMinutes": 1440,
+        "state": "open",
+        "openedAt": "2026-09-29T02:30:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-melding-openbare-ruimte"
+        },
+        "publishedUuid": "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01",
+        "name": "melding openbare ruimte",
+        "register": "meldingen",
+        "schema": "melding",
+        "versions": ["1"]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-boom"
+        },
+        "publishedUuid": "8a2d4c61-1e3f-4a5b-8c7d-9e0f1a2b3c02",
+        "name": "boom",
+        "register": "openbare-ruimte",
+        "schema": "boom",
+        "versions": []
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-parkeervergunning"
+        },
+        "publishedUuid": "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03",
+        "name": "parkeervergunning",
+        "register": "vergunningen",
+        "schema": "parkeervergunning",
+        "versions": ["1", "2"]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-meldingen-app"
+        },
+        "name": "Meldingen app",
+        "credential": "objecten-token-meldingen-app",
+        "principal": "svc-meldingen",
+        "permissions": {
+          "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01": "read_write"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-bomenbeheer"
+        },
+        "name": "Bomenbeheer",
+        "credential": "objecten-token-bomenbeheer",
+        "principal": "svc-bomen",
+        "permissions": {
+          "8a2d4c61-1e3f-4a5b-8c7d-9e0f1a2b3c02": "read_write",
+          "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01": "read"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-dashboard"
+        },
+        "name": "Dashboard gemeente",
+        "credential": "objecten-token-dashboard",
+        "principal": "svc-dashboard",
+        "permissions": {
+          "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03": "read"
+        }
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-staged-replay"},
+        "tool": "integriq.replayDeadLetters",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "admin",
+        "outcome": "staged",
+        "store": "sync",
+        "targetIds": ["5d1e2f30-0000-4000-8000-00000000d001", "5d1e2f30-0000-4000-8000-00000000d002"],
+        "binding": "9f2c4c0b7c1e5d8a3b6f0e2d4c6a8b0d1e3f5a7c9b1d3f5e7a9c1b3d5f7e9a1c",
+        "at": "2026-09-30T02:40:00+02:00"
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-denied-run"},
+        "tool": "integriq.runSynchronization",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "griffie",
+        "outcome": "denied",
+        "reason": "synchronization.run",
+        "targetIds": ["7b3c4d50-0000-4000-8000-00000000s001"],
+        "at": "2026-09-30T02:41:00+02:00"
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-list"},
+        "tool": "integriq.listDeadLetters",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "admin",
+        "outcome": "executed",
+        "targetIds": [],
+        "at": "2026-09-30T02:39:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-zaak-json"
+        },
+        "name": "Voorbeeld zaak (JSON Schema)",
+        "description": "Voorbeeld: een zaak met identificatie, zaaktype en startdatum.",
+        "kind": "json-schema",
+        "document": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"identificatie\",\n    \"zaaktype\"\n  ],\n  \"properties\": {\n    \"identificatie\": {\n      \"type\": \"string\"\n    },\n    \"zaaktype\": {\n      \"type\": \"string\",\n      \"format\": \"uri\"\n    },\n    \"startdatum\": {\n      \"type\": \"string\",\n      \"format\": \"date\"\n    }\n  }\n}\n",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-adres-xsd"
+        },
+        "name": "Voorbeeld adres (XSD)",
+        "description": "Voorbeeld: een adres met postcode en huisnummer, als XSD.",
+        "kind": "xsd",
+        "document": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" targetNamespace=\"https://integriq.conduction.nl/example/adres\" elementFormDefault=\"qualified\">\n  <xs:element name=\"adres\">\n    <xs:complexType>\n      <xs:sequence>\n        <xs:element name=\"postcode\" type=\"xs:string\"/>\n        <xs:element name=\"huisnummer\" type=\"xs:positiveInteger\"/>\n      </xs:sequence>\n    </xs:complexType>\n  </xs:element>\n</xs:schema>\n",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-zaken-openapi"
+        },
+        "name": "Voorbeeld zaken-API (OpenAPI)",
+        "description": "Voorbeeld: de operatie createZaak met een verplichte startdatum.",
+        "kind": "openapi",
+        "document": "{\n  \"openapi\": \"3.0.3\",\n  \"info\": {\n    \"title\": \"Voorbeeld zaken\",\n    \"version\": \"1.0.0\"\n  },\n  \"paths\": {\n    \"/zaken\": {\n      \"post\": {\n        \"operationId\": \"createZaak\",\n        \"requestBody\": {\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"required\": [\n                  \"startdatum\"\n                ],\n                \"properties\": {\n                  \"startdatum\": {\n                    \"type\": \"string\",\n                    \"format\": \"date\"\n                  },\n                  \"toelichting\": {\n                    \"type\": \"string\",\n                    \"nullable\": true\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"201\": {\n            \"description\": \"Aangemaakt\"\n          }\n        }\n      }\n    }\n  }\n}\n",
+        "version": "1.0.0"
       }
     ]
   }

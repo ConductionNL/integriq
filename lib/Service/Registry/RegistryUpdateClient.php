@@ -30,7 +30,7 @@ use Throwable;
  * `POST /api/registry/{registry}/updates`. The change goes out, and nothing
  * about it is kept here.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
 class RegistryUpdateClient {
 	/**
@@ -67,7 +67,7 @@ class RegistryUpdateClient {
 	 *
 	 * @return int The HTTP status, or 0 when the call could not be made.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function postUpdate(string $registryId, array $payload): int {
 		$url = $this->urlGenerator->getAbsoluteURL('/index.php/apps/openregister/api/registry/' . rawurlencode($registryId) . '/updates');

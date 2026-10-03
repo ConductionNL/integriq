@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the SharePoint Online reference adapter (REQ-DCC-001).
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
  */
 class SharePointOnlineAdapterTest extends TestCase {
 

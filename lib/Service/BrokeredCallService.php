@@ -67,14 +67,25 @@ use Throwable;
  * same resolution infrastructure (broker resolution, credentialName→id, owner
  * pinning) as the proxy path; keeping both here is what keeps that shared logic
  * DRY — at the cost of the class length, which is why it too is suppressed.
+ * The TLS client identity (cert / ssl_key) is resolved through that same
+ * injection path (integriq#2102), which takes the method count past 25 for
+ * the same reason.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  *
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
 class BrokeredCallService {
+
+	/**
+	 * The configuration keys that carry a TLS client identity (Guzzle's `cert` / `ssl_key`).
+	 *
+	 * @var array<int, string>
+	 */
+	private const TLS_IDENTITY_KEYS = ['cert', 'ssl_key'];
 
 	/**
 	 * The app id the broker authorises against the credential's allowedApps.
@@ -204,12 +215,99 @@ class BrokeredCallService {
 	 */
 	public function hasInjectableCredentials(array $sourceData): bool {
 		$authentication = ($sourceData['configuration']['authentication'] ?? null);
-		if (is_array($authentication) === false) {
-			return false;
+		if (is_array($authentication) === true && $this->containsPlaceholder(node: $authentication) === true) {
+			return true;
 		}
 
-		return $this->containsPlaceholder(node: $authentication);
+		return $this->hasInjectableTlsIdentity(config: (array)($sourceData['configuration'] ?? []));
 	}//end hasInjectableCredentials()
+
+	/**
+	 * Whether a configuration's TLS client identity (`cert` / `ssl_key`) is a credential placeholder.
+	 *
+	 * A client certificate and its key are secrets as much as a client secret is, so they
+	 * may be kept in the credential broker too (integriq#2102). Either key may hold a
+	 * `{"credentialRef": {...}}` placeholder, or Guzzle's `[path, passphrase]` pair with a
+	 * placeholder in either position.
+	 *
+	 * @param array $config A source `configuration` or a merged call configuration.
+	 *
+	 * @return boolean Whether `cert` or `ssl_key` carries a placeholder.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	public function hasInjectableTlsIdentity(array $config): bool {
+		foreach (self::TLS_IDENTITY_KEYS as $key) {
+			$value = ($config[$key] ?? null);
+			if ($this->isPlaceholder(value: $value) === true) {
+				return true;
+			}
+
+			if (is_array($value) === true && $this->containsPlaceholder(node: $value) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasInjectableTlsIdentity()
+
+	/**
+	 * Resolve a configuration's TLS client identity placeholders to their PEM material.
+	 *
+	 * Interim custody for mTLS sources (integriq#2102, option 2): the certificate and key
+	 * are read from the broker through the same inject-only resolver as an authentication
+	 * placeholder, and the engine writes them to its own TLS context. The material enters
+	 * this process, which is weaker than a broker that presents the certificate itself
+	 * (openregister#2720 case 2), and stronger than keeping it on the source in clear.
+	 *
+	 * @param array $config A merged call configuration.
+	 *
+	 * @return array The configuration with `cert` / `ssl_key` placeholders replaced.
+	 *
+	 * @throws BrokeredCallConfigurationException On any resolution failure (mapped to a 409 CallLog).
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	public function hydrateInjectableTlsIdentity(array $config): array {
+		if ($this->hasInjectableTlsIdentity(config: $config) === false) {
+			return $config;
+		}
+
+		$this->assertBrokerAvailable();
+		$this->resolveBroker();
+
+		foreach (self::TLS_IDENTITY_KEYS as $key) {
+			$value = ($config[$key] ?? null);
+			if ($this->isPlaceholder(value: $value) === true) {
+				$config[$key] = $this->resolveInjectableSecret(ref: $value['credentialRef']);
+				continue;
+			}
+
+			if (is_array($value) === true) {
+				$config[$key] = $this->hydrateNode(node: $value);
+			}
+		}
+
+		return $config;
+	}//end hydrateInjectableTlsIdentity()
+
+	/**
+	 * Whether a configuration carries a real (non-empty) TLS client identity.
+	 *
+	 * @param array $config A merged call configuration.
+	 *
+	 * @return boolean Whether `cert` or `ssl_key` holds anything but an empty value.
+	 */
+	private function hasTlsIdentity(array $config): bool {
+		foreach (self::TLS_IDENTITY_KEYS as $key) {
+			$value = ($config[$key] ?? null);
+			if ($value !== null && $value !== '' && $value !== []) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasTlsIdentity()
 
 	/**
 	 * Resolves every credential placeholder under `configuration.authentication` to its plaintext.
@@ -240,14 +338,38 @@ class BrokeredCallService {
 		$this->resolveBroker();
 
 		$authentication = ($sourceData['configuration']['authentication'] ?? []);
-		if (is_array($authentication) === false) {
-			return $sourceData;
+		if (is_array($authentication) === true) {
+			$sourceData['configuration']['authentication'] = $this->hydrateNode(node: $authentication);
 		}
 
-		$sourceData['configuration']['authentication'] = $this->hydrateNode(node: $authentication);
+		if (is_array($sourceData['configuration'] ?? null) === true) {
+			$sourceData['configuration'] = $this->hydrateInjectableTlsIdentity(config: $sourceData['configuration']);
+		}
 
 		return $sourceData;
 	}//end hydrateInjectableCredentials()
+
+	/**
+	 * Resolve one credential reference to its secret, for a caller that is not a source.
+	 *
+	 * The same inject-only lookup {@see hydrateInjectableCredentials()} runs for a
+	 * placeholder under a source's authentication: the broker's owner and
+	 * allowedApps guards apply, and a host-locked proxy credential is refused.
+	 *
+	 * @param array $ref The inner reference, `{credentialId}` or `{credentialName}`.
+	 *
+	 * @return string The secret.
+	 *
+	 * @throws BrokeredCallConfigurationException On any resolution failure.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+	 */
+	public function resolveCredentialRef(array $ref): string {
+		$this->assertBrokerAvailable();
+
+		return $this->resolveInjectableSecret(ref: $ref);
+
+	}//end resolveCredentialRef()
 
 	/**
 	 * Whether any leaf under the given node is a credential placeholder (recursive).
@@ -749,10 +871,18 @@ class BrokeredCallService {
 			);
 		}
 
-		if (isset($config['cert']) === true || isset($config['ssl_key']) === true) {
+		// An empty `cert` / `ssl_key` is no certificate: the seeded BRP source ships both
+		// as "" placeholders, and `isset("")` is true, so the proxy path refused a source
+		// that carried no certificate at all (integriq#2102). A REAL certificate is still
+		// refused here: on the proxy path the broker opens the TLS connection itself and
+		// cannot present a client certificate, so accepting one would send the call
+		// without it. The app-injected form below carries both.
+		if ($this->hasTlsIdentity(config: $config) === true) {
 			throw new BrokeredCallConfigurationException(
-				message: 'TLS client-certificate configuration (cert / ssl_key) is not supported alongside '
-					. 'credentialRef (v1 scope) — outbound TLS identity is the broker\'s concern once brokered.'
+				message: 'A TLS client certificate (cert / ssl_key) cannot be used with a top-level '
+					. 'authentication.credentialRef: the broker makes that call and cannot present the certificate. '
+					. 'Use app-injected credentials instead: put a {"credentialRef": {...}} placeholder at the secret\'s '
+					. 'own position under authentication, and at cert and ssl_key.'
 			);
 		}
 

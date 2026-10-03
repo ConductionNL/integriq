@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md
+ * @spec openspec/specs/events-cloudevents/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
 /**
  * The broker transports this instance knows.
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
  */
 class BrokerTransportRegistry {
 
@@ -67,7 +67,7 @@ class BrokerTransportRegistry {
 	 *
 	 * @return boolean True when it was taken, false when its id was already claimed.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	public function register(BrokerTransportInterface $transport): bool {
 		$brokerId = $transport->getId();
@@ -95,7 +95,7 @@ class BrokerTransportRegistry {
 	 *
 	 * @return boolean True when it has.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	public function has(string $brokerId): bool {
 		return isset($this->transports[$brokerId]);
@@ -111,7 +111,7 @@ class BrokerTransportRegistry {
 	 *
 	 * @throws BrokerTransportException When nothing answers to that id.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	public function get(string $brokerId): BrokerTransportInterface {
 		if (isset($this->transports[$brokerId]) === false) {
@@ -129,7 +129,7 @@ class BrokerTransportRegistry {
 	 *
 	 * @return array<int,string> The broker ids.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	public function getBrokerIds(): array {
 		$ids = array_keys($this->transports);
@@ -143,7 +143,7 @@ class BrokerTransportRegistry {
 	 *
 	 * @return array<int,array<string,mixed>> The descriptions, in broker id order.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 */
 	public function describeAll(): array {
 		$described = [];

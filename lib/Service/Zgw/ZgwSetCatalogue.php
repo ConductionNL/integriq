@@ -66,11 +66,53 @@ final class ZgwSetCatalogue {
 	public const WRITE_BACK_SETS = ['zgw-zaken', 'zgw-documenten', 'zgw-besluiten', 'zgw-objecten'];
 
 	/**
-	 * The auth scheme every set's source template declares.
+	 * Sets that carry subscriptions, not records: installed without a register and schema.
+	 *
+	 * The guard keeps asking every other set for a target, because a data set
+	 * installed against nothing still runs and writes nowhere while reporting
+	 * success (zgw-connectors-for-dossiq design D3).
+	 *
+	 * @var string[]
+	 */
+	public const SUBSCRIPTION_SETS = ['zgw-notificaties'];
+
+	/**
+	 * The data set each Notificaties API kanaal belongs to.
+	 *
+	 * @var array<string, string>
+	 */
+	public const KANAAL_SETS = [
+		'zaken'                 => 'zgw-zaken',
+		'documenten'            => 'zgw-documenten',
+		'besluiten'             => 'zgw-besluiten',
+		'objecten'              => 'zgw-objecten',
+		'zaaktypen'             => 'zgw-catalogi',
+		'informatieobjecttypen' => 'zgw-catalogi',
+		'besluittypen'          => 'zgw-catalogi',
+	];
+
+	/**
+	 * The auth scheme a set's source template declares, unless TOKEN_AUTH_SETS names it.
 	 *
 	 * @var string
 	 */
 	public const AUTH = 'jwt-zgw';
+
+	/**
+	 * The auth scheme of the Objecten API: a static token, not a ZGW JWT.
+	 *
+	 * @var string
+	 */
+	public const TOKEN_AUTH = 'token';
+
+	/**
+	 * Sets whose store answers a static token rather than a ZGW JWT. The
+	 * Objecten API is not a ZGW component in that respect, and a set that
+	 * signs a JWT for it installs, runs, and gets 401 on every call.
+	 *
+	 * @var string[]
+	 */
+	public const TOKEN_AUTH_SETS = ['zgw-objecten'];
 
 	/**
 	 * The storage strategy a bound schema is written with.
@@ -126,6 +168,36 @@ final class ZgwSetCatalogue {
 	public static function isPackaged(string $slug): bool {
 		return array_key_exists($slug, self::SETS);
 	}//end isPackaged()
+
+	/**
+	 * The auth scheme this set's source template must declare.
+	 *
+	 * @param string $slug The set slug.
+	 *
+	 * @return string The auth scheme.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001
+	 */
+	public static function authFor(string $slug): string {
+		if (in_array($slug, self::TOKEN_AUTH_SETS, true) === true) {
+			return self::TOKEN_AUTH;
+		}
+
+		return self::AUTH;
+	}//end authFor()
+
+	/**
+	 * Whether this set carries subscriptions rather than records.
+	 *
+	 * @param string $slug The set slug.
+	 *
+	 * @return bool True for a subscription set.
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	public static function isSubscriptionSet(string $slug): bool {
+		return in_array($slug, self::SUBSCRIPTION_SETS, true);
+	}//end isSubscriptionSet()
 
 	/**
 	 * Whether this set pushes local changes back to the store.

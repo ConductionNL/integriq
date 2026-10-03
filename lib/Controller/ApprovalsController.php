@@ -67,6 +67,13 @@ use Throwable;
  * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalsController extends Controller {
+
+	/**
+	 * Answer codes for a resumed run's message, where it is not a plain 200:
+	 * the source changed after the preview (REQ-INAV-004).
+	 */
+	private const RESUME_STATUS_BY_MESSAGE = ['approval_superseded' => Http::STATUS_CONFLICT];
+
 	/**
 	 * Constructor.
 	 *
@@ -427,7 +434,17 @@ class ApprovalsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('The gated synchronization no longer exists')], Http::STATUS_NOT_FOUND);
 		}
 
-		$resumeResult = 'success';
+		// Store the approve FIRST. The gate honours only an approved,
+		// unconsumed request (REQ-015), so a run resumed while the request is
+		// still pending pauses again and opens a new request on every approve
+		// (REQ-INAV-004).
+		$approvalRequest = $this->approvalService->completeApproval(
+			approvalRequest: $approvalRequest,
+			approver: $user,
+			resumeResult: 'success',
+			comment: $comment
+		);
+
 		$statusCode = Http::STATUS_OK;
 		$result = [];
 
@@ -437,19 +454,19 @@ class ApprovalsController extends Controller {
 				force: true,
 				approvalRequestId: $approvalRequest->getUuid()
 			);
+			// The engine marked the request consumed or superseded; read it
+			// back so the answer shows what is stored.
+			$approvalRequest = $this->approvalService->find(id: (string)$approvalRequest->getUuid());
 		} catch (Throwable $e) {
 			$this->logger->error('ApprovalsController: resumed synchronization failed: ' . $e->getMessage(), ['exception' => $e]);
-			$resumeResult = 'error';
 			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
 			$result = ['error' => $e->getMessage()];
+			$approvalRequest = $this->approvalService->recordResumeResult(approvalRequest: $approvalRequest, resumeResult: 'error');
 		}
 
-		$approvalRequest = $this->approvalService->completeApproval(
-			approvalRequest: $approvalRequest,
-			approver: $user,
-			resumeResult: $resumeResult,
-			comment: $comment
-		);
+		// The source changed after the preview: nothing was written and a
+		// new request carries the new change set.
+		$statusCode = (self::RESUME_STATUS_BY_MESSAGE[(string)($result['message'] ?? '')] ?? $statusCode);
 
 		$body = ['data' => $result];
 		if (is_array($result) === true) {
@@ -461,6 +478,8 @@ class ApprovalsController extends Controller {
 			'id' => $approvalRequest->getUuid(),
 			'status' => ($approvalRequestData['status'] ?? 'approved'),
 			'resumedAt' => ($approvalRequestData['approvedAt'] ?? null),
+			'resumeResult' => ($approvalRequestData['resumeResult'] ?? null),
+			'supersededBy' => ($approvalRequestData['supersededBy'] ?? null),
 		];
 
 		return new JSONResponse($body, $statusCode);
@@ -674,6 +693,8 @@ class ApprovalsController extends Controller {
 				'approvedAt' => ($data['approvedAt'] ?? null),
 				'rejectedAt' => ($data['rejectedAt'] ?? null),
 				'resumeResult' => ($data['resumeResult'] ?? null),
+				'supersededBy' => ($data['supersededBy'] ?? null),
+				'changeSet' => ($snapshot['changeSet'] ?? null),
 				'snapshotPreview' => [
 					'method' => ($requestOriginal['method'] ?? null),
 					'path' => ($requestOriginal['path'] ?? null),

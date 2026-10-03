@@ -1,0 +1,76 @@
+{
+    "columns": [
+        {
+            "fieldName": "id",
+            "displayName": "id",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "name",
+            "displayName": "name",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "supplier",
+            "displayName": "supplier",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "version",
+            "displayName": "version",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "lifecycleStatus",
+            "displayName": "lifecycleStatus",
+            "fieldType": "text"
+        },
+        {
+            "fieldName": "description",
+            "displayName": "description",
+            "fieldType": "text"
+        }
+    ],
+    "dataSet": [
+        {
+            "id": "0b6f4d2e-1a2b-4c3d-8e9f-000000000001",
+            "name": "Zaaksysteem",
+            "supplier": "Dimpact",
+            "version": "2.4.1",
+            "lifecycleStatus": "In gebruik",
+            "description": "Zaakgericht werken voor alle afdelingen"
+        },
+        {
+            "id": "0b6f4d2e-1a2b-4c3d-8e9f-000000000002",
+            "name": "Burgerzaken",
+            "supplier": "Centric",
+            "version": "11.2",
+            "lifecycleStatus": "In gebruik",
+            "description": "Basisregistratie personen en reisdocumenten"
+        },
+        {
+            "id": "0b6f4d2e-1a2b-4c3d-8e9f-000000000003",
+            "name": "Belastingen",
+            "supplier": "PinkRoccade",
+            "version": "7.0",
+            "lifecycleStatus": "Uit te faseren",
+            "description": "Heffen en innen van gemeentelijke belastingen"
+        },
+        {
+            "id": "0b6f4d2e-1a2b-4c3d-8e9f-000000000004",
+            "name": "Financien",
+            "supplier": "Exact",
+            "version": "2025.3",
+            "lifecycleStatus": "Gepland",
+            "description": "Financiele administratie"
+        },
+        {
+            "id": "0b6f4d2e-1a2b-4c3d-8e9f-000000000005",
+            "name": "Omgevingsloket",
+            "supplier": "Rijkswaterstaat",
+            "version": "",
+            "lifecycleStatus": "Aanschaf",
+            "description": ""
+        }
+    ]
+}

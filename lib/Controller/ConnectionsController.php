@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+ * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Admin-only link-and-probe endpoint for connection rows.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+ * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
  */
 class ConnectionsController extends Controller {
 	/**
@@ -77,8 +77,8 @@ class ConnectionsController extends Controller {
 	 *
 	 * @return JSONResponse `{connection, probe}` on success; an `error` with 400, 404, 409 or 500 otherwise.
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-connection-that-already-has-a-source-is-refused
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-connection-that-already-has-a-source-is-refused
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function link(string $id): JSONResponse {

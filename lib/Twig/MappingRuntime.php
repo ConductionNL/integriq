@@ -36,6 +36,7 @@
 namespace OCA\Integriq\Twig;
 
 use GuzzleHttp\Exception\GuzzleException;
+use InvalidArgumentException;
 use OC\Files\Node\File;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
@@ -200,6 +201,53 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	public function generateUuid(): UuidV4 {
 		return Uuid::v4();
 	}//end generateUuid()
+
+	/**
+	 * The namespace `uuidFor()` derives its uuids under.
+	 *
+	 * 🔴 NEVER CHANGE IT. Every object a mapping already wrote with a derived id
+	 * would be written again under a new one, next to the old one, on the next run.
+	 */
+	public const UUID_FOR_NAMESPACE = 'f3b6c1d2-8a4e-4f7b-9c2d-1e5a6b7c8d90';
+
+	/**
+	 * A UUID v5 for a name: the same name gives the same uuid on every run and every install.
+	 *
+	 * A synchronization writes one target object per source item, so two
+	 * objects written by two synchronizations cannot name each other through a
+	 * lookup that only works once both exist. A mapping that derives both ids
+	 * from the same source id can: the course marketplace sets give a course,
+	 * its lesson and its placement ids derived from the provider course id, and
+	 * OpenRegister takes a supplied id on create.
+	 *
+	 * @param string $name The name, e.g. `course-marketplace:go1:course:1830612`.
+	 *
+	 * @return string The uuid.
+	 *
+	 * @throws InvalidArgumentException When the name is empty, which would give every caller the same uuid.
+	 *
+	 * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md
+	 */
+	public function uuidFor(string $name): string {
+		if (trim($name) === '') {
+			throw new InvalidArgumentException('uuidFor() needs a name: an empty one would give every caller the same uuid.');
+		}
+
+		// RFC 4122 section 4.3: SHA-1 over the namespace bytes and the name,
+		// then the version (5) and variant (10xx) bits.
+		$hash = sha1(hex2bin(str_replace('-', '', self::UUID_FOR_NAMESPACE)) . $name);
+		$timeHi = (hexdec(substr($hash, 12, 4)) & 0x0fff) | 0x5000;
+		$clockSeq = (hexdec(substr($hash, 16, 4)) & 0x3fff) | 0x8000;
+
+		return sprintf(
+			'%s-%s-%04x-%04x-%s',
+			substr($hash, 0, 8),
+			substr($hash, 8, 4),
+			$timeHi,
+			$clockSeq,
+			substr($hash, 20, 12)
+		);
+	}//end uuidFor()
 
 	/**
 	 * Fetch the content of a specific file for an object.

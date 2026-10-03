@@ -20,7 +20,7 @@ vendor secret directly), and register it in
 `Application::registerIntegrationProviders()`. The remaining ~36 named
 vendors in this spec stay explicit backlog — this change proves the
 scaffolding, not a full vendor rollout (see
-`openspec/changes/connector-category-adapter-scaffolding`).
+`openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding`).
 
 ## Requirements
 ### Requirement: Endpoint and virtual-desktop / workspace connectors SHALL register through the integration registry per ADR-019 (REQ-EWC-001)

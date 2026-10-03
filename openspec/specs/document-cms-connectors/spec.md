@@ -20,7 +20,7 @@ attachment-ingestion endpoint — no such public route currently exists in the
 docudesk app. Wiring a real docudesk hand-off is deferred as a follow-up, not
 invented against a route that doesn't exist. The remaining named vendors
 stay explicit backlog (see
-`openspec/changes/connector-category-adapter-scaffolding`).
+`openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding`).
 
 ## Requirements
 ### Requirement: Document/CMS connector adapters SHALL register through the integration registry per ADR-019 and target EXTERNAL document systems only (REQ-DCC-001)

@@ -1,0 +1,317 @@
+{
+  "$comment": "ADR-037 register fragment (observability-connection-run-summary). Adds alertThresholds to source and synchronization and declares connection_alert, the alert ConnectionThresholdJob opens when a count passes a threshold and clears when it falls back. The warning is declarative: a created rule on connection_alert notifies the members of the group named in the app setting connection_alert_group (ConnectionAlertRecipientResolver). No group is set by default, so nobody is notified until an administrator names one. See openspec/changes/archive/2026-09-29-observability-connection-run-summary/design.md D4 and D5.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "connection_alert"
+        ]
+      }
+    },
+    "schemas": {
+      "source": {
+        "version": "1.6.0",
+        "properties": {
+          "alertThresholds": {
+            "type": "object",
+            "title": "Alert thresholds",
+            "description": "When to warn about this source: each threshold counts failures over a window. Leave it empty and nothing is counted.",
+            "properties": {
+              "failedCalls": {
+                "type": "object",
+                "title": "Failed calls",
+                "description": "Calls answered with status 400 or higher.",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "title": "More than",
+                    "description": "An alert opens when the count in the window is higher than this."
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 10080,
+                    "title": "Window in minutes",
+                    "description": "How far back to count, in minutes."
+                  }
+                },
+                "required": [
+                  "count",
+                  "windowMinutes"
+                ]
+              },
+              "failedRuns": {
+                "type": "object",
+                "title": "Failed runs",
+                "description": "Synchronization runs that ended failed.",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "title": "More than",
+                    "description": "An alert opens when the count in the window is higher than this."
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 10080,
+                    "title": "Window in minutes",
+                    "description": "How far back to count, in minutes."
+                  }
+                },
+                "required": [
+                  "count",
+                  "windowMinutes"
+                ]
+              },
+              "invalidObjects": {
+                "type": "object",
+                "title": "Invalid objects",
+                "description": "Objects the runs rejected as invalid.",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "title": "More than",
+                    "description": "An alert opens when the count in the window is higher than this."
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 10080,
+                    "title": "Window in minutes",
+                    "description": "How far back to count, in minutes."
+                  }
+                },
+                "required": [
+                  "count",
+                  "windowMinutes"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "synchronization": {
+        "version": "1.3.0",
+        "properties": {
+          "alertThresholds": {
+            "type": "object",
+            "title": "Alert thresholds",
+            "description": "When to warn about this synchronization: each threshold counts failures over a window. Leave it empty and nothing is counted.",
+            "properties": {
+              "failedCalls": {
+                "type": "object",
+                "title": "Failed calls",
+                "description": "Calls answered with status 400 or higher.",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "title": "More than",
+                    "description": "An alert opens when the count in the window is higher than this."
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 10080,
+                    "title": "Window in minutes",
+                    "description": "How far back to count, in minutes."
+                  }
+                },
+                "required": [
+                  "count",
+                  "windowMinutes"
+                ]
+              },
+              "failedRuns": {
+                "type": "object",
+                "title": "Failed runs",
+                "description": "Synchronization runs that ended failed.",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "title": "More than",
+                    "description": "An alert opens when the count in the window is higher than this."
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 10080,
+                    "title": "Window in minutes",
+                    "description": "How far back to count, in minutes."
+                  }
+                },
+                "required": [
+                  "count",
+                  "windowMinutes"
+                ]
+              },
+              "invalidObjects": {
+                "type": "object",
+                "title": "Invalid objects",
+                "description": "Objects the runs rejected as invalid.",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "title": "More than",
+                    "description": "An alert opens when the count in the window is higher than this."
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 10080,
+                    "title": "Window in minutes",
+                    "description": "How far back to count, in minutes."
+                  }
+                },
+                "required": [
+                  "count",
+                  "windowMinutes"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "connection_alert": {
+        "slug": "connection_alert",
+        "title": "Connection alert",
+        "icon": "AlertOutline",
+        "version": "1.0.0",
+        "summary": "A source or synchronization passed one of its alert thresholds",
+        "description": "Opened by the threshold job when a count of failures passes a threshold, and cleared when the count falls back. While an alert is open for a subject and rule, no second one opens, so a source failing all night warns once.",
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "required": [
+          "subjectType",
+          "subject",
+          "rule",
+          "count",
+          "threshold",
+          "windowMinutes",
+          "state",
+          "openedAt"
+        ],
+        "type": "object",
+        "appendOnly": false,
+        "immutable": false,
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "title": "UUID",
+            "description": "Canonical UUID assigned by OpenRegister"
+          },
+          "subjectType": {
+            "type": "string",
+            "enum": [
+              "source",
+              "synchronization"
+            ],
+            "title": "Subject type",
+            "description": "Whether the threshold belongs to a source or a synchronization."
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "description": "The id of the source or synchronization."
+          },
+          "subjectName": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the source or synchronization when the alert opened."
+          },
+          "rule": {
+            "type": "string",
+            "enum": [
+              "failedCalls",
+              "failedRuns",
+              "invalidObjects"
+            ],
+            "title": "Rule",
+            "description": "What was counted: failed calls, failed runs or invalid objects."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Count",
+            "description": "The count in the window when the alert opened."
+          },
+          "threshold": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Threshold",
+            "description": "The count the threshold allows; the alert opened above it."
+          },
+          "windowMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Window in minutes",
+            "description": "How far back was counted."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "cleared"
+            ],
+            "title": "State",
+            "description": "Open while the count stays above the threshold, cleared once it falls back."
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Opened at",
+            "description": "When the alert opened."
+          },
+          "clearedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Cleared at",
+            "description": "When the count fell back and the alert cleared."
+          }
+        },
+        "x-openregister-notifications": {
+          "threshold-passed": {
+            "trigger": {
+              "type": "created"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
+              }
+            ],
+            "subject": {
+              "nl": "{{subjectName}}: {{count}} keer {{rule}} in {{windowMinutes}} minuten, meer dan {{threshold}}",
+              "en": "{{subjectName}}: {{rule}} {{count}} times in {{windowMinutes}} minutes, more than {{threshold}}"
+            },
+            "message": {
+              "nl": "Open Integriq > Verbindingsmeldingen voor de details.",
+              "en": "Open Integriq > Connection alerts for the details."
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -26,7 +26,7 @@ use InvalidArgumentException;
  * Declared on the synchronisation, never hardcoded in the engine. A value the
  * engine does not know is refused, and is never quietly read as the default.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
  */
 final class DisappearancePolicy {
 	/**
@@ -65,7 +65,7 @@ final class DisappearancePolicy {
 	 *
 	 * @throws InvalidArgumentException When the declared value is not one the engine knows.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public static function fromSourceConfig(array $sourceConfig): string {
 		$declared = ($sourceConfig[self::CONFIG_KEY] ?? null);
@@ -87,7 +87,7 @@ final class DisappearancePolicy {
 	 *
 	 * @return bool True when the declaration is absent or accepted.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public static function isValid(array $sourceConfig): bool {
 		try {
@@ -105,7 +105,7 @@ final class DisappearancePolicy {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public static function refusalMessage(mixed $declared): string {
 		$declaredText = gettype($declared);

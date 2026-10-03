@@ -6,7 +6,7 @@
  * only way a verdict does any good is by being visible. Pending is
  * deliberately not green: a checker that has not finished has not passed.
  *
- * Spec coverage: openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * Spec coverage: openspec/specs/outbound-call-log/spec.md
  */
 
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'

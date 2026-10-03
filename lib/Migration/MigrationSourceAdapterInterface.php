@@ -24,7 +24,7 @@ namespace OCA\Integriq\Migration;
  * An adapter reads. It never writes to the system it reads, and it never
  * writes to the target: OpenRegister's import engine does that.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-migration-source-is-an-adapter-behind-one-contract-req-msa-001
  */
 interface MigrationSourceAdapterInterface {
 	/**

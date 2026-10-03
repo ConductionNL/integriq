@@ -39,7 +39,7 @@ use OCP\IUserSession;
  * openregister resolves a declared property source through this surface, and
  * an administration screen resyncs a list-shaped one through it.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
 class PropertySourceController extends Controller {
 	/**
@@ -101,7 +101,7 @@ class PropertySourceController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on
+	 * @spec openspec/specs/registry-field-source/spec.md#scenario-describe-says-what-the-provider-keys-on
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -123,7 +123,7 @@ class PropertySourceController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
+	 * @spec openspec/specs/registry-field-source/spec.md#scenario-an-applicant-types-an-address
 	 *
 	 * @no-admin-idor-exempt Queries an authoritative registry the instance is configured for, by search
 	 *     term. The identifier is a registry key, not an id of a record this app stores, so there is no per-
@@ -156,7 +156,7 @@ class PropertySourceController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
 	 *
 	 * @no-admin-idor-exempt Queries an authoritative registry the instance is configured for, by registry
 	 *     identifier. Not a read of a record this app stores, so there is no per-object owner to compare
@@ -226,7 +226,7 @@ class PropertySourceController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when the query may proceed.
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
 	 */
 	private function requireQueryPermission(string $provider): ?JSONResponse {
 		if (in_array($provider, self::PUBLIC_PROVIDERS, true) === true) {
@@ -262,7 +262,7 @@ class PropertySourceController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

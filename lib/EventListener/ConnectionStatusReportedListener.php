@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
+ * @spec openspec/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
+ * @spec openspec/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
  */
 class ConnectionStatusReportedListener implements IEventListener {
 	/**
@@ -67,7 +67,7 @@ class ConnectionStatusReportedListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-unknown-key-is-refused-without-an-exception
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-unknown-key-is-refused-without-an-exception
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ConnectionStatusReportedEvent) === false) {

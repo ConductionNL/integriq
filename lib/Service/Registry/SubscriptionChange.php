@@ -24,7 +24,7 @@ namespace OCA\Integriq\Service\Registry;
  * The identity, what changed about it, and the source's own event reference.
  * Nothing more: the record itself stays in OpenRegister.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
 final class SubscriptionChange {
 	/**

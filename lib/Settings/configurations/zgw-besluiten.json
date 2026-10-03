@@ -14,7 +14,6 @@
     "1.5",
     "1.6"
   ],
-  "translator": "ZgwResourceTranslatorInterface",
   "synchronizations": [
     "zgw-besluiten-pull",
     "zgw-besluiten-push"
@@ -31,6 +30,7 @@
     "chosenBy": "operator"
   },
   "source": {
+    "slug": "zgw-set-besluiten",
     "name": "Besluiten API",
     "type": "api",
     "location": "",

@@ -144,8 +144,38 @@ class ObjecttypeRegistry {
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
 	public function find(string $uuid): ?array {
-		return ($this->byUuid[trim($uuid)] ?? null);
+		return ($this->byUuid[$this->uuidFrom(reference: $uuid)] ?? null);
 	}//end find()
+
+	/**
+	 * The objecttype uuid a caller's `type` names: the uuid itself, or the objecttype URL.
+	 *
+	 * 🔑 THE STANDARD SENDS THE URL. A VNG Objecten consumer fills `type` with
+	 * the objecttype's URL on the Objecttypen API, `{base}/api/v2/objecttypes/{uuid}`,
+	 * so a lookup on the bare uuid alone answered 404 to every standard client.
+	 * Only a path ending in `objecttypes/{segment}` is read as an objecttype URL;
+	 * any other URL is returned unchanged, so it matches no declaration and the
+	 * caller is answered 404 rather than resolved to a type it did not name.
+	 *
+	 * @param string $reference The uuid or the objecttype URL.
+	 *
+	 * @return string The uuid, or the trimmed reference when it is not an objecttype URL.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+	 */
+	public function uuidFrom(string $reference): string {
+		$reference = trim($reference);
+		if (preg_match('#^https?://#i', $reference) !== 1) {
+			return $reference;
+		}
+
+		$path = (string)parse_url($reference, PHP_URL_PATH);
+		if (preg_match('#/objecttypes/([^/]+)/?$#', $path, $match) !== 1) {
+			return $reference;
+		}
+
+		return rawurldecode($match[1]);
+	}//end uuidFrom()
 
 	/**
 	 * Every declared objecttype.

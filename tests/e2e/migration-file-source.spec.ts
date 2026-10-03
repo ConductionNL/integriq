@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/migration-source-adapters/specs/migration-sources/spec.md
+ * Spec coverage: openspec/specs/migration-sources/spec.md
  *
  * Two scenarios in that spec reach a running instance: a stored column mapping
  * reused across deliveries, and a mapping onto a target field the schema does

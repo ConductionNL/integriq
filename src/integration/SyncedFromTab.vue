@@ -31,28 +31,47 @@
 			{{ t('integriq', 'This object was not created by a synchronization.') }}
 		</div>
 
-		<ul v-else class="oc-synced-from__list">
-			<li v-for="row in rows" :key="row.id" class="oc-synced-from__row">
-				<div class="oc-synced-from__row-icon">
-					<SyncIcon :size="20" />
-				</div>
-				<div class="oc-synced-from__row-body">
-					<a v-if="row.url" :href="row.url" class="oc-synced-from__title">
-						{{ row.title || t('integriq', 'Synchronization') }}
-					</a>
-					<span v-else class="oc-synced-from__title">
-						{{ row.title || t('integriq', 'Synchronization') }}
-					</span>
-					<span v-if="row.subtitle" class="oc-synced-from__subtitle">{{
-						row.subtitle
-					}}</span>
-					<span v-if="row.originId" class="oc-synced-from__origin">
-						{{ t('integriq', 'Origin id:') }}
-						<code>{{ row.originId }}</code>
-					</span>
-				</div>
-			</li>
-		</ul>
+		<template v-else>
+			<p
+				v-if="writeBackConflict"
+				class="oc-synced-from__conflict"
+				role="status"
+				data-testid="oc-synced-from-conflict">
+				{{ t('integriq', 'The connected system refused your last change.') }}
+				{{
+					t(
+						'integriq',
+						'Your change is still here, and the next change it accepts clears this notice.',
+					)
+				}}
+			</p>
+
+			<ul class="oc-synced-from__list">
+				<li v-for="row in rows" :key="row.id" class="oc-synced-from__row">
+					<div class="oc-synced-from__row-icon">
+						<SyncIcon :size="20" />
+					</div>
+					<div class="oc-synced-from__row-body">
+						<a
+							v-if="row.url"
+							:href="row.url"
+							class="oc-synced-from__title">
+							{{ row.title || t('integriq', 'Synchronization') }}
+						</a>
+						<span v-else class="oc-synced-from__title">
+							{{ row.title || t('integriq', 'Synchronization') }}
+						</span>
+						<span v-if="row.subtitle" class="oc-synced-from__subtitle">{{
+							row.subtitle
+						}}</span>
+						<span v-if="row.originId" class="oc-synced-from__origin">
+							{{ t('integriq', 'Origin id:') }}
+							<code>{{ row.originId }}</code>
+						</span>
+					</div>
+				</li>
+			</ul>
+		</template>
 	</div>
 </template>
 
@@ -102,6 +121,18 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the connected system refused the last local change. The
+		 * provider puts the object's write-back state on every row.
+		 *
+		 * @return {boolean} True when a row reports a refused write-back.
+		 *
+		 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+		 */
+		writeBackConflict() {
+			return this.rows.some((row) => row.writeBackConflict === true)
+		},
+
 		/**
 		 * Resolve the sub-resource endpoint. Uses the injected apiBase
 		 * when present, else the OpenRegister API path.
@@ -169,6 +200,15 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 	padding: 8px 12px;
+}
+
+.oc-synced-from__conflict {
+	margin: 0 12px 8px;
+	padding: 8px 12px;
+	border-inline-start: 4px solid var(--color-warning);
+	background-color: var(--color-background-hover);
+	color: var(--color-main-text);
+	font-size: 13px;
 }
 
 .oc-synced-from__list {

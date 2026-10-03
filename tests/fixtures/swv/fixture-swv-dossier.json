@@ -1,0 +1,11 @@
+{
+  "$comment": "Representative SWV support-request/TLV dossier. Field names are drawn from the SWV-hosted operator manuals found in market-intelligence round 1 (Kindkans: 'Handleiding van ParnasSys naar Kindkans via OSO SWV'; LDOS: 'Handleiding TLV-applicatie LDOS', SWV PO Eindhoven, 2023) -- both describe the hand-off as an OSO SWV dossier exchange. This is NOT a payload captured from a live receiver -- no live credentials exist for this round.",
+  "receiverId": "swv-kindkans",
+  "dossier": {
+    "pupilReference": "leerling-mock-0001",
+    "requestType": "tlv-so",
+    "tlvRequested": true,
+    "supportProfile": "onderwijsbehoeften-mock",
+    "requestedAt": "2026-09-20"
+  }
+}

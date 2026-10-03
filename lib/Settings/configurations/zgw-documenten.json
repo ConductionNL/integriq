@@ -14,7 +14,6 @@
     "1.5",
     "1.6"
   ],
-  "translator": "ZgwResourceTranslatorInterface",
   "synchronizations": [
     "zgw-documenten-pull",
     "zgw-documenten-push"
@@ -31,6 +30,7 @@
     "chosenBy": "operator"
   },
   "source": {
+    "slug": "zgw-set-documenten",
     "name": "Documenten API",
     "type": "api",
     "location": "",

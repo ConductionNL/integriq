@@ -1,0 +1,15 @@
+[
+    {
+        "assetId": "0b6f4d2e-1a2b-4c3d-8e9f-000000000002",
+        "linkId": "9f8e7d6c-0000-4000-8000-000000000001",
+        "linkType": "child",
+        "name": "Burgerzaken",
+        "type": "Application",
+        "archived": false,
+        "archivedAsset": false,
+        "status": "OPERATIONAL",
+        "summary": "Basisregistratie personen en reisdocumenten",
+        "capabilityId": "e462d679-aec2-4cc8-b81d-09236de4c198",
+        "capabilityName": "Uses data from"
+    }
+]

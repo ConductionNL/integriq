@@ -64,6 +64,11 @@
     "configuration.export": ["admin"],
     "configuration.import": ["admin"],
     "environment.manage": ["admin"],
-    "environment.promote": ["admin"]
+    "environment.promote": ["admin"],
+    "exchange.read": ["admin", "coordinators", "compliance-officers"],
+    "exchange.resubmit": ["admin"],
+    "exchange.waive": ["admin"],
+    "sync-dead-letter.replay": ["admin"],
+    "sync-dead-letter.discard": ["admin"]
   }
 }
