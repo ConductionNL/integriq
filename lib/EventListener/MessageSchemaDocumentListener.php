@@ -91,6 +91,10 @@ class MessageSchemaDocumentListener implements IEventListener {
 	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
 	 */
 	public function handle(Event $event): void {
+		if (($event instanceof ObjectCreatingEvent) === false && ($event instanceof ObjectUpdatingEvent) === false) {
+			return;
+		}
+
 		$entity = null;
 		if ($event instanceof ObjectCreatingEvent) {
 			$entity = $event->getObject();

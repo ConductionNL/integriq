@@ -203,6 +203,36 @@ class MessageSchemaRegisterFragmentTest extends TestCase {
 	}//end testTheSeedsCheckTheSamePersonWithTheRealCheckers()
 
 	/**
+	 * The demo register carries three message schemas (ADR-111 rule 1), each valid and parseable.
+	 *
+	 * @return void
+	 */
+	public function testTheDemoRegisterCarriesThreeParseableMessageSchemas(): void {
+		$demo = array_values(
+			array_filter(
+				self::json('/lib/Settings/integriq_mock_register.json')['components']['objects'],
+				static fn (array $object): bool => ($object['@self']['schema'] ?? '') === 'message_schema'
+			)
+		);
+		$this->assertCount(3, $demo);
+
+		$schema = self::mergedRegister()['components']['schemas']['message_schema'];
+		$kinds = [];
+		foreach ($demo as $object) {
+			unset($object['@self']);
+			$result = (new Validator())->validate(
+				json_decode(json_encode($object, JSON_THROW_ON_ERROR)),
+				json_encode($schema, JSON_THROW_ON_ERROR)
+			);
+			$this->assertTrue($result->isValid(), (string)$object['name']);
+			$this->assertNull(self::service()->documentProblem($object), (string)$object['name']);
+			$kinds[] = $object['kind'];
+		}
+
+		$this->assertSame(['json-schema', 'xsd', 'openapi'], $kinds);
+	}//end testTheDemoRegisterCarriesThreeParseableMessageSchemas()
+
+	/**
 	 * The page lists message schemas for administrators, under Automation next to Mappings.
 	 *
 	 * @return void
