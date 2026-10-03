@@ -3020,7 +3020,17 @@
         "The set file for \"%s\" is missing from this installation.": "The set file for \"%s\" is missing from this installation.",
         "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.",
         "The connected system refused your last change.": "The connected system refused your last change.",
-        "Your change is still here, and the next change it accepts clears this notice.": "Your change is still here, and the next change it accepts clears this notice."
+        "Your change is still here, and the next change it accepts clears this notice.": "Your change is still here, and the next change it accepts clears this notice.",
+        "Attachment missing": "Attachment missing",
+        "File ID": "File ID",
+        "How many downloads were tried": "How many downloads were tried",
+        "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.": "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.",
+        "The Nextcloud file id, once stored": "The Nextcloud file id, once stored",
+        "The file name from the verzoek": "The file name from the verzoek",
+        "The last error, once failed or too-large": "The last error, once failed or too-large",
+        "True when a bijlage is failed or too-large. Handle that bijlage by hand.": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
+        "Where DSO-LV serves the file": "Where DSO-LV serves the file",
+        "Pending until the download job has run. Then stored, failed or too-large.": "Pending until the download job has run. Then stored, failed or too-large."
     },
     "plurals": {}
 }

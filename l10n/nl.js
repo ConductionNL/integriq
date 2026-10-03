@@ -1677,7 +1677,18 @@ OC.L10N.register(
         "The set file for \"%s\" is missing from this installation.": "Het setbestand voor \"%s\" ontbreekt in deze installatie.",
         "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "De synchronisatie \"%s\" die deze set nodig heeft, staat niet op deze instantie. Herstel of herinstalleer Integriq zodat de meegeleverde sets worden geïmporteerd, en installeer de set daarna opnieuw.",
         "The connected system refused your last change.": "Het gekoppelde systeem weigerde je laatste wijziging.",
-        "Your change is still here, and the next change it accepts clears this notice.": "Je wijziging staat er nog, en de volgende wijziging die het accepteert haalt deze melding weg."
+        "Your change is still here, and the next change it accepts clears this notice.": "Je wijziging staat er nog, en de volgende wijziging die het accepteert haalt deze melding weg.",
+        "Attachments": "Bijlagen",
+        "Attachment missing": "Bijlage ontbreekt",
+        "File ID": "Bestands-ID",
+        "How many downloads were tried": "Hoe vaak de download is geprobeerd",
+        "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.": "De bijlagen van dit verzoek, één regel per bijlage. Een achtergrondtaak downloadt ze en koppelt ze hier als bestanden.",
+        "The Nextcloud file id, once stored": "Het Nextcloud-bestands-ID, zodra het bestand is opgeslagen",
+        "The file name from the verzoek": "De bestandsnaam uit het verzoek",
+        "The last error, once failed or too-large": "De laatste fout, bij mislukt of te groot",
+        "True when a bijlage is failed or too-large. Handle that bijlage by hand.": "Waar als een bijlage mislukt of te groot is. Verwerk die bijlage dan met de hand.",
+        "Where DSO-LV serves the file": "Waar DSO-LV het bestand aanbiedt",
+        "Pending until the download job has run. Then stored, failed or too-large.": "In afwachting tot de downloadtaak heeft gedraaid. Daarna opgeslagen, mislukt of te groot."
     },
     "nplurals=2; plural=(n != 1);"
 )

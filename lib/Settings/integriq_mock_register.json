@@ -4503,7 +4503,7 @@
           },
           "attachments": {
             "type": "array",
-            "description": "One entry per bijlage the verzoek references. Intake writes each entry as pending; FetchDsoAttachmentsJob downloads it from DSO-LV and attaches it to this object as a file tagged dso-bijlage. Status is pending, stored, failed or too-large.",
+            "description": "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.",
             "title": "Attachments",
             "items": {
               "type": "object",
@@ -4532,7 +4532,7 @@
                     "failed",
                     "too-large"
                   ],
-                  "description": "pending until the job has run, then stored, failed or too-large",
+                  "description": "Pending until the download job has run. Then stored, failed or too-large.",
                   "title": "Status"
                 },
                 "fileId": {
@@ -4556,8 +4556,8 @@
           },
           "attachmentMissing": {
             "type": "boolean",
-            "description": "True while one or more attachments are failed or too-large, so the behandelaar handles them by hand (REQ-DSO-005: bijlage ontbreekt). Set by FetchDsoAttachmentsJob.",
-            "title": "Attachment Missing"
+            "description": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
+            "title": "Attachment missing"
           }
         },
         "x-openregister-handoff": [
