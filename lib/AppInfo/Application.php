@@ -88,6 +88,7 @@ use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\EventListener\RosterImportRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
+use OCA\Integriq\EventListener\MessageSchemaDocumentListener;
 use OCA\Integriq\EventListener\SubscriptionSigningDefaultListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
 use OCA\Integriq\EventListener\ViewDeletedEventListener;
@@ -302,6 +303,11 @@ class Application extends App implements IBootstrap {
 		// creating/updating events, whichever page or app saves it.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: SubscriptionSigningDefaultListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: SubscriptionSigningDefaultListener::class);
+		// REQ-MSV-001 (mapping-message-schema-validation): a message schema whose
+		// document does not parse for its kind is refused on OpenRegister's own
+		// save path, so the refusal holds whichever page or app saves it.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: MessageSchemaDocumentListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: MessageSchemaDocumentListener::class);
 		// Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
 		// CloudEvents (register `openconnector` — the OpenRegister register slug,
 		// frozen across the app-id rename; schema event) created by any app.

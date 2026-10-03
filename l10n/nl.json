@@ -1679,7 +1679,18 @@
         "The set file for \"%s\" is missing from this installation.": "Het setbestand voor \"%s\" ontbreekt in deze installatie.",
         "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "De synchronisatie \"%s\" die deze set nodig heeft, staat niet op deze instantie. Herstel of herinstalleer Integriq zodat de meegeleverde sets worden geïmporteerd, en installeer de set daarna opnieuw.",
         "The connected system refused your last change.": "Het gekoppelde systeem weigerde je laatste wijziging.",
-        "Your change is still here, and the next change it accepts clears this notice.": "Je wijziging staat er nog, en de volgende wijziging die het accepteert haalt deze melding weg."
+        "Your change is still here, and the next change it accepts clears this notice.": "Je wijziging staat er nog, en de volgende wijziging die het accepteert haalt deze melding weg.",
+        "Document": "Document",
+        "For kind register-schema: the register and schema slug, as register/schema": "Voor soort register-schema: de slug van het register en het schema, als register/schema",
+        "How you recognise this schema, for example the partner and the message": "Waaraan je dit schema herkent, bijvoorbeeld de partner en het bericht",
+        "Message schema": "Berichtschema",
+        "Message schemas": "Berichtschema's",
+        "Paste the schema: JSON Schema as JSON, an XSD as XML, OpenAPI as JSON or YAML. A broken document is not saved": "Plak het schema: JSON Schema als JSON, een XSD als XML, OpenAPI als JSON of YAML. Een kapot document wordt niet opgeslagen",
+        "Pick json-schema, xsd or openapi to paste a document. Pick register-schema to check against a register schema": "Kies json-schema, xsd of openapi om een document te plakken. Kies register-schema om tegen een registerschema te controleren",
+        "Register schema": "Registerschema",
+        "The partner's version of this schema. Change it when the partner publishes a new one": "De versie van dit schema bij de partner. Pas hem aan als de partner een nieuwe publiceert",
+        "What the schema is for and where it came from": "Waar het schema voor is en waar het vandaan komt",
+        "This message schema was not saved: %s": "Dit berichtschema is niet opgeslagen: %s"
     },
     "plurals": {}
 }

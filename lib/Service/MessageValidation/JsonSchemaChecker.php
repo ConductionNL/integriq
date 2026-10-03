@@ -46,6 +46,28 @@ class JsonSchemaChecker {
 	private const MAX_ERRORS = 100;
 
 	/**
+	 * Why a JSON Schema document cannot be stored, or null when it parses.
+	 *
+	 * @param string $schema The schema as JSON text.
+	 *
+	 * @return string|null The parser's message.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
+	 */
+	public function documentProblem(string $schema): ?string {
+		$document = json_decode($schema, false);
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			return 'The JSON Schema document does not parse: ' . json_last_error_msg();
+		}
+
+		if (is_object($document) === false && is_bool($document) === false) {
+			return 'The JSON Schema document is not an object';
+		}
+
+		return null;
+	}//end documentProblem()
+
+	/**
 	 * Check a payload against a JSON Schema.
 	 *
 	 * @param string|array|object $schema  The schema: JSON text, or a decoded document.

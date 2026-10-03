@@ -81,4 +81,27 @@ class MessageValidationService {
 			),
 		};
 	}//end validate()
+
+	/**
+	 * Why a message schema's document cannot be stored, or null when it parses for its kind.
+	 *
+	 * A `register-schema` kind references a register schema instead of
+	 * carrying a document, so there is nothing to parse.
+	 *
+	 * @param array $messageSchema The `message_schema` object: `kind` and `document`.
+	 *
+	 * @return string|null The parser's message.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
+	 */
+	public function documentProblem(array $messageSchema): ?string {
+		$document = (string)($messageSchema['document'] ?? '');
+
+		return match ((string)($messageSchema['kind'] ?? '')) {
+			'json-schema' => $this->jsonSchema->documentProblem(schema: $document),
+			'xsd' => $this->xsd->documentProblem(xsd: $document),
+			'openapi' => $this->openApi->documentProblem(document: $document),
+			default => null,
+		};
+	}//end documentProblem()
 }//end class

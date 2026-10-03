@@ -57,6 +57,41 @@ class XsdChecker {
 	private const REFERENCING_ELEMENTS = ['import', 'include', 'redefine', 'override'];
 
 	/**
+	 * Why an XSD document cannot be stored, or null when it parses.
+	 *
+	 * The document must be well-formed XML whose root is `xs:schema`. It is
+	 * loaded the same way {@see check()} loads it, so what is stored is what
+	 * the checker can read.
+	 *
+	 * @param string $xsd The XSD document.
+	 *
+	 * @return string|null The parser's message.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
+	 */
+	public function documentProblem(string $xsd): ?string {
+		$previousErrors = libxml_use_internal_errors(true);
+		libxml_clear_errors();
+
+		try {
+			$schemaDom = new DOMDocument();
+			if (SafeXmlParser::loadDom(dom: $schemaDom, data: $xsd) === false) {
+				return 'The XSD document does not parse: ' . self::libxmlMessages();
+			}
+
+			$root = $schemaDom->documentElement;
+			if ($root === null || $root->namespaceURI !== self::XSD_NAMESPACE || $root->localName !== 'schema') {
+				return 'The XSD document is XML, but its root element is not xs:schema';
+			}
+
+			return null;
+		} finally {
+			libxml_clear_errors();
+			libxml_use_internal_errors($previousErrors);
+		}
+	}//end documentProblem()
+
+	/**
 	 * Check an XML message against an XSD.
 	 *
 	 * @param string $xsd     The XSD document.
