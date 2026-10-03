@@ -9428,6 +9428,48 @@
       {
         "@self": {
           "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-go1"
+        },
+        "deploymentId": "demo-go1-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b01",
+        "name": "Go1 (demo deployment)",
+        "description": "Demo deployment of the Go1 tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-go1-placement\" to let the Go1 synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a01",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-linkedin-learning"
+        },
+        "deploymentId": "demo-linkedin-learning-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b02",
+        "name": "LinkedIn Learning (demo deployment)",
+        "description": "Demo deployment of the LinkedIn Learning tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-linkedin-learning-placement\" to let the LinkedIn Learning synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a02",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-udemy-business"
+        },
+        "deploymentId": "demo-udemy-business-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b03",
+        "name": "Udemy Business (demo deployment)",
+        "description": "Demo deployment of the Udemy Business tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-udemy-business-placement\" to let the Udemy Business synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a03",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
           "schema": "lti_identity_link",
           "slug": "lti-identity-link-lti-identity-link-1-1"
         },
@@ -9643,6 +9685,57 @@
         "status": "suspended",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-go1"
+        },
+        "clientId": "demo-go1",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a01",
+        "name": "Go1 (demo tool)",
+        "description": "Demo registration of the Go1 LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values Go1 gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.go1.example/login",
+        "launchUrl": "https://lti.go1.example/launch",
+        "jwksUri": "https://lti.go1.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-linkedin-learning"
+        },
+        "clientId": "demo-linkedin-learning",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a02",
+        "name": "LinkedIn Learning (demo tool)",
+        "description": "Demo registration of the LinkedIn Learning LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values LinkedIn Learning gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.linkedin-learning.example/login",
+        "launchUrl": "https://lti.linkedin-learning.example/launch",
+        "jwksUri": "https://lti.linkedin-learning.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-udemy-business"
+        },
+        "clientId": "demo-udemy-business",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a03",
+        "name": "Udemy Business (demo tool)",
+        "description": "Demo registration of the Udemy Business LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values Udemy Business gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.udemy-business.example/login",
+        "launchUrl": "https://lti.udemy-business.example/launch",
+        "jwksUri": "https://lti.udemy-business.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
       },
       {
         "@self": {

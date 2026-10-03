@@ -62,6 +62,8 @@ Kind: code. Size M. Row `learniq:cont-outside-provider-catalogue`. Depends on
   - GIVEN a course marketplace source WHEN the form opens THEN it shows collection, language and text filter fields
   - GIVEN demo data WHEN an administrator opens the LTI deployments THEN one per provider is listed
 - [ ] Implement
+  - Demo data half built: `integriq_mock_register.json` carries one `lti_tool` (pending, placeholder URLs) and one `lti_deployment` naming it per provider; each deployment's description names the placement mapping to put its uuid in. `tests/Unit/Settings/CourseMarketplaceDemoDeploymentsTest.php` checks one deployment per provider on its own tool and validates all six against integriq's real schemas.
+  - Form half open, needs a decision: the selection is the synchronizations' `conditions` (design, "Selection and retirement"), not a source setting, so collection, language and text filter fields on `SourceFormFields.vue` would write values nothing reads. Either the fields move to the synchronization form and write `conditions`, or this criterion is rewritten.
 - [ ] Test (`tests/e2e/course-marketplace.spec.ts`)
 
 ### Task 7: Tell the provider's tool which course to open
