@@ -183,6 +183,9 @@
           ]
         },
         "conditions": [],
+        "targetConfig": {
+          "ltiCustomOriginIdParameter": "course_id"
+        },
         "targetId": "learniq/lti-tool-placement",
         "targetType": "register/schema",
         "version": "1.0.0"
@@ -411,6 +414,9 @@
           ]
         },
         "conditions": [],
+        "targetConfig": {
+          "ltiCustomOriginIdParameter": "course_id"
+        },
         "targetId": "learniq/lti-tool-placement",
         "targetType": "register/schema",
         "version": "1.0.0"
@@ -635,6 +641,9 @@
           ]
         },
         "conditions": [],
+        "targetConfig": {
+          "ltiCustomOriginIdParameter": "course_id"
+        },
         "targetId": "learniq/lti-tool-placement",
         "targetType": "register/schema",
         "version": "1.0.0"

@@ -74,6 +74,7 @@ class LtiPlatformLoginService {
 	public const CLAIM_CONTEXT = 'https://purl.imsglobal.org/spec/lti/claim/context';
 	public const CLAIM_LAUNCH_PRESENTATION = 'https://purl.imsglobal.org/spec/lti/claim/launch_presentation';
 	public const CLAIM_AGS_ENDPOINT = 'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint';
+	public const CLAIM_CUSTOM = 'https://purl.imsglobal.org/spec/lti/claim/custom';
 
 	/**
 	 * The route of a line item on a deployment ({@see LtiController::agsLineItem()}).
@@ -91,6 +92,7 @@ class LtiPlatformLoginService {
 	 * @param LtiPlatformHint $hint Issues and verifies the signed login hint.
 	 * @param IUserSession $userSession The signed-in user.
 	 * @param IURLGenerator $urlGenerator Derives this platform's issuer.
+	 * @param LtiCustomParameterReader $customParameters The custom claim values of a placement a synchronization wrote.
 	 */
 	public function __construct(
 		private readonly LtiRegistrationResolverService $resolver,
@@ -98,6 +100,7 @@ class LtiPlatformLoginService {
 		private readonly LtiPlatformHint $hint,
 		private readonly IUserSession $userSession,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly LtiCustomParameterReader $customParameters,
 	) {
 
 	}//end __construct()
@@ -392,6 +395,9 @@ class LtiPlatformLoginService {
 	 * @param array $toolData The tool registration's data.
 	 *
 	 * @return array<string, mixed> Claims merged into the id_token.
+	 *
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-the-platform-authorizes-the-tools-login-redirect-and-posts-the-launch-token-req-ltil-002
+	 * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-providers-catalogue-arrives-in-learniq-as-draft-courses-that-launch-through-lti-req-cmkt-001
 	 */
 	private function launchClaims(array $context, array $toolData): array {
 		$claims = [
@@ -411,6 +417,13 @@ class LtiPlatformLoginService {
 		$agsEndpoint = $this->agsEndpointClaim(context: $context);
 		if ($agsEndpoint !== null) {
 			$claims[self::CLAIM_AGS_ENDPOINT] = $agsEndpoint;
+		}
+
+		// The provider's course id for a placement a course marketplace
+		// synchronization wrote (design D8): the tool opens that course.
+		$custom = $this->customParameters->forPlacement(placementId: (string)($context['placementId'] ?? ''));
+		if ($custom !== []) {
+			$claims[self::CLAIM_CUSTOM] = $custom;
 		}
 
 		return $claims;

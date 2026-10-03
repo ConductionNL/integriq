@@ -147,6 +147,13 @@ placement's id). Telling the provider's tool which course to open at launch is
 a new task (Task 7): the launch claims read that contract for the placement
 and send the provider course id as an LTI custom claim.
 
+Built as a declaration, not a marketplace special case: a synchronization
+that writes placements sets `targetConfig.ltiCustomOriginIdParameter` to the
+custom parameter name its tool reads, and the launch looks up the contract
+whose `targetId` is the placement. The three sets declare `course_id`. None
+of the three providers' published LTI documentation pinned the name, so it is
+a value an administrator changes on the synchronization, not a constant.
+
 ### Selection and retirement
 
 The selection is the synchronization's `conditions` (JsonLogic on the

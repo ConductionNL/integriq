@@ -69,8 +69,10 @@ Kind: code. Size M. Row `learniq:cont-outside-provider-catalogue`. Depends on
 - **files**: `lib/Service/Lti/LtiPlatformLoginService.php` (launch claims), `lib/Service/SynchronizationContractService.php` (read)
 - **acceptance_criteria**:
   - GIVEN a placement written by a course marketplace synchronization WHEN it is launched THEN the id_token carries the provider course id (the contract's origin id) in the LTI custom claim (design D8)
-- [ ] Implement
-- [ ] Test (PHPUnit on the claims builder with a real contract row)
+- [x] Implement
+  - `LtiCustomParameterReader` (`lib/Service/Lti/`) finds the contract whose target is the launched placement, reads its synchronization's `targetConfig.ltiCustomOriginIdParameter`, and answers `[<name> => <origin id>]`. `LtiPlatformLoginService::launchClaims()` puts that in `https://purl.imsglobal.org/spec/lti/claim/custom`. The three placement synchronizations declare `course_id`; no provider's published LTI documentation confirmed the name it reads, so it is a declaration on the synchronization that an administrator can change. A placement without such a contract, or a store that cannot be read, launches without the claim.
+- [x] Test (PHPUnit on the claims builder with a real contract row)
+  - `LtiPlatformLaunchTest`: the launch through the real controller, the real reader and the real `SynchronizationContractService`, with the shipped Go1 placement synchronization, carries the course id; a course synchronization's contract and no contract carry none; an unreadable store does not stop the launch; every placement synchronization declares the name.
 
 ## Verification
 

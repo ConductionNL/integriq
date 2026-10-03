@@ -12,6 +12,7 @@
  *
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-the-platform-authorizes-the-tools-login-redirect-and-posts-the-launch-token-req-ltil-002
+ * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-providers-catalogue-arrives-in-learniq-as-draft-courses-that-launch-through-lti-req-cmkt-001
  */
 
 declare(strict_types=1);
@@ -24,12 +25,14 @@ use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\AuthorizationService;
 use OCA\Integriq\Service\Lti\LtiAgsService;
+use OCA\Integriq\Service\Lti\LtiCustomParameterReader;
 use OCA\Integriq\Service\Lti\LtiJwksResolverService;
 use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiPlatformHint;
 use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
+use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\ArrayCache;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -86,6 +89,27 @@ class LtiPlatformLaunchTest extends TestCase {
 	 * @var array<string, array>
 	 */
 	private array $registrations = [];
+
+	/**
+	 * Synchronization contract rows in the contract store.
+	 *
+	 * @var list<array<string, mixed>>
+	 */
+	private array $contracts = [];
+
+	/**
+	 * Synchronizations by OpenRegister id.
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	private array $synchronizations = [];
+
+	/**
+	 * Whether reading the contract store throws.
+	 *
+	 * @var boolean
+	 */
+	private bool $contractStoreFails = false;
 
 	/**
 	 * Build the tool registration.
@@ -335,6 +359,94 @@ class LtiPlatformLaunchTest extends TestCase {
 	}//end testToolWithoutRedirectUrisMayOnlyUseItsLaunchUrl()
 
 	// ---------------------------------------------------------------------
+	// REQ-CMKT-001 (connectors-course-marketplace Task 7): a placement a course
+	// marketplace synchronization wrote tells the tool which course to open.
+	// ---------------------------------------------------------------------
+
+	/**
+	 * Launching a placement the Go1 placement synchronization wrote sends the
+	 * Go1 course id (the contract's origin id) in the LTI custom claim, under
+	 * the name the synchronization declares. The synchronization is the real
+	 * one from the shipped fragment.
+	 *
+	 * @return void
+	 */
+	public function testAMarketplacePlacementTellsTheToolWhichCourseToOpen(): void {
+		$sync = $this->shippedSynchronization(slug: 'course-marketplace-go1-placement');
+		$this->synchronizations = ['sync-go1-placement' => $sync];
+		$this->contracts = [
+			[
+				'synchronizationId' => 'sync-go1-placement',
+				'originId' => 'go1-course-123',
+				'targetId' => 'placement-7',
+			],
+		];
+
+		$response = $this->authorize(params: $this->toolRedirect());
+		$claims = $this->claimsOf(idToken: $response->getParams()['idToken']);
+
+		$parameter = $sync['targetConfig']['ltiCustomOriginIdParameter'];
+		$this->assertSame([$parameter => 'go1-course-123'], $claims[LtiPlatformLoginService::CLAIM_CUSTOM]);
+
+	}//end testAMarketplacePlacementTellsTheToolWhichCourseToOpen()
+
+	/**
+	 * A placement no synchronization wrote, and one written by a
+	 * synchronization that declares no custom parameter, launch without a
+	 * custom claim; the rest of the launch is unchanged.
+	 *
+	 * @return void
+	 */
+	public function testAPlacementWithoutADeclaringSynchronizationCarriesNoCustomClaim(): void {
+		$claims = $this->claimsOf(idToken: $this->authorize(params: $this->toolRedirect())->getParams()['idToken']);
+		$this->assertArrayNotHasKey(LtiPlatformLoginService::CLAIM_CUSTOM, $claims);
+
+		$this->synchronizations = ['sync-go1-course' => $this->shippedSynchronization(slug: 'course-marketplace-go1-course')];
+		$this->contracts = [['synchronizationId' => 'sync-go1-course', 'originId' => 'go1-course-123', 'targetId' => 'placement-7']];
+
+		$claims = $this->claimsOf(idToken: $this->authorize(params: $this->toolRedirect())->getParams()['idToken']);
+		$this->assertArrayNotHasKey(LtiPlatformLoginService::CLAIM_CUSTOM, $claims);
+		$this->assertSame(['id' => 'placement-7'], $claims[LtiLaunchService::CLAIM_RESOURCE_LINK]);
+
+	}//end testAPlacementWithoutADeclaringSynchronizationCarriesNoCustomClaim()
+
+	/**
+	 * A contract store that cannot be read does not stop the launch: the
+	 * token goes out without the custom claim.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableContractStoreDoesNotStopTheLaunch(): void {
+		$this->contractStoreFails = true;
+
+		$response = $this->authorize(params: $this->toolRedirect());
+
+		$this->assertSame('lti-autopost', $response->getTemplateName());
+		$this->assertArrayNotHasKey(LtiPlatformLoginService::CLAIM_CUSTOM, $this->claimsOf(idToken: $response->getParams()['idToken']));
+
+	}//end testAnUnreadableContractStoreDoesNotStopTheLaunch()
+
+	/**
+	 * Every marketplace placement synchronization declares the parameter, and
+	 * the course and lesson synchronizations do not (their targets are not launched).
+	 *
+	 * @return void
+	 */
+	public function testEveryMarketplacePlacementSynchronizationDeclaresTheParameter(): void {
+		foreach (['go1', 'linkedin-learning', 'udemy-business'] as $provider) {
+			$placement = $this->shippedSynchronization(slug: 'course-marketplace-' . $provider . '-placement');
+			$this->assertIsString($placement['targetConfig']['ltiCustomOriginIdParameter'] ?? null, $provider);
+			$this->assertNotSame('', $placement['targetConfig']['ltiCustomOriginIdParameter'], $provider);
+
+			foreach (['course', 'lesson'] as $kind) {
+				$other = $this->shippedSynchronization(slug: 'course-marketplace-' . $provider . '-' . $kind);
+				$this->assertArrayNotHasKey('ltiCustomOriginIdParameter', (array)($other['targetConfig'] ?? []), $provider . ' ' . $kind);
+			}
+		}
+
+	}//end testEveryMarketplacePlacementSynchronizationDeclaresTheParameter()
+
+	// ---------------------------------------------------------------------
 	// Fixture.
 	// ---------------------------------------------------------------------
 
@@ -481,10 +593,78 @@ class LtiPlatformLaunchTest extends TestCase {
 			$this->makeLaunchService(),
 			$this->makeHint(),
 			$this->makeUserSession(),
-			$urlGenerator
+			$urlGenerator,
+			$this->makeCustomParameterReader()
 		);
 
 	}//end makeLoginService()
+
+	/**
+	 * The real custom parameter reader over the real contract service, with
+	 * OpenRegister answering from the fixture's contracts and synchronizations.
+	 *
+	 * @return LtiCustomParameterReader
+	 */
+	private function makeCustomParameterReader(): LtiCustomParameterReader {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('findAll')->willReturnCallback(
+			function (array $config = []): array {
+				if ($this->contractStoreFails === true) {
+					throw new \RuntimeException('contract store unavailable');
+				}
+
+				$filters = ($config['filters'] ?? []);
+				$this->assertSame('synchronization_contract', $filters['schema'] ?? null, 'only the contract store is searched');
+				$results = [];
+				foreach ($this->contracts as $index => $row) {
+					if (($filters['targetId'] ?? null) === $row['targetId']) {
+						$results[] = $this->entity(uuid: 'contract-' . $index, data: $row);
+					}
+				}
+
+				return ['results' => $results];
+			}
+		);
+		$objectService->method('find')->willReturnCallback(
+			function ($id, $register = null, $schema = null): ?ObjectEntity {
+				$this->assertSame('synchronization', $schema, 'a contract names a synchronization');
+				if (isset($this->synchronizations[(string)$id]) === false) {
+					return null;
+				}
+
+				return $this->entity(uuid: (string)$id, data: $this->synchronizations[(string)$id]);
+			}
+		);
+
+		return new LtiCustomParameterReader(
+			new SynchronizationContractService($objectService),
+			$objectService,
+			new NullLogger()
+		);
+
+	}//end makeCustomParameterReader()
+
+	/**
+	 * A synchronization as the course marketplace fragment ships it.
+	 *
+	 * @param string $slug The synchronization's slug.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function shippedSynchronization(string $slug): array {
+		$fragment = json_decode(
+			(string)file_get_contents(__DIR__ . '/../../../../lib/Settings/register.d/course-marketplace-connectors.json'),
+			true
+		);
+		foreach ($fragment['components']['objects'] as $object) {
+			if (($object['@self']['schema'] ?? '') === 'synchronization' && ($object['@self']['slug'] ?? '') === $slug) {
+				return $object;
+			}
+		}
+
+		$this->fail('The fragment ships no synchronization ' . $slug);
+
+	}//end shippedSynchronization()
 
 	/**
 	 * The hint service with a real HMAC and the fixture clock.
