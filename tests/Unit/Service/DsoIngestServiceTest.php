@@ -263,6 +263,36 @@ class DsoIngestServiceTest extends TestCase {
 	}//end testIngestWritesBijlagenAsPendingAttachments()
 
 	/**
+	 * Two bijlagen with the same name get distinct file names, because they
+	 * land in the same object folder.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+	 */
+	public function testIngestMakesAttachmentNamesUnique(): void {
+		$service = $this->buildService();
+
+		$request = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-4',
+				'type' => 'aanvraag',
+				'bijlagen' => [
+					['name' => 'tekening.pdf', 'url' => 'https://dso-lv.nl/docs/1'],
+					['name' => 'Tekening.pdf', 'url' => 'https://dso-lv.nl/docs/2'],
+					['name' => 'tekening.pdf', 'url' => 'https://dso-lv.nl/docs/3'],
+					['name' => 'notitie', 'url' => 'https://dso-lv.nl/docs/4'],
+					['name' => 'notitie', 'url' => 'https://dso-lv.nl/docs/5'],
+				],
+			]
+		);
+
+		$this->assertSame(
+			['tekening.pdf', 'Tekening (2).pdf', 'tekening (3).pdf', 'notitie', 'notitie (2)'],
+			array_column($request->getObject()['attachments'], 'name')
+		);
+
+	}//end testIngestMakesAttachmentNamesUnique()
+
+	/**
 	 * Per-verzoek isolation: a translation failure on one verzoek MUST NOT
 	 * affect a second, valid verzoek ingested after it.
 	 *

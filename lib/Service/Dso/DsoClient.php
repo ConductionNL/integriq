@@ -73,6 +73,7 @@ namespace OCA\Integriq\Service\Dso;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\Integriq\Exception\DsoAttachmentTooLargeException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
@@ -108,6 +109,13 @@ class DsoClient implements DsoConnectorProviderInterface {
 		'status' => '/statussen',
 		'besluit' => '/besluiten',
 	];
+
+	/**
+	 * Bytes read per chunk while a bijlage body is streamed.
+	 *
+	 * @var integer
+	 */
+	private const DOWNLOAD_CHUNK_BYTES = 8192;
 
 	/**
 	 * Constructor.
@@ -194,6 +202,10 @@ class DsoClient implements DsoConnectorProviderInterface {
 				'bronorganisatie' => [
 					'type' => 'string',
 					'description' => 'This bevoegd gezag\'s OIN/bronorganisatie code (outbound stuurgegevens default).',
+				],
+				'maxFileSize' => [
+					'type' => 'integer',
+					'description' => 'Largest bijlage download in bytes. Larger bijlagen are not stored. Default 104857600 (100 MB).',
 				],
 			],
 		];
@@ -284,6 +296,96 @@ class DsoClient implements DsoConnectorProviderInterface {
 	}//end send()
 
 	/**
+	 * Download one bijlage from DSO-LV with the source's own authentication:
+	 * a Bearer token in token mode, the client certificate in mTLS mode.
+	 *
+	 * The body is streamed into a temporary stream, never held in memory as
+	 * one string. A declared Content-Length above `$maxBytes`, or a body that
+	 * grows past it, stops the download.
+	 *
+	 * @param array $sourceConfiguration The `dso` source's `configuration` object.
+	 * @param string $url The absolute bijlage URL.
+	 * @param integer $maxBytes The largest body accepted, in bytes.
+	 *
+	 * @return resource A readable stream positioned at the start of the body.
+	 *
+	 * @throws DsoAttachmentTooLargeException When the bijlage is larger than `$maxBytes`.
+	 * @throws DsoProviderException When the credential is unusable, the transport fails or DSO-LV answers non-2xx.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+	 */
+	public function download(array $sourceConfiguration, string $url, int $maxBytes) {
+		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
+		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+
+		$headers = ['Accept' => '*/*'];
+		if ($useMtls === false) {
+			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
+		}
+
+		try {
+			$response = $this->dispatch(
+				useMtls: $useMtls,
+				authConfig: $authConfig,
+				url: $url,
+				requestOptions: ['headers' => $headers, 'http_errors' => false, 'stream' => true],
+				method: 'GET'
+			);
+		} catch (MtlsTransportException $exception) {
+			throw new DsoProviderException(
+				message: 'The DSO-LV mTLS download failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
+				previous: $exception
+			);
+		} catch (GuzzleException $exception) {
+			throw new DsoProviderException(
+				message: 'The DSO-LV download failed: ' . $exception->getMessage(),
+				previous: $exception
+			);
+		}
+
+		$status = $response->getStatusCode();
+		$body = $response->getBody();
+		if ($status < 200 || $status >= 300) {
+			$body->close();
+			throw new DsoProviderException(message: 'DSO-LV answered the download with HTTP ' . $status . '.');
+		}
+
+		$declared = $response->getHeaderLine('Content-Length');
+		if (ctype_digit($declared) === true && (int)$declared > $maxBytes) {
+			$body->close();
+			throw new DsoAttachmentTooLargeException(
+				message: 'The bijlage is ' . $declared . ' bytes, more than the maximum of ' . $maxBytes . ' bytes.'
+			);
+		}
+
+		$target = fopen('php://temp', 'w+b');
+		if ($target === false) {
+			$body->close();
+			throw new DsoProviderException(message: 'No temporary stream could be opened for the download.');
+		}
+
+		$received = 0;
+		while ($body->eof() === false) {
+			$chunk = $body->read(self::DOWNLOAD_CHUNK_BYTES);
+			$received += strlen($chunk);
+			if ($received > $maxBytes) {
+				$body->close();
+				fclose($target);
+				throw new DsoAttachmentTooLargeException(
+					message: 'The bijlage is more than the maximum of ' . $maxBytes . ' bytes.'
+				);
+			}
+
+			fwrite($target, $chunk);
+		}
+
+		$body->close();
+		rewind($target);
+
+		return $target;
+	}//end download()
+
+	/**
 	 * Dispatch the request over mTLS when configured, else over the existing
 	 * token-mode path (unchanged). Never falls back between the two: an mTLS
 	 * resolve/handshake failure propagates as {@see MtlsTransportException}.
@@ -292,6 +394,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 * @param array $authConfig The source's `configuration.authentication` object.
 	 * @param string $url The absolute request URL.
 	 * @param array $requestOptions The Guzzle request options.
+	 * @param string $method The HTTP method: POST for messages, GET for bijlagen.
 	 *
 	 * @return ResponseInterface The Guzzle response.
 	 *
@@ -300,13 +403,19 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 *
 	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-dsoclient-routes-through-the-mtls-transport-when-configured
 	 */
-	private function dispatch(bool $useMtls, array $authConfig, string $url, array $requestOptions): ResponseInterface {
+	private function dispatch(
+		bool $useMtls,
+		array $authConfig,
+		string $url,
+		array $requestOptions,
+		string $method = 'POST'
+	): ResponseInterface {
 		if ($useMtls === true) {
 			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
-			return $this->mtlsTransport->request($this->httpClient, 'POST', $url, $requestOptions, $bundle);
+			return $this->mtlsTransport->request($this->httpClient, $method, $url, $requestOptions, $bundle);
 		}
 
-		return $this->httpClient->request('POST', $url, $requestOptions);
+		return $this->httpClient->request($method, $url, $requestOptions);
 	}//end dispatch()
 
 	/**

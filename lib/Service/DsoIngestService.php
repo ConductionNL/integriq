@@ -214,6 +214,10 @@ class DsoIngestService {
 	 * Turn the parser's bijlage references into `attachments` entries, each
 	 * `pending` until {@see \OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob} has run.
 	 *
+	 * Names are made unique within the request ("tekening.pdf", then
+	 * "tekening (2).pdf"), because every bijlage becomes a file in the same
+	 * object folder and OpenRegister refuses a second file with the same name.
+	 *
 	 * @param mixed $references The {@see DSOParserService::parseRequest()} `bijlagen` list.
 	 *
 	 * @return array<int, array{name: string, url: string, status: string, attempts: int}> The entries.
@@ -226,13 +230,14 @@ class DsoIngestService {
 		}
 
 		$entries = [];
+		$taken = [];
 		foreach ($references as $reference) {
 			if (is_array($reference) === false) {
 				continue;
 			}
 
 			$entries[] = [
-				'name' => (string)($reference['name'] ?? ''),
+				'name' => $this->uniqueFileName(name: (string)($reference['name'] ?? ''), taken: $taken),
 				'url' => (string)($reference['url'] ?? ''),
 				'status' => 'pending',
 				'attempts' => 0,
@@ -241,6 +246,34 @@ class DsoIngestService {
 
 		return $entries;
 	}//end pendingAttachments()
+
+	/**
+	 * Return a file name not yet in `$taken`, and add it there.
+	 *
+	 * @param string $name The wanted name.
+	 * @param array<string, true> $taken The names already used, by reference.
+	 *
+	 * @return string The unique name.
+	 */
+	private function uniqueFileName(string $name, array &$taken): string {
+		$candidate = $name;
+		$extension = pathinfo($name, PATHINFO_EXTENSION);
+		$stem = $name;
+		if ($extension !== '') {
+			$stem = substr($name, 0, -(strlen($extension) + 1));
+			$extension = '.' . $extension;
+		}
+
+		$counter = 1;
+		while (isset($taken[strtolower($candidate)]) === true) {
+			$counter++;
+			$candidate = $stem . ' (' . $counter . ')' . $extension;
+		}
+
+		$taken[strtolower($candidate)] = true;
+
+		return $candidate;
+	}//end uniqueFileName()
 
 	/**
 	 * Read one dso_verzoek's current state.
