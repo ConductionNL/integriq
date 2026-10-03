@@ -8,8 +8,12 @@ Kind: code. Matrix row `integriq:map-message-validation`.
 - **acceptance_criteria**:
   - GIVEN the register is imported WHEN an administrator opens the message schemas page THEN the two seeded schemas are listed
   - GIVEN a malformed XSD WHEN it is saved THEN the save is refused with the parser message
-- [ ] Implement
+- [x] Implement
+  - The fragment declares `message_schema` (slug, `name`, `description`, `kind` of four, `document`, `registerSchema`, `version`), joins it to the integriq register, closes every verb to administrators (in `SchemaAuthorizationRatchetTest::CLOSED`), and seeds `example-person-json` and `example-person-xsd`, the same person twice. The manifest fragment adds the `MessageSchemas` index page (admin) under Automation.
+  - A document that does not parse for its kind is refused on OpenRegister's own save path: `MessageSchemaDocumentListener` on `ObjectCreatingEvent` and `ObjectUpdatingEvent` asks `MessageValidationService::documentProblem()` and stops the save with the parser's message (400, nothing stored). An XSD must be well-formed with an `xs:schema` root; a JSON Schema must be a JSON object or boolean; an OpenAPI description must parse as JSON or YAML and carry a `paths` object. `register-schema` carries no document.
 - [ ] Test (`node tests/validate-register.js`, `node tests/validate-manifest.js`, Playwright `tests/e2e/message-schema-validation.spec.ts`)
+  - Done: `tests/Unit/Settings/MessageSchemaRegisterFragmentTest.php` (fragment shape, admin-only, both seeds pass the real merged schema with Opis and check the same person with the real checkers, the page and menu) and `tests/Unit/EventListener/MessageSchemaDocumentListenerTest.php` (real OpenRegister events and real checkers: broken XSD refused with the parser's message, XML that is not an XSD, broken JSON Schema on update, OpenAPI without paths, good documents saved, the Application registration); `npm run check:specs` passes.
+  - Owed: the Playwright spec against a live instance (the page lists both seeds; a broken XSD save shows the parser's message).
 
 ### Task 2: The validator service and its three checkers
 - **spec_ref**: openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004

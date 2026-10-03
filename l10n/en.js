@@ -3018,7 +3018,18 @@ OC.L10N.register(
         "The set file for \"%s\" is missing from this installation.": "The set file for \"%s\" is missing from this installation.",
         "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.": "The synchronization \"%s\" this set needs is not on this instance. Repair or reinstall Integriq so its packaged sets are imported, then install the set again.",
         "The connected system refused your last change.": "The connected system refused your last change.",
-        "Your change is still here, and the next change it accepts clears this notice.": "Your change is still here, and the next change it accepts clears this notice."
+        "Your change is still here, and the next change it accepts clears this notice.": "Your change is still here, and the next change it accepts clears this notice.",
+        "Document": "Document",
+        "For kind register-schema: the register and schema slug, as register/schema": "For kind register-schema: the register and schema slug, as register/schema",
+        "How you recognise this schema, for example the partner and the message": "How you recognise this schema, for example the partner and the message",
+        "Message schema": "Message schema",
+        "Message schemas": "Message schemas",
+        "Paste the schema: JSON Schema as JSON, an XSD as XML, OpenAPI as JSON or YAML. A broken document is not saved": "Paste the schema: JSON Schema as JSON, an XSD as XML, OpenAPI as JSON or YAML. A broken document is not saved",
+        "Pick json-schema, xsd or openapi to paste a document. Pick register-schema to check against a register schema": "Pick json-schema, xsd or openapi to paste a document. Pick register-schema to check against a register schema",
+        "Register schema": "Register schema",
+        "The partner's version of this schema. Change it when the partner publishes a new one": "The partner's version of this schema. Change it when the partner publishes a new one",
+        "What the schema is for and where it came from": "What the schema is for and where it came from",
+        "This message schema was not saved: %s": "This message schema was not saved: %s"
     },
     "nplurals=2; plural=(n != 1);"
 )

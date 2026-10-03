@@ -1,0 +1,43 @@
+{
+  "$comment": "ADR-037 manifest fragment (mapping-message-schema-validation). The message schemas page, next to Mappings: an administrator stores a partner's JSON Schema, XSD or OpenAPI description once and picks it on an endpoint or a synchronization. A document that does not parse is refused on save by MessageSchemaDocumentListener, so the page needs no form of its own.",
+  "pages": [
+    {
+      "id": "MessageSchemas",
+      "route": "/message-schemas",
+      "type": "index",
+      "title": "Message schemas",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "message_schema",
+        "columns": [
+          "name",
+          "kind",
+          "version",
+          "dateModified"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "AutomationGroup",
+      "children": [
+        {
+          "id": "MessageSchemas",
+          "label": "Message schemas",
+          "icon": "FileCheckOutline",
+          "route": "MessageSchemas",
+          "order": 45
+        }
+      ]
+    }
+  ]
+}

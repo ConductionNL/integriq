@@ -212,4 +212,26 @@ class MessageSchemaDocumentListenerTest extends TestCase {
 		$this->listener(schemaSlug: 'mapping')->handle($other);
 		$this->assertFalse($other->isPropagationStopped());
 	}//end testARegisterSchemaKindAndOtherSchemasPass()
+
+	/**
+	 * The caller: Application registers the listener on both stoppable save events.
+	 *
+	 * Application::register() needs a running Nextcloud container, so the
+	 * registration statements are read from its source; without them the
+	 * listener above is a guard with no call site.
+	 *
+	 * @return void
+	 */
+	public function testApplicationRegistersTheListenerOnCreateAndUpdate(): void {
+		$source = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/AppInfo/Application.php');
+
+		$this->assertStringContainsString('use OCA\Integriq\EventListener\MessageSchemaDocumentListener;', $source);
+		foreach (['ObjectCreatingEvent', 'ObjectUpdatingEvent'] as $event) {
+			$this->assertStringContainsString(
+				'$dispatcher->addServiceListener(eventName: ' . $event . '::class, className: MessageSchemaDocumentListener::class);',
+				$source,
+				$event
+			);
+		}
+	}//end testApplicationRegistersTheListenerOnCreateAndUpdate()
 }//end class
