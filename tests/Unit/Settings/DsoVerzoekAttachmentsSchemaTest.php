@@ -44,6 +44,7 @@ class DsoVerzoekAttachmentsSchemaTest extends TestCase {
 		return [
 			'verzoekId' => 'dso-1',
 			'status' => 'mapped',
+			'attachmentMissing' => true,
 			'attachments' => [
 				['name' => 'a.pdf', 'url' => 'https://dso.test/a', 'status' => 'pending', 'attempts' => 0],
 				['name' => 'b.pdf', 'url' => 'https://dso.test/b', 'status' => 'stored', 'attempts' => 1, 'fileId' => 42],
@@ -96,4 +97,21 @@ class DsoVerzoekAttachmentsSchemaTest extends TestCase {
 		$this->assertNotSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $unknownStatus));
 
 	}//end testUndeclaredFieldOrUnknownStatusIsRefused()
+
+	/**
+	 * The "bijlage ontbreekt" flag is a declared boolean.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 *
+	 * @return void
+	 */
+	public function testAttachmentMissingFlagIsADeclaredBoolean(): void {
+		$schema = RegisterSchemaValidator::descriptor()['components']['schemas']['dso_verzoek'];
+		$this->assertSame('boolean', ($schema['properties']['attachmentMissing']['type'] ?? null));
+
+		$notBoolean = $this->requestWithEveryAttachmentState();
+		$notBoolean['attachmentMissing'] = 'yes';
+		$this->assertNotSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $notBoolean));
+
+	}//end testAttachmentMissingFlagIsADeclaredBoolean()
 }//end class

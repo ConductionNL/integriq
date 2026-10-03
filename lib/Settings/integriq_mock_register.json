@@ -4553,6 +4553,11 @@
                 }
               }
             }
+          },
+          "attachmentMissing": {
+            "type": "boolean",
+            "description": "True while one or more attachments are failed or too-large, so the behandelaar handles them by hand (REQ-DSO-005: bijlage ontbreekt). Set by FetchDsoAttachmentsJob.",
+            "title": "Attachment Missing"
           }
         },
         "x-openregister-handoff": [

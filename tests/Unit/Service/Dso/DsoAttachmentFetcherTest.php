@@ -263,6 +263,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 		$this->assertSame(['stored', 'stored', 'stored'], array_column($attachments, 'status'));
 		$this->assertSame([101, 102, 103], array_column($attachments, 'fileId'));
 		$this->assertSame($attachments, $this->stored->getObject()['attachments']);
+		$this->assertFalse($this->stored->getObject()['attachmentMissing']);
 		$this->assertSame(
 			[],
 			RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->stored->getObject())
@@ -330,6 +331,11 @@ class DsoAttachmentFetcherTest extends TestCase {
 		$this->assertSame(3, $attachments[0]['attempts']);
 		$this->assertStringContainsString('HTTP 503', $attachments[0]['error']);
 		$this->assertArrayNotHasKey('fileId', $attachments[0]);
+		$this->assertTrue($this->stored->getObject()['attachmentMissing'], 'A failed bijlage flags the request.');
+		$this->assertSame(
+			[],
+			RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->stored->getObject())
+		);
 
 	}//end testPersistentFailureIsRetriedThreeTimesThenFailed()
 
@@ -377,6 +383,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 		$this->assertCount(3, $this->history, 'A too-large bijlage must not be retried.');
 		$this->assertSame(['fits.pdf'], array_column($this->addFileCalls, 'fileName'));
 		$this->assertStringContainsString('maximum of 10 bytes', $attachments[0]['error']);
+		$this->assertTrue($this->stored->getObject()['attachmentMissing'], 'A too-large bijlage flags the request.');
 
 	}//end testOversizedBijlageIsTooLargeAndNotStored()
 
@@ -475,8 +482,30 @@ class DsoAttachmentFetcherTest extends TestCase {
 		$this->assertSame(['c.pdf', 'd.pdf', 'e.pdf'], array_column($this->addFileCalls, 'fileName'));
 		$this->assertCount(3, $this->history);
 		$this->assertSame(array_fill(0, 5, 'stored'), array_column($attachments, 'status'));
+		$this->assertFalse($this->stored->getObject()['attachmentMissing']);
 		$this->assertSame($afterCrash[0], $attachments[0]);
 		$this->assertSame($afterCrash[1], $attachments[1]);
 
 	}//end testRerunFinishesWhatACrashLeft()
+
+	/**
+	 * The flag clears once a rerun stores the bijlage that had failed.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 *
+	 * @return void
+	 */
+	public function testFlagClearsWhenAFailedBijlageIsStoredLater(): void {
+		$this->storeRequest([
+			['name' => 'a.pdf', 'url' => 'https://dso-lv.example.nl/docs/a.pdf', 'status' => 'failed', 'attempts' => 1, 'error' => 'No active DSO source'],
+		]);
+		$fetcher = $this->buildFetcher([new Response(200, [], 'A')]);
+
+		$attachments = $fetcher->fetchPending('verzoek-1');
+
+		$this->assertSame('stored', $attachments[0]['status']);
+		$this->assertSame(2, $attachments[0]['attempts']);
+		$this->assertFalse($this->stored->getObject()['attachmentMissing']);
+
+	}//end testFlagClearsWhenAFailedBijlageIsStoredLater()
 }//end class

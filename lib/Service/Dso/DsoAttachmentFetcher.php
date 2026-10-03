@@ -305,7 +305,27 @@ class DsoAttachmentFetcher {
 	}//end failed()
 
 	/**
-	 * Save the attachments list back onto the request.
+	 * Whether the behandelaar must handle a bijlage by hand: true while any
+	 * entry is `failed` or `too-large` (REQ-DSO-005, "bijlage ontbreekt").
+	 *
+	 * @param array<int, array<string, mixed>> $attachments The attachments list.
+	 *
+	 * @return boolean True when a bijlage is missing.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 */
+	public function isAttachmentMissing(array $attachments): bool {
+		foreach ($attachments as $entry) {
+			if (in_array(($entry['status'] ?? null), ['failed', 'too-large'], true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isAttachmentMissing()
+
+	/**
+	 * Save the attachments list, and the attachmentMissing flag, onto the request.
 	 *
 	 * @param ObjectEntity $request The request as last saved.
 	 * @param array<int, array<string, mixed>> $attachments The attachments list.
@@ -315,6 +335,7 @@ class DsoAttachmentFetcher {
 	private function saveAttachments(ObjectEntity $request, array $attachments): ObjectEntity {
 		$data = $request->getObject();
 		$data['attachments'] = $attachments;
+		$data['attachmentMissing'] = $this->isAttachmentMissing(attachments: $attachments);
 
 		return $this->objectService->saveObject(
 			object: $data,
