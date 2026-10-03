@@ -29,7 +29,8 @@
     | `handleSamenloop()`, `createHoofdzaakWithDeelzaken()`, `createCombinedCase()`, `handleUnmappedActivity()`, `createCase()` | They build zaak arrays with `uniqid()` ids and persist nothing. The live equivalent is the `verzoek-to-case` handoff to `ns#Case` through OpenRegister's `HandoffService` (`DsoIngestService::handoff()`) | Deleted |
     | `validateCertificate()` | Reads a certificate from a filesystem path. The live path keeps certificates encrypted in the source and checks them in `MtlsConfigResolver` (expired is refused) and `DsoPkiSettingsController` (chain and expiry). The 30-day warning of REQ-DSO-050 is not live anywhere; this method never sent one either | Deleted |
     | `testDSOConnection()` | Filesystem certificate path and the unused `dso_api_url`. A REQ-DSO-060 health check of the DSO source is not live anywhere; this method had no caller, so it never ran either. A real one belongs on the source, not here | Deleted |
-- [ ] 3.2 Delete `DSOAdapterService` and `DSOAdapterServiceTest`, and verify `git grep -n DSO-verzoeken -- lib` is empty and the suite still passes
+- [x] 3.2 Delete `DSOAdapterService` and `DSOAdapterServiceTest`, and verify `git grep -n DSO-verzoeken -- lib` is empty and the suite still passes
+  - Evidence: both files deleted; `git grep -n DSO-verzoeken -- lib` and `git grep -n DSOAdapterService -- lib tests appinfo src` return nothing (exit 1). `tests/Unit/Service`, `tests/Unit/Controller/DSOControllerTest.php`, `tests/Unit/BackgroundJob` and `tests/Unit/Settings` pass on the host: 3130 tests, 0 failures. The full suite result is in the PR body.
 
 ## 4. Proof
 
