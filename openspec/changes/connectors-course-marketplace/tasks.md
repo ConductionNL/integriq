@@ -62,6 +62,8 @@ Kind: code. Size M. Row `learniq:cont-outside-provider-catalogue`. Depends on
   - GIVEN a course marketplace source WHEN the form opens THEN it shows collection, language and text filter fields
   - GIVEN demo data WHEN an administrator opens the LTI deployments THEN one per provider is listed
 - [ ] Implement
+  - Demo data half built: `integriq_mock_register.json` carries one `lti_tool` (pending, placeholder URLs) and one `lti_deployment` naming it per provider; each deployment's description names the placement mapping to put its uuid in. `tests/Unit/Settings/CourseMarketplaceDemoDeploymentsTest.php` checks one deployment per provider on its own tool and validates all six against integriq's real schemas.
+  - Form half open, needs a decision: the selection is the synchronizations' `conditions` (design, "Selection and retirement"), not a source setting, so collection, language and text filter fields on `SourceFormFields.vue` would write values nothing reads. Either the fields move to the synchronization form and write `conditions`, or this criterion is rewritten.
 - [ ] Test (`tests/e2e/course-marketplace.spec.ts`)
 
 ### Task 7: Tell the provider's tool which course to open
@@ -69,8 +71,10 @@ Kind: code. Size M. Row `learniq:cont-outside-provider-catalogue`. Depends on
 - **files**: `lib/Service/Lti/LtiPlatformLoginService.php` (launch claims), `lib/Service/SynchronizationContractService.php` (read)
 - **acceptance_criteria**:
   - GIVEN a placement written by a course marketplace synchronization WHEN it is launched THEN the id_token carries the provider course id (the contract's origin id) in the LTI custom claim (design D8)
-- [ ] Implement
-- [ ] Test (PHPUnit on the claims builder with a real contract row)
+- [x] Implement
+  - `LtiCustomParameterReader` (`lib/Service/Lti/`) finds the contract whose target is the launched placement, reads its synchronization's `targetConfig.ltiCustomOriginIdParameter`, and answers `[<name> => <origin id>]`. `LtiPlatformLoginService::launchClaims()` puts that in `https://purl.imsglobal.org/spec/lti/claim/custom`. The three placement synchronizations declare `course_id`; no provider's published LTI documentation confirmed the name it reads, so it is a declaration on the synchronization that an administrator can change. A placement without such a contract, or a store that cannot be read, launches without the claim.
+- [x] Test (PHPUnit on the claims builder with a real contract row)
+  - `LtiPlatformLaunchTest`: the launch through the real controller, the real reader and the real `SynchronizationContractService`, with the shipped Go1 placement synchronization, carries the course id; a course synchronization's contract and no contract carry none; an unreadable store does not stop the launch; every placement synchronization declares the name.
 
 ## Verification
 

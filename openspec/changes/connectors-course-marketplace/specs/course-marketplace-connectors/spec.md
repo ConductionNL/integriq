@@ -40,6 +40,12 @@ go through the credential broker.
 - THEN it writes nothing and its log names the missing deployment
 - e2e: `tests/e2e/course-marketplace.spec.ts`
 
+#### Scenario: the launch tells the provider's tool which course to open
+- GIVEN a placement written by a course marketplace synchronization
+- WHEN a learner launches it
+- THEN the id_token carries the provider's course id in the LTI custom claim, under the parameter name the placement synchronization declares
+- @e2e exclude the claim travels inside a signed id_token posted to the provider's tool, which a browser test cannot read; covered by PHPUnit through the real authorization controller (`LtiPlatformLaunchTest`)
+
 ### Requirement: An administrator imports a selection, not the whole catalogue (REQ-CMKT-002)
 
 A course marketplace source MUST accept a selection of collections or
