@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService as ORFileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Response;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IRequestId;
@@ -55,6 +56,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use ReflectionProperty;
 
 /**
  * The whole request path of a proxying endpoint, with the real gate and the
@@ -221,6 +223,19 @@ class EndpointServiceMessageValidationTest extends TestCase {
 	}//end callLog()
 
 	/**
+	 * A header the response set itself; getHeaders() needs a running server.
+	 *
+	 * @param Response $response The response.
+	 * @param string   $name     The header name.
+	 *
+	 * @return string|null
+	 */
+	private function header(Response $response, string $name): ?string {
+		$headers = (new ReflectionProperty(Response::class, 'headers'))->getValue($response);
+		return $headers[$name] ?? null;
+	}//end header()
+
+	/**
 	 * Mode refuse: a request without bsn is answered 400, names /bsn, and the source is not called.
 	 *
 	 * @return void
@@ -237,7 +252,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertSame(400, $response->getStatus());
-		$this->assertSame('application/problem+json', $response->getHeaders()['Content-Type']);
+		$this->assertSame('application/problem+json', $this->header($response, 'Content-Type'));
 		$this->assertContains('/bsn', array_column($response->getData()['errors'], 'path'));
 	}//end testARequestMissingARequiredFieldIsRefusedAndNotDispatched()
 
@@ -288,7 +303,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 		);
 
 		$this->assertSame(502, $response->getStatus());
-		$this->assertSame('application/problem+json', $response->getHeaders()['Content-Type']);
+		$this->assertSame('application/problem+json', $this->header($response, 'Content-Type'));
 		$this->assertContains('/bsn', array_column($response->getData()['errors'], 'path'));
 	}//end testAFailingProxiedAnswerIsRefusedWith502()
 
