@@ -46,6 +46,8 @@ final class ValidationOutcome {
 	 * A message that matches its schema.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public static function valid(): self {
 		return new self(errors: []);
@@ -57,6 +59,8 @@ final class ValidationOutcome {
 	 * @param list<array{path: string, message: string}> $errors At least one error.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public static function failed(array $errors): self {
 		if ($errors === []) {
@@ -73,6 +77,8 @@ final class ValidationOutcome {
 	 * @param string $path    The path, `/` by default.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public static function failure(string $message, string $path = '/'): self {
 		return new self(errors: [['path' => $path, 'message' => $message]]);
@@ -82,6 +88,8 @@ final class ValidationOutcome {
 	 * Whether the message matches.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public function isValid(): bool {
 		return $this->errors === [];
@@ -91,6 +99,8 @@ final class ValidationOutcome {
 	 * Every error.
 	 *
 	 * @return list<array{path: string, message: string}>
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public function errors(): array {
 		return $this->errors;
@@ -102,6 +112,8 @@ final class ValidationOutcome {
 	 * @param int $limit How many.
 	 *
 	 * @return list<array{path: string, message: string}>
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public function firstErrors(int $limit): array {
 		return array_slice($this->errors, 0, max(0, $limit));
@@ -111,6 +123,8 @@ final class ValidationOutcome {
 	 * The distinct paths with an error.
 	 *
 	 * @return list<string>
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public function paths(): array {
 		return array_values(array_unique(array_column($this->errors, 'path')));
