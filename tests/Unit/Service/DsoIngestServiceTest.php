@@ -27,6 +27,7 @@ use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
@@ -222,6 +223,44 @@ class DsoIngestServiceTest extends TestCase {
 		$this->assertStringContainsString('verzoekId', (string)$request->getObject()['errorDetail']);
 
 	}//end testIngestFailsClosedForMissingVerzoekId()
+
+	/**
+	 * Intake writes every bijlage reference as a `pending` attachment entry,
+	 * and the register accepts what it writes.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 */
+	public function testIngestWritesBijlagenAsPendingAttachments(): void {
+		$service = $this->buildService();
+
+		$request = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-3',
+				'type' => 'aanvraag',
+				'bijlagen' => [
+					['name' => 'bouwtekening.pdf', 'url' => 'https://dso-lv.nl/docs/abc123'],
+					['name' => 'constructie.pdf', 'url' => 'https://dso-lv.nl/docs/def456'],
+				],
+			]
+		);
+
+		$attachments = $request->getObject()['attachments'];
+		$this->assertSame(
+			[
+				['name' => 'bouwtekening.pdf', 'url' => 'https://dso-lv.nl/docs/abc123', 'status' => 'pending', 'attempts' => 0],
+				['name' => 'constructie.pdf', 'url' => 'https://dso-lv.nl/docs/def456', 'status' => 'pending', 'attempts' => 0],
+			],
+			$attachments
+		);
+		$this->assertSame(
+			[],
+			RegisterSchemaValidator::errors(
+				schemaSlug: 'dso_verzoek',
+				object: ['verzoekId' => 'dso-3', 'status' => 'mapped', 'attachments' => $attachments]
+			)
+		);
+
+	}//end testIngestWritesBijlagenAsPendingAttachments()
 
 	/**
 	 * Per-verzoek isolation: a translation failure on one verzoek MUST NOT

@@ -168,6 +168,7 @@ class DsoIngestService {
 				'correlationId' => '',
 				'targetCase' => [],
 				'receivedAt' => (new DateTime())->format('c'),
+				'attachments' => $this->pendingAttachments(references: ($parsedRequest['bijlagen'] ?? [])),
 			],
 			register: self::REGISTER,
 			schema: self::SCHEMA_VERZOEK
@@ -208,6 +209,38 @@ class DsoIngestService {
 		);
 
 	}//end ingest()
+
+	/**
+	 * Turn the parser's bijlage references into `attachments` entries, each
+	 * `pending` until {@see \OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob} has run.
+	 *
+	 * @param mixed $references The {@see DSOParserService::parseRequest()} `bijlagen` list.
+	 *
+	 * @return array<int, array{name: string, url: string, status: string, attempts: int}> The entries.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/tasks.md#task-1.2
+	 */
+	private function pendingAttachments(mixed $references): array {
+		if (is_array($references) === false) {
+			return [];
+		}
+
+		$entries = [];
+		foreach ($references as $reference) {
+			if (is_array($reference) === false) {
+				continue;
+			}
+
+			$entries[] = [
+				'name' => (string)($reference['name'] ?? ''),
+				'url' => (string)($reference['url'] ?? ''),
+				'status' => 'pending',
+				'attempts' => 0,
+			];
+		}
+
+		return $entries;
+	}//end pendingAttachments()
 
 	/**
 	 * Read one dso_verzoek's current state.
