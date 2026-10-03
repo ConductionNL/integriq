@@ -16,7 +16,19 @@
 
 ## 3. Retire DSOAdapterService
 
-- [ ] 3.1 For each public method of `DSOAdapterService`, record its live equivalent or its absence of callers and requirements in this file; move what a requirement still needs next to the live path with its tests
+- [x] 3.1 For each public method of `DSOAdapterService`, record its live equivalent or its absence of callers and requirements in this file; move what a requirement still needs next to the live path with its tests
+  - Evidence: `git grep -n DSOAdapterService -- lib appinfo src` found only the class itself; its only other user was `DSOAdapterServiceTest`. Per public method:
+
+    | Method | Live equivalent or requirement | Outcome |
+    |---|---|---|
+    | `getConfiguredApiUrl()` | The live path reads the DSO source's `configuration.baseUrl`; the `dso_api_url` app config key is not read anywhere else | Deleted |
+    | `processRequest()`, `handleReport()`, `handleInformatieverzoek()`, `handleVooroverleg()`, `handleApplication()` | `DSOController::receiveRequest()` -> `DsoIngestService::ingest()` takes every type; `DsoRequestTranslator` sets title, priority and channel per type | Deleted |
+    | `downloadAttachments()` | Replaced by `DsoAttachmentFetcher` + `FetchDsoAttachmentsJob` (this change). Its https-only guard moved into `DsoAttachmentFetcher::fetchOne()` | Deleted |
+    | `mapActiviteitenToZaaktypen()`, `getDefaultMappings()` | No live equivalent; REQ-DSO-010 still needs them | Moved to `Service\Dso\DsoActivityMapper` with their tests (`DsoActivityMapperTest`). Not wired: no caller yet |
+    | `determineSamenloopStrategy()` | No live equivalent; REQ-DSO-011 still needs it | Moved to `DsoActivityMapper` with its tests. Not wired |
+    | `handleSamenloop()`, `createHoofdzaakWithDeelzaken()`, `createCombinedCase()`, `handleUnmappedActivity()`, `createCase()` | They build zaak arrays with `uniqid()` ids and persist nothing. The live equivalent is the `verzoek-to-case` handoff to `ns#Case` through OpenRegister's `HandoffService` (`DsoIngestService::handoff()`) | Deleted |
+    | `validateCertificate()` | Reads a certificate from a filesystem path. The live path keeps certificates encrypted in the source and checks them in `MtlsConfigResolver` (expired is refused) and `DsoPkiSettingsController` (chain and expiry). The 30-day warning of REQ-DSO-050 is not live anywhere; this method never sent one either | Deleted |
+    | `testDSOConnection()` | Filesystem certificate path and the unused `dso_api_url`. A REQ-DSO-060 health check of the DSO source is not live anywhere; this method had no caller, so it never ran either. A real one belongs on the source, not here | Deleted |
 - [ ] 3.2 Delete `DSOAdapterService` and `DSOAdapterServiceTest`, and verify `git grep -n DSO-verzoeken -- lib` is empty and the suite still passes
 
 ## 4. Proof
