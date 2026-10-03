@@ -79,6 +79,21 @@ The parser validates:
 - ISO 8601 date format
 - Enum values for type field
 
+## Bijlagen
+
+You find every bijlage of a verzoek as a file on its `dso_verzoek` object in Nextcloud Files. Each file carries the tag `dso-bijlage` and the object's access rights.
+
+The STAM endpoint answers 202 as soon as the verzoek is saved. A background job then downloads the bijlagen on the next cron run.
+
+- The job downloads through the active DSO source, with its token or its PKIoverheid certificate.
+- Each bijlage gets three attempts, with a short wait between them.
+- A bijlage above the source's `maxFileSize` is not stored. The default is 100 MB.
+- Only `https` URLs are downloaded.
+
+The verzoek's `attachments` list shows each bijlage's status: `pending`, `stored`, `failed` or `too-large`. When a bijlage is `failed` or `too-large`, `attachmentMissing` is true. Handle that bijlage by hand.
+
+Nothing is written outside Nextcloud Files.
+
 ## PKIoverheid Authentication
 
 DSO-LV communication uses PKIoverheid certificates for mutual TLS. Certificates are configured via the Source entity's configuration field and managed through CallService's existing certificate handling.
@@ -87,6 +102,8 @@ DSO-LV communication uses PKIoverheid certificates for mutual TLS. Certificates 
 
 - **DSOController**: `lib/Controller/DSOController.php` -- STAM endpoint
 - **DSOParserService**: `lib/Service/DSOParserService.php` -- Payload parsing and validation
+- **DsoAttachmentFetcher**: `lib/Service/Dso/DsoAttachmentFetcher.php`. Downloads bijlagen and stores them on the request
+- **FetchDsoAttachmentsJob**: `lib/BackgroundJob/FetchDsoAttachmentsJob.php`. The queued job that runs the fetcher
 - **Route**: `appinfo/routes.php` -- POST /api/dso/stam/verzoeken
 - **Tests**: `tests/Unit/Service/DSOParserServiceTest.php`
 
@@ -94,7 +111,6 @@ DSO-LV communication uses PKIoverheid certificates for mutual TLS. Certificates 
 
 Foundational implementation complete (endpoint, parser, validator). The following features require external dependencies and are planned for future implementation:
 
-- Bijlagen download from DSO-LV (requires mTLS certificates)
 - Automatic zaak creation (requires Procest app)
 - Status push back to DSO-LV
 - DSO-SWF samenwerking
