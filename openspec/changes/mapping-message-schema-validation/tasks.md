@@ -18,8 +18,11 @@ Kind: code. Matrix row `integriq:map-message-validation`.
   - GIVEN a JSON Schema requiring `bsn` WHEN a payload lacks it THEN the outcome lists `/bsn`
   - GIVEN an XSD with a remote import WHEN it validates THEN no HTTP request is made and the import is reported
   - GIVEN an OpenAPI 3.0 operation with a `nullable` field WHEN null is sent THEN it passes
-- [ ] Implement
-- [ ] Test (PHPUnit per checker with fixtures under `tests/fixtures/message-schemas/`)
+- [x] Implement
+  - `MessageValidationService::validate(messageSchema, payload, context)` picks the checker by `kind` and answers a `ValidationOutcome` (errors with a JSON pointer path, `firstErrors(20)` for a refusal body). `JsonSchemaChecker` (Opis) reports a missing required property under its own path. `XsdChecker` loads both documents through `SafeXmlParser::loadDom()`, reports a remote `xs:import`/`include`/`redefine`/`override` by location before validating, and validates with libxml's entity loader pinned to one that loads nothing, so a relative location is not read from disk either. `OpenApiChecker` finds the operation by `operationId` or method and path, takes the request body or the answer for its status (`2XX`, `default`), inlines local `$ref`s (`OpenApiReferenceResolver`; a remote one is reported) and rewrites `nullable` to a type union.
+  - Kind `register-schema` is not checked here yet: it is refused by name, never passed unchecked. It goes through OpenRegister's validate handler when Task 3 or 4 wires the first caller.
+- [x] Test (PHPUnit per checker with fixtures under `tests/fixtures/message-schemas/`)
+  - `tests/Unit/Service/MessageValidation/MessageValidationServiceTest.php` runs all three real checkers through the service: `/bsn` listed, a wrong value, a broken document, XSD valid and invalid, the remote import reported with libxml's loader never asked for it, a relative include not read from disk, OpenAPI `nullable`, an operation found by method and path on the answer, an unknown operation and an unknown kind.
 
 ### Task 3: Endpoint request and answer validation
 - **spec_ref**: openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002

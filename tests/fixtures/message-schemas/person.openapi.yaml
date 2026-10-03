@@ -1,0 +1,33 @@
+openapi: 3.0.3
+info:
+  title: Personen
+  version: 1.0.0
+paths:
+  /personen/{bsn}:
+    put:
+      operationId: updatePersoon
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Persoon'
+      responses:
+        '200':
+          description: Bijgewerkt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persoon'
+components:
+  schemas:
+    Persoon:
+      type: object
+      required: [bsn, naam]
+      properties:
+        bsn:
+          type: string
+        naam:
+          type: string
+        tussenvoegsel:
+          type: string
+          nullable: true
