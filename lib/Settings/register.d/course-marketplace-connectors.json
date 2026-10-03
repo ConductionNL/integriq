@@ -132,7 +132,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "archived"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-go1-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the Go1 lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/course",
@@ -166,7 +173,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "retired"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-go1-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the Go1 lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/lti-tool-placement",
@@ -200,7 +214,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "retired"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-go1-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the Go1 lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/lesson",
@@ -338,7 +359,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "archived"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-linkedin-learning-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the LinkedIn Learning lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/course",
@@ -373,7 +401,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "retired"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-linkedin-learning-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the LinkedIn Learning lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/lti-tool-placement",
@@ -408,7 +443,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "retired"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-linkedin-learning-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the LinkedIn Learning lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/lesson",
@@ -543,7 +585,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "archived"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-udemy-business-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the Udemy Business lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/course",
@@ -576,7 +625,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "retired"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-udemy-business-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the Udemy Business lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/lti-tool-placement",
@@ -609,7 +665,14 @@
           "disappearancePolicy": "keepAndFlag",
           "disappearanceValues": {
             "lifecycle": "retired"
-          }
+          },
+          "requiredMappingValues": [
+            {
+              "mapping": "course-marketplace-udemy-business-placement",
+              "key": "openconnectorDeploymentId",
+              "name": "the Udemy Business lti_deployment"
+            }
+          ]
         },
         "conditions": [],
         "targetId": "learniq/lesson",

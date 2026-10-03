@@ -42,6 +42,7 @@ use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Exception\TargetWriteRefusedException;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
+use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Ownership\DisappearanceApplier;
@@ -570,6 +571,13 @@ class SynchronizationService {
 	private ?IEventDispatcher $eventDispatcher = null;
 
 	/**
+	 * Refuses a run whose declared prerequisites are not set (connectors-course-marketplace Task 4).
+	 *
+	 * @var RunPrerequisiteGuard|null
+	 */
+	private ?RunPrerequisiteGuard $prerequisiteGuard = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * Post OpenRegister-cutover, synchronizations are resolved through the
@@ -638,6 +646,13 @@ class SynchronizationService {
 		$runProgressService = $this->containerInterface->get(SynchronizationRunProgressService::class);
 		if ($runProgressService instanceof SynchronizationRunProgressService) {
 			$this->runProgressService = $runProgressService;
+		}
+
+		// Resolved in the body for the same reason as the progress recorder: a
+		// bare container mock leaves the guard off rather than fatal.
+		$prerequisiteGuard = $this->containerInterface->get(RunPrerequisiteGuard::class);
+		if ($prerequisiteGuard instanceof RunPrerequisiteGuard) {
+			$this->prerequisiteGuard = $prerequisiteGuard;
 		}
 
 		// Fall back to the defaults the settings read reports, from one table,
@@ -2526,6 +2541,15 @@ class SynchronizationService {
 			$log->setMessage('sourceId of synchronization cannot be empty. Canceling synchronization...');
 			$log = $this->synchronizationLogService->update(log: $log);
 			throw new Exception('sourceId of synchronization cannot be empty. Canceling synchronization...');
+		}
+
+		// A declared prerequisite that is not set stops the run before any
+		// fetch, so nothing is written that the target app would refuse.
+		$missingPrerequisite = $this->prerequisiteGuard?->missing(sourceConfig: $sourceConfig);
+		if ($missingPrerequisite !== null) {
+			$log->setMessage($missingPrerequisite);
+			$log = $this->synchronizationLogService->update(log: $log);
+			throw new Exception($missingPrerequisite);
 		}
 
 		$result['timing']['stages']['configuration_validation'] = [
