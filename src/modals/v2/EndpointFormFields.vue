@@ -366,6 +366,13 @@ export default {
 			return this.validationModeOptions.find((option) => option.id === mode)
 		},
 
+		/**
+		 * The schema fields drawn in the loop. `targetId` has its own pickers
+		 * and `validation` its own section, so neither is drawn twice.
+		 *
+		 * @return {object[]} The fields to draw.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
 			return this.fields.filter(
