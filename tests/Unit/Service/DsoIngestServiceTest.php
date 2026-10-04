@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
+use OCA\Integriq\Service\Dso\DsoActivityMapper;
 use OCA\Integriq\Service\Dso\DsoClient;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
@@ -199,10 +200,25 @@ class DsoIngestServiceTest extends TestCase {
 			restProvider: $this->restProvider,
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
-			jobList: $this->jobList
+			jobList: $this->jobList,
+			activityMapper: new DsoActivityMapper()
 		);
 
 	}//end buildService()
+
+	/**
+	 * The request fields the activity mapping writes, plus the required ones,
+	 * so the schema check judges exactly what the mapping adds.
+	 *
+	 * @param array<string, mixed> $data The saved request.
+	 *
+	 * @return array<string, mixed> The subset.
+	 */
+	private function mappingFields(array $data): array {
+		$keys = ['verzoekId', 'status', 'mappedActivities', 'mappedCaseTypes', 'samenloopStrategy', 'activityUnmapped'];
+
+		return array_intersect_key($data, array_flip($keys));
+	}//end mappingFields()
 
 	private function addSourceFixture(array $configuration, bool $enabled = true): void {
 		$this->sourceFixtures[] = $this->buildEntity(
@@ -342,6 +358,153 @@ class DsoIngestServiceTest extends TestCase {
 		$this->assertCount(2, $this->queued, 'A request whose mapping failed still gets its bijlagen.');
 
 	}//end testIngestQueuesTheDownloadOnlyWhenThereAreBijlagen()
+
+	/**
+	 * Intake runs the activiteiten through DsoActivityMapper: each mapped
+	 * activiteit carries its zaaktype, the request lists its zaaktypen, and the
+	 * register accepts what intake writes.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-one-to-one-activiteit-mapping-creates-zaak
+	 */
+	public function testIngestMapsActiviteitenToCaseTypes(): void {
+		$service = $this->buildService();
+
+		$request = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-map-1',
+				'type' => 'aanvraag',
+				'activiteiten' => [
+					['code' => 'bouwen-01', 'omschrijving' => 'Bouwen van een woning'],
+					['code' => 'kappen-01', 'omschrijving' => 'Kappen van een boom'],
+				],
+			]
+		);
+
+		$data = $request->getObject();
+		$this->assertSame(
+			[
+				['code' => 'bouwen-01', 'description' => 'Bouwen van een woning', 'mapped' => true, 'caseType' => 'ZAAKTYPE-BOUWEN-2024', 'samenloopStrategy' => 'deelzaken'],
+				['code' => 'kappen-01', 'description' => 'Kappen van een boom', 'mapped' => true, 'caseType' => 'ZAAKTYPE-KAPPEN-2024', 'samenloopStrategy' => 'gecombineerd'],
+			],
+			$data['mappedActivities']
+		);
+		$this->assertSame(['ZAAKTYPE-BOUWEN-2024', 'ZAAKTYPE-KAPPEN-2024'], $data['mappedCaseTypes']);
+		$this->assertSame('deelzaken', $data['samenloopStrategy']);
+		$this->assertFalse($data['activityUnmapped']);
+		$this->assertSame('mapped', $data['status']);
+		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->mappingFields(data: $data)));
+
+	}//end testIngestMapsActiviteitenToCaseTypes()
+
+	/**
+	 * Samenloop: when every mapped activiteit is `gecombineerd`, the request is
+	 * `gecombineerd`; one zaaktype shared by two activiteiten is listed once.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-gecombineerd-strategy-creates-one-combined-zaak
+	 */
+	public function testIngestDecidesGecombineerdWhenEveryActiviteitCombines(): void {
+		$service = $this->buildService();
+
+		$request = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-map-2',
+				'type' => 'aanvraag',
+				'activiteiten' => [
+					['code' => 'kappen-01', 'omschrijving' => 'Kappen'],
+					['code' => 'uitrit-01', 'omschrijving' => 'Uitrit'],
+					['code' => 'kappen-01', 'omschrijving' => 'Nog een boom'],
+				],
+			]
+		);
+
+		$data = $request->getObject();
+		$this->assertSame('gecombineerd', $data['samenloopStrategy']);
+		$this->assertSame(['ZAAKTYPE-KAPPEN-2024', 'ZAAKTYPE-UITRIT-2024'], $data['mappedCaseTypes']);
+
+	}//end testIngestDecidesGecombineerdWhenEveryActiviteitCombines()
+
+	/**
+	 * An activiteit without a mapping is kept, marked unmapped, and flags the
+	 * request for triage. The mapped one still gets its zaaktype.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-mixed-mapped-and-unmapped-activiteiten
+	 */
+	public function testIngestFlagsAnUnmappedActiviteitForTriage(): void {
+		$service = $this->buildService();
+
+		$request = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-map-3',
+				'type' => 'aanvraag',
+				'activiteiten' => [
+					['code' => 'bouwen-01', 'omschrijving' => 'Bouwen'],
+					['code' => 'experimenteel-gebruik-2025', 'omschrijving' => null],
+					['code' => null, 'omschrijving' => 'Zonder code'],
+				],
+			]
+		);
+
+		$data = $request->getObject();
+		$this->assertSame(
+			[
+				['code' => 'bouwen-01', 'description' => 'Bouwen', 'mapped' => true, 'caseType' => 'ZAAKTYPE-BOUWEN-2024', 'samenloopStrategy' => 'deelzaken'],
+				['code' => 'experimenteel-gebruik-2025', 'description' => '', 'mapped' => false],
+				['code' => '', 'description' => 'Zonder code', 'mapped' => false],
+			],
+			$data['mappedActivities']
+		);
+		$this->assertSame(['ZAAKTYPE-BOUWEN-2024'], $data['mappedCaseTypes']);
+		$this->assertTrue($data['activityUnmapped']);
+		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->mappingFields(data: $data)));
+
+	}//end testIngestFlagsAnUnmappedActiviteitForTriage()
+
+	/**
+	 * A request without activiteiten maps to nothing and is not flagged; it
+	 * gets no samenloop strategy, because there is nothing to combine.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+	 */
+	public function testIngestWithoutActiviteitenMapsNothing(): void {
+		$service = $this->buildService();
+
+		$data = $service->ingest(parsedRequest: ['verzoekId' => 'dso-map-4', 'type' => 'melding'])->getObject();
+
+		$this->assertSame([], $data['mappedActivities']);
+		$this->assertSame([], $data['mappedCaseTypes']);
+		$this->assertFalse($data['activityUnmapped']);
+		$this->assertArrayNotHasKey('samenloopStrategy', $data);
+		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->mappingFields(data: $data)));
+
+	}//end testIngestWithoutActiviteitenMapsNothing()
+
+	/**
+	 * The register refuses an activity entry it does not declare, so a wrong
+	 * field name in intake cannot pass the tests above by accident.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+	 */
+	public function testRegisterRefusesAnUndeclaredActivityField(): void {
+		$this->assertNotSame(
+			[],
+			RegisterSchemaValidator::errors(
+				schemaSlug: 'dso_verzoek',
+				object: [
+					'verzoekId' => 'dso-map-5',
+					'status' => 'mapped',
+					'mappedActivities' => [['code' => 'bouwen-01', 'mapped' => true, 'zaaktypeIdentificatie' => 'X']],
+				]
+			)
+		);
+		$this->assertNotSame(
+			[],
+			RegisterSchemaValidator::errors(
+				schemaSlug: 'dso_verzoek',
+				object: ['verzoekId' => 'dso-map-6', 'status' => 'mapped', 'samenloopStrategy' => 'samen']
+			)
+		);
+
+	}//end testRegisterRefusesAnUndeclaredActivityField()
 
 	/**
 	 * Per-verzoek isolation: a translation failure on one verzoek MUST NOT
