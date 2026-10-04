@@ -21,6 +21,15 @@ Goals: every OpenRegister write of the intake and its job has a named owner and 
 
 Non-goals: moving the intake onto the endpoint runtime, changing the STAM wire format, the outbound status push (REQ-DSO-040), and the case handoff (it already runs as the calling user).
 
+## Ruben's decisions (2026-10-04)
+
+These four are fixed. The rest of this design follows them.
+
+1. DSO-LV is an integriq **consumer**. The STAM signature check (HMAC or PKIoverheid) authenticates it. Its writes run as the consumer's account, the existing `consumer.userId` that `authorizeApiKey()` already uses. No new account field.
+2. A missing connection, a missing acting account, or an account without rights: the endpoint answers **503**, logs it, and writes nothing. Digikoppeling treats a 503 as recoverable, so DSO-LV retries.
+3. Rights are checked with OpenRegister's `PermissionHandler::hasPermission()`. The engine may read the consumer, the DSO source and the activity mapping table with `_rbac: false`. Those are reads only; every write stays under the account's own rights. Both are recorded under "Contract gaps" below.
+4. The queued `FetchDsoAttachmentsJob` acts as the same account. It carries the acting uid, or resolves it from the request's consumer. It never runs as no user and never under `runAsSystem()`.
+
 ## Decisions
 
 ### D1. DSO-LV is a consumer with `authorizationType: dso-stam`
@@ -38,13 +47,15 @@ The DSO consumer:
 | `authorizationConfiguration.signingCertificate`, `intermediateChain`, `rootCa` | production trust chain, PEM |
 | `userId` | the Nextcloud account the intake acts as |
 
+The verifier also accepts `rsa`, the value the app config used, as a name for `pkioverheid`.
+
 There is at most one `dso-stam` consumer per instance. A second one is refused on save. One gemeente has one STAM koppeling per environment, and two consumers would make "which account" ambiguous.
 
 `consumer.userId` is described today as "the user that created the consumer". The code already uses it as the backing identity (`authorizeApiKey()`). This change corrects the description to match the code. It does not add a second field.
 
 ### D2. `DsoConnection` does the work the controller should not
 
-A new `Service\Dso\DsoConnection` has one public method, `authenticate(string $rawBody, ?string $signatureHeader): IUser`. It:
+A new `Service\Dso\DsoConnection` has one entry point for the intake, `authenticate(string $rawBody, ?string $signatureHeader): DsoIdentity`. `DsoIdentity` holds the account (`IUser`) and the consumer's uuid, which `receivedVia` records. It:
 
 1. finds the `dso-stam` consumer. This is an engine read of admin configuration, done as the endpoint runtime reads rules: `_rbac: false`, `_multitenancy: false`, `_render: false`, so the write-only trust fields come back. It is a read, never a write;
 2. verifies the signature with `DSOSignatureVerifierService::verify()`, which now takes the trust configuration as an argument instead of reading app config;
@@ -54,7 +65,9 @@ A new `Service\Dso\DsoConnection` has one public method, `authenticate(string $r
 It throws one of two exceptions:
 
 - `DsoSignatureException` when step 2 fails. The controller answers 401, as today.
-- `DsoConnectionUnavailableException` with a machine reason (`no_connection`, `no_account`, `account_unknown`, `account_disabled`, `account_lacks_rights`). The controller answers 503.
+- `DsoConnectionUnavailableException` with a machine reason (`no_connection`, `ambiguous_connection`, `no_account`, `account_unknown`, `account_disabled`, `account_lacks_rights`, `rights_unverifiable`). The controller answers 503.
+
+`rights_unverifiable` means OpenRegister's `PermissionHandler` or the `dso_verzoek` schema could not be resolved. The intake fails closed on it: a check that cannot run is not a pass. `ambiguous_connection` means two `dso-stam` consumers exist despite D1; the intake does not guess which account to use.
 
 Step 4 runs before the first write. That closes the gap PR #2488 left open: without it, a user with `create` but not `update` leaves a `received` record behind, and the retry adds a second one.
 
@@ -83,7 +96,7 @@ DSO-LV identifies a verzoek by its verzoeknummer, and STAM adds a volgnummer. `i
 
 When the user no longer resolves, or is disabled, the job writes nothing. It logs an error naming the verzoek and the account, and sends the admin notification of D7. The entries stay `pending`, so a rerun after the fix completes them.
 
-The job does not read the consumer's current account instead. ActorForwardedJob in OpenRegister sets the rule: re-establish the identity that did the work, never a newer authority.
+A job that carries `actingUserId` uses it, and never the consumer's current account. ActorForwardedJob in OpenRegister sets the rule: re-establish the identity that did the work, never a newer authority. A job queued before this change carries no `actingUserId`. It resolves the uid from the request's consumer, the one `dso-stam` consumer, through the same account checks. When that yields no usable account, it writes nothing, as above.
 
 The DSO `source` is admin-only (`99-source-lockdown.json`). Its comment states the engine rule: "it is the engine, not the user, that needs the source". The attachment path follows it: the source read becomes an engine read (`_rbac: false`, `_render: false`), like the sync engine's. The account does not need to be an admin. Every write of the job stays under the account's RBAC.
 
@@ -107,6 +120,8 @@ The admin section shows the current state in one line: "Intake acts as {display 
 | No `dso-stam` consumer | 503 `dso_connection_not_configured` | error | admins |
 | `userId` empty, unknown or disabled | 503 `dso_account_unavailable` | error | admins |
 | Account lacks `create` or `update` | 503 `dso_account_lacks_rights` | error | admins |
+| Rights cannot be checked (`PermissionHandler` or schema absent) | 503 `dso_account_lacks_rights` | error | admins |
+| Two `dso-stam` consumers | 503 `dso_connection_not_configured` | error | admins |
 | OpenRegister refuses a write anyway | 503 `verzoek_not_stored` (PR #2488) | error | admins |
 
 Why 503 and not 4xx for configuration problems: the Digikoppeling Koppelvlakstandaard ebMS2 (5.11.2) treats a 503 as recoverable and a 4xx as a final error. A missing account is something an admin fixes in minutes. DSO-LV should keep the verzoek and deliver again, not give up.
@@ -169,10 +184,19 @@ A consumer gives the identity, the admin page and the audit trail now. When the 
 
 ## Risks / trade-offs
 
-- **`PermissionHandler::hasPermission()` is not a published OpenRegister contract.** `lib/Contract/` has `ObjectServiceInterface` and the slug resolver only. The check is resolved lazily and pinned by a unit test, the same treatment `FileService` gets in `dso-attachments-on-the-request`. When the handler is absent the check reports "unknown", the save warns, and the write itself still runs under RBAC, so the worst case is a 503 at intake, never a silent pass.
+- **`PermissionHandler::hasPermission()` is not a published OpenRegister contract.** See "Contract gaps". When the handler is absent, the settings save warns and the intake answers 503 (`rights_unverifiable`). The worst case is a 503, never a silent pass.
 - **One account for all DSO verzoeken.** Every record shows the same owner. `receivedVia` records the connection; the initiatiefnemer stays in `requester`.
 - **The account can lose its rights later.** D2 step 4 catches that per push, with a 503 and a notification.
 - **Engine reads with `_rbac: false`.** The consumer and source reads skip RBAC on purpose, as the endpoint runtime and sync engine already do. They are reads of admin configuration, scoped to one known slug.
+
+## Contract gaps
+
+Two OpenRegister surfaces this change uses are not published contracts. `lib/Contract/` holds `ObjectServiceInterface` and the slug resolver only. The same gap is recorded for `FileService` in `dso-attachments-on-the-request`, as dossiq records it.
+
+1. **`OCA\OpenRegister\Service\Object\PermissionHandler::hasPermission(schema:, action:, userId:)`**, with the `Schema` from `SchemaMapper::find('dso_verzoek')`. `DsoConnection` resolves the handler lazily from the container, so integriq still loads without it. A unit test pins the call shape. A signature change there turns every push into a 503, loudly.
+2. **Engine reads with `_rbac: false`** on the concrete `ObjectService::find()` / `findAll()`: the `dso-stam` consumer (`_render: false` as well, so the write-only trust comes back), the DSO `source`, and the `dso_activity_mapping` table of `dso-activity-mapping-table`. They are reads of admin configuration, scoped to one known schema. No write in this change passes `_rbac: false`. OpenRegister has no contract that names an engine read; the flag on the concrete class is the only handle.
+
+OpenRegister should publish both: a rights query for a named user, and an engine-read scope. Until then each call site carries a `@spec` pointer here.
 
 ## Migration
 

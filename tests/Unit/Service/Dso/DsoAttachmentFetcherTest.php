@@ -174,7 +174,10 @@ class DsoAttachmentFetcherTest extends TestCase {
 		$source->setUuid('source-dso');
 		$source->setObject(['type' => 'dso', 'configuration' => $this->sourceConfiguration]);
 		$ingest = $this->getMockBuilder(DsoIngestService::class)->disableOriginalConstructor()->getMock();
-		$ingest->method('resolveActiveSource')->willReturn($source);
+		// The account the job runs as is not an admin, and the source is
+		// admin-only: the fetcher must ask for an engine read (D5).
+		$ingest->expects($this->never())->method('resolveActiveSource');
+		$ingest->method('resolveActiveSourceAsEngine')->willReturn($source);
 
 		$fileService = $this->getMockBuilder(FileService::class)->disableOriginalConstructor()->getMock();
 		$fileService->method('addFile')->willReturnCallback(
