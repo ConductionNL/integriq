@@ -279,6 +279,8 @@ class DsoAttachmentFetcher {
 	 * @param integer $seconds The backoff in seconds.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 */
 	protected function pause(int $seconds): void {
 		sleep($seconds);
