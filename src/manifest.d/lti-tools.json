@@ -1,0 +1,121 @@
+{
+  "$comment": "ADR-037 manifest fragment (connectors-lti-platform-launch Task 4, REQ-LTIL-004). Two pages over lti_tool. An administrator registering a tool at the vendor needs six values from this instance (issuer, client id, deployment ids, authorization URL, token URL, key set URL); the detail page shows them in LtiPlatformDetails, read from ltiPlatformDetails#show so every URL is one this instance answers on. Both pages are read-only on purpose: signingKeys holds writeOnly private key material that OpenRegister strips from every read, so a generic edit form would save the registration back without its keys. Keys are generated and rotated through lti#generateKey and lti#rotateKey, approval through lti#approve.",
+  "pages": [
+    {
+      "id": "LtiTools",
+      "route": "/lti/tools",
+      "type": "index",
+      "title": "LTI tools",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "lti_tool",
+        "columns": [
+          "name",
+          "clientId",
+          "status",
+          "updated"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "actionToggles": {
+          "showAdd": false,
+          "showFormDialog": false,
+          "showEditAction": false,
+          "showCopyAction": false,
+          "showDeleteAction": false,
+          "showMassImport": false,
+          "showMassCopy": false,
+          "showMassDelete": false
+        },
+        "actions": [
+          {
+            "id": "view",
+            "label": "View",
+            "icon": "EyeOutline",
+            "handler": "navigate",
+            "route": "LtiToolDetail"
+          }
+        ],
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "LtiToolDetail",
+      "route": "/lti/tools/:id",
+      "type": "detail",
+      "title": "LTI tool",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "lti_tool",
+        "widgets": [
+          {
+            "id": "lti-tool-data",
+            "type": "data",
+            "icon": "ApplicationOutline",
+            "title": "Registration",
+            "content": {
+              "columns": 2,
+              "exclude": [
+                "signingKeys"
+              ]
+            }
+          }
+        ],
+        "layout": [
+          {
+            "id": "1",
+            "widgetId": "lti-tool-data",
+            "gridX": 0,
+            "gridY": 0,
+            "gridWidth": 12,
+            "gridHeight": 6
+          }
+        ],
+        "bodyWidgets": [
+          {
+            "id": "lti-tool-platform-details",
+            "component": "LtiPlatformDetails",
+            "placement": "after-data",
+            "colSpan": 12
+          }
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true,
+          "tabs": [
+            {
+              "id": "audit",
+              "label": "Audit trail",
+              "icon": "History",
+              "widgets": [
+                {
+                  "type": "audit"
+                }
+              ]
+            }
+          ]
+        },
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "GatewayGroup",
+      "children": [
+        {
+          "id": "LtiTools",
+          "label": "LTI tools",
+          "icon": "ApplicationOutline",
+          "route": "LtiTools",
+          "order": 35
+        }
+      ]
+    }
+  ]
+}

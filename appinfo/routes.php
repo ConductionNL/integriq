@@ -317,6 +317,9 @@ return [
 		// injection (see LtiController::approve()/suspend() precedent + design.md).
 		['name' => 'lti#approve', 'url' => '/api/lti/{registrationType}/{registrationUuid}/approve', 'verb' => 'POST'],
 		['name' => 'lti#suspend', 'url' => '/api/lti/{registrationType}/{registrationUuid}/suspend', 'verb' => 'POST'],
+		// Platform details for a tool's administrator (connectors-lti-platform-launch
+		// REQ-LTIL-004): admin-only, on its own controller.
+		['name' => 'ltiPlatformDetails#show', 'url' => '/api/lti/tools/{id}/platform-details', 'verb' => 'GET'],
 
 		// EUDI wallet credential issuance — OpenID4VCI pre-authorized code flow
 		// (openspec/changes/eudi-wallet-credential-issuance). Dedicated controller

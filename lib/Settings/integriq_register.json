@@ -6765,7 +6765,7 @@
         "slug": "lti_tool",
         "title": "LTI Tool",
         "icon": "ApplicationOutline",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "summary": "An external LTI 1.3 Tool this instance may launch — this instance acts as Platform",
         "description": "An lti_tool row describes an external Tool (e.g. a content tool) that this instance launches via a signed id_token. This instance acts as Platform for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [
@@ -6803,6 +6803,15 @@
             "type": "string",
             "description": "The tool's launch endpoint the signed id_token is POSTed to",
             "title": "Launch URL"
+          },
+          "redirectUris": {
+            "type": "array",
+            "description": "The redirect URIs the tool may ask the platform to post a launch to (LTI 1.3 redirect_uri). An empty list allows only the launchUrl.",
+            "title": "Redirect URIs",
+            "items": {
+              "type": "string"
+            },
+            "default": []
           },
           "jwksUri": {
             "type": "string",

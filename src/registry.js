@@ -38,6 +38,7 @@ import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
+import LtiPlatformDetails from './components/LtiPlatformDetails.vue'
 import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
 import SourceRunSummaryWidget from './components/SourceRunSummaryWidget.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
@@ -151,6 +152,11 @@ export default {
 	// runs, with Run again on a failed one. Reads runSummary#show.
 	// connection-run-monitoring REQ-CRUN-002 and REQ-CRUN-003.
 	SourceRunSummaryWidget,
+
+	// LtiToolDetail body widget: the six values a tool's administrator enters
+	// at the vendor, each with a copy action. Reads ltiPlatformDetails#show.
+	// connectors-lti-platform-launch REQ-LTIL-004.
+	LtiPlatformDetails,
 
 	// The outbound call log (SourceLogs) acts on its calls: a per-row replay
 	// through `slots["row-actions"]`, and bulk replay plus firing by hand
