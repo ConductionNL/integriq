@@ -43,6 +43,7 @@ use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Exception\TargetWriteRefusedException;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
+use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
@@ -612,6 +613,13 @@ class SynchronizationService {
 	 * @var SynchronizationMessageGate|null
 	 */
 	private ?SynchronizationMessageGate $messageGate = null;
+
+	/**
+	 * Fills a push's `writeBack` templates (REQ-CSD-001); made on first use.
+	 *
+	 * @var OutcomeWriteBack|null
+	 */
+	private ?OutcomeWriteBack $outcomeWriteBack = null;
 
 	/**
 	 * Whether {@see $messageGate} has been looked up in the container.
@@ -9186,7 +9194,12 @@ class SynchronizationService {
 
 			$this->inspectTargetBody(targetConfig: $targetConfig, contract: $contract);
 			$this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
-			$callLog = $this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig, trace: $trace);
+			$callLog = $this->callForPush(
+				synchronization: $synchronization,
+				contract: $contract,
+				call: fn (): ObjectEntity => $this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig, trace: $trace)
+			);
+			$pushFailed = $this->writeBackOnFailedAnswer(synchronization: $synchronization, contract: $contract, callLog: $callLog);
 			$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $targetConfig);
 			$response = $this->callLogResponse(callLog: $callLog);
 
@@ -9206,6 +9219,15 @@ class SynchronizationService {
 			}
 
 			$contract['targetId'] = $targetId;
+			if ($pushFailed === false) {
+				$this->writeOutcomeBack(
+					synchronization: $synchronization,
+					contract: $contract,
+					outcome: OutcomeWriteBack::SUCCESS,
+					context: ['response' => $body, 'status' => $this->callLogStatusCode(callLog: $callLog), 'targetId' => $targetId]
+				);
+			}
+
 			return $contract;
 		}//end if
 
@@ -9232,7 +9254,12 @@ class SynchronizationService {
 
 		$this->inspectTargetBody(targetConfig: $targetConfig, contract: $contract);
 		$this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
-		$callLog = $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace);
+		$callLog = $this->callForPush(
+			synchronization: $synchronization,
+			contract: $contract,
+			call: fn (): ObjectEntity => $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace)
+		);
+		$pushFailed = $this->writeBackOnFailedAnswer(synchronization: $synchronization, contract: $contract, callLog: $callLog);
 		$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $targetConfig);
 		$response = $this->callLogResponse(callLog: $callLog);
 
@@ -9241,11 +9268,152 @@ class SynchronizationService {
 			$decodedResponseBody = [];
 		}
 
+		if ($pushFailed === false) {
+			$this->writeOutcomeBack(
+				synchronization: $synchronization,
+				contract: $contract,
+				outcome: OutcomeWriteBack::SUCCESS,
+				context: ['response' => $decodedResponseBody, 'status' => $this->callLogStatusCode(callLog: $callLog), 'targetId' => $targetId]
+			);
+		}
+
 		$body = array_merge($decodedResponseBody, ['targetId' => $targetId]);
 		$targetObject = $body;
 
 		return $contract;
 	}//end writeObjectToTarget()
+
+	/**
+	 * Make a push's call, and write the failure back when the transport gives up.
+	 *
+	 * CallService::call() spends the source's retry budget before it returns
+	 * or throws, so what reaches this method is the attempt's final outcome.
+	 *
+	 * @param array    $synchronization The push synchronization.
+	 * @param array    $contract        The contract (its originId names the source object).
+	 * @param callable $call            Makes the call and returns its call log.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @throws \Throwable Whatever the call threw, after the failure is written back.
+	 *
+	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-push-writes-its-outcome-back-onto-the-object-that-started-it-req-csd-001
+	 */
+	private function callForPush(array $synchronization, array $contract, callable $call): ObjectEntity {
+		try {
+			return $call();
+		} catch (\Throwable $e) {
+			$this->writeOutcomeBack(
+				synchronization: $synchronization,
+				contract: $contract,
+				outcome: OutcomeWriteBack::FAILURE,
+				context: ['error' => ['message' => $this->outcomeWriteBack()->truncate(message: $e->getMessage())]]
+			);
+			throw $e;
+		}
+	}//end callForPush()
+
+	/**
+	 * Write the failure back when the target answered 4xx or 5xx.
+	 *
+	 * @param array        $synchronization The push synchronization.
+	 * @param array        $contract        The contract.
+	 * @param ObjectEntity $callLog         The call log of the attempt.
+	 *
+	 * @return bool True when the answer was a failure.
+	 *
+	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-push-writes-its-outcome-back-onto-the-object-that-started-it-req-csd-001
+	 */
+	private function writeBackOnFailedAnswer(array $synchronization, array $contract, ObjectEntity $callLog): bool {
+		$status = $this->callLogStatusCode(callLog: $callLog);
+		if ($status === null || $status < 400) {
+			return false;
+		}
+
+		$response = $this->callLogResponse(callLog: $callLog);
+		$body     = ($response['body'] ?? null);
+		if (is_string($body) === false) {
+			$body = null;
+		}
+
+		$decoded = json_decode((string)$body, true);
+		if (is_array($decoded) === false) {
+			$decoded = [];
+		}
+
+		$this->writeOutcomeBack(
+			synchronization: $synchronization,
+			contract: $contract,
+			outcome: OutcomeWriteBack::FAILURE,
+			context: [
+				'response' => $decoded,
+				'status' => $status,
+				'error' => [
+					'message' => $this->outcomeWriteBack()->messageFromAnswer(body: $body, status: $status),
+					'status' => $status,
+				],
+			]
+		);
+
+		return true;
+	}//end writeBackOnFailedAnswer()
+
+	/**
+	 * Write a push's outcome onto the OpenRegister object that started it, silently.
+	 *
+	 * Silent, like markWriteBack(): a normal save fires the object event and
+	 * the push would run again. Only a `register/schema` source has an object
+	 * to write onto. A write-back that fails is logged and never fails the push,
+	 * which already happened.
+	 *
+	 * @param array                $synchronization The push synchronization.
+	 * @param array                $contract        The contract (originId = the source object's uuid).
+	 * @param string               $outcome         OutcomeWriteBack::SUCCESS or ::FAILURE.
+	 * @param array<string, mixed> $context         What the templates read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-push-writes-its-outcome-back-onto-the-object-that-started-it-req-csd-001
+	 */
+	private function writeOutcomeBack(array $synchronization, array $contract, string $outcome, array $context): void {
+		$fields   = $this->outcomeWriteBack()->fields(writeBack: ($synchronization['writeBack'] ?? null), outcome: $outcome, context: $context);
+		$originId = (string)($contract['originId'] ?? '');
+		$sourceId = explode(separator: '/', string: (string)($synchronization['sourceId'] ?? ''));
+		if ($fields === [] || $originId === '' || ($synchronization['sourceType'] ?? null) !== 'register/schema' || count($sourceId) !== 2) {
+			return;
+		}
+
+		try {
+			$data = $this->orObjectService->find(id: $originId, register: $sourceId[0], schema: $sourceId[1])->getObject();
+			$this->orObjectService->saveObject(
+				object: array_merge($data, $fields),
+				register: $sourceId[0],
+				schema: $sourceId[1],
+				uuid: $originId,
+				silent: true
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Could not write the push outcome back onto object ' . $originId . ' for synchronization '
+				. (string)($synchronization['id'] ?? '') . ': ' . $e->getMessage()
+			);
+		}
+	}//end writeOutcomeBack()
+
+	/**
+	 * The write-back template filler, made once.
+	 *
+	 * @return OutcomeWriteBack The filler.
+	 *
+	 * @spec exclude lazy holder for a stateless helper
+	 */
+	private function outcomeWriteBack(): OutcomeWriteBack {
+		if ($this->outcomeWriteBack === null) {
+			$this->outcomeWriteBack = new OutcomeWriteBack();
+		}
+
+		return $this->outcomeWriteBack;
+	}//end outcomeWriteBack()
 
 	/**
 	 * Synchronize data to a target.

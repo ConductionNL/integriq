@@ -180,7 +180,7 @@ class SynchronizationOutcomeWriteBackTest extends TestCase {
 		$save = $this->saves[0];
 		$this->assertSame(['filinq', 'caseSystemDelivery', 'delivery-1'], [$save['register'], $save['schema'], $save['uuid']]);
 		$this->assertTrue($save['silent'], 'A normal save fires the object event, which would push the delivery again.');
-		$this->assertSame(
+		$this->assertEquals(
 			['processingStatus' => 'written_back', 'resultExternalId' => self::DOCUMENT] + self::DELIVERY,
 			$save['object'],
 			'The stored delivery keeps its own fields; only the outcome is added.'

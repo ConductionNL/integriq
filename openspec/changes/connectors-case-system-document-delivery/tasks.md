@@ -10,8 +10,18 @@ Kind: code. Size M. Half for filinq `generate-store-in-case-system` and `zgw-doc
 - **acceptance_criteria**:
   - GIVEN a push with write-back WHEN the target answers 201 THEN the source object carries the success fields and the push is not triggered again
   - GIVEN a failure after the last retry WHEN the budget is spent THEN the failure fields are written once
-- [ ] Implement
-- [ ] Test (PHPUnit with real `ObjectEntity` instances)
+- [ ] Implement. Engine and schema done: `synchronization.writeBack` (1.2.0, both registers;
+      `OutcomeWriteBack` fills `{{ response.* }}`, `{{ status }}`, `{{ targetId }}`,
+      `{{ error.message }}`); `writeObjectToTarget()` writes `onSuccess` after an accepted create
+      or update and `onFailure` after a 4xx/5xx answer or a transport failure, silently onto the
+      `register/schema` source object. CallService spends the retry budget before it returns, so
+      each attempt writes once. Owed: the field in the synchronization editor.
+- [x] Test (PHPUnit with real `ObjectEntity` instances)
+      `tests/Unit/Service/SynchronizationOutcomeWriteBackTest.php`, 8 tests through the real
+      `updateTarget()`: accepted create (silent save, url as external id, own fields kept),
+      refusal with the ZGW `detail` written once, a message-less 503, a transport failure
+      rethrown, an update with `{{ targetId }}`, no write-back declared, an api source, both
+      registers.
 
 ### Task 2: ZGW create, parts upload and case relation
 - **spec_ref**: `openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002`
