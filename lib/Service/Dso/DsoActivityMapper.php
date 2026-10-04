@@ -8,11 +8,12 @@
  * task 3.1) because REQ-DSO-010 and REQ-DSO-011 still need them. They are
  * pure functions over a mapping table.
  *
- * NOT WIRED YET. Nothing on the live intake path calls this class: the live
- * path hands a verzoek to the case system through the `verzoek-to-case`
- * handoff, which does not pick a zaaktype per activiteit. Wiring it, and
- * storing the mapping table as OpenRegister objects as REQ-DSO-010 asks, is
- * its own change.
+ * Intake calls {@see self::mapRequest()} ({@see \OCA\Integriq\Service\DsoIngestService::ingest()}),
+ * so every `dso_verzoek` records its zaaktypen and samenloop strategy. The
+ * table is the built-in {@see self::getDefaultMappings()}: REQ-DSO-010 asks for
+ * a table stored as OpenRegister objects that an administrator edits, and no
+ * schema for it exists yet. One activiteitcode maps to one zaaktype; the
+ * one-to-many mapping of REQ-DSO-010 needs that table first.
  *
  * @category Service
  * @package  OCA\Integriq\Service\Dso
@@ -253,6 +254,93 @@ class DsoActivityMapper {
 		];
 
 	}//end getDefaultMappings()
+
+	/**
+	 * Map one parsed verzoek's activiteiten into the fields intake stores on
+	 * the `dso_verzoek` object.
+	 *
+	 * Each activiteit keeps its code and omschrijving. A mapped one gains its
+	 * `caseType` and `samenloopStrategy`. `mappedCaseTypes` lists each zaaktype
+	 * once. `samenloopStrategy` is set only when at least one activiteit is
+	 * mapped. `activityUnmapped` flags the request for triage (REQ-DSO-013).
+	 *
+	 * @param array $activiteiten The parsed activiteiten (each with `code` and `omschrijving`).
+	 *
+	 * @return array<string, mixed> The `mappedActivities`, `mappedCaseTypes`, `activityUnmapped`
+	 *                              and, when anything is mapped, `samenloopStrategy` fields.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+	 */
+	public function mapRequest(array $activiteiten): array {
+		// The mapper splits mapped from unmapped; the position puts them back in request order.
+		$activities = [];
+		foreach (array_values($activiteiten) as $position => $activity) {
+			if (is_array($activity) === true) {
+				$activities[] = (['position' => $position] + $activity);
+			}
+		}
+
+		$result = $this->mapActiviteitenToZaaktypen(
+			activiteiten: $activities,
+			mappingTable: $this->defaultMappingTable()
+		);
+
+		$entries = [];
+		$caseTypes = [];
+		$unmapped = false;
+		foreach (array_merge($result['mapped'], $result['unmapped']) as $activity) {
+			$entry = [
+				'code' => (string)($activity['code'] ?? ''),
+				'description' => (string)($activity['omschrijving'] ?? ''),
+				'mapped' => ($activity['mapped'] === true && $activity['zaaktypeIdentificatie'] !== null),
+			];
+			if ($entry['mapped'] === true) {
+				$entry['caseType'] = (string)$activity['zaaktypeIdentificatie'];
+				$entry['samenloopStrategy'] = (string)$activity['samenloopStrategie'];
+				$caseTypes[$entry['caseType']] = true;
+			}
+
+			$unmapped = ($unmapped === true || $entry['mapped'] === false);
+			$entries[$activity['position']] = $entry;
+		}
+
+		ksort($entries);
+
+		$fields = [
+			'mappedActivities' => array_values($entries),
+			'mappedCaseTypes' => array_keys($caseTypes),
+			'activityUnmapped' => $unmapped,
+		];
+		if (count($result['mapped']) > 0) {
+			$fields['samenloopStrategy'] = $this->determineSamenloopStrategy(mappedActiviteiten: $result['mapped']);
+		}
+
+		return $fields;
+	}//end mapRequest()
+
+	/**
+	 * The active default mappings, keyed by activiteitcode, in the shape
+	 * {@see self::mapActiviteitenToZaaktypen()} reads.
+	 *
+	 * @return array<string, array{zaaktypeIdentificatie: string, samenloopStrategie: string}> The table.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+	 */
+	public function defaultMappingTable(): array {
+		$table = [];
+		foreach ($this->getDefaultMappings() as $mapping) {
+			if (($mapping['isActief'] ?? false) !== true) {
+				continue;
+			}
+
+			$table[$mapping['dsoActiviteitCode']] = [
+				'zaaktypeIdentificatie' => $mapping['zaaktypeIdentificatie'],
+				'samenloopStrategie' => $mapping['samenloopStrategie'],
+			];
+		}
+
+		return $table;
+	}//end defaultMappingTable()
 
 	/**
 	 * Determine the samenloop strategy for a set of mapped activiteiten.
