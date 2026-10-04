@@ -331,7 +331,7 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 		$create = $this->sent[0]['options']['json'];
 		$this->assertSame('besluit-geanonimiseerd.pdf', $create['bestandsnaam']);
 		$this->assertArrayNotHasKey('resultFileRef', $create);
-		$this->assertSame('ANON', $this->sent[1]['options']['multipart'][0]['contents']);
+		$this->assertSame('ANO', $this->sent[1]['options']['multipart'][0]['contents']);
 		$this->assertSame('written_back', $this->saves[0]['object']['status']);
 	}//end testTheFileNamedInTheFileIdFieldIsDelivered()
 
