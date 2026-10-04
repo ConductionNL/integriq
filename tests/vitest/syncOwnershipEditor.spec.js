@@ -24,6 +24,7 @@ import SynchronizationEditorModal from '@/modals/v2/SynchronizationEditorModal.v
 import {
 	disappearancePolicyOptions,
 	ownershipModeOptions,
+	sourceDestroyedOptions,
 } from '@/views/Synchronization/ownershipOptions.js'
 
 const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }))
@@ -124,7 +125,7 @@ describe('the ownership inputs on the synchronisation editor', () => {
 			'utf8',
 		)
 		const accepted = disappearancePolicyOptions().map((option) => option.id)
-		expect(accepted).toEqual(['delete', 'markEnded', 'keepAndFlag'])
+		expect(accepted).toEqual(['delete', 'markEnded', 'keepAndFlag', 'purge'])
 		for (const id of accepted) {
 			expect(policy).toContain(`'${id}'`)
 		}
@@ -231,5 +232,119 @@ describe('the ownership inputs on the synchronisation editor', () => {
 
 		expect(confirm).not.toHaveBeenCalled()
 		expect(wrapper.vm.saveError).toContain('markended')
+	})
+})
+
+/**
+ * The purge warning on the editor, or undefined when there is none.
+ *
+ * @param {object} wrapper the mounted editor
+ * @return {object|undefined} the warning note card
+ */
+function purgeWarning(wrapper) {
+	return wrapper
+		.findAllComponents({ name: 'NcNoteCard' })
+		.find(
+			(card) => card.attributes('data-testid') === 'sync-editor-purge-warning',
+		)
+}
+
+/**
+ * The picker with the given input id.
+ *
+ * @param {object} wrapper the mounted editor
+ * @param {string} inputId the picker's input id
+ * @return {object} the NcSelect
+ */
+function picker(wrapper, inputId) {
+	return wrapper
+		.findAllComponents({ name: 'NcSelect' })
+		.find((select) => select.props('inputId') === inputId)
+}
+
+// synchronisation-source-destruction-purge Task 4 (REQ-SDP-001, REQ-SDP-002):
+// purge is a fourth policy, a destruction notice can purge at once, and the
+// form says a purge cannot be undone.
+describe('the purge choice on the synchronisation editor', () => {
+	beforeEach(() => {
+		get.mockReset()
+		post.mockReset()
+		get.mockResolvedValue({ data: { enabled: false } })
+	})
+
+	it('offers the destruction notice choices the engine reads', () => {
+		const ids = sourceDestroyedOptions().map((option) => option.id)
+		expect(ids).toEqual(['', 'purge'])
+		const engine = readFileSync(
+			join(root, 'lib/Service/SynchronizationService.php'),
+			'utf8',
+		)
+		expect(engine).toContain(
+			"['onSourceDestroyed'] ?? null) === DisappearancePolicy::PURGE",
+		)
+	})
+
+	it('shows no warning while nothing is purged', async () => {
+		const wrapper = mountEditor({
+			id: 's1',
+			name: 'Woo publicaties',
+			sourceConfig: {},
+		})
+		await flushPromises()
+
+		expect(purgeWarning(wrapper)).toBeUndefined()
+		expect(
+			picker(wrapper, 'cn-sync-editor-source-destroyed').props('modelValue')
+				.id,
+		).toBe('')
+	})
+
+	it('warns that purged files cannot be restored when the policy is purge', async () => {
+		const wrapper = mountEditor({
+			id: 's1',
+			name: 'Woo publicaties',
+			sourceConfig: {},
+		})
+		await flushPromises()
+
+		picker(wrapper, 'cn-sync-editor-disappearance-policy').vm.$emit(
+			'update:modelValue',
+			{ id: 'purge' },
+		)
+		await flushPromises()
+
+		expect(wrapper.vm.draft.sourceConfig.disappearancePolicy).toBe('purge')
+		const warning = purgeWarning(wrapper)
+		expect(warning).toBeDefined()
+		expect(warning.props('type')).toBe('warning')
+		expect(warning.text()).toContain('cannot be restored')
+	})
+
+	it('writes onSourceDestroyed, warns, and removes the key again', async () => {
+		const wrapper = mountEditor({
+			id: 's1',
+			name: 'Woo publicaties',
+			sourceConfig: { endpoint: '/documenten' },
+		})
+		await flushPromises()
+
+		picker(wrapper, 'cn-sync-editor-source-destroyed').vm.$emit(
+			'update:modelValue',
+			{ id: 'purge' },
+		)
+		await flushPromises()
+		expect(wrapper.vm.draft.sourceConfig).toEqual({
+			endpoint: '/documenten',
+			onSourceDestroyed: 'purge',
+		})
+		expect(purgeWarning(wrapper)).toBeDefined()
+
+		picker(wrapper, 'cn-sync-editor-source-destroyed').vm.$emit(
+			'update:modelValue',
+			{ id: '' },
+		)
+		await flushPromises()
+		expect(wrapper.vm.draft.sourceConfig).toEqual({ endpoint: '/documenten' })
+		expect(purgeWarning(wrapper)).toBeUndefined()
 	})
 })

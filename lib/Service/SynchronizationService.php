@@ -422,6 +422,14 @@ class SynchronizationService {
 	public const PURGE_TRIGGER_NOTICE = 'destructionNotice';
 
 	/**
+	 * The outcome of a destruction notice for a record no contract of the
+	 * synchronization names: nothing was touched (REQ-SDP-002).
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	public const DESTRUCTION_NO_CONTRACT = 'no_contract';
+
+	/**
 	 * Minimum number of existing contracts a synchronization must have before
 	 * the deletion-ratio guard is evaluated at all.
 	 *
@@ -5527,6 +5535,162 @@ class SynchronizationService {
 
 		return true;
 	}//end purgeTarget()
+
+	/**
+	 * Apply a source's destruction notice to the one object a contract maintains (REQ-SDP-002).
+	 *
+	 * Resolves the contract of this synchronization whose `originId` is one of
+	 * the candidates, tried in order. With `sourceConfig.onSourceDestroyed:
+	 * purge` that object is purged at once; otherwise the synchronization's
+	 * disappearance policy is applied to it alone. No full run, no garbage
+	 * collection, and a record without a contract leaves everything untouched.
+	 *
+	 * @param array|ObjectEntity $synchronization The synchronization.
+	 * @param list<string>       $originIds       Candidate origin ids of the destroyed record.
+	 * @param string|null        $reference       The notice's reference, written to the contract log.
+	 *
+	 * @return array{outcome: string, synchronizationId: string, originId: string|null, targetId: string|null, reason?: string}
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	public function applySourceDestruction(array|ObjectEntity $synchronization, array $originIds, ?string $reference): array {
+		$synchronization = $this->toSynchronization(synchronization: $synchronization);
+		$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
+		$outcome = ['outcome' => self::DESTRUCTION_NO_CONTRACT, 'synchronizationId' => $synchronizationId, 'originId' => null, 'targetId' => null];
+
+		$contract = $this->findDestroyedContract(synchronizationId: $synchronizationId, originIds: $originIds);
+		if ($contract === null) {
+			return $outcome;
+		}
+
+		$outcome['originId'] = (string)$contract['originId'];
+		$outcome['targetId'] = $contract['targetId'] ?? null;
+		if (empty($outcome['targetId']) === true || ($synchronization['targetType'] ?? null) !== 'register/schema') {
+			// Already gone, or a target this path does not act on.
+			return ['outcome' => 'nothing_to_remove'] + $outcome;
+		}
+
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		try {
+			$action = DisappearancePolicy::fromSourceConfig($sourceConfig);
+		} catch (\InvalidArgumentException $policyException) {
+			return ['outcome' => 'unknown_disappearance_policy', 'reason' => $policyException->getMessage()] + $outcome;
+		}
+
+		if (($sourceConfig['onSourceDestroyed'] ?? null) === DisappearancePolicy::PURGE) {
+			$action = DisappearancePolicy::PURGE;
+		}
+
+		try {
+			return $this->applyDestructionAction(
+				action: $action,
+				synchronization: $synchronization,
+				contract: $contract,
+				sourceConfig: $sourceConfig,
+				reference: $reference
+			) + $outcome;
+		} catch (\Throwable $throwable) {
+			$this->logger->warning(
+				'SynchronizationService: a destruction notice could not be applied',
+				['synchronizationId' => $synchronizationId, 'originId' => $outcome['originId'], 'error' => $throwable->getMessage()]
+			);
+			return ['outcome' => 'failed', 'reason' => $throwable->getMessage()] + $outcome;
+		}
+	}//end applySourceDestruction()
+
+	/**
+	 * The contract of one synchronization whose originId is one of the candidates.
+	 *
+	 * Both fields are checked on the row as well: a lookup that ignored a
+	 * filter must not hand back another synchronization's contract.
+	 *
+	 * @param string       $synchronizationId The synchronization.
+	 * @param list<string> $originIds         The candidates, in order.
+	 *
+	 * @return array|null
+	 */
+	private function findDestroyedContract(string $synchronizationId, array $originIds): ?array {
+		foreach ($originIds as $originId) {
+			$matches = [];
+			$this->findContractBySyncAndOrigin(synchronizationId: $synchronizationId, originId: (string)$originId, allMatches: $matches);
+			foreach ($matches as $match) {
+				if ((string)($match['synchronizationId'] ?? '') === $synchronizationId && (string)($match['originId'] ?? '') === (string)$originId) {
+					return $match;
+				}
+			}
+		}
+
+		return null;
+	}//end findDestroyedContract()
+
+	/**
+	 * Purge, delete, end or flag the one object a destruction notice names.
+	 *
+	 * @param string      $action          The resolved action: a disappearance policy.
+	 * @param array       $synchronization The synchronization (register/schema target).
+	 * @param array       $contract        The contract that maintains the object.
+	 * @param array       $sourceConfig    The synchronization's sourceConfig.
+	 * @param string|null $reference       The notice's reference.
+	 *
+	 * @return array{outcome: string, reason?: string}
+	 */
+	private function applyDestructionAction(string $action, array $synchronization, array $contract, array $sourceConfig, ?string $reference): array {
+		if ($action === DisappearancePolicy::PURGE) {
+			$purgeInfo = ['purgedCount' => 0, 'purgeRefusals' => []];
+			$purged = $this->purgeTarget(
+				synchronization: $synchronization,
+				contract: $contract,
+				trigger: self::PURGE_TRIGGER_NOTICE,
+				reference: $reference,
+				purgeInfo: $purgeInfo
+			);
+			if ($purged === true) {
+				return ['outcome' => 'purged'];
+			}
+
+			return ['outcome' => 'purge_refused', 'reason' => (string)($purgeInfo['purgeRefusals'][0]['reason'] ?? '')];
+		}
+
+		if ($action === DisappearancePolicy::DELETE) {
+			$this->persistContract(
+				contract: $this->updateTarget(synchronizationContract: $contract, action: 'delete', synchronization: $synchronization)
+			);
+			return ['outcome' => 'deleted'];
+		}
+
+		[$registerId, $schemaId] = array_pad(explode(separator: '/', string: (string)($synchronization['targetId'] ?? '')), 2, '');
+		$targetObject = $this->orObjectService->find(
+			id: (string)$contract['targetId'],
+			register: $registerId,
+			schema: $schemaId,
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($targetObject === null) {
+			return ['outcome' => 'nothing_to_remove'];
+		}
+
+		$applier = new DisappearanceApplier();
+		$counts = ['ended' => 0, 'flagged' => 0];
+		$this->applyDisappearancePolicy(
+			policy: $action,
+			applier: $applier,
+			targetObject: $targetObject,
+			contract: $contract,
+			registerId: $registerId,
+			schemaId: $schemaId,
+			runAt: gmdate('c'),
+			counts: $counts,
+			values: $applier->valuesFrom(sourceConfig: $sourceConfig)
+		);
+
+		$key = $applier->countKey(policy: $action);
+		if ($counts[$key] === 0) {
+			return ['outcome' => 'failed', 'reason' => 'the disappearance policy could not be applied'];
+		}
+
+		return ['outcome' => $key];
+	}//end applyDestructionAction()
 
 	/**
 	 * Write one purge, or one refused purge, to the contract log (REQ-SDP-003).
