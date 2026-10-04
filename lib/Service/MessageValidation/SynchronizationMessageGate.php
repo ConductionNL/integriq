@@ -143,7 +143,7 @@ class SynchronizationMessageGate {
 		];
 
 		if (self::refuses(config: $config) === true) {
-			throw new MessageValidationRefusedException(self::describe(finding: $finding));
+			throw new MessageValidationRefusedException(message: self::describe(finding: $finding));
 		}
 
 		$this->logger->warning(
@@ -166,7 +166,7 @@ class SynchronizationMessageGate {
 	 */
 	public static function unavailable(array $config, string $side): MessageValidationRefusedException {
 		return new MessageValidationRefusedException(
-			'The ' . $side . ' message could not be checked against message schema '
+			message: 'The ' . $side . ' message could not be checked against message schema '
 			. (string)($config['validation']['messageSchema'] ?? '') . ': message validation is not available'
 		);
 	}//end unavailable()
