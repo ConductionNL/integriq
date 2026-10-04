@@ -46,7 +46,11 @@ vi.mock('@nextcloud/vue', async () => {
 			name: 'NcButton',
 			emits: ['click'],
 			render() {
-				return h('button', { onClick: () => this.$emit('click') }, this.$slots.default?.())
+				return h(
+					'button',
+					{ onClick: () => this.$emit('click') },
+					this.$slots.default?.(),
+				)
 			},
 		}),
 	}
@@ -55,7 +59,10 @@ vi.mock('@nextcloud/vue', async () => {
 vi.mock('@conduction/nextcloud-vue', async () => {
 	const { defineComponent, h } = await import('vue')
 	return {
-		CnFieldHelper: defineComponent({ name: 'CnFieldHelper', render: () => h('span') }),
+		CnFieldHelper: defineComponent({
+			name: 'CnFieldHelper',
+			render: () => h('span'),
+		}),
 	}
 })
 
@@ -97,14 +104,21 @@ describe('CaseSystemSourceFields', () => {
 		get.mockResolvedValue(SOURCES)
 	})
 
-	it('offers the instance\'s sources for the Zaken and the Documenten API', async () => {
+	it("offers the instance's sources for the Zaken and the Documenten API", async () => {
 		const wrapper = mountFields()
 		await flushPromises()
 
-		expect(get.mock.calls[0][0]).toContain('/apps/openregister/api/objects/integriq/source')
+		expect(get.mock.calls[0][0]).toContain(
+			'/apps/openregister/api/objects/integriq/source',
+		)
 		const selects = wrapper.findAllComponents({ name: 'NcSelect' })
-		const zaken = selects.find((s) => s.attributes('data-id') === 'cn-case-system-zaken-source')
-		expect(zaken.props('options').map((o) => o.id)).toEqual(['zaken-uuid', 'documenten-uuid'])
+		const zaken = selects.find(
+			(s) => s.attributes('data-id') === 'cn-case-system-zaken-source',
+		)
+		expect(zaken.props('options').map((o) => o.id)).toEqual([
+			'zaken-uuid',
+			'documenten-uuid',
+		])
 	})
 
 	it('writes every key under the name the backend reads, keeping the rest', async () => {
@@ -112,17 +126,35 @@ describe('CaseSystemSourceFields', () => {
 		await flushPromises()
 
 		const select = (id) =>
-			wrapper.findAllComponents({ name: 'NcSelect' }).find((s) => s.attributes('data-id') === id)
+			wrapper
+				.findAllComponents({ name: 'NcSelect' })
+				.find((s) => s.attributes('data-id') === id)
 		const text = (id) =>
-			wrapper.findAllComponents({ name: 'NcTextField' }).find((s) => s.attributes('data-id') === id)
+			wrapper
+				.findAllComponents({ name: 'NcTextField' })
+				.find((s) => s.attributes('data-id') === id)
 
-		select('cn-case-system-zaken-source').vm.$emit('update:modelValue', { id: 'zaken-uuid' })
-		select('cn-case-system-documenten-source').vm.$emit('update:modelValue', { id: 'documenten-uuid' })
-		text('cn-case-system-meeting-zaaktype').vm.$emit('update:modelValue', 'https://zgw.example/zaaktypen/1')
-		text('cn-case-system-bronorganisatie').vm.$emit('update:modelValue', '002220647')
+		select('cn-case-system-zaken-source').vm.$emit('update:modelValue', {
+			id: 'zaken-uuid',
+		})
+		select('cn-case-system-documenten-source').vm.$emit('update:modelValue', {
+			id: 'documenten-uuid',
+		})
+		text('cn-case-system-meeting-zaaktype').vm.$emit(
+			'update:modelValue',
+			'https://zgw.example/zaaktypen/1',
+		)
+		text('cn-case-system-bronorganisatie').vm.$emit(
+			'update:modelValue',
+			'002220647',
+		)
 		text('cn-case-system-auteur').vm.$emit('update:modelValue', 'Griffie')
-		select('cn-case-system-confidential-as').vm.$emit('update:modelValue', { id: 'geheim' })
-		select('cn-case-system-public-as').vm.$emit('update:modelValue', { id: 'beperkt_openbaar' })
+		select('cn-case-system-confidential-as').vm.$emit('update:modelValue', {
+			id: 'geheim',
+		})
+		select('cn-case-system-public-as').vm.$emit('update:modelValue', {
+			id: 'beperkt_openbaar',
+		})
 
 		const written = lastEmitted(wrapper)
 		expect(written).toMatchObject({
@@ -141,21 +173,39 @@ describe('CaseSystemSourceFields', () => {
 		const wrapper = mountFields()
 		const confidential = wrapper
 			.findAllComponents({ name: 'NcSelect' })
-			.find((s) => s.attributes('data-id') === 'cn-case-system-confidential-as')
-		const zaken = JSON.parse(readFileSync(join(root, 'tests/fixtures/zgw/zaken-1.5.1.schema.json'), 'utf8'))
+			.find(
+				(s) => s.attributes('data-id') === 'cn-case-system-confidential-as',
+			)
+		const zaken = JSON.parse(
+			readFileSync(
+				join(root, 'tests/fixtures/zgw/zaken-1.5.1.schema.json'),
+				'utf8',
+			),
+		)
 		const found = JSON.stringify(zaken).match(/"enum":\[("openbaar"[^\]]*)\]/)
 		const allowed = JSON.parse('[' + found[1] + ']')
-		expect(confidential.props('options').map((o) => o.id).sort()).toEqual([...allowed].sort())
+		expect(
+			confidential
+				.props('options')
+				.map((o) => o.id)
+				.sort(),
+		).toEqual([...allowed].sort())
 	})
 
 	it('writes the document type per kind as an object, and removes a row', async () => {
-		const wrapper = mountFields({ kinds: { besluitenlijst: 'https://zgw.example/iot/1' } })
+		const wrapper = mountFields({
+			kinds: { besluitenlijst: 'https://zgw.example/iot/1' },
+		})
 		await flushPromises()
 
 		await wrapper.find('[data-testid="case-system-add-kind"]').trigger('click')
 		const texts = () => wrapper.findAllComponents({ name: 'NcTextField' })
-		const kind = texts().filter((t) => t.attributes('data-id')?.startsWith('cn-case-system-kind-name-'))[1]
-		const url = texts().filter((t) => t.attributes('data-id')?.startsWith('cn-case-system-kind-url-'))[1]
+		const kind = texts().filter((t) =>
+			t.attributes('data-id')?.startsWith('cn-case-system-kind-name-'),
+		)[1]
+		const url = texts().filter((t) =>
+			t.attributes('data-id')?.startsWith('cn-case-system-kind-url-'),
+		)[1]
 		kind.vm.$emit('update:modelValue', 'agenda')
 		url.vm.$emit('update:modelValue', 'https://zgw.example/iot/2')
 
@@ -164,14 +214,20 @@ describe('CaseSystemSourceFields', () => {
 			agenda: 'https://zgw.example/iot/2',
 		})
 
-		await wrapper.findAll('[data-testid="case-system-remove-kind"]')[0].trigger('click')
-		expect(lastEmitted(wrapper).kinds).toEqual({ agenda: 'https://zgw.example/iot/2' })
+		await wrapper
+			.findAll('[data-testid="case-system-remove-kind"]')[0]
+			.trigger('click')
+		expect(lastEmitted(wrapper).kinds).toEqual({
+			agenda: 'https://zgw.example/iot/2',
+		})
 	})
 
 	it('switches mock mode as a boolean', async () => {
 		const wrapper = mountFields({})
 		await flushPromises()
-		wrapper.findComponent({ name: 'NcCheckboxRadioSwitch' }).vm.$emit('update:modelValue', true)
+		wrapper
+			.findComponent({ name: 'NcCheckboxRadioSwitch' })
+			.vm.$emit('update:modelValue', true)
 		expect(lastEmitted(wrapper).mock).toBe(true)
 	})
 
@@ -217,9 +273,16 @@ describe('SourceFormFields and the case-system type', () => {
 	})
 
 	it('shows the case-system fields only on a case-system source', async () => {
-		expect(mountEditor({ type: 'api' }).wrapper.findComponent(CaseSystemSourceFields).exists()).toBe(false)
+		expect(
+			mountEditor({ type: 'api' })
+				.wrapper.findComponent(CaseSystemSourceFields)
+				.exists(),
+		).toBe(false)
 
-		const { wrapper, updateField } = mountEditor({ type: 'case-system', configuration: { mock: true } })
+		const { wrapper, updateField } = mountEditor({
+			type: 'case-system',
+			configuration: { mock: true },
+		})
 		await flushPromises()
 		const fields = wrapper.findComponent(CaseSystemSourceFields)
 		expect(fields.exists()).toBe(true)
