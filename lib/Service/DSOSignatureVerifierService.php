@@ -25,21 +25,22 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\AppInfo\Application;
-use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
  * PKIoverheid certificate-chain / HMAC body-signature verifier for DSO STAM.
  *
- * Two signing modes, selected via admin config (`dso_pki_mode`):
+ * Two signing modes, selected by the `mode` of the trust configuration the
+ * caller passes in. Since dso-intake-through-an-integriq-connection that
+ * configuration lives on the instance's `dso-stam` consumer, not in app config:
  *   - `hmac`: shared-secret HMAC-SHA256, for the DSO-LV pre-production
  *             environment. Delegates the actual HMAC comparison to the
  *             already-hardened {@see WebhookSignatureService} (GitHub-style
  *             `sha256=<hex>` scheme) so the constant-time comparison logic is
  *             not duplicated.
- *   - `rsa`:  PKIoverheid certificate-chain + RSA-SHA256 body signature, for
+ *   - `pkioverheid` (legacy name `rsa`): PKIoverheid certificate-chain +
+ *             RSA-SHA256 body signature, for
  *             production. The signing certificate, intermediate chain, and
  *             trusted root CA are all admin-configured (never hardcoded).
  *
@@ -53,7 +54,8 @@ use RuntimeException;
 class DSOSignatureVerifierService {
 
 	/**
-	 * App-config key selecting the signing mode (`hmac` or `rsa`).
+	 * Legacy app-config key selecting the signing mode (`hmac` or `rsa`).
+	 * Read only by the MigrateDsoStamConnection repair step.
 	 *
 	 * @var string
 	 */
@@ -99,17 +101,22 @@ class DSOSignatureVerifierService {
 	 *
 	 * @var string
 	 */
+	public const MODE_PKIOVERHEID = 'pkioverheid';
+
+	/**
+	 * Legacy name of the PKIoverheid mode, as the app config stored it.
+	 *
+	 * @var string
+	 */
 	public const MODE_RSA = 'rsa';
 
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig App config for the PKI/HMAC configuration.
 	 * @param WebhookSignatureService $webhookSignatureService Shared HMAC verifier (pre-production mode).
 	 * @param LoggerInterface $logger Logger for fail-closed diagnostics.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
 		private readonly WebhookSignatureService $webhookSignatureService,
 		private readonly LoggerInterface $logger,
 	) {
@@ -121,22 +128,25 @@ class DSOSignatureVerifierService {
 	 *
 	 * @param string|null $signatureHeader The raw `X-DSO-Signature` header value.
 	 * @param string $rawBody The exact raw request body bytes.
+	 * @param array<string, mixed> $trust The trust configuration: `mode`, `hmacSecret`,
+	 *                                    `signingCertificate`, `intermediateChain`, `rootCa`.
 	 *
 	 * @return boolean True only when the signature cryptographically verifies.
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
-	public function verify(?string $signatureHeader, string $rawBody): bool {
+	public function verify(?string $signatureHeader, string $rawBody, array $trust): bool {
 		if ($signatureHeader === null || $signatureHeader === '') {
 			return false;
 		}
 
 		try {
-			if ($this->getMode() === self::MODE_RSA) {
-				return $this->verifyRsaChain(signatureHeader: $signatureHeader, rawBody: $rawBody);
+			if ($this->normalizeMode(mode: ($trust['mode'] ?? null)) === self::MODE_PKIOVERHEID) {
+				return $this->verifyRsaChain(signatureHeader: $signatureHeader, rawBody: $rawBody, trust: $trust);
 			}
 
-			return $this->verifyHmac(signatureHeader: $signatureHeader, rawBody: $rawBody);
+			return $this->verifyHmac(signatureHeader: $signatureHeader, rawBody: $rawBody, trust: $trust);
 		} catch (\Throwable $e) {
 			// Fail closed: any unexpected error (malformed PEM, filesystem
 			// failure while staging a temp CA bundle, etc.) rejects the
@@ -151,32 +161,34 @@ class DSOSignatureVerifierService {
 	}//end verify()
 
 	/**
-	 * The configured signing mode.
+	 * Normalise a stored signing mode.
 	 *
-	 * @return string {@see self::MODE_HMAC} or {@see self::MODE_RSA}. Defaults to HMAC
-	 *                (pre-production) until an admin explicitly switches to RSA.
+	 * @param mixed $mode The stored mode: `hmac`, `pkioverheid`, or the legacy `rsa`.
 	 *
-	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+	 * @return string {@see self::MODE_HMAC} or {@see self::MODE_PKIOVERHEID}. Anything
+	 *                else reads as HMAC (pre-production) until an admin switches.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
-	public function getMode(): string {
-		$mode = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_MODE, self::MODE_HMAC);
-		if ($mode === self::MODE_RSA) {
-			return self::MODE_RSA;
+	public function normalizeMode(mixed $mode): string {
+		if ($mode === self::MODE_PKIOVERHEID || $mode === self::MODE_RSA) {
+			return self::MODE_PKIOVERHEID;
 		}
 
 		return self::MODE_HMAC;
-	}//end getMode()
+	}//end normalizeMode()
 
 	/**
 	 * Verify an HMAC-SHA256 body signature (pre-production mode).
 	 *
 	 * @param string $signatureHeader The `sha256=<hex>` (or bare hex) signature header.
 	 * @param string $rawBody The raw request body.
+	 * @param array<string, mixed> $trust The trust configuration.
 	 *
 	 * @return boolean
 	 */
-	private function verifyHmac(string $signatureHeader, string $rawBody): bool {
-		$secret = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_HMAC_SECRET, '');
+	private function verifyHmac(string $signatureHeader, string $rawBody, array $trust): bool {
+		$secret = (string)($trust['hmacSecret'] ?? '');
 		if ($secret === '') {
 			return false;
 		}
@@ -198,17 +210,18 @@ class DSOSignatureVerifierService {
 	 *
 	 * @param string $signatureHeader Base64-encoded RSA signature over the raw body.
 	 * @param string $rawBody The raw request body.
+	 * @param array<string, mixed> $trust The trust configuration.
 	 *
 	 * @return boolean
 	 */
-	private function verifyRsaChain(string $signatureHeader, string $rawBody): bool {
-		$certPem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_SIGNING_CERTIFICATE, '');
-		$rootPem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_ROOT_CA, '');
+	private function verifyRsaChain(string $signatureHeader, string $rawBody, array $trust): bool {
+		$certPem = (string)($trust['signingCertificate'] ?? '');
+		$rootPem = (string)($trust['rootCa'] ?? '');
 		if ($certPem === '' || $rootPem === '') {
 			return false;
 		}
 
-		$intermediatePem = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_INTERMEDIATE_CHAIN, '');
+		$intermediatePem = (string)($trust['intermediateChain'] ?? '');
 
 		$decodedSignature = base64_decode($signatureHeader, true);
 		if ($decodedSignature === false || $decodedSignature === '') {

@@ -329,4 +329,35 @@ class ObjectService {
 	public function unlockObject(string|int $identifier): bool {
 		return true;
 	}
+
+	/**
+	 * The user session runAs() swaps. OpenRegister's real class takes it in
+	 * its constructor (`private readonly IUserSession $userSession`); a test
+	 * sets it by reflection under the same name, so the same test runs
+	 * against this stub and against the real class.
+	 *
+	 * @var \OCP\IUserSession|null
+	 */
+	private $userSession = null;
+
+	/**
+	 * Run a callable as a named user. Copied from openregister development
+	 * dd67a6a044 (`ObjectService::runAs()`), so a caller is tested against the
+	 * real scoping: setVolatileActiveUser(), restored in a finally.
+	 *
+	 * @param \OCP\IUser $user      The user to act as.
+	 * @param callable    $operation The operation.
+	 *
+	 * @return mixed Whatever the callable returns.
+	 */
+	public function runAs(\OCP\IUser $user, callable $operation) {
+		$previousUser = $this->userSession->getUser();
+		$this->userSession->setVolatileActiveUser($user);
+
+		try {
+			return $operation();
+		} finally {
+			$this->userSession->setVolatileActiveUser($previousUser);
+		}
+	}
 }
