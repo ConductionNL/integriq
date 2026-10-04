@@ -44,8 +44,11 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
 - **acceptance_criteria**:
   - GIVEN a tool with no redirect URIs WHEN a launch uses its `launchUrl` THEN it is accepted
   - GIVEN the tool's detail view WHEN an administrator opens it THEN the six values show with copy actions
-- [ ] Implement
-  - Half built: `LtiPlatformLoginService::isRegisteredRedirectUri()` reads `redirectUris` when present and otherwise allows only the `launchUrl` (`testToolWithoutRedirectUrisMayOnlyUseItsLaunchUrl`). Open: `lti_tool` is still 1.2.0 with no `redirectUris` property, so a value an administrator sets is not part of the schema; and the detail view with the six platform values and copy actions does not exist.
+- [x] Implement
+  - `LtiPlatformLoginService::isRegisteredRedirectUri()` reads `redirectUris` when present and otherwise allows only the `launchUrl` (`testToolWithoutRedirectUrisMayOnlyUseItsLaunchUrl`).
+  - `lti_tool` 1.3.0 declares `redirectUris` (array of strings, default empty) in `integriq_register.json` and `integriq_mock_register.json`. No `format` on the items: adding a format is a tightening OpenRegister refuses on re-import.
+  - The six values come from `LtiPlatformDetailsService::forTool()` behind `GET /api/lti/tools/{id}/platform-details` (`LtiPlatformDetailsController`, admin only). Every URL is generated from a route name of this app; the issuer is computed as `LtiPlatformLoginService::platformIssuer()` computes it, and a test pins the two equal. The tool is read without the approval gate, because an administrator needs the values to register at the vendor before approving.
+  - There was no page for `lti_tool` at all. `src/manifest.d/lti-tools.json` adds a read-only index (Gateway > LTI tools) and a detail page with the `LtiPlatformDetails` panel: six rows, each with a copy action. Read-only on purpose: `signingKeys` holds writeOnly key material OpenRegister strips from reads, so a generic edit form would save the registration back without its keys.
 - [ ] Test (`tests/validate-register.js`; `tests/e2e/lti-platform-launch.spec.ts`)
 
 ### Task 5: Hand learniq its half
