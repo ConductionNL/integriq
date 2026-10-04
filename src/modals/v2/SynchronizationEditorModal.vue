@@ -207,6 +207,31 @@
 										option?.id || 'delete',
 									)
 							" />
+						<NcSelect
+							inputId="cn-sync-editor-source-destroyed"
+							:inputLabel="
+								t(
+									'integriq',
+									'When the source says it destroyed a record',
+								)
+							"
+							:modelValue="selectedSourceDestroyed"
+							:options="sourceDestroyedOptions"
+							:clearable="false"
+							:disabled="saving"
+							data-testid="sync-editor-source-destroyed"
+							@update:modelValue="onSourceDestroyedChange" />
+						<NcNoteCard
+							v-if="purgeSelected"
+							type="warning"
+							data-testid="sync-editor-purge-warning">
+							{{
+								t(
+									'integriq',
+									'A purge deletes the record and its files permanently. Purged files cannot be restored.',
+								)
+							}}
+						</NcNoteCard>
 					</div>
 				</section>
 
@@ -471,6 +496,8 @@ import {
 	disappearancePolicyError,
 	disappearancePolicyOptions,
 	ownershipModeOptions,
+	purges,
+	sourceDestroyedOptions,
 } from '../../views/Synchronization/ownershipOptions.js'
 import {
 	CURSOR_COMPARATOR_OPTIONS,
@@ -768,6 +795,43 @@ export default {
 			)
 		},
 
+		/**
+		 * What a destruction notice does (REQ-SDP-002).
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+		 */
+		sourceDestroyedOptions() {
+			return sourceDestroyedOptions()
+		},
+
+		/**
+		 * The declared destruction notice choice, the policy when none is declared.
+		 *
+		 * @return {{id: string, label: string}}
+		 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+		 */
+		selectedSourceDestroyed() {
+			const options = this.sourceDestroyedOptions
+			const current = this.draft?.sourceConfig?.onSourceDestroyed || ''
+			return (
+				options.find((opt) => opt.id === current) || {
+					id: current,
+					label: String(current),
+				}
+			)
+		},
+
+		/**
+		 * Whether this synchronization purges, so the form can say a purge is final.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-synchronization-can-purge-a-vanished-record-and-its-files-req-sdp-001
+		 */
+		purgeSelected() {
+			return purges(this.draft?.sourceConfig)
+		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		rootConditionGroup() {
 			return normaliseConditions(this.draft?.conditions)
@@ -860,6 +924,22 @@ export default {
 				...(this.draft.sourceConfig || {}),
 				[key]: value,
 			})
+		},
+
+		/**
+		 * Write the destruction notice choice; the default leaves the key out.
+		 *
+		 * @param {?object} option the picked option
+		 *
+		 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+		 */
+		onSourceDestroyedChange(option) {
+			const rest = { ...(this.draft.sourceConfig || {}) }
+			delete rest.onSourceDestroyed
+			if (option?.id) {
+				rest.onSourceDestroyed = option.id
+			}
+			this.updateDraft('sourceConfig', rest)
 		},
 
 		/**
