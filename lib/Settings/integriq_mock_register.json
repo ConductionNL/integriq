@@ -4414,7 +4414,7 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
         "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
         "required": [
@@ -4500,6 +4500,64 @@
             "format": "date-time",
             "description": "ISO 8601 timestamp this verzoek was received on the STAM koppelvlak",
             "title": "Received At"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.",
+            "title": "Attachments",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "url",
+                "status"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The file name from the verzoek",
+                  "title": "Name"
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Where DSO-LV serves the file",
+                  "title": "URL"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "stored",
+                    "failed",
+                    "too-large"
+                  ],
+                  "description": "Pending until the download job has run. Then stored, failed or too-large.",
+                  "title": "Status"
+                },
+                "fileId": {
+                  "type": "integer",
+                  "description": "The Nextcloud file id, once stored",
+                  "title": "File ID"
+                },
+                "attempts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "How many downloads were tried",
+                  "title": "Attempts"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "The last error, once failed or too-large",
+                  "title": "Error"
+                }
+              }
+            }
+          },
+          "attachmentMissing": {
+            "type": "boolean",
+            "description": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
+            "title": "Attachment missing"
           }
         },
         "x-openregister-handoff": [

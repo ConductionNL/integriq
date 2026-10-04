@@ -194,7 +194,7 @@ class DSOParserService {
 			'locatie' => $this->parseLocation(location: ($payload['locatie'] ?? [])),
 			'activiteiten' => $this->parseActiviteiten(activiteiten: ($payload['activiteiten'] ?? [])),
 			'bouwkosten' => $bouwkosten,
-			'bijlagen' => ($payload['bijlagen'] ?? []),
+			'bijlagen' => $this->parseAttachments(attachments: ($payload['bijlagen'] ?? [])),
 			'status' => 'ontvangen',
 			'environment' => ($payload['environment'] ?? 'productie'),
 			'stamApiVersion' => ($payload['stamApiVersion'] ?? null),
@@ -355,6 +355,47 @@ class DSOParserService {
 
 		return $parsed;
 	}//end parseActiviteiten()
+
+	/**
+	 * Parse the bijlagen references into a fixed `{name, url}` shape.
+	 *
+	 * The STAM payload names a bijlage with `naam` and serves it at `url`. When
+	 * `naam` is absent the last segment of the URL path is the name. An entry
+	 * without a URL is kept with an empty `url`, so the download job records it
+	 * as failed instead of losing it.
+	 *
+	 * @param mixed $attachments The raw bijlagen data.
+	 *
+	 * @return array<int, array{name: string, url: string}> The parsed references.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/tasks.md#task-1.2
+	 */
+	private function parseAttachments(mixed $attachments): array {
+		if (is_array($attachments) === false) {
+			return [];
+		}
+
+		$parsed = [];
+		foreach (array_values($attachments) as $index => $attachment) {
+			if (is_array($attachment) === false) {
+				continue;
+			}
+
+			$url = trim((string)($attachment['url'] ?? ''));
+			$name = trim((string)($attachment['naam'] ?? ''));
+			if ($name === '' && $url !== '') {
+				$name = basename((string)parse_url($url, PHP_URL_PATH));
+			}
+
+			if ($name === '' || $name === '.' || $name === '/') {
+				$name = 'bijlage-' . ($index + 1);
+			}
+
+			$parsed[] = ['name' => $name, 'url' => $url];
+		}
+
+		return $parsed;
+	}//end parseAttachments()
 
 	/**
 	 * Convert a GML geometry string to GeoJSON.

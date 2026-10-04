@@ -1702,7 +1702,18 @@ OC.L10N.register(
         "Validation findings": "Validatiebevindingen",
         "What did not match a message schema while this call was let through in record mode": "Wat niet aan een berichtschema voldeed toen deze aanroep in vastlegmodus werd doorgelaten",
         "Record": "Vastleggen",
-        "Refuse": "Weigeren"
+        "Refuse": "Weigeren",
+        "Attachments": "Bijlagen",
+        "Attachment missing": "Bijlage ontbreekt",
+        "File ID": "Bestands-ID",
+        "How many downloads were tried": "Hoe vaak de download is geprobeerd",
+        "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.": "De bijlagen van dit verzoek, één regel per bijlage. Een achtergrondtaak downloadt ze en koppelt ze hier als bestanden.",
+        "The Nextcloud file id, once stored": "Het Nextcloud-bestands-ID, zodra het bestand is opgeslagen",
+        "The file name from the verzoek": "De bestandsnaam uit het verzoek",
+        "The last error, once failed or too-large": "De laatste fout, bij mislukt of te groot",
+        "True when a bijlage is failed or too-large. Handle that bijlage by hand.": "Waar als een bijlage mislukt of te groot is. Verwerk die bijlage dan met de hand.",
+        "Where DSO-LV serves the file": "Waar DSO-LV het bestand aanbiedt",
+        "Pending until the download job has run. Then stored, failed or too-large.": "In afwachting tot de downloadtaak heeft gedraaid. Daarna opgeslagen, mislukt of te groot."
     },
     "nplurals=2; plural=(n != 1);"
 )

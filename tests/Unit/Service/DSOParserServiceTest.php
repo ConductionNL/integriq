@@ -234,4 +234,38 @@ class DSOParserServiceTest extends TestCase {
 
 	}//end testParseLocatieConvertsGMLPoint()
 
+	/**
+	 * The bijlagen references come out as a fixed `{name, url}` shape: `naam`
+	 * is the name, the URL path is the fallback, and an entry without a URL
+	 * is kept so the download job can record it as failed.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/tasks.md#task-1.2
+	 *
+	 * @return void
+	 */
+	public function testParseRequestReturnsAttachmentsAsNameAndUrl(): void {
+		$payload = [
+			'verzoekId' => 'dso-12345',
+			'type' => 'aanvraag',
+			'bijlagen' => [
+				['naam' => 'bouwtekening.pdf', 'type' => 'tekening', 'url' => 'https://dso-lv.nl/docs/abc123'],
+				['type' => 'rapport', 'url' => 'https://dso-lv.nl/docs/constructie.pdf?v=2'],
+				['naam' => 'zonder-url.pdf'],
+				'not-an-entry',
+			],
+		];
+
+		$request = $this->parser->parseRequest($payload);
+
+		$this->assertSame(
+			[
+				['name' => 'bouwtekening.pdf', 'url' => 'https://dso-lv.nl/docs/abc123'],
+				['name' => 'constructie.pdf', 'url' => 'https://dso-lv.nl/docs/constructie.pdf?v=2'],
+				['name' => 'zonder-url.pdf', 'url' => ''],
+			],
+			$request['bijlagen']
+		);
+
+	}//end testParseRequestReturnsAttachmentsAsNameAndUrl()
+
 }//end class

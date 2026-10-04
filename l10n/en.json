@@ -3045,7 +3045,17 @@
         "Validation findings": "Validation findings",
         "What did not match a message schema while this call was let through in record mode": "What did not match a message schema while this call was let through in record mode",
         "Record": "Record",
-        "Refuse": "Refuse"
+        "Refuse": "Refuse",
+        "Attachment missing": "Attachment missing",
+        "File ID": "File ID",
+        "How many downloads were tried": "How many downloads were tried",
+        "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.": "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.",
+        "The Nextcloud file id, once stored": "The Nextcloud file id, once stored",
+        "The file name from the verzoek": "The file name from the verzoek",
+        "The last error, once failed or too-large": "The last error, once failed or too-large",
+        "True when a bijlage is failed or too-large. Handle that bijlage by hand.": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
+        "Where DSO-LV serves the file": "Where DSO-LV serves the file",
+        "Pending until the download job has run. Then stored, failed or too-large.": "Pending until the download job has run. Then stored, failed or too-large."
     },
     "plurals": {}
 }
