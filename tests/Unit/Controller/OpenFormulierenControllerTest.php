@@ -21,10 +21,14 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\OpenFormulierenController;
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
+use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -50,8 +54,8 @@ class OpenFormulierenControllerTest extends TestCase {
 	/** @var OpenFormulierenIntakeService|\PHPUnit\Framework\MockObject\MockObject */
 	private $intakeService;
 
-	/** @var WebhookSignatureService|\PHPUnit\Framework\MockObject\MockObject */
-	private $signatureService;
+	/** @var OpenFormulierenConnection|\PHPUnit\Framework\MockObject\MockObject */
+	private $connection;
 
 	/** @var IUserSession|\PHPUnit\Framework\MockObject\MockObject */
 	private $userSession;
@@ -72,7 +76,7 @@ class OpenFormulierenControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->intakeService = $this->createMock(OpenFormulierenIntakeService::class);
-		$this->signatureService = $this->createMock(WebhookSignatureService::class);
+		$this->connection = $this->createMock(OpenFormulierenConnection::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 		$this->l = $this->createMock(IL10N::class);
@@ -91,7 +95,8 @@ class OpenFormulierenControllerTest extends TestCase {
 			'integriq',
 			$this->request,
 			$this->intakeService,
-			$this->signatureService,
+			$this->connection,
+			$this->createMock(DsoConnectionAlerts::class),
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
@@ -101,29 +106,32 @@ class OpenFormulierenControllerTest extends TestCase {
 	}//end buildController()
 
 	/**
-	 * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#scenario-no-active-source-configured-fails-closed
+	 * No usable Open Formulieren connection answers 503 before any state change.
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#scenario-no-active-source-configured-fails-closed
 	 */
-	public function testInboundWithNoSourceConfiguredReturns401(): void {
-		$this->intakeService->method('resolveActiveSource')->willThrowException(
-			new OpenFormulierenException('no source')
+	public function testInboundWithNoConnectionReturns503(): void {
+		$this->connection->method('authenticate')->willThrowException(
+			new DsoConnectionUnavailableException(
+				reason: DsoConnectionUnavailableException::NO_CONNECTION,
+				message: 'none',
+				channel: DsoConnectionUnavailableException::CHANNEL_OPEN_FORMULIEREN
+			)
 		);
 		$this->intakeService->expects($this->never())->method('ingest');
 
 		$response = $this->controller->inbound();
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame('openformulieren_connection_not_configured', $response->getData()['error']);
 
-	}//end testInboundWithNoSourceConfiguredReturns401()
+	}//end testInboundWithNoConnectionReturns503()
 
 	/**
 	 * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#scenario-invalid-signature-is-rejected
 	 */
 	public function testInboundInvalidSignatureReturns401BeforeAnySideEffect(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->intakeService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(false);
-
+		$this->connection->method('authenticate')->willThrowException(new DsoSignatureException('bad'));
 		$this->intakeService->expects($this->never())->method('ingest');
 
 		$response = $this->controller->inbound();
@@ -134,31 +142,14 @@ class OpenFormulierenControllerTest extends TestCase {
 	}//end testInboundInvalidSignatureReturns401BeforeAnySideEffect()
 
 	/**
-	 * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#scenario-missing-signature-is-rejected
-	 */
-	public function testInboundMissingSignatureReturns401(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->intakeService->method('resolveActiveSource')->willReturn($source);
-		$this->request->method('getHeader')->willReturn('');
-		$this->signatureService->method('verify')->willReturn(false);
-
-		$this->intakeService->expects($this->never())->method('ingest');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-
-	}//end testInboundMissingSignatureReturns401()
-
-	/**
 	 * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#scenario-valid-signature-is-accepted
 	 */
-	public function testInboundValidSignatureIngestsSubmission(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->intakeService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
+	public function testInboundValidSignatureIngestsSubmissionAsTheConnectionAccount(): void {
+		$identity = $this->identity();
+		$this->connection->method('authenticate')->willReturn($identity);
+		$this->connection->expects($this->once())->method('runAs')
+			->with($identity->account, $this->isType('callable'))
+			->willReturnCallback(static fn ($account, callable $operation): mixed => $operation());
 		$this->request->method('getParams')->willReturn(
 			[
 				'form' => ['slug' => 'vergunning-aanvraag', 'uuid' => 'form-uuid-1'],
@@ -173,7 +164,7 @@ class OpenFormulierenControllerTest extends TestCase {
 
 		$this->intakeService->expects($this->once())
 			->method('ingest')
-			->with('vergunning-aanvraag', 'form-uuid-1', ['uuid' => 'of-sub-1'], ['aanvraagType' => 'kapvergunning'], [], null)
+			->with('vergunning-aanvraag', 'form-uuid-1', ['uuid' => 'of-sub-1'], ['aanvraagType' => 'kapvergunning'], [], null, $identity)
 			->willReturn($submission);
 
 		$response = $this->controller->inbound();
@@ -181,13 +172,10 @@ class OpenFormulierenControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame('sub-1', $response->getData()['id']);
 
-	}//end testInboundValidSignatureIngestsSubmission()
+	}//end testInboundValidSignatureIngestsSubmissionAsTheConnectionAccount()
 
 	public function testInboundMissingFormSlugReturns400(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->intakeService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
+		$this->connection->method('authenticate')->willReturn($this->identity());
 		$this->request->method('getParams')->willReturn(['values' => []]);
 
 		$this->intakeService->expects($this->never())->method('ingest');
@@ -197,6 +185,19 @@ class OpenFormulierenControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
 	}//end testInboundMissingFormSlugReturns400()
+
+	/**
+	 * An identity for the Open Formulieren connection account.
+	 *
+	 * @return DsoIdentity The identity.
+	 */
+	private function identity(): DsoIdentity {
+		$account = $this->createMock(IUser::class);
+		$account->method('getUID')->willReturn('of-intake');
+
+		return new DsoIdentity(account: $account, consumerUuid: 'consumer-of');
+
+	}//end identity()
 
 	public function testStatusRequiresAuthentication(): void {
 		$this->userSession = $this->createMock(IUserSession::class);

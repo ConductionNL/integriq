@@ -34,6 +34,7 @@ use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Service\Intake\IntakeGroups;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -50,6 +51,10 @@ use Throwable;
  * Admin-only controller for the DSO connection (`dso-stam` consumer).
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the connection, its signature or group helpers, the
+ * admin check, l10n, logger and the HTTP and OpenRegister types it answers with; splitting would
+ * spread one admin form over several classes.
  */
 class DsoPkiSettingsController extends Controller {
 	/**
@@ -59,6 +64,7 @@ class DsoPkiSettingsController extends Controller {
 	 * @param DsoConnection               $connection        Finds, checks and saves the consumer.
 	 * @param DSOSignatureVerifierService $signatureVerifier Chain-validation helper.
 	 * @param IGroupManager               $groupManager      Tells an administrator account apart.
+	 * @param IntakeGroups                $groups            Puts the chosen account in the dso-intake group.
 	 * @param IL10N                       $l                 Field errors and warnings.
 	 * @param LoggerInterface             $logger            Diagnostics.
 	 *
@@ -69,6 +75,7 @@ class DsoPkiSettingsController extends Controller {
 		private readonly DsoConnection $connection,
 		private readonly DSOSignatureVerifierService $signatureVerifier,
 		private readonly IGroupManager $groupManager,
+		private readonly IntakeGroups $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -166,6 +173,8 @@ class DsoPkiSettingsController extends Controller {
 			);
 		}
 
+		$this->withdrawPrevious(consumer: $consumer, userId: $userId);
+
 		return new JSONResponse(
 			[
 				'mode' => $mode,
@@ -262,6 +271,24 @@ class DsoPkiSettingsController extends Controller {
 	}//end ambiguous()
 
 	/**
+	 * Take the account the connection used before out of the intake group.
+	 *
+	 * @param ObjectEntity|null $consumer The consumer as it was before the save.
+	 * @param string            $userId   The account it has now, or ''.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/dso-omgevingsloket/spec.md#requirement-verzoeken-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-dso-072
+	 */
+	private function withdrawPrevious(?ObjectEntity $consumer, string $userId): void {
+		$previous = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
+		if ($previous !== '' && $previous !== $userId) {
+			$this->groups->withdraw(groupId: IntakeGroups::DSO_INTAKE, userId: $previous);
+		}
+
+	}//end withdrawPrevious()
+
+	/**
 	 * The field error for an account, or null when it may be saved.
 	 *
 	 * @param string       $userId   The chosen uid.
@@ -282,7 +309,17 @@ class DsoPkiSettingsController extends Controller {
 			return $this->l->t('Account %s does not exist.', [$userId]);
 		}
 
+		// The authorization block grants the intake group, so the chosen
+		// account joins it before its rights are checked. It leaves again when
+		// the check still refuses it and it was not a member before.
+		$wasMember = $this->groups->isMember(groupId: IntakeGroups::DSO_INTAKE, userId: $userId);
+		$this->groups->enrol(groupId: IntakeGroups::DSO_INTAKE, userId: $userId);
+
 		$missing = $this->connection->missingRights(userId: $userId);
+		if ($missing !== null && $missing !== [] && $wasMember === false) {
+			$this->groups->withdraw(groupId: IntakeGroups::DSO_INTAKE, userId: $userId);
+		}
+
 		if ($missing === null) {
 			$warnings[] = $this->l->t('The rights of account %s could not be checked. Pushes are refused until they can be.', [$userId]);
 		} elseif ($missing !== []) {

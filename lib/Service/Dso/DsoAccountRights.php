@@ -65,40 +65,45 @@ class DsoAccountRights {
 	}//end __construct()
 
 	/**
-	 * The rights the account lacks on `dso_verzoek`.
+	 * The rights the account lacks on a schema, `dso_verzoek` by default.
+	 *
+	 * The Open Formulieren intake asks the same question about
+	 * `openformulieren_submission`, so the schema is a parameter.
 	 *
 	 * @param string       $userId  The uid to check.
 	 * @param list<string> $actions The actions needed.
+	 * @param string       $schema  The schema slug the account writes.
 	 *
 	 * @return list<string>|null The missing actions (empty when all are held), or null
 	 *                           when OpenRegister cannot answer the question.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
-	public function missing(string $userId, array $actions): ?array {
+	public function missing(string $userId, array $actions, string $schema = DsoConnection::SCHEMA_VERZOEK): ?array {
 		$handler = $this->resolvePermissionHandler();
 		if ($handler === null) {
 			return null;
 		}
 
 		try {
-			$schema = $this->schemaMapper->find(DsoConnection::SCHEMA_VERZOEK, [], false, false);
+			$schemaEntity = $this->schemaMapper->find($schema, [], false, false);
 		} catch (Throwable $exception) {
 			$this->logger->error(
-				'[DsoAccountRights] the dso_verzoek schema could not be resolved for the rights check',
-				['exception' => $exception->getMessage()]
+				'[DsoAccountRights] the schema could not be resolved for the rights check',
+				['schema' => $schema, 'exception' => $exception->getMessage()]
 			);
 			return null;
 		}
 
-		if ($schema === null) {
+		if ($schemaEntity === null) {
 			return null;
 		}
 
 		$missing = [];
 		foreach ($actions as $action) {
 			try {
-				$granted = $handler->hasPermission(schema: $schema, action: $action, userId: $userId);
+				$granted = $handler->hasPermission(schema: $schemaEntity, action: $action, userId: $userId);
 			} catch (Throwable $exception) {
 				$this->logger->error(
 					'[DsoAccountRights] the rights check raised an exception; treating the rights as unverifiable',

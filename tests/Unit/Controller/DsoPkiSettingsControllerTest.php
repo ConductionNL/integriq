@@ -89,6 +89,7 @@ class DsoPkiSettingsControllerTest extends TestCase {
 			connection: $this->buildWorldConnection(objectService: $objectService),
 			signatureVerifier: new DSOSignatureVerifierService(new WebhookSignatureService($logger), $logger),
 			groupManager: $groupManager,
+			groups: $this->buildWorldIntakeGroups(),
 			l: $l,
 			logger: $logger
 		);
@@ -214,4 +215,64 @@ class DsoPkiSettingsControllerTest extends TestCase {
 		$this->assertStringContainsString('administrator', $response->getData()['warnings'][0]);
 
 	}//end testAnAdministratorAccountSavesWithAWarning()
+	/**
+	 * An account without rights of its own joins dso-intake and saves: the
+	 * authorization block grants that group create and update.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/dso-omgevingsloket/spec.md#scenario-the-chosen-intake-account-joins-the-intake-group
+	 */
+	public function testAChosenAccountJoinsTheIntakeGroup(): void {
+		$this->worldGroupGrants = ['dso-intake' => ['create', 'update']];
+		$this->addAccount(uid: 'fresh', grants: []);
+		$this->params = ['mode' => 'hmac', 'hmacSecret' => 's'] + ['userId' => 'fresh'];
+
+		$response = $this->controller()->setConfig();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['fresh'], $this->worldGroupMembers['dso-intake']);
+		$this->assertSame('fresh', array_values($this->worldConsumers)[0]['userId']);
+
+	}//end testAChosenAccountJoinsTheIntakeGroup()
+
+	/**
+	 * A refused account is not left behind in dso-intake.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/dso-omgevingsloket/spec.md#scenario-the-chosen-intake-account-joins-the-intake-group
+	 */
+	public function testARefusedAccountDoesNotStayInTheIntakeGroup(): void {
+		$this->addAccount(uid: 'reader', grants: ['read']);
+		$this->params = ['mode' => 'hmac', 'hmacSecret' => 's'] + ['userId' => 'reader'];
+
+		$response = $this->controller()->setConfig();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame([], ($this->worldGroupMembers['dso-intake'] ?? []));
+
+	}//end testARefusedAccountDoesNotStayInTheIntakeGroup()
+
+	/**
+	 * Choosing another account takes the previous one out of dso-intake.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/dso-omgevingsloket/spec.md#scenario-the-chosen-intake-account-joins-the-intake-group
+	 */
+	public function testThePreviousAccountLeavesTheIntakeGroup(): void {
+		$this->worldGroupGrants = ['dso-intake' => ['create', 'update']];
+		$this->addAccount(uid: 'old', grants: []);
+		$this->addAccount(uid: 'new', grants: []);
+		$this->worldGroupMembers = ['dso-intake' => ['old']];
+		$this->addDsoConsumer(userId: 'old');
+		$this->params = ['mode' => 'hmac', 'hmacSecret' => 's'] + ['userId' => 'new'];
+
+		$response = $this->controller()->setConfig();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['new'], $this->worldGroupMembers['dso-intake']);
+
+	}//end testThePreviousAccountLeavesTheIntakeGroup()
 }//end class
