@@ -16,10 +16,9 @@
  * that swallows the write — the test would then pass while asserting nothing,
  * which is worse than the error it replaces.
  *
- * `isActive()` returns false. The real one answers "are we inside a system
- * operation", and outside a `run()` call that answer is false; no integriq
- * unit test asserts the true case, and returning true unconditionally would let
- * a test claim suppression that never happened.
+ * `isActive()` answers "are we inside a `run()` call", as the real one does:
+ * a depth counter, raised for the duration of the operation and lowered in a
+ * `finally`. MigrateDsoStamConnectionTest asserts the write ran inside it.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Stubs
@@ -36,6 +35,13 @@ namespace OCA\OpenRegister\Service;
 class SystemOperationContext {
 
 	/**
+	 * How many run() calls are on the stack.
+	 *
+	 * @var int
+	 */
+	private static int $depth = 0;
+
+	/**
 	 * Run an operation inside a system-operation context.
 	 *
 	 * @param callable $operation The operation to run.
@@ -43,7 +49,12 @@ class SystemOperationContext {
 	 * @return mixed Whatever the operation returns.
 	 */
 	public static function run(callable $operation) {
-		return $operation();
+		self::$depth++;
+		try {
+			return $operation();
+		} finally {
+			self::$depth--;
+		}
 	}
 
 	/**
@@ -52,6 +63,6 @@ class SystemOperationContext {
 	 * @return bool Always false in the stub; see the file docblock.
 	 */
 	public static function isActive(): bool {
-		return false;
+		return self::$depth > 0;
 	}
 }

@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.8-unstable.20260930170001</version>
+	<version>0.4.8-unstable.20261004210001</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -350,6 +350,10 @@
 			<!-- identity-broker-browser-login: the disabled portaliq consumer,
 			     so enabling it is one occ command. Never overwrites an entry. -->
 			<step>OCA\Integriq\Repair\SeedIdpBrokerConsumers</step>
+			<!-- dso-intake-through-an-integriq-connection: the dso_pki_* app config
+			     becomes the one dso-stam consumer, with an empty account. Runs after
+			     the register import, so the consumer schema exists. Idempotent. -->
+			<step>OCA\Integriq\Repair\MigrateDsoStamConnection</step>
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes
