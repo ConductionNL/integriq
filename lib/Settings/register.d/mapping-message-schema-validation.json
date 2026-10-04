@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (mapping-message-schema-validation). Declares `message_schema`: the schema a message must match, stored once and referenced by uuid from an endpoint or a synchronization, so a partner's new version is one edit (design D1). `kind` picks the checker in lib/Service/MessageValidationService.php; a `register-schema` kind carries no document and references a register schema instead. MessageSchemaDocumentListener refuses a save whose document does not parse for its kind. Admin-only on every verb: which schema a partner's message must match is integration trust config. Seeds two examples that describe the same person, one as JSON Schema and one as XSD; no seeded endpoint or synchronization references them, so nothing changes behaviour on upgrade. Does NOT edit lib/Settings/integriq_register.json.",
+  "$comment": "ADR-037 register fragment (mapping-message-schema-validation). Declares `message_schema`: the schema a message must match, stored once and referenced by uuid from an endpoint or a synchronization, so a partner's new version is one edit (design D1). `kind` picks the checker in lib/Service/MessageValidationService.php; a `register-schema` kind carries no document and references a register schema instead. MessageSchemaDocumentListener refuses a save whose document does not parse for its kind. Admin-only on every verb: which schema a partner's message must match is integration trust config. Seeds two examples that describe the same person, one as JSON Schema and one as XSD; no seeded endpoint or synchronization references them, so nothing changes behaviour on upgrade. Does NOT edit lib/Settings/integriq_register.json. It also merges a `validation` object onto `endpoint` (mode, request and response message schema, design 'Where it fits') and a `validation` list onto `call_log`, where record mode writes what it let through.",
   "components": {
     "registers": {
       "integriq": {
@@ -74,6 +74,73 @@
             "type": "string",
             "title": "Version",
             "description": "The partner's version of this schema. Change it when the partner publishes a new one"
+          }
+        }
+      },
+      "endpoint": {
+        "properties": {
+          "validation": {
+            "type": "object",
+            "title": "Message validation",
+            "description": "Check the request and the proxied answer against a message schema. Record writes the errors to the call log. Refuse answers 400 or 502",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "title": "Mode",
+                "enum": [
+                  "record",
+                  "refuse"
+                ],
+                "default": "record",
+                "description": "Record lets the message through and logs the errors. Refuse stops it"
+              },
+              "request": {
+                "type": "object",
+                "properties": {
+                  "messageSchema": {
+                    "type": "string",
+                    "title": "Message schema",
+                    "description": "The uuid of the message schema the message must match"
+                  },
+                  "operationId": {
+                    "type": "string",
+                    "title": "Operation",
+                    "description": "For an OpenAPI message schema: the operation to check against. Empty means the request's method and path"
+                  }
+                },
+                "title": "Request schema",
+                "description": "The schema the request body must match"
+              },
+              "response": {
+                "type": "object",
+                "properties": {
+                  "messageSchema": {
+                    "type": "string",
+                    "title": "Message schema",
+                    "description": "The uuid of the message schema the message must match"
+                  },
+                  "operationId": {
+                    "type": "string",
+                    "title": "Operation",
+                    "description": "For an OpenAPI message schema: the operation to check against. Empty means the request's method and path"
+                  }
+                },
+                "title": "Answer schema",
+                "description": "The schema the source's answer must match"
+              }
+            }
+          }
+        }
+      },
+      "call_log": {
+        "properties": {
+          "validation": {
+            "type": "array",
+            "title": "Validation findings",
+            "description": "What did not match a message schema while this call was let through in record mode",
+            "items": {
+              "type": "object"
+            }
           }
         }
       }

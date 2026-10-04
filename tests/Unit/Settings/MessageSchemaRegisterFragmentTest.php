@@ -203,6 +203,37 @@ class MessageSchemaRegisterFragmentTest extends TestCase {
 	}//end testTheSeedsCheckTheSamePersonWithTheRealCheckers()
 
 	/**
+	 * An endpoint declares its validation, and a call log keeps what record mode let through.
+	 *
+	 * @return void
+	 */
+	public function testEndpointAndCallLogCarryTheValidationTheRuntimeReads(): void {
+		$schemas = self::mergedRegister()['components']['schemas'];
+
+		$validation = $schemas['endpoint']['properties']['validation'];
+		$this->assertSame('endpoint', $schemas['endpoint']['slug']);
+		$this->assertSame(['record', 'refuse'], $validation['properties']['mode']['enum']);
+		$this->assertSame('record', $validation['properties']['mode']['default']);
+		foreach (['request', 'response'] as $direction) {
+			$this->assertSame(
+				['messageSchema', 'operationId'],
+				array_keys($validation['properties'][$direction]['properties']),
+				$direction
+			);
+		}
+
+		$this->assertSame('call_log', $schemas['call_log']['slug']);
+		$this->assertSame('array', $schemas['call_log']['properties']['validation']['type']);
+
+		// The block the endpoint runtime reads passes the merged endpoint schema.
+		$result = (new Validator())->validate(
+			json_decode('{"mode":"refuse","request":{"messageSchema":"b7f1c2d3-4e5f-4a6b-8c7d-9e0f1a2b3c4d"},"response":{"messageSchema":"b7f1c2d3-4e5f-4a6b-8c7d-9e0f1a2b3c4d","operationId":"getPersoon"}}'),
+			json_encode($validation, JSON_THROW_ON_ERROR)
+		);
+		$this->assertTrue($result->isValid());
+	}//end testEndpointAndCallLogCarryTheValidationTheRuntimeReads()
+
+	/**
 	 * The demo register carries three message schemas (ADR-111 rule 1), each valid and parseable.
 	 *
 	 * @return void

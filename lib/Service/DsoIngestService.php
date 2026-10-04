@@ -45,6 +45,7 @@ use DateTime;
 use OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
+use OCA\Integriq\Service\Dso\DsoActivityMapper;
 use OCA\Integriq\Service\Dso\DsoClient;
 use OCA\Integriq\Service\Dso\DsoConnectorProviderInterface;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
@@ -129,6 +130,7 @@ class DsoIngestService {
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
 	 * @param IJobList $jobList Queues the bijlage download after intake.
+	 * @param DsoActivityMapper $activityMapper Maps the activiteiten to zaaktypen (REQ-DSO-010).
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -139,6 +141,7 @@ class DsoIngestService {
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
 		private readonly IJobList $jobList,
+		private readonly DsoActivityMapper $activityMapper,
 	) {
 
 	}//end __construct()
@@ -205,6 +208,10 @@ class DsoIngestService {
 		$data['mappedChannel'] = $mapped['mappedChannel'];
 		$data['mappedPriority'] = $mapped['mappedPriority'];
 		$data['requester'] = $mapped['requester'];
+		$data = array_merge(
+			$data,
+			$this->activityMapper->mapRequest(activiteiten: (array)($parsedRequest['activiteiten'] ?? []))
+		);
 		$data['status'] = 'mapped';
 
 		return $this->enqueueAttachmentFetch(
