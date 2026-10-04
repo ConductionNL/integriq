@@ -35,4 +35,6 @@
 ## 4. Proof
 
 - [ ] 4.1 On a live instance, push a verzoek with three bijlagen to the STAM endpoint (pre-production HMAC mode, a local file server as DSO-LV), run cron, and verify the three files are on the request object in Files and nothing appeared under `/DSO-verzoeken`
-- [ ] 4.2 Run `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint` once before push, and record the exit codes in the PR body
+  - NOT DONE: the local instance runs integriq 0.4.8 from another session's mounted checkout. Running this branch there means swapping that app's code and running `occ upgrade` for the schema change, which the lane may not do. The proof also needs a DSO-LV stand-in over https with a certificate the instance trusts, because only https bijlage URLs are fetched.
+- [x] 4.2 Run `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint` once before push, and record the exit codes in the PR body
+  - Evidence: `composer check:strict` exit 1: phpmd found 4 findings in this change's new code (fixed in 615326be0, phpmd on the changed files then exit 0) and PHPUnit has 11 errors that development has too (`tests/Unit/AppInfo`, host without a Nextcloud). Every other section passed. `npm run lint` exit 0 (warnings only). Full numbers in the PR body.
