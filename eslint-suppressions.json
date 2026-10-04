@@ -306,11 +306,6 @@
       "count": 2
     }
   },
-  "src/views/admin/DsoPkiSettings.vue": {
-    "no-console": {
-      "count": 2
-    }
-  },
   "src/views/wrappers/MappingDetailPage.vue": {
     "eqeqeq": {
       "count": 1

@@ -24,6 +24,28 @@
 		</p>
 
 		<div v-else class="integriq-admin__dso-pki-form">
+			<p
+				class="integriq-admin__hint"
+				:class="{ 'integriq-admin__action-error': accountState.refused }"
+				data-testid="admin-dso-account-state">
+				{{ accountState.text }}
+			</p>
+
+			<NcSelectUsers
+				v-model="account"
+				:inputLabel="t('integriq', 'Account the intake acts as')"
+				:options="accountOptions"
+				:loading="searchingAccounts"
+				data-testid="admin-dso-account"
+				@search="searchAccounts" />
+			<p
+				v-if="accountError"
+				class="integriq-admin__action-error"
+				role="alert"
+				data-testid="admin-dso-account-error">
+				{{ accountError }}
+			</p>
+
 			<NcSelect
 				v-model="mode"
 				:inputLabel="t('integriq', 'Signing mode')"
@@ -101,15 +123,17 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcPasswordField, NcSelect } from '@nextcloud/vue'
+import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
+import { generateOcsUrl, generateUrl } from '@nextcloud/router'
+import { NcButton, NcPasswordField, NcSelect, NcSelectUsers } from '@nextcloud/vue'
 
 /**
- * Admin editor for the DSO STAM PKIoverheid / HMAC signature verification
- * configuration consumed by `DSOSignatureVerifierService`.
+ * Admin editor for the DSO connection: the instance's one `dso-stam`
+ * consumer. It holds the STAM signature trust (HMAC or PKIoverheid chain)
+ * and the account every DSO-LV push is stored as.
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+ * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
  */
 export default {
 	name: 'DsoPkiSettings',
@@ -118,6 +142,7 @@ export default {
 		NcButton,
 		NcPasswordField,
 		NcSelect,
+		NcSelectUsers,
 	},
 
 	data() {
@@ -131,6 +156,11 @@ export default {
 			signingCertificate: '',
 			intermediateChain: '',
 			rootCa: '',
+			account: null,
+			accountInfo: { state: 'none', displayName: '' },
+			accountOptions: [],
+			searchingAccounts: false,
+			accountError: '',
 			modeOptions: [
 				{
 					label: this.t('integriq', 'HMAC shared secret (pre-production)'),
@@ -143,10 +173,46 @@ export default {
 						'PKIoverheid certificate chain (production)',
 					),
 
-					value: 'rsa',
+					value: 'pkioverheid',
 				},
 			],
 		}
+	},
+
+	computed: {
+		/**
+		 * The one-line state of the connection's account.
+		 *
+		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
+		 */
+		accountState() {
+			const name = this.accountInfo.displayName
+			if (this.accountInfo.state === 'ok') {
+				return {
+					refused: false,
+					text: this.t('integriq', 'Intake acts as {name}', { name }),
+				}
+			}
+
+			if (this.accountInfo.state === 'none') {
+				return {
+					refused: true,
+					text: this.t(
+						'integriq',
+						'No account set: DSO-LV pushes are refused with 503',
+					),
+				}
+			}
+
+			return {
+				refused: true,
+				text: this.t(
+					'integriq',
+					'Account {name} is not usable: DSO-LV pushes are refused with 503',
+					{ name },
+				),
+			}
+		},
 	},
 
 	/** @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2 */
@@ -163,13 +229,23 @@ export default {
 				const { data } = await axios.get(
 					generateUrl('/apps/integriq/api/admin/dso-pki-config'),
 				)
-				this.mode = data.mode === 'rsa' ? 'rsa' : 'hmac'
+				this.mode = data.mode === 'pkioverheid' ? 'pkioverheid' : 'hmac'
 				this.hmacSecretConfigured = data.hmacSecretConfigured === true
 				this.signingCertificate = data.signingCertificate || ''
 				this.intermediateChain = data.intermediateChain || ''
 				this.rootCa = data.rootCa || ''
-			} catch (e) {
-				console.error('Failed to load DSO PKI configuration', e)
+				this.accountInfo = data.account || {
+					state: 'none',
+					displayName: '',
+				}
+				this.account = data.userId
+					? {
+							id: data.userId,
+							user: data.userId,
+							displayName: this.accountInfo.displayName || data.userId,
+						}
+					: null
+			} catch {
 				this.error = this.t(
 					'integriq',
 					'Failed to load the DSO signature configuration.',
@@ -179,14 +255,53 @@ export default {
 			}
 		},
 
+		/**
+		 * Look up accounts for the picker through Nextcloud's autocomplete.
+		 *
+		 * @param {string} search The typed text.
+		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+		 */
+		async searchAccounts(search) {
+			if (!search || search.length < 2) {
+				return
+			}
+
+			this.searchingAccounts = true
+			try {
+				const { data } = await axios.get(
+					generateOcsUrl('core/autocomplete/get'),
+					{
+						params: {
+							search,
+							itemType: '',
+							itemId: '',
+							shareTypes: [0],
+							limit: 10,
+						},
+					},
+				)
+				this.accountOptions = (data.ocs.data || []).map((entry) => ({
+					id: entry.id,
+					user: entry.id,
+					displayName: entry.label || entry.id,
+				}))
+			} catch {
+				this.accountError = this.t('integriq', 'Searching accounts failed.')
+			} finally {
+				this.searchingAccounts = false
+			}
+		},
+
 		/** @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2 */
 		async save() {
 			this.saving = true
 			this.error = ''
+			this.accountError = ''
 			try {
-				await axios.put(
+				const { data } = await axios.put(
 					generateUrl('/apps/integriq/api/admin/dso-pki-config'),
 					{
+						userId: this.account ? this.account.id : '',
 						mode: this.mode,
 						hmacSecret: this.hmacSecret,
 						signingCertificate: this.signingCertificate,
@@ -197,8 +312,14 @@ export default {
 				this.hmacSecret = ''
 				await this.load()
 				showSuccess(this.t('integriq', 'DSO signature configuration saved.'))
+				for (const warning of data.warnings || []) {
+					showWarning(warning)
+				}
 			} catch (e) {
-				console.error('Failed to save DSO PKI configuration', e)
+				const fieldErrors =
+					(e.response && e.response.data && e.response.data.fieldErrors)
+					|| {}
+				this.accountError = fieldErrors.userId || ''
 				const errors =
 					e.response
 					&& e.response.data
