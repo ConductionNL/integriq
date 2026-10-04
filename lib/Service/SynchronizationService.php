@@ -9424,7 +9424,8 @@ class SynchronizationService {
 		if ($field !== '') {
 			$fileId = (string)($document[$field] ?? '');
 			if ($fileId === '') {
-				throw new Exception('The object ' . (string)($contract['originId'] ?? '') . ' has no file id in ' . $field . ' to deliver to the Documenten API.');
+				$origin = (string)($contract['originId'] ?? '');
+				throw new Exception('The object ' . $origin . ' has no file id in ' . $field . ' to deliver to the Documenten API.');
 			}
 
 			$zgw['fileId'] = $fileId;
