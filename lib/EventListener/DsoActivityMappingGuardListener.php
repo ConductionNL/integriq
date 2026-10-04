@@ -93,8 +93,7 @@ class DsoActivityMappingGuardListener implements IEventListener {
 		}
 
 		$row = (array)$entity->getObject();
-		$imowId = trim((string)($row['imowId'] ?? ''));
-		if ($imowId === '' && trim((string)($row['activityId'] ?? '')) === '') {
+		if ($this->hasIdentifier(row: $row) === false) {
 			$this->refuse(
 				event: $event,
 				code: 'dso_activity_identifier_missing',
@@ -104,18 +103,46 @@ class DsoActivityMappingGuardListener implements IEventListener {
 			return;
 		}
 
-		if ($imowId === '' || ($row['isActive'] ?? true) === false || $this->isTaken(imowId: $imowId, uuid: (string)$entity->getUuid()) === false) {
-			return;
+		if ($this->isDuplicate(row: $row, uuid: (string)$entity->getUuid()) === true) {
+			$this->refuse(
+				event: $event,
+				code: 'dso_activity_imow_id_taken',
+				message: $this->l10n->t('Another active row already maps imow-id %s. Edit that row, or deactivate it first.', [trim((string)$row['imowId'])]),
+				status: 409
+			);
 		}
 
-		$this->refuse(
-			event: $event,
-			code: 'dso_activity_imow_id_taken',
-			message: $this->l10n->t('Another active row already maps imow-id %s. Edit that row, or deactivate it first.', [$imowId]),
-			status: 409
-		);
-
 	}//end handle()
+
+	/**
+	 * Whether a row names an imowId or an activityId.
+	 *
+	 * @param array<string, mixed> $row The row being saved.
+	 *
+	 * @return bool
+	 */
+	private function hasIdentifier(array $row): bool {
+		return trim((string)($row['imowId'] ?? '')) !== '' || trim((string)($row['activityId'] ?? '')) !== '';
+
+	}//end hasIdentifier()
+
+	/**
+	 * Whether an active row with an imowId collides with another active row.
+	 *
+	 * @param array<string, mixed> $row  The row being saved.
+	 * @param string               $uuid The uuid of the row being saved.
+	 *
+	 * @return bool
+	 */
+	private function isDuplicate(array $row, string $uuid): bool {
+		$imowId = trim((string)($row['imowId'] ?? ''));
+		if ($imowId === '' || ($row['isActive'] ?? true) === false) {
+			return false;
+		}
+
+		return $this->isTaken(imowId: $imowId, uuid: $uuid);
+
+	}//end isDuplicate()
 
 	/**
 	 * Whether another active row already has this imowId.
