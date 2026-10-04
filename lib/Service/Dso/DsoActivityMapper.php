@@ -3,17 +3,16 @@
 /**
  * Integriq DSO Activity Mapper.
  *
- * The activiteiten-to-zaaktype mapping and the samenloop decision, moved here
- * from the retired DSOAdapterService (change dso-attachments-on-the-request,
- * task 3.1) because REQ-DSO-010 and REQ-DSO-011 still need them. They are
- * pure functions over a mapping table.
+ * Maps the activiteiten of one DSO verzoek to case types and decides the
+ * samenloop strategy (REQ-DSO-010, REQ-DSO-011). The table is the
+ * `dso_activity_mapping` rows an administrator keeps in OpenRegister, read
+ * once per verzoek through {@see DsoActivityTable} (change
+ * dso-activity-mapping-table). There is no built-in table: no public static
+ * list of DSO activity identifiers exists to ship one (design.md, Research).
  *
- * Intake calls {@see self::mapRequest()} ({@see \OCA\Integriq\Service\DsoIngestService::ingest()}),
- * so every `dso_verzoek` records its zaaktypen and samenloop strategy. The
- * table is the built-in {@see self::getDefaultMappings()}: REQ-DSO-010 asks for
- * a table stored as OpenRegister objects that an administrator edits, and no
- * schema for it exists yet. One activiteitcode maps to one zaaktype; the
- * one-to-many mapping of REQ-DSO-010 needs that table first.
+ * Intake calls {@see self::mapRequest()} from
+ * {@see \OCA\Integriq\Service\DsoIngestService::ingest()}, so every
+ * `dso_verzoek` records its case types and samenloop strategy.
  *
  * @category Service
  * @package  OCA\Integriq\Service\Dso
@@ -27,7 +26,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+ * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
  */
 
 declare(strict_types=1);
@@ -35,338 +34,368 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Dso;
 
 /**
- * Maps DSO activiteiten to zaaktypen and decides the samenloop strategy.
+ * Maps DSO activiteiten to case types and decides the samenloop strategy.
  *
- * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+ * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
  */
 class DsoActivityMapper {
 
 	/**
-	 * Map DSO activiteiten to zaaktypen using the provided mapping table.
+	 * Samenloop: one case per activity under a main case.
 	 *
-	 * For each activiteit, looks up its 'code' in the mappingTable.
-	 * Returns an array of activiteiten enriched with their zaaktype assignment,
-	 * and a separate list of unmatched activiteiten.
-	 *
-	 * @param array $activiteiten Array of activiteit objects (each with a 'code' key).
-	 * @param array $mappingTable Mapping keyed by activiteitCode, each value containing
-	 *                            'zaaktypeIdentificatie' and 'samenloopStrategie'.
-	 *
-	 * @return array Associative array with 'mapped' and 'unmapped' sub-arrays.
-	 *
-	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+	 * @var string
 	 */
-	public function mapActiviteitenToZaaktypen(array $activiteiten, array $mappingTable): array {
-		$mapped = [];
-		$unmapped = [];
-
-		foreach ($activiteiten as $activity) {
-			$code = ($activity['code'] ?? null);
-
-			if ($code === null || isset($mappingTable[$code]) === false) {
-				$activity['zaaktypeIdentificatie'] = null;
-				$activity['samenloopStrategie'] = null;
-				$activity['mapped'] = false;
-				$unmapped[] = $activity;
-				continue;
-			}
-
-			$mapping = $mappingTable[$code];
-
-			$activity['zaaktypeIdentificatie'] = ($mapping['zaaktypeIdentificatie'] ?? null);
-			$activity['samenloopStrategie'] = ($mapping['samenloopStrategie'] ?? 'deelzaken');
-			$activity['mapped'] = true;
-			$mapped[] = $activity;
-		}//end foreach
-
-		return [
-			'mapped' => $mapped,
-			'unmapped' => $unmapped,
-		];
-
-	}//end mapActiviteitenToZaaktypen()
+	public const DEELZAKEN = 'deelzaken';
 
 	/**
-	 * Return the default hardcoded mapping table of DSO activiteitcodes to zaaktypen.
+	 * Samenloop: one combined case.
 	 *
-	 * Contains 25+ default mappings covering the most common Omgevingswet activiteiten.
-	 * Each entry has dsoActiviteitCode, zaaktypeIdentificatie, samenloopStrategie,
-	 * and isActief flags.
-	 *
-	 * @return array Array of default mapping objects.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) A literal data table of 25 entries, no logic.
-	 *
-	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+	 * @var string
 	 */
-	public function getDefaultMappings(): array {
-		return [
-			[
-				'dsoActiviteitCode' => 'bouwen-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-BOUWEN-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'kappen-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-KAPPEN-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'uitrit-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-UITRIT-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'milieu-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-MILIEU-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'slopen-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-SLOPEN-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'reclame-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-RECLAME-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'opslaan-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-OPSLAG-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'lozen-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-LOZEN-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'monument-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-MONUMENT-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'inrit-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-INRIT-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'weg-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-WEG-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'water-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-WATER-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'grond-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-GROND-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'natuur-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-NATUUR-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'geluid-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-GELUID-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'lucht-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-LUCHT-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'bodem-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-BODEM-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'brand-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-BRAND-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'evenement-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-EVENEMENT-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'gebruik-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-GEBRUIK-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'inrichting-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-INRICHTING-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'aanleg-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-AANLEG-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'vellen-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-VELLEN-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'reclamebord-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-RECLAMEBORD-2024',
-				'samenloopStrategie' => 'gecombineerd',
-				'isActief' => true,
-			],
-			[
-				'dsoActiviteitCode' => 'energie-01',
-				'zaaktypeIdentificatie' => 'ZAAKTYPE-ENERGIE-2024',
-				'samenloopStrategie' => 'deelzaken',
-				'isActief' => true,
-			],
-		];
+	public const GECOMBINEERD = 'gecombineerd';
 
-	}//end getDefaultMappings()
+	/**
+	 * The identifiers tried per activiteit, most specific first (design D2).
+	 *
+	 * Each entry is [where the identifier sits, the identifier, the index it is looked up in].
+	 *
+	 * @var array<int, array{0: string|null, 1: string, 2: string}>
+	 */
+	private const MATCH_ORDER = [
+		['underlying', 'imowId', 'imowId'],
+		['underlying', 'activityId', 'activityId'],
+		[null, 'imowId', 'imowId'],
+		[null, 'activityId', 'activityId'],
+	];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param DsoActivityTable $table Reads the administrator's mapping rows.
+	 */
+	public function __construct(
+		private readonly DsoActivityTable $table,
+	) {
+
+	}//end __construct()
 
 	/**
 	 * Map one parsed verzoek's activiteiten into the fields intake stores on
 	 * the `dso_verzoek` object.
 	 *
-	 * Each activiteit keeps its code and omschrijving. A mapped one gains its
-	 * `caseType` and `samenloopStrategy`. `mappedCaseTypes` lists each zaaktype
-	 * once. `samenloopStrategy` is set only when at least one activiteit is
-	 * mapped. `activityUnmapped` flags the request for triage (REQ-DSO-013).
+	 * The active rows are read once. Each activiteit keeps its STAM
+	 * identifiers. A mapped one gains its case types, each with its
+	 * department, the samenloop strategy of its row, the row's uuid and the
+	 * identifier it matched on. `mappedCaseTypes` lists each case type
+	 * reference once. `samenloopStrategy` is set only when at least one
+	 * activiteit is mapped. `activityUnmapped` flags the verzoek for triage.
 	 *
-	 * @param array $activiteiten The parsed activiteiten (each with `code` and `omschrijving`).
+	 * @param array $activiteiten The parsed activiteiten ({@see \OCA\Integriq\Service\DSOParserService::parseRequest()}).
 	 *
 	 * @return array<string, mixed> The `mappedActivities`, `mappedCaseTypes`, `activityUnmapped`
 	 *                              and, when anything is mapped, `samenloopStrategy` fields.
 	 *
-	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
+	 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-3.1
 	 */
 	public function mapRequest(array $activiteiten): array {
-		// The mapper splits mapped from unmapped; the position puts them back in request order.
-		$activities = [];
-		foreach (array_values($activiteiten) as $position => $activity) {
-			if (is_array($activity) === true) {
-				$activities[] = (['position' => $position] + $activity);
-			}
-		}
-
-		$result = $this->mapActiviteitenToZaaktypen(
-			activiteiten: $activities,
-			mappingTable: $this->defaultMappingTable()
-		);
+		$index = $this->index(rows: $this->table->activeRows());
 
 		$entries = [];
+		$matchedRows = [];
 		$caseTypes = [];
 		$unmapped = false;
-		foreach (array_merge($result['mapped'], $result['unmapped']) as $activity) {
-			$entry = [
-				'code' => (string)($activity['code'] ?? ''),
-				'description' => (string)($activity['omschrijving'] ?? ''),
-				'mapped' => ($activity['mapped'] === true && $activity['zaaktypeIdentificatie'] !== null),
-			];
-			if ($entry['mapped'] === true) {
-				$entry['caseType'] = (string)$activity['zaaktypeIdentificatie'];
-				$entry['samenloopStrategy'] = (string)$activity['samenloopStrategie'];
-				$caseTypes[$entry['caseType']] = true;
-			}
-
-			$unmapped = ($unmapped === true || $entry['mapped'] === false);
-			$entries[$activity['position']] = $entry;
-		}
-
-		ksort($entries);
-
-		$fields = [
-			'mappedActivities' => array_values($entries),
-			'mappedCaseTypes' => array_keys($caseTypes),
-			'activityUnmapped' => $unmapped,
-		];
-		if (count($result['mapped']) > 0) {
-			$fields['samenloopStrategy'] = $this->determineSamenloopStrategy(mappedActiviteiten: $result['mapped']);
-		}
-
-		return $fields;
-	}//end mapRequest()
-
-	/**
-	 * The active default mappings, keyed by activiteitcode, in the shape
-	 * {@see self::mapActiviteitenToZaaktypen()} reads.
-	 *
-	 * @return array<string, array{zaaktypeIdentificatie: string, samenloopStrategie: string}> The table.
-	 *
-	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
-	 */
-	public function defaultMappingTable(): array {
-		$table = [];
-		foreach ($this->getDefaultMappings() as $mapping) {
-			if (($mapping['isActief'] ?? false) !== true) {
+		foreach ($activiteiten as $activity) {
+			if (is_array($activity) === false) {
 				continue;
 			}
 
-			$table[$mapping['dsoActiviteitCode']] = [
-				'zaaktypeIdentificatie' => $mapping['zaaktypeIdentificatie'],
-				'samenloopStrategie' => $mapping['samenloopStrategie'],
-			];
+			$entry = $this->identifiers(activity: $activity);
+			$match = $this->match(activity: $activity, index: $index);
+			if ($match === null) {
+				$entry['mapped'] = false;
+				$unmapped = true;
+				$entries[] = $entry;
+				continue;
+			}
+
+			[$row, $matchedOn] = $match;
+			$entry['mapped'] = true;
+			$entry['matchedOn'] = $matchedOn;
+			$entry['mappingRow'] = (string)$row['id'];
+			$entry['caseTypes'] = $this->caseTypes(row: $row);
+			$entry['samenloopStrategy'] = $this->rowStrategy(row: $row);
+			foreach ($entry['caseTypes'] as $caseType) {
+				$caseTypes[$caseType['reference']] = true;
+			}
+
+			$matchedRows[] = $row;
+			$entries[] = $entry;
+		}//end foreach
+
+		$fields = [
+			'mappedActivities' => $entries,
+			'mappedCaseTypes' => array_map('strval', array_keys($caseTypes)),
+			'activityUnmapped' => $unmapped,
+		];
+		if (count($matchedRows) > 0) {
+			$fields['samenloopStrategy'] = $this->samenloopStrategy(rows: $matchedRows);
 		}
 
-		return $table;
-	}//end defaultMappingTable()
+		return $fields;
+
+	}//end mapRequest()
 
 	/**
-	 * Determine the samenloop strategy for a set of mapped activiteiten.
+	 * Whether an activiteit, in the parser's shape, matches one of the active rows.
 	 *
-	 * Returns 'gecombineerd' only when ALL mapped activiteiten carry that strategy.
-	 * Returns 'deelzaken' in all other cases (including an empty set).
+	 * Used by the unmapped list to drop activities a row was added for after
+	 * the verzoek arrived.
 	 *
-	 * @param array $mappedActiviteiten Array of mapped activiteit objects, each with a
-	 *                                  'samenloopStrategie' key.
+	 * @param array<string, mixed>                    $activity The activiteit.
+	 * @param array<string, array<string, mixed>>|null $index   A prepared {@see self::index()}, or null to read the table.
 	 *
-	 * @return string Either 'gecombineerd' or 'deelzaken'.
+	 * @return bool True when a row matches.
 	 *
-	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-samenloop-handling-req-dso-011
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-in-the-app-req-dso-012
 	 */
-	public function determineSamenloopStrategy(array $mappedActiviteiten): string {
-		if (count($mappedActiviteiten) === 0) {
-			return 'deelzaken';
+	public function isMapped(array $activity, ?array $index = null): bool {
+		if ($index === null) {
+			$index = $this->index(rows: $this->table->activeRows());
 		}
 
-		foreach ($mappedActiviteiten as $activity) {
-			$strategy = ($activity['samenloopStrategie'] ?? 'deelzaken');
-			if ($strategy !== 'gecombineerd') {
-				return 'deelzaken';
+		return $this->match(activity: $activity, index: $index) !== null;
+
+	}//end isMapped()
+
+	/**
+	 * Index the active rows by imowId and by activityId. The first row wins.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The active rows.
+	 *
+	 * @return array<string, array<string, array<string, mixed>>> The rows under `imowId` and `activityId`.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-3.1
+	 */
+	public function index(array $rows): array {
+		$index = ['imowId' => [], 'activityId' => []];
+		foreach ($rows as $row) {
+			foreach (['imowId', 'activityId'] as $key) {
+				$value = trim((string)($row[$key] ?? ''));
+				if ($value !== '' && isset($index[$key][$value]) === false) {
+					$index[$key][$value] = $row;
+				}
 			}
 		}
 
-		return 'gecombineerd';
-	}//end determineSamenloopStrategy()
+		return $index;
+
+	}//end index()
+
+	/**
+	 * The first row that matches, in the order of design D2, with what it matched on.
+	 *
+	 * @param array<string, mixed>                               $activity The activiteit.
+	 * @param array<string, array<string, array<string, mixed>>> $index    The rows by key.
+	 *
+	 * @return array{0: array<string, mixed>, 1: string}|null The row and the identifier path, or null.
+	 */
+	private function match(array $activity, array $index): ?array {
+		foreach (self::MATCH_ORDER as [$where, $key, $indexKey]) {
+			$source = $activity;
+			if ($where !== null) {
+				$source = $activity[$where] ?? null;
+			}
+
+			if (is_array($source) === false) {
+				continue;
+			}
+
+			$value = trim((string)($source[$key] ?? ''));
+			if ($value !== '' && isset($index[$indexKey][$value]) === true) {
+				$path = $key;
+				if ($where !== null) {
+					$path = $where . '.' . $key;
+				}
+
+				return [$index[$indexKey][$value], $path];
+			}
+		}
+
+		return null;
+
+	}//end match()
+
+	/**
+	 * The STAM identifiers of an activiteit, without the empty ones.
+	 *
+	 * @param array<string, mixed> $activity The activiteit.
+	 *
+	 * @return array<string, mixed> `imowId`, `activityId`, `activityName`, `volgnr` and `underlying`, when set.
+	 */
+	private function identifiers(array $activity): array {
+		$entry = $this->identifierFields(source: $activity, keys: ['imowId', 'activityId', 'activityName', 'volgnr']);
+		if (is_array($activity['underlying'] ?? null) === true) {
+			$underlying = $this->identifierFields(
+				source: $activity['underlying'],
+				keys: ['imowId', 'activityId', 'activityName']
+			);
+			if ($underlying !== []) {
+				$entry['underlying'] = $underlying;
+			}
+		}
+
+		return $entry;
+
+	}//end identifiers()
+
+	/**
+	 * The named scalar fields of a source, as strings, without the empty ones.
+	 *
+	 * @param array<string, mixed> $source The source.
+	 * @param array<int, string>   $keys   The fields.
+	 *
+	 * @return array<string, string> The fields that are set.
+	 */
+	private function identifierFields(array $source, array $keys): array {
+		$fields = [];
+		foreach ($keys as $key) {
+			$value = ($source[$key] ?? null);
+			if (is_scalar($value) === true && trim((string)$value) !== '') {
+				$fields[$key] = trim((string)$value);
+			}
+		}
+
+		return $fields;
+
+	}//end identifierFields()
+
+	/**
+	 * The case types of a row, each with a reference and, when set, a title and department.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return array<int, array{reference: string, title?: string, department?: string}> The case types.
+	 */
+	private function caseTypes(array $row): array {
+		$caseTypes = [];
+		foreach ((array)($row['caseTypes'] ?? []) as $caseType) {
+			if (is_array($caseType) === false || trim((string)($caseType['reference'] ?? '')) === '') {
+				continue;
+			}
+
+			$caseTypes[] = (['reference' => trim((string)$caseType['reference'])] + $this->identifierFields(source: $caseType, keys: ['title', 'department']));
+		}
+
+		return $caseTypes;
+
+	}//end caseTypes()
+
+	/**
+	 * A row's own samenloop strategy, `deelzaken` when it names none.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return string The strategy.
+	 */
+	private function rowStrategy(array $row): string {
+		if (($row['samenloopStrategy'] ?? null) === self::GECOMBINEERD) {
+			return self::GECOMBINEERD;
+		}
+
+		return self::DEELZAKEN;
+
+	}//end rowStrategy()
+
+	/**
+	 * The samenloop strategy of the verzoek (design D3).
+	 *
+	 * One mapped activiteit: its row's strategy. Two or more: every pair is
+	 * decided by a samenloop rule when one of its two rows names the other's
+	 * imowId, and otherwise by the two rows' own strategies (gecombineerd only
+	 * when both say so). The verzoek is gecombineerd when every pair is. Two
+	 * rules for one pair that disagree give deelzaken.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The matched row of each mapped activiteit, in order.
+	 *
+	 * @return string `gecombineerd` or `deelzaken`.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-3.3
+	 */
+	private function samenloopStrategy(array $rows): string {
+		if (count($rows) === 1) {
+			return $this->rowStrategy(row: $rows[0]);
+		}
+
+		$count = count($rows);
+		for ($first = 0; $first < $count; $first++) {
+			for ($second = ($first + 1); $second < $count; $second++) {
+				if ($this->pairStrategy(one: $rows[$first], other: $rows[$second]) !== self::GECOMBINEERD) {
+					return self::DEELZAKEN;
+				}
+			}
+		}
+
+		return self::GECOMBINEERD;
+
+	}//end samenloopStrategy()
+
+	/**
+	 * The strategy for one pair of matched rows.
+	 *
+	 * @param array<string, mixed> $one   One row.
+	 * @param array<string, mixed> $other The other row.
+	 *
+	 * @return string `gecombineerd` or `deelzaken`.
+	 */
+	private function pairStrategy(array $one, array $other): string {
+		$rules = array_merge(
+			$this->rulesFor(row: $one, otherImowId: (string)($other['imowId'] ?? '')),
+			$this->rulesFor(row: $other, otherImowId: (string)($one['imowId'] ?? ''))
+		);
+		if ($rules !== []) {
+			if (in_array(self::DEELZAKEN, $rules, true) === true) {
+				return self::DEELZAKEN;
+			}
+
+			return self::GECOMBINEERD;
+		}
+
+		if ($this->rowStrategy(row: $one) === self::GECOMBINEERD && $this->rowStrategy(row: $other) === self::GECOMBINEERD) {
+			return self::GECOMBINEERD;
+		}
+
+		return self::DEELZAKEN;
+
+	}//end pairStrategy()
+
+	/**
+	 * The strategies a row's samenloop rules give for one other activity.
+	 *
+	 * @param array<string, mixed> $row         The row holding the rules.
+	 * @param string               $otherImowId The other activity's imowId.
+	 *
+	 * @return array<int, string> The strategies, each `gecombineerd` or `deelzaken`.
+	 */
+	private function rulesFor(array $row, string $otherImowId): array {
+		if (trim($otherImowId) === '') {
+			return [];
+		}
+
+		$strategies = [];
+		foreach ((array)($row['samenloopRules'] ?? []) as $rule) {
+			if (is_array($rule) === false || trim((string)($rule['withImowId'] ?? '')) !== trim($otherImowId)) {
+				continue;
+			}
+
+			$strategy = self::DEELZAKEN;
+			if (($rule['strategy'] ?? null) === self::GECOMBINEERD) {
+				$strategy = self::GECOMBINEERD;
+			}
+
+			$strategies[] = $strategy;
+		}
+
+		return $strategies;
+
+	}//end rulesFor()
 }//end class

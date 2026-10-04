@@ -335,26 +335,73 @@ class DSOParserService {
 	/**
 	 * Parse the activiteiten array.
 	 *
+	 * Keeps the identifiers a STAM Project Activiteit carries (STAM v6.0.2
+	 * section 3.7): `imowId`, `activityId` (the Activiteit-id), `activityName`
+	 * and `volgnr`, plus the onderliggende activiteit as `underlying`. These
+	 * are integriq's own JSON field names. The old `code` (or `activiteitCode`)
+	 * is read as `activityId` and `omschrijving` as `activityName`, so earlier
+	 * pushes keep working. Which STAM XML elements carry these values is not
+	 * verified yet (change dso-activity-mapping-table, task 1.1).
+	 *
 	 * @param array $activiteiten The raw activiteiten data.
 	 *
-	 * @return array The parsed activiteiten data.
+	 * @return array<int, array<string, mixed>> The parsed activiteiten.
 	 *
-	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-verzoek-payload-parsing-req-dso-004
 	 */
 	private function parseActiviteiten(array $activiteiten): array {
 		$parsed = [];
 		foreach ($activiteiten as $activity) {
-			$code = ($activity['code'] ?? ($activity['activiteitCode'] ?? null));
-			$omschrijving = ($activity['omschrijving'] ?? null);
+			if (is_array($activity) === false) {
+				continue;
+			}
 
-			$parsed[] = [
-				'code' => $code,
-				'omschrijving' => $omschrijving,
-			];
+			$entry = $this->activityIdentifiers(activity: $activity);
+			$entry['volgnr'] = $this->scalarText(value: ($activity['volgnr'] ?? null));
+			$entry['underlying'] = null;
+			if (is_array($activity['underlying'] ?? null) === true) {
+				$entry['underlying'] = $this->activityIdentifiers(activity: $activity['underlying']);
+			}
+
+			$parsed[] = $entry;
 		}
 
 		return $parsed;
 	}//end parseActiviteiten()
+
+	/**
+	 * The three identifying fields of one activity, `code` and `omschrijving` as fallbacks.
+	 *
+	 * @param array<string, mixed> $activity The raw activity.
+	 *
+	 * @return array{imowId: string|null, activityId: string|null, activityName: string|null} The fields.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-1.2
+	 */
+	private function activityIdentifiers(array $activity): array {
+		return [
+			'imowId' => $this->scalarText(value: ($activity['imowId'] ?? null)),
+			'activityId' => $this->scalarText(
+				value: ($activity['activityId'] ?? ($activity['code'] ?? ($activity['activiteitCode'] ?? null)))
+			),
+			'activityName' => $this->scalarText(value: ($activity['activityName'] ?? ($activity['omschrijving'] ?? null))),
+		];
+	}//end activityIdentifiers()
+
+	/**
+	 * A scalar as trimmed text, null when absent, empty or not a scalar.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null The text.
+	 */
+	private function scalarText(mixed $value): ?string {
+		if (is_scalar($value) === false || trim((string)$value) === '') {
+			return null;
+		}
+
+		return trim((string)$value);
+	}//end scalarText()
 
 	/**
 	 * Parse the bijlagen references into a fixed `{name, url}` shape.

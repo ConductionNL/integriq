@@ -1,0 +1,147 @@
+{
+  "$comment": "ADR-037 register fragment (dso-activity-mapping-table, design D1). Declares `dso_activity_mapping`: one row per DSO activity, keyed on the identifiers a STAM verzoekbericht carries (imow-id first, Activiteit-id as the fallback), mapped to one or more case types. DsoActivityMapper reads the active rows at intake as an engine read (_rbac false, read only). Admin-only on every verb: the table decides which case system zaaktype a verzoek becomes. Ships NO rows: there is no public static list of DSO activity identifiers (design.md, Research). Two rules the schema cannot carry live in DsoActivityMappingGuardListener on OpenRegister's save path: a row needs an imowId or an activityId (OpenRegister reads a schema-level anyOf as schema composition and does not enforce it), and two active rows may not share an imowId. Does NOT edit lib/Settings/integriq_register.json.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "dso_activity_mapping"
+        ]
+      }
+    },
+    "schemas": {
+      "dso_activity_mapping": {
+        "x-wire-standard": "STAM v6.0.2 section 3.7: imowId and activityId are the koppelvlak's Imow-id and Activiteit-id. Their values MUST NOT be translated.",
+        "slug": "dso_activity_mapping",
+        "title": "DSO activity mapping",
+        "icon": "SitemapOutline",
+        "version": "1.0.0",
+        "summary": "Which case types a DSO activity becomes",
+        "description": "One row per DSO activity a gemeente receives. A verzoek's activiteit matches a row on its imowId, then on its activityId; the onderliggende activiteit is tried first. A matched row gives the case types and the samenloop strategy. Inactive rows are ignored. See openspec/changes/dso-activity-mapping-table/design.md.",
+        "type": "object",
+        "required": [
+          "activityName",
+          "caseTypes",
+          "samenloopStrategy"
+        ],
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "properties": {
+          "imowId": {
+            "type": "string",
+            "pattern": "^nl\\.imow-(gm|pv|ws|mn|mnre)[0-9]{1,6}\\.[A-Za-z]+\\.[A-Za-z0-9]{1,32}$",
+            "maxLength": 6144,
+            "description": "The imow-id of the activity, the primary match key. STAM pattern nl.imow-(gm|pv|ws|mn|mnre)<number>.<object type>.<id>",
+            "title": "Imow-id"
+          },
+          "activityId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 6144,
+            "description": "The Activiteit-id (functionele structuurreferentie), the match key when a verzoek carries no imow-id",
+            "title": "Activity id"
+          },
+          "activityName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The Activiteitnaam, for people",
+            "title": "Activity name"
+          },
+          "caseTypes": {
+            "type": "array",
+            "minItems": 1,
+            "description": "The case types this activity becomes, each with the department that handles it",
+            "title": "Case types",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "reference"
+              ],
+              "properties": {
+                "reference": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "A ZGW zaaktype URL or a catalogue identificatie. The case system resolves it",
+                  "title": "Reference"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "The case type's name, for people",
+                  "title": "Title"
+                },
+                "department": {
+                  "type": "string",
+                  "description": "The department (afdeling) that handles this case type",
+                  "title": "Department"
+                }
+              }
+            }
+          },
+          "samenloopStrategy": {
+            "type": "string",
+            "enum": [
+              "deelzaken",
+              "gecombineerd"
+            ],
+            "default": "deelzaken",
+            "description": "What happens when this activity arrives together with others: one case per activity under a main case (deelzaken), or one combined case (gecombineerd)",
+            "title": "Samenloop strategy"
+          },
+          "samenloopRules": {
+            "type": "array",
+            "description": "The strategy for one combination with another activity. A rule decides that pair, whichever of the two rows holds it",
+            "title": "Samenloop rules",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "withImowId",
+                "strategy"
+              ],
+              "properties": {
+                "withImowId": {
+                  "type": "string",
+                  "pattern": "^nl\\.imow-(gm|pv|ws|mn|mnre)[0-9]{1,6}\\.[A-Za-z]+\\.[A-Za-z0-9]{1,32}$",
+                  "description": "The imow-id of the other activity",
+                  "title": "With imow-id"
+                },
+                "strategy": {
+                  "type": "string",
+                  "enum": [
+                    "deelzaken",
+                    "gecombineerd"
+                  ],
+                  "description": "The strategy for this pair",
+                  "title": "Strategy"
+                }
+              }
+            }
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true,
+            "description": "Inactive rows are ignored at intake",
+            "title": "Active"
+          },
+          "note": {
+            "type": "string",
+            "description": "Free text for the administrator",
+            "title": "Note"
+          }
+        }
+      }
+    }
+  }
+}

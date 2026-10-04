@@ -69,6 +69,7 @@ use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
 use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
 use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
+use OCA\Integriq\EventListener\DsoActivityMappingGuardListener;
 use OCA\Integriq\EventListener\SourceRequestedListener;
 use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
 use OCA\Integriq\EventListener\GatewayDeliveryRequestedListener;
@@ -297,6 +298,11 @@ class Application extends App implements IBootstrap {
 		// OpenRegister's stoppable ObjectDeletingEvent, so the refusal of a
 		// source-owned record holds whichever page or app deletes it.
 		$dispatcher->addServiceListener(eventName: ObjectDeletingEvent::class, className: SourceOwnedDeleteGuardListener::class);
+		// REQ-DSO-010 (dso-activity-mapping-table): a DSO activity mapping row
+		// needs an imowId or an activityId, and two active rows may not share an
+		// imowId; refused on OpenRegister's own save path.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoActivityMappingGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoActivityMappingGuardListener::class);
 		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a
 		// subscription through OpenRegister's object API, so the signing
 		// default and the unsigned-needs-a-reason refusal run on its stoppable
