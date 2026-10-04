@@ -154,10 +154,14 @@ class WebhookConnectionsSettingsController extends Controller {
 		}
 
 		$header = trim((string)$this->request->getParam('header', $profile->defaultHeader));
+		if ($header === '') {
+			$header = $profile->defaultHeader;
+		}
+
 		$trust = [
 			'scheme' => $scheme,
 			'secret' => (string)$this->request->getParam('secret', ''),
-			'header' => ($header === '' ? $profile->defaultHeader : $header),
+			'header' => $header,
 			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS)),
 		];
 

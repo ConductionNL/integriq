@@ -48,6 +48,9 @@ use Throwable;
 /**
  * Peppol participant lookup + signed inbound receive webhook.
  *
+ * @spec openspec/specs/peppol-access-point-connector/spec.md
+ * @spec openspec/changes/peppol-inbound-on-the-consumer-model/specs/peppol-access-point-connector/spec.md#requirement-the-inbound-webhook-acts-as-the-peppol-connections-account-req-020
+ *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.ElseExpression)
  */

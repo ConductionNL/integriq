@@ -98,7 +98,10 @@ class MigrateWebhookConnections implements IRepairStep {
 			}
 
 			if ($created === true) {
-				$output->info('Created the ' . $profile->authorizationType . ' consumer from the source webhook trust. Choose the account the ' . $profile->label . ' webhook acts as.');
+				$output->info(
+					'Created the ' . $profile->authorizationType . ' consumer from the source webhook trust. '
+					. 'Choose the account the ' . $profile->label . ' webhook acts as.'
+				);
 			}
 		}
 
