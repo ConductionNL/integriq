@@ -50,6 +50,10 @@ use Throwable;
  * Admin-only controller for the Open Formulieren connection (`open-formulieren` consumer).
  *
  * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-open-formulieren-connections-account-is-chosen-and-checked-by-an-administrator-req-007
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the connection, its signature or group helpers, the
+ * admin check, l10n, logger and the HTTP and OpenRegister types it answers with; splitting would
+ * spread one admin form over several classes.
  */
 class OpenFormulierenSettingsController extends Controller {
 

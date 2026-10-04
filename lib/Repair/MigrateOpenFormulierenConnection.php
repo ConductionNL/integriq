@@ -89,6 +89,8 @@ class MigrateOpenFormulierenConnection implements IRepairStep {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemWrite exposes only a static entry point, as in MigrateDsoStamConnection.
+	 *
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-5
 	 */
 	public function run(IOutput $output): void {

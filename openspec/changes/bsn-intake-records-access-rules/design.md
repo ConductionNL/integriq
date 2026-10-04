@@ -43,4 +43,5 @@ The `submission-to-case` and `verzoek-to-case` handoffs run as the handler who t
 
 - **Handlers lose access until an administrator fills the handler group.** Until then only administrators read verzoeken and submissions. That is the intended default for BSN data; the proposal tells operators.
 - **Records owned by another account.** A record stored by an account that is no longer the intake account stays invisible to the new account. A retry of such a record creates a second one.
+- **Files.** The attachments are stored in the intake account's home folder. A handler who can read the record cannot list its files (live run-19). See D6 of `openformulieren-intake-through-an-integriq-connection`.
 - **Delete.** Nobody but an administrator and the owner (the intake account) can delete. OpenRegister's owner rule cannot be switched off per schema.

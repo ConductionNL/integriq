@@ -51,6 +51,10 @@ use Throwable;
  * Admin-only controller for the DSO connection (`dso-stam` consumer).
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the connection, its signature or group helpers, the
+ * admin check, l10n, logger and the HTTP and OpenRegister types it answers with; splitting would
+ * spread one admin form over several classes.
  */
 class DsoPkiSettingsController extends Controller {
 	/**
