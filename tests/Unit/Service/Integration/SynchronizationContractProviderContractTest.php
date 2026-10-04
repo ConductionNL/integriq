@@ -32,8 +32,8 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\IL10N;
+use OCP\IServerContainer;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -386,12 +386,16 @@ class SynchronizationContractProviderContractTest extends TestCase {
 	 * REQ-OCIP-005: when OpenRegister cannot hand over its registry, boot
 	 * logs a warning and carries on.
 	 *
+	 * The container is an IServerContainer: NC 32 to 34 declare that as
+	 * getServerContainer()'s return type, NC 35 widens it to the PSR
+	 * ContainerInterface that IServerContainer extends, so this mock fits all.
+	 *
 	 * @return void
 	 */
 	public function testBootCarriesOnWhenTheRegistryCannotBeResolved(): void {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning');
-		$container = $this->createMock(ContainerInterface::class);
+		$container = $this->createMock(IServerContainer::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($logger) {
 				if ($id === IntegrationRegistry::class) {
