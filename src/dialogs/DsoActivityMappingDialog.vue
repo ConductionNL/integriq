@@ -216,6 +216,12 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The two samenloop strategies, as select options.
+		 *
+		 * @return {object[]}
+		 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-4.1
+		 */
 		strategyOptions() {
 			return [
 				{
@@ -232,12 +238,25 @@ export default {
 			]
 		},
 
+		/**
+		 * The problems of the draft, shown once the administrator tried to save.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-4.1
+		 */
 		shownProblems() {
 			return this.tried ? draftProblems(this.draft) : []
 		},
 	},
 
 	watch: {
+		/**
+		 * Start a fresh draft when the parent passes another row.
+		 *
+		 * @param {object} row The row.
+		 * @return {void}
+		 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-4.1
+		 */
 		row(row) {
 			this.draft = draftFromRow(row)
 			this.tried = false

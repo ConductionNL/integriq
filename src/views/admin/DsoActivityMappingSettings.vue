@@ -49,12 +49,14 @@
 			<table v-else class="dso-activities__table">
 				<thead>
 					<tr>
-						<th>{{ t('integriq', 'Activity name') }}</th>
-						<th>{{ t('integriq', 'Imow-id or activity id') }}</th>
-						<th>{{ t('integriq', 'Case types') }}</th>
-						<th>{{ t('integriq', 'Samenloop') }}</th>
-						<th>{{ t('integriq', 'Active') }}</th>
-						<th>
+						<th scope="col">{{ t('integriq', 'Activity name') }}</th>
+						<th scope="col">
+							{{ t('integriq', 'Imow-id or activity id') }}
+						</th>
+						<th scope="col">{{ t('integriq', 'Case types') }}</th>
+						<th scope="col">{{ t('integriq', 'Samenloop') }}</th>
+						<th scope="col">{{ t('integriq', 'Active') }}</th>
+						<th scope="col">
 							<span class="hidden-visually">{{
 								t('integriq', 'Actions')
 							}}</span>
@@ -124,11 +126,13 @@
 			<table v-else class="dso-activities__table">
 				<thead>
 					<tr>
-						<th>{{ t('integriq', 'Activity name') }}</th>
-						<th>{{ t('integriq', 'Imow-id or activity id') }}</th>
-						<th>{{ t('integriq', 'Times seen') }}</th>
-						<th>{{ t('integriq', 'Last seen') }}</th>
-						<th>
+						<th scope="col">{{ t('integriq', 'Activity name') }}</th>
+						<th scope="col">
+							{{ t('integriq', 'Imow-id or activity id') }}
+						</th>
+						<th scope="col">{{ t('integriq', 'Times seen') }}</th>
+						<th scope="col">{{ t('integriq', 'Last seen') }}</th>
+						<th scope="col">
 							<span class="hidden-visually">{{
 								t('integriq', 'Actions')
 							}}</span>
