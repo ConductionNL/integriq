@@ -38,10 +38,12 @@ use JWadhams\JsonLogic;
 use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
 use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
+use OCA\Integriq\Exception\MessageValidationRefusedException;
 use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Exception\TargetWriteRefusedException;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
+use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -576,6 +578,33 @@ class SynchronizationService {
 	 * @var RunPrerequisiteGuard|null
 	 */
 	private ?RunPrerequisiteGuard $prerequisiteGuard = null;
+
+	/**
+	 * Checks source objects and target bodies against their message schemas
+	 * (mapping-message-schema-validation REQ-MSV-003).
+	 *
+	 * Resolved on first use by {@see messageGate()}, not in the constructor,
+	 * which is already at its complexity ceiling.
+	 *
+	 * @var SynchronizationMessageGate|null
+	 */
+	private ?SynchronizationMessageGate $messageGate = null;
+
+	/**
+	 * Whether {@see $messageGate} has been looked up in the container.
+	 *
+	 * @var bool
+	 */
+	private bool $messageGateResolved = false;
+
+	/**
+	 * Record-mode findings from target writes, taken into the run's result by
+	 * the item loop. The target write sits below the item and has no handle on
+	 * the result, so the loop collects what it left here.
+	 *
+	 * @var list<array>
+	 */
+	private array $pendingValidationFindings = [];
 
 	/**
 	 * Constructor.
@@ -2852,6 +2881,7 @@ class SynchronizationService {
 						);
 
 						$this->captureSyncItemFailure(synchronization: $synchronization, object: $object, exception: $itemException);
+						$result = $this->takeValidationFindings(result: $result);
 
 						$objectProcessingTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
 						continue;
@@ -2860,7 +2890,7 @@ class SynchronizationService {
 					$objectProcessingTime = round((microtime(true) - $objectStartTime) * 1000, 2);
 					$objectProcessingTimes[] = $objectProcessingTime;
 
-					$result = $processResult['result'];
+					$result = $this->takeValidationFindings(result: $processResult['result']);
 
 					// `_embed` is deliberately NOT built here. It used to be, on every
 					// object, over the WHOLE accumulated `contracts` list — so the list
@@ -3524,6 +3554,7 @@ class SynchronizationService {
 		// object (register `openconnector`, schema `synchronization`); hydrate it
 		// into the typed value object the engine operates on.
 		$synchronization = $this->toSynchronization(synchronization: $synchronization);
+		$this->pendingValidationFindings = [];
 
 		if ($flowToken === null) {
 			$flowToken = new FlowToken();
@@ -8585,6 +8616,118 @@ class SynchronizationService {
 	}//end getAllObjectsFromArray()
 
 	/**
+	 * Check one message against the message schema its config block declares.
+	 *
+	 * A declared validation is never skipped: without the gate, mode refuse
+	 * refuses and mode record records that the message could not be checked.
+	 *
+	 * @param array       $config   The sourceConfig or targetConfig (dots applied).
+	 * @param string      $side     SynchronizationMessageGate::SOURCE or ::TARGET.
+	 * @param mixed       $message  The source object or the target body.
+	 * @param string|null $originId The source object's origin id, for the finding.
+	 *
+	 * @return array|null The record-mode finding, or null when the message matches or nothing is declared.
+	 *
+	 * @throws MessageValidationRefusedException In mode refuse, when the message does not match.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 */
+	private function inspectMessage(array $config, string $side, mixed $message, ?string $originId): ?array {
+		if (SynchronizationMessageGate::declares(config: $config) === false) {
+			return null;
+		}
+
+		$messageGate = $this->messageGate();
+		if ($messageGate !== null) {
+			return $messageGate->inspect(config: $config, side: $side, message: $message, originId: $originId);
+		}
+
+		$refusal = SynchronizationMessageGate::unavailable(config: $config, side: $side);
+		if (SynchronizationMessageGate::refuses(config: $config) === true) {
+			throw $refusal;
+		}
+
+		$this->logger->warning('[integriq] ' . $refusal->getMessage());
+
+		return [
+			'side' => $side,
+			'originId' => $originId,
+			'messageSchema' => (string)($config['validation']['messageSchema'] ?? ''),
+			'errors' => [['path' => '/', 'message' => $refusal->getMessage()]],
+		];
+	}//end inspectMessage()
+
+	/**
+	 * The message gate, looked up in the container once; null when it is not there.
+	 *
+	 * @return SynchronizationMessageGate|null
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 */
+	private function messageGate(): ?SynchronizationMessageGate {
+		if ($this->messageGateResolved === false) {
+			$this->messageGateResolved = true;
+			$messageGate = $this->containerInterface->get(SynchronizationMessageGate::class);
+			if ($messageGate instanceof SynchronizationMessageGate) {
+				$this->messageGate = $messageGate;
+			}
+		}
+
+		return $this->messageGate;
+	}//end messageGate()
+
+	/**
+	 * Check the body about to be sent to an `api` target (REQ-MSV-003).
+	 *
+	 * Refuse throws before the call, so nothing is sent and the item loop
+	 * dead-letters the item. Record keeps the finding for the item loop.
+	 *
+	 * @param array $targetConfig The target config (dots applied), its `json` the body.
+	 * @param array $contract     The contract, for the origin id.
+	 *
+	 * @return void
+	 *
+	 * @throws MessageValidationRefusedException In mode refuse, when the body does not match.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 */
+	private function inspectTargetBody(array $targetConfig, array $contract): void {
+		$originId = null;
+		if (isset($contract['originId']) === true) {
+			$originId = (string)$contract['originId'];
+		}
+
+		$finding = $this->inspectMessage(
+			config: $targetConfig,
+			side: SynchronizationMessageGate::TARGET,
+			message: ($targetConfig['json'] ?? null),
+			originId: $originId
+		);
+		if ($finding !== null) {
+			$this->pendingValidationFindings[] = $finding;
+		}
+	}//end inspectTargetBody()
+
+	/**
+	 * Move the target writes' record-mode findings into the run's result.
+	 *
+	 * @param array $result The run's result.
+	 *
+	 * @return array The result, with the findings under `validation`.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 */
+	private function takeValidationFindings(array $result): array {
+		foreach ($this->pendingValidationFindings as $finding) {
+			$result['validation'][] = $finding;
+		}
+
+		$this->pendingValidationFindings = [];
+
+		return $result;
+	}//end takeValidationFindings()
+
+	/**
 	 * Write an created, updated or deleted object to an external target.
 	 *
 	 * @param array $synchronization The synchronization to run.
@@ -8699,6 +8842,7 @@ class SynchronizationService {
 				$targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
 			}
 
+			$this->inspectTargetBody(targetConfig: $targetConfig, contract: $contract);
 			$this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
 			$callLog = $this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig, trace: $trace);
 			$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $targetConfig);
@@ -8744,6 +8888,7 @@ class SynchronizationService {
 			$targetConfig['json'] = $this->processMapping(mapping: $mapping, data: $targetConfig['json']);
 		}
 
+		$this->inspectTargetBody(targetConfig: $targetConfig, contract: $contract);
 		$this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
 		$callLog = $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace);
 		$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $targetConfig);
@@ -11032,6 +11177,19 @@ class SynchronizationService {
 		// If the source configuration contains a dot notation for the id position,
 		// we need to extract the id from the source object.
 		$originId = $this->getOriginId(synchronization: $synchronization, object: $object);
+
+		// REQ-MSV-003: the source object is checked against its message schema
+		// before it is mapped. Refuse throws, and the item loop dead-letters it;
+		// record lets it through and the finding goes onto the run log.
+		$sourceFinding = $this->inspectMessage(
+			config: $sourceConfig,
+			side: SynchronizationMessageGate::SOURCE,
+			message: $object,
+			originId: (string)$originId
+		);
+		if ($sourceFinding !== null) {
+			$result['validation'][] = $sourceFinding;
+		}
 
 		// Get the synchronization contract for this object.
 		$findContractByOriginId = false;
