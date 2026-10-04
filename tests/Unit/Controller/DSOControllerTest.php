@@ -27,6 +27,16 @@ use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Service\Dso\DsoActivityMapper;
+use OCA\Integriq\Service\Dso\DsoClient;
+use OCA\Integriq\Service\Dso\DsoRequestTranslator;
+use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
+use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\BackgroundJob\IJobList;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -116,6 +126,12 @@ class DSOControllerTest extends TestCase {
 		// not need to restate this every time.
 		$user = $this->createMock(IUser::class);
 		$this->userSession->method('getUser')->willReturn($user);
+
+		// Default: ingest stores the verzoek, so the 202 tests describe a
+		// request that really was saved.
+		$stored = new ObjectEntity();
+		$stored->setUuid('verzoek-uuid-1');
+		$this->ingestService->method('ingest')->willReturn($stored);
 
 		$this->controller = $this->buildController();
 
@@ -384,15 +400,14 @@ class DSOControllerTest extends TestCase {
 	}//end testReceiveVerzoekPersistsViaIngestService()
 
 	/**
-	 * Test that an ingest failure never prevents the webhook's 202
-	 * acknowledgement — the STAM koppelvlak's asynchronous-processing
-	 * contract must not regress just because persistence/mapping failed.
+	 * Sign every request and let the payload through, so a test only states
+	 * what happens at ingest.
+	 *
+	 * @param array<string, mixed> $body The parsed verzoek.
 	 *
 	 * @return void
 	 */
-	public function testIngestFailureDoesNotBreakTheWebhookAcknowledgement(): void {
-		$body = ['verzoekId' => 'dso-boom'];
-
+	private function acceptSignedPayload(array $body): void {
 		$this->request->method('getParams')->willReturn($body);
 		$this->request->method('getHeader')
 			->willReturnCallback(
@@ -407,13 +422,96 @@ class DSOControllerTest extends TestCase {
 
 		$this->parser->method('validatePayload')->willReturn([]);
 		$this->parser->method('parseRequest')->willReturn($body);
-		$this->ingestService->method('ingest')->willThrowException(new DsoTranslationException(message: 'boom'));
+
+	}//end acceptSignedPayload()
+
+	/**
+	 * The live failure: OpenRegister refuses `create` for the anonymous
+	 * webhook caller. The real ingest service runs against an object service
+	 * that throws exactly what OpenRegister's PermissionHandler throws. The
+	 * endpoint MUST NOT answer 202, because nothing was stored: it answers 503,
+	 * which a Digikoppeling ebMS2 sender treats as recoverable and retries.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-stam-koppelvlak-endpoint-registration-req-dso-001
+	 */
+	public function testRefusedCreateAnswers503AndQueuesNothing(): void {
+		$this->acceptSignedPayload(
+			[
+				'verzoekId' => 'dso-refused',
+				'type' => 'aanvraag',
+				'bijlagen' => [['name' => 'tekening.pdf', 'url' => 'https://dso.example/tekening.pdf']],
+			]
+		);
+
+		$objectService = $this->getMockBuilder(ORObjectService::class)
+			->disableOriginalConstructor()
+			->getMock();
+		$objectService->expects($this->once())
+			->method('saveObject')
+			->willThrowException(
+				new NotAuthorizedException(
+					message: "User 'Anonymous' does not have permission to 'create' objects in schema 'DSO Verzoek'"
+				)
+			);
+
+		$jobList = $this->createMock(IJobList::class);
+		$jobList->expects($this->never())->method('add');
+
+		$this->ingestService = new DsoIngestService(
+			objectService: $objectService,
+			handoffService: $this->getMockBuilder(HandoffService::class)->disableOriginalConstructor()->getMock(),
+			translator: new DsoRequestTranslator(),
+			logProvider: new LogDsoConnectorProvider(),
+			restProvider: $this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
+			logger: $this->createMock(LoggerInterface::class),
+			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
+			jobList: $jobList,
+			activityMapper: new DsoActivityMapper()
+		);
+
+		$errors = [];
+		$this->logger->method('error')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$errors): void {
+				$errors[] = ['message' => $message, 'context' => $context];
+			}
+		);
+
+		$this->controller = $this->buildController();
 
 		$response = $this->controller->receiveRequest();
 
-		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame('verzoek_not_stored', $response->getData()['error']);
+		$this->assertArrayNotHasKey('status', $response->getData());
+		$this->assertCount(1, $errors);
+		$this->assertSame('dso-refused', $errors[0]['context']['verzoekId']);
+		$this->assertStringContainsString("'create'", (string)$errors[0]['context']['exception']);
 
-	}//end testIngestFailureDoesNotBreakTheWebhookAcknowledgement()
+	}//end testRefusedCreateAnswers503AndQueuesNothing()
+
+	/**
+	 * An ingest that returns an object without a uuid stored nothing either,
+	 * so it gets the same 503 as a thrown refusal.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-stam-koppelvlak-endpoint-registration-req-dso-001
+	 */
+	public function testIngestWithoutAStoredObjectAnswers503(): void {
+		$this->acceptSignedPayload(['verzoekId' => 'dso-empty']);
+
+		$this->ingestService = $this->createMock(DsoIngestService::class);
+		$this->ingestService->method('ingest')->willReturn(new ObjectEntity());
+		$this->controller = $this->buildController();
+
+		$response = $this->controller->receiveRequest();
+
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame('verzoek_not_stored', $response->getData()['error']);
+
+	}//end testIngestWithoutAStoredObjectAnswers503()
 
 	/**
 	 * Test that listVerzoeken() returns 401 when unauthenticated.

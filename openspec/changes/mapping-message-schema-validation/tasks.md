@@ -49,8 +49,13 @@ Kind: code. Matrix row `integriq:map-message-validation`.
 - **acceptance_criteria**:
   - GIVEN ten objects with one invalid in mode `refuse` WHEN the run completes THEN nine are written and one is dead-lettered
   - GIVEN an invalid target body in mode `refuse` WHEN the item is written THEN CallService is not called
-- [ ] Implement
+- [x] Implement
+  - A synchronization declares `sourceConfig.validation` and `targetConfig.validation`, each `{mode, messageSchema, operationId?}` (mode record or refuse, default record). `SynchronizationMessageGate` (`lib/Service/MessageValidation/`) checks one message through `EndpointMessageGate::checkDeclared()`, the same message schema read and checkers the endpoint uses.
+  - `SynchronizationService::processSynchronizationObject()` checks each source object before it is mapped; `writeObjectToTarget()` checks the body of an `api` target right before `callSourceObject()`, on create and on update. Refuse throws `MessageValidationRefusedException`, which the existing per-item isolation dead-letters (`SyncItemDeadLetterService`), so nothing is mapped or sent and the run goes on. Record lets the message through, writes the finding to the server log and puts it under `result.validation` on the run's synchronization log. A declared validation is never skipped: without the gate, mode refuse dead-letters and mode record records that the message could not be checked.
+  - `src/views/Synchronization/SyncConfigWidget.vue` has a message validation section for an `api` source or target: message schema (picked from the `message_schema` objects) and mode. Clearing the schema removes the block; the `operationId` is kept when the schema changes and is not edited on the form yet.
 - [ ] Test (PHPUnit with a mocked CallService; Playwright for the dead-letter entry)
+  - Done: `tests/Unit/Service/SynchronizationMessageValidationTest.php` runs `synchronize()` with the real gate, the real checkers, the seeded message schemas and the real `SyncItemDeadLetterService`, CallService mocked: refuse dead-letters 1 of 10 and writes 9, record writes 10 with one finding on the run log, an invalid target body is not sent and is dead-lettered, an XSD target body that does not match sends nothing, record sends every body with the finding, no gate refuses, no validation unchanged. `tests/vitest/syncMessageValidation.spec.js` checks the form writes the block.
+  - Owed: the Playwright dead-letter entry in `tests/e2e/message-schema-validation.spec.ts` against a live instance.
 
 ## Verification
 
