@@ -57,6 +57,7 @@ import EmailFast from 'vue-material-design-icons/EmailFast.vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileCheckOutline from 'vue-material-design-icons/FileCheckOutline.vue'
 import FileCogOutline from 'vue-material-design-icons/FileCogOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -163,6 +164,7 @@ export default {
 	EmailOffOutline,
 	EmailOutline,
 	EyeOutline,
+	FileCheckOutline,
 	FileCogOutline,
 	FileDocumentMultipleOutline,
 	FileDocumentOutline,

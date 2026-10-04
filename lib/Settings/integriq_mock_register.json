@@ -12113,6 +12113,42 @@
         "outcome": "executed",
         "targetIds": [],
         "at": "2026-09-30T02:39:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-zaak-json"
+        },
+        "name": "Voorbeeld zaak (JSON Schema)",
+        "description": "Voorbeeld: een zaak met identificatie, zaaktype en startdatum.",
+        "kind": "json-schema",
+        "document": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"identificatie\",\n    \"zaaktype\"\n  ],\n  \"properties\": {\n    \"identificatie\": {\n      \"type\": \"string\"\n    },\n    \"zaaktype\": {\n      \"type\": \"string\",\n      \"format\": \"uri\"\n    },\n    \"startdatum\": {\n      \"type\": \"string\",\n      \"format\": \"date\"\n    }\n  }\n}\n",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-adres-xsd"
+        },
+        "name": "Voorbeeld adres (XSD)",
+        "description": "Voorbeeld: een adres met postcode en huisnummer, als XSD.",
+        "kind": "xsd",
+        "document": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" targetNamespace=\"https://integriq.conduction.nl/example/adres\" elementFormDefault=\"qualified\">\n  <xs:element name=\"adres\">\n    <xs:complexType>\n      <xs:sequence>\n        <xs:element name=\"postcode\" type=\"xs:string\"/>\n        <xs:element name=\"huisnummer\" type=\"xs:positiveInteger\"/>\n      </xs:sequence>\n    </xs:complexType>\n  </xs:element>\n</xs:schema>\n",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-zaken-openapi"
+        },
+        "name": "Voorbeeld zaken-API (OpenAPI)",
+        "description": "Voorbeeld: de operatie createZaak met een verplichte startdatum.",
+        "kind": "openapi",
+        "document": "{\n  \"openapi\": \"3.0.3\",\n  \"info\": {\n    \"title\": \"Voorbeeld zaken\",\n    \"version\": \"1.0.0\"\n  },\n  \"paths\": {\n    \"/zaken\": {\n      \"post\": {\n        \"operationId\": \"createZaak\",\n        \"requestBody\": {\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"required\": [\n                  \"startdatum\"\n                ],\n                \"properties\": {\n                  \"startdatum\": {\n                    \"type\": \"string\",\n                    \"format\": \"date\"\n                  },\n                  \"toelichting\": {\n                    \"type\": \"string\",\n                    \"nullable\": true\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"201\": {\n            \"description\": \"Aangemaakt\"\n          }\n        }\n      }\n    }\n  }\n}\n",
+        "version": "1.0.0"
       }
     ]
   }

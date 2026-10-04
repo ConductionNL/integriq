@@ -104,6 +104,36 @@ class OpenApiChecker {
 	}//end check()
 
 	/**
+	 * Why an OpenAPI document cannot be stored, or null when it parses.
+	 *
+	 * @param string $document The document, JSON or YAML.
+	 *
+	 * @return string|null The parser's message.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
+	 */
+	public function documentProblem(string $document): ?string {
+		$openApi = json_decode($document, false);
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			try {
+				$openApi = Yaml::parse($document, Yaml::PARSE_OBJECT_FOR_MAP);
+			} catch (\Throwable $e) {
+				return 'The OpenAPI document does not parse: ' . $e->getMessage();
+			}
+		}
+
+		if ($openApi instanceof stdClass === false) {
+			return 'The OpenAPI document does not parse: it is not an object';
+		}
+
+		if (($openApi->paths ?? null) instanceof stdClass === false) {
+			return 'The OpenAPI document has no paths object, so it describes no operation';
+		}
+
+		return null;
+	}//end documentProblem()
+
+	/**
 	 * Parse JSON or YAML into objects.
 	 *
 	 * @param string $document The document.
