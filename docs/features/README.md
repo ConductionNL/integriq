@@ -28,6 +28,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Objecten API](objecten-api.md) | The VNG Objecten and Objecttypen APIs over your registers, one token per caller | Implemented |
 | [ZGW consumer sets](zgw-sets.md) | Read a ZGW store (Zaken, Documenten, Catalogi, Besluiten, Objecten) into a schema you choose, in the store's own shape, and write changes back | Partial |
 | [Case system for meeting apps](case-system.md) | A `case-system` source answers a meeting app's five case operations through the ZGW Zaken and Documenten APIs, or from test data | Implemented |
+| [Documents to the case system](case-system-document-delivery.md) | Two seeded synchronizations send a filinq document, or its anonymised copy, to the case system as a new document, and write the outcome back | Partial |
 
 ## Architecture Overview
 
