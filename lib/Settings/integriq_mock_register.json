@@ -4414,9 +4414,22 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
         "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "authorization": {
+          "create": [
+            "dso-intake"
+          ],
+          "read": [
+            "dso-behandelaars"
+          ],
+          "update": [
+            "dso-intake",
+            "dso-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "verzoekId",
           "status"
@@ -5284,9 +5297,22 @@
         "slug": "openformulieren_submission",
         "title": "Open Formulieren Submission",
         "icon": "FileDocumentOutline",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "summary": "Lifecycle + audit record for one Open Formulieren submission, from receipt through mapping to a ns#Case handoff",
         "description": "One record per inbound, signature-verified Open Formulieren submission (open-formulieren-intake). Status tracks received -> mapped -> handed_off | failed, isolated per submission. Declares the submission-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/open-formulieren/submissions/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time. See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md.",
+        "authorization": {
+          "create": [
+            "openformulieren-intake"
+          ],
+          "read": [
+            "openformulieren-behandelaars"
+          ],
+          "update": [
+            "openformulieren-intake",
+            "openformulieren-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "formSlug",
           "status"

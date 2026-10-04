@@ -89,6 +89,7 @@ class OpenFormulierenSettingsControllerTest extends TestCase {
 			request: $request,
 			connection: $this->buildWorldOpenFormulierenConnection(objectService: $this->buildWorldObjectService()),
 			groupManager: $groupManager,
+			groups: $this->buildWorldIntakeGroups(),
 			l: $l,
 			logger: new NullLogger()
 		);
@@ -232,4 +233,64 @@ class OpenFormulierenSettingsControllerTest extends TestCase {
 		$this->assertStringContainsString('administrator', $response->getData()['warnings'][0]);
 
 	}//end testAnAdministratorAccountSavesWithAWarning()
+	/**
+	 * An account without rights of its own joins openformulieren-intake and saves: the
+	 * authorization block grants that group create and update.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#scenario-the-chosen-intake-account-joins-the-intake-group
+	 */
+	public function testAChosenAccountJoinsTheIntakeGroup(): void {
+		$this->worldGroupGrants = ['openformulieren-intake' => ['create', 'update']];
+		$this->addAccount(uid: 'fresh', grants: []);
+		$this->params = ['scheme' => 'openconnector', 'secret' => 's'] + ['userId' => 'fresh'];
+
+		$response = $this->controller()->setConfig();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['fresh'], $this->worldGroupMembers['openformulieren-intake']);
+		$this->assertSame('fresh', array_values($this->worldConsumers)[0]['userId']);
+
+	}//end testAChosenAccountJoinsTheIntakeGroup()
+
+	/**
+	 * A refused account is not left behind in openformulieren-intake.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#scenario-the-chosen-intake-account-joins-the-intake-group
+	 */
+	public function testARefusedAccountDoesNotStayInTheIntakeGroup(): void {
+		$this->addAccount(uid: 'reader', grants: ['read']);
+		$this->params = ['scheme' => 'openconnector', 'secret' => 's'] + ['userId' => 'reader'];
+
+		$response = $this->controller()->setConfig();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame([], ($this->worldGroupMembers['openformulieren-intake'] ?? []));
+
+	}//end testARefusedAccountDoesNotStayInTheIntakeGroup()
+
+	/**
+	 * Choosing another account takes the previous one out of openformulieren-intake.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#scenario-the-chosen-intake-account-joins-the-intake-group
+	 */
+	public function testThePreviousAccountLeavesTheIntakeGroup(): void {
+		$this->worldGroupGrants = ['openformulieren-intake' => ['create', 'update']];
+		$this->addAccount(uid: 'old', grants: []);
+		$this->addAccount(uid: 'new', grants: []);
+		$this->worldGroupMembers = ['openformulieren-intake' => ['old']];
+		$this->addOpenFormulierenConsumer(userId: 'old');
+		$this->params = ['scheme' => 'openconnector', 'secret' => 's'] + ['userId' => 'new'];
+
+		$response = $this->controller()->setConfig();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['new'], $this->worldGroupMembers['openformulieren-intake']);
+
+	}//end testThePreviousAccountLeavesTheIntakeGroup()
 }//end class

@@ -33,6 +33,7 @@ use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\IntakeGroups;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -65,6 +66,7 @@ class OpenFormulierenSettingsController extends Controller {
 	 * @param IRequest                  $request      The request.
 	 * @param OpenFormulierenConnection $connection   Finds, checks and saves the consumer.
 	 * @param IGroupManager             $groupManager Tells an administrator account apart.
+	 * @param IntakeGroups              $groups       Puts the chosen account in the openformulieren-intake group.
 	 * @param IL10N                     $l            Field errors and warnings.
 	 * @param LoggerInterface           $logger       Diagnostics.
 	 *
@@ -74,6 +76,7 @@ class OpenFormulierenSettingsController extends Controller {
 		IRequest $request,
 		private readonly OpenFormulierenConnection $connection,
 		private readonly IGroupManager $groupManager,
+		private readonly IntakeGroups $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -191,6 +194,8 @@ class OpenFormulierenSettingsController extends Controller {
 			);
 		}
 
+		$this->withdrawPrevious(consumer: $consumer, userId: $userId);
+
 		return new JSONResponse(
 			[
 				'scheme' => $scheme,
@@ -246,6 +251,24 @@ class OpenFormulierenSettingsController extends Controller {
 	}//end ambiguous()
 
 	/**
+	 * Take the account the connection used before out of the intake group.
+	 *
+	 * @param ObjectEntity|null $consumer The consumer as it was before the save.
+	 * @param string            $userId   The account it has now, or ''.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#requirement-submissions-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-008
+	 */
+	private function withdrawPrevious(?ObjectEntity $consumer, string $userId): void {
+		$previous = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
+		if ($previous !== '' && $previous !== $userId) {
+			$this->groups->withdraw(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $previous);
+		}
+
+	}//end withdrawPrevious()
+
+	/**
 	 * Why the account cannot be the intake account, or null when it can.
 	 *
 	 * @param string       $userId   The chosen uid.
@@ -264,7 +287,17 @@ class OpenFormulierenSettingsController extends Controller {
 			return $this->l->t('Account %s does not exist.', [$userId]);
 		}
 
+		// The authorization block grants the intake group, so the chosen
+		// account joins it before its rights are checked. It leaves again when
+		// the check still refuses it and it was not a member before.
+		$wasMember = $this->groups->isMember(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
+		$this->groups->enrol(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
+
 		$missing = $this->connection->missingRights(userId: $userId);
+		if ($missing !== null && $missing !== [] && $wasMember === false) {
+			$this->groups->withdraw(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
+		}
+
 		if ($missing === null) {
 			$warnings[] = $this->l->t('The rights of account %s could not be checked. Submissions are refused until they can be.', [$userId]);
 		} elseif ($missing !== []) {

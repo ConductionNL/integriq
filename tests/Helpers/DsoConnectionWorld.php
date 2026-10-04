@@ -28,11 +28,14 @@ namespace OCA\Integriq\Tests\Helpers;
 use OCA\Integriq\Service\Dso\DsoAccountRights;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Service\Intake\IntakeGroups;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\IGroup;
+use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -87,6 +90,20 @@ trait DsoConnectionWorld {
 	 * @var array<string, array{entity: ObjectEntity, owner: string|null}>
 	 */
 	protected array $worldSubmissions = [];
+
+	/**
+	 * Nextcloud group members: group id => list of uids.
+	 *
+	 * @var array<string, list<string>>
+	 */
+	protected array $worldGroupMembers = [];
+
+	/**
+	 * What membership of a group grants on the intake schemas: group id => actions.
+	 *
+	 * @var array<string, list<string>>
+	 */
+	protected array $worldGroupGrants = [];
 
 	/**
 	 * When true, every write to a submission is refused as OpenRegister would.
@@ -150,6 +167,8 @@ trait DsoConnectionWorld {
 		$this->worldHasPermissionHandler = true;
 		$this->worldVerzoeken = [];
 		$this->worldSubmissions = [];
+		$this->worldGroupMembers = [];
+		$this->worldGroupGrants = [];
 		$this->worldRefuseSubmissionWrites = false;
 		$this->worldOthers = [];
 		$this->worldWrites = [];
@@ -390,6 +409,56 @@ trait DsoConnectionWorld {
 	}//end buildWorldConnection()
 
 	/**
+	 * The real IntakeGroups over the world's groups.
+	 *
+	 * @return IntakeGroups The groups service.
+	 */
+	protected function buildWorldIntakeGroups(): IntakeGroups {
+		$groupOf = function (string $groupId): IGroup {
+			$group = $this->createMock(IGroup::class);
+			$group->method('getGID')->willReturn($groupId);
+			$group->method('inGroup')->willReturnCallback(
+				fn (IUser $user): bool => in_array($user->getUID(), ($this->worldGroupMembers[$groupId] ?? []), true)
+			);
+			$group->method('addUser')->willReturnCallback(
+				function (IUser $user) use ($groupId): void {
+					$this->worldGroupMembers[$groupId][] = $user->getUID();
+				}
+			);
+			$group->method('removeUser')->willReturnCallback(
+				function (IUser $user) use ($groupId): void {
+					$this->worldGroupMembers[$groupId] = array_values(
+						array_diff(($this->worldGroupMembers[$groupId] ?? []), [$user->getUID()])
+					);
+				}
+			);
+
+			return $group;
+		};
+
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('get')->willReturnCallback(
+			fn (string $groupId): ?IGroup => (array_key_exists($groupId, $this->worldGroupMembers) === true ? $groupOf($groupId) : null)
+		);
+		$groupManager->method('createGroup')->willReturnCallback(
+			function (string $groupId) use ($groupOf): IGroup {
+				$this->worldGroupMembers[$groupId] = ($this->worldGroupMembers[$groupId] ?? []);
+				return $groupOf($groupId);
+			}
+		);
+		$groupManager->method('isInGroup')->willReturnCallback(
+			fn (string $uid, string $groupId): bool => in_array($uid, ($this->worldGroupMembers[$groupId] ?? []), true)
+		);
+
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturnCallback(
+			fn (string $uid): ?IUser => (array_key_exists($uid, $this->worldAccounts) === true ? $this->worldUser($uid) : null)
+		);
+
+		return new IntakeGroups(groupManager: $groupManager, userManager: $userManager, logger: new NullLogger());
+	}//end buildWorldIntakeGroups()
+
+	/**
 	 * The real Open Formulieren connection over the world.
 	 *
 	 * @param ORObjectService $objectService The world's ObjectService.
@@ -429,7 +498,17 @@ trait DsoConnectionWorld {
 			return false;
 		}
 
-		return in_array($action, ($this->worldGrants[$uid] ?? []), true);
+		if (in_array($action, ($this->worldGrants[$uid] ?? []), true) === true) {
+			return true;
+		}
+
+		foreach ($this->worldGroupGrants as $groupId => $actions) {
+			if (in_array($uid, ($this->worldGroupMembers[$groupId] ?? []), true) === true && in_array($action, $actions, true) === true) {
+				return true;
+			}
+		}
+
+		return false;
 	}//end worldGrants()
 
 	/**
