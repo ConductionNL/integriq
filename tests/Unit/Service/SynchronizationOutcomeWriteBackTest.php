@@ -188,7 +188,10 @@ class SynchronizationOutcomeWriteBackTest extends TestCase {
 	}//end testAnAcceptedDeliveryIsMarkedWrittenBackWithTheDocumentUrl()
 
 	/**
-	 * A refusal writes the failure fields once, with the case system's own message, and still fails the push.
+	 * A refusal writes the failure fields once, with the case system's own message.
+	 *
+	 * The push itself behaves as before: with an idPosition the refused create
+	 * leaves the contract without a target id, so the next run tries again.
 	 *
 	 * @return void
 	 */
@@ -196,12 +199,9 @@ class SynchronizationOutcomeWriteBackTest extends TestCase {
 		$this->answer     = 400;
 		$this->answerBody = '{"title":"Invalid input.","detail":"Het informatieobjecttype is niet gepubliceerd."}';
 
-		try {
-			$this->push();
-			$this->fail('A refused create must still fail the push.');
-		} catch (\Exception $e) {
-			$this->assertStringContainsString('Could not determine an id', $e->getMessage());
-		}
+		$contract = $this->push();
+
+		$this->assertNull($contract['targetId']);
 
 		$this->assertCount(1, $this->saves, 'Written once per finished attempt.');
 		$this->assertTrue($this->saves[0]['silent']);
