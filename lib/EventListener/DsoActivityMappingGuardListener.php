@@ -166,10 +166,15 @@ class DsoActivityMappingGuardListener implements IEventListener {
 	/**
 	 * Stop the save with an error.
 	 *
+	 * The caller gets HTTP 422 whatever `status` says: OpenRegister's object
+	 * API answers every refused create or update with 422 and passes these
+	 * fields on under `errors` (design D1). `status` names the code the
+	 * refusal means, for the day OpenRegister reads it on the save path.
+	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event   The event.
 	 * @param string                                  $code    The error code.
 	 * @param string                                  $message The translated message.
-	 * @param int                                     $status  The HTTP status.
+	 * @param int                                     $status  The status the refusal means (400 or 409).
 	 *
 	 * @return void
 	 */

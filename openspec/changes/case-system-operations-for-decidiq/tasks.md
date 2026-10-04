@@ -29,5 +29,12 @@
       `tests/Unit/Settings/CaseSystemSeedTest.php`.
 
 ### Task 4: Docs, strings and the e2e link test
-- [ ] Implement (docs page, en and nl strings for the source configuration)
+- [x] Implement (docs page, en and nl strings for the source configuration)
+      `docs/features/case-system.md` (linked from the features README). The source
+      editor offers the type "Case system (ZGW)" and shows `CaseSystemSourceFields`,
+      which writes every key ZgwCaseSystem and CaseSystemOperations read under that
+      name (zakenSource, documentenSource, meetingZaaktype, bronorganisatie, auteur,
+      confidentialAs, publicAs, kinds, mock); 21 en and 22 nl strings.
+      `tests/vitest/caseSystemSourceFields.spec.js` mounts the real editor and fields;
+      the confidentiality options are checked against the Zaken 1.5.1 schema fixture.
 - [ ] Test (`tests/e2e/case-system-link.spec.ts`)

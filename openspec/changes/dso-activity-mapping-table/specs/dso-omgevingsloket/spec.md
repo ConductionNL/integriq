@@ -27,6 +27,12 @@ The adapter MUST map DSO activiteiten to zaaktypen through a mapping table store
 - **THEN** no default rows are loaded, because no public list of DSO activity codes exists to load them from
 - **AND** the section points to "Unmapped DSO activities", where the activities of real verzoeken appear
 
+#### Scenario: A verzoek that maps nothing stores an empty case type list
+- **WHEN** no active row maps any activiteit of a verzoek
+- **THEN** the verzoek's `mappedCaseTypes` is stored as an empty list `[]`, not `null`
+- **AND** `activityUnmapped` is true and no `samenloopStrategy` is set
+- **AND** a read through OpenRegister's object API shows the empty list only with `_empty=true`, because OpenRegister leaves empty values out of a read by default
+
 #### Scenario: A fresh install ships no activity codes
 - **WHEN** Integriq is installed on a new instance
 - **THEN** the `dso_activity_mapping` table holds no rows
@@ -108,6 +114,19 @@ Integriq MUST offer a "DSO activities" section on its admin settings page (`/set
 - **WHEN** an administrator opens the "Unmapped DSO activities" list and chooses that activity's action
 - **THEN** the add form opens with its imowId, activityId and name filled in
 - @e2e tests/e2e/dso-activity-mapping.spec.ts
+
+#### Scenario: A second active row with the same imowId is refused
+- **GIVEN** an active row with imowId "nl.imow-gm0000.activiteit.DemoBouwen"
+- **WHEN** an administrator creates or updates another active row with that imowId
+- **THEN** the save is refused with HTTP 422, and the body's `errors` carries code `dso_activity_imow_id_taken`, the message and status 409
+- **AND** the 422 is an OpenRegister limitation: its object API answers every create or update refused by a save listener with 422, whatever status the listener names
+- **AND** an inactive row with the same imowId saves
+- @e2e exclude refusal on OpenRegister's save path: covered by PHPUnit (DsoActivityMappingGuardListenerTest) and the live proof in tasks.md 6.1
+
+#### Scenario: A row without an identifier is refused
+- **WHEN** an administrator saves a row with neither an imowId nor an activityId
+- **THEN** the save is refused with HTTP 422, and the body's `errors` carries code `dso_activity_identifier_missing`, the message and status 400
+- @e2e exclude refusal on OpenRegister's save path: covered by PHPUnit (DsoActivityMappingGuardListenerTest) and the live proof in tasks.md 6.1
 
 #### Scenario: A non-administrator cannot change the table
 - **GIVEN** a user outside the admin group

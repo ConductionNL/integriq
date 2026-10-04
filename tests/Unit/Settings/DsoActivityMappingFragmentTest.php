@@ -186,6 +186,34 @@ class DsoActivityMappingFragmentTest extends TestCase {
 	}//end testAnOldMappedActivitiesItemStillValidates()
 
 	/**
+	 * A verzoek that maps nothing validates with an empty case type list, in both registers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-a-verzoek-that-maps-nothing-stores-an-empty-case-type-list
+	 */
+	public function testAnUnmappedVerzoekValidatesWithAnEmptyCaseTypeList(): void {
+		$unmapped = [
+			'verzoekId' => 'dso-unmapped',
+			'status' => 'mapped',
+			'mappedActivities' => [['activityId' => 'bouwen-01', 'activityName' => 'Bouwen', 'mapped' => false]],
+			'mappedCaseTypes' => [],
+			'activityUnmapped' => true,
+		];
+		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $unmapped));
+
+		$declared = RegisterSchemaValidator::descriptor()['components']['schemas']['dso_verzoek']['properties']['mappedCaseTypes'];
+		$this->assertArrayNotHasKey('minItems', $declared, 'An empty list must stay valid');
+
+		$mock = json_decode((string)file_get_contents(__DIR__ . '/../../../lib/Settings/integriq_mock_register.json'), true);
+		$this->assertSame(
+			$declared,
+			$mock['components']['schemas']['dso_verzoek']['properties']['mappedCaseTypes'],
+			'Both registers declare the same list'
+		);
+	}//end testAnUnmappedVerzoekValidatesWithAnEmptyCaseTypeList()
+
+	/**
 	 * The guard listener over these stored rows.
 	 *
 	 * @param array<int, ObjectEntity> $stored The rows already stored.
