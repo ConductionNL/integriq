@@ -8,8 +8,11 @@ Kind: code. Size S. Row `opencatalogi:lc-source-destroyed`.
 - **acceptance_criteria**:
   - GIVEN policy `purge` and a vanished record on a complete run WHEN the run finishes THEN `deleteObject()` is called with `permanent: true` and the object's files are gone
   - GIVEN policy `purge` in incremental mode or on an incomplete fetch WHEN the run finishes THEN nothing is purged
-- [ ] Implement
+- [x] Implement
+  - `DisappearancePolicy::PURGE` is accepted. In `deleteInvalidObjects()` a vanished record under `purge` goes to `purgeTarget()`, behind the same incremental, completeness and ratio guards as a delete. `updateTargetOpenRegister()` has a `purge` action that calls OpenRegister's `deleteObject(permanent: true)` inside the source-owned delete guard, and sets `targetId: null`, `targetLastAction: purge`. The run result carries `objects.purged` and `objects.purgeRefusals`.
 - [ ] Test (integration test against OpenRegister checking the Nextcloud folder is removed)
+  - Done: `tests/Unit/Service/SynchronizationServicePurgeTest.php` through the real `deleteInvalidObjects()`, `updateTarget()` and `synchronize()`: the vanished record is deleted with `permanent: true`, a full run on a complete empty page reports two purged, an incomplete fetch, incremental mode and the ratio guard purge nothing.
+  - Owed: the integration test against a live OpenRegister that the object's Nextcloud folder is gone.
 
 ### Task 2: The destruction notice paths
 - **spec_ref**: openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
@@ -27,8 +30,11 @@ Kind: code. Size S. Row `opencatalogi:lc-source-destroyed`.
 - **acceptance_criteria**:
   - GIVEN a purge WHEN it completes THEN a contract log entry names the source record, the object id and the trigger, and the run counts it as purged
   - GIVEN a `ReferentialIntegrityException` WHEN the purge runs THEN the object is untouched and the refusal is in the run failures
-- [ ] Implement
+- [x] Implement
+  - `purgeTarget()` writes a contract log entry per purge (`targetResult: purged`, `source.originId`, `source.trigger` `fullRun` or `destructionNotice`, `source.reference`, `target.id`) and persists the contract with `targetLastAction: purge`. A refusal from OpenRegister leaves the object and the contract as they were, never falls back to a soft delete, is written to the contract log as `purge_refused` and is listed in `objects.purgeRefusals` with OpenRegister's reason.
 - [ ] Test (integration test with a restricting relation)
+  - Done: the same test throws OpenRegister's real `ReferentialIntegrityException` (copied with its `DeletionAnalysis` into `tests/stubs/`) and checks the refusal is listed with its reason, nothing is deleted and the contract does not claim a purge.
+  - Owed: the integration test with a restricting relation on a live OpenRegister.
 
 ### Task 4: The edit form and demo data
 - **spec_ref**: openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-synchronization-can-purge-a-vanished-record-and-its-files-req-sdp-001

@@ -405,6 +405,21 @@ class SynchronizationService {
 	public const DEFAULT_DELETION_RATIO_THRESHOLD = 0.10;
 
 	/**
+	 * What started a purge, as the contract log names it (REQ-SDP-003): a
+	 * complete full run that no longer saw the record.
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-every-purge-is-recorded-and-a-refused-purge-stays-visible-req-sdp-003
+	 */
+	public const PURGE_TRIGGER_FULL_RUN = 'fullRun';
+
+	/**
+	 * What started a purge: a destruction notice from the source.
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-every-purge-is-recorded-and-a-refused-purge-stays-visible-req-sdp-003
+	 */
+	public const PURGE_TRIGGER_NOTICE = 'destructionNotice';
+
+	/**
 	 * Minimum number of existing contracts a synchronization must have before
 	 * the deletion-ratio guard is evaluated at all.
 	 *
@@ -3072,6 +3087,11 @@ class SynchronizationService {
 
 			$result['objects']['deleted'] = $deletedCount;
 			$result['objects']['deletionGuard'] = $guardInfo;
+			// REQ-SDP-001/003: a purge is counted apart from a soft delete, and a
+			// purge OpenRegister refused is listed with its reason, on the
+			// result the run log stores.
+			$result['objects']['purged'] = ($guardInfo['purgedCount'] ?? 0);
+			$result['objects']['purgeRefusals'] = ($guardInfo['purgeRefusals'] ?? []);
 
 			$result['timing']['stages']['cleanup_invalid'] = [
 				'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
@@ -4271,6 +4291,7 @@ class SynchronizationService {
 		}//end try
 
 		$policyRunAt = gmdate('c');
+		$purgeInfo = ['purgedCount' => 0, 'purgeRefusals' => []];
 
 		// [NEW] REQ-018 (change cdc-incremental-sync): defense-in-depth —
 		// independently refuse to run against an incremental Synchronization
@@ -4488,6 +4509,21 @@ class SynchronizationService {
 						continue;
 					}
 
+					// REQ-SDP-001: under `purge` the object goes for good, with
+					// its files. It sits behind the same incremental,
+					// completeness and ratio guards as a delete, because it is
+					// the one action that cannot be undone.
+					if ($disappearancePolicy === DisappearancePolicy::PURGE) {
+						$this->purgeTarget(
+							synchronization: $synchronization,
+							contract: $synchronizationContract,
+							trigger: self::PURGE_TRIGGER_FULL_RUN,
+							reference: null,
+							purgeInfo: $purgeInfo
+						);
+						continue;
+					}
+
 					// REQ-SOR-003: under `markEnded` and `keepAndFlag` the object
 					// stays. It is only ever reached here, behind the incremental,
 					// completeness and ratio guards above, so a truncated page or a
@@ -4519,6 +4555,8 @@ class SynchronizationService {
 				// records the source stopped carrying.
 				$guardInfo['endedCount'] = $policyCounts['ended'];
 				$guardInfo['flaggedCount'] = $policyCounts['flagged'];
+				$guardInfo['purgedCount'] = $purgeInfo['purgedCount'];
+				$guardInfo['purgeRefusals'] = $purgeInfo['purgeRefusals'];
 				$guardInfo['disappearancePolicy'] = $disappearancePolicy;
 				break;
 
@@ -5367,10 +5405,150 @@ class SynchronizationService {
 				$synchronizationContract['targetId'] = null;
 				$synchronizationContract['targetLastAction'] = 'delete';
 				break;
+			case DisappearancePolicy::PURGE:
+				// REQ-SDP-001: a permanent delete, so the object's files go
+				// with it. A refusal (another object restricts it) propagates
+				// unchanged: there is no fallback to a soft delete, and the
+				// contract keeps pointing at the object that is still there.
+				if (empty($synchronizationContract['targetId'] ?? null) === false) {
+					$targetId = (string)$synchronizationContract['targetId'];
+					SourceOwnedDeleteGuardListener::whileTheEngineDeletes(
+						delete: static fn () => $objectService->deleteObject(uuid: $targetId, permanent: true)
+					);
+				}
+
+				$synchronizationContract['targetId'] = null;
+				$synchronizationContract['targetLastAction'] = DisappearancePolicy::PURGE;
+				break;
 		}//end switch
 
 		return $synchronizationContract;
 	}//end updateTargetOpenRegister()
+
+	/**
+	 * Purge the object one contract points at, and record it (REQ-SDP-001, REQ-SDP-003).
+	 *
+	 * The contract is kept with `targetId: null` and `targetLastAction:
+	 * purge`, so a source record that comes back is recreated visibly rather
+	 * than silently. A purge OpenRegister refuses leaves the object and the
+	 * contract as they were, is written to the contract log and is listed in
+	 * `purgeRefusals` with OpenRegister's reason.
+	 *
+	 * @param array       $synchronization The synchronization (register/schema target).
+	 * @param array       $contract        The contract that maintains the object.
+	 * @param string      $trigger         self::PURGE_TRIGGER_FULL_RUN or self::PURGE_TRIGGER_NOTICE.
+	 * @param string|null $reference       The destruction notice's reference, if any.
+	 * @param array       $purgeInfo       `purgedCount` and `purgeRefusals`, updated in place.
+	 *
+	 * @return bool Whether the object was purged.
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-synchronization-can-purge-a-vanished-record-and-its-files-req-sdp-001
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-every-purge-is-recorded-and-a-refused-purge-stays-visible-req-sdp-003
+	 */
+	private function purgeTarget(
+		array $synchronization,
+		array $contract,
+		string $trigger,
+		?string $reference,
+		array &$purgeInfo,
+	): bool {
+		$targetId = (string)($contract['targetId'] ?? '');
+		$originId = (string)($contract['originId'] ?? '');
+
+		try {
+			$purged = $this->updateTarget(
+				synchronizationContract: $contract,
+				action: DisappearancePolicy::PURGE,
+				synchronization: $synchronization
+			);
+			$this->persistContract(contract: $purged);
+		} catch (\Throwable $refusal) {
+			$purgeInfo['purgeRefusals'][] = [
+				'originId' => $originId,
+				'targetId' => $targetId,
+				'reason' => $refusal->getMessage(),
+			];
+			$this->logger->warning(
+				'SynchronizationService: purge refused, the object is left as it was',
+				['originId' => $originId, 'targetId' => $targetId, 'error' => $refusal->getMessage()]
+			);
+			$this->writePurgeLog(
+				synchronization: $synchronization,
+				contract: $contract,
+				trigger: $trigger,
+				reference: $reference,
+				result: 'purge_refused',
+				reason: $refusal->getMessage()
+			);
+
+			return false;
+		}//end try
+
+		$purgeInfo['purgedCount']++;
+		$this->writePurgeLog(
+			synchronization: $synchronization,
+			contract: $contract,
+			trigger: $trigger,
+			reference: $reference,
+			result: 'purged',
+			reason: null
+		);
+
+		return true;
+	}//end purgeTarget()
+
+	/**
+	 * Write one purge, or one refused purge, to the contract log (REQ-SDP-003).
+	 *
+	 * The object is gone after a purge, so the record lives on the contract
+	 * log: the source record, the purged object id, the trigger and the
+	 * notice's reference.
+	 *
+	 * @param array       $synchronization The synchronization.
+	 * @param array       $contract        The contract as it was before the purge.
+	 * @param string      $trigger         What started the purge.
+	 * @param string|null $reference       The destruction notice's reference, if any.
+	 * @param string      $result          purged or purge_refused.
+	 * @param string|null $reason          OpenRegister's reason for a refusal.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-every-purge-is-recorded-and-a-refused-purge-stays-visible-req-sdp-003
+	 */
+	private function writePurgeLog(
+		array $synchronization,
+		array $contract,
+		string $trigger,
+		?string $reference,
+		string $result,
+		?string $reason,
+	): void {
+		if ($this->synchronizationContractLogService === null) {
+			return;
+		}
+
+		$targetId = (string)($contract['targetId'] ?? '');
+		$message = 'Purged object ' . $targetId . ' and its files (' . $trigger . ')';
+		if ($reason !== null) {
+			$message = 'Purge of object ' . $targetId . ' refused, the object is left as it was: ' . $reason;
+		}
+
+		$this->synchronizationContractLogService->createFromArray(
+			object: [
+				'synchronizationId' => (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? '')),
+				'synchronizationContractId' => ($contract['id'] ?? ($contract['uuid'] ?? null)),
+				'source' => [
+					'originId' => ($contract['originId'] ?? null),
+					'trigger' => $trigger,
+					'reference' => $reference,
+				],
+				'target' => ['id' => $targetId],
+				'targetResult' => $result,
+				'message' => $message,
+				'expires' => $this->calculateExpires(...[$this->successRetention, $this->successRetention]),
+			]
+		);
+	}//end writePurgeLog()
 
 	/**
 	 * Queue a mapped target row for the run's bulk write instead of writing it now.

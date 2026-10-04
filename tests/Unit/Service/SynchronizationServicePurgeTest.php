@@ -98,19 +98,25 @@ class SynchronizationServicePurgeTest extends TestCase {
 
 		$orObjectService = $this->getMockBuilder(OrObjectService::class)->disableOriginalConstructor()->getMock();
 		$orObjectService->method('findAll')->willReturn(['results' => $contracts, 'total' => count($contracts)]);
-		$orObjectService->method('find')->willReturnCallback(fn (...$args) => ($objects[(string)$args['id']] ?? null));
+		$objects['source-uuid-woo'] = ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://dms.example.nl', 'enabled' => true], 'source-uuid-woo');
+		$orObjectService->method('find')->willReturnCallback(fn (...$args) => ($objects[(string)$args[0]] ?? null));
 		$orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
-				if (($args['schema'] ?? null) === 'synchronization_contract') {
-					$this->contracts[] = $args['object'];
+				// A mock callback receives its arguments by position; the
+				// schema is looked up by value so the stub's and OpenRegister's
+				// parameter orders both work.
+				if (in_array('synchronization_contract', $args, true) === true) {
+					$this->contracts[] = $args[0];
 				}
 
-				return ObjectServiceMockBuilder::objectEntity($this, $args['object'], (string)($args['uuid'] ?? 'saved'));
+				return ObjectServiceMockBuilder::objectEntity($this, (array)$args[0], 'saved');
 			}
 		);
 		$orObjectService->method('deleteObject')->willReturnCallback(
 			function (...$args) use ($refuseUuid): bool {
-				if ($refuseUuid !== null && ($args['uuid'] ?? null) === $refuseUuid) {
+				// By position: 0 is the uuid, 7 is `permanent` (openregister 98a3469c0f).
+				$args = ['uuid' => $args[0], 'permanent' => ($args[7] ?? false)];
+				if ($refuseUuid !== null && $args['uuid'] === $refuseUuid) {
 					throw new ReferentialIntegrityException(new DeletionAnalysis(deletable: false, blockers: [['uuid' => 'restricting-object']]));
 				}
 
@@ -127,8 +133,16 @@ class SynchronizationServicePurgeTest extends TestCase {
 			}
 		);
 
+		// The source answers one complete page that no longer lists anything.
 		$callService = $this->createMock(CallService::class);
 		$callService->method('applyConfigDot')->willReturnArgument(0);
+		$callService->method('call')->willReturn(
+			ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['response' => ['statusCode' => 200, 'body' => json_encode(['items' => []]), 'encoding' => 'UTF-8', 'headers' => []]],
+				'call-log-empty-page'
+			)
+		);
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
@@ -149,7 +163,7 @@ class SynchronizationServicePurgeTest extends TestCase {
 			$orObjectService,
 			$this->createMock(ObjectService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(SynchronizationLogService::class),
+			new SynchronizationLogService(ObjectServiceMockBuilder::make($this), $this->createMock(\OCP\IUserSession::class), $this->createMock(\OCP\ISession::class)),
 			$appConfig,
 			$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class),
 		);
@@ -220,6 +234,30 @@ class SynchronizationServicePurgeTest extends TestCase {
 		$this->assertSame('fullRun', $log['source']['trigger']);
 		$this->assertSame('pub-b', $log['target']['id']);
 	}//end testAVanishedRecordIsPurgedPermanentlyAndRecorded()
+
+	/**
+	 * A full run reports the purge on its result, which is what the run log stores.
+	 *
+	 * @return void
+	 */
+	public function testAFullRunReportsThePurgedCount(): void {
+		$result = $this->service(['pub-a', 'pub-b'])->synchronize(
+			synchronization: [
+				'id' => self::SYNC_ID,
+				'uuid' => self::SYNC_ID,
+				'sourceId' => 'source-uuid-woo',
+				'sourceType' => 'api',
+				'targetType' => 'register/schema',
+				'targetId' => '1/2',
+				'sourceConfig' => ['endpoint' => '/documenten', 'resultsPosition' => 'items', 'disappearancePolicy' => 'purge'],
+			]
+		);
+
+		$this->assertSame(['pub-a', 'pub-b'], array_column($this->deletes, 'uuid'));
+		$this->assertSame(2, $result['result']['objects']['purged'], 'The run counts two purged objects.');
+		$this->assertSame(0, $result['result']['objects']['deleted']);
+		$this->assertSame([], $result['result']['objects']['purgeRefusals']);
+	}//end testAFullRunReportsThePurgedCount()
 
 	/**
 	 * An incomplete fetch purges nothing and says why.
