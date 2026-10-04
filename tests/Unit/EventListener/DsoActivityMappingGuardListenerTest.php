@@ -122,6 +122,8 @@ class DsoActivityMappingGuardListenerTest extends TestCase {
 	 * A row with neither imowId nor activityId is refused.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-a-row-without-an-identifier-is-refused
 	 */
 	public function testARowWithoutAnIdentifierIsRefused(): void {
 		$event = new ObjectCreatingEvent($this->entity('new', []));
@@ -137,6 +139,8 @@ class DsoActivityMappingGuardListenerTest extends TestCase {
 	 * A second active row with the same imowId is refused, on create and on update.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-a-second-active-row-with-the-same-imowid-is-refused
 	 */
 	public function testASecondActiveRowWithTheSameImowIdIsRefused(): void {
 		$this->stored = [$this->entity('first', ['imowId' => 'nl.imow-gm0000.activiteit.DemoBouwen'])];

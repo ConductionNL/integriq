@@ -184,6 +184,16 @@
 			</template>
 		</div>
 
+		<!-- A case-system source is configured through its own fields: every
+		     key ZgwCaseSystem reads, under the name it reads. -->
+		<CaseSystemSourceFields
+			v-if="isCaseSystem"
+			class="cn-source-form-fields__field"
+			:configuration="caseSystemConfiguration"
+			@update:configuration="
+				(configuration) => updateField('configuration', configuration)
+			" />
+
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
 			<NcCheckboxRadioSwitch
@@ -300,8 +310,10 @@
 <script>
 import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import CaseSystemSourceFields from './CaseSystemSourceFields.vue'
 import {
 	clearCredentialRef,
 	EMBEDDED_SECRET_FIELDS,
@@ -323,6 +335,7 @@ const SOURCE_TYPE_OPTIONS = [
 	{ id: 'file', label: 'File' },
 	{ id: 'soap', label: 'SOAP' },
 	{ id: 'dso', label: 'DSO' },
+	{ id: 'case-system', label: 'Case system (ZGW)' },
 ]
 
 export default {
@@ -333,6 +346,7 @@ export default {
 		NcSelect,
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
+		CaseSystemSourceFields,
 	},
 
 	props: {
@@ -376,10 +390,40 @@ export default {
 		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
-			if (!this.brokeredEnabled) return this.fields
-			return this.fields.filter(
+			// On a case-system source CaseSystemSourceFields owns the
+			// configuration; a raw JSON editor beside it would hold a stale draft.
+			const fields = this.isCaseSystem
+				? this.fields.filter((field) => field.key !== 'configuration')
+				: this.fields
+			if (!this.brokeredEnabled) return fields
+			return fields.filter(
 				(field) => !EMBEDDED_SECRET_FIELDS.includes(field.key),
 			)
+		},
+
+		/**
+		 * Whether this is a case-system source, which gets its own fields.
+		 *
+		 * @return {boolean} True for a case-system source.
+		 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-seeded-zgw-zaken-template-links-a-connection-at-once-req-cso-003
+		 */
+		isCaseSystem() {
+			return String(this.formData?.type ?? '') === 'case-system'
+		},
+
+		/**
+		 * The configuration the case-system fields edit, as an object.
+		 *
+		 * @return {object} The configuration.
+		 * @spec exclude trivial projection of the form value, presentation only
+		 */
+		caseSystemConfiguration() {
+			const configuration = this.formData?.configuration
+			return configuration
+				&& typeof configuration === 'object'
+				&& !Array.isArray(configuration)
+				? configuration
+				: {}
 		},
 
 		/**
@@ -517,6 +561,8 @@ export default {
 	},
 
 	methods: {
+		t,
+
 		/**
 		 * Map a schema widget to an <input type>.
 		 *

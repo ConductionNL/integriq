@@ -600,8 +600,10 @@ class DsoIngestServiceTest extends TestCase {
 
 	/**
 	 * An empty table maps nothing, and nothing is built in to fall back on.
+	 * The case type list is stored empty, not null.
 	 *
 	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-a-fresh-install-ships-no-activity-codes
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-a-verzoek-that-maps-nothing-stores-an-empty-case-type-list
 	 */
 	public function testAnEmptyTableMapsNothing(): void {
 		$service = $this->buildService();
