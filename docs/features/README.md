@@ -27,6 +27,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Timetables into planninq](rostering-to-planninq.md) | Zermelo, Untis, Xedule and TimeEdit lessons delivered into planninq's school timetable | Dormant |
 | [Objecten API](objecten-api.md) | The VNG Objecten and Objecttypen APIs over your registers, one token per caller | Implemented |
 | [ZGW consumer sets](zgw-sets.md) | Read a ZGW store (Zaken, Documenten, Catalogi, Besluiten, Objecten) into a schema you choose, in the store's own shape, and write changes back | Partial |
+| [Case system for meeting apps](case-system.md) | A `case-system` source answers a meeting app's five case operations through the ZGW Zaken and Documenten APIs, or from test data | Implemented |
 
 ## Architecture Overview
 

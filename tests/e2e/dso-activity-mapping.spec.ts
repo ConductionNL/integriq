@@ -10,15 +10,20 @@
  * and map an activity that arrived on a verzoek no row maps.
  *
  * The matching at intake is covered by PHPUnit through DsoIngestService.
- * Not run in this change's lane: no instance was available. The coordinator
- * schedules the run.
+ *
+ * The text fields are located by their test id directly. NcTextField in
+ * @nextcloud/vue 9 passes `data-testid` through to its <input>, so the id
+ * already names the input and `.locator('input')` below it finds nothing.
+ * First run on a live instance: 2026-10-04 (task 6.1).
  */
 
 import { expect, test } from '@playwright/test'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const ADMIN_SETTINGS_URL = '/index.php/settings/admin/integriq'
-const IMOW_MILIEU = 'nl.imow-gm0000.activiteit.E2eMilieu'
+// One imow-id per run: the test leaves its deactivated row behind, and a fixed
+// id would make the row filter match two rows on the next run.
+const IMOW_MILIEU = `nl.imow-gm0000.activiteit.E2eMilieu${Date.now().toString(36)}`
 const IMOW_UNMAPPED = 'nl.imow-gm0000.activiteit.E2eUnmapped'
 
 test.describe('dso activity mapping', () => {
@@ -32,24 +37,16 @@ test.describe('dso activity mapping', () => {
 
 		await section.getByTestId('admin-dso-activities-add').click()
 		const dialog = page.getByTestId('dso-activity-dialog')
-		await dialog
-			.getByTestId('dso-activity-name')
-			.locator('input')
-			.fill('E2E milieu')
-		await dialog
-			.getByTestId('dso-activity-imow-id')
-			.locator('input')
-			.fill(IMOW_MILIEU)
+		await dialog.getByTestId('dso-activity-name').fill('E2E milieu')
+		await dialog.getByTestId('dso-activity-imow-id').fill(IMOW_MILIEU)
 		await dialog
 			.getByTestId('dso-activity-case-type-reference')
 			.first()
-			.locator('input')
 			.fill('E2E-MILIEU')
 		await dialog.getByTestId('dso-activity-add-case-type').click()
 		await dialog
 			.getByTestId('dso-activity-case-type-reference')
 			.nth(1)
-			.locator('input')
 			.fill('E2E-BOUWEN')
 		await dialog.getByTestId('dso-activity-save').click()
 
@@ -64,7 +61,6 @@ test.describe('dso activity mapping', () => {
 		await dialog
 			.getByTestId('dso-activity-case-type-reference')
 			.nth(1)
-			.locator('input')
 			.fill('E2E-BOUWEN-2')
 		await dialog.getByTestId('dso-activity-save').click()
 		await expect(row).toContainText('E2E-BOUWEN-2', { timeout: 20_000 })
@@ -106,14 +102,14 @@ test.describe('dso activity mapping', () => {
 
 		await unmapped.getByTestId('admin-dso-unmapped-map').click()
 		const dialog = page.getByTestId('dso-activity-dialog')
-		await expect(
-			dialog.getByTestId('dso-activity-imow-id').locator('input'),
-		).toHaveValue(IMOW_UNMAPPED)
-		await expect(
-			dialog.getByTestId('dso-activity-activity-id').locator('input'),
-		).toHaveValue('E2E-0000-Unmapped')
-		await expect(
-			dialog.getByTestId('dso-activity-name').locator('input'),
-		).toHaveValue('E2E unmapped')
+		await expect(dialog.getByTestId('dso-activity-imow-id')).toHaveValue(
+			IMOW_UNMAPPED,
+		)
+		await expect(dialog.getByTestId('dso-activity-activity-id')).toHaveValue(
+			'E2E-0000-Unmapped',
+		)
+		await expect(dialog.getByTestId('dso-activity-name')).toHaveValue(
+			'E2E unmapped',
+		)
 	})
 })
