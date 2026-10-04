@@ -227,6 +227,9 @@ trait DsoConnectionWorld {
 	 * @return ORObjectService&MockObject
 	 */
 	protected function buildWorldObjectService(): ORObjectService {
+		// The callbacks follow the parameter order of the ObjectService stub in
+		// tests/stubs (find: id, register, schema, _rbac; saveObject: object,
+		// register, schema, uuid, _rbac). The code under test calls them by name.
 		$service = $this->getMockBuilder(ORObjectService::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['find', 'findAll', 'saveObject'])
@@ -245,7 +248,7 @@ trait DsoConnectionWorld {
 		);
 
 		$service->method('find')->willReturnCallback(
-			function ($id, ?array $_extend = [], bool $files = false, $register = null, $schema = null, bool $_rbac = true): ?ObjectEntity {
+			function ($id, $register = null, $schema = null, bool $_rbac = true): ?ObjectEntity {
 				$this->worldReads[] = ['schema' => $schema, 'rbac' => $_rbac, 'uid' => $this->worldSession->getUser()?->getUID()];
 				foreach ($this->worldFind(schema: $schema, filters: [], rbac: $_rbac) as $entity) {
 					if ($entity->getUuid() === (string)$id) {
@@ -258,7 +261,7 @@ trait DsoConnectionWorld {
 		);
 
 		$service->method('saveObject')->willReturnCallback(
-			function ($object, ?array $extend = [], $register = null, $schema = null, ?string $uuid = null, bool $_rbac = true): ObjectEntity {
+			function ($object, $register = null, $schema = null, ?string $uuid = null, bool $_rbac = true): ObjectEntity {
 				return $this->worldSave(object: (array)$object, schema: (string)$schema, uuid: $uuid, rbac: $_rbac);
 			}
 		);

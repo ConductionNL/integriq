@@ -30,12 +30,16 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Exception\DsoProviderException;
+use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DSOParserService;
-use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Service\Dso\DsoConnection;
+use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Controller;
@@ -76,7 +80,8 @@ class DSOController extends Controller {
 	 * @param IRequest $request Request object.
 	 * @param DSOParserService $parser The DSO payload parser service.
 	 * @param LoggerInterface $logger Logger for error handling.
-	 * @param DSOSignatureVerifierService $signatureVerifier PKIoverheid / HMAC webhook signature verifier.
+	 * @param DsoConnection $connection The dso-stam consumer: signature, account, rights, runAs().
+	 * @param DsoConnectionAlerts $alerts Admin notifications when a push is refused with 503.
 	 * @param DsoIngestService $ingestService dso_verzoek persistence, mapping, handoff, outbound.
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IUserSession $userSession The user session (status/list/handoff/outbound
@@ -84,13 +89,15 @@ class DSOController extends Controller {
 	 * @param IL10N $l The localization service.
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly DSOParserService $parser,
 		private readonly LoggerInterface $logger,
-		private readonly DSOSignatureVerifierService $signatureVerifier,
+		private readonly DsoConnection $connection,
+		private readonly DsoConnectionAlerts $alerts,
 		private readonly DsoIngestService $ingestService,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
@@ -134,9 +141,14 @@ class DSOController extends Controller {
 		$rawBody = $this->getRawContent();
 		$body = $this->request->getParams();
 
-		// Validate webhook signature over the exact raw body bytes.
+		// DSO-LV is an integriq consumer (authorizationType dso-stam). The
+		// signature over the exact raw body authenticates it, and its account
+		// is who every write runs as. A connection, account or right that is
+		// missing answers 503 before anything is written, so DSO-LV retries.
 		$signatureHeader = $this->request->getHeader('X-DSO-Signature');
-		if ($this->signatureVerifier->verify(signatureHeader: $signatureHeader, rawBody: $rawBody) === false) {
+		try {
+			$identity = $this->connection->authenticate(rawBody: $rawBody, signatureHeader: $signatureHeader);
+		} catch (DsoSignatureException) {
 			$this->logger->warning(
 				'DSO STAM: Webhook signature validation failed',
 				['hasSignatureHeader' => ($signatureHeader !== '' && $signatureHeader !== null)]
@@ -148,6 +160,8 @@ class DSOController extends Controller {
 				],
 				statusCode: Http::STATUS_UNAUTHORIZED
 			);
+		} catch (DsoConnectionUnavailableException $exception) {
+			return $this->connectionUnavailable(exception: $exception);
 		}
 
 		// Validate the payload schema.
@@ -191,12 +205,15 @@ class DSOController extends Controller {
 		// codes) treats a 503 as recoverable and keeps its reliable-messaging
 		// retries going, while a 4xx counts as a final error.
 		try {
-			$stored = $this->ingestService->ingest(parsedRequest: $request);
+			$stored = $this->connection->runAs(
+				$identity->account,
+				fn (): mixed => $this->ingestService->ingest(parsedRequest: $request, identity: $identity)
+			);
 		} catch (Throwable $exception) {
 			return $this->notStored(requestId: $requestId, reason: $exception->getMessage());
 		}
 
-		if ($stored->getUuid() === null || $stored->getUuid() === '') {
+		if ($stored instanceof ObjectEntity === false || $stored->getUuid() === null || $stored->getUuid() === '') {
 			return $this->notStored(requestId: $requestId, reason: 'ingest returned an object without a uuid');
 		}
 
@@ -229,6 +246,7 @@ class DSOController extends Controller {
 			'DSO STAM: verzoek not stored, answering 503 so the sender retries',
 			['verzoekId' => $requestId, 'exception' => $reason]
 		);
+		$this->alerts->notify(reason: DsoConnectionAlerts::REASON_NOT_STORED);
 
 		return new JSONResponse(
 			data: [
@@ -240,6 +258,35 @@ class DSOController extends Controller {
 		);
 
 	}//end notStored()
+
+	/**
+	 * Log a push the DSO connection cannot store and answer 503.
+	 *
+	 * Nothing was written. The administrators get one notification per
+	 * reason per hour, and DSO-LV delivers the verzoek again.
+	 *
+	 * @param DsoConnectionUnavailableException $exception Why the connection is not usable.
+	 *
+	 * @return JSONResponse HTTP 503 with the error code of the reason.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
+	 */
+	private function connectionUnavailable(DsoConnectionUnavailableException $exception): JSONResponse {
+		$this->logger->error(
+			'DSO STAM: push refused, the DSO connection is not usable; answering 503 so the sender retries',
+			['reason' => $exception->getReason(), 'detail' => $exception->getMessage()]
+		);
+		$this->alerts->notify(reason: $exception->getReason());
+
+		return new JSONResponse(
+			data: [
+				'error' => $exception->getErrorCode(),
+				'message' => 'Verzoek kon niet worden opgeslagen, probeer het later opnieuw',
+			],
+			statusCode: Http::STATUS_SERVICE_UNAVAILABLE
+		);
+
+	}//end connectionUnavailable()
 
 	/**
 	 * List `dso_verzoek` records, optionally filtered by `?status=`.
