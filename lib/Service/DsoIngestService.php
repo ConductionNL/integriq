@@ -48,6 +48,7 @@ use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
 use OCA\Integriq\Service\Dso\DsoClient;
 use OCA\Integriq\Service\Dso\DsoConnectorProviderInterface;
+use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use OCA\Integriq\Service\Security\RawSourceResolver;
@@ -151,35 +152,38 @@ class DsoIngestService {
 	 * (`received`), then resolve + apply {@see DsoRequestTranslator}
 	 * (`mapped`|`failed`, isolated to this verzoek).
 	 *
+	 * Runs inside `DsoConnection::runAs()`: every read and write here happens
+	 * as the DSO connection's account, under its own RBAC. A repeated delivery
+	 * of a verzoek that is already stored is matched by `verzoekId` (and
+	 * `volgnummer`, when the payload has one): `mapped`, `failed` or
+	 * `handed_off` answers with the stored record and writes nothing;
+	 * `received` (a crash after the first save) is finished, not duplicated.
+	 *
 	 * @param array<string, mixed> $parsedRequest The {@see DSOParserService::parseRequest()} output.
+	 * @param DsoIdentity|null     $identity      The account and connection the intake acts as;
+	 *                                            recorded in `receivedVia` and handed to the bijlage job.
 	 *
 	 * @return ObjectEntity The persisted `dso_verzoek` record (any status).
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso_verzoek-lifecycle-with-per-verzoek-isolation-req-003
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
-	public function ingest(array $parsedRequest): ObjectEntity {
-		$request = $this->objectService->saveObject(
-			object: [
-				'verzoekId' => (string)($parsedRequest['verzoekId'] ?? ''),
-				'bronorganisatie' => (string)($parsedRequest['bronorganisatie'] ?? ''),
-				'type' => (string)($parsedRequest['type'] ?? ''),
-				'submissionDate' => (string)($parsedRequest['submissionDate'] ?? ''),
-				'rawRequest' => $parsedRequest,
-				'mappedTitle' => '',
-				'mappedSummary' => '',
-				'mappedChannel' => '',
-				'mappedPriority' => '',
-				'requester' => [],
-				'status' => 'received',
-				'errorDetail' => null,
-				'correlationId' => '',
-				'targetCase' => [],
-				'receivedAt' => (new DateTime())->format('c'),
-				'attachments' => $this->pendingAttachments(references: ($parsedRequest['bijlagen'] ?? [])),
-			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_VERZOEK
-		);
+	public function ingest(array $parsedRequest, ?DsoIdentity $identity = null): ObjectEntity {
+		$actingUserId = '';
+		if ($identity !== null) {
+			$actingUserId = $identity->account->getUID();
+		}
+
+		$existing = $this->findDelivered(parsedRequest: $parsedRequest);
+		if ($existing !== null && ($existing->getObject()['status'] ?? null) !== 'received') {
+			$this->logger->info(
+				'[DsoIngestService] verzoek ' . (string)($parsedRequest['verzoekId'] ?? '') . ' was delivered before; nothing written',
+				['uuid' => $existing->getUuid()]
+			);
+			return $existing;
+		}
+
+		$request = ($existing ?? $this->createReceived(parsedRequest: $parsedRequest, identity: $identity));
 
 		try {
 			$mapped = $this->translator->translate(request: $parsedRequest);
@@ -198,7 +202,8 @@ class DsoIngestService {
 					register: self::REGISTER,
 					schema: self::SCHEMA_VERZOEK,
 					uuid: $request->getUuid()
-				)
+				),
+				actingUserId: $actingUserId
 			);
 		}
 
@@ -220,10 +225,98 @@ class DsoIngestService {
 				register: self::REGISTER,
 				schema: self::SCHEMA_VERZOEK,
 				uuid: $request->getUuid()
-			)
+			),
+			actingUserId: $actingUserId
 		);
 
 	}//end ingest()
+
+	/**
+	 * Find a verzoek DSO-LV delivered before, under the acting account's rights.
+	 *
+	 * @param array<string, mixed> $parsedRequest The parsed verzoek.
+	 *
+	 * @return ObjectEntity|null The stored record, or null when this is a first delivery.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function findDelivered(array $parsedRequest): ?ObjectEntity {
+		$verzoekId = (string)($parsedRequest['verzoekId'] ?? '');
+		if ($verzoekId === '') {
+			return null;
+		}
+
+		$filters = ['register' => self::REGISTER, 'schema' => self::SCHEMA_VERZOEK, 'verzoekId' => $verzoekId];
+		$matches = $this->objectService->findAll(config: ['filters' => $filters, 'limit' => 10]);
+		$results = ($matches['results'] ?? $matches);
+
+		$volgnummer = ($parsedRequest['volgnummer'] ?? null);
+		foreach ($results as $candidate) {
+			if ($candidate instanceof ObjectEntity === false) {
+				continue;
+			}
+
+			$data = $candidate->getObject();
+			if (($data['verzoekId'] ?? null) !== $verzoekId) {
+				continue;
+			}
+
+			$storedVolgnummer = ($data['rawRequest']['volgnummer'] ?? null);
+			if ($volgnummer !== null && $storedVolgnummer !== null && (string)$storedVolgnummer !== (string)$volgnummer) {
+				continue;
+			}
+
+			return $candidate;
+		}
+
+		return null;
+
+	}//end findDelivered()
+
+	/**
+	 * Store a first delivery as `received`.
+	 *
+	 * @param array<string, mixed> $parsedRequest The parsed verzoek.
+	 * @param DsoIdentity|null     $identity      The account and connection the intake acts as.
+	 *
+	 * @return ObjectEntity The stored record.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function createReceived(array $parsedRequest, ?DsoIdentity $identity): ObjectEntity {
+		$object = [
+			'verzoekId' => (string)($parsedRequest['verzoekId'] ?? ''),
+			'bronorganisatie' => (string)($parsedRequest['bronorganisatie'] ?? ''),
+			'type' => (string)($parsedRequest['type'] ?? ''),
+			'submissionDate' => (string)($parsedRequest['submissionDate'] ?? ''),
+			'rawRequest' => $parsedRequest,
+			'mappedTitle' => '',
+			'mappedSummary' => '',
+			'mappedChannel' => '',
+			'mappedPriority' => '',
+			'requester' => [],
+			'status' => 'received',
+			'errorDetail' => null,
+			'correlationId' => '',
+			'targetCase' => [],
+			'receivedAt' => (new DateTime())->format('c'),
+			'attachments' => $this->pendingAttachments(references: ($parsedRequest['bijlagen'] ?? [])),
+		];
+
+		if ($identity !== null) {
+			$object['receivedVia'] = [
+				'consumer' => $identity->consumerUuid,
+				'account' => $identity->account->getUID(),
+			];
+		}
+
+		return $this->objectService->saveObject(
+			object: $object,
+			register: self::REGISTER,
+			schema: self::SCHEMA_VERZOEK
+		);
+
+	}//end createReceived()
 
 	/**
 	 * Queue one {@see FetchDsoAttachmentsJob} for a request that has bijlagen.
@@ -232,19 +325,27 @@ class DsoIngestService {
 	 * for the request object. The endpoint answers without waiting for it.
 	 * A failure to queue is logged and leaves every entry `pending`.
 	 *
-	 * @param ObjectEntity $request The saved request.
+	 * The job carries the uid the intake acted as, so it runs as the same
+	 * account under cron (dso-intake-through-an-integriq-connection D5).
+	 *
+	 * @param ObjectEntity $request      The saved request.
+	 * @param string       $actingUserId The uid the intake acted as.
 	 *
 	 * @return ObjectEntity The same request.
 	 *
 	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-3
 	 */
-	private function enqueueAttachmentFetch(ObjectEntity $request): ObjectEntity {
+	private function enqueueAttachmentFetch(ObjectEntity $request, string $actingUserId): ObjectEntity {
 		if (empty($request->getObject()['attachments'] ?? []) === true) {
 			return $request;
 		}
 
 		try {
-			$this->jobList->add(FetchDsoAttachmentsJob::class, ['requestUuid' => $request->getUuid()]);
+			$this->jobList->add(
+				FetchDsoAttachmentsJob::class,
+				['requestUuid' => $request->getUuid(), 'actingUserId' => $actingUserId]
+			);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'[DsoIngestService] could not queue the bijlage download for verzoek ' . $request->getUuid(),
@@ -498,13 +599,22 @@ class DsoIngestService {
 	 * Resolve the single active `dso` outbound source
 	 * (`type=dso`, `isEnabled=true`).
 	 *
+	 * The source is admin-only configuration (`99-source-lockdown.json`). The
+	 * bijlage job runs as the DSO connection's account, which need not be an
+	 * admin, so it asks for an engine read (`$engineRead`): `_rbac: false` and
+	 * `_render: false`, a read only. Every other caller reads under its own
+	 * rights, as before.
+	 *
+	 * @param bool $engineRead Read as the engine rather than as the active user.
+	 *
 	 * @return ObjectEntity The resolved source.
 	 *
 	 * @throws DsoProviderException When no active source is configured.
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-outbound-status-besluit-post-with-per-message-audit-req-006
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
-	public function resolveActiveSource(): ObjectEntity {
+	public function resolveActiveSource(bool $engineRead = false): ObjectEntity {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -514,7 +624,9 @@ class DsoIngestService {
 					'isEnabled' => true,
 				],
 				'limit' => 1,
-			]
+			],
+			_rbac: ($engineRead === false),
+			_multitenancy: ($engineRead === false)
 		);
 		$results = ($matches['results'] ?? $matches);
 
@@ -525,7 +637,30 @@ class DsoIngestService {
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		if ($engineRead === false) {
+			return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		}
+
+		// The engine read re-reads the located source raw, as RawSourceResolver
+		// does, but without the active user's RBAC: the account is not an admin.
+		$uuid = (string)$results[0]->getUuid();
+		if ($uuid === '') {
+			return $results[0];
+		}
+
+		$raw = $this->objectService->find(
+			id: $uuid,
+			register: self::REGISTER,
+			schema: self::SCHEMA_SOURCE,
+			_rbac: false,
+			_multitenancy: false,
+			_render: false
+		);
+		if ($raw instanceof ObjectEntity === false) {
+			return $results[0];
+		}
+
+		return $raw;
 	}//end resolveActiveSource()
 
 	/**

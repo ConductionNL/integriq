@@ -25,6 +25,7 @@ use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
 use OCA\Integriq\Service\Dso\DsoClient;
+use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use OCA\Integriq\Service\DsoIngestService;
@@ -35,6 +36,7 @@ use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
+use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -348,7 +350,10 @@ class DsoIngestServiceTest extends TestCase {
 				'bijlagen' => [['name' => 'tekening.pdf', 'url' => 'https://dso-lv.nl/docs/1']],
 			]
 		);
-		$this->assertSame([[FetchDsoAttachmentsJob::class, ['requestUuid' => $with->getUuid()]]], $this->queued);
+		$this->assertSame(
+			[[FetchDsoAttachmentsJob::class, ['requestUuid' => $with->getUuid(), 'actingUserId' => '']]],
+			$this->queued
+		);
 		$this->assertSame('pending', $with->getObject()['attachments'][0]['status']);
 
 		$failed = $service->ingest(
@@ -669,4 +674,121 @@ class DsoIngestServiceTest extends TestCase {
 		$service->postOutbound(requestUuid: $request->getUuid(), type: 'onbekend', fields: []);
 
 	}//end testPostOutboundRejectsUnknownType()
+
+	/**
+	 * An identity for the DSO connection's account.
+	 *
+	 * @return DsoIdentity
+	 */
+	private function identity(): DsoIdentity {
+		$account = $this->createMock(IUser::class);
+		$account->method('getUID')->willReturn('dso-intake');
+
+		return new DsoIdentity(account: $account, consumerUuid: 'consumer-dso');
+	}//end identity()
+
+	/**
+	 * The job carries the uid the intake acted as, and the record says which
+	 * connection delivered it; the register accepts receivedVia.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-3
+	 */
+	public function testIngestHandsTheActingAccountToTheJobAndRecordsReceivedVia(): void {
+		$service = $this->buildService();
+
+		$stored = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-via-1',
+				'type' => 'aanvraag',
+				'bijlagen' => [['name' => 'tekening.pdf', 'url' => 'https://dso-lv.nl/docs/1']],
+			],
+			identity: $this->identity()
+		);
+
+		$this->assertSame(
+			[[FetchDsoAttachmentsJob::class, ['requestUuid' => $stored->getUuid(), 'actingUserId' => 'dso-intake']]],
+			$this->queued
+		);
+		$this->assertSame(['consumer' => 'consumer-dso', 'account' => 'dso-intake'], $stored->getObject()['receivedVia']);
+		$this->assertSame(
+			[],
+			RegisterSchemaValidator::errors(
+				schemaSlug: 'dso_verzoek',
+				object: ['verzoekId' => 'dso-via-1', 'status' => 'mapped', 'receivedVia' => $stored->getObject()['receivedVia']]
+			)
+		);
+		$this->assertNotSame(
+			[],
+			RegisterSchemaValidator::errors(
+				schemaSlug: 'dso_verzoek',
+				object: ['verzoekId' => 'dso-via-2', 'status' => 'mapped', 'receivedVia' => ['consumer' => 'c', 'user' => 'x']]
+			),
+			'receivedVia declares exactly consumer and account'
+		);
+
+	}//end testIngestHandsTheActingAccountToTheJobAndRecordsReceivedVia()
+
+	/**
+	 * A repeated delivery of a mapped or failed verzoek writes nothing and
+	 * returns the stored record.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-repeated-delivery-creates-no-second-record
+	 */
+	public function testARepeatedDeliveryOfAMappedVerzoekWritesNothing(): void {
+		$service = $this->buildService();
+		$verzoek = [
+			'verzoekId' => 'dso-123',
+			'type' => 'aanvraag',
+			'bijlagen' => [['name' => 'a.pdf', 'url' => 'https://dso-lv.nl/docs/a']],
+		];
+
+		$first = $service->ingest(parsedRequest: $verzoek, identity: $this->identity());
+		$this->assertSame('mapped', $first->getObject()['status']);
+		$storedBefore = $this->requestStore;
+		$queuedBefore = $this->queued;
+
+		$second = $service->ingest(parsedRequest: $verzoek, identity: $this->identity());
+
+		$this->assertSame($first->getUuid(), $second->getUuid());
+		$this->assertCount(1, $this->requestStore);
+		$this->assertSame($storedBefore, $this->requestStore);
+		$this->assertSame($queuedBefore, $this->queued, 'No second bijlage job');
+
+	}//end testARepeatedDeliveryOfAMappedVerzoekWritesNothing()
+
+	/**
+	 * A verzoek left `received` (a crash after the first save) is finished on
+	 * the next delivery, not created twice.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	public function testARepeatedDeliveryFinishesAReceivedVerzoek(): void {
+		$service = $this->buildService();
+		$this->requestStore['verzoek-crashed'] = $this->buildEntity(
+			['verzoekId' => 'dso-crash', 'status' => 'received', 'attachments' => []],
+			'verzoek-crashed'
+		);
+
+		$finished = $service->ingest(parsedRequest: ['verzoekId' => 'dso-crash', 'type' => 'aanvraag'], identity: $this->identity());
+
+		$this->assertSame('verzoek-crashed', $finished->getUuid());
+		$this->assertSame('mapped', $finished->getObject()['status']);
+		$this->assertCount(1, $this->requestStore);
+
+	}//end testARepeatedDeliveryFinishesAReceivedVerzoek()
+
+	/**
+	 * A different verzoekId is a new verzoek.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	public function testADifferentVerzoekIdIsCreated(): void {
+		$service = $this->buildService();
+
+		$service->ingest(parsedRequest: ['verzoekId' => 'dso-a', 'type' => 'aanvraag'], identity: $this->identity());
+		$service->ingest(parsedRequest: ['verzoekId' => 'dso-b', 'type' => 'aanvraag'], identity: $this->identity());
+
+		$this->assertCount(2, $this->requestStore);
+
+	}//end testADifferentVerzoekIdIsCreated()
 }//end class
