@@ -41,10 +41,11 @@ Kind: config, with two node options. Half for stackiq `sharing-itsm-exchange` (r
 
 ### Task 6: Docs
 - **files**: `docs/features/service-desk-connectors.md`, `l10n/en.json`, `l10n/nl.json`
-- [ ] Implement
+- [x] Implement
+  - Landed with #2428: `docs/features/service-desk-connectors.md` (who owns which field, connect TOPdesk, ServiceNow and GLPI, what is seeded, the flow options, the mocks), its row in `docs/features/README.md`, and the 13 English and Dutch strings for the ownership and `bodyFrom` options and their refusals.
 
 ## Verification
-- [ ] `openspec validate connectors-service-desk-templates --strict` passes
+- [x] `openspec validate connectors-service-desk-templates --strict` passes
 - [ ] `composer check:strict` once before push; PHPUnit exit code read
 - [ ] Live on :8096: inbound reads from both mocks land mapped records; an outbound write sends the expected payload; in a conflict the desk-owned field wins and a stackiq-owned field survives
 - [ ] Run against a real ServiceNow developer instance (Ruben provides one)
