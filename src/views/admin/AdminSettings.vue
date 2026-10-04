@@ -14,6 +14,7 @@
 			<DsoPkiSettings />
 			<DsoActivityMappingSettings />
 			<OpenFormulierenConnectionSettings />
+			<WebhookConnectionsSettings />
 			<ExpressionSourceSettings />
 			<ConnectionAlertSettings />
 		</div>
@@ -28,6 +29,7 @@ import DsoActivityMappingSettings from './DsoActivityMappingSettings.vue'
 import DsoPkiSettings from './DsoPkiSettings.vue'
 import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
+import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
 
 /**
  * Root admin settings panel for Integriq.
@@ -62,6 +64,7 @@ export default {
 		DsoPkiSettings,
 		ExpressionSourceSettings,
 		OpenFormulierenConnectionSettings,
+		WebhookConnectionsSettings,
 	},
 }
 </script>
