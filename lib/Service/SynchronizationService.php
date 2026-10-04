@@ -1866,6 +1866,42 @@ class SynchronizationService {
 	}//end calculateExpires()
 
 	/**
+	 * Whether an object meets a synchronization's conditions.
+	 *
+	 * The synchronization schema types `conditions` as a list of JsonLogic
+	 * groups, and the editor stores it that way (`[{"and": [...]}]`), while
+	 * older seeds hold one bare JsonLogic object. JsonLogic::apply() on a list
+	 * answers a list (`[false]`), which is never `false`, so a list-shaped
+	 * condition used to let every object through. A list holds when every
+	 * group in it holds. JsonLogic::apply() returns a range of types, so only
+	 * a literal `false` fails a group, as before.
+	 *
+	 * @param mixed $conditions The conditions: [] (none), a JsonLogic object, or a list of them.
+	 * @param array $data       The object to test.
+	 *
+	 * @return bool True when there are no conditions or every one holds.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-synchronization-orchestration-and-direction-routing-req-001
+	 */
+	private static function conditionsHold(mixed $conditions, array $data): bool {
+		if ($conditions === [] || $conditions === null) {
+			return true;
+		}
+
+		if (is_array($conditions) === true && array_is_list($conditions) === true) {
+			foreach ($conditions as $group) {
+				if (self::conditionsHold(conditions: $group, data: $data) === false) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		return JsonLogic::apply($conditions, $data) !== false;
+	}//end conditionsHold()
+
+	/**
 	 * Finds all synchronizations by the given source ID, which is a combination of register and schema.
 	 *
 	 * @param $register The register id.
@@ -2401,9 +2437,7 @@ class SynchronizationService {
 			);
 		}//end if
 
-		if (($synchronization['conditions'] ?? []) !== []
-			&& JsonLogic::apply(($synchronization['conditions'] ?? []), $serializedObject) === false
-		) {
+		if (self::conditionsHold(conditions: ($synchronization['conditions'] ?? []), data: (array)$serializedObject) === false) {
 			return null;
 		}
 
@@ -11492,9 +11526,7 @@ class SynchronizationService {
 			// enclosing method's $flowToken parameter is non-nullable.
 			$conditionsObject['flowToken'] = $flowToken->__serialize();
 
-			// Take note, JsonLogic::apply() returns a range of return types, so
-			// checking it with '=== false' or '!== true' does not work properly.
-			$conditionsWith = (JsonLogic::apply($conditions, $conditionsObject) !== false);
+			$conditionsWith = self::conditionsHold(conditions: $conditions, data: $conditionsObject);
 		}
 
 		// Check if object adheres to conditions.

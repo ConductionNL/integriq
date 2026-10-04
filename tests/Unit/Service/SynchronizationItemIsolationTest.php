@@ -198,7 +198,7 @@ class SynchronizationItemIsolationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-synchronization-orchestration-and-direction-routing-req-001
 	 */
 	public function testListShapedConditionsSkipAPulledObjectThatDoesNotMatch(): void {
 		$service = $this->buildServiceReturningObjects(
@@ -229,12 +229,14 @@ class SynchronizationItemIsolationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-synchronization-orchestration-and-direction-routing-req-001
 	 */
 	public function testListShapedConditionsStopAPushForAnObjectThatDoesNotMatch(): void {
 		$service = $this->buildServiceReturningObjects([]);
 
-		foreach (['list' => [['==' => [['var' => 'processingStatus'], 'ready_for_writeback']]], 'object' => ['==' => [['var' => 'processingStatus'], 'ready_for_writeback']]] as $shape => $conditions) {
+		$group  = ['==' => [['var' => 'processingStatus'], 'ready_for_writeback']];
+		$shapes = ['list' => [$group], 'object' => $group];
+		foreach ($shapes as $shape => $conditions) {
 			$object   = ['id' => 'doc-1', 'processingStatus' => 'staged'];
 			$contract = $service->synchronize(
 				synchronization: [
