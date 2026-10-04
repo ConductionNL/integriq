@@ -39,6 +39,7 @@ use DateTime;
 use GuzzleHttp\Client;
 use OCA\Integriq\Exception\MappingResolutionException;
 use OCA\Integriq\Exception\OpenFormulierenException;
+use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -125,43 +126,15 @@ class OpenFormulierenIntakeService {
 	}//end __construct()
 
 	/**
-	 * Resolve the single active `open-formulieren` source
-	 * (`type=open-formulieren`, `isEnabled=true`).
-	 *
-	 * @return ObjectEntity The resolved source.
-	 *
-	 * @throws OpenFormulierenException When no active source is configured.
-	 *
-	 * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-signed-inbound-submission-webhook-req-001
-	 */
-	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
-			throw new OpenFormulierenException(
-				message: 'No active Open Formulieren source is configured (register "openconnector", '
-				. 'schema "source", type "open-formulieren", isEnabled=true).'
-			);
-		}
-
-		return $results[0];
-	}//end resolveActiveSource()
-
-	/**
 	 * Ingest one signed, verified submission: persist (`received`), resolve +
 	 * apply the form mapping (`mapped`|`failed`, isolated to this submission),
 	 * and best-effort fetch/store attachments.
+	 *
+	 * Runs as the Open Formulieren connection's account (the controller wraps
+	 * it in `runAs()`), so every write, the attachment files included, has that
+	 * owner. A repeated delivery of the same `submission.uuid` creates no
+	 * second record: a finished one is answered as it is, a `received` one is
+	 * finished.
 	 *
 	 * @param string $formSlug The Open Formulieren form slug.
 	 * @param string|null $formUuid The Open Formulieren form uuid, if present.
@@ -170,10 +143,12 @@ class OpenFormulierenIntakeService {
 	 * @param array<int, array> $attachmentRefs `[{key, url, filename, contentType}, ...]`.
 	 * @param array<string, mixed>|null $authContext `{plugin, bsn, kvk}` when present — never
 	 *                                               logged.
+	 * @param DsoIdentity|null $identity The connection and account the intake runs as; recorded as `receivedVia`.
 	 *
 	 * @return ObjectEntity The persisted `openformulieren_submission` record (any status).
 	 *
 	 * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-openformulieren-submission-lifecycle-with-per-submission-isolation-req-003
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-intake-acts-as-the-open-formulieren-connections-account-req-006
 	 */
 	public function ingest(
 		string $formSlug,
@@ -182,28 +157,47 @@ class OpenFormulierenIntakeService {
 		array $values,
 		array $attachmentRefs = [],
 		?array $authContext = null,
+		?DsoIdentity $identity = null,
 	): ObjectEntity {
-		$submission = $this->objectService->saveObject(
-			object: [
-				'formSlug' => $formSlug,
-				'formUuid' => ($formUuid ?? ''),
-				'submissionUuid' => (string)($submissionMeta['uuid'] ?? ''),
-				'submittedAt' => (string)($submissionMeta['submittedAt'] ?? (new DateTime())->format('c')),
-				'rawValues' => $values,
-				'authContext' => ($authContext ?? []),
-				'mappedTitle' => '',
-				'mappedSummary' => '',
-				'mappedChannel' => '',
-				'mappedPriority' => '',
-				'attachments' => [],
-				'status' => 'received',
-				'errorDetail' => null,
-				'correlationId' => '',
-				'targetCase' => [],
-			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION
-		);
+		$submissionUuid = (string)($submissionMeta['uuid'] ?? '');
+
+		$existing = $this->findDelivered(submissionUuid: $submissionUuid);
+		if ($existing !== null && ($existing->getObject()['status'] ?? null) !== 'received') {
+			return $existing;
+		}
+
+		$record = [
+			'formSlug' => $formSlug,
+			'formUuid' => ($formUuid ?? ''),
+			'submissionUuid' => $submissionUuid,
+			'submittedAt' => (string)($submissionMeta['submittedAt'] ?? (new DateTime())->format('c')),
+			'rawValues' => $values,
+			'authContext' => ($authContext ?? []),
+			'mappedTitle' => '',
+			'mappedSummary' => '',
+			'mappedChannel' => '',
+			'mappedPriority' => '',
+			'attachments' => [],
+			'status' => 'received',
+			'errorDetail' => null,
+			'correlationId' => '',
+			'targetCase' => [],
+		];
+		if ($identity !== null) {
+			$record['receivedVia'] = [
+				'consumer' => $identity->consumerUuid,
+				'account' => $identity->account->getUID(),
+			];
+		}
+
+		$submission = $existing;
+		if ($submission === null) {
+			$submission = $this->objectService->saveObject(
+				object: $record,
+				register: self::REGISTER,
+				schema: self::SCHEMA_SUBMISSION
+			);
+		}
 
 		try {
 			$mapped = $this->resolveAndApplyMapping(formSlug: $formSlug, values: $values);
@@ -324,6 +318,45 @@ class OpenFormulierenIntakeService {
 
 		return $result;
 	}//end handoff()
+
+	/**
+	 * The stored submission for an Open Formulieren submission uuid, if any.
+	 *
+	 * Read under the acting account's own rights: the intake account owns what
+	 * it stored, so it finds its own earlier delivery.
+	 *
+	 * @param string $submissionUuid Open Formulieren's own submission uuid.
+	 *
+	 * @return ObjectEntity|null The stored submission, or null.
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-intake-acts-as-the-open-formulieren-connections-account-req-006
+	 */
+	private function findDelivered(string $submissionUuid): ?ObjectEntity {
+		if ($submissionUuid === '') {
+			return null;
+		}
+
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_SUBMISSION,
+					'submissionUuid' => $submissionUuid,
+				],
+				'limit' => 1,
+			]
+		);
+		$results = ($matches['results'] ?? $matches);
+
+		foreach ($results as $candidate) {
+			if ($candidate instanceof ObjectEntity === true && ($candidate->getObject()['submissionUuid'] ?? null) === $submissionUuid) {
+				return $candidate;
+			}
+		}
+
+		return null;
+
+	}//end findDelivered()
 
 	/**
 	 * Resolve the `openformulieren_form_mapping` record for a form slug and

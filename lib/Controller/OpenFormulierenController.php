@@ -4,8 +4,8 @@
  * Integriq Open Formulieren Controller.
  *
  * REST controller for the open-formulieren-intake bridge: the signed
- * inbound submission webhook (gated by HMAC, not an NC session — mirrors
- * `PeppolController::inbound()` / `NotifyNlController::inbound()`), a
+ * inbound submission webhook (gated by HMAC against the `open-formulieren`
+ * consumer, and run as that consumer's account, like the DSO STAM intake), a
  * status-read endpoint, and the authenticated handoff-trigger endpoint that
  * executes the declared `ns#Case` handoff under the calling user's own
  * session/RBAC (see design.md §1.1 for why this is a separate, authenticated
@@ -30,10 +30,15 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
+use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Controller;
@@ -67,7 +72,8 @@ class OpenFormulierenController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param OpenFormulierenIntakeService $intakeService Ingest / mapping / handoff orchestration.
-	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.
+	 * @param OpenFormulierenConnection $connection The consumer that authenticates the webhook and its account.
+	 * @param DsoConnectionAlerts $alerts Admin alerts when a submission is refused (shared with DSO).
 	 * @param IUserSession $userSession The user session (status/handoff endpoints).
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -77,7 +83,8 @@ class OpenFormulierenController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly OpenFormulierenIntakeService $intakeService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly OpenFormulierenConnection $connection,
+		private readonly DsoConnectionAlerts $alerts,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,
@@ -90,15 +97,19 @@ class OpenFormulierenController extends Controller {
 	/**
 	 * Receive a signed Open Formulieren submission.
 	 *
-	 * Gated by HMAC (constant-time compare, timestamp tolerance) verified
-	 * against the active `open-formulieren` source's
-	 * `configuration.webhookSignature` — an unsigned or tampered submission
-	 * is rejected 401 BEFORE any state change, no active source fails
-	 * closed. Expected JSON body: see design.md §5.
+	 * Open Formulieren is an integriq consumer (`authorizationType:
+	 * open-formulieren`). The HMAC over the exact raw body authenticates it
+	 * against that consumer's trust, and the consumer's account (`userId`) is
+	 * who every write runs as, inside OpenRegister's `runAs()`. A bad signature
+	 * answers 401 before any state change. A missing connection, account or
+	 * right answers 503 before anything is written, so Open Formulieren
+	 * delivers again. A write OpenRegister refuses anyway answers 503 too.
+	 * Expected JSON body: see design.md §5 of open-formulieren-intake.
 	 *
-	 * @return JSONResponse The persisted `openformulieren_submission` record, or a 400/401 error envelope.
+	 * @return JSONResponse The persisted `openformulieren_submission` record, or a 400/401/503 error envelope.
 	 *
 	 * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-signed-inbound-submission-webhook-req-001
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-intake-acts-as-the-open-formulieren-connections-account-req-006
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -106,34 +117,13 @@ class OpenFormulierenController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		try {
-			$source = $this->intakeService->resolveActiveSource();
-		} catch (OpenFormulierenException) {
-			// No source configured => no secret to verify against => fail closed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$webhookConfig = ($source->getObject()['configuration']['webhookSignature'] ?? []);
-		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
-		$secret = (string)($webhookConfig['secret'] ?? '');
-		$headerName = ($webhookConfig['header'] ?? 'X-OpenFormulieren-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
-
-		$headerValue = (string)$this->request->getHeader($headerName);
-
-		$verified = $this->signatureService->verify(
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			config: ['scheme' => $scheme, 'secret' => $secret, 'toleranceSeconds' => $tolerance]
-		);
-
-		if ($verified === false) {
-			// Undifferentiated error body: never leak which check failed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		$identity = $this->identify(rawBody: $rawBody);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		// Payload access goes through the framework's normalised params (NC decodes
-		// a JSON body into params), NOT a second json_decode($rawBody) — signature
+		// a JSON body into params), NOT a second json_decode($rawBody): signature
 		// verification already ran over the exact raw bytes above.
 		$body = $this->request->getParams();
 
@@ -146,30 +136,108 @@ class OpenFormulierenController extends Controller {
 		}
 
 		$formUuid = ($body['form']['uuid'] ?? null);
-		$submissionMeta = (array)($body['submission'] ?? []);
-		$values = (array)($body['values'] ?? []);
-		$attachmentRefs = (array)($body['attachments'] ?? []);
-		$authContext = ($body['auth'] ?? null);
-		if (is_array($authContext) === false) {
-			$authContext = null;
-		}
-
 		$formUuidValue = null;
 		if ($formUuid !== null) {
 			$formUuidValue = (string)$formUuid;
 		}
 
-		$submission = $this->intakeService->ingest(
-			formSlug: $formSlug,
-			formUuid: $formUuidValue,
-			submissionMeta: $submissionMeta,
-			values: $values,
-			attachmentRefs: $attachmentRefs,
-			authContext: $authContext
-		);
+		$authContext = ($body['auth'] ?? null);
+		if (is_array($authContext) === false) {
+			$authContext = null;
+		}
+
+		$submissionMeta = (array)($body['submission'] ?? []);
+
+		try {
+			$submission = $this->connection->runAs(
+				$identity->account,
+				fn (): mixed => $this->intakeService->ingest(
+					formSlug: $formSlug,
+					formUuid: $formUuidValue,
+					submissionMeta: $submissionMeta,
+					values: (array)($body['values'] ?? []),
+					attachmentRefs: (array)($body['attachments'] ?? []),
+					authContext: $authContext,
+					identity: $identity
+				)
+			);
+		} catch (Throwable $exception) {
+			return $this->notStored(submissionMeta: $submissionMeta, reason: $exception->getMessage());
+		}
+
+		if ($submission instanceof ObjectEntity === false || (string)$submission->getUuid() === '') {
+			return $this->notStored(submissionMeta: $submissionMeta, reason: 'ingest returned an object without a uuid');
+		}
 
 		return new JSONResponse($submission->getObject() + ['id' => $submission->getUuid()]);
 	}//end inbound()
+
+	/**
+	 * Authenticate the submission against the Open Formulieren connection.
+	 *
+	 * @param string $rawBody The exact raw request body.
+	 *
+	 * @return DsoIdentity|JSONResponse The identity, or the 401/503 answer.
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function identify(string $rawBody): DsoIdentity|JSONResponse {
+		try {
+			return $this->connection->authenticate(
+				rawBody: $rawBody,
+				headerOf: fn (string $name): string => (string)$this->request->getHeader($name)
+			);
+		} catch (DsoSignatureException) {
+			// Undifferentiated error body: never leak which check failed.
+			$this->logger->warning('[OpenFormulierenController] webhook signature validation failed');
+			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		} catch (DsoConnectionUnavailableException $exception) {
+			$this->logger->error(
+				'[OpenFormulierenController] submission refused, the Open Formulieren connection is not usable; answering 503 so the sender retries',
+				['reason' => $exception->getReason(), 'detail' => $exception->getMessage()]
+			);
+			$this->alerts->notify(reason: $exception->getReason(), channel: DsoConnectionUnavailableException::CHANNEL_OPEN_FORMULIEREN);
+
+			return new JSONResponse(
+				[
+					'error' => $exception->getErrorCode(),
+					'message' => $this->l->t('The submission could not be stored. Try again later.'),
+				],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
+		}//end try
+
+	}//end identify()
+
+	/**
+	 * Answer 503 for a submission that was not stored, log it and alert the admins.
+	 *
+	 * @param array<string, mixed> $submissionMeta The payload's `submission` block.
+	 * @param string               $reason         Why it was not stored (secret-free).
+	 *
+	 * @return JSONResponse The 503 answer.
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function notStored(array $submissionMeta, string $reason): JSONResponse {
+		$this->logger->error(
+			'[OpenFormulierenController] submission not stored, answering 503 so the sender retries',
+			['submissionUuid' => (string)($submissionMeta['uuid'] ?? ''), 'exception' => $reason]
+		);
+		$this->alerts->notify(
+			reason: DsoConnectionAlerts::REASON_SUBMISSION_NOT_STORED,
+			channel: DsoConnectionUnavailableException::CHANNEL_OPEN_FORMULIEREN
+		);
+
+		return new JSONResponse(
+			[
+				'error' => DsoConnectionAlerts::REASON_SUBMISSION_NOT_STORED,
+				'message' => $this->l->t('The submission could not be stored. Try again later.'),
+			],
+			Http::STATUS_SERVICE_UNAVAILABLE
+		);
+
+	}//end notStored()
 
 	/**
 	 * Read one submission's current status.
