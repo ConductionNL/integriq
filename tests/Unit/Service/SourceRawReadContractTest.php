@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
+use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoClient;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
@@ -181,7 +182,7 @@ class SourceRawReadContractTest extends TestCase {
 				$logger,
 				$resolver,
 				$this->createMock(IJobList::class),
-				new DsoActivityMapper()
+				new DsoActivityMapper(new DsoActivityTable($fake))
 			),
 			'Kiss' => new KissSyncService(
 				$fake,

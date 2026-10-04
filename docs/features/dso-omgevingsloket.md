@@ -31,7 +31,12 @@ Receives DSO-verzoek payloads from DSO-LV via the STAM koppelvlak.
     "gmlGeometrie": "<gml:Point><gml:pos>52.370216 4.895168</gml:pos></gml:Point>"
   },
   "activiteiten": [
-    { "code": "bouwen-01", "omschrijving": "Bouwen van een woning" }
+    {
+      "imowId": "nl.imow-gm0000.activiteit.DemoBouwen",
+      "activityId": "Demo-0000-Bouwen",
+      "activityName": "Bouwen van een woning",
+      "volgnr": 1
+    }
   ],
   "bouwkosten": 250000,
   "bijlagen": [
@@ -65,11 +70,16 @@ Receives DSO-verzoek payloads from DSO-LV via the STAM koppelvlak.
 
 ## Activiteiten Mapping
 
-DSO activiteiten (bouwen, milieu, kappen, etc.) are mapped to zaaktypen via a configurable mapping table stored in OpenRegister. The mapping supports:
+You map DSO activities to case types in **Settings > Administration > Integriq > DSO activities**. Each row is a `dso_activity_mapping` object in OpenRegister. Only administrators can change it.
 
-- **One-to-one:** One activiteit maps to one zaaktype
-- **One-to-many:** One activiteit generates multiple zaaktypen for different afdelingen
-- **Samenloop:** Multiple activiteiten in one verzoek can create deelzaken or a combined zaak
+- A verzoek activity matches a row on its imow-id first, then on its activity id. An onderliggende activiteit is tried before its parent.
+- One row can give several case types, each with the department that handles it.
+- Samenloop: each row says deelzaken or gecombineerd. A samenloop rule on a row decides one specific pair.
+- Integriq ships no activity codes. There is no public list of them: each gemeente, provincie or waterschap defines its own. A fresh install starts empty.
+- Activities that no row maps show up under **Unmapped DSO activities**, with how often they arrived. Choose **Map** to add a row for one.
+- The `code` and `omschrijving` fields of older pushes are read as the activity id and name.
+
+The demo data holds three rows with gemeentecode 0000. That code does not exist, so they never match a real verzoek.
 
 ## Validation
 
@@ -114,4 +124,3 @@ Foundational implementation complete (endpoint, parser, validator). The followin
 - Automatic zaak creation (requires Procest app)
 - Status push back to DSO-LV
 - DSO-SWF samenwerking
-- Activiteiten-mapping administration UI

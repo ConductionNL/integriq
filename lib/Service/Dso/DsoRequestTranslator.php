@@ -115,30 +115,26 @@ class DsoRequestTranslator {
 	}//end translate()
 
 	/**
-	 * Resolve the normalised title from the first activiteit's omschrijving
-	 * (or `code` when no omschrijving is present), falling back to a
-	 * type-based generic title when no activiteiten are present at all —
-	 * this bridge never fabricates a title referencing data that is not
-	 * actually on the Verzoek.
+	 * Resolve the normalised title from the first activiteit's name (or its
+	 * identifier when it has no name), falling back to a type-based generic
+	 * title when no activiteiten are present at all. This bridge never
+	 * fabricates a title referencing data that is not actually on the Verzoek.
 	 *
 	 * @param array<string, mixed> $request The parsed Verzoek.
 	 * @param string $type The Verzoek type.
 	 *
 	 * @return string The resolved title.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-1.2
 	 */
 	private function resolveTitle(array $request, string $type): string {
 		$activiteiten = (array)($request['activiteiten'] ?? []);
 		$first = ($activiteiten[0] ?? null);
 
 		if (is_array($first) === true) {
-			$omschrijving = trim((string)($first['omschrijving'] ?? ''));
-			if ($omschrijving !== '') {
-				return $omschrijving;
-			}
-
-			$code = trim((string)($first['code'] ?? ''));
-			if ($code !== '') {
-				return $code;
+			$label = $this->activityLabel(activity: $first);
+			if ($label !== '') {
+				return $label;
 			}
 		}
 
@@ -146,7 +142,31 @@ class DsoRequestTranslator {
 	}//end resolveTitle()
 
 	/**
-	 * Resolve the normalised summary: every activiteit's omschrijving/code,
+	 * The label of one activiteit: its name, else its identifier.
+	 *
+	 * Reads the parser's `activityName` and `activityId`, and the older
+	 * `omschrijving` and `code` for a verzoek parsed before change
+	 * dso-activity-mapping-table.
+	 *
+	 * @param array<string, mixed> $activity The parsed activiteit.
+	 *
+	 * @return string The label, empty when the activiteit has none.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-1.2
+	 */
+	private function activityLabel(array $activity): string {
+		foreach (['activityName', 'omschrijving', 'activityId', 'code'] as $key) {
+			$value = trim((string)($activity[$key] ?? ''));
+			if ($value !== '') {
+				return $value;
+			}
+		}
+
+		return '';
+	}//end activityLabel()
+
+	/**
+	 * Resolve the normalised summary: every activiteit's label ({@see self::activityLabel()}),
 	 * comma-joined, plus the projectbeschrijving when present.
 	 *
 	 * @param array<string, mixed> $request The parsed Verzoek.
@@ -161,7 +181,7 @@ class DsoRequestTranslator {
 				continue;
 			}
 
-			$label = trim((string)($activity['omschrijving'] ?? ($activity['code'] ?? '')));
+			$label = $this->activityLabel(activity: $activity);
 			if ($label !== '') {
 				$labels[] = $label;
 			}
