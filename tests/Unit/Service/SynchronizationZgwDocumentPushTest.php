@@ -62,18 +62,39 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 	private int $createStatus = 201;
 
 	/**
+	 * Extra `zgwDocument` settings for one test.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private array $zgwExtra = [];
+
+	/**
+	 * Extra fields on the mapped delivery for one test.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private array $mappedExtra = [];
+
+	/**
+	 * File ids the service looked up directly.
+	 *
+	 * @var list<int>
+	 */
+	private array $fileIdLookups = [];
+
+	/**
 	 * The push synchronization.
 	 *
 	 * @return array
 	 */
-	private static function push(): array {
+	private function push(): array {
 		return [
 			'id' => 'push-uuid',
 			'sourceType' => 'register/schema',
 			'sourceId' => 'filinq/caseSystemDelivery',
 			'targetType' => 'api',
 			'targetId' => 'drc-uuid',
-			'targetConfig' => ['endpoint' => '/enkelvoudiginformatieobjecten', 'zgwDocument' => ['zakenSource' => 'zrc-uuid']],
+			'targetConfig' => ['endpoint' => '/enkelvoudiginformatieobjecten', 'zgwDocument' => array_merge(['zakenSource' => 'zrc-uuid'], $this->zgwExtra)],
 			'writeBack' => [
 				'onSuccess' => ['status' => 'written_back', 'resultExternalId' => '{{ response.url }}'],
 				'onFailure' => ['status' => 'writeback_failed', 'writeBackError' => '{{ error.message }}'],
@@ -93,7 +114,7 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$id);
 				$entity->setObject(match ((string)$id) {
-					'push-uuid' => self::push(),
+					'push-uuid' => $this->push(),
 					'delivery-1' => self::DELIVERY,
 					default => ['location' => self::DRC, 'name' => 'Documenten API'],
 				});
@@ -158,12 +179,31 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 				return 'application/pdf';
 			}
 		};
-		$fileService = new class($file) {
-			public function __construct(private object $file) {
+		$redacted = new class {
+			public function getContent(): string {
+				return 'ANON!';
+			}
+
+			public function getName(): string {
+				return 'besluit-geanonimiseerd.pdf';
+			}
+
+			public function getMimeType(): string {
+				return 'application/pdf';
+			}
+		};
+		$lookups = &$this->fileIdLookups;
+		$fileService = new class($file, $redacted, $lookups) {
+			public function __construct(private object $file, private object $redacted, private array &$lookups) {
 			}
 
 			public function getFiles(mixed $object): array {
 				return [$this->file];
+			}
+
+			public function getFileById(int $id): ?object {
+				$this->lookups[] = $id;
+				return $id === 4711 ? $this->redacted : null;
 			}
 		};
 
@@ -204,7 +244,7 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 	 * @return array The contract.
 	 */
 	private function pushOnce(?string $targetId=null): array {
-		$mapped = self::DELIVERY;
+		$mapped = array_merge(self::DELIVERY, $this->mappedExtra);
 		return $this->service()->updateTarget(
 			synchronizationContract: ['synchronizationId' => 'push-uuid', 'originId' => 'delivery-1', 'targetId' => $targetId],
 			targetObject: $mapped
@@ -274,4 +314,45 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 		$this->assertSame('writeback_failed', $this->saves[0]['object']['status']);
 		$this->assertSame('Documenten API answered 400: informatieobjecttype is niet gepubliceerd', $this->saves[0]['object']['writeBackError']);
 	}//end testARefusedCreateIsWrittenBackAsFailed()
+
+	/**
+	 * A redacted copy names its file in a field: that file goes up, not the object's first file.
+	 *
+	 * @return void
+	 */
+	public function testTheFileNamedInTheFileIdFieldIsDelivered(): void {
+		$this->zgwExtra    = ['fileIdField' => 'resultFileRef'];
+		$this->mappedExtra = ['resultFileRef' => '4711'];
+
+		$contract = $this->pushOnce();
+
+		$this->assertSame(self::DOCUMENT, $contract['targetId']);
+		$this->assertSame([4711], $this->fileIdLookups);
+		$create = $this->sent[0]['options']['json'];
+		$this->assertSame('besluit-geanonimiseerd.pdf', $create['bestandsnaam']);
+		$this->assertArrayNotHasKey('resultFileRef', $create);
+		$this->assertSame('ANON', $this->sent[1]['options']['multipart'][0]['contents']);
+		$this->assertSame('written_back', $this->saves[0]['object']['status']);
+	}//end testTheFileNamedInTheFileIdFieldIsDelivered()
+
+	/**
+	 * A delivery whose file field is empty sends nothing and is written back as failed.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyFileIdFieldFailsWithoutSending(): void {
+		$this->zgwExtra = ['fileIdField' => 'resultFileRef'];
+
+		try {
+			$this->pushOnce();
+			$this->fail('A delivery without its file must fail the push.');
+		} catch (\Exception $e) {
+			$this->assertStringContainsString('resultFileRef', $e->getMessage());
+		}
+
+		$this->assertSame([], $this->sent);
+		$this->assertSame([], $this->fileIdLookups);
+		$this->assertCount(1, $this->saves);
+		$this->assertSame('writeback_failed', $this->saves[0]['object']['status']);
+	}//end testAnEmptyFileIdFieldFailsWithoutSending()
 }//end class
