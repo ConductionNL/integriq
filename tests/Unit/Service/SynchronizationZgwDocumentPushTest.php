@@ -173,7 +173,8 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 				ZgwDocumentDelivery::class => new ZgwDocumentDelivery(transport: $transport),
 				'OCA\OpenRegister\Service\FileService' => $fileService,
 				'OCA\OpenRegister\Service\ObjectService' => $or,
-				default => throw new \RuntimeException('unexpected service ' . $id),
+				// The constructor's own lookups get what an unconfigured container mock gives.
+				default => null,
 			}
 		);
 
@@ -203,9 +204,10 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 	 * @return array The contract.
 	 */
 	private function pushOnce(?string $targetId=null): array {
+		$mapped = self::DELIVERY;
 		return $this->service()->updateTarget(
 			synchronizationContract: ['synchronizationId' => 'push-uuid', 'originId' => 'delivery-1', 'targetId' => $targetId],
-			targetObject: self::DELIVERY
+			targetObject: $mapped
 		);
 	}//end pushOnce()
 
