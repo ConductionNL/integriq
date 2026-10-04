@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import axios from '@nextcloud/axios'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -12,7 +13,6 @@
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import axios from '@nextcloud/axios'
 import EndpointFormFields from '@/modals/v2/EndpointFormFields.vue'
 
 vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn() } }))
@@ -59,9 +59,13 @@ async function mountWith(formData) {
 			data: {
 				results: url.includes('message_schema')
 					? [
-						{ '@self': { id: 'ms-1' }, name: 'Person', version: '1.0.0' },
-						{ '@self': { id: 'ms-2' }, name: 'Adres' },
-					]
+							{
+								'@self': { id: 'ms-1' },
+								name: 'Person',
+								version: '1.0.0',
+							},
+							{ '@self': { id: 'ms-2' }, name: 'Adres' },
+						]
 					: [],
 			},
 		}),
@@ -86,8 +90,13 @@ describe('EndpointFormFields message validation', () => {
 	})
 
 	it('writes the picked request schema and keeps the mode', async () => {
-		const { wrapper, updateField } = await mountWith({ validation: { mode: 'refuse' } })
-		wrapper.vm.setValidationSchema('request', { id: 'ms-1', label: 'Person (1.0.0)' })
+		const { wrapper, updateField } = await mountWith({
+			validation: { mode: 'refuse' },
+		})
+		wrapper.vm.setValidationSchema('request', {
+			id: 'ms-1',
+			label: 'Person (1.0.0)',
+		})
 		expect(updateField).toHaveBeenCalledWith('validation', {
 			mode: 'refuse',
 			request: { messageSchema: 'ms-1' },
@@ -96,9 +105,14 @@ describe('EndpointFormFields message validation', () => {
 
 	it('keeps the operation when the answer schema changes, and clears it on null', async () => {
 		const { wrapper, updateField } = await mountWith({
-			validation: { response: { messageSchema: 'ms-1', operationId: 'getPersoon' } },
+			validation: {
+				response: { messageSchema: 'ms-1', operationId: 'getPersoon' },
+			},
 		})
-		expect(wrapper.vm.messageSchemaOption('response')).toEqual({ id: 'ms-1', label: 'Person (1.0.0)' })
+		expect(wrapper.vm.messageSchemaOption('response')).toEqual({
+			id: 'ms-1',
+			label: 'Person (1.0.0)',
+		})
 
 		wrapper.vm.setValidationSchema('response', { id: 'ms-2', label: 'Adres' })
 		expect(updateField).toHaveBeenLastCalledWith('validation', {
