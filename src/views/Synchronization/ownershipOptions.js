@@ -54,7 +54,52 @@ export function disappearancePolicyOptions() {
 				'Keep the record and flag that the source dropped it',
 			),
 		},
+		{
+			id: 'purge',
+			label: t('integriq', 'Delete the record and its files permanently'),
+		},
 	]
+}
+
+/**
+ * What a destruction notice from the source does, as
+ * SynchronizationService::applySourceDestruction() reads
+ * `sourceConfig.onSourceDestroyed` (REQ-SDP-002): an empty id leaves the key
+ * out, so the notice applies the disappearance policy to that one record.
+ *
+ * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+ *
+ * @return {Array<{id: string, label: string}>} the options, the policy first
+ */
+export function sourceDestroyedOptions() {
+	return [
+		{
+			id: '',
+			label: t('integriq', 'Apply the policy above to that record'),
+		},
+		{
+			id: 'purge',
+			label: t(
+				'integriq',
+				'Delete the record and its files permanently, at once',
+			),
+		},
+	]
+}
+
+/**
+ * Whether a sourceConfig purges, on a full run or on a destruction notice.
+ *
+ * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-synchronization-can-purge-a-vanished-record-and-its-files-req-sdp-001
+ *
+ * @param {object} sourceConfig the sourceConfig being edited
+ * @return {boolean} true when either key is `purge`
+ */
+export function purges(sourceConfig) {
+	return (
+		sourceConfig?.disappearancePolicy === 'purge'
+		|| sourceConfig?.onSourceDestroyed === 'purge'
+	)
 }
 
 /**

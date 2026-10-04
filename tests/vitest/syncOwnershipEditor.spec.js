@@ -244,7 +244,9 @@ describe('the ownership inputs on the synchronisation editor', () => {
 function purgeWarning(wrapper) {
 	return wrapper
 		.findAllComponents({ name: 'NcNoteCard' })
-		.find((card) => card.attributes('data-testid') === 'sync-editor-purge-warning')
+		.find(
+			(card) => card.attributes('data-testid') === 'sync-editor-purge-warning',
+		)
 }
 
 /**
@@ -277,22 +279,38 @@ describe('the purge choice on the synchronisation editor', () => {
 			join(root, 'lib/Service/SynchronizationService.php'),
 			'utf8',
 		)
-		expect(engine).toContain("['onSourceDestroyed'] ?? null) === DisappearancePolicy::PURGE")
+		expect(engine).toContain(
+			"['onSourceDestroyed'] ?? null) === DisappearancePolicy::PURGE",
+		)
 	})
 
 	it('shows no warning while nothing is purged', async () => {
-		const wrapper = mountEditor({ id: 's1', name: 'Woo publicaties', sourceConfig: {} })
+		const wrapper = mountEditor({
+			id: 's1',
+			name: 'Woo publicaties',
+			sourceConfig: {},
+		})
 		await flushPromises()
 
 		expect(purgeWarning(wrapper)).toBeUndefined()
-		expect(picker(wrapper, 'cn-sync-editor-source-destroyed').props('modelValue').id).toBe('')
+		expect(
+			picker(wrapper, 'cn-sync-editor-source-destroyed').props('modelValue')
+				.id,
+		).toBe('')
 	})
 
 	it('warns that purged files cannot be restored when the policy is purge', async () => {
-		const wrapper = mountEditor({ id: 's1', name: 'Woo publicaties', sourceConfig: {} })
+		const wrapper = mountEditor({
+			id: 's1',
+			name: 'Woo publicaties',
+			sourceConfig: {},
+		})
 		await flushPromises()
 
-		picker(wrapper, 'cn-sync-editor-disappearance-policy').vm.$emit('update:modelValue', { id: 'purge' })
+		picker(wrapper, 'cn-sync-editor-disappearance-policy').vm.$emit(
+			'update:modelValue',
+			{ id: 'purge' },
+		)
 		await flushPromises()
 
 		expect(wrapper.vm.draft.sourceConfig.disappearancePolicy).toBe('purge')
@@ -310,7 +328,10 @@ describe('the purge choice on the synchronisation editor', () => {
 		})
 		await flushPromises()
 
-		picker(wrapper, 'cn-sync-editor-source-destroyed').vm.$emit('update:modelValue', { id: 'purge' })
+		picker(wrapper, 'cn-sync-editor-source-destroyed').vm.$emit(
+			'update:modelValue',
+			{ id: 'purge' },
+		)
 		await flushPromises()
 		expect(wrapper.vm.draft.sourceConfig).toEqual({
 			endpoint: '/documenten',
@@ -318,7 +339,10 @@ describe('the purge choice on the synchronisation editor', () => {
 		})
 		expect(purgeWarning(wrapper)).toBeDefined()
 
-		picker(wrapper, 'cn-sync-editor-source-destroyed').vm.$emit('update:modelValue', { id: '' })
+		picker(wrapper, 'cn-sync-editor-source-destroyed').vm.$emit(
+			'update:modelValue',
+			{ id: '' },
+		)
 		await flushPromises()
 		expect(wrapper.vm.draft.sourceConfig).toEqual({ endpoint: '/documenten' })
 		expect(purgeWarning(wrapper)).toBeUndefined()
