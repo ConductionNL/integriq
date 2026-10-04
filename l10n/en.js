@@ -3206,7 +3206,13 @@ OC.L10N.register(
         "Remove this kind": "Remove this kind",
         "Add a kind": "Add a kind",
         "Answer from test data": "Answer from test data",
-        "Answers from built-in example cases instead of the case system. Nothing is stored.": "Answers from built-in example cases instead of the case system. Nothing is stored."
+        "Answers from built-in example cases instead of the case system. Nothing is stored.": "Answers from built-in example cases instead of the case system. Nothing is stored.",
+        "Write-back": "Write-back",
+        "On success": "On success",
+        "Fields to set when the target accepted the object": "Fields to set when the target accepted the object",
+        "On failure": "On failure",
+        "Fields to set when the target refused the object or could not be reached": "Fields to set when the target refused the object or could not be reached",
+        "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent.": "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent."
     },
     "nplurals=2; plural=(n != 1);"
 )
