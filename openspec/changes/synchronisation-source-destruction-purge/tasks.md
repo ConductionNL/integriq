@@ -47,8 +47,12 @@ Kind: code. Size S. Row `opencatalogi:lc-source-destroyed`.
 - **acceptance_criteria**:
   - GIVEN the synchronization editor WHEN an administrator picks `purge` THEN the form states that purged files cannot be restored
   - GIVEN demo data WHEN the demo synchronization runs THEN the run shows a purged count
-- [ ] Implement
+- [x] Implement
+  - `ownershipOptions.js` offers `purge` as a fourth disappearance policy and a new choice for `onSourceDestroyed` (the policy, or purge at once; the default leaves the key out). `SynchronizationEditorModal.vue` shows that picker under the policy and a warning card ("Purged files cannot be restored.") whenever either key is `purge`. Five strings in `l10n/en.json` and `l10n/nl.json`.
+  - Demo data: the mock register has no publication synchronization (the design assumed one), so `disappearancePolicy: purge` and `onSourceDestroyed: purge` are declared on the full-mode demo synchronization `synchronization-voorbeeld-name-3-3`. `tests/Unit/Settings/SourceDestructionDemoTest.php` pins it and validates it against the real register schema.
 - [ ] Test (`tests/e2e/source-destruction-purge.spec.ts`)
+  - Done: `tests/vitest/syncOwnershipEditor.spec.js` mounts the real modal: the purge option, the `onSourceDestroyed` picker writing and removing its key, and the warning shown only when something purges.
+  - Owed: the Playwright spec, and a live demo run that shows the purged count.
 
 ## Verification
 

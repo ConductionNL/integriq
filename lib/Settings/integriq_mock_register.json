@@ -11355,7 +11355,10 @@
         "sourceHash": "Voorbeeld Sourcehash 3",
         "sourceHashMapping": "Voorbeeld Sourcehashmapping 3",
         "sourceTargetMapping": "Voorbeeld Sourcetargetmapping 3",
-        "sourceConfig": {},
+        "sourceConfig": {
+          "disappearancePolicy": "purge",
+          "onSourceDestroyed": "purge"
+        },
         "sourceLastChanged": "2026-03-03T09:00:00+00:00",
         "sourceLastChecked": "2026-03-03T09:00:00+00:00",
         "sourceLastSynced": "2026-03-03T09:00:00+00:00",
