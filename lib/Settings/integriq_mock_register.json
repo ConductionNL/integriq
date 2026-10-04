@@ -4414,7 +4414,7 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
         "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
         "required": [
@@ -4558,6 +4558,72 @@
             "type": "boolean",
             "description": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
             "title": "Attachment missing"
+          },
+          "mappedActivities": {
+            "type": "array",
+            "description": "The activiteiten of this verzoek, each with the zaaktype the mapping table gives it. Set at intake.",
+            "title": "Mapped activities",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "mapped"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "The DSO activiteitcode",
+                  "title": "Code"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "The omschrijving of the activiteit",
+                  "title": "Description"
+                },
+                "mapped": {
+                  "type": "boolean",
+                  "description": "True when the mapping table knows this activiteitcode",
+                  "title": "Mapped"
+                },
+                "caseType": {
+                  "type": "string",
+                  "description": "The zaaktype identificatie, set only when mapped",
+                  "title": "Case type"
+                },
+                "samenloopStrategy": {
+                  "type": "string",
+                  "enum": [
+                    "deelzaken",
+                    "gecombineerd"
+                  ],
+                  "description": "The samenloop strategy of this activiteit, set only when mapped",
+                  "title": "Samenloop strategy"
+                }
+              }
+            }
+          },
+          "mappedCaseTypes": {
+            "type": "array",
+            "description": "The zaaktypen the mapped activiteiten give, each once, in order",
+            "title": "Mapped case types",
+            "items": {
+              "type": "string"
+            }
+          },
+          "samenloopStrategy": {
+            "type": "string",
+            "enum": [
+              "deelzaken",
+              "gecombineerd"
+            ],
+            "description": "Gecombineerd when every mapped activiteit combines, otherwise deelzaken. Absent when nothing is mapped.",
+            "title": "Samenloop strategy"
+          },
+          "activityUnmapped": {
+            "type": "boolean",
+            "description": "True when an activiteit has no mapping. Pick the zaaktype by hand.",
+            "title": "Activity unmapped"
           }
         },
         "x-openregister-handoff": [
