@@ -453,7 +453,8 @@ trait DsoConnectionWorld {
 			$action = 'update';
 		}
 
-		if ($rbac === true && $this->worldGrants($uid, $action) === false) {
+		$system = \OCA\OpenRegister\Service\SystemOperationContext::isActive();
+		if ($rbac === true && $system === false && $this->worldGrants($uid, $action) === false) {
 			throw new RuntimeException(
 				"User '" . ($uid ?? 'Anonymous') . "' does not have permission to '" . $action . "' objects in schema '" . $schema . "'"
 			);
@@ -472,7 +473,7 @@ trait DsoConnectionWorld {
 			$this->worldConsumers[$resolved] = $object;
 		}
 
-		$this->worldWrites[] = ['schema' => $schema, 'action' => $action, 'uid' => $uid, 'object' => $object, 'rbac' => $rbac];
+		$this->worldWrites[] = ['schema' => $schema, 'action' => $action, 'uid' => $uid, 'object' => $object, 'rbac' => $rbac, 'system' => $system];
 
 		return $entity;
 	}//end worldSave()
