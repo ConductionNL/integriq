@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.8-unstable.20261004233001</version>
+	<version>0.4.8-unstable.20261005010001</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -358,6 +358,11 @@
 			     trust of the open-formulieren source becomes the one
 			     open-formulieren consumer, with an empty account. Idempotent. -->
 			<step>OCA\Integriq\Repair\MigrateOpenFormulierenConnection</step>
+			<!-- public-webhooks-on-the-consumer-model: the webhook trust of the
+			     peppol, sms, rod, oso, uwlr-eduv, verzuimloket, iwmo-ijw, stuf-zkn
+			     and intake-channel sources becomes one consumer per webhook, with
+			     an empty account. Idempotent; the sources are left as they are. -->
+			<step>OCA\Integriq\Repair\MigrateWebhookConnections</step>
 			<!-- bsn-intake-records-access-rules: the intake and handler groups the
 			     dso_verzoek and openformulieren_submission authorization blocks
 			     name, and each connection's account in its intake group. Runs

@@ -21,9 +21,8 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\MigrateOpenFormulierenConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
-use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
+use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
 use OCA\Integriq\Tests\Helpers\DsoConnectionWorld;
-use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -84,25 +83,8 @@ class MigrateOpenFormulierenConnectionTest extends TestCase {
 	 * @return MigrateOpenFormulierenConnection The step.
 	 */
 	private function step(): MigrateOpenFormulierenConnection {
-		$objectService = $this->buildWorldObjectService();
-		$connection = $this->buildWorldOpenFormulierenConnection(objectService: $objectService);
-
-		$alerts = $this->createMock(DsoConnectionAlerts::class);
-		$alerts->method('notify')->willReturnCallback(
-			function (string $reason, string $channel = 'dso'): bool {
-				$this->alerted[] = ['reason' => $reason, 'channel' => $channel];
-				return true;
-			}
-		);
-
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturnCallback(
-			static fn (string $id): object => match ($id) {
-				OpenFormulierenConnection::class => $connection,
-				OrObjectService::class => $objectService,
-				DsoConnectionAlerts::class => $alerts,
-			}
-		);
+		$container->method('get')->willReturn($this->worldMigrator());
 
 		return new MigrateOpenFormulierenConnection(container: $container);
 
@@ -168,4 +150,28 @@ class MigrateOpenFormulierenConnectionTest extends TestCase {
 		$this->assertSame([], $this->alerted);
 
 	}//end testNoUsableSourceCreatesNothing()
+
+	/**
+	 * The real migrator over the world, recording its alerts.
+	 *
+	 * @return WebhookTrustMigrator
+	 */
+	private function worldMigrator(): WebhookTrustMigrator {
+		$objectService = $this->buildWorldObjectService();
+
+		$alerts = $this->createMock(DsoConnectionAlerts::class);
+		$alerts->method('notify')->willReturnCallback(
+			function (string $reason, string $channel = 'dso'): bool {
+				$this->alerted[] = ['reason' => $reason, 'channel' => $channel];
+				return true;
+			}
+		);
+
+		return new WebhookTrustMigrator(
+			webhooks: $this->buildWorldWebhookConnection(objectService: $objectService),
+			objectService: $objectService,
+			alerts: $alerts
+		);
+
+	}//end worldMigrator()
 }//end class

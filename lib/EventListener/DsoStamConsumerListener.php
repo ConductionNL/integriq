@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Service\Dso\DsoConnection;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -88,7 +89,8 @@ class DsoStamConsumerListener implements IEventListener {
 
 		$entity = $this->savedObject(event: $event);
 		$type = strtolower((string)($entity->getObject()['authorizationType'] ?? ''));
-		if (in_array($type, [DsoConnection::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE], true) === false
+		$webhook = WebhookProfiles::byAuthorizationType(authorizationType: $type);
+		if ((in_array($type, [DsoConnection::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE], true) === false && $webhook === null)
 			|| $this->isIntegriqConsumer(object: $entity) === false
 		) {
 			return;
@@ -99,6 +101,9 @@ class DsoStamConsumerListener implements IEventListener {
 		if ($type === OpenFormulierenConnection::AUTHORIZATION_TYPE) {
 			$message = $this->l10n->t('Only one Open Formulieren connection is allowed. Edit the existing one instead.');
 			$code = 'openformulieren_connection_exists';
+		} elseif ($webhook !== null) {
+			$message = $this->l10n->t('Only one %s connection is allowed. Edit the existing one instead.', [$webhook->label]);
+			$code = 'webhook_connection_exists';
 		}
 
 		foreach ($this->connection->findConsumers(authorizationType: $type) as $existing) {
