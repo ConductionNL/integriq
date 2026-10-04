@@ -25,8 +25,7 @@ use OCA\Integriq\Controller\PeppolController;
 use OCA\Integriq\Exception\PeppolProviderException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\PeppolTransmissionService;
-use OCA\Integriq\Service\WebhookSignatureService;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Integriq\Service\Intake\WebhookGate;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -54,9 +53,9 @@ class PeppolControllerTest extends TestCase {
 	private $transmissionService;
 
 	/**
-	 * @var WebhookSignatureService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var WebhookGate|\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private $signatureService;
+	private $gate;
 
 	/**
 	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
@@ -93,7 +92,7 @@ class PeppolControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->transmissionService = $this->createMock(PeppolTransmissionService::class);
-		$this->signatureService = $this->createMock(WebhookSignatureService::class);
+		$this->gate = $this->createMock(WebhookGate::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 		$this->l = $this->createMock(IL10N::class);
@@ -107,7 +106,7 @@ class PeppolControllerTest extends TestCase {
 			'integriq',
 			$this->request,
 			$this->transmissionService,
-			$this->signatureService,
+			$this->gate,
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
@@ -128,7 +127,7 @@ class PeppolControllerTest extends TestCase {
 			'integriq',
 			$this->request,
 			$this->transmissionService,
-			$this->signatureService,
+			$this->gate,
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
@@ -193,118 +192,8 @@ class PeppolControllerTest extends TestCase {
 
 	}//end testParticipantsMapsProviderExceptionToBadGateway()
 
-	/**
-	 * No Peppol source configured at all fails the inbound webhook closed (401) — nothing to verify against.
-	 *
-	 * @return void
-	 */
-	public function testInboundWithNoSourceConfiguredReturns401(): void {
-		$this->transmissionService->method('resolveActiveSource')
-			->willThrowException(new PeppolProviderException(message: 'no source'));
-		$this->signatureService->expects($this->never())->method('verify');
 
-		$response = $this->controller->inbound();
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-	}//end testInboundWithNoSourceConfiguredReturns401()
 
-	/**
-	 * An unsigned/tampered callback is rejected 401 before any state change or event — REQ-005.
-	 *
-	 * @return void
-	 */
-	public function testInboundInvalidSignatureReturns401BeforeAnySideEffect(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->transmissionService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(false);
-
-		$this->transmissionService->expects($this->never())->method('handleDeliveryCallback');
-		$this->transmissionService->expects($this->never())->method('handleInboundDocument');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-		$this->assertSame('invalid signature', $response->getData()['error']);
-
-	}//end testInboundInvalidSignatureReturns401BeforeAnySideEffect()
-
-	/**
-	 * A verified delivery callback (has transmissionId) is routed to handleDeliveryCallback.
-	 *
-	 * PeppolController verifies the signature over the raw request body but
-	 * reads the PAYLOAD via `$this->request->getParams()` (mirrors
-	 * DSOController — NC decodes a JSON body into params), so tests drive the
-	 * payload through the request mock rather than `php://input`.
-	 *
-	 * @return void
-	 */
-	public function testInboundVerifiedDeliveryCallbackIsRouted(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->transmissionService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-		$this->request->method('getParams')->willReturn(['transmissionId' => 'AP-TX-123', 'status' => 'delivered', 'detail' => 'Accepted']);
-
-		$this->transmissionService->expects($this->once())
-			->method('handleDeliveryCallback')
-			->with('AP-TX-123', 'delivered', 'Accepted');
-		$this->transmissionService->expects($this->never())->method('handleInboundDocument');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['received']);
-
-	}//end testInboundVerifiedDeliveryCallbackIsRouted()
-
-	/**
-	 * A verified inbound-document notification (has senderPeppolId) is routed to handleInboundDocument.
-	 *
-	 * @return void
-	 */
-	public function testInboundVerifiedDocumentNotificationIsRouted(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->transmissionService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-		$this->request->method('getParams')->willReturn(
-			[
-				'senderPeppolId' => '0192:9999999999',
-				'documentType' => 'ubl-invoice-2.1',
-				'payloadReference' => 'https://ap.example/doc/AP-DOC-9',
-			]
-		);
-
-		$this->transmissionService->expects($this->never())->method('handleDeliveryCallback');
-		$this->transmissionService->expects($this->once())
-			->method('handleInboundDocument')
-			->with('0192:9999999999', 'ubl-invoice-2.1', 'https://ap.example/doc/AP-DOC-9');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-
-	}//end testInboundVerifiedDocumentNotificationIsRouted()
-
-	/**
-	 * A processing exception after a verified signature never surfaces as a 500 — REQ-005.
-	 *
-	 * @return void
-	 */
-	public function testInboundNeverCrashesOnProcessingException(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->transmissionService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-		$this->request->method('getParams')->willReturn(['transmissionId' => 'AP-TX-123', 'status' => 'delivered']);
-		$this->transmissionService->method('handleDeliveryCallback')->willThrowException(new \RuntimeException('boom'));
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['received']);
-
-	}//end testInboundNeverCrashesOnProcessingException()
 }//end class

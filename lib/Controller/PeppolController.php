@@ -30,7 +30,8 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\PeppolProviderException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\PeppolTransmissionService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -57,7 +58,7 @@ class PeppolController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param PeppolTransmissionService $transmissionService Lookup + transmission/callback logic.
-	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.
+	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (participants endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -67,7 +68,7 @@ class PeppolController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly PeppolTransmissionService $transmissionService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,
@@ -139,9 +140,14 @@ class PeppolController extends Controller {
 	 * this endpoint authenticates via webhook signature, not NC session — the
 	 * signature check IS the auth body for this route (mirrors DSOController).
 	 *
-	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
+	 * @return JSONResponse `{received: true}` on success, 401 on signature failure, 503 when not stored.
+	 *
+	 * The callback authenticates the `peppol-webhook` consumer, and every write
+	 * runs as that consumer's account. A missing connection, account or right,
+	 * and a write OpenRegister refuses, answer 503 so the access point retries.
 	 *
 	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-inbound-receive-webhook-that-republishes-ap-callbacks-as-events-req-005
+	 * @spec openspec/changes/peppol-inbound-on-the-consumer-model/specs/peppol-access-point-connector/spec.md#requirement-the-inbound-webhook-acts-as-the-peppol-connections-account-req-020
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -149,30 +155,9 @@ class PeppolController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		try {
-			$source = $this->transmissionService->resolveActiveSource();
-		} catch (PeppolProviderException) {
-			// No source configured => no secret to verify against => fail closed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$webhookConfig = ($source->getObject()['configuration']['webhookSignature'] ?? []);
-		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
-		$secret = (string)($webhookConfig['secret'] ?? '');
-		$headerName = ($webhookConfig['header'] ?? 'X-OpenConnector-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
-
-		$headerValue = (string)$this->request->getHeader($headerName);
-
-		$verified = $this->signatureService->verify(
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			config: ['scheme' => $scheme, 'secret' => $secret, 'toleranceSeconds' => $tolerance]
-		);
-
-		if ($verified === false) {
-			// Undifferentiated error body: never leak which check failed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		$identity = $this->gate->identify(profile: WebhookProfiles::peppol(), rawBody: $rawBody, request: $this->request);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		// Payload parsing happens from $this->request->getParams() (NC decodes a
@@ -182,29 +167,34 @@ class PeppolController extends Controller {
 		$body = $this->request->getParams();
 
 		try {
-			if (isset($body['transmissionId']) === true) {
-				$detail = null;
-				if (isset($body['detail']) === true) {
-					$detail = (string)$body['detail'];
-				}
+			$this->gate->deliver(
+				identity: $identity,
+				operation: function () use ($body): void {
+					if (isset($body['transmissionId']) === true) {
+						$detail = null;
+						if (isset($body['detail']) === true) {
+							$detail = (string)$body['detail'];
+						}
 
-				$this->transmissionService->handleDeliveryCallback(
-					transmissionId: (string)$body['transmissionId'],
-					status: (string)($body['status'] ?? ''),
-					detail: $detail
-				);
-			} elseif (isset($body['senderPeppolId']) === true) {
-				$this->transmissionService->handleInboundDocument(
-					senderPeppolId: (string)$body['senderPeppolId'],
-					documentType: (string)($body['documentType'] ?? ''),
-					payloadReference: (string)($body['payloadReference'] ?? '')
-				);
-			} else {
-				$this->logger->warning('[PeppolController] inbound webhook payload matched neither known shape', ['keys' => array_keys($body)]);
-			}
+						$this->transmissionService->handleDeliveryCallback(
+							transmissionId: (string)$body['transmissionId'],
+							status: (string)($body['status'] ?? ''),
+							detail: $detail
+						);
+					} elseif (isset($body['senderPeppolId']) === true) {
+						$this->transmissionService->handleInboundDocument(
+							senderPeppolId: (string)$body['senderPeppolId'],
+							documentType: (string)($body['documentType'] ?? ''),
+							payloadReference: (string)($body['payloadReference'] ?? '')
+						);
+					} else {
+						$this->logger->warning('[PeppolController] inbound webhook payload matched neither known shape', ['keys' => array_keys($body)]);
+					}
+				}
+			);
 		} catch (Throwable $exception) {
-			// Never 500 on a verified callback: log and acknowledge receipt (REQ-005).
-			$this->logger->error('[PeppolController] inbound webhook processing failed: ' . $exception->getMessage(), ['exception' => $exception]);
+			// The account's write was refused: answer 503 so the access point delivers again.
+			return $this->gate->notStored(profile: WebhookProfiles::peppol(), reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

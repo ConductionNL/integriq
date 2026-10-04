@@ -16,9 +16,10 @@
  * throws {@see DsoConnectionUnavailableException} with the Open Formulieren
  * channel (503, so Open Formulieren delivers again).
  *
- * It reuses the DSO building blocks: the raw consumer read of
- * {@see DsoConnection::findConsumers()}, the rights check of
- * {@see DsoAccountRights}, and OpenRegister's `ObjectService::runAs()`.
+ * Since public-webhooks-on-the-consumer-model it is one profile of
+ * {@see WebhookConnection}, the mechanism every signed public webhook shares:
+ * the raw consumer read of {@see DsoConnection::findConsumers()}, the rights
+ * check of {@see DsoAccountRights}, and OpenRegister's `ObjectService::runAs()`.
  *
  * @category Service
  * @package  OCA\Integriq\Service\OpenFormulieren
@@ -41,14 +42,13 @@ namespace OCA\Integriq\Service\OpenFormulieren;
 
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Exception\DsoSignatureException;
-use OCA\Integriq\Service\Dso\DsoAccountRights;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoIdentity;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookConnection;
+use OCA\Integriq\Service\Intake\WebhookProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
-use OCP\IUserManager;
 
 /**
  * Resolves, verifies and checks the identity of an Open Formulieren submission.
@@ -95,23 +95,38 @@ class OpenFormulierenConnection {
 	/**
 	 * Constructor.
 	 *
-	 * @param DsoConnection           $consumers        The raw consumer read and runAs(), shared with DSO.
-	 * @param ORObjectService         $objectService    Saves the consumer for the settings section.
-	 * @param WebhookSignatureService $signatureService Verifies the submission against the consumer's trust.
-	 * @param IUserManager            $userManager      Resolves the consumer's account.
-	 * @param DsoAccountRights        $rights           Checks the account's rights on the submission schema.
+	 * @param WebhookConnection $webhooks      The shared consumer-model mechanism.
+	 * @param ORObjectService   $objectService Saves the consumer for the settings section.
 	 *
-	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
 	 */
 	public function __construct(
-		private readonly DsoConnection $consumers,
+		private readonly WebhookConnection $webhooks,
 		private readonly ORObjectService $objectService,
-		private readonly WebhookSignatureService $signatureService,
-		private readonly IUserManager $userManager,
-		private readonly DsoAccountRights $rights,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The Open Formulieren profile of the shared mechanism.
+	 *
+	 * @return WebhookProfile
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
+	 */
+	public static function profile(): WebhookProfile {
+		return new WebhookProfile(
+			authorizationType: self::AUTHORIZATION_TYPE,
+			channel: DsoConnectionUnavailableException::CHANNEL_OPEN_FORMULIEREN,
+			label: 'Open Formulieren',
+			schema: self::SCHEMA_SUBMISSION,
+			requiredActions: self::REQUIRED_ACTIONS,
+			legacySourceType: 'open-formulieren',
+			defaultHeader: self::DEFAULT_HEADER,
+			defaultScheme: self::DEFAULT_SCHEME
+		);
+
+	}//end profile()
 
 	/**
 	 * Authenticate a submission and return the identity its writes run as.
@@ -127,29 +142,7 @@ class OpenFormulierenConnection {
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function authenticate(string $rawBody, callable $headerOf): DsoIdentity {
-		$consumer = $this->requireConsumer();
-		$data = $consumer->getObject();
-
-		$trust = $this->trustOf(data: $data);
-		$headerValue = (string)$headerOf((string)($trust['header'] ?? self::DEFAULT_HEADER));
-
-		$verified = $this->signatureService->verify(
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			config: [
-				'scheme' => (string)($trust['scheme'] ?? self::DEFAULT_SCHEME),
-				'secret' => (string)($trust['secret'] ?? ''),
-				'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
-			]
-		);
-		if ($verified === false) {
-			throw new DsoSignatureException(message: 'Open Formulieren webhook signature validation failed');
-		}
-
-		$account = $this->resolveAccount(userId: (string)($data['userId'] ?? ''));
-		$this->requireRights(account: $account);
-
-		return new DsoIdentity(account: $account, consumerUuid: (string)$consumer->getUuid());
+		return $this->webhooks->authenticate(profile: self::profile(), rawBody: $rawBody, headerOf: $headerOf);
 
 	}//end authenticate()
 
@@ -161,7 +154,7 @@ class OpenFormulierenConnection {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function findConsumers(): array {
-		return $this->consumers->findConsumers(authorizationType: self::AUTHORIZATION_TYPE);
+		return $this->webhooks->findConsumers(profile: self::profile());
 
 	}//end findConsumers()
 
@@ -175,15 +168,7 @@ class OpenFormulierenConnection {
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function findConsumer(): ?ObjectEntity {
-		$consumers = $this->findConsumers();
-		if (count($consumers) > 1) {
-			throw $this->unavailable(
-				reason: DsoConnectionUnavailableException::AMBIGUOUS_CONNECTION,
-				message: count($consumers) . ' open-formulieren consumers exist; the intake does not guess which account to use.'
-			);
-		}
-
-		return ($consumers[0] ?? null);
+		return $this->webhooks->findConsumer(profile: self::profile());
 
 	}//end findConsumer()
 
@@ -199,29 +184,7 @@ class OpenFormulierenConnection {
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function resolveAccount(string $userId): IUser {
-		if ($userId === '') {
-			throw $this->unavailable(
-				reason: DsoConnectionUnavailableException::NO_ACCOUNT,
-				message: 'The Open Formulieren connection names no account to act as.'
-			);
-		}
-
-		$account = $this->userManager->get($userId);
-		if ($account === null) {
-			throw $this->unavailable(
-				reason: DsoConnectionUnavailableException::ACCOUNT_UNKNOWN,
-				message: 'The Open Formulieren connection account "' . $userId . '" does not exist.'
-			);
-		}
-
-		if ($account->isEnabled() === false) {
-			throw $this->unavailable(
-				reason: DsoConnectionUnavailableException::ACCOUNT_DISABLED,
-				message: 'The Open Formulieren connection account "' . $userId . '" is disabled.'
-			);
-		}
-
-		return $account;
+		return $this->webhooks->resolveAccount(profile: self::profile(), userId: $userId);
 
 	}//end resolveAccount()
 
@@ -236,7 +199,7 @@ class OpenFormulierenConnection {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function missingRights(string $userId): ?array {
-		return $this->rights->missing(userId: $userId, actions: self::REQUIRED_ACTIONS, schema: self::SCHEMA_SUBMISSION);
+		return $this->webhooks->missingRights(profile: self::profile(), userId: $userId);
 
 	}//end missingRights()
 
@@ -266,9 +229,6 @@ class OpenFormulierenConnection {
 	/**
 	 * Run an operation as the account, restoring the previous user afterwards.
 	 *
-	 * The same OpenRegister `ObjectService::runAs()` the DSO intake uses
-	 * (ADR-099: `setVolatileActiveUser()`, restored in a `finally`).
-	 *
 	 * @param IUser    $account   The account to act as.
 	 * @param callable $operation The operation.
 	 *
@@ -277,89 +237,7 @@ class OpenFormulierenConnection {
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function runAs(IUser $account, callable $operation): mixed {
-		return $this->consumers->runAs(account: $account, operation: $operation);
+		return $this->webhooks->runAs(account: $account, operation: $operation);
 
 	}//end runAs()
-
-	/**
-	 * The trust configuration of a consumer, as an array.
-	 *
-	 * @param array<string, mixed> $data The consumer data.
-	 *
-	 * @return array<string, mixed> The trust.
-	 */
-	private function trustOf(array $data): array {
-		$trust = ($data['authorizationConfiguration'] ?? []);
-		if (is_array($trust) === false) {
-			return [];
-		}
-
-		return $trust;
-
-	}//end trustOf()
-
-	/**
-	 * Find the one `open-formulieren` consumer, or fail with a reason.
-	 *
-	 * @return ObjectEntity The consumer, read raw.
-	 *
-	 * @throws DsoConnectionUnavailableException With reason no_connection or ambiguous_connection.
-	 */
-	private function requireConsumer(): ObjectEntity {
-		$consumer = $this->findConsumer();
-		if ($consumer === null) {
-			throw $this->unavailable(
-				reason: DsoConnectionUnavailableException::NO_CONNECTION,
-				message: 'No open-formulieren consumer is configured.'
-			);
-		}
-
-		return $consumer;
-
-	}//end requireConsumer()
-
-	/**
-	 * Fail unless the account holds create and update on the submission schema.
-	 *
-	 * @param IUser $account The account.
-	 *
-	 * @return void
-	 *
-	 * @throws DsoConnectionUnavailableException With reason account_lacks_rights or rights_unverifiable.
-	 */
-	private function requireRights(IUser $account): void {
-		$missing = $this->missingRights(userId: $account->getUID());
-		if ($missing === null) {
-			throw $this->unavailable(
-				reason: DsoConnectionUnavailableException::RIGHTS_UNVERIFIABLE,
-				message: 'The rights of Open Formulieren connection account "' . $account->getUID() . '" could not be checked.'
-			);
-		}
-
-		if ($missing !== []) {
-			throw $this->unavailable(
-				reason: DsoConnectionUnavailableException::ACCOUNT_LACKS_RIGHTS,
-				message: 'Open Formulieren connection account "' . $account->getUID() . '" lacks ' . implode(', ', $missing)
-				. ' on openformulieren_submission.'
-			);
-		}
-
-	}//end requireRights()
-
-	/**
-	 * Build a refusal on the Open Formulieren channel.
-	 *
-	 * @param string $reason  One of the reason constants.
-	 * @param string $message A secret-free description.
-	 *
-	 * @return DsoConnectionUnavailableException The refusal.
-	 */
-	private function unavailable(string $reason, string $message): DsoConnectionUnavailableException {
-		return new DsoConnectionUnavailableException(
-			reason: $reason,
-			message: $message,
-			channel: DsoConnectionUnavailableException::CHANNEL_OPEN_FORMULIEREN
-		);
-
-	}//end unavailable()
 }//end class

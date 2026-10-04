@@ -29,6 +29,7 @@ use OCA\Integriq\Service\Dso\DsoAccountRights;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Service\Intake\IntakeGroups;
+use OCA\Integriq\Service\Intake\WebhookConnection;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -113,6 +114,13 @@ trait DsoConnectionWorld {
 	protected bool $worldRefuseSubmissionWrites = false;
 
 	/**
+	 * Schemas whose writes OpenRegister refuses even with the rights held.
+	 *
+	 * @var list<string>
+	 */
+	protected array $worldRefuseWritesTo = [];
+
+	/**
 	 * Other stored objects (sources, form mappings) by uuid, with their schema
 	 * and whether only an engine read sees them.
 	 *
@@ -170,6 +178,7 @@ trait DsoConnectionWorld {
 		$this->worldGroupMembers = [];
 		$this->worldGroupGrants = [];
 		$this->worldRefuseSubmissionWrites = false;
+		$this->worldRefuseWritesTo = [];
 		$this->worldOthers = [];
 		$this->worldWrites = [];
 		$this->worldReads = [];
@@ -469,6 +478,20 @@ trait DsoConnectionWorld {
 	 * @return OpenFormulierenConnection The connection.
 	 */
 	protected function buildWorldOpenFormulierenConnection(ORObjectService $objectService): OpenFormulierenConnection {
+		return new OpenFormulierenConnection(
+			webhooks: $this->buildWorldWebhookConnection(objectService: $objectService),
+			objectService: $objectService
+		);
+	}//end buildWorldOpenFormulierenConnection()
+
+	/**
+	 * The real WebhookConnection over the world.
+	 *
+	 * @param ORObjectService $objectService The world's ObjectService.
+	 *
+	 * @return WebhookConnection The connection every signed webhook shares.
+	 */
+	protected function buildWorldWebhookConnection(ORObjectService $objectService): WebhookConnection {
 		$logger = new NullLogger();
 		$dso = $this->buildWorldConnection(objectService: $objectService);
 
@@ -479,14 +502,13 @@ trait DsoConnectionWorld {
 
 		$property = new ReflectionProperty(DsoConnection::class, 'rights');
 
-		return new OpenFormulierenConnection(
+		return new WebhookConnection(
 			consumers: $dso,
-			objectService: $objectService,
 			signatureService: new WebhookSignatureService($logger),
 			userManager: $userManager,
 			rights: $property->getValue($dso)
 		);
-	}//end buildWorldOpenFormulierenConnection()
+	}//end buildWorldWebhookConnection()
 
 	/**
 	 * Whether a uid holds an action on dso_verzoek. Public for the handler double.
@@ -635,11 +657,15 @@ trait DsoConnectionWorld {
 	private function worldSave(array $object, string $schema, ?string $uuid, bool $rbac): ObjectEntity {
 		$uid = $this->worldSession->getUser()?->getUID();
 		$action = 'create';
-		if ($uuid !== null && (isset($this->worldVerzoeken[$uuid]) === true || isset($this->worldConsumers[$uuid]) === true || isset($this->worldSubmissions[$uuid]) === true)) {
+		if ($uuid !== null && (isset($this->worldVerzoeken[$uuid]) === true || isset($this->worldConsumers[$uuid]) === true || isset($this->worldSubmissions[$uuid]) === true || isset($this->worldOthers[$uuid]) === true)) {
 			$action = 'update';
 		}
 
 		$system = \OCA\OpenRegister\Service\SystemOperationContext::isActive();
+		if (in_array($schema, $this->worldRefuseWritesTo, true) === true) {
+			throw new RuntimeException('OpenRegister refused the ' . $action . ' on ' . $schema);
+		}
+
 		if ($schema === 'openformulieren_submission' && $this->worldRefuseSubmissionWrites === true) {
 			throw new RuntimeException("User '" . ($uid ?? 'Anonymous') . "' does not have permission to '" . $action . "' objects in schema '" . $schema . "'");
 		}
@@ -667,6 +693,14 @@ trait DsoConnectionWorld {
 			$this->worldSubmissions[$resolved] = [
 				'entity' => $entity,
 				'owner' => ($this->worldSubmissions[$resolved]['owner'] ?? $uid),
+			];
+		}
+
+		if (in_array($schema, ['dso_verzoek', 'consumer', 'openformulieren_submission'], true) === false) {
+			$this->worldOthers[$resolved] = [
+				'schema' => $schema,
+				'entity' => $entity,
+				'adminOnly' => ($this->worldOthers[$resolved]['adminOnly'] ?? false),
 			];
 		}
 

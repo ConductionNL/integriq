@@ -74,6 +74,13 @@ class DsoConnectionAlerts {
 	public const REASON_SUBMISSION_NOT_STORED = 'submission_not_stored';
 
 	/**
+	 * A signed webhook delivery whose work OpenRegister refused (503).
+	 *
+	 * @var string
+	 */
+	public const REASON_DELIVERY_NOT_STORED = 'delivery_not_stored';
+
+	/**
 	 * Reason: the migration created a connection without an account.
 	 *
 	 * @var string
