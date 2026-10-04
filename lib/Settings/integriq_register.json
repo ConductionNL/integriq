@@ -544,7 +544,7 @@
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that created the consumer (null for system-created)",
+            "description": "The Nextcloud account this consumer acts as. AuthorizationService::authorizeApiKey() makes it the active user, and the DSO STAM intake writes every verzoek as it (dso-stam consumers). Empty: an apiKey consumer authenticates as itself; a dso-stam consumer refuses pushes with 503.",
             "title": "User ID"
           },
           "rateLimit": {
@@ -4430,7 +4430,7 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
         "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
         "required": [
@@ -4574,6 +4574,24 @@
             "type": "boolean",
             "description": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
             "title": "Attachment missing"
+          },
+          "receivedVia": {
+            "type": "object",
+            "description": "Which DSO connection delivered this verzoek, and the account it was stored as. Set at intake.",
+            "title": "Received via",
+            "additionalProperties": false,
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "description": "The uuid of the dso-stam consumer",
+                "title": "Consumer"
+              },
+              "account": {
+                "type": "string",
+                "description": "The Nextcloud account the intake acted as",
+                "title": "Account"
+              }
+            }
           },
           "mappedActivities": {
             "type": "array",

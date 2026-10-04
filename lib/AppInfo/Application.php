@@ -88,6 +88,7 @@ use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\EventListener\RosterImportRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
+use OCA\Integriq\EventListener\DsoStamConsumerListener;
 use OCA\Integriq\EventListener\MessageSchemaDocumentListener;
 use OCA\Integriq\EventListener\SubscriptionSigningDefaultListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
@@ -308,6 +309,10 @@ class Application extends App implements IBootstrap {
 		// save path, so the refusal holds whichever page or app saves it.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: MessageSchemaDocumentListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: MessageSchemaDocumentListener::class);
+		// REQ-CON-DSO-001 (dso-intake-through-an-integriq-connection): at most one
+		// dso-stam consumer, so the STAM intake never has to guess its account.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoStamConsumerListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoStamConsumerListener::class);
 		// Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
 		// CloudEvents (register `openconnector` — the OpenRegister register slug,
 		// frozen across the app-id rename; schema event) created by any app.
@@ -905,6 +910,8 @@ class Application extends App implements IBootstrap {
 		// without a notifier registered under this app id, the notification
 		// manager silently drops it when preparing it for display.
 		$context->registerNotifierService(\OCA\Integriq\Notification\ApprovalNotifier::class);
+		// DSO intake (dso-intake-through-an-integriq-connection): admin alerts when DSO-LV pushes are refused.
+		$context->registerNotifierService(\OCA\Integriq\Notification\DsoConnectionNotifier::class);
 
 		// Dashboard-http-datasource: advertise the capability so a leaf
 		// dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
