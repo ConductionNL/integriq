@@ -583,9 +583,19 @@ class SynchronizationService {
 	 * Checks source objects and target bodies against their message schemas
 	 * (mapping-message-schema-validation REQ-MSV-003).
 	 *
+	 * Resolved on first use by {@see messageGate()}, not in the constructor,
+	 * which is already at its complexity ceiling.
+	 *
 	 * @var SynchronizationMessageGate|null
 	 */
 	private ?SynchronizationMessageGate $messageGate = null;
+
+	/**
+	 * Whether {@see $messageGate} has been looked up in the container.
+	 *
+	 * @var bool
+	 */
+	private bool $messageGateResolved = false;
 
 	/**
 	 * Record-mode findings from target writes, taken into the run's result by
@@ -672,11 +682,6 @@ class SynchronizationService {
 		$prerequisiteGuard = $this->containerInterface->get(RunPrerequisiteGuard::class);
 		if ($prerequisiteGuard instanceof RunPrerequisiteGuard) {
 			$this->prerequisiteGuard = $prerequisiteGuard;
-		}
-
-		$messageGate = $this->containerInterface->get(SynchronizationMessageGate::class);
-		if ($messageGate instanceof SynchronizationMessageGate) {
-			$this->messageGate = $messageGate;
 		}
 
 		// Fall back to the defaults the settings read reports, from one table,
@@ -8632,8 +8637,9 @@ class SynchronizationService {
 			return null;
 		}
 
-		if ($this->messageGate !== null) {
-			return $this->messageGate->inspect(config: $config, side: $side, message: $message, originId: $originId);
+		$messageGate = $this->messageGate();
+		if ($messageGate !== null) {
+			return $messageGate->inspect(config: $config, side: $side, message: $message, originId: $originId);
 		}
 
 		$refusal = SynchronizationMessageGate::unavailable(config: $config, side: $side);
@@ -8650,6 +8656,25 @@ class SynchronizationService {
 			'errors' => [['path' => '/', 'message' => $refusal->getMessage()]],
 		];
 	}//end inspectMessage()
+
+	/**
+	 * The message gate, looked up in the container once; null when it is not there.
+	 *
+	 * @return SynchronizationMessageGate|null
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 */
+	private function messageGate(): ?SynchronizationMessageGate {
+		if ($this->messageGateResolved === false) {
+			$this->messageGateResolved = true;
+			$messageGate = $this->containerInterface->get(SynchronizationMessageGate::class);
+			if ($messageGate instanceof SynchronizationMessageGate) {
+				$this->messageGate = $messageGate;
+			}
+		}
+
+		return $this->messageGate;
+	}//end messageGate()
 
 	/**
 	 * Check the body about to be sent to an `api` target (REQ-MSV-003).
