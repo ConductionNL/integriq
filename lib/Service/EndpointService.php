@@ -34,6 +34,7 @@ use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\MessageValidation\EndpointMessageGate;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RateLimit\RateLimitDecision;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
@@ -160,6 +161,10 @@ class EndpointService {
 	 *                                                          gets the DI container's instance.
 	 * @param EndpointTargetResolver|null $targetResolver Resolves a `targetId` named by slug (REQ-EP-011);
 	 *                                                    nullable for the same reason.
+	 * @param EndpointMessageGate|null $messageGate Checks the request and the proxied answer against
+	 *                                              the endpoint's message schemas (REQ-MSV-002);
+	 *                                              nullable for the same reason, and a declared
+	 *                                              validation without it is refused, never skipped.
 	 *
 	 * @return void
 	 */
@@ -189,6 +194,7 @@ class EndpointService {
 		private readonly ORFileService $orFileService,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 		private readonly ?EndpointTargetResolver $targetResolver = null,
+		private readonly ?EndpointMessageGate $messageGate = null,
 	) {
 	}//end __construct()
 
@@ -444,6 +450,24 @@ class EndpointService {
 			return new JSONResponse(['error' => 'The following parameters are not correctly set', 'fields' => $errors], 400);
 		}
 
+		// REQ-MSV-002: the request body is checked against the endpoint's
+		// message schema before any rule or dispatch runs. Mode refuse answers
+		// here; mode record carries the finding to the call log.
+		$validationFindings = [];
+		$requestCheck = $this->validateMessage(
+			endpointData: $endpointData,
+			direction: EndpointMessageGate::REQUEST,
+			body: $this->getRawContent(),
+			context: ['method' => $request->getMethod(), 'path' => $path]
+		);
+		if ($requestCheck instanceof JSONResponse === true) {
+			return $requestCheck;
+		}
+
+		if ($requestCheck !== null) {
+			$validationFindings[] = $requestCheck;
+		}
+
 		// Execution-trace REQ-001: mint the traceId before any downstream
 		// work begins — one of the four execution entry points.
 		$trace = new ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: $endpoint->getUuid(), triggeredBy: 'http');
@@ -516,7 +540,8 @@ class EndpointService {
 				flowToken: $flowToken,
 				ruleResult: $ruleResult,
 				enforceRateLimit: true,
-				trace: $trace
+				trace: $trace,
+				validationFindings: $validationFindings
 			);
 
 			$this->finalizeTrace(trace: $trace, response: $response);
@@ -626,6 +651,7 @@ class EndpointService {
 	 * @param boolean $dryRun Whether write-shaped rule dispatch is suppressed
 	 *                        (rule-pipeline REQ-RULE-011) — threaded into the
 	 *                        `after`-phase `processRules()` call.
+	 * @param array $validationFindings Record mode's request finding (REQ-MSV-002), carried to the call log.
 	 *
 	 * @return Response
 	 *
@@ -643,6 +669,7 @@ class EndpointService {
 		bool $enforceRateLimit,
 		?ExecutionTraceContext $trace = null,
 		bool $dryRun = false,
+		array $validationFindings = [],
 	): Response {
 		$endpointData = $endpoint->getObject();
 
@@ -676,6 +703,12 @@ class EndpointService {
 
 		// Update request data with rule processing results.
 		$flowToken = $this->updateRequestWithRuleData(flowToken: $flowToken, ruleData: $ruleResult);
+
+		// A register schema target makes no call log: record mode's findings
+		// go to the server log (REQ-MSV-002).
+		if ($validationFindings !== [] && ($endpointData['targetType'] ?? '') !== 'api') {
+			$this->messageGate?->record(callLog: null, findings: $validationFindings, endpoint: (string)$endpoint->getUuid());
+		}
 
 		// Check if endpoint connects to a schema.
 		if (($endpointData['targetType'] ?? '') === 'register/schema') {
@@ -751,7 +784,13 @@ class EndpointService {
 		// Check if endpoint connects to a source.
 		if (($endpointData['targetType'] ?? '') === 'api') {
 			// Proxy request to source via CallService.
-			return $this->handleSourceRequest(endpoint: $endpoint, request: $request, path: $path, trace: $trace);
+			return $this->handleSourceRequest(
+				endpoint: $endpoint,
+				request: $request,
+				path: $path,
+				trace: $trace,
+				validationFindings: $validationFindings
+			);
 		}
 
 		// Invalid endpoint configuration.
@@ -2227,7 +2266,7 @@ class EndpointService {
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
-	private function getRawContent(): string {
+	protected function getRawContent(): string {
 		return file_get_contents(filename: 'php://input');
 	}//end getRawContent()
 
@@ -2307,6 +2346,7 @@ class EndpointService {
 	 *                     named path segments into the upstream path template
 	 *                     (ocon#1069).
 	 * @param ExecutionTraceContext|null $trace The active execution trace context (execution-trace REQ-001).
+	 * @param array $validationFindings Record mode's request finding (REQ-MSV-002), written to this call's log.
 	 *
 	 * @return JSONResponse
 	 * @throws GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception
@@ -2319,6 +2359,7 @@ class EndpointService {
 		IRequest $request,
 		string $path = '',
 		?ExecutionTraceContext $trace = null,
+		array $validationFindings = [],
 	): JSONResponse {
 		$endpointData = $endpoint->getObject();
 		$headers = $this->getHeaders(server: $_SERVER);
@@ -2382,11 +2423,72 @@ class EndpointService {
 		);
 		$callLogData = $callLog->getObject();
 
+		// REQ-MSV-002: the proxied answer is checked against the endpoint's
+		// answer schema. Mode refuse answers 502, the fault being upstream.
+		$answerCheck = $this->validateMessage(
+			endpointData: $endpointData,
+			direction: EndpointMessageGate::RESPONSE,
+			body: ($callLogData['response']['body'] ?? ($callLogData['response'] ?? null)),
+			context: ['method' => $request->getMethod(), 'path' => $path, 'status' => (int)($callLogData['statusCode'] ?? 200)]
+		);
+		if ($answerCheck instanceof JSONResponse === true) {
+			return $answerCheck;
+		}
+
+		if ($answerCheck !== null) {
+			$validationFindings[] = $answerCheck;
+		}
+
+		if ($validationFindings !== []) {
+			$this->messageGate?->record(callLog: $callLog, findings: $validationFindings, endpoint: (string)$endpoint->getUuid());
+		}
+
 		return new JSONResponse(
 			$callLogData['response'] ?? [],
 			$callLogData['statusCode'] ?? 200
 		);
 	}//end handleSourceRequest()
+
+	/**
+	 * Check one message against the endpoint's message schema for that direction (REQ-MSV-002).
+	 *
+	 * A declared validation is never skipped: without the gate, mode refuse
+	 * answers 500 and mode record logs that nothing was checked.
+	 *
+	 * @param array  $endpointData The endpoint object.
+	 * @param string $direction    EndpointMessageGate::REQUEST or ::RESPONSE.
+	 * @param mixed  $body         The message.
+	 * @param array  $context      The method, path and, for an answer, its status.
+	 *
+	 * @return JSONResponse|array|null A refusal, a finding for the call log, or null when it passes.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 */
+	private function validateMessage(array $endpointData, string $direction, mixed $body, array $context): JSONResponse|array|null {
+		if ((string)($endpointData['validation'][$direction]['messageSchema'] ?? '') === '') {
+			return null;
+		}
+
+		if ($this->messageGate === null) {
+			$this->logger->error('[integriq] an endpoint declares message validation but the validator is not available; nothing was checked');
+			if (($endpointData['validation']['mode'] ?? 'record') === 'refuse') {
+				return new JSONResponse(['error' => 'The message could not be checked against its message schema'], Http::STATUS_INTERNAL_SERVER_ERROR);
+			}
+
+			return null;
+		}
+
+		$outcome = $this->messageGate->check(endpointData: $endpointData, direction: $direction, body: $body, context: $context);
+		if ($outcome === null || $outcome->isValid() === true) {
+			return null;
+		}
+
+		if ($this->messageGate->refuses(endpointData: $endpointData) === true) {
+			return $this->messageGate->refusal(outcome: $outcome, direction: $direction);
+		}
+
+		return $this->messageGate->finding(outcome: $outcome, direction: $direction, endpointData: $endpointData);
+	}//end validateMessage()
 
 	/**
 	 * Build the template context the upstream path is rendered against
