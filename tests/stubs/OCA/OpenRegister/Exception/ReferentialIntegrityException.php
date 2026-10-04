@@ -50,7 +50,7 @@ class ReferentialIntegrityException extends Exception {
 	 * @param int $code The error code.
 	 * @param Exception|null $previous The previous exception.
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * Specified in OpenRegister at openspec/specs/object-lifecycle/spec.md (copied from openregister development 98a3469c0f).
 	 */
 	public function __construct(DeletionAnalysis $analysis, int $code = 0, ?Exception $previous = null) {
 		$blockerCount = count($analysis->blockers);
@@ -65,7 +65,7 @@ class ReferentialIntegrityException extends Exception {
 	 *
 	 * @return DeletionAnalysis The analysis containing blocker and target details.
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * Specified in OpenRegister at openspec/specs/object-lifecycle/spec.md (copied from openregister development 98a3469c0f).
 	 */
 	public function getAnalysis(): DeletionAnalysis {
 		return $this->analysis;
@@ -76,7 +76,7 @@ class ReferentialIntegrityException extends Exception {
 	 *
 	 * @return array The structured error response with error code, message, and blockers.
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * Specified in OpenRegister at openspec/specs/object-lifecycle/spec.md (copied from openregister development 98a3469c0f).
 	 */
 	public function toResponseBody(): array {
 		return [

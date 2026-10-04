@@ -248,7 +248,7 @@ class OwnershipControllerTest extends TestCase {
 		$data = $response->getData();
 		$this->assertFalse($data['valid']);
 		$this->assertSame('disappearancePolicy', $data['key']);
-		$this->assertSame(['delete', 'markEnded', 'keepAndFlag'], $data['accepted']);
+		$this->assertSame(['delete', 'markEnded', 'keepAndFlag', 'purge'], $data['accepted']);
 	}//end testAMisspelledPolicyIsRefusedBeforeItIsStored()
 
 	/**

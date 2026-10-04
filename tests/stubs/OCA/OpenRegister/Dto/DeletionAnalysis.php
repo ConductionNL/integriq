@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/openregister-legacy-quality-cleanup/tasks.md#task-1.1
+ * Specified in OpenRegister at openspec/changes/openregister-legacy-quality-cleanup/tasks.md#task-1.1 (copied from openregister development 98a3469c0f).
  */
 
 declare(strict_types=1);
