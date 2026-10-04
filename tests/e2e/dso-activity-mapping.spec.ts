@@ -21,7 +21,9 @@ import { expect, test } from '@playwright/test'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const ADMIN_SETTINGS_URL = '/index.php/settings/admin/integriq'
-const IMOW_MILIEU = 'nl.imow-gm0000.activiteit.E2eMilieu'
+// One imow-id per run: the test leaves its deactivated row behind, and a fixed
+// id would make the row filter match two rows on the next run.
+const IMOW_MILIEU = `nl.imow-gm0000.activiteit.E2eMilieu${Date.now().toString(36)}`
 const IMOW_UNMAPPED = 'nl.imow-gm0000.activiteit.E2eUnmapped'
 
 test.describe('dso activity mapping', () => {
