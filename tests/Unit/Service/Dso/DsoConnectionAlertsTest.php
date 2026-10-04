@@ -183,4 +183,18 @@ class DsoConnectionAlertsTest extends TestCase {
 		$this->assertCount(4, $this->sent);
 
 	}//end testAnotherReasonIsNotThrottled()
+	/**
+	 * The Open Formulieren intake has its own throttle; the DSO key keeps its name.
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
+	 */
+	public function testEachChannelIsThrottledOnItsOwn(): void {
+		$this->assertTrue($this->alerts->notify(reason: 'no_account'));
+		$this->assertTrue($this->alerts->notify(reason: 'no_account', channel: 'openformulieren'));
+		$this->assertFalse($this->alerts->notify(reason: 'no_account', channel: 'openformulieren'));
+
+		$this->assertCount(4, $this->sent);
+		$this->assertSame(['dso_alert_last_no_account', 'openformulieren_alert_last_no_account'], array_keys($this->config));
+
+	}//end testEachChannelIsThrottledOnItsOwn()
 }//end class

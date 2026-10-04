@@ -188,4 +188,39 @@ class DsoStamConsumerListenerTest extends TestCase {
 		$this->assertFalse($elsewhere->isPropagationStopped());
 
 	}//end testOtherTypesAndSchemasPass()
+	/**
+	 * A second open-formulieren consumer is refused the same way.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-open-formulieren-consumer-is-refused
+	 */
+	public function testASecondOpenFormulierenConsumerIsRefused(): void {
+		$this->addOpenFormulierenConsumer(userId: 'of-intake', uuid: 'consumer-of-first');
+		$event = new ObjectCreatingEvent($this->consumer('consumer-of-second', 'open-formulieren'));
+
+		$this->listener()->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('openformulieren_connection_exists', $event->getErrors()['code']);
+		$this->assertStringContainsString('Only one Open Formulieren connection', $event->getErrors()['message']);
+
+	}//end testASecondOpenFormulierenConsumerIsRefused()
+
+	/**
+	 * One connection of each kind may exist side by side.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-open-formulieren-consumer-is-refused
+	 */
+	public function testAnOpenFormulierenConsumerNextToADsoConsumerPasses(): void {
+		$this->addDsoConsumer(userId: 'dso-intake', uuid: 'consumer-dso');
+		$event = new ObjectCreatingEvent($this->consumer('consumer-of-first', 'open-formulieren'));
+
+		$this->listener()->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+
+	}//end testAnOpenFormulierenConsumerNextToADsoConsumerPasses()
 }//end class

@@ -61,26 +61,47 @@ class DsoConnectionUnavailableException extends Exception {
 	 * @var array<string, string>
 	 */
 	private const ERROR_CODES = [
-		self::NO_CONNECTION => 'dso_connection_not_configured',
-		self::AMBIGUOUS_CONNECTION => 'dso_connection_not_configured',
-		self::NO_ACCOUNT => 'dso_account_unavailable',
-		self::ACCOUNT_UNKNOWN => 'dso_account_unavailable',
-		self::ACCOUNT_DISABLED => 'dso_account_unavailable',
-		self::ACCOUNT_LACKS_RIGHTS => 'dso_account_lacks_rights',
-		self::RIGHTS_UNVERIFIABLE => 'dso_account_lacks_rights',
+		self::NO_CONNECTION => 'connection_not_configured',
+		self::AMBIGUOUS_CONNECTION => 'connection_not_configured',
+		self::NO_ACCOUNT => 'account_unavailable',
+		self::ACCOUNT_UNKNOWN => 'account_unavailable',
+		self::ACCOUNT_DISABLED => 'account_unavailable',
+		self::ACCOUNT_LACKS_RIGHTS => 'account_lacks_rights',
+		self::RIGHTS_UNVERIFIABLE => 'account_lacks_rights',
 	];
+
+	/**
+	 * The channel of the DSO STAM intake, the prefix of its error codes.
+	 *
+	 * @var string
+	 */
+	public const CHANNEL_DSO = 'dso';
+
+	/**
+	 * The channel of the Open Formulieren intake, the prefix of its error codes.
+	 *
+	 * @var string
+	 */
+	public const CHANNEL_OPEN_FORMULIEREN = 'openformulieren';
 
 	/**
 	 * Constructor.
 	 *
+	 * The same reasons serve every intake that runs as a consumer's account.
+	 * `$channel` only prefixes the error code, so DSO-LV keeps answering
+	 * `dso_account_unavailable` and Open Formulieren gets
+	 * `openformulieren_account_unavailable`.
+	 *
 	 * @param string $reason  One of the reason constants.
 	 * @param string $message A secret-free description for the log.
+	 * @param string $channel The intake, one of the CHANNEL_* constants.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function __construct(
 		private readonly string $reason,
 		string $message,
+		private readonly string $channel = self::CHANNEL_DSO,
 	) {
 		parent::__construct(message: $message);
 
@@ -103,10 +124,22 @@ class DsoConnectionUnavailableException extends Exception {
 	 *
 	 * @return string The error code, for example `dso_account_unavailable`.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function getErrorCode(): string {
-		return (self::ERROR_CODES[$this->reason] ?? 'dso_connection_not_configured');
+		return $this->channel . '_' . (self::ERROR_CODES[$this->reason] ?? 'connection_not_configured');
 
 	}//end getErrorCode()
+
+	/**
+	 * The intake this refusal belongs to.
+	 *
+	 * @return string One of the CHANNEL_* constants.
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
+	 */
+	public function getChannel(): string {
+		return $this->channel;
+
+	}//end getChannel()
 }//end class

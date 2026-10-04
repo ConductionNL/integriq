@@ -6,6 +6,8 @@
  * Refuses a second `dso-stam` consumer on OpenRegister's own create and
  * update path. One gemeente has one STAM koppeling per environment, and two
  * consumers would make "which account does the intake act as" ambiguous.
+ * The Open Formulieren connection (`open-formulieren`) follows the same rule,
+ * for the same reason.
  *
  * @category EventListener
  * @package  OCA\Integriq\EventListener
@@ -27,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Service\Dso\DsoConnection;
+use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -69,13 +72,14 @@ class DsoStamConsumerListener implements IEventListener {
 	}//end __construct()
 
 	/**
-	 * Refuse the save when another dso-stam consumer already exists.
+	 * Refuse the save when another consumer of the same intake type already exists.
 	 *
 	 * @param Event $event The creating or updating event.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectCreatingEvent) === false && ($event instanceof ObjectUpdatingEvent) === false) {
@@ -83,19 +87,29 @@ class DsoStamConsumerListener implements IEventListener {
 		}
 
 		$entity = $this->savedObject(event: $event);
-		if ($this->isDsoStamConsumer(object: $entity) === false) {
+		$type = strtolower((string)($entity->getObject()['authorizationType'] ?? ''));
+		if (in_array($type, [DsoConnection::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE], true) === false
+			|| $this->isIntegriqConsumer(object: $entity) === false
+		) {
 			return;
 		}
 
-		foreach ($this->connection->findConsumers() as $existing) {
+		$message = $this->l10n->t('Only one DSO connection is allowed. Edit the existing one instead.');
+		$code = 'dso_connection_exists';
+		if ($type === OpenFormulierenConnection::AUTHORIZATION_TYPE) {
+			$message = $this->l10n->t('Only one Open Formulieren connection is allowed. Edit the existing one instead.');
+			$code = 'openformulieren_connection_exists';
+		}
+
+		foreach ($this->connection->findConsumers(authorizationType: $type) as $existing) {
 			if ($existing->getUuid() === $entity->getUuid()) {
 				continue;
 			}
 
 			$event->setErrors(
 				[
-					'code' => 'dso_connection_exists',
-					'message' => $this->l10n->t('Only one DSO connection is allowed. Edit the existing one instead.'),
+					'code' => $code,
+					'message' => $message,
 					'status' => 409,
 				]
 			);
@@ -122,26 +136,22 @@ class DsoStamConsumerListener implements IEventListener {
 	}//end savedObject()
 
 	/**
-	 * Whether the object is a consumer in the integriq register with type dso-stam.
+	 * Whether the object is a consumer in the integriq register.
 	 *
 	 * @param ObjectEntity $object The object being saved.
 	 *
 	 * @return bool
 	 */
-	private function isDsoStamConsumer(ObjectEntity $object): bool {
-		if (strtolower((string)($object->getObject()['authorizationType'] ?? '')) !== DsoConnection::AUTHORIZATION_TYPE) {
-			return false;
-		}
-
+	private function isIntegriqConsumer(ObjectEntity $object): bool {
 		try {
 			$registerSlug = $this->registerMapper->find($object->getRegister())->getSlug();
 			$schemaSlug = $this->schemaMapper->find($object->getSchema())->getSlug();
 		} catch (Throwable $failure) {
-			$this->logger->debug('[integriq] dso-stam consumer check: could not resolve register/schema: ' . $failure->getMessage());
+			$this->logger->debug('[integriq] intake consumer check: could not resolve register/schema: ' . $failure->getMessage());
 			return false;
 		}
 
 		return $registerSlug === DsoConnection::REGISTER && $schemaSlug === DsoConnection::SCHEMA_CONSUMER;
 
-	}//end isDsoStamConsumer()
+	}//end isIntegriqConsumer()
 }//end class
