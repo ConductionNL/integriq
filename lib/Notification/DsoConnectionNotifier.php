@@ -42,6 +42,8 @@ use OCP\Notification\INotifier;
  * Notifier for the DSO connection alerts.
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) WebhookProfiles is a final catalogue of pure lookups; there is nothing to inject.
  */
 class DsoConnectionNotifier implements INotifier {
 

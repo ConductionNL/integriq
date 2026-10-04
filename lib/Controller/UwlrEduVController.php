@@ -326,7 +326,7 @@ class UwlrEduVController extends Controller {
 	private function handleSignedInbound(callable $handler): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::uwlrEduV(), rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfiles::UWLR_EDUV, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -340,7 +340,7 @@ class UwlrEduVController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the UWLR/Edu-V partner delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::uwlrEduV(), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::UWLR_EDUV, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

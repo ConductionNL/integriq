@@ -53,6 +53,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the gate and its webhook-type constant replace the
+ * signature service; the HTTP, auth and provider types this controller answers with stay.
  */
 class IwmoIjwController extends Controller {
 	/**
@@ -166,7 +169,7 @@ class IwmoIjwController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::iwmoIjw(), rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfiles::IWMO_IJW, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -183,7 +186,7 @@ class IwmoIjwController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the iWMO/iJW partner delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::iwmoIjw(), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::IWMO_IJW, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

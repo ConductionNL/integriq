@@ -87,6 +87,9 @@ class MigrateOpenFormulierenConnection implements IRepairStep {
 	 * @return void
 	 *
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-5
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OpenFormulierenConnection::profile() is a pure, static
+	 * description of the webhook; resolving the whole connection only to read it would be worse.
 	 */
 	public function run(IOutput $output): void {
 		try {

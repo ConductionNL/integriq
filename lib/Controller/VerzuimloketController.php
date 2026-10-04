@@ -53,6 +53,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
  * @spec openspec/specs/verzuimloket-adapter/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the gate and its webhook-type constant replace the
+ * signature service; the HTTP, auth and provider types this controller answers with stay.
  */
 class VerzuimloketController extends Controller {
 	/**
@@ -160,7 +163,7 @@ class VerzuimloketController extends Controller {
 	public function retour(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::verzuimloket(), rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfiles::VERZUIMLOKET, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -174,7 +177,7 @@ class VerzuimloketController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so Verzuimloket delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::verzuimloket(), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::VERZUIMLOKET, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

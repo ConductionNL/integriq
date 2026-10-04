@@ -84,6 +84,9 @@ class WebhookTrustMigrator {
 	 * @return bool True when a consumer was created.
 	 *
 	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-upgrade-moves-the-source-trust-into-the-consumer
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemWrite exposes only a static
+	 * entry point, as in MigrateDsoStamConnection.
 	 */
 	public function migrate(WebhookProfile $profile, ?string $name = null, ?string $description = null): bool {
 		if ($this->webhooks->findConsumers(profile: $profile) !== []) {
@@ -148,36 +151,47 @@ class WebhookTrustMigrator {
 				continue;
 			}
 
-			$data = $this->readRaw(source: $source)->getObject();
-			if (($data['isEnabled'] ?? true) === false) {
-				continue;
+			$trust = $this->trustOf(profile: $profile, data: $this->readRaw(source: $source)->getObject());
+			if ($trust !== null) {
+				return $trust;
 			}
-
-			$configuration = ($data['configuration'] ?? []);
-			if (is_array($configuration) === false) {
-				continue;
-			}
-
-			if ($profile->legacyChannelId !== null && (string)($configuration['channelId'] ?? '') !== $profile->legacyChannelId) {
-				continue;
-			}
-
-			$signature = ($configuration['webhookSignature'] ?? []);
-			if (is_array($signature) === false || (string)($signature['secret'] ?? '') === '') {
-				continue;
-			}
-
-			return [
-				'scheme' => (string)($signature['scheme'] ?? $profile->defaultScheme),
-				'secret' => (string)$signature['secret'],
-				'header' => (string)($signature['header'] ?? $profile->defaultHeader),
-				'toleranceSeconds' => (int)($signature['toleranceSeconds'] ?? 300),
-			];
-		}//end foreach
+		}
 
 		return null;
 
 	}//end legacyTrust()
+
+	/**
+	 * The webhook trust of one source, or null when it is disabled, another channel's or has no secret.
+	 *
+	 * @param WebhookProfile       $profile The webhook.
+	 * @param array<string, mixed> $data    The raw source data.
+	 *
+	 * @return array{scheme: string, secret: string, header: string, toleranceSeconds: int}|null
+	 */
+	private function trustOf(WebhookProfile $profile, array $data): ?array {
+		$configuration = ($data['configuration'] ?? []);
+		if (($data['isEnabled'] ?? true) === false || is_array($configuration) === false) {
+			return null;
+		}
+
+		if ($profile->legacyChannelId !== null && (string)($configuration['channelId'] ?? '') !== $profile->legacyChannelId) {
+			return null;
+		}
+
+		$signature = ($configuration['webhookSignature'] ?? []);
+		if (is_array($signature) === false || (string)($signature['secret'] ?? '') === '') {
+			return null;
+		}
+
+		return [
+			'scheme' => (string)($signature['scheme'] ?? $profile->defaultScheme),
+			'secret' => (string)$signature['secret'],
+			'header' => (string)($signature['header'] ?? $profile->defaultHeader),
+			'toleranceSeconds' => (int)($signature['toleranceSeconds'] ?? 300),
+		];
+
+	}//end trustOf()
 
 	/**
 	 * Re-read a source raw, so a write-only secret comes back.

@@ -44,6 +44,8 @@ use Throwable;
  * Creates each webhook's consumer from its legacy source trust.
  *
  * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-upgrade-moves-the-source-trust-into-the-consumer
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) WebhookProfiles is a final catalogue of pure lookups; there is nothing to inject.
  */
 class MigrateWebhookConnections implements IRepairStep {
 

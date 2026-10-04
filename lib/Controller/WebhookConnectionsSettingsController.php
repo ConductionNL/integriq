@@ -56,6 +56,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the connection, the profiles, the admin check, l10n,
  * logger and the HTTP and OpenRegister types it answers with; one admin form, one class.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) WebhookProfiles is a final catalogue of pure lookups; there is nothing to inject.
  */
 class WebhookConnectionsSettingsController extends Controller {
 

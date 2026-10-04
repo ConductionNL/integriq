@@ -32,6 +32,8 @@ namespace OCA\Integriq\Service\Intake;
  * The profile of every webhook on the consumer model.
  *
  * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) a catalogue: one named factory per webhook, plus the lookups.
  */
 final class WebhookProfiles {
 
@@ -41,6 +43,62 @@ final class WebhookProfiles {
 	 * @var string
 	 */
 	public const INTAKE_CHANNEL_PREFIX = 'intake-channel-';
+
+	/**
+	 * The consumer types the controllers name. A string, so a controller needs no static call.
+	 *
+	 * @var string
+	 */
+	public const PEPPOL = 'peppol-webhook';
+
+	/**
+	 * NotifyNL status callbacks.
+	 *
+	 * @var string
+	 */
+	public const NOTIFYNL = 'notifynl-webhook';
+
+	/**
+	 * ROD retours.
+	 *
+	 * @var string
+	 */
+	public const ROD = 'rod-webhook';
+
+	/**
+	 * OSO imports and retours.
+	 *
+	 * @var string
+	 */
+	public const OSO = 'oso-webhook';
+
+	/**
+	 * UWLR and Edu-V retours.
+	 *
+	 * @var string
+	 */
+	public const UWLR_EDUV = 'uwlr-eduv-webhook';
+
+	/**
+	 * Verzuimloket retours.
+	 *
+	 * @var string
+	 */
+	public const VERZUIMLOKET = 'verzuimloket-webhook';
+
+	/**
+	 * iWMO and iJW retours.
+	 *
+	 * @var string
+	 */
+	public const IWMO_IJW = 'iwmo-ijw-webhook';
+
+	/**
+	 * StUF-ZKN kennisgevingen.
+	 *
+	 * @var string
+	 */
+	public const STUF_ZKN = 'stuf-zkn-webhook';
 
 	/**
 	 * The intake channels the controller accepts, plus the verdicts channel.
@@ -90,7 +148,12 @@ final class WebhookProfiles {
 	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
 	 */
 	public static function byAuthorizationType(string $authorizationType): ?WebhookProfile {
-		return (self::all()[strtolower($authorizationType)] ?? null);
+		$type = strtolower($authorizationType);
+		if (str_starts_with($type, self::INTAKE_CHANNEL_PREFIX) === true && strlen($type) > strlen(self::INTAKE_CHANNEL_PREFIX)) {
+			return self::intakeChannel(channelId: substr($type, strlen(self::INTAKE_CHANNEL_PREFIX)));
+		}
+
+		return (self::all()[$type] ?? null);
 
 	}//end byAuthorizationType()
 
@@ -123,7 +186,7 @@ final class WebhookProfiles {
 	 */
 	public static function peppol(): WebhookProfile {
 		return new WebhookProfile(
-			authorizationType: 'peppol-webhook',
+			authorizationType: self::PEPPOL,
 			channel: 'peppol',
 			label: 'Peppol',
 			schema: 'peppol_transmission',
@@ -141,7 +204,7 @@ final class WebhookProfiles {
 	 */
 	public static function notifyNl(): WebhookProfile {
 		return new WebhookProfile(
-			authorizationType: 'notifynl-webhook',
+			authorizationType: self::NOTIFYNL,
 			channel: 'notifynl',
 			label: 'NotifyNL',
 			schema: 'sms_message',
@@ -159,7 +222,7 @@ final class WebhookProfiles {
 	 */
 	public static function rod(): WebhookProfile {
 		return new WebhookProfile(
-			authorizationType: 'rod-webhook',
+			authorizationType: self::ROD,
 			channel: 'rod',
 			label: 'ROD',
 			schema: 'rod_message',
@@ -177,7 +240,7 @@ final class WebhookProfiles {
 	 */
 	public static function oso(): WebhookProfile {
 		return new WebhookProfile(
-			authorizationType: 'oso-webhook',
+			authorizationType: self::OSO,
 			channel: 'oso',
 			label: 'OSO',
 			schema: 'oso_message',
@@ -195,7 +258,7 @@ final class WebhookProfiles {
 	 */
 	public static function uwlrEduV(): WebhookProfile {
 		return new WebhookProfile(
-			authorizationType: 'uwlr-eduv-webhook',
+			authorizationType: self::UWLR_EDUV,
 			channel: 'uwlreduv',
 			label: 'UWLR/Edu-V',
 			schema: 'uwlr_eduv_message',
@@ -213,7 +276,7 @@ final class WebhookProfiles {
 	 */
 	public static function verzuimloket(): WebhookProfile {
 		return new WebhookProfile(
-			authorizationType: 'verzuimloket-webhook',
+			authorizationType: self::VERZUIMLOKET,
 			channel: 'verzuimloket',
 			label: 'Verzuimloket',
 			schema: 'verzuim_message',
@@ -231,7 +294,7 @@ final class WebhookProfiles {
 	 */
 	public static function iwmoIjw(): WebhookProfile {
 		return new WebhookProfile(
-			authorizationType: 'iwmo-ijw-webhook',
+			authorizationType: self::IWMO_IJW,
 			channel: 'iwmoijw',
 			label: 'iWMO/iJW',
 			schema: 'iwmo_ijw_message',
@@ -249,7 +312,7 @@ final class WebhookProfiles {
 	 */
 	public static function stufZkn(): WebhookProfile {
 		return new WebhookProfile(
-			authorizationType: 'stuf-zkn-webhook',
+			authorizationType: self::STUF_ZKN,
 			channel: 'stufzkn',
 			label: 'StUF-ZKN',
 			schema: 'stuf_message',

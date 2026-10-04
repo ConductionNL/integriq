@@ -158,7 +158,7 @@ class PeppolController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::peppol(), rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfiles::PEPPOL, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -197,7 +197,7 @@ class PeppolController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the access point delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::peppol(), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::PEPPOL, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

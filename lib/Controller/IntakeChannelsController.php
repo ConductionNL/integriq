@@ -124,7 +124,7 @@ class IntakeChannelsController extends Controller {
 	public function inbound(string $channel): JSONResponse {
 		$rawBody = $this->getRawContent();
 		$identity = $this->gate->identify(
-			profile: WebhookProfiles::intakeChannel(channelId: $channel),
+			profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . $channel,
 			rawBody: $rawBody,
 			request: $this->request
 		);
@@ -147,7 +147,7 @@ class IntakeChannelsController extends Controller {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the channel delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::intakeChannel(channelId: $channel), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . $channel, reason: $exception->getMessage());
 		}
 
 		$object = $stored->getObject();

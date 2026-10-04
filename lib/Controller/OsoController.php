@@ -53,6 +53,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
  * @spec openspec/specs/oso-adapter/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the gate and its webhook-type constant replace the
+ * signature service; the HTTP, auth and provider types this controller answers with stay.
  */
 class OsoController extends Controller {
 	/**
@@ -193,7 +196,7 @@ class OsoController extends Controller {
 	private function handleSignedInbound(callable $handler): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::oso(), rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfiles::OSO, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -207,7 +210,7 @@ class OsoController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so OSO delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::oso(), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::OSO, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

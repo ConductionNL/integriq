@@ -214,7 +214,7 @@ class NotifyNlController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::notifyNl(), rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfiles::NOTIFYNL, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -249,7 +249,7 @@ class NotifyNlController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so NotifyNL delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::notifyNl(), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::NOTIFYNL, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

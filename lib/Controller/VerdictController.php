@@ -102,7 +102,7 @@ class VerdictController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 		$identity = $this->gate->identify(
-			profile: WebhookProfiles::intakeChannel(channelId: self::CHANNEL_ID),
+			profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
 			rawBody: $rawBody,
 			request: $this->request
 		);
@@ -133,7 +133,7 @@ class VerdictController extends Controller {
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the checker delivers again.
 			return $this->gate->notStored(
-				profile: WebhookProfiles::intakeChannel(channelId: self::CHANNEL_ID),
+				profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
 				reason: $exception->getMessage()
 			);
 		}

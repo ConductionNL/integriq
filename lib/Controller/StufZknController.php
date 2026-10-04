@@ -66,6 +66,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the gate and its webhook-type constant replace the
+ * signature service; the HTTP, auth and provider types this controller answers with stay.
  */
 class StufZknController extends Controller {
 
@@ -128,7 +131,7 @@ class StufZknController extends Controller {
 	public function inbound(): DataDisplayResponse|JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::stufZkn(), rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfiles::STUF_ZKN, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -145,7 +148,7 @@ class StufZknController extends Controller {
 				operation: fn (): string => $this->syncService->receiveInbound(soapXml: $rawBody)
 			);
 		} catch (Throwable $exception) {
-			return $this->gate->notStored(profile: WebhookProfiles::stufZkn(), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::STUF_ZKN, reason: $exception->getMessage());
 		}
 
 		return new DataDisplayResponse($replyXml, Http::STATUS_OK, ['Content-Type' => self::XML_CONTENT_TYPE]);

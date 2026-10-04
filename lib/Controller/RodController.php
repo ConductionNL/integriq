@@ -53,6 +53,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
  * @spec openspec/specs/rod-adapter/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the gate and its webhook-type constant replace the
+ * signature service; the HTTP, auth and provider types this controller answers with stay.
  */
 class RodController extends Controller {
 	/**
@@ -164,7 +167,7 @@ class RodController extends Controller {
 	public function retour(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::rod(), rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfiles::ROD, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -180,7 +183,7 @@ class RodController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so ROD delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::rod(), reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfiles::ROD, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);
