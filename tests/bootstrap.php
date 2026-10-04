@@ -393,6 +393,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Exception/ValidationException.php';
 		}
 
+		// ReferentialIntegrityException and its DeletionAnalysis, copied from
+		// openregister development 98a3469c0f: what a permanent delete throws
+		// when another object restricts it (synchronisation-source-destruction-purge).
+		if (class_exists('OCA\\OpenRegister\\Dto\\DeletionAnalysis') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Dto/DeletionAnalysis.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Exception\\ReferentialIntegrityException') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Exception/ReferentialIntegrityException.php';
+		}
+
 		// OCA\OpenRegister\Event\Object{Created,Updated,Deleted}Event stubs —
 		// peer app not in vendor. Used by outbound-webhooks-activation's
 		// CloudEventListenerTest to construct real event instances (PHPUnit

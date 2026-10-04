@@ -45,6 +45,12 @@ final class DisappearancePolicy {
 	public const KEEP_AND_FLAG = 'keepAndFlag';
 
 	/**
+	 * Delete the object permanently, with its files (REQ-SDP-001). It cannot
+	 * be undone, so it keeps every guard a delete has.
+	 */
+	public const PURGE = 'purge';
+
+	/**
 	 * The key a synchronisation declares the policy under.
 	 */
 	public const CONFIG_KEY = 'disappearancePolicy';
@@ -54,7 +60,7 @@ final class DisappearancePolicy {
 	 *
 	 * @var array<int,string>
 	 */
-	public const ACCEPTED = [self::DELETE, self::MARK_ENDED, self::KEEP_AND_FLAG];
+	public const ACCEPTED = [self::DELETE, self::MARK_ENDED, self::KEEP_AND_FLAG, self::PURGE];
 
 	/**
 	 * Read the declared policy, refusing a value the engine does not know.

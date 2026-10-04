@@ -262,12 +262,29 @@ class ObjectService {
 	 * real OCA\OpenRegister\Service\ObjectService, and no __call() either. This
 	 * stub deliberately does not invent one.
 	 *
+	 * The trailing parameters follow openregister development 98a3469c0f; a
+	 * permanent delete (`permanent: true`) removes the object and its files.
+	 *
 	 * @param string|null $uuid
 	 * @param string|int|null $register
 	 * @param string|int|null $schema
+	 * @param bool $_rbac
+	 * @param bool $_multitenancy
+	 * @param bool $_retentionSweep
+	 * @param mixed $currentUser
+	 * @param bool $permanent
 	 * @return bool
 	 */
-	public function deleteObject(?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
+	public function deleteObject(
+		?string $uuid = null,
+		string|int|null $register = null,
+		string|int|null $schema = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		bool $_retentionSweep = false,
+		mixed $currentUser = null,
+		bool $permanent = false,
+	): bool {
 		return true;
 	}
 
