@@ -35,12 +35,8 @@ test.describe('dso activity mapping', () => {
 
 		await section.getByTestId('admin-dso-activities-add').click()
 		const dialog = page.getByTestId('dso-activity-dialog')
-		await dialog
-			.getByTestId('dso-activity-name')
-			.fill('E2E milieu')
-		await dialog
-			.getByTestId('dso-activity-imow-id')
-			.fill(IMOW_MILIEU)
+		await dialog.getByTestId('dso-activity-name').fill('E2E milieu')
+		await dialog.getByTestId('dso-activity-imow-id').fill(IMOW_MILIEU)
 		await dialog
 			.getByTestId('dso-activity-case-type-reference')
 			.first()
@@ -104,14 +100,14 @@ test.describe('dso activity mapping', () => {
 
 		await unmapped.getByTestId('admin-dso-unmapped-map').click()
 		const dialog = page.getByTestId('dso-activity-dialog')
-		await expect(
-			dialog.getByTestId('dso-activity-imow-id'),
-		).toHaveValue(IMOW_UNMAPPED)
-		await expect(
-			dialog.getByTestId('dso-activity-activity-id'),
-		).toHaveValue('E2E-0000-Unmapped')
-		await expect(
-			dialog.getByTestId('dso-activity-name'),
-		).toHaveValue('E2E unmapped')
+		await expect(dialog.getByTestId('dso-activity-imow-id')).toHaveValue(
+			IMOW_UNMAPPED,
+		)
+		await expect(dialog.getByTestId('dso-activity-activity-id')).toHaveValue(
+			'E2E-0000-Unmapped',
+		)
+		await expect(dialog.getByTestId('dso-activity-name')).toHaveValue(
+			'E2E unmapped',
+		)
 	})
 })
