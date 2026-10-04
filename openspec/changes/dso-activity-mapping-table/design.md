@@ -52,7 +52,9 @@ The "at least one of" rule is NOT a schema-level `anyOf`. OpenRegister reads a s
 
 `imowId` carries the STAM pattern. STAM writes `Objecttype` literally in the pattern; we read it as the IMOW object type segment and accept `[A-Za-z]+` there. Task 1.1 checks that reading against a real verzoekbericht before the pattern is enforced.
 
-Authorization (`register.d/dso-activity-mapping.json`, ADR-037): `create`, `update`, `delete` for `admin`; `read` for `admin`. The mapper reads the table as an engine read of admin configuration (`_rbac: false`, read only), the same pattern the endpoint runtime uses for `rule`. A uniqueness check refuses two active rows with the same `imowId`: `DsoActivityMappingGuardListener`, on `ObjectCreatingEvent` and `ObjectUpdatingEvent` (409). `configuration.unique` was not used, because it cannot leave inactive rows out.
+Authorization (`register.d/dso-activity-mapping.json`, ADR-037): `create`, `update`, `delete` for `admin`; `read` for `admin`. The mapper reads the table as an engine read of admin configuration (`_rbac: false`, read only), the same pattern the endpoint runtime uses for `rule`. A uniqueness check refuses two active rows with the same `imowId`: `DsoActivityMappingGuardListener`, on `ObjectCreatingEvent` and `ObjectUpdatingEvent`. `configuration.unique` was not used, because it cannot leave inactive rows out.
+
+How a refusal reaches the caller. The listener stops the event with `errors` holding a `code`, a `message` and the status it means: `dso_activity_identifier_missing` with 400, `dso_activity_imow_id_taken` with 409. The caller gets HTTP 422, with those three fields under `errors` in the body. That is an OpenRegister limitation, not a choice: `MagicMapper` turns a stopped creating or updating event into a `HookStoppedException`, and `ObjectsController::create()`, `update()`, `patch()` and `postPatch()` answer that exception with a fixed 422. Only `destroy()` reads `errors.status` (openregister development e80cd62, `lib/Controller/ObjectsController.php` lines 3380, 3764, 4003, 4173 and 4289-4300). The listener keeps sending `status`, so the right code comes through once OpenRegister reads it on the save path too.
 
 ### D2. Matching
 
@@ -72,7 +74,7 @@ For a verzoek with two or more mapped activities:
 2. All pairs decided `gecombineerd` gives `gecombineerd`. Any pair decided `deelzaken` gives `deelzaken`.
 3. Without rules, today's `determineSamenloopStrategy()` applies: `gecombineerd` only when every mapped row says so.
 
-`mappedCaseTypes` becomes the union over all case types of all mapped rows, so one activity with two case types yields two entries. Each `mappedActivities` entry records its own case types and departments, so the handoff can route each deelzaak (REQ-DSO-011).
+`mappedCaseTypes` becomes the union over all case types of all mapped rows, so one activity with two case types yields two entries. When nothing maps, it is stored as an empty list `[]`, never `null`: the property has no `minItems`, so `[]` validates. OpenRegister's object API leaves empty values out of a read unless the caller passes `_empty=true` (`ObjectsController::stripEmptyValues()`), so a read without it shows no `mappedCaseTypes` key at all. Each `mappedActivities` entry records its own case types and departments, so the handoff can route each deelzaak (REQ-DSO-011).
 
 ### D4. The parser keeps the STAM identifiers
 
