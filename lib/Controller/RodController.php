@@ -32,7 +32,8 @@ use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\RodService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -60,7 +61,7 @@ class RodController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param RodService $rodService Send/retour orchestration logic.
-	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.
+	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -70,7 +71,7 @@ class RodController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly RodService $rodService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,
@@ -148,9 +149,14 @@ class RodController extends Controller {
 	 * authenticates via webhook signature, not NC session — the signature
 	 * check IS the auth body for this route (mirrors `IwmoIjwController::inbound()`).
 	 *
+	 * The delivery authenticates the `rod-webhook` consumer, and every write runs
+	 * as that consumer's account. A missing connection, account or right, and
+	 * a write OpenRegister refuses, answer 503 so the partner retries.
+	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
 	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 * @spec openspec/changes/rod-retour-on-the-consumer-model/specs/rod-adapter/spec.md#requirement-the-retour-acts-as-the-rod-connections-account-req-020
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -158,43 +164,24 @@ class RodController extends Controller {
 	public function retour(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		try {
-			$source = $this->rodService->resolveActiveSource();
-		} catch (RodProviderException) {
-			// No source configured => no secret to verify against => fail closed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$webhookConfig = ($source->getObject()['configuration']['webhookSignature'] ?? []);
-		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
-		$secret = (string)($webhookConfig['secret'] ?? '');
-		$headerName = ($webhookConfig['header'] ?? 'X-OpenConnector-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
-
-		$headerValue = (string)$this->request->getHeader($headerName);
-
-		$verified = $this->signatureService->verify(
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			config: ['scheme' => $scheme, 'secret' => $secret, 'toleranceSeconds' => $tolerance]
-		);
-
-		if ($verified === false) {
-			// Undifferentiated error body: never leak which check failed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		$identity = $this->gate->identify(profile: WebhookProfiles::rod(), rawBody: $rawBody, request: $this->request);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		// Signature verification runs over the exact raw bytes; the retour
 		// is XML (not JSON), so the body is passed to the service verbatim.
 		try {
-			$this->rodService->receiveReturn(rawXml: $rawBody);
-		} catch (Throwable $exception) {
-			// Never 500 on a verified callback: log and acknowledge receipt.
-			$this->logger->error(
-				'[RodController] inbound retour processing failed: ' . $exception->getMessage(),
-				['exception' => $exception]
+			$this->gate->deliver(
+				identity: $identity,
+				operation: function () use ($rawBody): void {
+					$this->rodService->receiveReturn(rawXml: $rawBody);
+				}
 			);
-		}
+		} catch (Throwable $exception) {
+			// The account's write was refused: answer 503 so ROD delivers again.
+			return $this->gate->notStored(profile: WebhookProfiles::rod(), reason: $exception->getMessage());
+		}//end try
 
 		return new JSONResponse(['received' => true]);
 	}//end retour()

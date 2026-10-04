@@ -32,7 +32,8 @@ use OCA\Integriq\Exception\VerzuimloketProviderException;
 use OCA\Integriq\Exception\VerzuimloketTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\VerzuimloketService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -60,7 +61,7 @@ class VerzuimloketController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param VerzuimloketService $verzuimloketService Send/retour orchestration logic.
-	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.
+	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -70,7 +71,7 @@ class VerzuimloketController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly VerzuimloketService $verzuimloketService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,
@@ -144,9 +145,14 @@ class VerzuimloketController extends Controller {
 	 * Gated by the same HMAC scheme as the `webhook_signature` rule: an
 	 * unsigned or tampered retour is rejected 401 BEFORE any state change.
 	 *
+	 * The delivery authenticates the `verzuimloket-webhook` consumer, and every write runs
+	 * as that consumer's account. A missing connection, account or right, and
+	 * a write OpenRegister refuses, answer 503 so the partner retries.
+	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
 	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 * @spec openspec/changes/verzuimloket-retour-on-the-consumer-model/specs/verzuimloket-adapter/spec.md#requirement-the-retour-acts-as-the-verzuimloket-connections-account-req-020
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -154,39 +160,22 @@ class VerzuimloketController extends Controller {
 	public function retour(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		try {
-			$source = $this->verzuimloketService->resolveActiveSource();
-		} catch (VerzuimloketProviderException) {
-			// No source configured => no secret to verify against => fail closed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$webhookConfig = ($source->getObject()['configuration']['webhookSignature'] ?? []);
-		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
-		$secret = (string)($webhookConfig['secret'] ?? '');
-		$headerName = ($webhookConfig['header'] ?? 'X-OpenConnector-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
-
-		$headerValue = (string)$this->request->getHeader($headerName);
-
-		$verified = $this->signatureService->verify(
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			config: ['scheme' => $scheme, 'secret' => $secret, 'toleranceSeconds' => $tolerance]
-		);
-
-		if ($verified === false) {
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		$identity = $this->gate->identify(profile: WebhookProfiles::verzuimloket(), rawBody: $rawBody, request: $this->request);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		try {
-			$this->verzuimloketService->receiveReturn(rawXml: $rawBody);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'[VerzuimloketController] inbound retour processing failed: ' . $exception->getMessage(),
-				['exception' => $exception]
+			$this->gate->deliver(
+				identity: $identity,
+				operation: function () use ($rawBody): void {
+					$this->verzuimloketService->receiveReturn(rawXml: $rawBody);
+				}
 			);
-		}
+		} catch (Throwable $exception) {
+			// The account's write was refused: answer 503 so Verzuimloket delivers again.
+			return $this->gate->notStored(profile: WebhookProfiles::verzuimloket(), reason: $exception->getMessage());
+		}//end try
 
 		return new JSONResponse(['received' => true]);
 	}//end retour()

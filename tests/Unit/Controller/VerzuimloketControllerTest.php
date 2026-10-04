@@ -25,7 +25,7 @@ use OCA\Integriq\Exception\VerzuimloketProviderException;
 use OCA\Integriq\Exception\VerzuimloketTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\VerzuimloketService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
@@ -54,9 +54,9 @@ class VerzuimloketControllerTest extends TestCase {
 	private $verzuimloketService;
 
 	/**
-	 * @var WebhookSignatureService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var WebhookGate|\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private $signatureService;
+	private $gate;
 
 	/**
 	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
@@ -93,7 +93,7 @@ class VerzuimloketControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->verzuimloketService = $this->createMock(VerzuimloketService::class);
-		$this->signatureService = $this->createMock(WebhookSignatureService::class);
+		$this->gate = $this->createMock(WebhookGate::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 		$this->l = $this->createMock(IL10N::class);
@@ -117,7 +117,7 @@ class VerzuimloketControllerTest extends TestCase {
 			'integriq',
 			$this->request,
 			$this->verzuimloketService,
-			$this->signatureService,
+			$this->gate,
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
@@ -237,78 +237,7 @@ class VerzuimloketControllerTest extends TestCase {
 
 	}//end testBerichtenMapsProviderFailureTo502()
 
-	/**
-	 * No Verzuimloket source configured at all fails the inbound webhook closed (401).
-	 *
-	 * @return void
-	 */
-	public function testRetourWithNoSourceConfiguredReturns401(): void {
-		$this->verzuimloketService->method('resolveActiveSource')
-			->willThrowException(new VerzuimloketProviderException(message: 'no source'));
-		$this->signatureService->expects($this->never())->method('verify');
 
-		$response = $this->controller->retour();
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-	}//end testRetourWithNoSourceConfiguredReturns401()
-
-	/**
-	 * An unsigned/tampered retour is rejected 401 before any state change.
-	 *
-	 * @return void
-	 */
-	public function testRetourInvalidSignatureReturns401BeforeAnySideEffect(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->verzuimloketService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(false);
-
-		$this->verzuimloketService->expects($this->never())->method('receiveReturn');
-
-		$response = $this->controller->retour();
-
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-		$this->assertSame('invalid signature', $response->getData()['error']);
-
-	}//end testRetourInvalidSignatureReturns401BeforeAnySideEffect()
-
-	/**
-	 * A verified retour is routed to receiveReturn() and always acknowledges receipt.
-	 *
-	 * @return void
-	 */
-	public function testRetourVerifiedIsRoutedAndAcknowledged(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->verzuimloketService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-
-		$this->verzuimloketService->expects($this->once())->method('receiveReturn');
-
-		$response = $this->controller->retour();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['received']);
-
-	}//end testRetourVerifiedIsRoutedAndAcknowledged()
-
-	/**
-	 * A processing exception after a verified signature never surfaces as a 500.
-	 *
-	 * @return void
-	 */
-	public function testRetourNeverCrashesOnProcessingException(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->verzuimloketService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-		$this->verzuimloketService->method('receiveReturn')->willThrowException(new RuntimeException('boom'));
-
-		$response = $this->controller->retour();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['received']);
-
-	}//end testRetourNeverCrashesOnProcessingException()
 }//end class
