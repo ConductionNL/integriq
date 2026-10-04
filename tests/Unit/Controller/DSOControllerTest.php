@@ -28,6 +28,7 @@ use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
+use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoClient;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
@@ -468,7 +469,7 @@ class DSOControllerTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
 			jobList: $jobList,
-			activityMapper: new DsoActivityMapper()
+			activityMapper: new DsoActivityMapper(new DsoActivityTable($objectService))
 		);
 
 		$errors = [];

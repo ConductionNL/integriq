@@ -107,7 +107,7 @@ class DSOParserServiceTest extends TestCase {
 			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653', 'naam' => 'Test'],
 			'locatie' => ['bagAdres' => ['postcode' => '1234AB']],
-			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen']],
+			'activiteiten' => [['code' => 'Demo-0000-Bouwen', 'omschrijving' => 'Bouwen']],
 		];
 
 		$errors = $this->parser->validatePayload($payload);
@@ -149,7 +149,7 @@ class DSOParserServiceTest extends TestCase {
 			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => ['naam' => 'Test'],
 			'locatie' => ['bagAdres' => []],
-			'activiteiten' => [['code' => 'bouwen-01']],
+			'activiteiten' => [['code' => 'Demo-0000-Bouwen']],
 		];
 
 		$errors = $this->parser->validatePayload($payload);
@@ -170,7 +170,7 @@ class DSOParserServiceTest extends TestCase {
 			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => ['bsn' => '123456789', 'naam' => 'Test'],
 			'locatie' => ['bagAdres' => []],
-			'activiteiten' => [['code' => 'bouwen-01']],
+			'activiteiten' => [['code' => 'Demo-0000-Bouwen']],
 		];
 
 		$errors = $this->parser->validatePayload($payload);
@@ -192,7 +192,7 @@ class DSOParserServiceTest extends TestCase {
 			'indieningsdatum' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653', 'naam' => 'Jansen'],
 			'locatie' => ['bagAdres' => ['postcode' => '1234AB', 'huisnummer' => '10']],
-			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen']],
+			'activiteiten' => [['code' => 'Demo-0000-Bouwen', 'omschrijving' => 'Bouwen']],
 			'bouwkosten' => '250000',
 		];
 
@@ -204,7 +204,7 @@ class DSOParserServiceTest extends TestCase {
 		$this->assertSame(250000.0, $request['bouwkosten']);
 		$this->assertSame('999993653', $request['aanvrager']['bsn']);
 		$this->assertCount(1, $request['activiteiten']);
-		$this->assertSame('bouwen-01', $request['activiteiten'][0]['code']);
+		$this->assertSame('Demo-0000-Bouwen', $request['activiteiten'][0]['activityId']);
 
 	}//end testParseVerzoekExtractsAllFields()
 
@@ -267,5 +267,63 @@ class DSOParserServiceTest extends TestCase {
 		);
 
 	}//end testParseRequestReturnsAttachmentsAsNameAndUrl()
+
+	/**
+	 * Per activiteit the parser keeps the STAM identifiers and the
+	 * onderliggende activiteit, in integriq's JSON field names. The STAM XML
+	 * element names behind them are not verified yet (task 1.1).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-activiteiten-array-tagged-with-zaaktypen
+	 */
+	public function testParseRequestKeepsTheStamActivityIdentifiers(): void {
+		$request = $this->parser->parseRequest(
+			[
+				'verzoekId' => 'dso-stam-1',
+				'activiteiten' => [
+					[
+						'imowId' => 'nl.imow-gm0000.activiteit.DemoMilieu',
+						'activityId' => 'Demo-0000-Milieu',
+						'activityName' => 'Milieubelastende activiteit',
+						'volgnr' => 2,
+						'underlying' => ['imowId' => 'nl.imow-gm0000.activiteit.DemoTankstation', 'activityName' => 'Tankstation'],
+					],
+				],
+			]
+		);
+
+		$this->assertSame(
+			[
+				'imowId' => 'nl.imow-gm0000.activiteit.DemoMilieu',
+				'activityId' => 'Demo-0000-Milieu',
+				'activityName' => 'Milieubelastende activiteit',
+				'volgnr' => '2',
+				'underlying' => ['imowId' => 'nl.imow-gm0000.activiteit.DemoTankstation', 'activityId' => null, 'activityName' => 'Tankstation'],
+			],
+			$request['activiteiten'][0]
+		);
+
+	}//end testParseRequestKeepsTheStamActivityIdentifiers()
+
+	/**
+	 * An activiteit with only the old `code` field returns that value as
+	 * `activityId`, and `omschrijving` as `activityName`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-the-old-integriq-code-field-still-parses
+	 */
+	public function testTheOldCodeFieldStillParses(): void {
+		$request = $this->parser->parseRequest(
+			['activiteiten' => [['code' => 'Demo-0000-Kappen', 'omschrijving' => 'Kappen'], ['activiteitCode' => 'Demo-0000-Uitrit']]]
+		);
+
+		$this->assertSame('Demo-0000-Kappen', $request['activiteiten'][0]['activityId']);
+		$this->assertSame('Kappen', $request['activiteiten'][0]['activityName']);
+		$this->assertNull($request['activiteiten'][0]['imowId']);
+		$this->assertSame('Demo-0000-Uitrit', $request['activiteiten'][1]['activityId']);
+
+	}//end testTheOldCodeFieldStillParses()
 
 }//end class

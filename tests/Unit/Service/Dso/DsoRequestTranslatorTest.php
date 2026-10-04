@@ -59,7 +59,7 @@ class DsoRequestTranslatorTest extends TestCase {
 		$request = [
 			'verzoekId' => 'dso-12345',
 			'type' => 'aanvraag',
-			'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen van een woning']],
+			'activiteiten' => [['activityId' => 'Demo-0000-Bouwen', 'activityName' => 'Bouwen van een woning']],
 			'projectbeschrijving' => 'Nieuwbouw eengezinswoning',
 			'aanvrager' => ['bsn' => '999993653', 'kvkNummer' => null],
 		];
@@ -90,14 +90,19 @@ class DsoRequestTranslatorTest extends TestCase {
 		$request = [
 			'verzoekId' => 'dso-partial-1',
 			'type' => 'melding',
-			'activiteiten' => [['code' => 'kappen-01']],
+			'activiteiten' => [['activityId' => 'Demo-0000-Kappen']],
 		];
 
 		$result = $this->translator->translate(request: $request);
 
-		$this->assertSame('kappen-01', $result['mappedTitle']);
-		$this->assertSame('kappen-01', $result['mappedSummary']);
+		$this->assertSame('Demo-0000-Kappen', $result['mappedTitle']);
+		$this->assertSame('Demo-0000-Kappen', $result['mappedSummary']);
 		$this->assertSame('normaal', $result['mappedPriority']);
+		$this->assertSame(
+			'Kappen',
+			$this->translator->translate(request: ['verzoekId' => 'dso-old-1', 'type' => 'melding', 'activiteiten' => [['code' => 'k', 'omschrijving' => 'Kappen']]])['mappedTitle'],
+			'A verzoek parsed before the STAM identifiers still gets its title'
+		);
 		$this->assertNull($result['requester']['bsn']);
 
 	}//end testPartialMeldingVerzoekTranslatesWithFallbacks()
