@@ -104,27 +104,37 @@ class DsoActivityMappingGuardListener implements IEventListener {
 			return;
 		}
 
-		if ($imowId === '' || ($row['isActive'] ?? true) === false) {
+		if ($imowId === '' || ($row['isActive'] ?? true) === false || $this->isTaken(imowId: $imowId, uuid: (string)$entity->getUuid()) === false) {
 			return;
 		}
 
-		foreach ($this->table->activeRows() as $existing) {
-			if ((string)$existing['id'] === (string)$entity->getUuid()
-				|| trim((string)($existing['imowId'] ?? '')) !== $imowId
-			) {
-				continue;
-			}
-
-			$this->refuse(
-				event: $event,
-				code: 'dso_activity_imow_id_taken',
-				message: $this->l10n->t('Another active row already maps imow-id %s. Edit that row, or deactivate it first.', [$imowId]),
-				status: 409
-			);
-			return;
-		}
+		$this->refuse(
+			event: $event,
+			code: 'dso_activity_imow_id_taken',
+			message: $this->l10n->t('Another active row already maps imow-id %s. Edit that row, or deactivate it first.', [$imowId]),
+			status: 409
+		);
 
 	}//end handle()
+
+	/**
+	 * Whether another active row already has this imowId.
+	 *
+	 * @param string $imowId The imowId of the row being saved.
+	 * @param string $uuid   The uuid of the row being saved.
+	 *
+	 * @return bool
+	 */
+	private function isTaken(string $imowId, string $uuid): bool {
+		foreach ($this->table->activeRows() as $existing) {
+			if ((string)$existing['id'] !== $uuid && trim((string)($existing['imowId'] ?? '')) === $imowId) {
+				return true;
+			}
+		}
+
+		return false;
+
+	}//end isTaken()
 
 	/**
 	 * Stop the save with an error.

@@ -166,7 +166,7 @@ class DsoRequestTranslator {
 	}//end activityLabel()
 
 	/**
-	 * Resolve the normalised summary: every activiteit's omschrijving/code,
+	 * Resolve the normalised summary: every activiteit's label ({@see self::activityLabel()}),
 	 * comma-joined, plus the projectbeschrijving when present.
 	 *
 	 * @param array<string, mixed> $request The parsed Verzoek.
