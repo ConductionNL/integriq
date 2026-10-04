@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\Dso\DsoClient;
@@ -27,10 +28,12 @@ use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -69,6 +72,15 @@ class DsoIngestServiceTest extends TestCase {
 	private HandoffService $handoffService;
 
 	private DsoClient $restProvider;
+
+	private IJobList $jobList;
+
+	/**
+	 * Every IJobList::add() call, as [class, argument].
+	 *
+	 * @var array<int, array{0: string, 1: mixed}>
+	 */
+	private array $queued = [];
 
 	private function buildEntity(array $data, string $uuid): ObjectEntity {
 		$entity = new ObjectEntity();
@@ -171,6 +183,14 @@ class DsoIngestServiceTest extends TestCase {
 			->disableOriginalConstructor()
 			->getMock();
 
+		$this->queued = [];
+		$this->jobList = $this->createMock(IJobList::class);
+		$this->jobList->method('add')->willReturnCallback(
+			function ($job, $argument = null): void {
+				$this->queued[] = [$job, $argument];
+			}
+		);
+
 		return new DsoIngestService(
 			objectService: $objectService,
 			handoffService: $this->handoffService,
@@ -178,7 +198,8 @@ class DsoIngestServiceTest extends TestCase {
 			logProvider: new LogDsoConnectorProvider(),
 			restProvider: $this->restProvider,
 			logger: $this->createMock(LoggerInterface::class),
-			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class))
+			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
+			jobList: $this->jobList
 		);
 
 	}//end buildService()
@@ -222,6 +243,105 @@ class DsoIngestServiceTest extends TestCase {
 		$this->assertStringContainsString('verzoekId', (string)$request->getObject()['errorDetail']);
 
 	}//end testIngestFailsClosedForMissingVerzoekId()
+
+	/**
+	 * Intake writes every bijlage reference as a `pending` attachment entry,
+	 * and the register accepts what it writes.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 */
+	public function testIngestWritesBijlagenAsPendingAttachments(): void {
+		$service = $this->buildService();
+
+		$request = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-3',
+				'type' => 'aanvraag',
+				'bijlagen' => [
+					['name' => 'bouwtekening.pdf', 'url' => 'https://dso-lv.nl/docs/abc123'],
+					['name' => 'constructie.pdf', 'url' => 'https://dso-lv.nl/docs/def456'],
+				],
+			]
+		);
+
+		$attachments = $request->getObject()['attachments'];
+		$this->assertSame(
+			[
+				['name' => 'bouwtekening.pdf', 'url' => 'https://dso-lv.nl/docs/abc123', 'status' => 'pending', 'attempts' => 0],
+				['name' => 'constructie.pdf', 'url' => 'https://dso-lv.nl/docs/def456', 'status' => 'pending', 'attempts' => 0],
+			],
+			$attachments
+		);
+		$this->assertSame(
+			[],
+			RegisterSchemaValidator::errors(
+				schemaSlug: 'dso_verzoek',
+				object: ['verzoekId' => 'dso-3', 'status' => 'mapped', 'attachments' => $attachments]
+			)
+		);
+
+	}//end testIngestWritesBijlagenAsPendingAttachments()
+
+	/**
+	 * Two bijlagen with the same name get distinct file names, because they
+	 * land in the same object folder.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+	 */
+	public function testIngestMakesAttachmentNamesUnique(): void {
+		$service = $this->buildService();
+
+		$request = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-4',
+				'type' => 'aanvraag',
+				'bijlagen' => [
+					['name' => 'tekening.pdf', 'url' => 'https://dso-lv.nl/docs/1'],
+					['name' => 'Tekening.pdf', 'url' => 'https://dso-lv.nl/docs/2'],
+					['name' => 'tekening.pdf', 'url' => 'https://dso-lv.nl/docs/3'],
+					['name' => 'notitie', 'url' => 'https://dso-lv.nl/docs/4'],
+					['name' => 'notitie', 'url' => 'https://dso-lv.nl/docs/5'],
+				],
+			]
+		);
+
+		$this->assertSame(
+			['tekening.pdf', 'Tekening (2).pdf', 'tekening (3).pdf', 'notitie', 'notitie (2)'],
+			array_column($request->getObject()['attachments'], 'name')
+		);
+
+	}//end testIngestMakesAttachmentNamesUnique()
+
+	/**
+	 * Intake queues one download job for a request with bijlagen, carrying
+	 * the request's uuid, and none for a request without.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 */
+	public function testIngestQueuesTheDownloadOnlyWhenThereAreBijlagen(): void {
+		$service = $this->buildService();
+
+		$without = $service->ingest(parsedRequest: ['verzoekId' => 'dso-5', 'type' => 'aanvraag']);
+		$this->assertSame([], $this->queued);
+		$this->assertSame([], $without->getObject()['attachments']);
+
+		$with = $service->ingest(
+			parsedRequest: [
+				'verzoekId' => 'dso-6',
+				'type' => 'aanvraag',
+				'bijlagen' => [['name' => 'tekening.pdf', 'url' => 'https://dso-lv.nl/docs/1']],
+			]
+		);
+		$this->assertSame([[FetchDsoAttachmentsJob::class, ['requestUuid' => $with->getUuid()]]], $this->queued);
+		$this->assertSame('pending', $with->getObject()['attachments'][0]['status']);
+
+		$failed = $service->ingest(
+			parsedRequest: ['type' => 'aanvraag', 'bijlagen' => [['name' => 'a.pdf', 'url' => 'https://dso-lv.nl/docs/2']]]
+		);
+		$this->assertSame('failed', $failed->getObject()['status']);
+		$this->assertCount(2, $this->queued, 'A request whose mapping failed still gets its bijlagen.');
+
+	}//end testIngestQueuesTheDownloadOnlyWhenThereAreBijlagen()
 
 	/**
 	 * Per-verzoek isolation: a translation failure on one verzoek MUST NOT

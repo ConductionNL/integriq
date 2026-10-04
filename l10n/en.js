@@ -3029,7 +3029,17 @@ OC.L10N.register(
         "Register schema": "Register schema",
         "The partner's version of this schema. Change it when the partner publishes a new one": "The partner's version of this schema. Change it when the partner publishes a new one",
         "What the schema is for and where it came from": "What the schema is for and where it came from",
-        "This message schema was not saved: %s": "This message schema was not saved: %s"
+        "This message schema was not saved: %s": "This message schema was not saved: %s",
+        "Attachment missing": "Attachment missing",
+        "File ID": "File ID",
+        "How many downloads were tried": "How many downloads were tried",
+        "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.": "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.",
+        "The Nextcloud file id, once stored": "The Nextcloud file id, once stored",
+        "The file name from the verzoek": "The file name from the verzoek",
+        "The last error, once failed or too-large": "The last error, once failed or too-large",
+        "True when a bijlage is failed or too-large. Handle that bijlage by hand.": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
+        "Where DSO-LV serves the file": "Where DSO-LV serves the file",
+        "Pending until the download job has run. Then stored, failed or too-large.": "Pending until the download job has run. Then stored, failed or too-large."
     },
     "nplurals=2; plural=(n != 1);"
 )

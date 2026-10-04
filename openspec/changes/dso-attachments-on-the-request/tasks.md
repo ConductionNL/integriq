@@ -1,20 +1,40 @@
 ## 1. Data
 
-- [ ] 1.1 Add `attachments` (array of `name`, `url`, `status`, `fileId`, `attempts`, `error`) to `dso_verzoek` in `lib/Settings/integriq_register.json`, and verify a save of a request carrying it keeps every field (PHPUnit against the real schema fragment, not a mock)
-- [ ] 1.2 Have `DSOParserService` return the bijlage references as `name` + `url`, and `DsoIngestService::ingest()` write them as `attachments` with status `pending`, and verify both in PHPUnit
+- [x] 1.1 Add `attachments` (array of `name`, `url`, `status`, `fileId`, `attempts`, `error`) to `dso_verzoek` in `lib/Settings/integriq_register.json`, and verify a save of a request carrying it keeps every field (PHPUnit against the real schema fragment, not a mock)
+  - Evidence: `tests/Unit/Settings/DsoVerzoekAttachmentsSchemaTest.php` validates through `RegisterSchemaValidator` (the merged register, opis/json-schema). Red on development (2 of 2 fail: field not declared), green after. Same property added to `integriq_mock_register.json`; `dso_verzoek` version 1.0.0 -> 1.1.0. Item schema is `additionalProperties: false`, so an undeclared field is refused, not silently dropped.
+- [x] 1.2 Have `DSOParserService` return the bijlage references as `name` + `url`, and `DsoIngestService::ingest()` write them as `attachments` with status `pending`, and verify both in PHPUnit
+  - Evidence: `DSOParserServiceTest::testParseRequestReturnsAttachmentsAsNameAndUrl` (wire `naam`, URL-path fallback, entry without URL kept) and `DsoIngestServiceTest::testIngestWritesBijlagenAsPendingAttachments` (entries `pending`, `attempts: 0`, accepted by the real schema). Both red on development, green after.
 
 ## 2. Download
 
-- [ ] 2.1 Build `Dso\DsoAttachmentFetcher`: GET through the active source's `DsoClient` (token or mTLS), stream into OpenRegister `FileService::addFile()` tagged `dso-bijlage`, cap at the configured size, retry 3 times with backoff; verify each outcome (`stored`, `failed`, `too-large`) in PHPUnit, and pin the `addFile()` call shape
-- [ ] 2.2 Build `FetchDsoAttachmentsJob` (QueuedJob), enqueued by ingest when a request has attachments; it touches only entries that are not `stored`. Verify the "rerun finishes what a crash left" scenario
-- [ ] 2.3 Flag the request for the behandelaar when an entry ends `failed` or `too-large`, and verify the flag
+- [x] 2.1 Build `Dso\DsoAttachmentFetcher`: GET through the active source's `DsoClient` (token or mTLS), stream into OpenRegister `FileService::addFile()` tagged `dso-bijlage`, cap at the configured size, retry 3 times with backoff; verify each outcome (`stored`, `failed`, `too-large`) in PHPUnit, and pin the `addFile()` call shape
+  - Evidence: `tests/Unit/Service/Dso/DsoAttachmentFetcherTest.php`, 9 tests over the real `DsoClient` (Guzzle MockHandler): `stored` with GET + Bearer token, mTLS through `MtlsTransportService` with no token, 3 attempts with backoff 1 s and 2 s then `failed`, transient failure then `stored`, `too-large` by Content-Length and by streamed size (not retried), default cap 100 MB, missing or non-https URL refused without a request, no FileService leaves entries `pending`. The `addFile()` call shape is pinned: request object, file name, a stream resource, `share: false`, `tags: ['dso-bijlage']`. All 9 error on development (class absent); mutations (no tag, 1 attempt, no cap) each turn their tests red. `DsoClient::download()` added (it had only POST `send()`); the size cap is the source's `configuration.maxFileSize`, the key `SynchronizationService` already uses. Ingest makes names unique within a request, because OpenRegister refuses a second file with the same name (`testIngestMakesAttachmentNamesUnique`, red without the change).
+- [x] 2.2 Build `FetchDsoAttachmentsJob` (QueuedJob), enqueued by ingest when a request has attachments; it touches only entries that are not `stored`. Verify the "rerun finishes what a crash left" scenario
+  - Evidence: `tests/Unit/BackgroundJob/FetchDsoAttachmentsJobTest.php` (a QueuedJob, hands `requestUuid` to the fetcher, drops a malformed argument, logs a failure without throwing) and `DsoIngestServiceTest::testIngestQueuesTheDownloadOnlyWhenThereAreBijlagen` (one job per request with bijlagen, also when mapping failed, none without; queued after the last intake save). The rerun scenario is `DsoAttachmentFetcherTest::testRerunFinishesWhatACrashLeft`: the worker dies on the 3rd of 5, 2 stay `stored`, the rerun downloads only c, d and e. All red on development; removing the `IJobList::add()` turns the ingest test red.
+- [x] 2.3 Flag the request for the behandelaar when an entry ends `failed` or `too-large`, and verify the flag
+  - Evidence: new boolean `dso_verzoek.attachmentMissing` (both registers), written with every attachments save: true while any entry is `failed` or `too-large`, false again once a rerun stores it. Asserted in `DsoAttachmentFetcherTest` (failed, too-large, all stored, flag clears) and `DsoVerzoekAttachmentsSchemaTest::testAttachmentMissingFlagIsADeclaredBoolean`. 6 tests red with the change reverted.
 
 ## 3. Retire DSOAdapterService
 
-- [ ] 3.1 For each public method of `DSOAdapterService`, record its live equivalent or its absence of callers and requirements in this file; move what a requirement still needs next to the live path with its tests
-- [ ] 3.2 Delete `DSOAdapterService` and `DSOAdapterServiceTest`, and verify `git grep -n DSO-verzoeken -- lib` is empty and the suite still passes
+- [x] 3.1 For each public method of `DSOAdapterService`, record its live equivalent or its absence of callers and requirements in this file; move what a requirement still needs next to the live path with its tests
+  - Evidence: `git grep -n DSOAdapterService -- lib appinfo src` found only the class itself; its only other user was `DSOAdapterServiceTest`. Per public method:
+
+    | Method | Live equivalent or requirement | Outcome |
+    |---|---|---|
+    | `getConfiguredApiUrl()` | The live path reads the DSO source's `configuration.baseUrl`; the `dso_api_url` app config key is not read anywhere else | Deleted |
+    | `processRequest()`, `handleReport()`, `handleInformatieverzoek()`, `handleVooroverleg()`, `handleApplication()` | `DSOController::receiveRequest()` -> `DsoIngestService::ingest()` takes every type; `DsoRequestTranslator` sets title, priority and channel per type | Deleted |
+    | `downloadAttachments()` | Replaced by `DsoAttachmentFetcher` + `FetchDsoAttachmentsJob` (this change). Its https-only guard moved into `DsoAttachmentFetcher::fetchOne()` | Deleted |
+    | `mapActiviteitenToZaaktypen()`, `getDefaultMappings()` | No live equivalent; REQ-DSO-010 still needs them | Moved to `Service\Dso\DsoActivityMapper` with their tests (`DsoActivityMapperTest`). Not wired: no caller yet |
+    | `determineSamenloopStrategy()` | No live equivalent; REQ-DSO-011 still needs it | Moved to `DsoActivityMapper` with its tests. Not wired |
+    | `handleSamenloop()`, `createHoofdzaakWithDeelzaken()`, `createCombinedCase()`, `handleUnmappedActivity()`, `createCase()` | They build zaak arrays with `uniqid()` ids and persist nothing. The live equivalent is the `verzoek-to-case` handoff to `ns#Case` through OpenRegister's `HandoffService` (`DsoIngestService::handoff()`) | Deleted |
+    | `validateCertificate()` | Reads a certificate from a filesystem path. The live path keeps certificates encrypted in the source and checks them in `MtlsConfigResolver` (expired is refused) and `DsoPkiSettingsController` (chain and expiry). The 30-day warning of REQ-DSO-050 is not live anywhere; this method never sent one either | Deleted |
+    | `testDSOConnection()` | Filesystem certificate path and the unused `dso_api_url`. A REQ-DSO-060 health check of the DSO source is not live anywhere; this method had no caller, so it never ran either. A real one belongs on the source, not here | Deleted |
+- [x] 3.2 Delete `DSOAdapterService` and `DSOAdapterServiceTest`, and verify `git grep -n DSO-verzoeken -- lib` is empty and the suite still passes
+  - Evidence: both files deleted; `git grep -n DSO-verzoeken -- lib` and `git grep -n DSOAdapterService -- lib tests appinfo src` return nothing (exit 1). `tests/Unit/Service`, `tests/Unit/Controller/DSOControllerTest.php`, `tests/Unit/BackgroundJob` and `tests/Unit/Settings` pass on the host: 3130 tests, 0 failures. The full suite result is in the PR body.
 
 ## 4. Proof
 
 - [ ] 4.1 On a live instance, push a verzoek with three bijlagen to the STAM endpoint (pre-production HMAC mode, a local file server as DSO-LV), run cron, and verify the three files are on the request object in Files and nothing appeared under `/DSO-verzoeken`
-- [ ] 4.2 Run `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint` once before push, and record the exit codes in the PR body
+  - NOT DONE: the local instance runs integriq 0.4.8 from another session's mounted checkout. Running this branch there means swapping that app's code and running `occ upgrade` for the schema change, which the lane may not do. The proof also needs a DSO-LV stand-in over https with a certificate the instance trusts, because only https bijlage URLs are fetched.
+- [x] 4.2 Run `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint` once before push, and record the exit codes in the PR body
+  - Evidence: `composer check:strict` exit 1: phpmd found 4 findings in this change's new code (fixed in 615326be0, phpmd on the changed files then exit 0) and PHPUnit has 11 errors that development has too (`tests/Unit/AppInfo`, host without a Nextcloud). Every other section passed. `npm run lint` exit 0 (warnings only). Full numbers in the PR body.

@@ -62,7 +62,7 @@ Where a requirement still needs one, the method moves next to the live path, wit
 ## Risks / Trade-offs
 
 - **`FileService` is not a published OpenRegister contract.** A signature change there breaks this silently. The fetcher resolves it lazily, as dossiq does, and a unit test pins the call shape. Recorded as the same contract gap dossiq names.
-- **Files arrive after the request.** A case system that reads the request in the first minute may see `pending` entries. The handoff passes the `attachments` statuses along, so the receiver can tell "not yet" from "none".
+- **Files arrive after the request.** A case system that reads the request in the first minute may see `pending` entries. The `verzoek-to-case` handoff maps only the title, summary, channel and priority, plus a provenance link to the request object. The receiver follows that link to the request, its files and their `attachments` statuses, so it can tell "not yet" from "none". Putting the statuses into the handoff mapping itself would change the Case contract, and is left for a change that owns it.
 - **Large drawings.** Streaming keeps memory flat, and the size cap bounds disk use per file.
 
 ## Migration

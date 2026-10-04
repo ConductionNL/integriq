@@ -1690,7 +1690,18 @@
         "Register schema": "Registerschema",
         "The partner's version of this schema. Change it when the partner publishes a new one": "De versie van dit schema bij de partner. Pas hem aan als de partner een nieuwe publiceert",
         "What the schema is for and where it came from": "Waar het schema voor is en waar het vandaan komt",
-        "This message schema was not saved: %s": "Dit berichtschema is niet opgeslagen: %s"
+        "This message schema was not saved: %s": "Dit berichtschema is niet opgeslagen: %s",
+        "Attachments": "Bijlagen",
+        "Attachment missing": "Bijlage ontbreekt",
+        "File ID": "Bestands-ID",
+        "How many downloads were tried": "Hoe vaak de download is geprobeerd",
+        "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.": "De bijlagen van dit verzoek, één regel per bijlage. Een achtergrondtaak downloadt ze en koppelt ze hier als bestanden.",
+        "The Nextcloud file id, once stored": "Het Nextcloud-bestands-ID, zodra het bestand is opgeslagen",
+        "The file name from the verzoek": "De bestandsnaam uit het verzoek",
+        "The last error, once failed or too-large": "De laatste fout, bij mislukt of te groot",
+        "True when a bijlage is failed or too-large. Handle that bijlage by hand.": "Waar als een bijlage mislukt of te groot is. Verwerk die bijlage dan met de hand.",
+        "Where DSO-LV serves the file": "Waar DSO-LV het bestand aanbiedt",
+        "Pending until the download job has run. Then stored, failed or too-large.": "In afwachting tot de downloadtaak heeft gedraaid. Daarna opgeslagen, mislukt of te groot."
     },
     "plurals": {}
 }
