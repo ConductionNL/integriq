@@ -4414,7 +4414,7 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
         "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
         "required": [
@@ -4579,35 +4579,107 @@
           },
           "mappedActivities": {
             "type": "array",
-            "description": "The activiteiten of this verzoek, each with the zaaktype the mapping table gives it. Set at intake.",
+            "description": "The activiteiten of this verzoek, each with the case types the DSO activity mapping table gives it. Set at intake.",
             "title": "Mapped activities",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "required": [
-                "code",
                 "mapped"
               ],
               "properties": {
-                "code": {
+                "imowId": {
                   "type": "string",
-                  "description": "The DSO activiteitcode",
-                  "title": "Code"
+                  "description": "The imow-id of the activiteit (STAM Imow-id)",
+                  "title": "Imow-id"
                 },
-                "description": {
+                "activityId": {
                   "type": "string",
-                  "description": "The omschrijving of the activiteit",
-                  "title": "Description"
+                  "description": "The Activiteit-id of the activiteit (functionele structuurreferentie)",
+                  "title": "Activity id"
+                },
+                "activityName": {
+                  "type": "string",
+                  "description": "The Activiteitnaam",
+                  "title": "Activity name"
+                },
+                "volgnr": {
+                  "type": "string",
+                  "description": "The Volgnr of the activiteit in the verzoek",
+                  "title": "Sequence number"
+                },
+                "underlying": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "The onderliggende activiteit, when the verzoek names one",
+                  "title": "Underlying activity",
+                  "properties": {
+                    "imowId": {
+                      "type": "string",
+                      "description": "The imow-id of the onderliggende activiteit",
+                      "title": "Imow-id"
+                    },
+                    "activityId": {
+                      "type": "string",
+                      "description": "The Activiteit-id of the onderliggende activiteit",
+                      "title": "Activity id"
+                    },
+                    "activityName": {
+                      "type": "string",
+                      "description": "The Activiteitnaam of the onderliggende activiteit",
+                      "title": "Activity name"
+                    }
+                  }
                 },
                 "mapped": {
                   "type": "boolean",
-                  "description": "True when the mapping table knows this activiteitcode",
+                  "description": "True when an active mapping row matched this activiteit",
                   "title": "Mapped"
                 },
-                "caseType": {
+                "matchedOn": {
                   "type": "string",
-                  "description": "The zaaktype identificatie, set only when mapped",
-                  "title": "Case type"
+                  "enum": [
+                    "underlying.imowId",
+                    "underlying.activityId",
+                    "imowId",
+                    "activityId"
+                  ],
+                  "description": "The identifier the mapping row matched on, set only when mapped",
+                  "title": "Matched on"
+                },
+                "mappingRow": {
+                  "type": "string",
+                  "description": "The uuid of the dso_activity_mapping row that matched, set only when mapped",
+                  "title": "Mapping row"
+                },
+                "caseTypes": {
+                  "type": "array",
+                  "description": "The case types the matched row gives, each with its department, set only when mapped",
+                  "title": "Case types",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reference"
+                    ],
+                    "properties": {
+                      "reference": {
+                        "type": "string",
+                        "description": "A ZGW zaaktype URL or a catalogue identificatie",
+                        "title": "Reference"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "The case type's name",
+                        "title": "Title"
+                      },
+                      "department": {
+                        "type": "string",
+                        "description": "The department that handles this case type",
+                        "title": "Department"
+                      }
+                    }
+                  }
                 },
                 "samenloopStrategy": {
                   "type": "string",
@@ -4615,15 +4687,30 @@
                     "deelzaken",
                     "gecombineerd"
                   ],
-                  "description": "The samenloop strategy of this activiteit, set only when mapped",
+                  "description": "The samenloop strategy of the matched row, set only when mapped",
                   "title": "Samenloop strategy"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "The activiteitcode, written by intake before change dso-activity-mapping-table",
+                  "title": "Code"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "The omschrijving, written by intake before change dso-activity-mapping-table",
+                  "title": "Description"
+                },
+                "caseType": {
+                  "type": "string",
+                  "description": "The zaaktype identificatie, written by intake before change dso-activity-mapping-table",
+                  "title": "Case type"
                 }
               }
             }
           },
           "mappedCaseTypes": {
             "type": "array",
-            "description": "The zaaktypen the mapped activiteiten give, each once, in order",
+            "description": "The case type references the mapped activiteiten give, each once, in order",
             "title": "Mapped case types",
             "items": {
               "type": "string"
@@ -4635,7 +4722,7 @@
               "deelzaken",
               "gecombineerd"
             ],
-            "description": "Gecombineerd when every mapped activiteit combines, otherwise deelzaken. Absent when nothing is mapped.",
+            "description": "Gecombineerd when every pair of mapped activiteiten combines, by a samenloop rule or by both rows, otherwise deelzaken. Absent when nothing is mapped.",
             "title": "Samenloop strategy"
           },
           "activityUnmapped": {
@@ -12245,6 +12332,77 @@
         "kind": "openapi",
         "document": "{\n  \"openapi\": \"3.0.3\",\n  \"info\": {\n    \"title\": \"Voorbeeld zaken\",\n    \"version\": \"1.0.0\"\n  },\n  \"paths\": {\n    \"/zaken\": {\n      \"post\": {\n        \"operationId\": \"createZaak\",\n        \"requestBody\": {\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"required\": [\n                  \"startdatum\"\n                ],\n                \"properties\": {\n                  \"startdatum\": {\n                    \"type\": \"string\",\n                    \"format\": \"date\"\n                  },\n                  \"toelichting\": {\n                    \"type\": \"string\",\n                    \"nullable\": true\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"201\": {\n            \"description\": \"Aangemaakt\"\n          }\n        }\n      }\n    }\n  }\n}\n",
         "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "dso_activity_mapping",
+          "slug": "dso-activity-mapping-demo-bouwen"
+        },
+        "imowId": "nl.imow-gm0000.activiteit.DemoBouwen",
+        "activityId": "Demo-0000-Bouwen",
+        "activityName": "Demo: bouwen van een bouwwerk",
+        "caseTypes": [
+          {
+            "reference": "DEMO-ZAAKTYPE-BOUWEN",
+            "title": "Demo: omgevingsvergunning bouwen",
+            "department": "Demo: team bouwen"
+          }
+        ],
+        "samenloopStrategy": "deelzaken",
+        "isActive": true,
+        "note": "Demo row. Gemeentecode 0000 is not a CBS gemeentecode, so this row never matches a real verzoek. Replace it with the activities your gemeente receives."
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "dso_activity_mapping",
+          "slug": "dso-activity-mapping-demo-milieu"
+        },
+        "imowId": "nl.imow-gm0000.activiteit.DemoMilieu",
+        "activityId": "Demo-0000-Milieu",
+        "activityName": "Demo: milieubelastende activiteit",
+        "caseTypes": [
+          {
+            "reference": "DEMO-ZAAKTYPE-MILIEU",
+            "title": "Demo: omgevingsvergunning milieu",
+            "department": "Demo: team milieu"
+          },
+          {
+            "reference": "DEMO-ZAAKTYPE-BOUWEN",
+            "title": "Demo: omgevingsvergunning bouwen",
+            "department": "Demo: team bouwen"
+          }
+        ],
+        "samenloopStrategy": "deelzaken",
+        "isActive": true,
+        "note": "Demo row. Gemeentecode 0000 is not a CBS gemeentecode, so this row never matches a real verzoek. Replace it with the activities your gemeente receives."
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "dso_activity_mapping",
+          "slug": "dso-activity-mapping-demo-kappen"
+        },
+        "imowId": "nl.imow-gm0000.activiteit.DemoKappen",
+        "activityId": "Demo-0000-Kappen",
+        "activityName": "Demo: kappen van een boom",
+        "caseTypes": [
+          {
+            "reference": "DEMO-ZAAKTYPE-KAPPEN",
+            "title": "Demo: omgevingsvergunning kappen",
+            "department": "Demo: team groen"
+          }
+        ],
+        "samenloopStrategy": "deelzaken",
+        "samenloopRules": [
+          {
+            "withImowId": "nl.imow-gm0000.activiteit.DemoBouwen",
+            "strategy": "gecombineerd"
+          }
+        ],
+        "isActive": true,
+        "note": "Demo row. Gemeentecode 0000 is not a CBS gemeentecode, so this row never matches a real verzoek. Replace it with the activities your gemeente receives."
       }
     ]
   }

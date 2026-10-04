@@ -44,13 +44,15 @@ Not verified, and needed before the parser task: the XML element names in the ST
 | `isActive` | boolean, default true | inactive rows are ignored |
 | `note` | string | free text for the beheerder |
 
-`required`: `activityName`, `caseTypes`, `samenloopStrategy`, and at least one of `imowId` or `activityId` (`anyOf`).
+`required`: `activityName`, `caseTypes`, `samenloopStrategy`, and at least one of `imowId` or `activityId`.
+
+The "at least one of" rule is NOT a schema-level `anyOf`. OpenRegister reads a schema-level `anyOf` as schema composition (a list of schema ids, `Schema::setAnyOf()`) and its property validator marks `anyOf` "stored, not enforced". So `DsoActivityMappingGuardListener` refuses a row without either identifier on OpenRegister's create and update events, next to the uniqueness check below.
 
 `caseTypes[].reference` is a string: a ZGW zaaktype URL or a catalogue identificatie. The case system decides what it resolves. Integriq does not validate it against a catalogue, because the case system is a separate app and may not be installed.
 
 `imowId` carries the STAM pattern. STAM writes `Objecttype` literally in the pattern; we read it as the IMOW object type segment and accept `[A-Za-z]+` there. Task 1.1 checks that reading against a real verzoekbericht before the pattern is enforced.
 
-Authorization (`register.d/dso-activity-mapping.json`, ADR-037): `create`, `update`, `delete` for `admin`; `read` for `admin`. The mapper reads the table as an engine read of admin configuration (`_rbac: false`, read only), the same pattern the endpoint runtime uses for `rule`. A uniqueness check refuses two active rows with the same `imowId`.
+Authorization (`register.d/dso-activity-mapping.json`, ADR-037): `create`, `update`, `delete` for `admin`; `read` for `admin`. The mapper reads the table as an engine read of admin configuration (`_rbac: false`, read only), the same pattern the endpoint runtime uses for `rule`. A uniqueness check refuses two active rows with the same `imowId`: `DsoActivityMappingGuardListener`, on `ObjectCreatingEvent` and `ObjectUpdatingEvent` (409). `configuration.unique` was not used, because it cannot leave inactive rows out.
 
 ### D2. Matching
 
@@ -78,14 +80,14 @@ For a verzoek with two or more mapped activities:
 
 ### D5. The admin screen
 
-A manifest fragment `src/manifest.d/dso-activity-mapping-table.json` (ADR-037) adds two pages to the Connections group:
+Decided by Ruben on 2026-10-04: the table is instance configuration, so it lives on the admin settings page (ADR-079), not in the app's navigation. `src/views/admin/DsoActivityMappingSettings.vue` is one section of `AdminSettings.vue`:
 
-- **DSO activities** (`type: index`, schema `dso_activity_mapping`). Columns: activity name, imow-id, case types, samenloop, active. Add and edit through `src/modals/DsoActivityMappingModal.vue` (ADR-004: one modal per file; every `NcSelect` has an `inputLabel`). The modal edits `caseTypes` and `samenloopRules` as lists.
-- **Unmapped DSO activities** (`type: index`, schema `dso_verzoek`, filter `activityUnmapped = true`). It groups the unmapped activiteiten by `imowId` and shows how often each was seen and when last. A row action opens the same modal, prefilled with `imowId`, `activityId` and `activityName`.
+- **DSO activities.** A table of the rows: activity name, imow-id or activity id, case types, samenloop, active. Add and edit through `src/dialogs/DsoActivityMappingDialog.vue` (ADR-004: one dialog per file, NcDialog-based so under `src/dialogs/`; every `NcSelect` has an `inputLabel`). The dialog edits `caseTypes` and `samenloopRules` as lists. Deactivate flips `isActive` and keeps the row. Rows are read and written through OpenRegister's object API (ADR-022); the schema's authorization keeps them admin-only.
+- **Unmapped DSO activities.** The activities on recent verzoeken that no active row maps, grouped by `imowId` (else `activityId`), with how often each was seen and when last. A row action opens the same dialog, prefilled with `imowId`, `activityId` and `activityName`.
 
-The page is an app page, not a Nextcloud admin settings section. The rows are operational data a VTH functioneel beheerder maintains, like Sources, Mappings and Rules, which are app pages too. The schema's authorization keeps editing admin-only. ADR-079 places instance configuration in the admin settings section; whether this table counts as that is an open question for review.
+The grouping does not use `x-openregister-aggregations`: its `groupBy` accepts declared top-level properties only (`AggregationAnnotationValidator`), and the identifiers sit inside the `mappedActivities` list. So `GET /api/admin/dso-activities/unmapped` (`DsoActivityMappingController`, `#[AuthorizedAdminSetting]`) groups in `DsoUnmappedActivities`. It reads the latest 500 verzoeken flagged `activityUnmapped` as an engine read and drops an activity that a row added since then maps. An activity with neither identifier is counted, not listed.
 
-Grouping the unmapped list needs a count per `imowId` over `mappedActivities` items. If OpenRegister's `x-openregister-aggregations` cannot group on a nested array item, the page falls back to listing verzoeken with `activityUnmapped` and the modal reads the identifiers from the chosen verzoek. Task 4.2 decides which, by trying the aggregation first (ADR-031).
+No manifest fragment is added: the section is not an app page.
 
 ### D6. Demo data, not seed data
 

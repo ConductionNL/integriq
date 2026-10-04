@@ -24,11 +24,13 @@ use OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
+use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoClient;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use OCA\Integriq\Service\DsoIngestService;
+use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -39,6 +41,7 @@ use OCP\BackgroundJob\IJobList;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Tests for verzoek ingest (persist + translate), the authenticated handoff
@@ -69,6 +72,22 @@ class DsoIngestServiceTest extends TestCase {
 	 * @var array<int, ObjectEntity>
 	 */
 	private array $sourceFixtures = [];
+
+	/**
+	 * In-memory `dso_activity_mapping` rows. Only an engine read (`_rbac`
+	 * false) sees them, as on a live instance where the intake account is no
+	 * administrator.
+	 *
+	 * @var array<int, ObjectEntity>
+	 */
+	private array $mappingRows = [];
+
+	/**
+	 * How often the mapping table was read.
+	 *
+	 * @var int
+	 */
+	private int $mappingReads = 0;
 
 	private int $uuidCounter = 0;
 
@@ -147,8 +166,17 @@ class DsoIngestServiceTest extends TestCase {
 		);
 
 		$mock->method('findAll')->willReturnCallback(
-			function (array $config = []) {
+			function (array $config = [], bool $_rbac = true) {
 				$schema = ($config['filters']['schema'] ?? null);
+				if ($schema === DsoActivityTable::SCHEMA) {
+					$this->mappingReads++;
+					if ($_rbac !== false) {
+						return ['results' => [], 'total' => 0];
+					}
+
+					return ['results' => $this->mappingRows, 'total' => count($this->mappingRows)];
+				}
+
 				if ($schema === DsoIngestService::SCHEMA_SOURCE) {
 					return ['results' => $this->sourceFixtures, 'total' => count($this->sourceFixtures)];
 				}
@@ -203,10 +231,39 @@ class DsoIngestServiceTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
 			jobList: $this->jobList,
-			activityMapper: new DsoActivityMapper()
+			activityMapper: new DsoActivityMapper(new DsoActivityTable($objectService))
 		);
 
 	}//end buildService()
+
+	/**
+	 * Store one `dso_activity_mapping` row.
+	 *
+	 * @param string $uuid The row's uuid.
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return array<string, mixed> The row as stored.
+	 */
+	private function addMappingRow(string $uuid, array $row): array {
+		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: DsoActivityTable::SCHEMA, object: $row), 'The fixture row is one the schema accepts');
+		$this->mappingRows[] = $this->buildEntity($row, $uuid);
+
+		return $row;
+	}//end addMappingRow()
+
+	/**
+	 * A verzoek with these activiteiten, run through the real parser.
+	 *
+	 * @param string $verzoekId The verzoek id.
+	 * @param array<int, array<string, mixed>> $activiteiten The raw activiteiten.
+	 *
+	 * @return array<string, mixed> The parsed verzoek.
+	 */
+	private function parsed(string $verzoekId, array $activiteiten): array {
+		return (new DSOParserService(new NullLogger()))->parseRequest(
+			payload: ['verzoekId' => $verzoekId, 'type' => 'aanvraag', 'activiteiten' => $activiteiten]
+		);
+	}//end parsed()
 
 	/**
 	 * The request fields the activity mapping writes, plus the required ones,
@@ -240,7 +297,7 @@ class DsoIngestServiceTest extends TestCase {
 			parsedRequest: [
 				'verzoekId' => 'dso-1',
 				'type' => 'aanvraag',
-				'activiteiten' => [['code' => 'bouwen-01', 'omschrijving' => 'Bouwen van een woning']],
+				'activiteiten' => [['activityId' => 'Demo-0000-Bouwen', 'activityName' => 'Bouwen van een woning']],
 			]
 		);
 
@@ -365,104 +422,315 @@ class DsoIngestServiceTest extends TestCase {
 	}//end testIngestQueuesTheDownloadOnlyWhenThereAreBijlagen()
 
 	/**
-	 * Intake runs the activiteiten through DsoActivityMapper: each mapped
-	 * activiteit carries its zaaktype, the request lists its zaaktypen, and the
-	 * register accepts what intake writes.
+	 * One of the demo rows the mock register ships, without its `@self`.
 	 *
-	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-one-to-one-activiteit-mapping-creates-zaak
+	 * @param string $slug The demo row's slug.
+	 *
+	 * @return array<string, mixed> The row.
 	 */
-	public function testIngestMapsActiviteitenToCaseTypes(): void {
+	private function demoRow(string $slug): array {
+		$mock = json_decode((string)file_get_contents(__DIR__ . '/../../../lib/Settings/integriq_mock_register.json'), true);
+		foreach ($mock['components']['objects'] as $object) {
+			if (($object['@self']['slug'] ?? null) === $slug) {
+				unset($object['@self']);
+				return $object;
+			}
+		}
+
+		$this->fail('No demo row ' . $slug);
+	}//end demoRow()
+
+	/**
+	 * Intake maps an activiteit on its imowId through the table in
+	 * OpenRegister: the entry keeps the STAM identifiers and gains the row's
+	 * case types and strategy, and the register accepts what intake writes.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-one-to-one-activiteit-mapping-creates-zaak
+	 */
+	public function testIngestMapsAnActiviteitOnItsImowId(): void {
+		$this->addMappingRow('row-bouwen', $this->demoRow('dso-activity-mapping-demo-bouwen'));
 		$service = $this->buildService();
 
-		$request = $service->ingest(
-			parsedRequest: [
-				'verzoekId' => 'dso-map-1',
-				'type' => 'aanvraag',
-				'activiteiten' => [
-					['code' => 'bouwen-01', 'omschrijving' => 'Bouwen van een woning'],
-					['code' => 'kappen-01', 'omschrijving' => 'Kappen van een boom'],
-				],
-			]
-		);
+		$data = $service->ingest(
+			parsedRequest: $this->parsed(
+				'dso-map-1',
+				[['imowId' => 'nl.imow-gm0000.activiteit.DemoBouwen', 'activityName' => 'Bouwen van een woning', 'volgnr' => 1]]
+			)
+		)->getObject();
 
-		$data = $request->getObject();
 		$this->assertSame(
 			[
-				['code' => 'bouwen-01', 'description' => 'Bouwen van een woning', 'mapped' => true, 'caseType' => 'ZAAKTYPE-BOUWEN-2024', 'samenloopStrategy' => 'deelzaken'],
-				['code' => 'kappen-01', 'description' => 'Kappen van een boom', 'mapped' => true, 'caseType' => 'ZAAKTYPE-KAPPEN-2024', 'samenloopStrategy' => 'gecombineerd'],
+				[
+					'imowId' => 'nl.imow-gm0000.activiteit.DemoBouwen',
+					'activityName' => 'Bouwen van een woning',
+					'volgnr' => '1',
+					'mapped' => true,
+					'matchedOn' => 'imowId',
+					'mappingRow' => 'row-bouwen',
+					'caseTypes' => [['reference' => 'DEMO-ZAAKTYPE-BOUWEN', 'title' => 'Demo: omgevingsvergunning bouwen', 'department' => 'Demo: team bouwen']],
+					'samenloopStrategy' => 'deelzaken',
+				],
 			],
 			$data['mappedActivities']
 		);
-		$this->assertSame(['ZAAKTYPE-BOUWEN-2024', 'ZAAKTYPE-KAPPEN-2024'], $data['mappedCaseTypes']);
+		$this->assertSame(['DEMO-ZAAKTYPE-BOUWEN'], $data['mappedCaseTypes']);
 		$this->assertSame('deelzaken', $data['samenloopStrategy']);
 		$this->assertFalse($data['activityUnmapped']);
 		$this->assertSame('mapped', $data['status']);
 		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->mappingFields(data: $data)));
 
-	}//end testIngestMapsActiviteitenToCaseTypes()
+	}//end testIngestMapsAnActiviteitOnItsImowId()
 
 	/**
-	 * Samenloop: when every mapped activiteit is `gecombineerd`, the request is
-	 * `gecombineerd`; one zaaktype shared by two activiteiten is listed once.
+	 * Without an imowId the activityId matches; an old push with only `code`
+	 * is read as that activityId.
 	 *
-	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-gecombineerd-strategy-creates-one-combined-zaak
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-the-fallback-identifier-matches
 	 */
-	public function testIngestDecidesGecombineerdWhenEveryActiviteitCombines(): void {
-		$service = $this->buildService();
-
-		$request = $service->ingest(
-			parsedRequest: [
-				'verzoekId' => 'dso-map-2',
-				'type' => 'aanvraag',
-				'activiteiten' => [
-					['code' => 'kappen-01', 'omschrijving' => 'Kappen'],
-					['code' => 'uitrit-01', 'omschrijving' => 'Uitrit'],
-					['code' => 'kappen-01', 'omschrijving' => 'Nog een boom'],
-				],
+	public function testIngestFallsBackOnTheActivityId(): void {
+		$this->addMappingRow(
+			'row-uitrit',
+			[
+				'activityId' => 'Demo-0000-Uitrit',
+				'activityName' => 'Demo: uitrit aanleggen',
+				'caseTypes' => [['reference' => 'DEMO-ZAAKTYPE-UITRIT']],
+				'samenloopStrategy' => 'gecombineerd',
 			]
 		);
+		$service = $this->buildService();
 
-		$data = $request->getObject();
+		$data = $service->ingest(
+			parsedRequest: $this->parsed('dso-map-2', [['code' => 'Demo-0000-Uitrit', 'omschrijving' => 'Uitrit']])
+		)->getObject();
+
+		$this->assertSame(
+			[
+				'activityId' => 'Demo-0000-Uitrit',
+				'activityName' => 'Uitrit',
+				'mapped' => true,
+				'matchedOn' => 'activityId',
+				'mappingRow' => 'row-uitrit',
+				'caseTypes' => [['reference' => 'DEMO-ZAAKTYPE-UITRIT']],
+				'samenloopStrategy' => 'gecombineerd',
+			],
+			$data['mappedActivities'][0]
+		);
 		$this->assertSame('gecombineerd', $data['samenloopStrategy']);
-		$this->assertSame(['ZAAKTYPE-KAPPEN-2024', 'ZAAKTYPE-UITRIT-2024'], $data['mappedCaseTypes']);
+		$this->assertSame('Uitrit', $data['mappedTitle'], 'The title still reads the activity name');
+		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->mappingFields(data: $data)));
 
-	}//end testIngestDecidesGecombineerdWhenEveryActiviteitCombines()
+	}//end testIngestFallsBackOnTheActivityId()
 
 	/**
-	 * An activiteit without a mapping is kept, marked unmapped, and flags the
-	 * request for triage. The mapped one still gets its zaaktype.
+	 * The onderliggende activiteit is tried first: its row decides, even
+	 * when the parent activity has a row too.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-the-onderliggende-activiteit-wins
+	 */
+	public function testTheUnderlyingActiviteitWins(): void {
+		$this->addMappingRow('row-milieu', $this->demoRow('dso-activity-mapping-demo-milieu'));
+		$this->addMappingRow(
+			'row-tankstation',
+			[
+				'imowId' => 'nl.imow-gm0000.activiteit.DemoTankstation',
+				'activityName' => 'Demo: tankstation',
+				'caseTypes' => [['reference' => 'DEMO-ZAAKTYPE-TANKSTATION', 'department' => 'Demo: team externe veiligheid']],
+				'samenloopStrategy' => 'deelzaken',
+			]
+		);
+		$service = $this->buildService();
+
+		$data = $service->ingest(
+			parsedRequest: $this->parsed(
+				'dso-map-3',
+				[
+					[
+						'imowId' => 'nl.imow-gm0000.activiteit.DemoMilieu',
+						'activityName' => 'Milieubelastende activiteit',
+						'underlying' => ['imowId' => 'nl.imow-gm0000.activiteit.DemoTankstation', 'activityName' => 'Tankstation'],
+					],
+				]
+			)
+		)->getObject();
+
+		$entry = $data['mappedActivities'][0];
+		$this->assertSame('underlying.imowId', $entry['matchedOn']);
+		$this->assertSame('row-tankstation', $entry['mappingRow']);
+		$this->assertSame(['imowId' => 'nl.imow-gm0000.activiteit.DemoTankstation', 'activityName' => 'Tankstation'], $entry['underlying']);
+		$this->assertSame(['DEMO-ZAAKTYPE-TANKSTATION'], $data['mappedCaseTypes']);
+		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->mappingFields(data: $data)));
+
+	}//end testTheUnderlyingActiviteitWins()
+
+	/**
+	 * An inactive row is ignored, an activiteit no row maps is kept and
+	 * flags the verzoek, and the mapped one still gets its case type.
 	 *
 	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-mixed-mapped-and-unmapped-activiteiten
 	 */
-	public function testIngestFlagsAnUnmappedActiviteitForTriage(): void {
+	public function testAnInactiveRowIsIgnoredAndAnUnmappedActiviteitFlagsTheVerzoek(): void {
+		$this->addMappingRow('row-bouwen', $this->demoRow('dso-activity-mapping-demo-bouwen'));
+		$this->addMappingRow('row-kappen', (['isActive' => false] + $this->demoRow('dso-activity-mapping-demo-kappen')));
 		$service = $this->buildService();
 
-		$request = $service->ingest(
-			parsedRequest: [
-				'verzoekId' => 'dso-map-3',
-				'type' => 'aanvraag',
-				'activiteiten' => [
-					['code' => 'bouwen-01', 'omschrijving' => 'Bouwen'],
-					['code' => 'experimenteel-gebruik-2025', 'omschrijving' => null],
-					['code' => null, 'omschrijving' => 'Zonder code'],
-				],
-			]
-		);
+		$data = $service->ingest(
+			parsedRequest: $this->parsed(
+				'dso-map-4',
+				[
+					['imowId' => 'nl.imow-gm0000.activiteit.DemoBouwen'],
+					['imowId' => 'nl.imow-gm0000.activiteit.DemoKappen', 'activityName' => 'Kappen'],
+					['activityName' => 'Zonder identificatie'],
+				]
+			)
+		)->getObject();
 
-		$data = $request->getObject();
 		$this->assertSame(
 			[
-				['code' => 'bouwen-01', 'description' => 'Bouwen', 'mapped' => true, 'caseType' => 'ZAAKTYPE-BOUWEN-2024', 'samenloopStrategy' => 'deelzaken'],
-				['code' => 'experimenteel-gebruik-2025', 'description' => '', 'mapped' => false],
-				['code' => '', 'description' => 'Zonder code', 'mapped' => false],
+				['imowId' => 'nl.imow-gm0000.activiteit.DemoKappen', 'activityName' => 'Kappen', 'mapped' => false],
+				['activityName' => 'Zonder identificatie', 'mapped' => false],
 			],
-			$data['mappedActivities']
+			array_slice($data['mappedActivities'], 1)
 		);
-		$this->assertSame(['ZAAKTYPE-BOUWEN-2024'], $data['mappedCaseTypes']);
+		$this->assertTrue($data['mappedActivities'][0]['mapped']);
+		$this->assertSame(['DEMO-ZAAKTYPE-BOUWEN'], $data['mappedCaseTypes']);
 		$this->assertTrue($data['activityUnmapped']);
 		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->mappingFields(data: $data)));
 
-	}//end testIngestFlagsAnUnmappedActiviteitForTriage()
+	}//end testAnInactiveRowIsIgnoredAndAnUnmappedActiviteitFlagsTheVerzoek()
+
+	/**
+	 * An empty table maps nothing, and nothing is built in to fall back on.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-a-fresh-install-ships-no-activity-codes
+	 */
+	public function testAnEmptyTableMapsNothing(): void {
+		$service = $this->buildService();
+
+		$data = $service->ingest(
+			parsedRequest: $this->parsed('dso-map-5', [['code' => 'bouwen', 'omschrijving' => 'Bouwen']])
+		)->getObject();
+
+		$this->assertSame([['activityId' => 'bouwen', 'activityName' => 'Bouwen', 'mapped' => false]], $data['mappedActivities']);
+		$this->assertSame([], $data['mappedCaseTypes']);
+		$this->assertTrue($data['activityUnmapped']);
+		$this->assertArrayNotHasKey('samenloopStrategy', $data);
+
+	}//end testAnEmptyTableMapsNothing()
+
+	/**
+	 * One activity with two case types: the entry records both with their
+	 * departments, and a case type two activities share is listed once.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-one-to-many-mapping-creates-multiple-deelzaken
+	 */
+	public function testOneActivityMapsToSeveralCaseTypes(): void {
+		$this->addMappingRow('row-milieu', $this->demoRow('dso-activity-mapping-demo-milieu'));
+		$this->addMappingRow('row-bouwen', $this->demoRow('dso-activity-mapping-demo-bouwen'));
+		$service = $this->buildService();
+
+		$data = $service->ingest(
+			parsedRequest: $this->parsed(
+				'dso-map-6',
+				[
+					['imowId' => 'nl.imow-gm0000.activiteit.DemoMilieu'],
+					['imowId' => 'nl.imow-gm0000.activiteit.DemoBouwen'],
+				]
+			)
+		)->getObject();
+
+		$this->assertSame(
+			[
+				['reference' => 'DEMO-ZAAKTYPE-MILIEU', 'title' => 'Demo: omgevingsvergunning milieu', 'department' => 'Demo: team milieu'],
+				['reference' => 'DEMO-ZAAKTYPE-BOUWEN', 'title' => 'Demo: omgevingsvergunning bouwen', 'department' => 'Demo: team bouwen'],
+			],
+			$data['mappedActivities'][0]['caseTypes']
+		);
+		$this->assertSame(['DEMO-ZAAKTYPE-MILIEU', 'DEMO-ZAAKTYPE-BOUWEN'], $data['mappedCaseTypes']);
+		$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'dso_verzoek', object: $this->mappingFields(data: $data)));
+
+	}//end testOneActivityMapsToSeveralCaseTypes()
+
+	/**
+	 * A samenloop rule decides its pair: the demo kappen row combines with
+	 * bouwen although both rows say deelzaken.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-a-samenloop-rule-combines-a-pair
+	 */
+	public function testASamenloopRuleCombinesAPair(): void {
+		$this->addMappingRow('row-bouwen', $this->demoRow('dso-activity-mapping-demo-bouwen'));
+		$this->addMappingRow('row-kappen', $this->demoRow('dso-activity-mapping-demo-kappen'));
+		$service = $this->buildService();
+
+		$data = $service->ingest(
+			parsedRequest: $this->parsed(
+				'dso-map-7',
+				[
+					['imowId' => 'nl.imow-gm0000.activiteit.DemoBouwen'],
+					['imowId' => 'nl.imow-gm0000.activiteit.DemoKappen'],
+				]
+			)
+		)->getObject();
+
+		$this->assertSame('gecombineerd', $data['samenloopStrategy']);
+
+	}//end testASamenloopRuleCombinesAPair()
+
+	/**
+	 * One deelzaken rule splits a pair whose rows both say gecombineerd.
+	 * Without rules, gecombineerd needs every row to say so.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-samenloop-handling-req-dso-011
+	 */
+	public function testADeelzakenRuleSplitsAndWithoutRulesEveryRowDecides(): void {
+		$row = static fn (string $id, string $strategy, array $rules = []): array => [
+			'imowId' => 'nl.imow-gm0000.activiteit.' . $id,
+			'activityName' => 'Demo: ' . $id,
+			'caseTypes' => [['reference' => 'DEMO-' . $id]],
+			'samenloopStrategy' => $strategy,
+			'samenloopRules' => $rules,
+		];
+		$this->addMappingRow('row-a', $row('A', 'gecombineerd', [['withImowId' => 'nl.imow-gm0000.activiteit.B', 'strategy' => 'deelzaken']]));
+		$this->addMappingRow('row-b', $row('B', 'gecombineerd'));
+		$this->addMappingRow('row-c', $row('C', 'gecombineerd'));
+		$this->addMappingRow('row-d', $row('D', 'deelzaken'));
+		$service = $this->buildService();
+		$strategy = fn (string $verzoekId, array $ids): string => $service->ingest(
+			parsedRequest: $this->parsed(
+				$verzoekId,
+				array_map(static fn (string $id): array => ['imowId' => 'nl.imow-gm0000.activiteit.' . $id], $ids)
+			)
+		)->getObject()['samenloopStrategy'];
+
+		$this->assertSame('deelzaken', $strategy('dso-rule-1', ['A', 'B']), 'The rule of row A decides the pair');
+		$this->assertSame('deelzaken', $strategy('dso-rule-2', ['B', 'A']), 'Whichever row holds the rule');
+		$this->assertSame('gecombineerd', $strategy('dso-rule-3', ['B', 'C']), 'No rule: both rows combine');
+		$this->assertSame('deelzaken', $strategy('dso-rule-4', ['C', 'D']), 'No rule: one row splits');
+		$this->assertSame('gecombineerd', $strategy('dso-rule-5', ['C']), 'One activity: its own row');
+
+	}//end testADeelzakenRuleSplitsAndWithoutRulesEveryRowDecides()
+
+	/**
+	 * A row an administrator changes is used for the next verzoek, and the
+	 * table is read once per verzoek.
+	 *
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#scenario-modified-mapping-applied-to-next-verzoek
+	 */
+	public function testAChangedRowAppliesToTheNextVerzoek(): void {
+		$this->addMappingRow('row-bouwen', $this->demoRow('dso-activity-mapping-demo-bouwen'));
+		$service = $this->buildService();
+		$activiteiten = [['imowId' => 'nl.imow-gm0000.activiteit.DemoBouwen'], ['imowId' => 'nl.imow-gm0000.activiteit.DemoBouwen']];
+
+		$before = $service->ingest(parsedRequest: $this->parsed('dso-change-1', $activiteiten))->getObject();
+		$this->mappingRows[0]->setObject(
+			array_merge($this->mappingRows[0]->getObject(), ['caseTypes' => [['reference' => 'DEMO-ZAAKTYPE-BOUWEN-2']]])
+		);
+		$after = $service->ingest(parsedRequest: $this->parsed('dso-change-2', $activiteiten))->getObject();
+
+		$this->assertSame(['DEMO-ZAAKTYPE-BOUWEN'], $before['mappedCaseTypes']);
+		$this->assertSame(['DEMO-ZAAKTYPE-BOUWEN-2'], $after['mappedCaseTypes']);
+		$this->assertSame(2, $this->mappingReads, 'One table read per verzoek, not per activiteit');
+
+	}//end testAChangedRowAppliesToTheNextVerzoek()
 
 	/**
 	 * A request without activiteiten maps to nothing and is not flagged; it
@@ -497,7 +765,7 @@ class DsoIngestServiceTest extends TestCase {
 				object: [
 					'verzoekId' => 'dso-map-5',
 					'status' => 'mapped',
-					'mappedActivities' => [['code' => 'bouwen-01', 'mapped' => true, 'zaaktypeIdentificatie' => 'X']],
+					'mappedActivities' => [['activityId' => 'Demo-0000-Bouwen', 'mapped' => true, 'zaaktypeIdentificatie' => 'X']],
 				]
 			)
 		);
