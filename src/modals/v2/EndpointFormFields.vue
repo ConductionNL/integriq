@@ -340,13 +340,6 @@ export default {
 
 	computed: {
 		/**
-		 * Schema fields to render. `targetId` is composed from the Register +
-		 * Schema pickers, so it never renders as its own input.
-		 *
-		 * @return {object[]} The visible field descriptors.
-		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
-		 */
-		/**
 		 * @return {object[]} The two validation modes.
 		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
@@ -726,12 +719,6 @@ export default {
 		},
 
 		/**
-		 * Load configuration profiles for the multiselect.
-		 *
-		 * @return {Promise<void>} Resolves once loaded.
-		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
-		 */
-		/**
 		 * The option for the message schema picked for one direction.
 		 *
 		 * @param {string} direction request or response.
@@ -815,6 +802,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Load configuration profiles for the multiselect.
+		 *
+		 * @return {Promise<void>} Resolves once loaded.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
 		async fetchConfigurations() {
 			this.configurationsLoading = true
 			try {
