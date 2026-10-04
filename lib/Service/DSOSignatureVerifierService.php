@@ -142,7 +142,7 @@ class DSOSignatureVerifierService {
 		}
 
 		try {
-			if (self::normalizeMode(mode: ($trust['mode'] ?? null)) === self::MODE_PKIOVERHEID) {
+			if ($this->normalizeMode(mode: ($trust['mode'] ?? null)) === self::MODE_PKIOVERHEID) {
 				return $this->verifyRsaChain(signatureHeader: $signatureHeader, rawBody: $rawBody, trust: $trust);
 			}
 
@@ -170,7 +170,7 @@ class DSOSignatureVerifierService {
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
-	public static function normalizeMode(mixed $mode): string {
+	public function normalizeMode(mixed $mode): string {
 		if ($mode === self::MODE_PKIOVERHEID || $mode === self::MODE_RSA) {
 			return self::MODE_PKIOVERHEID;
 		}

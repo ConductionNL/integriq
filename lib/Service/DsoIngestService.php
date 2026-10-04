@@ -597,52 +597,48 @@ class DsoIngestService {
 
 	/**
 	 * Resolve the single active `dso` outbound source
-	 * (`type=dso`, `isEnabled=true`).
-	 *
-	 * The source is admin-only configuration (`99-source-lockdown.json`). The
-	 * bijlage job runs as the DSO connection's account, which need not be an
-	 * admin, so it asks for an engine read (`$engineRead`): `_rbac: false` and
-	 * `_render: false`, a read only. Every other caller reads under its own
-	 * rights, as before.
-	 *
-	 * @param bool $engineRead Read as the engine rather than as the active user.
+	 * (`type=dso`, `isEnabled=true`), under the active user's rights.
 	 *
 	 * @return ObjectEntity The resolved source.
 	 *
 	 * @throws DsoProviderException When no active source is configured.
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-outbound-status-besluit-post-with-per-message-audit-req-006
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
-	public function resolveActiveSource(bool $engineRead = false): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			],
-			_rbac: ($engineRead === false),
-			_multitenancy: ($engineRead === false)
-		);
+	public function resolveActiveSource(): ObjectEntity {
+		$matches = $this->objectService->findAll(config: $this->activeSourceQuery());
 		$results = ($matches['results'] ?? $matches);
 
 		if (empty($results) === true) {
-			throw new DsoProviderException(
-				message: 'No active DSO source is configured (register "openconnector", '
-				. 'schema "source", type "dso", isEnabled=true).'
-			);
+			throw $this->noActiveSource();
 		}
 
-		if ($engineRead === false) {
-			return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+	}//end resolveActiveSource()
+
+	/**
+	 * Resolve the active `dso` source as an engine read.
+	 *
+	 * The source is admin-only configuration (`99-source-lockdown.json`). The
+	 * bijlage job runs as the DSO connection's account, which need not be an
+	 * admin, so it reads the source as the engine: `_rbac: false` and
+	 * `_render: false`, a read only. It mirrors RawSourceResolver, without the
+	 * active user's RBAC.
+	 *
+	 * @return ObjectEntity The resolved source, read raw.
+	 *
+	 * @throws DsoProviderException When no active source is configured.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 */
+	public function resolveActiveSourceAsEngine(): ObjectEntity {
+		$matches = $this->objectService->findAll(config: $this->activeSourceQuery(), _rbac: false, _multitenancy: false);
+		$results = ($matches['results'] ?? $matches);
+
+		if (empty($results) === true) {
+			throw $this->noActiveSource();
 		}
 
-		// The engine read re-reads the located source raw, as RawSourceResolver
-		// does, but without the active user's RBAC: the account is not an admin.
 		$uuid = (string)$results[0]->getUuid();
 		if ($uuid === '') {
 			return $results[0];
@@ -661,7 +657,36 @@ class DsoIngestService {
 		}
 
 		return $raw;
-	}//end resolveActiveSource()
+	}//end resolveActiveSourceAsEngine()
+
+	/**
+	 * The query that locates the active DSO source.
+	 *
+	 * @return array<string, mixed> The findAll() config.
+	 */
+	private function activeSourceQuery(): array {
+		return [
+			'filters' => [
+				'register' => self::REGISTER,
+				'schema' => self::SCHEMA_SOURCE,
+				'type' => self::SOURCE_TYPE,
+				'isEnabled' => true,
+			],
+			'limit' => 1,
+		];
+	}//end activeSourceQuery()
+
+	/**
+	 * The error for a missing active DSO source.
+	 *
+	 * @return DsoProviderException The exception.
+	 */
+	private function noActiveSource(): DsoProviderException {
+		return new DsoProviderException(
+			message: 'No active DSO source is configured (register "openconnector", '
+			. 'schema "source", type "dso", isEnabled=true).'
+		);
+	}//end noActiveSource()
 
 	/**
 	 * Resolve the outbound provider binding named by

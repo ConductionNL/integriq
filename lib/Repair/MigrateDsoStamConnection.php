@@ -56,13 +56,15 @@ class MigrateDsoStamConnection implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig         $appConfig The legacy `dso_pki_*` keys.
-	 * @param ContainerInterface $container Resolves the OpenRegister-backed services lazily.
+	 * @param IAppConfig                  $appConfig         The legacy `dso_pki_*` keys.
+	 * @param DSOSignatureVerifierService $signatureVerifier Normalises the legacy mode name.
+	 * @param ContainerInterface          $container         Resolves the OpenRegister-backed services lazily.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
+		private readonly DSOSignatureVerifierService $signatureVerifier,
 		private readonly ContainerInterface $container,
 	) {
 
@@ -108,8 +110,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 			return;
 		}
 
-		SystemWrite::run(
-			what: 'the DSO connection migration',
+		$this->runAsSystem(
 			operation: static fn () => $objectService->saveObject(
 				object: [
 					'name' => 'DSO-LV (STAM)',
@@ -127,6 +128,21 @@ class MigrateDsoStamConnection implements IRepairStep {
 		$output->info('Created the dso-stam consumer from the dso_pki_* app config. Choose the account the DSO intake acts as.');
 
 	}//end run()
+
+	/**
+	 * Write the app's own configuration on nobody's behalf.
+	 *
+	 * @param callable $operation The write.
+	 *
+	 * @return mixed What the write returns.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemWrite exposes only a static
+	 * entrypoint, as in MigrateStoredJobClasses; isolated in this helper.
+	 */
+	private function runAsSystem(callable $operation): mixed {
+		return SystemWrite::run(what: 'the DSO connection migration', operation: $operation);
+
+	}//end runAsSystem()
 
 	/**
 	 * The legacy trust configuration, or null when no key is set.
@@ -148,7 +164,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 			return null;
 		}
 
-		$trust['mode'] = DSOSignatureVerifierService::normalizeMode(mode: $trust['mode']);
+		$trust['mode'] = $this->signatureVerifier->normalizeMode(mode: $trust['mode']);
 
 		return $trust;
 

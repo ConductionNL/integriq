@@ -41,11 +41,9 @@ use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
 use OCP\IUserManager;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -92,20 +90,12 @@ class DsoConnection {
 	public const REQUIRED_ACTIONS = ['create', 'update'];
 
 	/**
-	 * OpenRegister's PermissionHandler, resolved lazily: not a published contract.
-	 *
-	 * @var string
-	 */
-	private const PERMISSION_HANDLER = 'OCA\OpenRegister\Service\Object\PermissionHandler';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService             $objectService     Engine reads of the consumer, and runAs().
 	 * @param DSOSignatureVerifierService $signatureVerifier Verifies the push against the consumer's trust.
 	 * @param IUserManager                $userManager       Resolves the consumer's account.
-	 * @param SchemaMapper                $schemaMapper      Resolves the `dso_verzoek` schema for the rights check.
-	 * @param ContainerInterface          $container         Resolves OpenRegister's PermissionHandler lazily.
+	 * @param DsoAccountRights            $rights            Checks the account's rights on `dso_verzoek`.
 	 * @param LoggerInterface             $logger            Secret-free diagnostics.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
@@ -114,8 +104,7 @@ class DsoConnection {
 		private readonly ORObjectService $objectService,
 		private readonly DSOSignatureVerifierService $signatureVerifier,
 		private readonly IUserManager $userManager,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly ContainerInterface $container,
+		private readonly DsoAccountRights $rights,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -144,7 +133,7 @@ class DsoConnection {
 		}
 
 		if ($this->signatureVerifier->verify(signatureHeader: $signatureHeader, rawBody: $rawBody, trust: $trust) === false) {
-			throw new DsoSignatureException('Webhook signature validation failed');
+			throw new DsoSignatureException(message: 'Webhook signature validation failed');
 		}
 
 		$account = $this->resolveAccount(userId: (string)($data['userId'] ?? ''));
@@ -265,45 +254,32 @@ class DsoConnection {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function missingRights(string $userId): ?array {
-		$handler = $this->resolvePermissionHandler();
-		if ($handler === null) {
-			return null;
-		}
-
-		try {
-			$schema = $this->schemaMapper->find(self::SCHEMA_VERZOEK, [], false, false);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'[DsoConnection] the dso_verzoek schema could not be resolved for the rights check',
-				['exception' => $exception->getMessage()]
-			);
-			return null;
-		}
-
-		if ($schema === null) {
-			return null;
-		}
-
-		$missing = [];
-		foreach (self::REQUIRED_ACTIONS as $action) {
-			try {
-				$granted = $handler->hasPermission(schema: $schema, action: $action, userId: $userId);
-			} catch (Throwable $exception) {
-				$this->logger->error(
-					'[DsoConnection] the rights check raised an exception; treating the rights as unverifiable',
-					['action' => $action, 'exception' => $exception->getMessage()]
-				);
-				return null;
-			}
-
-			if ($granted !== true) {
-				$missing[] = $action;
-			}
-		}
-
-		return $missing;
+		return $this->rights->missing(userId: $userId, actions: self::REQUIRED_ACTIONS);
 
 	}//end missingRights()
+
+	/**
+	 * Save the dso-stam consumer as the active user, under its own RBAC.
+	 *
+	 * The DSO connection settings call this as the administrator. The consumer
+	 * schema is admin-only, so nobody else can.
+	 *
+	 * @param array<string, mixed> $data The consumer data.
+	 * @param string|null          $uuid The consumer's uuid, or null to create it.
+	 *
+	 * @return ObjectEntity The saved consumer.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+	 */
+	public function saveConsumer(array $data, ?string $uuid): ObjectEntity {
+		return $this->objectService->saveObject(
+			object: $data,
+			register: self::REGISTER,
+			schema: self::SCHEMA_CONSUMER,
+			uuid: $uuid
+		);
+
+	}//end saveConsumer()
 
 	/**
 	 * Run an operation as the account, restoring the previous user afterwards.
@@ -408,29 +384,4 @@ class DsoConnection {
 		return $raw;
 
 	}//end readRaw()
-
-	/**
-	 * Resolve OpenRegister's PermissionHandler, or null when it is absent.
-	 *
-	 * @return object|null The handler.
-	 */
-	private function resolvePermissionHandler(): ?object {
-		try {
-			$handler = $this->container->get(self::PERMISSION_HANDLER);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'[DsoConnection] OpenRegister PermissionHandler unavailable; the rights check cannot run',
-				['exception' => $exception->getMessage()]
-			);
-			return null;
-		}
-
-		if (is_object($handler) === false || method_exists($handler, 'hasPermission') === false) {
-			$this->logger->error('[DsoConnection] OpenRegister PermissionHandler has no hasPermission(); the rights check cannot run');
-			return null;
-		}
-
-		return $handler;
-
-	}//end resolvePermissionHandler()
 }//end class

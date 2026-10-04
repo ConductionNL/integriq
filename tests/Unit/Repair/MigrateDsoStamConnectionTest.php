@@ -91,7 +91,13 @@ class MigrateDsoStamConnectionTest extends TestCase {
 			}
 		);
 
-		return new MigrateDsoStamConnection(appConfig: $appConfig, container: $container);
+		$logger = new \Psr\Log\NullLogger();
+
+		return new MigrateDsoStamConnection(
+			appConfig: $appConfig,
+			signatureVerifier: new \OCA\Integriq\Service\DSOSignatureVerifierService(new \OCA\Integriq\Service\WebhookSignatureService($logger), $logger),
+			container: $container
+		);
 	}//end step()
 
 	/**

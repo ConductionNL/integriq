@@ -78,16 +78,12 @@ class DsoStamConsumerListener implements IEventListener {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function handle(Event $event): void {
-		$entity = null;
-		if ($event instanceof ObjectCreatingEvent) {
-			$entity = $event->getObject();
+		if (($event instanceof ObjectCreatingEvent) === false && ($event instanceof ObjectUpdatingEvent) === false) {
+			return;
 		}
 
-		if ($event instanceof ObjectUpdatingEvent) {
-			$entity = $event->getNewObject();
-		}
-
-		if ($entity === null || $this->isDsoStamConsumer(object: $entity) === false) {
+		$entity = $this->savedObject(event: $event);
+		if ($this->isDsoStamConsumer(object: $entity) === false) {
 			return;
 		}
 
@@ -108,6 +104,22 @@ class DsoStamConsumerListener implements IEventListener {
 		}
 
 	}//end handle()
+
+	/**
+	 * The object being saved.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event.
+	 *
+	 * @return ObjectEntity The new object.
+	 */
+	private function savedObject(ObjectCreatingEvent|ObjectUpdatingEvent $event): ObjectEntity {
+		if ($event instanceof ObjectCreatingEvent) {
+			return $event->getObject();
+		}
+
+		return $event->getNewObject();
+
+	}//end savedObject()
 
 	/**
 	 * Whether the object is a consumer in the integriq register with type dso-stam.

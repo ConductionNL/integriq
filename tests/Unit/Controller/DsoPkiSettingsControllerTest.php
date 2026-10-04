@@ -87,7 +87,6 @@ class DsoPkiSettingsControllerTest extends TestCase {
 		return new DsoPkiSettingsController(
 			request: $request,
 			connection: $this->buildWorldConnection(objectService: $objectService),
-			objectService: $objectService,
 			signatureVerifier: new DSOSignatureVerifierService(new WebhookSignatureService($logger), $logger),
 			groupManager: $groupManager,
 			l: $l,

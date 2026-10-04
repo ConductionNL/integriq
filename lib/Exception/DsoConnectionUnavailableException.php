@@ -82,7 +82,7 @@ class DsoConnectionUnavailableException extends Exception {
 		private readonly string $reason,
 		string $message,
 	) {
-		parent::__construct($message);
+		parent::__construct(message: $message);
 
 	}//end __construct()
 

@@ -141,7 +141,7 @@ class DsoAttachmentFetcher {
 		$sourceConfiguration = null;
 		$sourceError = '';
 		try {
-			$sourceConfiguration = (array)($this->ingestService->resolveActiveSource(engineRead: true)->getObject()['configuration'] ?? []);
+			$sourceConfiguration = (array)($this->ingestService->resolveActiveSourceAsEngine()->getObject()['configuration'] ?? []);
 		} catch (DsoProviderException $exception) {
 			$sourceError = $exception->getMessage();
 		}

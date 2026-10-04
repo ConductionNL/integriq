@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Helpers;
 
+use OCA\Integriq\Service\Dso\DsoAccountRights;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Service\WebhookSignatureService;
@@ -329,8 +330,7 @@ trait DsoConnectionWorld {
 				logger: $logger
 			),
 			userManager: $userManager,
-			schemaMapper: $schemaMapper,
-			container: $container,
+			rights: new DsoAccountRights(schemaMapper: $schemaMapper, container: $container, logger: $logger),
 			logger: $logger
 		);
 	}//end buildWorldConnection()

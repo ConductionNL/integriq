@@ -35,8 +35,6 @@ use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Settings\IntegriqAdmin;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -57,8 +55,7 @@ class DsoPkiSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request           The request.
-	 * @param DsoConnection               $connection        Finds the consumer and checks the account.
-	 * @param ORObjectService             $objectService     Saves the consumer as the administrator.
+	 * @param DsoConnection               $connection        Finds, checks and saves the consumer.
 	 * @param DSOSignatureVerifierService $signatureVerifier Chain-validation helper.
 	 * @param IGroupManager               $groupManager      Tells an administrator account apart.
 	 * @param IL10N                       $l                 Field errors and warnings.
@@ -69,7 +66,6 @@ class DsoPkiSettingsController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly DsoConnection $connection,
-		private readonly ORObjectService $objectService,
 		private readonly DSOSignatureVerifierService $signatureVerifier,
 		private readonly IGroupManager $groupManager,
 		private readonly IL10N $l,
@@ -91,10 +87,7 @@ class DsoPkiSettingsController extends Controller {
 		try {
 			$consumer = $this->connection->findConsumer();
 		} catch (DsoConnectionUnavailableException $exception) {
-			return new JSONResponse(
-				['errors' => [$this->l->t('More than one DSO connection exists. Remove all but one on the Consumers page.')]],
-				Http::STATUS_CONFLICT
-			);
+			return $this->ambiguous();
 		}
 
 		$data = [];
@@ -112,7 +105,7 @@ class DsoPkiSettingsController extends Controller {
 		return new JSONResponse(
 			[
 				'configured' => ($consumer !== null),
-				'mode' => DSOSignatureVerifierService::normalizeMode(mode: ($trust['mode'] ?? null)),
+				'mode' => $this->signatureVerifier->normalizeMode(mode: ($trust['mode'] ?? null)),
 				'hmacSecretConfigured' => ((string)($trust['hmacSecret'] ?? '') !== ''),
 				'signingCertificate' => (string)($trust['signingCertificate'] ?? ''),
 				'intermediateChain' => (string)($trust['intermediateChain'] ?? ''),
@@ -137,82 +130,51 @@ class DsoPkiSettingsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {
-		$mode = DSOSignatureVerifierService::normalizeMode(mode: $this->request->getParam('mode', DSOSignatureVerifierService::MODE_HMAC));
-		$hmacSecret = (string)$this->request->getParam('hmacSecret', '');
-		$signingCertificate = (string)$this->request->getParam('signingCertificate', '');
-		$intermediateChain = (string)$this->request->getParam('intermediateChain', '');
-		$rootCa = (string)$this->request->getParam('rootCa', '');
+		$mode = $this->signatureVerifier->normalizeMode(mode: $this->request->getParam('mode', DSOSignatureVerifierService::MODE_HMAC));
+		$trust = [
+			'mode' => $mode,
+			'hmacSecret' => (string)$this->request->getParam('hmacSecret', ''),
+			'signingCertificate' => (string)$this->request->getParam('signingCertificate', ''),
+			'intermediateChain' => (string)$this->request->getParam('intermediateChain', ''),
+			'rootCa' => (string)$this->request->getParam('rootCa', ''),
+		];
 		$userId = trim((string)$this->request->getParam('userId', ''));
 
-		if ($mode === DSOSignatureVerifierService::MODE_PKIOVERHEID) {
-			$errors = $this->signatureVerifier->validateChainConfig(
-				certPem: $signingCertificate,
-				rootPem: $rootCa,
-				intermediatePem: $intermediateChain
-			);
-
-			if (empty($errors) === false) {
-				return new JSONResponse(['errors' => $errors], Http::STATUS_BAD_REQUEST);
-			}
-		}
-
 		$warnings = [];
-		if ($userId !== '') {
-			$fieldError = $this->accountError(userId: $userId, warnings: $warnings);
-			if ($fieldError !== null) {
-				return new JSONResponse(
-					['errors' => [$fieldError], 'fieldErrors' => ['userId' => $fieldError]],
-					Http::STATUS_BAD_REQUEST
-				);
-			}
+		$refusal = $this->refusal(trust: $trust, userId: $userId, warnings: $warnings);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
 			$consumer = $this->connection->findConsumer();
 		} catch (DsoConnectionUnavailableException $exception) {
-			return new JSONResponse(
-				['errors' => [$this->l->t('More than one DSO connection exists. Remove all but one on the Consumers page.')]],
-				Http::STATUS_CONFLICT
-			);
+			return $this->ambiguous();
 		}
 
 		$data = [
 			'name' => 'DSO-LV (STAM)',
 			'description' => 'The STAM koppelvlak of the Omgevingsloket (DSO-LV). Every push is stored as the account in userId.',
-			'authorizationType' => DsoConnection::AUTHORIZATION_TYPE,
 		];
-		$previousTrust = [];
+		$uuid = null;
 		if ($consumer !== null) {
-			$data = array_merge($consumer->getObject(), ['authorizationType' => DsoConnection::AUTHORIZATION_TYPE]);
-			$previousTrust = $data['authorizationConfiguration'] ?? [];
-			if (is_array($previousTrust) === false) {
-				$previousTrust = [];
-			}
+			$data = $consumer->getObject();
+			$uuid = $consumer->getUuid();
 		}
 
 		// Only overwrite the HMAC secret when a non-empty value was submitted,
 		// so the admin form can save other fields without re-typing (and
 		// re-exposing) the secret every time.
-		if ($hmacSecret === '') {
-			$hmacSecret = (string)($previousTrust['hmacSecret'] ?? '');
+		if ($trust['hmacSecret'] === '') {
+			$trust['hmacSecret'] = (string)(((array)($data['authorizationConfiguration'] ?? []))['hmacSecret'] ?? '');
 		}
 
-		$data['authorizationConfiguration'] = [
-			'mode' => $mode,
-			'hmacSecret' => $hmacSecret,
-			'signingCertificate' => $signingCertificate,
-			'intermediateChain' => $intermediateChain,
-			'rootCa' => $rootCa,
-		];
+		$data['authorizationType'] = DsoConnection::AUTHORIZATION_TYPE;
+		$data['authorizationConfiguration'] = $trust;
 		$data['userId'] = $userId;
 
 		try {
-			$this->objectService->saveObject(
-				object: $data,
-				register: DsoConnection::REGISTER,
-				schema: DsoConnection::SCHEMA_CONSUMER,
-				uuid: $this->uuidOf(consumer: $consumer)
-			);
+			$this->connection->saveConsumer(data: $data, uuid: $uuid);
 		} catch (Throwable $exception) {
 			$this->logger->error('[DsoPkiSettingsController] the DSO connection was not saved', ['exception' => $exception->getMessage()]);
 			return new JSONResponse(
@@ -231,6 +193,57 @@ class DsoPkiSettingsController extends Controller {
 		);
 
 	}//end setConfig()
+
+	/**
+	 * The 400 answer for a trust chain or account that may not be saved, or null.
+	 *
+	 * @param array<string, string> $trust    The submitted trust configuration.
+	 * @param string                $userId   The chosen uid; empty clears the account.
+	 * @param list<string>          $warnings Warnings to add to; passed by reference.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 */
+	private function refusal(array $trust, string $userId, array &$warnings): ?JSONResponse {
+		if ($trust['mode'] === DSOSignatureVerifierService::MODE_PKIOVERHEID) {
+			$errors = $this->signatureVerifier->validateChainConfig(
+				certPem: $trust['signingCertificate'],
+				rootPem: $trust['rootCa'],
+				intermediatePem: $trust['intermediateChain']
+			);
+
+			if (empty($errors) === false) {
+				return new JSONResponse(['errors' => $errors], Http::STATUS_BAD_REQUEST);
+			}
+		}
+
+		if ($userId === '') {
+			return null;
+		}
+
+		$fieldError = $this->accountError(userId: $userId, warnings: $warnings);
+		if ($fieldError === null) {
+			return null;
+		}
+
+		return new JSONResponse(
+			['errors' => [$fieldError], 'fieldErrors' => ['userId' => $fieldError]],
+			Http::STATUS_BAD_REQUEST
+		);
+
+	}//end refusal()
+
+	/**
+	 * The 409 answer when more than one dso-stam consumer exists.
+	 *
+	 * @return JSONResponse
+	 */
+	private function ambiguous(): JSONResponse {
+		return new JSONResponse(
+			['errors' => [$this->l->t('More than one DSO connection exists. Remove all but one on the Consumers page.')]],
+			Http::STATUS_CONFLICT
+		);
+
+	}//end ambiguous()
 
 	/**
 	 * The field error for an account, or null when it may be saved.
@@ -294,20 +307,4 @@ class DsoPkiSettingsController extends Controller {
 		return ['state' => 'ok', 'displayName' => $account->getDisplayName()];
 
 	}//end describeAccount()
-
-	/**
-	 * The consumer's uuid, or null for a new one.
-	 *
-	 * @param ObjectEntity|null $consumer The consumer.
-	 *
-	 * @return string|null The uuid.
-	 */
-	private function uuidOf(?ObjectEntity $consumer): ?string {
-		if ($consumer === null || $consumer->getUuid() === null || $consumer->getUuid() === '') {
-			return null;
-		}
-
-		return $consumer->getUuid();
-
-	}//end uuidOf()
 }//end class

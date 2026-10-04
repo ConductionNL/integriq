@@ -39,6 +39,7 @@ use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -145,23 +146,9 @@ class DSOController extends Controller {
 		// signature over the exact raw body authenticates it, and its account
 		// is who every write runs as. A connection, account or right that is
 		// missing answers 503 before anything is written, so DSO-LV retries.
-		$signatureHeader = $this->request->getHeader('X-DSO-Signature');
-		try {
-			$identity = $this->connection->authenticate(rawBody: $rawBody, signatureHeader: $signatureHeader);
-		} catch (DsoSignatureException) {
-			$this->logger->warning(
-				'DSO STAM: Webhook signature validation failed',
-				['hasSignatureHeader' => ($signatureHeader !== '' && $signatureHeader !== null)]
-			);
-			return new JSONResponse(
-				data: [
-					'error' => 'invalid_signature',
-					'message' => 'Webhook signature validation failed',
-				],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
-		} catch (DsoConnectionUnavailableException $exception) {
-			return $this->connectionUnavailable(exception: $exception);
+		$identity = $this->identify(rawBody: $rawBody);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		// Validate the payload schema.
@@ -227,6 +214,37 @@ class DSOController extends Controller {
 		);
 
 	}//end receiveRequest()
+
+	/**
+	 * Authenticate the push as the dso-stam consumer, or answer 401 or 503.
+	 *
+	 * @param string $rawBody The exact raw request body.
+	 *
+	 * @return DsoIdentity|JSONResponse The identity the writes run as, or the refusal.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function identify(string $rawBody): DsoIdentity|JSONResponse {
+		$signatureHeader = $this->request->getHeader('X-DSO-Signature');
+		try {
+			return $this->connection->authenticate(rawBody: $rawBody, signatureHeader: $signatureHeader);
+		} catch (DsoSignatureException) {
+			$this->logger->warning(
+				'DSO STAM: Webhook signature validation failed',
+				['hasSignatureHeader' => ($signatureHeader !== '' && $signatureHeader !== null)]
+			);
+			return new JSONResponse(
+				data: [
+					'error' => 'invalid_signature',
+					'message' => 'Webhook signature validation failed',
+				],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		} catch (DsoConnectionUnavailableException $exception) {
+			return $this->connectionUnavailable(exception: $exception);
+		}
+
+	}//end identify()
 
 	/**
 	 * Log a verzoek that was not stored and answer 503, so the sender retries.
