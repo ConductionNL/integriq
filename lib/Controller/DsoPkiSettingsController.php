@@ -3,10 +3,15 @@
 /**
  * DsoPkiSettingsController
  *
- * Admin-only API for reading and writing the DSO STAM PKIoverheid signature
- * verification configuration (signing mode, HMAC secret, certificate chain).
- * Both endpoints are gated at the middleware layer via
+ * Admin-only API for the DSO connection: the instance's one `dso-stam`
+ * consumer. It holds the STAM signature trust (signing mode, HMAC secret,
+ * PKIoverheid certificate chain) and the Nextcloud account the intake acts
+ * as. Both endpoints are gated at the middleware layer via
  * #[AuthorizedAdminSetting], so no in-body authorization is required.
+ *
+ * Until dso-intake-through-an-integriq-connection this read and wrote app
+ * config keys (`dso_pki_*`). Those are now read once, by the
+ * MigrateDsoStamConnection repair step.
  *
  * @category Controller
  * @package  OCA\Integriq\Controller
@@ -18,6 +23,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+ * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -25,104 +31,120 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
+use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
- * Admin-only controller exposing the DSO STAM PKIoverheid signing
- * configuration used by {@see DSOSignatureVerifierService}.
+ * Admin-only controller for the DSO connection (`dso-stam` consumer).
  *
- * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+ * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
  */
 class DsoPkiSettingsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The request.
-	 * @param IAppConfig $appConfig App config storage.
+	 * @param IRequest                    $request           The request.
+	 * @param DsoConnection               $connection        Finds the consumer and checks the account.
+	 * @param ORObjectService             $objectService     Saves the consumer as the administrator.
 	 * @param DSOSignatureVerifierService $signatureVerifier Chain-validation helper.
+	 * @param IGroupManager               $groupManager      Tells an administrator account apart.
+	 * @param IL10N                       $l                 Field errors and warnings.
+	 * @param LoggerInterface             $logger            Diagnostics.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly IAppConfig $appConfig,
+		private readonly DsoConnection $connection,
+		private readonly ORObjectService $objectService,
 		private readonly DSOSignatureVerifierService $signatureVerifier,
+		private readonly IGroupManager $groupManager,
+		private readonly IL10N $l,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 
 	/**
-	 * Get the current DSO PKI signing configuration.
+	 * Read the DSO connection. Never returns the HMAC secret.
 	 *
-	 * The HMAC secret is never returned in full — only whether one is set —
-	 * so the admin form cannot leak the shared secret back over the wire.
+	 * @return JSONResponse The mode, which trust is set, the PEM chain, and the account.
 	 *
-	 * @return JSONResponse
-	 *
-	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getConfig(): JSONResponse {
-		$hmacSecret = $this->appConfig->getValueString(
-			Application::APP_ID,
-			DSOSignatureVerifierService::CONFIG_HMAC_SECRET,
-			''
-		);
+		try {
+			$consumer = $this->connection->findConsumer();
+		} catch (DsoConnectionUnavailableException $exception) {
+			return new JSONResponse(
+				['errors' => [$this->l->t('More than one DSO connection exists. Remove all but one on the Consumers page.')]],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		$data = [];
+		if ($consumer !== null) {
+			$data = $consumer->getObject();
+		}
+
+		$trust = $data['authorizationConfiguration'] ?? [];
+		if (is_array($trust) === false) {
+			$trust = [];
+		}
+
+		$userId = (string)($data['userId'] ?? '');
 
 		return new JSONResponse(
 			[
-				'mode' => $this->signatureVerifier->getMode(),
-				'hmacSecretConfigured' => ($hmacSecret !== ''),
-				'signingCertificate' => $this->appConfig->getValueString(
-					Application::APP_ID,
-					DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE,
-					''
-				),
-				'intermediateChain' => $this->appConfig->getValueString(
-					Application::APP_ID,
-					DSOSignatureVerifierService::CONFIG_INTERMEDIATE_CHAIN,
-					''
-				),
-				'rootCa' => $this->appConfig->getValueString(
-					Application::APP_ID,
-					DSOSignatureVerifierService::CONFIG_ROOT_CA,
-					''
-				),
+				'configured' => ($consumer !== null),
+				'mode' => DSOSignatureVerifierService::normalizeMode(mode: ($trust['mode'] ?? null)),
+				'hmacSecretConfigured' => ((string)($trust['hmacSecret'] ?? '') !== ''),
+				'signingCertificate' => (string)($trust['signingCertificate'] ?? ''),
+				'intermediateChain' => (string)($trust['intermediateChain'] ?? ''),
+				'rootCa' => (string)($trust['rootCa'] ?? ''),
+				'userId' => $userId,
+				'account' => $this->describeAccount(userId: $userId),
 			]
 		);
 
 	}//end getConfig()
 
 	/**
-	 * Persist the DSO PKI signing configuration.
+	 * Write the DSO connection, creating the `dso-stam` consumer when there is none.
 	 *
-	 * Validates the certificate chain (parseable X.509, not expired, chains
-	 * to the configured root) before saving in `rsa` mode, surfacing a
-	 * clear admin-facing error and refusing to save otherwise.
+	 * Refuses an account that does not exist, is disabled, or lacks `create`
+	 * or `update` on `dso_verzoek`, with a field error. Warns, without
+	 * refusing, for an administrator account or when the rights cannot be checked.
 	 *
-	 * @return JSONResponse
+	 * @return JSONResponse The saved mode and account, with warnings; 400 with errors.
 	 *
-	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {
-		$mode = (string)$this->request->getParam('mode', DSOSignatureVerifierService::MODE_HMAC);
-		if ($mode !== DSOSignatureVerifierService::MODE_RSA) {
-			$mode = DSOSignatureVerifierService::MODE_HMAC;
-		}
-
+		$mode = DSOSignatureVerifierService::normalizeMode(mode: $this->request->getParam('mode', DSOSignatureVerifierService::MODE_HMAC));
 		$hmacSecret = (string)$this->request->getParam('hmacSecret', '');
 		$signingCertificate = (string)$this->request->getParam('signingCertificate', '');
 		$intermediateChain = (string)$this->request->getParam('intermediateChain', '');
 		$rootCa = (string)$this->request->getParam('rootCa', '');
+		$userId = trim((string)$this->request->getParam('userId', ''));
 
-		if ($mode === DSOSignatureVerifierService::MODE_RSA) {
+		if ($mode === DSOSignatureVerifierService::MODE_PKIOVERHEID) {
 			$errors = $this->signatureVerifier->validateChainConfig(
 				certPem: $signingCertificate,
 				rootPem: $rootCa,
@@ -130,38 +152,162 @@ class DsoPkiSettingsController extends Controller {
 			);
 
 			if (empty($errors) === false) {
+				return new JSONResponse(['errors' => $errors], Http::STATUS_BAD_REQUEST);
+			}
+		}
+
+		$warnings = [];
+		if ($userId !== '') {
+			$fieldError = $this->accountError(userId: $userId, warnings: $warnings);
+			if ($fieldError !== null) {
 				return new JSONResponse(
-					['errors' => $errors],
+					['errors' => [$fieldError], 'fieldErrors' => ['userId' => $fieldError]],
 					Http::STATUS_BAD_REQUEST
 				);
 			}
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, DSOSignatureVerifierService::CONFIG_MODE, $mode);
-		$this->appConfig->setValueString(
-			Application::APP_ID,
-			DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE,
-			$signingCertificate
-		);
-		$this->appConfig->setValueString(
-			Application::APP_ID,
-			DSOSignatureVerifierService::CONFIG_INTERMEDIATE_CHAIN,
-			$intermediateChain
-		);
-		$this->appConfig->setValueString(Application::APP_ID, DSOSignatureVerifierService::CONFIG_ROOT_CA, $rootCa);
+		try {
+			$consumer = $this->connection->findConsumer();
+		} catch (DsoConnectionUnavailableException $exception) {
+			return new JSONResponse(
+				['errors' => [$this->l->t('More than one DSO connection exists. Remove all but one on the Consumers page.')]],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		$data = [
+			'name' => 'DSO-LV (STAM)',
+			'description' => 'The STAM koppelvlak of the Omgevingsloket (DSO-LV). Every push is stored as the account in userId.',
+			'authorizationType' => DsoConnection::AUTHORIZATION_TYPE,
+		];
+		$previousTrust = [];
+		if ($consumer !== null) {
+			$data = array_merge($consumer->getObject(), ['authorizationType' => DsoConnection::AUTHORIZATION_TYPE]);
+			$previousTrust = $data['authorizationConfiguration'] ?? [];
+			if (is_array($previousTrust) === false) {
+				$previousTrust = [];
+			}
+		}
 
 		// Only overwrite the HMAC secret when a non-empty value was submitted,
 		// so the admin form can save other fields without re-typing (and
 		// re-exposing) the secret every time.
-		if ($hmacSecret !== '') {
-			$this->appConfig->setValueString(
-				Application::APP_ID,
-				DSOSignatureVerifierService::CONFIG_HMAC_SECRET,
-				$hmacSecret,
-				sensitive: true
+		if ($hmacSecret === '') {
+			$hmacSecret = (string)($previousTrust['hmacSecret'] ?? '');
+		}
+
+		$data['authorizationConfiguration'] = [
+			'mode' => $mode,
+			'hmacSecret' => $hmacSecret,
+			'signingCertificate' => $signingCertificate,
+			'intermediateChain' => $intermediateChain,
+			'rootCa' => $rootCa,
+		];
+		$data['userId'] = $userId;
+
+		try {
+			$this->objectService->saveObject(
+				object: $data,
+				register: DsoConnection::REGISTER,
+				schema: DsoConnection::SCHEMA_CONSUMER,
+				uuid: $this->uuidOf(consumer: $consumer)
+			);
+		} catch (Throwable $exception) {
+			$this->logger->error('[DsoPkiSettingsController] the DSO connection was not saved', ['exception' => $exception->getMessage()]);
+			return new JSONResponse(
+				['errors' => [$this->l->t('The DSO connection was not saved: %s', [$exception->getMessage()])]],
+				Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		return new JSONResponse(['mode' => $mode]);
+		return new JSONResponse(
+			[
+				'mode' => $mode,
+				'userId' => $userId,
+				'account' => $this->describeAccount(userId: $userId),
+				'warnings' => $warnings,
+			]
+		);
+
 	}//end setConfig()
+
+	/**
+	 * The field error for an account, or null when it may be saved.
+	 *
+	 * @param string       $userId   The chosen uid.
+	 * @param list<string> $warnings Warnings to add to; passed by reference.
+	 *
+	 * @return string|null The field error.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-is-refused
+	 */
+	private function accountError(string $userId, array &$warnings): ?string {
+		try {
+			$this->connection->resolveAccount(userId: $userId);
+		} catch (DsoConnectionUnavailableException $exception) {
+			if ($exception->getReason() === DsoConnectionUnavailableException::ACCOUNT_DISABLED) {
+				return $this->l->t('Account %s is disabled.', [$userId]);
+			}
+
+			return $this->l->t('Account %s does not exist.', [$userId]);
+		}
+
+		$missing = $this->connection->missingRights(userId: $userId);
+		if ($missing === null) {
+			$warnings[] = $this->l->t('The rights of account %s could not be checked. Pushes are refused until they can be.', [$userId]);
+		} elseif ($missing !== []) {
+			return $this->l->t('Account %1$s lacks the %2$s right on DSO verzoeken.', [$userId, implode(', ', $missing)]);
+		}
+
+		if ($this->groupManager->isAdmin($userId) === true) {
+			$warnings[] = $this->l->t('Account %s is an administrator. A dedicated account keeps the audit trail readable.', [$userId]);
+		}
+
+		return null;
+
+	}//end accountError()
+
+	/**
+	 * Describe the account for the admin section's one-line state.
+	 *
+	 * @param string $userId The uid on the consumer.
+	 *
+	 * @return array{state: string, displayName: string} `ok`, `none`, `unknown` or `disabled`.
+	 */
+	private function describeAccount(string $userId): array {
+		if ($userId === '') {
+			return ['state' => 'none', 'displayName' => ''];
+		}
+
+		try {
+			$account = $this->connection->resolveAccount(userId: $userId);
+		} catch (DsoConnectionUnavailableException $exception) {
+			$state = 'unknown';
+			if ($exception->getReason() === DsoConnectionUnavailableException::ACCOUNT_DISABLED) {
+				$state = 'disabled';
+			}
+
+			return ['state' => $state, 'displayName' => $userId];
+		}
+
+		return ['state' => 'ok', 'displayName' => $account->getDisplayName()];
+
+	}//end describeAccount()
+
+	/**
+	 * The consumer's uuid, or null for a new one.
+	 *
+	 * @param ObjectEntity|null $consumer The consumer.
+	 *
+	 * @return string|null The uuid.
+	 */
+	private function uuidOf(?ObjectEntity $consumer): ?string {
+		if ($consumer === null || $consumer->getUuid() === null || $consumer->getUuid() === '') {
+			return null;
+		}
+
+		return $consumer->getUuid();
+
+	}//end uuidOf()
 }//end class

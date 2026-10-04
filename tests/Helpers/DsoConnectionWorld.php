@@ -449,7 +449,7 @@ trait DsoConnectionWorld {
 	private function worldSave(array $object, string $schema, ?string $uuid, bool $rbac): ObjectEntity {
 		$uid = $this->worldSession->getUser()?->getUID();
 		$action = 'create';
-		if ($uuid !== null && isset($this->worldVerzoeken[$uuid]) === true) {
+		if ($uuid !== null && (isset($this->worldVerzoeken[$uuid]) === true || isset($this->worldConsumers[$uuid]) === true)) {
 			$action = 'update';
 		}
 
@@ -459,13 +459,17 @@ trait DsoConnectionWorld {
 			);
 		}
 
-		$resolved = ($uuid ?? 'verzoek-' . (++$this->worldUuidCounter));
+		$resolved = ($uuid ?? $schema . '-' . (++$this->worldUuidCounter));
 		$entity = new ObjectEntity();
 		$entity->setUuid($resolved);
 		$entity->setObject($object);
 
 		if ($schema === 'dso_verzoek') {
 			$this->worldVerzoeken[$resolved] = $entity;
+		}
+
+		if ($schema === 'consumer') {
+			$this->worldConsumers[$resolved] = $object;
 		}
 
 		$this->worldWrites[] = ['schema' => $schema, 'action' => $action, 'uid' => $uid, 'object' => $object, 'rbac' => $rbac];
