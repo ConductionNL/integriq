@@ -23,9 +23,9 @@ The adapter MUST map DSO activiteiten to zaaktypen through a mapping table store
 - **THEN** the row of the onderliggende activiteit decides the zaaktypen
 
 #### Scenario: Empty mapping table seeds defaults
-- **WHEN** the mapping table is empty (fresh install) and an administrator opens "DSO activities"
+- **WHEN** the mapping table is empty (fresh install) and an administrator opens the "DSO activities" section
 - **THEN** no default rows are loaded, because no public list of DSO activity codes exists to load them from
-- **AND** the page points to "Unmapped DSO activities", where the activities of real verzoeken appear
+- **AND** the section points to "Unmapped DSO activities", where the activities of real verzoeken appear
 
 #### Scenario: A fresh install ships no activity codes
 - **WHEN** Integriq is installed on a new instance
@@ -93,19 +93,19 @@ The adapter MUST parse the DSO-verzoek XML/JSON payload into structured data inc
 
 ## ADDED Requirements
 
-### Requirement: Administrators maintain the activity table in the app (REQ-DSO-012)
+### Requirement: Administrators maintain the activity table on the admin settings page (REQ-DSO-012)
 
-Integriq MUST offer a "DSO activities" page where an administrator lists, adds, edits and deactivates `dso_activity_mapping` rows, including several zaaktypen per row and samenloop rules. It MUST offer an "Unmapped DSO activities" view listing the activities seen on verzoeken that no active row maps, with how often and when each was last seen, and a row action that opens the add form prefilled with the activity's identifiers and name. Only administrators MAY create, change or delete rows.
+Integriq MUST offer a "DSO activities" section on its admin settings page (`/settings/admin/integriq`, ADR-079: the table is instance configuration) where an administrator lists, adds, edits and deactivates `dso_activity_mapping` rows, including several zaaktypen per row and samenloop rules. The same section MUST list "Unmapped DSO activities": the activities seen on recent verzoeken that no active row maps, with how often and when each was last seen, and a row action that opens the add form prefilled with the activity's identifiers and name. Only administrators MAY create, change or delete rows.
 
 #### Scenario: Add a row with two zaaktypen
-- **GIVEN** an administrator opens "DSO activities"
+- **GIVEN** an administrator opens the "DSO activities" section
 - **WHEN** they add a row with an imowId, an activity name and two zaaktypen, and save
 - **THEN** the row appears in the list with both zaaktypen
 - @e2e tests/e2e/dso-activity-mapping.spec.ts
 
 #### Scenario: An unmapped activity can be mapped from the list
 - **GIVEN** a verzoek arrived with an activity that no row maps
-- **WHEN** an administrator opens "Unmapped DSO activities" and chooses that activity's action
+- **WHEN** an administrator opens the "Unmapped DSO activities" list and chooses that activity's action
 - **THEN** the add form opens with its imowId, activityId and name filled in
 - @e2e tests/e2e/dso-activity-mapping.spec.ts
 

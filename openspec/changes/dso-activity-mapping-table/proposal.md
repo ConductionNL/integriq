@@ -20,7 +20,7 @@ So the table must be data an administrator fills, keyed on the identifiers STAM 
 - **One activity can map to several case types.** Each case type entry has a reference, a title and the afdeling that handles it. That covers the one-to-many case of REQ-DSO-010 and the routing of REQ-DSO-011.
 - **The mapper reads the table.** `DsoActivityMapper` loads the active rows once per verzoek and matches each activiteit on `imowId`, then on `activityId`. `getDefaultMappings()` and its placeholder codes are deleted.
 - **The parser keeps the STAM identifiers.** `DSOParserService` returns `imowId`, `activityId`, `activityName` and `volgnr` per activiteit, plus the onderliggende activiteit when present. `dso_verzoek.mappedActivities` records them.
-- **An admin screen in the app.** A manifest index page "DSO activities" lists, adds and edits rows. A second view lists the activities seen on verzoeken that no row maps, with how often each was seen, and opens the add form prefilled.
+- **A section on the admin settings page** (Ruben, 2026-10-04, ADR-079). "DSO activities" lists, adds, edits and deactivates rows. "Unmapped DSO activities" lists the activities seen on verzoeken that no row maps, with how often each was seen, and opens the add form prefilled.
 - **No real codes are seeded.** Demo data in the mock register shows the shape with identifiers that are visibly not real.
 
 ## Capabilities
@@ -31,7 +31,7 @@ So the table must be data an administrator fills, keyed on the identifiers STAM 
 
 ## Impact
 
-- New: `lib/Settings/register.d/dso-activity-mapping.json` (schema, authorization), `src/manifest.d/dso-activity-mapping-table.json` (pages, menu), `src/modals/DsoActivityMappingModal.vue`, demo rows in `lib/Settings/integriq_mock_register.json`.
-- Changed: `DsoActivityMapper` (reads OpenRegister, no built-in table), `DSOParserService::parseActiviteiten()`, `dso_verzoek.mappedActivities` item shape (both registers), `l10n/*.json`.
+- New: `lib/Settings/register.d/dso-activity-mapping.json` (schema, authorization), `DsoActivityTable`, `DsoActivityMappingGuardListener`, `DsoUnmappedActivities` and `DsoActivityMappingController` (`GET /api/admin/dso-activities/unmapped`), `src/views/admin/DsoActivityMappingSettings.vue`, `src/dialogs/DsoActivityMappingDialog.vue`, demo rows in `lib/Settings/integriq_mock_register.json`.
+- Changed: `DsoActivityMapper` (reads OpenRegister, no built-in table), `DSOParserService::parseActiviteiten()`, `DsoRequestTranslator` (reads the new activity names), `dso_verzoek.mappedActivities` item shape (both registers), `AdminSettings.vue`, `l10n/*.json`.
 - Removed: `DsoActivityMapper::getDefaultMappings()` and `defaultMappingTable()`, and the tests that pin the placeholder codes.
 - Works with or without `dso-intake-through-an-integriq-connection`. With it, the table is read while the intake acts as the connection's account.

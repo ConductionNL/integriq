@@ -27,6 +27,7 @@ use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
+use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoClient;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
@@ -222,7 +223,7 @@ class DSOControllerTest extends TestCase {
 			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653'],
 			'locatie' => ['bagAdres' => []],
-			'activiteiten' => [['code' => 'bouwen-01']],
+			'activiteiten' => [['code' => 'Demo-0000-Bouwen']],
 		];
 
 		$this->request->method('getParams')->willReturn($body);
@@ -267,7 +268,7 @@ class DSOControllerTest extends TestCase {
 			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653'],
 			'locatie' => ['bagAdres' => []],
-			'activiteiten' => [['code' => 'bouwen-01']],
+			'activiteiten' => [['code' => 'Demo-0000-Bouwen']],
 		];
 
 		$this->request->method('getParams')->willReturn($body);
@@ -416,7 +417,7 @@ class DSOControllerTest extends TestCase {
 			'submissionDate' => '2024-06-15',
 			'aanvrager' => ['bsn' => '999993653'],
 			'locatie' => ['bagAdres' => []],
-			'activiteiten' => [['code' => 'bouwen-01']],
+			'activiteiten' => [['code' => 'Demo-0000-Bouwen']],
 		];
 
 		$this->request->method('getParams')->willReturn($body);
@@ -513,7 +514,7 @@ class DSOControllerTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
 			jobList: $jobList,
-			activityMapper: new DsoActivityMapper()
+			activityMapper: new DsoActivityMapper(new DsoActivityTable($objectService))
 		);
 
 		$errors = [];
@@ -724,7 +725,7 @@ class DSOControllerTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($this->worldObjectService, $this->createMock(LoggerInterface::class)),
 			jobList: $jobList,
-			activityMapper: new DsoActivityMapper()
+			activityMapper: new DsoActivityMapper(new DsoActivityTable($this->worldObjectService))
 		);
 
 		return $this->buildController();

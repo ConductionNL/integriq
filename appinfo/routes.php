@@ -694,6 +694,8 @@ return [
 		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
+		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
+		['name' => 'dsoActivityMapping#unmapped', 'url' => '/api/admin/dso-activities/unmapped', 'verb' => 'GET'],
 		// Packaged ZGW consumer sets (zgw-connectors-for-dossiq): list, and install against a register/schema.
 		['name' => 'zgwSets#index',   'url' => '/api/zgw-sets', 'verb' => 'GET'],
 		['name' => 'zgwSets#install', 'url' => '/api/zgw-sets/{slug}/install', 'verb' => 'POST', 'requirements' => ['slug' => 'zgw-[a-z]+']],
