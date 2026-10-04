@@ -31,6 +31,19 @@
 				{{ accountState.text }}
 			</p>
 
+			<NcNoteCard
+				v-if="handlerGroup.empty"
+				type="warning"
+				data-testid="admin-openformulieren-handlers-empty">
+				{{
+					t(
+						'integriq',
+						'Nobody can read the submissions yet. Add handlers to the group {group} under Accounts.',
+						{ group: handlerGroup.id },
+					)
+				}}
+			</NcNoteCard>
+
 			<NcSelectUsers
 				v-model="account"
 				:inputLabel="t('integriq', 'Account the intake acts as')"
@@ -101,6 +114,7 @@ import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
 import { generateOcsUrl, generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
+	NcNoteCard,
 	NcPasswordField,
 	NcSelect,
 	NcSelectUsers,
@@ -119,6 +133,7 @@ export default {
 
 	components: {
 		NcButton,
+		NcNoteCard,
 		NcPasswordField,
 		NcSelect,
 		NcSelectUsers,
@@ -137,6 +152,7 @@ export default {
 			toleranceSeconds: '300',
 			account: null,
 			accountInfo: { state: 'none', displayName: '' },
+			handlerGroup: { id: '', empty: false },
 			accountOptions: [],
 			searchingAccounts: false,
 			accountError: '',
@@ -214,6 +230,7 @@ export default {
 				this.secretConfigured = data.secretConfigured === true
 				this.header = data.header || 'X-OpenFormulieren-Signature'
 				this.toleranceSeconds = String(data.toleranceSeconds || 300)
+				this.handlerGroup = data.handlerGroup || { id: '', empty: false }
 				this.accountInfo = data.account || { state: 'none', displayName: '' }
 				this.account = data.userId
 					? {

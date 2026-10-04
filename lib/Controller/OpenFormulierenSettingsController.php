@@ -124,6 +124,7 @@ class OpenFormulierenSettingsController extends Controller {
 				'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
 				'userId' => $userId,
 				'account' => $this->describeAccount(userId: $userId),
+				'handlerGroup' => $this->groups->describe(groupId: IntakeGroups::OPEN_FORMULIEREN_HANDLERS),
 			]
 		);
 

@@ -3185,7 +3185,9 @@ OC.L10N.register(
         "Account {name} is not usable: Open Formulieren submissions are refused with 503": "Account {name} is not usable: Open Formulieren submissions are refused with 503",
         "Failed to load the Open Formulieren connection.": "Failed to load the Open Formulieren connection.",
         "Open Formulieren connection saved.": "Open Formulieren connection saved.",
-        "Failed to save the Open Formulieren connection.": "Failed to save the Open Formulieren connection."
+        "Failed to save the Open Formulieren connection.": "Failed to save the Open Formulieren connection.",
+        "Nobody can read the DSO requests yet. Add handlers to the group {group} under Accounts.": "Nobody can read the DSO requests yet. Add handlers to the group {group} under Accounts.",
+        "Nobody can read the submissions yet. Add handlers to the group {group} under Accounts.": "Nobody can read the submissions yet. Add handlers to the group {group} under Accounts."
     },
     "nplurals=2; plural=(n != 1);"
 )

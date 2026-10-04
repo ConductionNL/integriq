@@ -417,6 +417,9 @@ trait DsoConnectionWorld {
 		$groupOf = function (string $groupId): IGroup {
 			$group = $this->createMock(IGroup::class);
 			$group->method('getGID')->willReturn($groupId);
+			$group->method('count')->willReturnCallback(
+				fn (): int => count($this->worldGroupMembers[$groupId] ?? [])
+			);
 			$group->method('inGroup')->willReturnCallback(
 				fn (IUser $user): bool => in_array($user->getUID(), ($this->worldGroupMembers[$groupId] ?? []), true)
 			);

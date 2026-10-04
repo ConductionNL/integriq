@@ -1846,7 +1846,9 @@ OC.L10N.register(
         "Account {name} is not usable: Open Formulieren submissions are refused with 503": "Account {name} is niet bruikbaar: inzendingen van Open Formulieren worden geweigerd met 503",
         "Failed to load the Open Formulieren connection.": "De Open Formulieren-koppeling kon niet worden geladen.",
         "Open Formulieren connection saved.": "Open Formulieren-koppeling opgeslagen.",
-        "Failed to save the Open Formulieren connection.": "De Open Formulieren-koppeling kon niet worden opgeslagen."
+        "Failed to save the Open Formulieren connection.": "De Open Formulieren-koppeling kon niet worden opgeslagen.",
+        "Nobody can read the DSO requests yet. Add handlers to the group {group} under Accounts.": "Nog niemand kan de DSO-verzoeken lezen. Voeg behandelaars toe aan de groep {group} onder Accounts.",
+        "Nobody can read the submissions yet. Add handlers to the group {group} under Accounts.": "Nog niemand kan de inzendingen lezen. Voeg behandelaars toe aan de groep {group} onder Accounts."
     },
     "nplurals=2; plural=(n != 1);"
 )

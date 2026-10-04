@@ -293,4 +293,28 @@ class OpenFormulierenSettingsControllerTest extends TestCase {
 		$this->assertSame(['new'], $this->worldGroupMembers['openformulieren-intake']);
 
 	}//end testThePreviousAccountLeavesTheIntakeGroup()
+
+	/**
+	 * While the handler group has no members, GET says so, and once it has one it does not.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/intake-handler-group-notice/specs/intake-access/spec.md#scenario-an-empty-handler-group-is-announced
+	 */
+	public function testGetReportsWhetherTheHandlerGroupIsEmpty(): void {
+		$this->addOpenFormulierenConsumer(userId: 'of-intake');
+
+		$this->worldGroupMembers = [];
+		$data = $this->controller()->getConfig()->getData();
+		$this->assertSame(['id' => 'openformulieren-behandelaars', 'empty' => true], $data['handlerGroup'], 'a group that does not exist yet is empty');
+
+		$this->worldGroupMembers = ['openformulieren-behandelaars' => []];
+		$data = $this->controller()->getConfig()->getData();
+		$this->assertTrue($data['handlerGroup']['empty'], 'an existing group without members is empty');
+
+		$this->worldGroupMembers = ['openformulieren-behandelaars' => ['behandelaar']];
+		$data = $this->controller()->getConfig()->getData();
+		$this->assertSame(['id' => 'openformulieren-behandelaars', 'empty' => false], $data['handlerGroup']);
+
+	}//end testGetReportsWhetherTheHandlerGroupIsEmpty()
 }//end class
