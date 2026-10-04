@@ -95,6 +95,25 @@ class EndpointMessageGate {
 			return null;
 		}
 
+		return $this->checkDeclared(declared: $declared, direction: $direction, body: $body, context: $context);
+	}//end check()
+
+	/**
+	 * Check one message against a declared `messageSchema` (+ optional `operationId`).
+	 *
+	 * The endpoint and the synchronization share this: both declare the same
+	 * pair, only where it lives differs.
+	 *
+	 * @param array  $declared  The declaration: `messageSchema` uuid, optional `operationId`.
+	 * @param string $direction self::REQUEST or self::RESPONSE, for an OpenAPI operation.
+	 * @param mixed  $body      The message: raw text, or an already decoded value.
+	 * @param array  $context   For OpenAPI: `method`, `path`, `status`.
+	 *
+	 * @return ValidationOutcome
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 */
+	public function checkDeclared(array $declared, string $direction, mixed $body, array $context = []): ValidationOutcome {
 		$messageSchema = $this->messageSchema(uuid: (string)$declared['messageSchema']);
 		if ($messageSchema === null) {
 			return ValidationOutcome::failure(
@@ -116,7 +135,7 @@ class EndpointMessageGate {
 		}
 
 		return $this->validator->validate(messageSchema: $messageSchema, payload: $payload, context: $context);
-	}//end check()
+	}//end checkDeclared()
 
 	/**
 	 * Whether a failing message is refused rather than recorded.

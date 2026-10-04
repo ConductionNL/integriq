@@ -3057,6 +3057,7 @@ OC.L10N.register(
         "Message validation": "Message validation",
         "Operation": "Operation",
         "Record lets the message through and logs the errors. Refuse stops it": "Record lets the message through and logs the errors. Refuse stops it",
+        "Record lets the message through and logs the errors. Refuse puts it on the dead-letter list": "Record lets the message through and logs the errors. Refuse puts it on the dead-letter list",
         "Request schema": "Request schema",
         "The schema the request body must match": "The schema the request body must match",
         "The schema the source's answer must match": "The schema the source's answer must match",

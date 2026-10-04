@@ -122,7 +122,8 @@ class DSOController extends Controller {
 	 * Generous ceiling: a tight one drops statutory submissions on the sender's
 	 * side.
 	 *
-	 * @return JSONResponse HTTP 202 on success, 400 on validation error, 401 on signature error.
+	 * @return JSONResponse HTTP 202 once stored, 400 on validation error, 401 on signature error,
+	 *                      503 when the verzoek could not be stored.
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-4
 	 */
@@ -182,20 +183,21 @@ class DSOController extends Controller {
 		);
 
 		// Persist as a dso_verzoek OR record (received -> mapped|failed) and
-		// run the normalising translator — see dso-connector-adapter. This
-		// is a fire-and-forget side effect from the webhook's point of view:
-		// a persistence/translation failure is logged, never surfaced as a
-		// non-202 response, matching the STAM koppelvlak's documented
-		// asynchronous-processing contract (mirrors
-		// IwmoIjwSyncService::receiveReturn()'s "never throws out to the
-		// controller" isolation).
+		// run the normalising translator, see dso-connector-adapter. A 202 is
+		// only true once the verzoek is stored. When nothing was stored (an
+		// OpenRegister refusal, any other failure, or an object without a
+		// uuid) the endpoint answers 503 instead, so the sender delivers again:
+		// the Digikoppeling Koppelvlakstandaard ebMS2 (5.11.2, HTTP response
+		// codes) treats a 503 as recoverable and keeps its reliable-messaging
+		// retries going, while a 4xx counts as a final error.
 		try {
-			$this->ingestService->ingest(parsedRequest: $request);
+			$stored = $this->ingestService->ingest(parsedRequest: $request);
 		} catch (Throwable $exception) {
-			$this->logger->error(
-				'DSO STAM: verzoek persistence/mapping failed',
-				['verzoekId' => $requestId, 'exception' => $exception->getMessage()]
-			);
+			return $this->notStored(requestId: $requestId, reason: $exception->getMessage());
+		}
+
+		if ($stored->getUuid() === null || $stored->getUuid() === '') {
+			return $this->notStored(requestId: $requestId, reason: 'ingest returned an object without a uuid');
 		}
 
 		return new JSONResponse(
@@ -208,6 +210,36 @@ class DSOController extends Controller {
 		);
 
 	}//end receiveRequest()
+
+	/**
+	 * Log a verzoek that was not stored and answer 503, so the sender retries.
+	 *
+	 * The body carries no `status: ontvangen`: nothing was received into the
+	 * register, and the caller must not read this answer as an acknowledgement.
+	 *
+	 * @param string $requestId The verzoekId from the payload.
+	 * @param string $reason Why nothing was stored.
+	 *
+	 * @return JSONResponse HTTP 503 with a `verzoek_not_stored` envelope.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-stam-koppelvlak-endpoint-registration-req-dso-001
+	 */
+	private function notStored(string $requestId, string $reason): JSONResponse {
+		$this->logger->error(
+			'DSO STAM: verzoek not stored, answering 503 so the sender retries',
+			['verzoekId' => $requestId, 'exception' => $reason]
+		);
+
+		return new JSONResponse(
+			data: [
+				'verzoekId' => $requestId,
+				'error' => 'verzoek_not_stored',
+				'message' => 'Verzoek kon niet worden opgeslagen, probeer het later opnieuw',
+			],
+			statusCode: Http::STATUS_SERVICE_UNAVAILABLE
+		);
+
+	}//end notStored()
 
 	/**
 	 * List `dso_verzoek` records, optionally filtered by `?status=`.

@@ -90,6 +90,35 @@
 						(value) => onConfigUpdate('resultsPosition', value)
 					" />
 			</div>
+
+			<!-- REQ-MSV-003: the message schema each source object or target
+			     body must match, and whether a mismatch is refused or recorded. -->
+			<fieldset class="sync-config__validation">
+				<legend class="sync-config__label">
+					{{ t('integriq', 'Message validation') }}
+				</legend>
+				<NcSelect
+					:inputLabel="t('integriq', 'Message schema')"
+					:modelValue="validationSchemaOption"
+					:options="messageSchemaOptions"
+					:loading="messageSchemasLoading"
+					@update:modelValue="onValidationSchemaPick" />
+				<NcSelect
+					:inputLabel="t('integriq', 'Mode')"
+					:modelValue="validationModeOption"
+					:options="validationModeOptions"
+					:clearable="false"
+					:disabled="!validationSchemaOption"
+					@update:modelValue="onValidationModePick" />
+				<span class="sync-config__helper">
+					{{
+						t(
+							'integriq',
+							'Record lets the message through and logs the errors. Refuse puts it on the dead-letter list',
+						)
+					}}
+				</span>
+			</fieldset>
 		</template>
 
 		<!-- Register/Schema mode -->
@@ -453,6 +482,9 @@ export default {
 			formOptions: [],
 			formsLoading: false,
 			formsError: '',
+			/** Message schemas a source object or target body can be checked against. */
+			messageSchemaOptions: [],
+			messageSchemasLoading: false,
 		}
 	},
 
@@ -462,6 +494,41 @@ export default {
 			return this.kind === 'source'
 				? t('integriq', 'Source')
 				: t('integriq', 'Target')
+		},
+
+		/**
+		 * @return {object[]} The two validation modes.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 */
+		validationModeOptions() {
+			return [
+				{ id: 'record', label: t('integriq', 'Record') },
+				{ id: 'refuse', label: t('integriq', 'Refuse') },
+			]
+		},
+
+		/**
+		 * @return {object} The selected mode; record when none is set, as the engine reads it.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 */
+		validationModeOption() {
+			const mode = this.config?.validation?.mode || 'record'
+			return this.validationModeOptions.find((option) => option.id === mode)
+		},
+
+		/**
+		 * @return {object|null} The picked message schema, or null when none is picked.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 */
+		validationSchemaOption() {
+			const uuid = this.config?.validation?.messageSchema
+			if (!uuid) return null
+			return (
+				this.messageSchemaOptions.find((option) => option.id === uuid) || {
+					id: uuid,
+					label: uuid,
+				}
+			)
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
@@ -624,6 +691,9 @@ export default {
 				if (value === 'api' && this.sourceOptions.length === 0) {
 					this.fetchSources()
 				}
+				if (value === 'api' && this.messageSchemaOptions.length === 0) {
+					this.fetchMessageSchemas()
+				}
 				if (value === 'register/schema') {
 					if (this.registerOptions.length === 0) {
 						this.fetchRegisters()
@@ -711,6 +781,94 @@ export default {
 				next[key] = value
 			}
 			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Write one key of the `validation` block and emit the whole config.
+		 * An emptied block drops the `validation` key, so a cleared picker
+		 * leaves no declaration the engine would try to honour.
+		 *
+		 * @param {object|null} validation The new block; null removes it.
+		 * @return {void}
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 */
+		writeValidation(validation) {
+			const next =
+				this.config
+				&& typeof this.config === 'object'
+				&& !Array.isArray(this.config)
+					? { ...this.config }
+					: {}
+			if (validation === null) {
+				delete next.validation
+			} else {
+				next.validation = validation
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Pick the message schema, keeping the mode and operation already set.
+		 * Clearing it removes the whole validation block.
+		 *
+		 * @param {{ id: string, label: string }|null} option The picked option.
+		 * @return {void}
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 */
+		onValidationSchemaPick(option) {
+			if (!option?.id) {
+				this.writeValidation(null)
+				return
+			}
+			this.writeValidation({
+				...(this.config?.validation || {}),
+				messageSchema: String(option.id),
+			})
+		},
+
+		/**
+		 * Pick the mode: record or refuse.
+		 *
+		 * @param {{ id: string, label: string }|null} option The picked option.
+		 * @return {void}
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 */
+		onValidationModePick(option) {
+			this.writeValidation({
+				...(this.config?.validation || {}),
+				mode: option?.id || 'record',
+			})
+		},
+
+		/**
+		 * Load the message schemas. Soft-fails to an empty list.
+		 *
+		 * @return {Promise<void>} Resolves once loaded.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 */
+		async fetchMessageSchemas() {
+			this.messageSchemasLoading = true
+			try {
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/objects/integriq/message_schema',
+					),
+				)
+				this.messageSchemaOptions = (response.data?.results || []).map(
+					(schema) => ({
+						id: schema['@self']?.id || schema.id,
+						label:
+							schema.name
+							+ (schema.version ? ' (' + schema.version + ')' : ''),
+					}),
+				)
+			} catch (err) {
+				this.messageSchemaOptions = []
+				// eslint-disable-next-line no-console
+				console.warn('[SyncConfigWidget] message schema fetch failed', err)
+			} finally {
+				this.messageSchemasLoading = false
+			}
 		},
 
 		/**
@@ -1055,6 +1213,15 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+}
+
+.sync-config__validation {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	padding: 8px 12px;
 }
 
 .sync-config__field {
