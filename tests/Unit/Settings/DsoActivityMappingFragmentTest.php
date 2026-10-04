@@ -112,7 +112,7 @@ class DsoActivityMappingFragmentTest extends TestCase {
 		$broken = [
 			'no caseTypes' => $withoutCaseTypes,
 			'empty caseTypes' => (['caseTypes' => [['title' => 'no reference']]] + $this->fullRow()),
-			'imowId off the pattern' => (['imowId' => 'bouwen-01'] + $this->fullRow()),
+			'imowId off the pattern' => (['imowId' => 'Bouwen'] + $this->fullRow()),
 			'unknown bevoegd gezag' => (['imowId' => 'nl.imow-xx0000.activiteit.Demo'] + $this->fullRow()),
 			'unknown strategy' => (['samenloopStrategy' => 'samen'] + $this->fullRow()),
 			'rule off the pattern' => (['samenloopRules' => [['withImowId' => 'kappen', 'strategy' => 'deelzaken']]] + $this->fullRow()),

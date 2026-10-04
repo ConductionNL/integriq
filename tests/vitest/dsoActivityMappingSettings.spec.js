@@ -282,7 +282,7 @@ describe('the draft helpers', () => {
 	it('refuse what the schema and the guard refuse', () => {
 		const draft = draftFromRow({})
 		expect(draftProblems(draft)).toHaveLength(3)
-		draft.imowId = 'bouwen-01'
+		draft.imowId = 'Bouwen'
 		expect(draftProblems(draft).join(' ')).toContain('STAM form')
 	})
 

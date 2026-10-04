@@ -16,7 +16,7 @@
 - [x] 3.1 Load the active `dso_activity_mapping` rows once per `mapRequest()` call (engine read, read only) and match per D2. Verify in `DsoActivityMapperTest`: match on `imowId`; fallback on `activityId`; the onderliggende activiteit wins over its parent; an inactive row is ignored; no row means `mapped: false`. DsoActivityTable reads with _rbac and _multitenancy off; tested through DsoIngestServiceTest
 - [x] 3.2 Map one activity to several case types: `mappedCaseTypes` holds all of them once, and the entry records each with its department. Verify in PHPUnit
 - [x] 3.3 Apply `samenloopRules` per D3, and verify: a `gecombineerd` rule for the pair gives `gecombineerd`; one `deelzaken` rule gives `deelzaken`; no rules falls back to today's rule. Two rules for one pair that disagree give deelzaken
-- [x] 3.4 Delete `getDefaultMappings()` and `defaultMappingTable()` with the tests that pin placeholder codes, and verify `git grep -n "bouwen-01" -- lib tests` returns nothing. `bouwen-01` remains only as a payload value in three lines of tests/Unit/Controller/DSOControllerTest.php, left alone to avoid a conflict with change dso-intake-through-an-integriq-connection, which rewrites that file. No assertion pins it
+- [x] 3.4 Delete `getDefaultMappings()` and `defaultMappingTable()` with the tests that pin placeholder codes, and verify `git grep -n "bouwen-01" -- lib tests` returns nothing. After merging #2499 the grep returns nothing
 - [x] 3.5 Verify through `DsoIngestServiceTest` that ingest writes the table's result onto the `dso_verzoek`, red before 3.1
 
 ## 4. The admin screen

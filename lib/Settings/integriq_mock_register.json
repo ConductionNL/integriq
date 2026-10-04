@@ -485,7 +485,7 @@
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that created the consumer (null for system-created)",
+            "description": "The Nextcloud account this consumer acts as. AuthorizationService::authorizeApiKey() makes it the active user, and the DSO STAM intake writes every verzoek as it (dso-stam consumers). Empty: an apiKey consumer authenticates as itself; a dso-stam consumer refuses pushes with 503.",
             "title": "User ID"
           },
           "rateLimit": {
@@ -4558,6 +4558,24 @@
             "type": "boolean",
             "description": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
             "title": "Attachment missing"
+          },
+          "receivedVia": {
+            "type": "object",
+            "description": "Which DSO connection delivered this verzoek, and the account it was stored as. Set at intake.",
+            "title": "Received via",
+            "additionalProperties": false,
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "description": "The uuid of the dso-stam consumer",
+                "title": "Consumer"
+              },
+              "account": {
+                "type": "string",
+                "description": "The Nextcloud account the intake acted as",
+                "title": "Account"
+              }
+            }
           },
           "mappedActivities": {
             "type": "array",
