@@ -1,33 +1,36 @@
 ## 1. What a verzoek really carries
 
 - [ ] 1.1 Obtain one real STAM verzoekbericht from the DSO pre-production environment (or the STAM verzoekbericht XSD from the developer portal) and record, in this file, the element names that carry `Activiteit-id`, `imow-id`, `Activiteitnaam`, `Volgnr` and the onderliggende activiteit, plus one real `imow-id` value. Blocks 1.2 and the `imowId` pattern. Do not guess the names
+  - Note (2026-10-04): Open. Ruben decided to build without a real STAM sample. There is no public activity code list: activities are identified per bevoegd gezag and only queryable through DSO APIs with an API key. Needs one pre-production verzoekbericht or the verzoekbericht XSD.
 - [ ] 1.2 Make `DSOParserService::parseActiviteiten()` return `imowId`, `activityId`, `activityName`, `volgnr` and `underlying`, keeping `code` as the `activityId` fallback. Verify in `DSOParserServiceTest` with the recorded real shape and with the old `code` shape
+  - Note (2026-10-04): Partly done. The parser returns imowId, activityId, activityName, volgnr and underlying, read from integriq's JSON field names, with code and omschrijving as fallbacks (DSOParserServiceTest). DsoRequestTranslator reads the new names too, or every title would have fallen back. Open until 1.1: which STAM XML elements carry these values, and a test on the real shape.
 
 ## 2. The schema
 
-- [ ] 2.1 Add `dso_activity_mapping` (D1) in `lib/Settings/register.d/dso-activity-mapping.json` with its admin-only authorization, and verify through `RegisterSchemaValidator`: a full row saves; a row without `caseTypes`, or with neither `imowId` nor `activityId`, is refused; an `imowId` off the STAM pattern is refused
-- [ ] 2.2 Refuse a second active row with the same `imowId`, and verify it in PHPUnit
-- [ ] 2.3 Extend the `dso_verzoek.mappedActivities` item with `imowId`, `activityId`, `activityName`, `volgnr`, `caseTypes` in both registers, optional, and verify an old item without them still validates
+- [x] 2.1 Add `dso_activity_mapping` (D1) in `lib/Settings/register.d/dso-activity-mapping.json` with its admin-only authorization, and verify through `RegisterSchemaValidator`: a full row saves; a row without `caseTypes`, or with neither `imowId` nor `activityId`, is refused; an `imowId` off the STAM pattern is refused. The identifier rule lives in DsoActivityMappingGuardListener (see design D1). The imowId pattern reads `Objecttype` as `[A-Za-z]+`, unverified until 1.1. DsoActivityMappingFragmentTest
+- [x] 2.2 Refuse a second active row with the same `imowId`, and verify it in PHPUnit. DsoActivityMappingGuardListener, DsoActivityMappingGuardListenerTest
+- [x] 2.3 Extend the `dso_verzoek.mappedActivities` item with `imowId`, `activityId`, `activityName`, `volgnr`, `caseTypes` in both registers, optional, and verify an old item without them still validates. dso_verzoek 1.4.0 in both registers; `code`, `description`, `caseType` stay as optional legacy fields. DsoActivityMappingFragmentTest
 
 ## 3. The mapper reads the table
 
-- [ ] 3.1 Load the active `dso_activity_mapping` rows once per `mapRequest()` call (engine read, read only) and match per D2. Verify in `DsoActivityMapperTest`: match on `imowId`; fallback on `activityId`; the onderliggende activiteit wins over its parent; an inactive row is ignored; no row means `mapped: false`
-- [ ] 3.2 Map one activity to several case types: `mappedCaseTypes` holds all of them once, and the entry records each with its department. Verify in PHPUnit
-- [ ] 3.3 Apply `samenloopRules` per D3, and verify: a `gecombineerd` rule for the pair gives `gecombineerd`; one `deelzaken` rule gives `deelzaken`; no rules falls back to today's rule
-- [ ] 3.4 Delete `getDefaultMappings()` and `defaultMappingTable()` with the tests that pin placeholder codes, and verify `git grep -n "bouwen-01" -- lib tests` returns nothing
-- [ ] 3.5 Verify through `DsoIngestServiceTest` that ingest writes the table's result onto the `dso_verzoek`, red before 3.1
+- [x] 3.1 Load the active `dso_activity_mapping` rows once per `mapRequest()` call (engine read, read only) and match per D2. Verify in `DsoActivityMapperTest`: match on `imowId`; fallback on `activityId`; the onderliggende activiteit wins over its parent; an inactive row is ignored; no row means `mapped: false`. DsoActivityTable reads with _rbac and _multitenancy off; tested through DsoIngestServiceTest
+- [x] 3.2 Map one activity to several case types: `mappedCaseTypes` holds all of them once, and the entry records each with its department. Verify in PHPUnit
+- [x] 3.3 Apply `samenloopRules` per D3, and verify: a `gecombineerd` rule for the pair gives `gecombineerd`; one `deelzaken` rule gives `deelzaken`; no rules falls back to today's rule. Two rules for one pair that disagree give deelzaken
+- [x] 3.4 Delete `getDefaultMappings()` and `defaultMappingTable()` with the tests that pin placeholder codes, and verify `git grep -n "bouwen-01" -- lib tests` returns nothing. `bouwen-01` remains only as a payload value in three lines of tests/Unit/Controller/DSOControllerTest.php, left alone to avoid a conflict with change dso-intake-through-an-integriq-connection, which rewrites that file. No assertion pins it
+- [x] 3.5 Verify through `DsoIngestServiceTest` that ingest writes the table's result onto the `dso_verzoek`, red before 3.1
 
 ## 4. The admin screen
 
-- [ ] 4.1 Add `src/manifest.d/dso-activity-mapping-table.json` with the "DSO activities" index page and menu entry in the Connections group, and `src/modals/DsoActivityMappingModal.vue` for add and edit, with en and nl strings through `l10n/*.json` and `npm run l10n:build`. Verify with `tests/e2e/dso-activity-mapping.spec.ts`: add a row with two case types, edit it, deactivate it
-- [ ] 4.2 Add the "Unmapped DSO activities" view (D5). Try `x-openregister-aggregations` grouped by `imowId` first; record in this file whether it works or the fallback was used. Verify with the same e2e file: an unmapped activity on a verzoek appears, and its row action opens the modal prefilled
+- [x] 4.1 Add `src/manifest.d/dso-activity-mapping-table.json` with the "DSO activities" index page and menu entry in the Connections group, and `src/modals/DsoActivityMappingModal.vue` for add and edit, with en and nl strings through `l10n/*.json` and `npm run l10n:build`. Verify with `tests/e2e/dso-activity-mapping.spec.ts`: add a row with two case types, edit it, deactivate it. Built as an admin settings section, not a manifest page (Ruben, ADR-079, design D5): src/views/admin/DsoActivityMappingSettings.vue and src/dialogs/DsoActivityMappingDialog.vue. Verified with tests/vitest/dsoActivityMappingSettings.spec.js. tests/e2e/dso-activity-mapping.spec.ts is written, not run: live proof scheduled by the coordinator
+- [x] 4.2 Add the "Unmapped DSO activities" view (D5). Try `x-openregister-aggregations` grouped by `imowId` first; record in this file whether it works or the fallback was used. Verify with the same e2e file: an unmapped activity on a verzoek appears, and its row action opens the modal prefilled. Aggregation not used: groupBy takes top-level properties only (design D5). GET /api/admin/dso-activities/unmapped groups server-side, DsoUnmappedActivitiesTest. The e2e test is written, not run
 - [ ] 4.3 Run the hydra gates `--scope-to-diff` and verify gates 26, 53, 62, 63, 101 and 102 pass for the new page and schema
 
 ## 5. Demo data
 
-- [ ] 5.1 Add three demo rows (D6) to `lib/Settings/integriq_mock_register.json`, with gemeentecode `0000` and names starting with "Demo:", and verify the production register ships no `dso_activity_mapping` rows
+- [x] 5.1 Add three demo rows (D6) to `lib/Settings/integriq_mock_register.json`, with gemeentecode `0000` and names starting with "Demo:", and verify the production register ships no `dso_activity_mapping` rows
 
 ## 6. Proof
 
 - [ ] 6.1 On a throwaway instance with an identity for the intake (change `dso-intake-through-an-integriq-connection`, or an admin session if that has not landed): push a signed verzoek with two activiteiten whose identifiers no row maps. Verify both appear in "Unmapped DSO activities". Map one with two case types in the screen, push again, and verify the new verzoek's `mappedCaseTypes` holds both and `activityUnmapped` is still true for the other
+  - Note (2026-10-04): Live proof scheduled by the coordinator. Run on an instance with this branch: as admin, POST two activiteiten whose imowIds no row maps to the DSO intake (or seed a dso_verzoek through the OR API as in the e2e spec); open /settings/admin/integriq and check both appear under Unmapped DSO activities; map one with two case types through Map; push again and check the new verzoek's mappedCaseTypes holds both references and activityUnmapped is still true. Then run npx playwright test tests/e2e/dso-activity-mapping.spec.ts
 - [ ] 6.2 Run `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint` once before push, and record the exit codes in the PR body

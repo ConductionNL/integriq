@@ -9,7 +9,7 @@
   `error`; this dialog only edits the draft and refuses to emit one the
   schema would refuse.
 
-  @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-in-the-app-req-dso-012
+  @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
 -->
 <template>
 	<NcDialog

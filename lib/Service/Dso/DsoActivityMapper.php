@@ -156,7 +156,7 @@ class DsoActivityMapper {
 	 *
 	 * @return bool True when a row matches.
 	 *
-	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-in-the-app-req-dso-012
+	 * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
 	 */
 	public function isMapped(array $activity, ?array $index = null): bool {
 		if ($index === null) {
