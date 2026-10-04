@@ -144,16 +144,21 @@ class DsoConnection {
 	}//end authenticate()
 
 	/**
-	 * The `dso-stam` consumers on this instance, read raw.
+	 * The consumers of one authorization type on this instance, read raw.
 	 *
 	 * Engine read of admin configuration (`_rbac: false`, `_render: false`), so
-	 * the write-only trust comes back. Never a write.
+	 * the write-only trust comes back. Never a write. `dso-stam` by default;
+	 * the Open Formulieren connection reads its `open-formulieren` consumer the
+	 * same way.
+	 *
+	 * @param string $authorizationType The consumer `authorizationType`, compared lower-cased.
 	 *
 	 * @return list<ObjectEntity> The consumers, normally zero or one.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
-	public function findConsumers(): array {
+	public function findConsumers(string $authorizationType = self::AUTHORIZATION_TYPE): array {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -172,7 +177,7 @@ class DsoConnection {
 				continue;
 			}
 
-			if (strtolower((string)($candidate->getObject()['authorizationType'] ?? '')) !== self::AUTHORIZATION_TYPE) {
+			if (strtolower((string)($candidate->getObject()['authorizationType'] ?? '')) !== strtolower($authorizationType)) {
 				continue;
 			}
 

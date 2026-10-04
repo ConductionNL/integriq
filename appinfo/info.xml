@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.8-unstable.20261004210001</version>
+	<version>0.4.8-unstable.20261004230001</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -354,6 +354,10 @@
 			     becomes the one dso-stam consumer, with an empty account. Runs after
 			     the register import, so the consumer schema exists. Idempotent. -->
 			<step>OCA\Integriq\Repair\MigrateDsoStamConnection</step>
+			<!-- openformulieren-intake-through-an-integriq-connection: the webhook
+			     trust of the open-formulieren source becomes the one
+			     open-formulieren consumer, with an empty account. Idempotent. -->
+			<step>OCA\Integriq\Repair\MigrateOpenFormulierenConnection</step>
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes

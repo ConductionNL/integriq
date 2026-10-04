@@ -5284,7 +5284,7 @@
         "slug": "openformulieren_submission",
         "title": "Open Formulieren Submission",
         "icon": "FileDocumentOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "Lifecycle + audit record for one Open Formulieren submission, from receipt through mapping to a ns#Case handoff",
         "description": "One record per inbound, signature-verified Open Formulieren submission (open-formulieren-intake). Status tracks received -> mapped -> handed_off | failed, isolated per submission. Declares the submission-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/open-formulieren/submissions/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time. See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md.",
         "required": [
@@ -5409,6 +5409,24 @@
             "type": "string",
             "description": "The handoff engine's correlation id, set after a successful handoff",
             "title": "Correlation ID"
+          },
+          "receivedVia": {
+            "type": "object",
+            "description": "Which Open Formulieren connection delivered this submission, and the account it was stored as. Set at intake.",
+            "title": "Received via",
+            "additionalProperties": false,
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "description": "The uuid of the open-formulieren consumer",
+                "title": "Consumer"
+              },
+              "account": {
+                "type": "string",
+                "description": "The Nextcloud account the intake acted as",
+                "title": "Account"
+              }
+            }
           },
           "targetCase": {
             "type": "object",

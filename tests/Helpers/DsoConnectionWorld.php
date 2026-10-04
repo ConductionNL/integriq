@@ -28,6 +28,7 @@ namespace OCA\Integriq\Tests\Helpers;
 use OCA\Integriq\Service\Dso\DsoAccountRights;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -81,9 +82,24 @@ trait DsoConnectionWorld {
 	protected array $worldVerzoeken = [];
 
 	/**
-	 * Other stored objects (sources) by uuid, with their schema.
+	 * Stored openformulieren_submission objects by uuid, with the uid that created them.
 	 *
-	 * @var array<string, array{schema: string, entity: ObjectEntity}>
+	 * @var array<string, array{entity: ObjectEntity, owner: string|null}>
+	 */
+	protected array $worldSubmissions = [];
+
+	/**
+	 * When true, every write to a submission is refused as OpenRegister would.
+	 *
+	 * @var bool
+	 */
+	protected bool $worldRefuseSubmissionWrites = false;
+
+	/**
+	 * Other stored objects (sources, form mappings) by uuid, with their schema
+	 * and whether only an engine read sees them.
+	 *
+	 * @var array<string, array{schema: string, entity: ObjectEntity, adminOnly: bool}>
 	 */
 	protected array $worldOthers = [];
 
@@ -133,6 +149,8 @@ trait DsoConnectionWorld {
 		$this->worldGrants = [];
 		$this->worldHasPermissionHandler = true;
 		$this->worldVerzoeken = [];
+		$this->worldSubmissions = [];
+		$this->worldRefuseSubmissionWrites = false;
 		$this->worldOthers = [];
 		$this->worldWrites = [];
 		$this->worldReads = [];
@@ -174,18 +192,54 @@ trait DsoConnectionWorld {
 	/**
 	 * Store an object outside dso_verzoek, for example the DSO source.
 	 *
-	 * @param string               $schema The schema slug.
-	 * @param string               $uuid   The uuid.
-	 * @param array<string, mixed> $data   The object data.
+	 * @param string               $schema    The schema slug.
+	 * @param string               $uuid      The uuid.
+	 * @param array<string, mixed> $data      The object data.
+	 * @param bool                 $adminOnly True when only an engine read sees it (sources).
 	 *
 	 * @return void
 	 */
-	protected function addOther(string $schema, string $uuid, array $data): void {
+	protected function addOther(string $schema, string $uuid, array $data, bool $adminOnly = true): void {
 		$entity = new ObjectEntity();
 		$entity->setUuid($uuid);
 		$entity->setObject($data);
-		$this->worldOthers[$uuid] = ['schema' => $schema, 'entity' => $entity];
+		$this->worldOthers[$uuid] = ['schema' => $schema, 'entity' => $entity, 'adminOnly' => $adminOnly];
 	}//end addOther()
+
+	/**
+	 * Add an `open-formulieren` consumer with the world's secret.
+	 *
+	 * @param string $userId The account it acts as.
+	 * @param string $uuid   The consumer uuid.
+	 *
+	 * @return void
+	 */
+	protected function addOpenFormulierenConsumer(string $userId, string $uuid = 'consumer-of'): void {
+		$this->worldConsumers[$uuid] = [
+			'name' => 'Open Formulieren',
+			'authorizationType' => 'open-formulieren',
+			'authorizationConfiguration' => [
+				'scheme' => 'openconnector',
+				'secret' => $this->worldSecret,
+				'header' => 'X-OpenFormulieren-Signature',
+				'toleranceSeconds' => 300,
+			],
+			'userId' => $userId,
+		];
+	}//end addOpenFormulierenConsumer()
+
+	/**
+	 * Sign a body the way Open Formulieren does (timestamped HMAC).
+	 *
+	 * @param string $body The raw body.
+	 *
+	 * @return string The X-OpenFormulieren-Signature header value.
+	 */
+	protected function signOpenFormulieren(string $body): string {
+		$timestamp = time();
+
+		return 't=' . $timestamp . ',v1=' . hash_hmac('sha256', $timestamp . '.' . $body, $this->worldSecret);
+	}//end signOpenFormulieren()
 
 	/**
 	 * Sign a body the way DSO-LV does in pre-production.
@@ -336,6 +390,33 @@ trait DsoConnectionWorld {
 	}//end buildWorldConnection()
 
 	/**
+	 * The real Open Formulieren connection over the world.
+	 *
+	 * @param ORObjectService $objectService The world's ObjectService.
+	 *
+	 * @return OpenFormulierenConnection The connection.
+	 */
+	protected function buildWorldOpenFormulierenConnection(ORObjectService $objectService): OpenFormulierenConnection {
+		$logger = new NullLogger();
+		$dso = $this->buildWorldConnection(objectService: $objectService);
+
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturnCallback(
+			fn (string $uid): ?IUser => (array_key_exists($uid, $this->worldAccounts) === true ? $this->worldUser($uid) : null)
+		);
+
+		$property = new ReflectionProperty(DsoConnection::class, 'rights');
+
+		return new OpenFormulierenConnection(
+			consumers: $dso,
+			objectService: $objectService,
+			signatureService: new WebhookSignatureService($logger),
+			userManager: $userManager,
+			rights: $property->getValue($dso)
+		);
+	}//end buildWorldOpenFormulierenConnection()
+
+	/**
 	 * Whether a uid holds an action on dso_verzoek. Public for the handler double.
 	 *
 	 * @param string|null $uid    The uid.
@@ -406,13 +487,36 @@ trait DsoConnectionWorld {
 			return $results;
 		}
 
+		if ($schema === 'openformulieren_submission') {
+			foreach ($this->worldSubmissions as $stored) {
+				// OpenRegister admits the owner, and a reader through its groups.
+				if ($rbac === true && $stored['owner'] !== $uid && $this->worldGrants($uid, 'read') === false) {
+					continue;
+				}
+
+				$data = $stored['entity']->getObject();
+				$match = true;
+				foreach ($filters as $key => $value) {
+					if (in_array($key, ['register', 'schema'], true) === false && ($data[$key] ?? null) !== $value) {
+						$match = false;
+					}
+				}
+
+				if ($match === true) {
+					$results[] = $stored['entity'];
+				}
+			}
+
+			return $results;
+		}
+
 		foreach ($this->worldOthers as $other) {
 			if ($other['schema'] !== $schema) {
 				continue;
 			}
 
 			// Sources are admin-only too.
-			if ($rbac === true) {
+			if ($rbac === true && ($other['adminOnly'] ?? true) === true) {
 				continue;
 			}
 
@@ -449,11 +553,15 @@ trait DsoConnectionWorld {
 	private function worldSave(array $object, string $schema, ?string $uuid, bool $rbac): ObjectEntity {
 		$uid = $this->worldSession->getUser()?->getUID();
 		$action = 'create';
-		if ($uuid !== null && (isset($this->worldVerzoeken[$uuid]) === true || isset($this->worldConsumers[$uuid]) === true)) {
+		if ($uuid !== null && (isset($this->worldVerzoeken[$uuid]) === true || isset($this->worldConsumers[$uuid]) === true || isset($this->worldSubmissions[$uuid]) === true)) {
 			$action = 'update';
 		}
 
 		$system = \OCA\OpenRegister\Service\SystemOperationContext::isActive();
+		if ($schema === 'openformulieren_submission' && $this->worldRefuseSubmissionWrites === true) {
+			throw new RuntimeException("User '" . ($uid ?? 'Anonymous') . "' does not have permission to '" . $action . "' objects in schema '" . $schema . "'");
+		}
+
 		if ($rbac === true && $system === false && $this->worldGrants($uid, $action) === false) {
 			throw new RuntimeException(
 				"User '" . ($uid ?? 'Anonymous') . "' does not have permission to '" . $action . "' objects in schema '" . $schema . "'"
@@ -471,6 +579,13 @@ trait DsoConnectionWorld {
 
 		if ($schema === 'consumer') {
 			$this->worldConsumers[$resolved] = $object;
+		}
+
+		if ($schema === 'openformulieren_submission') {
+			$this->worldSubmissions[$resolved] = [
+				'entity' => $entity,
+				'owner' => ($this->worldSubmissions[$resolved]['owner'] ?? $uid),
+			];
 		}
 
 		$this->worldWrites[] = ['schema' => $schema, 'action' => $action, 'uid' => $uid, 'object' => $object, 'rbac' => $rbac, 'system' => $system];

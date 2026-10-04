@@ -689,6 +689,9 @@ return [
 		// DSO STAM PKIoverheid signing configuration (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoPkiSettings#getConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'GET'],
 		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
+		// Open Formulieren connection (openformulieren-intake-through-an-integriq-connection), admin-only via #[AuthorizedAdminSetting].
+		['name' => 'openFormulierenSettings#getConfig', 'url' => '/api/admin/open-formulieren-connection', 'verb' => 'GET'],
+		['name' => 'openFormulierenSettings#setConfig', 'url' => '/api/admin/open-formulieren-connection', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
 		// Packaged ZGW consumer sets (zgw-connectors-for-dossiq): list, and install against a register/schema.
