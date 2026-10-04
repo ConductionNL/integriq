@@ -3118,7 +3118,10 @@ OC.L10N.register(
         "Fields to set when the target accepted the object": "Fields to set when the target accepted the object",
         "On failure": "On failure",
         "Fields to set when the target refused the object or could not be reached": "Fields to set when the target refused the object or could not be reached",
-        "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent.": "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent."
+        "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent.": "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent.",
+        "After each push, these fields are set on the object that started it. A value may hold {placeholders}.": "After each push, these fields are set on the object that started it. A value may hold {placeholders}.",
+        "Add field": "Add field",
+        "Remove field": "Remove field"
     },
     "nplurals=2; plural=(n != 1);"
 )

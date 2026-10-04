@@ -84,7 +84,11 @@ vi.mock('@nextcloud/vue', async () => {
 })
 
 const root = join(__dirname, '..', '..')
-const mocks = { t: (app, text, vars) => text.replace(/\{(\w+)\}/g, (m, k) => (vars && k in vars ? vars[k] : m)), n: (app, one) => one }
+const mocks = {
+	t: (app, text, vars) =>
+		text.replace(/\{(\w+)\}/g, (m, k) => (vars && k in vars ? vars[k] : m)),
+	n: (app, one) => one,
+}
 
 /**
  * Mount the editor over one synchronisation.
@@ -141,7 +145,10 @@ const pushSync = {
 	targetType: 'api',
 	sourceConfig: {},
 	writeBack: {
-		onSuccess: { documentUrl: '{{ response.url }}', deliveryStatus: 'delivered' },
+		onSuccess: {
+			documentUrl: '{{ response.url }}',
+			deliveryStatus: 'delivered',
+		},
 		onFailure: { deliveryError: '{{ error.message }}' },
 	},
 }
@@ -191,7 +198,12 @@ describe('the write-back rows helpers', () => {
 			'{{ targetId }}',
 			'{{ error.message }}',
 		])
-		for (const placeholder of ['response.*', 'status', 'targetId', 'error.message']) {
+		for (const placeholder of [
+			'response.*',
+			'status',
+			'targetId',
+			'error.message',
+		]) {
 			expect(engine).toContain(placeholder)
 		}
 	})
@@ -233,7 +245,9 @@ describe('the write-back fields', () => {
 
 	it('removes a row and emits null when nothing is left', async () => {
 		const wrapper = mount(SyncWriteBackFields, {
-			props: { value: { onFailure: { deliveryError: '{{ error.message }}' } } },
+			props: {
+				value: { onFailure: { deliveryError: '{{ error.message }}' } },
+			},
 			global: { mocks },
 		})
 		await button(wrapper, 'sync-write-back-remove-onFailure-0').vm.$emit('click')
