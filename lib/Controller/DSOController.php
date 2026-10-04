@@ -164,15 +164,7 @@ class DSOController extends Controller {
 			);
 		}
 
-		// Parse the verzoek.
-		$request = $this->parser->parseRequest(payload: $body);
-
-		// Tag with environment if provided by DSO-LV.
-		$environment = $this->request->getHeader('X-DSO-Environment');
-		if ($environment !== '' && $environment !== null) {
-			$request['environment'] = $environment;
-		}
-
+		$request = $this->parseVerzoek(body: $body);
 		$requestId = ($request['verzoekId'] ?? uniqid(prefix: 'dso-', more_entropy: true));
 
 		$this->logger->info(
@@ -200,7 +192,7 @@ class DSOController extends Controller {
 			return $this->notStored(requestId: $requestId, reason: $exception->getMessage());
 		}
 
-		if ($stored instanceof ObjectEntity === false || $stored->getUuid() === null || $stored->getUuid() === '') {
+		if ($this->isStored(stored: $stored) === false) {
 			return $this->notStored(requestId: $requestId, reason: 'ingest returned an object without a uuid');
 		}
 
@@ -214,6 +206,41 @@ class DSOController extends Controller {
 		);
 
 	}//end receiveRequest()
+
+	/**
+	 * Parse the verzoek and tag it with the DSO-LV environment, when given.
+	 *
+	 * @param array<string, mixed> $body The request parameters.
+	 *
+	 * @return array<string, mixed> The parsed verzoek.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
+	 */
+	private function parseVerzoek(array $body): array {
+		$request = $this->parser->parseRequest(payload: $body);
+
+		$environment = $this->request->getHeader('X-DSO-Environment');
+		if ($environment !== '' && $environment !== null) {
+			$request['environment'] = $environment;
+		}
+
+		return $request;
+
+	}//end parseVerzoek()
+
+	/**
+	 * Whether ingest returned a stored object: an entity with a uuid.
+	 *
+	 * @param mixed $stored What ingest returned.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-stam-koppelvlak-endpoint-registration-req-dso-001
+	 */
+	private function isStored(mixed $stored): bool {
+		return $stored instanceof ObjectEntity && $stored->getUuid() !== null && $stored->getUuid() !== '';
+
+	}//end isStored()
 
 	/**
 	 * Authenticate the push as the dso-stam consumer, or answer 401 or 503.

@@ -35,6 +35,7 @@ use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -152,29 +153,11 @@ class DsoPkiSettingsController extends Controller {
 			return $this->ambiguous();
 		}
 
-		$data = [
-			'name' => 'DSO-LV (STAM)',
-			'description' => 'The STAM koppelvlak of the Omgevingsloket (DSO-LV). Every push is stored as the account in userId.',
-		];
-		$uuid = null;
-		if ($consumer !== null) {
-			$data = $consumer->getObject();
-			$uuid = $consumer->getUuid();
-		}
-
-		// Only overwrite the HMAC secret when a non-empty value was submitted,
-		// so the admin form can save other fields without re-typing (and
-		// re-exposing) the secret every time.
-		if ($trust['hmacSecret'] === '') {
-			$trust['hmacSecret'] = (string)(((array)($data['authorizationConfiguration'] ?? []))['hmacSecret'] ?? '');
-		}
-
-		$data['authorizationType'] = DsoConnection::AUTHORIZATION_TYPE;
-		$data['authorizationConfiguration'] = $trust;
-		$data['userId'] = $userId;
-
 		try {
-			$this->connection->saveConsumer(data: $data, uuid: $uuid);
+			$this->connection->saveConsumer(
+				data: $this->consumerData(consumer: $consumer, trust: $trust, userId: $userId),
+				uuid: $consumer?->getUuid()
+			);
 		} catch (Throwable $exception) {
 			$this->logger->error('[DsoPkiSettingsController] the DSO connection was not saved', ['exception' => $exception->getMessage()]);
 			return new JSONResponse(
@@ -231,6 +214,39 @@ class DsoPkiSettingsController extends Controller {
 		);
 
 	}//end refusal()
+
+	/**
+	 * The consumer as it will be saved.
+	 *
+	 * @param ObjectEntity|null     $consumer The existing consumer, or null for a new one.
+	 * @param array<string, string> $trust    The submitted trust configuration.
+	 * @param string                $userId   The chosen account.
+	 *
+	 * @return array<string, mixed> The consumer data.
+	 */
+	private function consumerData(?ObjectEntity $consumer, array $trust, string $userId): array {
+		$data = [
+			'name' => 'DSO-LV (STAM)',
+			'description' => 'The STAM koppelvlak of the Omgevingsloket (DSO-LV). Every push is stored as the account in userId.',
+		];
+		if ($consumer !== null) {
+			$data = $consumer->getObject();
+		}
+
+		// Only overwrite the HMAC secret when a non-empty value was submitted,
+		// so the admin form can save other fields without re-typing (and
+		// re-exposing) the secret every time.
+		if ($trust['hmacSecret'] === '') {
+			$trust['hmacSecret'] = (string)(((array)($data['authorizationConfiguration'] ?? []))['hmacSecret'] ?? '');
+		}
+
+		$data['authorizationType'] = DsoConnection::AUTHORIZATION_TYPE;
+		$data['authorizationConfiguration'] = $trust;
+		$data['userId'] = $userId;
+
+		return $data;
+
+	}//end consumerData()
 
 	/**
 	 * The 409 answer when more than one dso-stam consumer exists.
