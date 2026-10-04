@@ -1715,7 +1715,25 @@ OC.L10N.register(
         "The last error, once failed or too-large": "De laatste fout, bij mislukt of te groot",
         "True when a bijlage is failed or too-large. Handle that bijlage by hand.": "Waar als een bijlage mislukt of te groot is. Verwerk die bijlage dan met de hand.",
         "Where DSO-LV serves the file": "Waar DSO-LV het bestand aanbiedt",
-        "Pending until the download job has run. Then stored, failed or too-large.": "In afwachting tot de downloadtaak heeft gedraaid. Daarna opgeslagen, mislukt of te groot."
+        "Pending until the download job has run. Then stored, failed or too-large.": "In afwachting tot de downloadtaak heeft gedraaid. Daarna opgeslagen, mislukt of te groot.",
+        "LTI tools": "LTI-tools",
+        "LTI tool": "LTI-tool",
+        "Registration": "Registratie",
+        "Issuer": "Uitgever",
+        "Client ID": "Client-ID",
+        "Deployment IDs": "Deployment-ID's",
+        "Authorization URL": "Autorisatie-URL",
+        "Token URL": "Token-URL",
+        "Key set URL": "Sleutelset-URL",
+        "Copied": "Gekopieerd",
+        "Copy {label}": "{label} kopiëren",
+        "Enter these values in the tool's platform registration at the vendor.": "Vul deze waarden in bij de platformregistratie van de tool bij de leverancier.",
+        "No deployment yet. Add one to place this tool.": "Nog geen deployment. Voeg er een toe om deze tool te plaatsen.",
+        "Platform details for the tool": "Platformgegevens voor de tool",
+        "Reading the platform details": "Platformgegevens worden gelezen",
+        "The platform details could not be read.": "De platformgegevens konden niet worden gelezen.",
+        "Redirect URIs": "Redirect-URI's",
+        "The redirect URIs the tool may ask the platform to post a launch to (LTI 1.3 redirect_uri). An empty list allows only the launchUrl.": "De redirect-URI's waarnaar de tool het platform een launch mag laten posten (LTI 1.3 redirect_uri). Een lege lijst staat alleen de launchUrl toe."
     },
     "nplurals=2; plural=(n != 1);"
 )

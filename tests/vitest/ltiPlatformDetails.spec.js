@@ -52,9 +52,11 @@ const DETAILS = {
 	issuer: 'https://nc.example',
 	clientId: 'tool-client',
 	deploymentIds: ['dep-a', 'dep-b'],
-	authorizationUrl: 'https://nc.example/index.php/apps/integriq/api/lti/platform/authorize',
+	authorizationUrl:
+		'https://nc.example/index.php/apps/integriq/api/lti/platform/authorize',
 	tokenUrl: 'https://nc.example/index.php/apps/integriq/api/lti/token',
-	keySetUrl: 'https://nc.example/index.php/apps/integriq/.well-known/lti/lti_tool/tool-1/jwks.json',
+	keySetUrl:
+		'https://nc.example/index.php/apps/integriq/.well-known/lti/lti_tool/tool-1/jwks.json',
 }
 
 /**
@@ -67,7 +69,10 @@ function mountForTool() {
 		global: {
 			provide: {
 				cnSectionContext: {
-					value: { objectId: 'tool-1', object: { clientId: 'tool-client' } },
+					value: {
+						objectId: 'tool-1',
+						object: { clientId: 'tool-client' },
+					},
 				},
 			},
 		},
@@ -86,7 +91,7 @@ describe('LtiPlatformDetails panel', () => {
 		})
 	})
 
-	it('asks this instance for the tool\'s platform details', async () => {
+	it("asks this instance for the tool's platform details", async () => {
 		get.mockResolvedValue({ data: DETAILS })
 		mountForTool()
 		await flushPromises()
@@ -136,7 +141,10 @@ describe('LtiPlatformDetails panel', () => {
 		const wrapper = mountForTool()
 		await flushPromises()
 
-		await wrapper.find('[data-key="deploymentIds"]').find('button').trigger('click')
+		await wrapper
+			.find('[data-key="deploymentIds"]')
+			.find('button')
+			.trigger('click')
 		await flushPromises()
 
 		expect(writeText).toHaveBeenCalledWith('dep-a\ndep-b')
@@ -158,7 +166,9 @@ describe('LtiPlatformDetails panel', () => {
 		await flushPromises()
 
 		expect(wrapper.find('[role="alert"]').text()).toContain('Tool not found')
-		expect(wrapper.findAll('[data-testid="lti-platform-detail"]')).toHaveLength(0)
+		expect(wrapper.findAll('[data-testid="lti-platform-detail"]')).toHaveLength(
+			0,
+		)
 	})
 })
 
@@ -186,12 +196,16 @@ describe('LTI tools manifest fragment', () => {
 
 	it('registers the panel component', () => {
 		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
-		expect(registry).toMatch(/import LtiPlatformDetails from '\.\/components\/LtiPlatformDetails\.vue'/)
+		expect(registry).toMatch(
+			/import LtiPlatformDetails from '\.\/components\/LtiPlatformDetails\.vue'/,
+		)
 		expect(registry).toMatch(/^\s+LtiPlatformDetails,$/m)
 	})
 
 	it('never puts key material in a column or on the data panel', () => {
-		const columns = index.config.columns.map((c) => (typeof c === 'string' ? c : c.key))
+		const columns = index.config.columns.map((c) =>
+			typeof c === 'string' ? c : c.key,
+		)
 		expect(columns).not.toContain('signingKeys')
 		const data = (detail.config.widgets || []).find((w) => w.type === 'data')
 		expect(data.content.exclude).toContain('signingKeys')
@@ -199,7 +213,10 @@ describe('LTI tools manifest fragment', () => {
 })
 
 describe('lti_tool schema', () => {
-	for (const file of ['lib/Settings/integriq_register.json', 'lib/Settings/integriq_mock_register.json']) {
+	for (const file of [
+		'lib/Settings/integriq_register.json',
+		'lib/Settings/integriq_mock_register.json',
+	]) {
 		it(`${file} holds a list of redirect URIs at 1.3.0`, () => {
 			const tool = read(file).components.schemas.lti_tool
 			expect(tool.version).toBe('1.3.0')

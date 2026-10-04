@@ -3054,7 +3054,23 @@ OC.L10N.register(
         "The last error, once failed or too-large": "The last error, once failed or too-large",
         "True when a bijlage is failed or too-large. Handle that bijlage by hand.": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
         "Where DSO-LV serves the file": "Where DSO-LV serves the file",
-        "Pending until the download job has run. Then stored, failed or too-large.": "Pending until the download job has run. Then stored, failed or too-large."
+        "Pending until the download job has run. Then stored, failed or too-large.": "Pending until the download job has run. Then stored, failed or too-large.",
+        "LTI tools": "LTI tools",
+        "LTI tool": "LTI tool",
+        "Registration": "Registration",
+        "Deployment IDs": "Deployment IDs",
+        "Authorization URL": "Authorization URL",
+        "Token URL": "Token URL",
+        "Key set URL": "Key set URL",
+        "Copied": "Copied",
+        "Copy {label}": "Copy {label}",
+        "Enter these values in the tool's platform registration at the vendor.": "Enter these values in the tool's platform registration at the vendor.",
+        "No deployment yet. Add one to place this tool.": "No deployment yet. Add one to place this tool.",
+        "Platform details for the tool": "Platform details for the tool",
+        "Reading the platform details": "Reading the platform details",
+        "The platform details could not be read.": "The platform details could not be read.",
+        "Redirect URIs": "Redirect URIs",
+        "The redirect URIs the tool may ask the platform to post a launch to (LTI 1.3 redirect_uri). An empty list allows only the launchUrl.": "The redirect URIs the tool may ask the platform to post a launch to (LTI 1.3 redirect_uri). An empty list allows only the launchUrl."
     },
     "nplurals=2; plural=(n != 1);"
 )
