@@ -30,6 +30,7 @@ namespace OCA\Integriq\Service\Dso;
 
 use DateTime;
 use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -66,6 +67,13 @@ class DsoConnectionAlerts {
 	public const REASON_JOB_ACCOUNT = 'job_account_unavailable';
 
 	/**
+	 * Reason: OpenRegister refused an Open Formulieren submission write anyway.
+	 *
+	 * @var string
+	 */
+	public const REASON_SUBMISSION_NOT_STORED = 'submission_not_stored';
+
+	/**
 	 * Reason: the migration created a connection without an account.
 	 *
 	 * @var string
@@ -80,11 +88,14 @@ class DsoConnectionAlerts {
 	public const THROTTLE_SECONDS = 3600;
 
 	/**
-	 * App-config key prefix holding the last send time per reason.
+	 * App-config key suffix holding the last send time per channel and reason.
+	 *
+	 * The key is `<channel>_alert_last_<reason>`, so the DSO keys keep their
+	 * old name (`dso_alert_last_<reason>`).
 	 *
 	 * @var string
 	 */
-	private const LAST_SENT_PREFIX = 'dso_alert_last_';
+	private const LAST_SENT_INFIX = '_alert_last_';
 
 	/**
 	 * Constructor.
@@ -110,15 +121,21 @@ class DsoConnectionAlerts {
 	/**
 	 * Notify the administrators, unless this reason was sent within the hour.
 	 *
-	 * @param string $reason The reason: a DsoConnectionUnavailableException reason or a REASON_* constant.
+	 * The Open Formulieren intake uses the same alerts with its own channel, so
+	 * the throttle and the rendered text are per intake.
+	 *
+	 * @param string $reason  The reason: a DsoConnectionUnavailableException reason or a REASON_* constant.
+	 * @param string $channel The intake: DsoConnectionUnavailableException::CHANNEL_DSO or CHANNEL_OPEN_FORMULIEREN.
 	 *
 	 * @return bool True when a notification went out.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
-	public function notify(string $reason): bool {
+	public function notify(string $reason, string $channel = DsoConnectionUnavailableException::CHANNEL_DSO): bool {
 		$now = $this->timeFactory->getTime();
-		$key = self::LAST_SENT_PREFIX . preg_replace('/[^a-z_]/', '', $reason);
+		$channel = (string)preg_replace('/[^a-z]/', '', $channel);
+		$key = $channel . self::LAST_SENT_INFIX . preg_replace('/[^a-z_]/', '', $reason);
 		$last = $this->appConfig->getValueInt(Application::APP_ID, $key, 0);
 		if ($last > 0 && ($now - $last) < self::THROTTLE_SECONDS) {
 			return false;
@@ -138,8 +155,8 @@ class DsoConnectionAlerts {
 				$notification->setApp(Application::APP_ID)
 					->setUser($admin->getUID())
 					->setDateTime((new DateTime())->setTimestamp($now))
-					->setObject('dso_connection', $reason)
-					->setSubject(self::SUBJECT, ['reason' => $reason]);
+					->setObject($channel . '_connection', $reason)
+					->setSubject(self::SUBJECT, ['reason' => $reason, 'channel' => $channel]);
 				$this->notificationManager->notify($notification);
 				$sent = true;
 			} catch (Throwable $exception) {

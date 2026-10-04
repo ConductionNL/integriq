@@ -29,7 +29,9 @@ namespace OCA\Integriq\Notification;
 
 use InvalidArgumentException;
 use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
@@ -97,6 +99,12 @@ class DsoConnectionNotifier implements INotifier {
 
 		$l = $this->l10nFactory->get(Application::APP_ID, $languageCode);
 		$reason = (string)($notification->getSubjectParameters()['reason'] ?? '');
+		$channel = (string)($notification->getSubjectParameters()['channel'] ?? DsoConnectionUnavailableException::CHANNEL_DSO);
+
+		if ($channel === DsoConnectionUnavailableException::CHANNEL_OPEN_FORMULIEREN) {
+			$subject = $this->openFormulierenSubject(l: $l, reason: $reason);
+			return $this->finish(notification: $notification, subject: $subject);
+		}
 
 		$subject = match ($reason) {
 			'no_connection', 'ambiguous_connection' => $l->t('DSO-LV pushes are refused: no DSO connection is configured.'),
@@ -108,6 +116,48 @@ class DsoConnectionNotifier implements INotifier {
 			default => $l->t('The DSO connection needs attention.'),
 		};
 
+		return $this->finish(notification: $notification, subject: $subject);
+	}//end prepare()
+
+	/**
+	 * The text of an Open Formulieren connection alert.
+	 *
+	 * @param IL10N  $l      The localisation.
+	 * @param string $reason The reason.
+	 *
+	 * @return string The parsed subject.
+	 *
+	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-intake-acts-as-the-open-formulieren-connections-account-req-006
+	 */
+	private function openFormulierenSubject(IL10N $l, string $reason): string {
+		return match ($reason) {
+			'no_connection', 'ambiguous_connection' => $l->t(
+				'Open Formulieren submissions are refused: no Open Formulieren connection is configured.'
+			),
+			'no_account', 'account_unknown', 'account_disabled' => $l->t(
+				'Open Formulieren submissions are refused: the Open Formulieren connection has no usable account.'
+			),
+			'account_lacks_rights', 'rights_unverifiable' => $l->t(
+				'Open Formulieren submissions are refused: the Open Formulieren connection account cannot store submissions.'
+			),
+			DsoConnectionAlerts::REASON_SUBMISSION_NOT_STORED => $l->t(
+				'An Open Formulieren submission could not be stored. Open Formulieren will deliver it again.'
+			),
+			DsoConnectionAlerts::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the Open Formulieren intake acts as.'),
+			default => $l->t('The Open Formulieren connection needs attention.'),
+		};
+
+	}//end openFormulierenSubject()
+
+	/**
+	 * Set the subject, the link to the admin section and the icon.
+	 *
+	 * @param INotification $notification The notification.
+	 * @param string        $subject      The parsed subject.
+	 *
+	 * @return INotification The prepared notification.
+	 */
+	private function finish(INotification $notification, string $subject): INotification {
 		$notification->setParsedSubject($subject);
 		$notification->setLink($this->urlGenerator->linkToRouteAbsolute('settings.AdminSettings.index', ['section' => Application::APP_ID]));
 		$notification->setIcon(
@@ -117,7 +167,7 @@ class DsoConnectionNotifier implements INotifier {
 		);
 
 		return $notification;
-	}//end prepare()
+	}//end finish()
 
 	/**
 	 * The exception that declines a notification this notifier does not own.
