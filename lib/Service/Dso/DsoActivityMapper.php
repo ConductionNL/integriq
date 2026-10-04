@@ -94,6 +94,8 @@ class DsoActivityMapper {
 	 *
 	 * @return array Array of default mapping objects.
 	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) A literal data table of 25 entries, no logic.
+	 *
 	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
 	 */
 	public function getDefaultMappings(): array {

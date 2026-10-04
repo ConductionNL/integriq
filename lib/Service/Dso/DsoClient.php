@@ -81,6 +81,7 @@ use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -358,6 +359,22 @@ class DsoClient implements DsoConnectorProviderInterface {
 			);
 		}
 
+		return $this->copyCapped(body: $body, maxBytes: $maxBytes);
+	}//end download()
+
+	/**
+	 * Copy a response body into a temporary stream, chunk by chunk, and stop
+	 * as soon as it grows past `$maxBytes`.
+	 *
+	 * @param StreamInterface $body The response body.
+	 * @param integer $maxBytes The largest body accepted, in bytes.
+	 *
+	 * @return resource A readable stream positioned at the start of the copy.
+	 *
+	 * @throws DsoAttachmentTooLargeException When the body is larger than `$maxBytes`.
+	 * @throws DsoProviderException When no temporary stream can be opened.
+	 */
+	private function copyCapped(StreamInterface $body, int $maxBytes) {
 		$target = fopen('php://temp', 'w+b');
 		if ($target === false) {
 			$body->close();
@@ -383,7 +400,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 		rewind($target);
 
 		return $target;
-	}//end download()
+	}//end copyCapped()
 
 	/**
 	 * Dispatch the request over mTLS when configured, else over the existing

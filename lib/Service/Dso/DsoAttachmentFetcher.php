@@ -147,13 +147,11 @@ class DsoAttachmentFetcher {
 		}
 
 		foreach ($todo as $index) {
-			$entry = (array)$attachments[$index];
-			if ($sourceConfiguration === null) {
-				$entry = $this->failed(entry: $entry, error: $sourceError, terminal: false);
-			} else {
+			$entry = $this->failed(entry: (array)$attachments[$index], error: $sourceError, terminal: false);
+			if ($sourceConfiguration !== null) {
 				$entry = $this->fetchOne(
 					request: $request,
-					entry: $entry,
+					entry: (array)$attachments[$index],
 					sourceConfiguration: $sourceConfiguration,
 					fileService: $fileService
 				);
@@ -259,6 +257,8 @@ class DsoAttachmentFetcher {
 	 * @param mixed $entry The attachment entry.
 	 *
 	 * @return boolean True when the entry should be fetched.
+	 *
+	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
 	 */
 	public function needsDownload(mixed $entry): bool {
 		if (is_array($entry) === false) {
