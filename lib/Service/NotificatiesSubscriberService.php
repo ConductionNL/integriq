@@ -90,6 +90,7 @@ class NotificatiesSubscriberService {
 	 * @param IURLGenerator $urlGenerator Builds this app's absolute callback URL per abonnement.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics (cascade-delete failures, etc.).
 	 * @param ZgwNotificationPullListener|null $pullListener Pulls the resource an installed ZGW set owns (zgw-connectors-for-dossiq D3).
+	 * @param SourceDestructionService|null $sourceDestruction Purges the object a `destroy` notification names (REQ-SDP-002).
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -99,6 +100,7 @@ class NotificatiesSubscriberService {
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
 		private readonly ?ZgwNotificationPullListener $pullListener = null,
+		private readonly ?SourceDestructionService $sourceDestruction = null,
 	) {
 
 	}//end __construct()
@@ -540,9 +542,45 @@ class NotificatiesSubscriberService {
 		// throwing: the notification was received whatever the pull does.
 		$this->pullListener?->handle(notification: $notification);
 
+		// A source that destroys a record says so (REQ-SDP-002): the object
+		// synchronized from it follows at once, not on the next full run.
+		if ($action === 'destroy') {
+			$this->handleDestroyed(abonnementId: $abonnementId, resourceUrl: (string)($notification['resourceUrl'] ?? ''));
+		}
+
 		return $messages;
 
 	}//end handleInboundNotification()
+
+	/**
+	 * Hand a `destroy` notification to the destruction path of the abonnement's source.
+	 *
+	 * Never throwing: the notification was received whatever the purge does,
+	 * and a refusal or failure is on the contract log and the server log.
+	 *
+	 * @param string $abonnementId The abonnement the notification arrived on.
+	 * @param string $resourceUrl  The destroyed resource.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	private function handleDestroyed(string $abonnementId, string $resourceUrl): void {
+		if ($this->sourceDestruction === null || $resourceUrl === '') {
+			return;
+		}
+
+		$sourceId = (string)($this->findAbonnement(abonnementId: $abonnementId)?->getObject()['sourceId'] ?? '');
+
+		try {
+			$this->sourceDestruction->handleZgwDestroyed(sourceId: $sourceId, resourceUrl: $resourceUrl);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'[integriq] a destroy notification could not be applied: ' . $exception->getMessage(),
+				['abonnementId' => $abonnementId, 'resourceUrl' => $resourceUrl]
+			);
+		}
+	}//end handleDestroyed()
 
 	/**
 	 * Derive the ZGW notification publish body from a matched CloudEvent and

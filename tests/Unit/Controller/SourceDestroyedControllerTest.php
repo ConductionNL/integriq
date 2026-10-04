@@ -25,8 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\Integriq\Controller\SynchronizationsController;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Controller\SourceDestroyedController;
 use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
@@ -34,7 +33,6 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -42,7 +40,7 @@ use Psr\Log\LoggerInterface;
 /**
  * The destroyed route through the real signature check and destruction service.
  */
-final class SynchronizationsControllerDestroyedTest extends TestCase {
+final class SourceDestroyedControllerTest extends TestCase {
 	private const SECRET = 'whsec-dms-source';
 
 	private const BODY = '{"originId":"doc-2","reference":"vernietigingslijst-2026-14"}';
@@ -54,9 +52,9 @@ final class SynchronizationsControllerDestroyedTest extends TestCase {
 	 * @param SynchronizationService  $engine  The engine.
 	 * @param string                  $rawBody The raw body bytes.
 	 *
-	 * @return SynchronizationsController
+	 * @return SourceDestroyedController
 	 */
-	private function makeController(IRequest $request, SynchronizationService $engine, string $rawBody = self::BODY): SynchronizationsController {
+	private function makeController(IRequest $request, SynchronizationService $engine, string $rawBody = self::BODY): SourceDestroyedController {
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnArgument(0);
 
@@ -77,20 +75,14 @@ final class SynchronizationsControllerDestroyedTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$controller = $this->getMockBuilder(SynchronizationsController::class)
+		$controller = $this->getMockBuilder(SourceDestroyedController::class)
 			->setConstructorArgs(
 				[
 					'integriq',
 					$request,
-					$objects,
-					$engine,
-					$l,
-					$logger,
-					$this->createMock(IUserSession::class),
-					$this->createMock(ActionAuthService::class),
-					null,
 					new SourceDestructionService($objects, $engine, $logger),
 					new WebhookSignatureService($logger),
+					$l,
 				]
 			)
 			->onlyMethods(['getRawContent'])

@@ -21,8 +21,13 @@ Kind: code. Size S. Row `opencatalogi:lc-source-destroyed`.
   - GIVEN a ZGW `destroy` notification for a synchronized document WHEN it arrives THEN only that object is purged
   - GIVEN `onSourceDestroyed` absent WHEN a notice arrives THEN the disappearance policy is applied to that one object
   - GIVEN a bad signature on the destroyed route WHEN it arrives THEN it is refused before the body is read
-- [ ] Implement
+- [x] Implement
+  - `SourceDestructionService` takes both ways in. `handleZgwDestroyed()` finds the synchronizations of the abonnement's source and tries the resource URL, then its last path segment, as `originId`; `handleDestroyed()` takes one synchronization and the record's id. Both hand the record to `SynchronizationService::applySourceDestruction()`, which resolves the one contract of that synchronization (both fields checked on the row), purges when `sourceConfig.onSourceDestroyed` is `purge` (trigger `destructionNotice`, the notice's reference on the contract log), and otherwise applies the disappearance policy to that object alone (`delete`, `markEnded`, `keepAndFlag`, `purge`). No full run, and a record without a contract touches nothing (`no_contract`).
+  - `NotificatiesSubscriberService::handleInboundNotification()` hands an `actie: destroy` to it after the CloudEvent and the ZGW pull, never throwing.
+  - The signed route is `POST /api/synchronizations/{id}/destroyed` on its own `SourceDestroyedController` (`sourceDestroyed#destroyed`; on `SynchronizationsController` the constructor would pass phpmd's parameter limit). `#[PublicPage]`, verified against the source's `configuration.webhookSignature` over the raw body before the body is read; an unknown synchronization, a source without a secret and a bad signature all answer the same 401. The body carries `originId` (the route's `{id}` is the synchronization) and an optional `reference`.
 - [ ] Test (PHPUnit on the service and controller; `tests/e2e/source-destruction-purge.spec.ts`)
+  - Done: `tests/Unit/Service/SourceDestructionServiceTest.php` through the real `SourceDestructionService` and `SynchronizationService` (only that object is purged, URL and uuid keyed contracts, the policy without `onSourceDestroyed`, keepAndFlag, no contract, another source's contract, unknown synchronization); `tests/Unit/Controller/SourceDestroyedControllerTest.php` with the real `WebhookSignatureService` (signed, forged, unsigned, unknown synchronization, missing `originId`); three tests in `NotificatiesSubscriberServiceTest` assert the hand-off from the caller.
+  - Owed: `tests/e2e/source-destruction-purge.spec.ts` against a live instance.
 
 ### Task 3: The purge record and the refusal
 - **spec_ref**: openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-every-purge-is-recorded-and-a-refused-purge-stays-visible-req-sdp-003
