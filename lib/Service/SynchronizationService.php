@@ -42,6 +42,8 @@ use OCA\Integriq\Exception\MessageValidationRefusedException;
 use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Exception\TargetWriteRefusedException;
+use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
+use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
@@ -9187,6 +9189,12 @@ class SynchronizationService {
 			}
 		}
 
+		// REQ-CSD-002: a ZGW document target creates once, in parts when the
+		// Documenten API asks for them, and never updates what it created.
+		if (is_array($targetConfig['zgwDocument'] ?? null) === true) {
+			return $this->pushZgwDocument(synchronization: $synchronization, contract: $contract, targetConfig: $targetConfig, targetId: $targetId);
+		}
+
 		if ($targetId === null) {
 			if (isset($targetConfig['idInRequestBody']) === true) {
 				$targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
@@ -9282,6 +9290,115 @@ class SynchronizationService {
 
 		return $contract;
 	}//end writeObjectToTarget()
+
+	/**
+	 * Push one delivery as a new document to a ZGW Documenten API.
+	 *
+	 * `targetConfig.zgwDocument` holds `zakenSource` (the Zaken API source for
+	 * the case relation), `zaakUrlField` (the object field naming the case,
+	 * default `zaakUrl`), `inline` (true for a Documenten API 1.0) and where the
+	 * file is: `fileName`, `fileId` or `objectId`, read like `fileUpload`
+	 * (default: the source object's first file). The mapped object is the
+	 * document's metadata. A contract that already holds a target id has its
+	 * document: nothing is sent, because a delivery never updates or replaces
+	 * the document it created.
+	 *
+	 * @param array       $synchronization The push synchronization.
+	 * @param array       $contract        The contract.
+	 * @param array       $targetConfig    The target config (json = the mapped object).
+	 * @param string|null $targetId        The document url the contract holds, if any.
+	 *
+	 * @return array The contract, its targetId the document's url.
+	 *
+	 * @throws CaseSystemRefusal When an API refuses; the failure is written back first.
+	 * @throws Exception         When the source object has no file to deliver.
+	 *
+	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
+	 */
+	private function pushZgwDocument(array $synchronization, array $contract, array $targetConfig, ?string $targetId): array {
+		if ($targetId !== null) {
+			return $contract;
+		}
+
+		$zgw      = $targetConfig['zgwDocument'];
+		$document = (array)($targetConfig['json'] ?? []);
+
+		try {
+			$file = $this->zgwDocumentFile(zgw: $zgw, contract: $contract);
+			$document['bestandsnaam'] = (string)($document['bestandsnaam'] ?? $file['filename']);
+			$document['formaat']      = (string)($document['formaat'] ?? $file['mimeType']);
+
+			$result = $this->containerInterface->get(ZgwDocumentDelivery::class)->deliver(
+				document: $document,
+				content: $file['content'],
+				settings: [
+					'documentenSource' => (string)($synchronization['targetId'] ?? ''),
+					'zakenSource' => (string)($zgw['zakenSource'] ?? ''),
+					'zaakUrl' => (string)($document[(string)($zgw['zaakUrlField'] ?? 'zaakUrl')] ?? ''),
+					'inline' => (($zgw['inline'] ?? false) === true),
+				]
+			);
+		} catch (\Throwable $e) {
+			$status = null;
+			if ($e instanceof CaseSystemRefusal) {
+				$status = $e->getStatus();
+			}
+
+			$this->writeOutcomeBack(
+				synchronization: $synchronization,
+				contract: $contract,
+				outcome: OutcomeWriteBack::FAILURE,
+				context: ['status' => $status, 'error' => ['message' => $this->outcomeWriteBack()->truncate(message: $e->getMessage()), 'status' => $status]]
+			);
+			throw $e;
+		}//end try
+
+		$contract['targetId'] = $result['url'];
+		$this->writeOutcomeBack(
+			synchronization: $synchronization,
+			contract: $contract,
+			outcome: OutcomeWriteBack::SUCCESS,
+			context: [
+				'response' => array_merge($result['document'], ['url' => $result['url'], 'zaakinformatieobject' => $result['zaakinformatieobject']]),
+				'status' => 201,
+				'targetId' => $result['url'],
+			]
+		);
+
+		return $contract;
+	}//end pushZgwDocument()
+
+	/**
+	 * The file a ZGW document push delivers, found the way `fileUpload` finds one.
+	 *
+	 * @param array $zgw      The zgwDocument config (fileName, fileId, objectId).
+	 * @param array $contract The contract (originId = the source object).
+	 *
+	 * @return array{content:string,filename:string,mimeType:string}
+	 *
+	 * @throws Exception When no file is found.
+	 *
+	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
+	 */
+	private function zgwDocumentFile(array $zgw, array $contract): array {
+		$probe = [
+			'json' => [],
+			'fileUpload' => array_intersect_key($zgw, array_flip(['fileName', 'fileId', 'objectId'])) + ['fieldName' => 'inhoud'],
+		];
+		$this->applyFileUploadToTargetConfig(targetConfig: $probe, contract: $contract);
+
+		foreach ((array)($probe['multipart'] ?? []) as $part) {
+			if (isset($part['filename']) === true) {
+				return [
+					'content' => (string)$part['contents'],
+					'filename' => (string)$part['filename'],
+					'mimeType' => (string)($part['headers']['Content-Type'] ?? 'application/octet-stream'),
+				];
+			}
+		}
+
+		throw new Exception('The object ' . (string)($contract['originId'] ?? '') . ' has no file to deliver to the Documenten API.');
+	}//end zgwDocumentFile()
 
 	/**
 	 * Make a push's call, and write the failure back when the transport gives up.

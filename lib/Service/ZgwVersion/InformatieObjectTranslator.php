@@ -8,9 +8,8 @@
  * (VNG: no breaking changes in the stability line — see design.md's delta
  * table); this translator guards `vertrouwelijkheidaanduiding` and
  * `status` enum conformance. `bestandsdelen` (chunked binary upload) is
- * NOT handled — procest's document service never implements it either
- * (`inhoud` is always a `_downloadUrl`), so there is nothing to translate
- * (see design.md "Out of Scope").
+ * not a translation concern: the outbound upload in parts lives in
+ * `OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery` (REQ-CSD-002).
  *
  * @category Service
  * @package  OCA\Integriq\Service\ZgwVersion
