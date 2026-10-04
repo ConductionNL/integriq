@@ -26,6 +26,7 @@ use OCA\Integriq\Service\MessageValidation\ValidationOutcome;
 use OCA\Integriq\Service\MessageValidation\XsdChecker;
 use OCA\Integriq\Service\MessageValidationService;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Each checker is reached through MessageValidationService::validate(), the
@@ -314,4 +315,67 @@ class MessageValidationServiceTest extends TestCase {
 		);
 
 	}//end installRecordingLoader()
+
+	/**
+	 * The seeded JSON Schema message schema as OpenRegister hands it back: the
+	 * stored text decoded to an array. A valid body passes, a body without bsn
+	 * is refused naming /bsn, and the document is not reported as broken.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 */
+	public function testAJsonSchemaDocumentReadBackAsAnArrayIsChecked(): void {
+		$schema = $this->seededSchema(slug: 'example-person-json');
+		$schema['document'] = json_decode($schema['document'], true, 512, JSON_THROW_ON_ERROR);
+		$this->assertIsArray($schema['document']);
+
+		$valid = $this->service()->validate(messageSchema: $schema, payload: ['bsn' => '123456782', 'geslachtsnaam' => 'Jansen']);
+		$this->assertTrue($valid->isValid(), implode('; ', array_column($valid->errors(), 'message')));
+
+		$refused = $this->service()->validate(messageSchema: $schema, payload: ['geslachtsnaam' => 'Jansen']);
+		$this->assertFalse($refused->isValid());
+		$this->assertContains('/bsn', $refused->paths());
+
+		$this->assertNull($this->service()->documentProblem(messageSchema: $schema));
+	}//end testAJsonSchemaDocumentReadBackAsAnArrayIsChecked()
+
+	/**
+	 * An OpenAPI document read back as an array is checked like its text.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 */
+	public function testAnOpenApiDocumentReadBackAsAnArrayIsChecked(): void {
+		$schema = $this->schema(kind: 'openapi', file: 'person.openapi.yaml');
+		$schema['document'] = Yaml::parse($schema['document']);
+		$context = ['operationId' => 'updatePersoon', 'direction' => 'request'];
+
+		$valid = $this->service()->validate(messageSchema: $schema, payload: ['bsn' => '123456782', 'naam' => 'Jan'], context: $context);
+		$this->assertTrue($valid->isValid(), implode('; ', array_column($valid->errors(), 'message')));
+
+		$refused = $this->service()->validate(messageSchema: $schema, payload: ['naam' => 'Jan'], context: $context);
+		$this->assertContains('/bsn', $refused->paths());
+		$this->assertNull($this->service()->documentProblem(messageSchema: $schema));
+	}//end testAnOpenApiDocumentReadBackAsAnArrayIsChecked()
+
+	/**
+	 * A seeded message schema object from the register fragment.
+	 *
+	 * @param string $slug The seed slug.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function seededSchema(string $slug): array {
+		$fragment = json_decode((string)file_get_contents(__DIR__ . '/../../../../lib/Settings/register.d/mapping-message-schema-validation.json'), true, 512, JSON_THROW_ON_ERROR);
+		foreach ($fragment['components']['objects'] as $object) {
+			if ($object['@self']['schema'] === 'message_schema' && $object['@self']['slug'] === $slug) {
+				unset($object['@self']);
+				return $object;
+			}
+		}
+
+		$this->fail('No seeded message schema ' . $slug);
+	}//end seededSchema()
 }//end class
