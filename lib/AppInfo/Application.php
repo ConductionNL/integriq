@@ -90,6 +90,7 @@ use OCA\Integriq\EventListener\RosterImportRequestedListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
 use OCA\Integriq\EventListener\DsoStamConsumerListener;
+use OCA\Integriq\EventListener\EndpointRoutingListener;
 use OCA\Integriq\EventListener\MessageSchemaDocumentListener;
 use OCA\Integriq\EventListener\SubscriptionSigningDefaultListener;
 use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
@@ -315,6 +316,10 @@ class Application extends App implements IBootstrap {
 		// save path, so the refusal holds whichever page or app saves it.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: MessageSchemaDocumentListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: MessageSchemaDocumentListener::class);
+		// Live defect I1: an endpoint's endpointRegex and endpointArray follow its
+		// path on every save, as the EndpointMapper did before the OR cutover.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: EndpointRoutingListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: EndpointRoutingListener::class);
 		// REQ-CON-DSO-001 (dso-intake-through-an-integriq-connection): at most one
 		// dso-stam consumer, so the STAM intake never has to guess its account.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoStamConsumerListener::class);
