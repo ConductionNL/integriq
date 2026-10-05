@@ -30,10 +30,12 @@ use OCA\Integriq\Outbound\Identity\NoReplyHandler;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Tests\Helpers\InMemoryOptOutMapper;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -80,6 +82,20 @@ class OptOutAndHoldTest extends TestCase {
 	 * @var array<string,string>
 	 */
 	private array $config = [];
+
+	/**
+	 * The opt-out table the registry writes, after registry() made it.
+	 *
+	 * @var InMemoryOptOutMapper|null
+	 */
+	private ?InMemoryOptOutMapper $optOutTable = null;
+
+	/**
+	 * The unix time the clock double answers.
+	 *
+	 * @var int
+	 */
+	private int $now = 1790000000;
 
 	/**
 	 * Set up doubles that behave like storage and configuration.
@@ -431,7 +447,9 @@ class OptOutAndHoldTest extends TestCase {
 	 * @return OptOutRegistry The registry.
 	 */
 	private function registry(): OptOutRegistry {
-		return new OptOutRegistry($this->objectService, $this->appConfig);
+		$this->optOutTable = new InMemoryOptOutMapper($this->createMock(IDBConnection::class));
+
+		return new OptOutRegistry($this->optOutTable, $this->appConfig, $this->clock());
 
 	}//end registry()
 
@@ -446,9 +464,22 @@ class OptOutAndHoldTest extends TestCase {
 		$random = $this->createMock(ISecureRandom::class);
 		$random->method('generate')->willReturn('test-secret-0123456789');
 
-		return new UnsubscribeTokenService($this->appConfig, $random, $registry);
+		return new UnsubscribeTokenService($this->appConfig, $random, $registry, $this->clock());
 
 	}//end tokens()
+
+	/**
+	 * A clock that answers $this->now, read at each call.
+	 *
+	 * @return ITimeFactory The clock.
+	 */
+	private function clock(): ITimeFactory {
+		$time = $this->createMock(ITimeFactory::class);
+		$time->method('getTime')->willReturnCallback(fn (): int => $this->now);
+
+		return $time;
+
+	}//end clock()
 
 	/**
 	 * A hold queue on a clock the test moves.
