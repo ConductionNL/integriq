@@ -254,6 +254,31 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/SystemOperationContext.php';
 		}
 
+		// gate 23: integriq's inbound credential checks run in OpenRegister's
+		// AuthorizationService. These are the REAL files, copied byte for byte
+		// from openregister development 75088d6237 (#4361 landed), so the
+		// tests verify real signed tokens against OpenRegister's own code and
+		// not against a double. ConsumerMapper is the one stand-in: a required
+		// constructor argument integriq never lets the service read. Order
+		// matters: interfaces and value classes before the service.
+		foreach (
+			[
+				'Exception/AuthenticationException',
+				'Db/ConsumerMapper',
+				'Service/Consumer/ConsumerSource',
+				'Service/Consumer/ResolvedConsumer',
+				'Service/Consumer/RsaJwsVerifier',
+				'Service/Consumer/JwtValidator',
+				'Service/Consumer/EndpointAllowList',
+				'Service/AuthorizationService',
+			] as $authStub
+		) {
+			$authClass = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $authStub);
+			if (class_exists($authClass) === false && interface_exists($authClass) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/' . $authStub . '.php';
+			}
+		}
+
 		// The abstract base is a copy of OpenRegister's: it implements the
 		// interface and throws its NotImplementedException, so both load first.
 		if (interface_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider') === false) {

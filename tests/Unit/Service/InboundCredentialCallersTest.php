@@ -41,7 +41,7 @@ use Jose\Component\Signature\Algorithm\RS256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\Integriq\Exception\LtiValidationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\Lti\LtiJwksResolverService;
 use OCA\Integriq\Service\Lti\LtiKeyService;
@@ -49,7 +49,9 @@ use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
 use OCA\Integriq\Tests\Helpers\ArrayCache;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\OpenRegister\Db\ConsumerMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\AuthorizationService as OpenRegisterAuthorizationService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICacheFactory;
@@ -200,18 +202,23 @@ class InboundCredentialCallersTest extends TestCase {
 	}//end addConsumer()
 
 	/**
-	 * The credential checks the callers are wired to.
+	 * The credential checks the callers are wired to: OpenRegister's real
+	 * AuthorizationService behind integriq's bridge and consumer source.
 	 *
-	 * @return AuthorizationService
+	 * @return OpenRegisterCredentialBridge
 	 */
-	private function credentials(): AuthorizationService {
-		return new AuthorizationService(
-			userManager: $this->userManager,
+	private function credentials(): OpenRegisterCredentialBridge {
+		return new OpenRegisterCredentialBridge(
+			authorization: new OpenRegisterAuthorizationService(
+				userManager: $this->userManager,
+				userSession: $this->userSession,
+				consumerMapper: $this->createMock(ConsumerMapper::class),
+				cacheFactory: $this->cacheFactory,
+				groupManager: $this->groupManager,
+				request: $this->request,
+			),
+			objectService: $this->objectService,
 			userSession: $this->userSession,
-			orObjectService: $this->objectService,
-			groupManager: $this->groupManager,
-			cacheFactory: $this->cacheFactory,
-			request: $this->request,
 		);
 	}//end credentials()
 
@@ -413,6 +420,7 @@ class InboundCredentialCallersTest extends TestCase {
 		$result = $this->runRule($this->endpointService($credentials), ['type' => 'jwt'], ['Authorization' => 'Bearer ' . $token]);
 
 		$this->assertRefused($result, 'The token lifetime exceeds the maximum allowed duration');
+		$this->assertNull($credentials->getResolvedConsumer(), 'a refused token must not leave a consumer for rate limits and call logs');
 	}//end testOverLongLifetimeIsRefused()
 
 	/**
