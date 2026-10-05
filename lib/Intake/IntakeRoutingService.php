@@ -255,9 +255,19 @@ class IntakeRoutingService {
 	/**
 	 * The first enabled rule whose channel and condition match.
 	 *
+	 * The rules are administrator configuration, and `intake_routing_rule`
+	 * is deny-all for everyone else. A message arrives on the intake account
+	 * of its connection, which is no administrator, so a read through RBAC
+	 * returns no rule and every message would be held. The rules are read as
+	 * the engine (`_rbac: false`), exactly like the DSO and webhook
+	 * connections read their consumers. Read only: writing a rule stays an
+	 * administrator action (IntakeChannelsController::saveRule()).
+	 *
 	 * @param InboundMessage $message The message.
 	 *
 	 * @return array<string,mixed>|null The rule, or null when none matches.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/intake-channels/spec.md
 	 */
 	public function firstMatchingRule(InboundMessage $message): ?array {
 		$matches = $this->objectService->findAll(
@@ -268,7 +278,9 @@ class IntakeRoutingService {
 					'channelId' => $message->getChannelId(),
 					'isEnabled' => true,
 				],
-			]
+			],
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$results = ($matches['results'] ?? $matches);
