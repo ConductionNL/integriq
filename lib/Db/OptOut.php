@@ -108,13 +108,13 @@ class OptOut extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function __construct() {
-		$this->addType('address', 'string');
-		$this->addType('scope', 'string');
-		$this->addType('caseRef', 'string');
-		$this->addType('source', 'string');
-		$this->addType('createdAt', 'integer');
-		$this->addType('dedupeKey', 'string');
-		$this->addType('legacyUuid', 'string');
+		$this->addType(fieldName: 'address', type: 'string');
+		$this->addType(fieldName: 'scope', type: 'string');
+		$this->addType(fieldName: 'caseRef', type: 'string');
+		$this->addType(fieldName: 'source', type: 'string');
+		$this->addType(fieldName: 'createdAt', type: 'integer');
+		$this->addType(fieldName: 'dedupeKey', type: 'string');
+		$this->addType(fieldName: 'legacyUuid', type: 'string');
 
 	}//end __construct()
 

@@ -283,6 +283,8 @@ class UnsubscribeTokenService {
 	 * @param string $baseUrl The instance's base url.
 	 *
 	 * @return string|null The link, or null when this category cannot be stopped.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function linkFor(string $address, string $caseRef, string $category, string $baseUrl = ''): ?string {
 		if ($this->optOuts->isProtected($category) === true) {

@@ -56,7 +56,6 @@ class Version2Date20261005100000 extends SimpleMigrationStep {
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 		if ($schema->hasTable(OptOutMapper::TABLE) === true) {
 			return null;

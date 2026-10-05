@@ -44,7 +44,7 @@ class InMemoryOptOutMapper extends OptOutMapper {
 	 * @param IDBConnection $db A connection double; nothing reaches it.
 	 */
 	public function __construct(IDBConnection $db) {
-		parent::__construct($db);
+		parent::__construct(db: $db);
 
 	}//end __construct()
 

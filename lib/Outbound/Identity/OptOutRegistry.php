@@ -109,6 +109,8 @@ class OptOutRegistry {
 	 * @param string|null $caseRef The case, when the message is about one.
 	 *
 	 * @return array{send:bool,overridden:bool,reason:string} The decision.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function decide(string $address, string $category, ?string $caseRef = null): array {
 		$optOut = $this->find(address: $address, caseRef: $caseRef);
@@ -195,6 +197,8 @@ class OptOutRegistry {
 	 * @param string $category The category.
 	 *
 	 * @return bool True when it is protected.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function isProtected(string $category): bool {
 		return in_array(strtolower(trim($category)), $this->protectedCategories(), true);
@@ -205,6 +209,8 @@ class OptOutRegistry {
 	 * The protected categories on this instance.
 	 *
 	 * @return array<int,string> The categories, lower case.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function protectedCategories(): array {
 		$raw = $this->appConfig->getValueString('integriq', self::CONFIG_PROTECTED, '');

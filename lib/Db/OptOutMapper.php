@@ -57,7 +57,7 @@ class OptOutMapper extends QBMapper {
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function __construct(IDBConnection $db) {
-		parent::__construct($db, self::TABLE, OptOut::class);
+		parent::__construct(db: $db, tableName: self::TABLE, entityClass: OptOut::class);
 
 	}//end __construct()
 
@@ -76,7 +76,7 @@ class OptOutMapper extends QBMapper {
 			->from(self::TABLE)
 			->where($qb->expr()->eq('address', $qb->createNamedParameter(strtolower(trim($address)))));
 
-		return array_values($this->findEntities($qb));
+		return array_values($this->findEntities(query: $qb));
 
 	}//end findForAddress()
 
@@ -96,7 +96,7 @@ class OptOutMapper extends QBMapper {
 			->where($qb->expr()->eq('dedupe_key', $qb->createNamedParameter($dedupeKey)));
 
 		try {
-			return $this->findEntity($qb);
+			return $this->findEntity(query: $qb);
 		} catch (DoesNotExistException) {
 			return null;
 		}
@@ -121,7 +121,7 @@ class OptOutMapper extends QBMapper {
 		}
 
 		try {
-			return ['optOut' => $this->insert($optOut), 'created' => true];
+			return ['optOut' => $this->insert(entity: $optOut), 'created' => true];
 		} catch (DbException $exception) {
 			// Two clicks at once: the unique index let one through.
 			if ($exception->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
@@ -157,7 +157,7 @@ class OptOutMapper extends QBMapper {
 			->setMaxResults(max(1, min($limit, 500)))
 			->setFirstResult(max(0, $offset));
 
-		return array_values($this->findEntities($qb));
+		return array_values($this->findEntities(query: $qb));
 
 	}//end findPage()
 
