@@ -6,4 +6,4 @@ Ruben approved the model on 2026-10-05.
 - [x] 1.2 Four groups in `IntakeGroups`; `WebhookProfile` carries them; the webhook settings enrol, withdraw and return `handlerGroup`. Verify in PHPUnit against the real block (red before)
 - [x] 1.3 `ProvisionIntakeGroups` creates the groups and enrols the webhook accounts; app version bumped
 - [x] 1.4 Warning in `WebhookConnectionRow.vue`, English and Dutch
-- [ ] 1.5 Live per role on the throwaway instance (`ifu-live/commands.md`)
+- [x] 1.5 Live per role on the throwaway instance (`ifu-live/commands.md`)
