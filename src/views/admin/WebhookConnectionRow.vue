@@ -18,7 +18,9 @@
 		<NcNoteCard
 			v-if="connection.handlerGroup && connection.handlerGroup.empty"
 			type="warning"
-			:data-testid="'admin-webhook-handlers-empty-' + connection.authorizationType">
+			:data-testid="
+				'admin-webhook-handlers-empty-' + connection.authorizationType
+			">
 			{{
 				t(
 					'integriq',
