@@ -276,7 +276,7 @@ class OptOutRegistry {
 	 * @param string $baseUrl The instance url the link is built on.
 	 * @param string|null $inReplyTo The inbound message a reply answers.
 	 *
-	 * @return array<string,array{send:bool,overridden:bool,code:string,reason:string,unsubscribe:array<string,mixed>|null,address:string,category:string}> One decision
+	 * @return array<string,array<string,mixed>> One decision
 	 *         per recipient, keyed by the address as given.
 	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
@@ -554,7 +554,7 @@ class OptOutRegistry {
 	 * @param bool $requiresConsent Whether consent is required.
 	 * @param string $baseUrl The instance url.
 	 *
-	 * @return array<string,array{send:bool,overridden:bool,code:string,reason:string,unsubscribe:array<string,mixed>|null,address:string,category:string}> The decisions.
+	 * @return array<string,array<string,mixed>> The decisions.
 	 */
 	private function decideChunk(array $chunk, array $context, bool $requiresConsent, string $baseUrl): array {
 		$keys = [];
@@ -609,7 +609,7 @@ class OptOutRegistry {
 	 * @param bool $requiresConsent Whether consent is required.
 	 * @param string $baseUrl The instance url.
 	 *
-	 * @return array{send:bool,overridden:bool,code:string,reason:string,unsubscribe:array<string,mixed>|null,address:string,category:string} The decision.
+	 * @return array<string,mixed> The decision: send, overridden, code, reason, unsubscribe, address, category.
 	 */
 	private function decideOne(
 		?string $key,
@@ -621,13 +621,25 @@ class OptOutRegistry {
 	): array {
 		$category = $context['category'];
 		if ($key === null) {
-			$decision = $this->decision(false, self::CODE_INVALID_ADDRESS, 'This address cannot be used on the "' . $context['channel'] . '" channel.', '', $category);
+			$decision = $this->decision(
+				send: false,
+				code: self::CODE_INVALID_ADDRESS,
+				reason: 'This address cannot be used on the "' . $context['channel'] . '" channel.',
+				key: '',
+				category: $category
+			);
 			$this->append(kind: OptOutLogEntry::KIND_SUPPRESSED, address: '', context: $context, detail: ['code' => self::CODE_INVALID_ADDRESS]);
 			return $decision;
 		}
 
 		if ($category === OptOutCategories::REPLY) {
-			return $this->decision(true, self::CODE_ALLOWED, 'A direct reply is sent whatever the opt-outs say.', $key, $category);
+			return $this->decision(
+				send: true,
+				code: self::CODE_ALLOWED,
+				reason: 'A direct reply is sent whatever the opt-outs say.',
+				key: $key,
+				category: $category
+			);
 		}
 
 		$mine = $this->rowsOf(rows: $rows, key: $key, contactRef: (string)($recipient['contactRef'] ?? ''));
@@ -635,26 +647,66 @@ class OptOutRegistry {
 
 		if ($this->categories->isExempt($category) === true) {
 			if ($optOut === null) {
-				return $this->decision(true, self::CODE_ALLOWED, '', $key, $category);
+				return $this->decision(
+					send: true,
+					code: self::CODE_ALLOWED,
+					reason: '',
+					key: $key,
+					category: $category
+				);
 			}
 
-			$this->append(kind: OptOutLogEntry::KIND_OVERRIDE, address: $key, context: $context, detail: ['scope' => (string)$optOut->getScope(), 'optOutId' => $optOut->getId()]);
-			$decision = $this->decision(true, self::CODE_EXEMPT_OVERRIDE, 'Category "' . $category . '" cannot be stopped by an opt-out.', $key, $category);
+			$this->append(
+				kind: OptOutLogEntry::KIND_OVERRIDE,
+				address: $key,
+				context: $context,
+				detail: ['scope' => (string)$optOut->getScope(), 'optOutId' => $optOut->getId()]
+			);
+			$decision = $this->decision(
+				send: true,
+				code: self::CODE_EXEMPT_OVERRIDE,
+				reason: 'Category "' . $category . '" cannot be stopped by an opt-out.',
+				key: $key,
+				category: $category
+			);
 			$decision['overridden'] = true;
 			return $decision;
 		}
 
 		if ($optOut !== null) {
-			$this->append(kind: OptOutLogEntry::KIND_SUPPRESSED, address: $key, context: $context, detail: ['code' => self::CODE_OPTED_OUT, 'scope' => (string)$optOut->getScope()]);
-			return $this->decision(false, self::CODE_OPTED_OUT, 'This address opted out (' . $optOut->getScope() . ').', $key, $category);
+			$this->append(
+				kind: OptOutLogEntry::KIND_SUPPRESSED,
+				address: $key,
+				context: $context,
+				detail: ['code' => self::CODE_OPTED_OUT, 'scope' => (string)$optOut->getScope()]
+			);
+			return $this->decision(
+				send: false,
+				code: self::CODE_OPTED_OUT,
+				reason: 'This address opted out (' . $optOut->getScope() . ').',
+				key: $key,
+				category: $category
+			);
 		}
 
 		if ($requiresConsent === true && $this->hasConsent(rows: $mine, recipient: $recipient, channel: $context['channel']) === false) {
 			$this->append(kind: OptOutLogEntry::KIND_SUPPRESSED, address: $key, context: $context, detail: ['code' => self::CODE_NO_CONSENT]);
-			return $this->decision(false, self::CODE_NO_CONSENT, 'No recorded consent permits this message.', $key, $category);
+			return $this->decision(
+				send: false,
+				code: self::CODE_NO_CONSENT,
+				reason: 'No recorded consent permits this message.',
+				key: $key,
+				category: $category
+			);
 		}
 
-		$decision = $this->decision(true, self::CODE_ALLOWED, '', $key, $category);
+		$decision = $this->decision(
+			send: true,
+			code: self::CODE_ALLOWED,
+			reason: '',
+			key: $key,
+			category: $category
+		);
 		$decision['unsubscribe'] = $this->material(key: $key, recipient: $recipient, channel: $context['channel'], category: $category, baseUrl: $baseUrl);
 
 		return $decision;
@@ -862,7 +914,7 @@ class OptOutRegistry {
 	 * @param string $key The normalised address.
 	 * @param string $category The category it was decided as.
 	 *
-	 * @return array{send:bool,overridden:bool,code:string,reason:string,unsubscribe:array<string,mixed>|null,address:string,category:string} The decision.
+	 * @return array<string,mixed> The decision: send, overridden, code, reason, unsubscribe, address, category.
 	 */
 	private function decision(bool $send, string $code, string $reason, string $key, string $category): array {
 		return [
@@ -892,7 +944,13 @@ class OptOutRegistry {
 		$decisions = [];
 		foreach ($recipients as $recipient) {
 			$given = (string)($recipient['address'] ?? '');
-			$decisions[$given] = $this->decision($send, $code, $reason, $given, $category);
+			$decisions[$given] = $this->decision(
+				send: $send,
+				code: $code,
+				reason: $reason,
+				key: $given,
+				category: $category
+			);
 		}
 
 		return $decisions;
@@ -941,17 +999,33 @@ class OptOutRegistry {
 		$row->setAddress($key);
 		$row->setScope($scope);
 		$row->setChannel($channel);
-		$row->setCaseRef($scope === self::SCOPE_CASE ? $ref : '');
-		$row->setListRef($scope === self::SCOPE_LIST ? $ref : '');
+		$row->setCaseRef('');
+		$row->setListRef('');
+		if ($scope === self::SCOPE_CASE) {
+			$row->setCaseRef($ref);
+		}
+
+		if ($scope === self::SCOPE_LIST) {
+			$row->setListRef($ref);
+		}
+
 		$row->setState($state);
 		$row->setPurpose((string)($request['purpose'] ?? ''));
 		$row->setContactRef((string)($request['contactRef'] ?? ''));
 		$row->setLawfulBasis((string)($request['lawfulBasis'] ?? ''));
-		$row->setEvidence(is_array($evidence) === true && $evidence !== [] ? (string)json_encode($evidence) : null);
+		$row->setEvidence(null);
+		if (is_array($evidence) === true && $evidence !== []) {
+			$row->setEvidence((string)json_encode($evidence));
+		}
+
 		$row->setSource((string)($request['source'] ?? ''));
 		$row->setSourceApp((string)($request['sourceApp'] ?? ''));
 		$legacyRef = trim((string)($request['legacyRef'] ?? ''));
-		$row->setLegacyUuid($legacyRef === '' ? null : $legacyRef);
+		$row->setLegacyUuid(null);
+		if ($legacyRef !== '') {
+			$row->setLegacyUuid($legacyRef);
+		}
+
 		$row->setCreatedAt($now);
 		$row->setUpdatedAt($now);
 		$row->assignDedupeKey();

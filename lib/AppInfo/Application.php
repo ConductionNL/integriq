@@ -348,7 +348,7 @@ class Application extends App implements IBootstrap {
 		// replay) and writes the synchronous result slot back on the event.
 		$dispatcher->addServiceListener(eventName: DeliveryRequestedEvent::class, className: DeliveryRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DigitalPostSendRequestedEvent::class, className: DigitalPostSendRequestedListener::class);
-		// opt-out-before-send (REQ-OOA-002, REQ-OOA-003): a sibling app asks
+		// Opt-out-before-send (REQ-OOA-002, REQ-OOA-003): a sibling app asks
 		// whether it may message these people, and records a person's wish.
 		// Both answer synchronously from integriq's own opt-out table.
 		$dispatcher->addServiceListener(eventName: OutboundSendDecisionRequestedEvent::class, className: OutboundSendDecisionRequestedListener::class);

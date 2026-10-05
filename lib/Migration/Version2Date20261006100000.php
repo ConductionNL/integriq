@@ -3,7 +3,7 @@
 /**
  * Let integriq's opt-out table hold consent as well as opt-outs.
  *
- * pipelinq's consent moves into this table (opt-out-before-send), so a row
+ * The consent of pipelinq moves into this table (opt-out-before-send), so a row
  * now has a state, a channel, a list, a contact, a lawful basis, evidence and
  * a withdrawal. Columns are only added, each with a default an existing row
  * reads correctly under: an old row is an instance or case opt-out on every

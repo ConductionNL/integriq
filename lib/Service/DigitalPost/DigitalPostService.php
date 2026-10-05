@@ -106,7 +106,7 @@ class DigitalPostService {
 			return;
 		}
 
-		// opt-out-before-send: the category decides, not the channel. A besluit
+		// Opt-out-before-send: the category decides, not the channel. A besluit
 		// by Berichtenbox is sent; a case update respects an opt-out. The
 		// recipient is a BSN, so the opt-out list keys it as a hash.
 		$gateOptions = [

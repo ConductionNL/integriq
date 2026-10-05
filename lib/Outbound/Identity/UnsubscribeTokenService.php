@@ -578,7 +578,8 @@ class UnsubscribeTokenService {
 		}
 
 		$this->logger->warning(
-			'[UnsubscribeTokenService] the SMS unsubscribe text would pass ' . self::SMS_TEXT_MAX . ' characters; set ' . self::CONFIG_SHORT_BASE . ' to a shorter host',
+			'[UnsubscribeTokenService] the SMS unsubscribe text would pass ' . self::SMS_TEXT_MAX
+				. ' characters; set ' . self::CONFIG_SHORT_BASE . ' to a shorter host',
 			['base' => $base]
 		);
 

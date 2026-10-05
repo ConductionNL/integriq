@@ -132,7 +132,7 @@ class NotifyNlController extends Controller {
 			$options['personalisation'] = $params['personalisation'];
 		}
 
-		// opt-out-before-send: the category decides whether an opt-out stops
+		// Opt-out-before-send: the category decides whether an opt-out stops
 		// the message. Default `service`.
 		$options['category'] = 'service';
 		if (isset($params['category']) === true && is_string($params['category']) === true && trim($params['category']) !== '') {

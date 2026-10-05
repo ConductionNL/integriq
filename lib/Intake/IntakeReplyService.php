@@ -86,7 +86,7 @@ class IntakeReplyService {
 			return $result;
 		}
 
-		// opt-out-before-send: a direct answer to the citizen's own message is
+		// Opt-out-before-send: a direct answer to the citizen's own message is
 		// asked as `reply` with the message as `inReplyTo`. An opt-out does not
 		// stop it (Ruben, 2026-10-05); only an unusable address or an
 		// unreadable list can, and it carries no unsubscribe link.
@@ -139,11 +139,19 @@ class IntakeReplyService {
 		$email = trim((string)($correspondent['address'] ?? ''));
 		$phone = trim((string)($correspondent['phone'] ?? ''));
 
-		return match ($message->getChannelId()) {
-			RecipientKey::CHANNEL_MESSAGING => [RecipientKey::CHANNEL_MESSAGING, $phone],
-			RecipientKey::CHANNEL_TEAMS => [RecipientKey::CHANNEL_TEAMS, trim((string)($correspondent['id'] ?? ''))],
-			default => ($email !== '' ? [RecipientKey::CHANNEL_EMAIL, $email] : [RecipientKey::CHANNEL_SMS, $phone]),
-		};
+		if ($message->getChannelId() === RecipientKey::CHANNEL_MESSAGING) {
+			return [RecipientKey::CHANNEL_MESSAGING, $phone];
+		}
+
+		if ($message->getChannelId() === RecipientKey::CHANNEL_TEAMS) {
+			return [RecipientKey::CHANNEL_TEAMS, trim((string)($correspondent['id'] ?? ''))];
+		}
+
+		if ($email !== '') {
+			return [RecipientKey::CHANNEL_EMAIL, $email];
+		}
+
+		return [RecipientKey::CHANNEL_SMS, $phone];
 
 	}//end recipientOf()
 

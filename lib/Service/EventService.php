@@ -3009,11 +3009,18 @@ class EventService {
 		if ($this->sendGate === null) {
 			$send = in_array(strtolower(trim($category)), OptOutCategories::FLOOR, true)
 				|| isset(OptOutCategories::DEFAULT_ALIASES[strtolower(trim($category))]) === true;
+			$code = 'allowed';
+			$reason = '';
+			if ($send === false) {
+				$code = 'authority-unavailable';
+				$reason = 'The opt-out list is not available, so this delivery was not routed.';
+			}
+
 			$decision = [
 				'send' => $send,
 				'overridden' => false,
-				'code' => ($send === true ? 'allowed' : 'authority-unavailable'),
-				'reason' => ($send === true ? '' : 'The opt-out list is not available, so this delivery was not routed.'),
+				'code' => $code,
+				'reason' => $reason,
 				'unsubscribe' => null,
 				'address' => $recipient,
 				'category' => $category,
