@@ -59,6 +59,7 @@ use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
 use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
 use OCA\Integriq\Service\KissSyncService;
@@ -190,7 +191,8 @@ class SourceRawReadContractTest extends TestCase {
 				$this->getMockBuilder(KlantinteractiesClient::class)->disableOriginalConstructor()->getMock(),
 				$this->l10n(),
 				$logger,
-				$resolver
+				$resolver,
+				new CallEventLog($fake)
 			),
 			'StufZkn' => new StufZknSyncService(
 				$fake,

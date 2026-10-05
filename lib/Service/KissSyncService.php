@@ -32,7 +32,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\Integriq\Exception\CallEventNotFoundException;
 use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\KlantinteractiesProviderInterface;
 use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
@@ -120,6 +122,7 @@ class KissSyncService {
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
+	 * @param CallEventLog $callEvents The call event log a contact moment for a call is recorded from.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -128,6 +131,7 @@ class KissSyncService {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
+		private readonly CallEventLog $callEvents,
 	) {
 
 	}//end __construct()
@@ -256,15 +260,35 @@ class KissSyncService {
 	 * @param array $input The push payload: `onderwerp`, `kanaal`, `tekst`, `plaatsgevondenOp`,
 	 *                     `indicatieContactGelukt`, `taal`, `betrokkene` (optional),
 	 *                     `sourceApp`, `caseReference` (optional), `caseObjectType` (optional,
-	 *                     default `zaak`).
+	 *                     default `zaak`), `callId` and `callSourceId` (optional: record
+	 *                     the contact moment for that ended CTI call).
 	 *
 	 * @return array{id: string, localUuid: string} The KISS-assigned klantcontact id and local record uuid.
 	 *
 	 * @throws KissProviderException When no active KISS source is configured, or KISS rejects the request.
+	 * @throws CallEventNotFoundException When `callId` names no single ended call.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	public function pushCustomerContact(array $input): array {
+		// A contact moment for a call: refused before anything reaches KISS
+		// when the call has not ended, and answered with the first contact
+		// moment when the agent's panel posts it twice.
+		$call = null;
+		if ((string) ($input['callId'] ?? '') !== '') {
+			$call = $this->callEvents->findEnded(
+				callId: (string) $input['callId'],
+				sourceId: (string) ($input['callSourceId'] ?? '')
+			);
+			$recorded = $this->findByCall(call: $call);
+			if ($recorded !== null) {
+				return ['id' => (string) ($recorded->getObject()['kissId'] ?? ''), 'localUuid' => (string) $recorded->getUuid()];
+			}
+
+			$input = $this->callInput(input: $input, call: $call);
+		}
+
 		$source = $this->resolveActiveSource();
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
@@ -333,11 +357,77 @@ class KissSyncService {
 		}
 
 		$item['onderwerpobjecten'] = $onderwerpobjecten;
+		if ($call !== null) {
+			// Not wire fields: the Klantinteracties klantcontact has no
+			// duration, so these live on the local mirror only.
+			$item['callId'] = (string) $call['callId'];
+			$item['callSourceId'] = (string) $call['sourceId'];
+			$item['durationSeconds'] = max(0, (int) ($call['durationSeconds'] ?? 0));
+		}
 
 		$saved = $this->upsertCustomerContact(item: $item, direction: 'pushed', sourceApp: $sourceApp);
 
 		return ['id' => $kissId, 'localUuid' => $saved->getUuid()];
 	}//end pushCustomerContact()
+
+	/**
+	 * The push input for a contact moment recorded from a call.
+	 *
+	 * A call is recorded on the phone channel, whatever the panel posted, and
+	 * took place when the PBX says, unless the panel says otherwise.
+	 *
+	 * @param array $input The push payload.
+	 * @param array $call  The ended call event.
+	 *
+	 * @return array The push payload for that call.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 */
+	private function callInput(array $input, array $call): array {
+		$input['channel'] = 'telefoon';
+		unset($input['kanaal']);
+		if ((string) ($input['occurredOn'] ?? '') === '' && (string) ($call['at'] ?? '') !== '') {
+			$input['occurredOn'] = (string) $call['at'];
+		}
+
+		return $input;
+
+	}//end callInput()
+
+	/**
+	 * The contact moment already recorded for a call, if any.
+	 *
+	 * @param array $call The ended call event.
+	 *
+	 * @return ObjectEntity|null The local mirror, or null.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 */
+	private function findByCall(array $call): ?ObjectEntity {
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_KLANTCONTACT,
+					'callId' => (string) $call['callId'],
+					'callSourceId' => (string) $call['sourceId'],
+				],
+				'limit' => 1,
+			]
+		);
+		$results = ($matches['results'] ?? $matches);
+		foreach ((array) $results as $result) {
+			$object = $result->getObject();
+			if ((string) ($object['callId'] ?? '') === (string) $call['callId']
+				&& (string) ($object['callSourceId'] ?? '') === (string) $call['sourceId']
+			) {
+				return $result;
+			}
+		}
+
+		return null;
+
+	}//end findByCall()
 
 	/**
 	 * Resolve the single active KISS source (`type=kiss`, `isEnabled=true`).
@@ -442,6 +532,11 @@ class KissSyncService {
 			'sourceApp' => $sourceApp,
 			'syncedAt' => (new DateTime())->format('c'),
 		];
+		foreach (['callId', 'callSourceId', 'durationSeconds'] as $callField) {
+			if (array_key_exists($callField, $item) === true) {
+				$record[$callField] = $item[$callField];
+			}
+		}
 
 		$existing = $this->findByKissId(kissId: $kissId);
 		if ($existing !== null) {
