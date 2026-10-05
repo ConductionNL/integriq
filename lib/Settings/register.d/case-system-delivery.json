@@ -1,0 +1,148 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-case-system-document-delivery, Task 4, design D4 and D5). Seeds the two push synchronizations that turn a filinq delivery into a new document in the case system, and their mappings. Both ship unbound (no source schema) and point at the dormant ZGW set sources zgw-set-documenten and zgw-set-zaken (zgw-consumer-sets.json, isEnabled false), so nothing runs until an administrator links them. The slugs object-to-zgw-document and zgw-documenten-push already belong to the zgw-documenten set (pass-through write-back of edits to documents that came from the case system), so this change seeds its own. Field names follow filinq development: caseSystemDelivery (change generate-store-in-case-system D6, deliveryStatus) and externalDocument (change zgw-document-bridge, processingStatus, resultFileRef, resultExternalId, writeBackError).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "case-system-delivery-to-zgw-document"
+        },
+        "name": "filinq delivery to a Documenten API document",
+        "slug": "case-system-delivery-to-zgw-document",
+        "description": "Maps a filinq caseSystemDelivery onto the EnkelvoudigInformatieObject the Documenten API creates: bronorganisatie, creatiedatum, titel, auteur, taal, formaat, bestandsnaam, informatieobjecttype and vertrouwelijkheidaanduiding, plus zaakUrl for the case relation. A field the delivery does not carry stays empty and is left out of the request. Used by the synchronization filinq-case-system-delivery.",
+        "mapping": {
+          "bronorganisatie": "{{ bronorganisatie|default('')|raw }}",
+          "creatiedatum": "{% if creatiedatum is not empty %}{{ creatiedatum|date('Y-m-d') }}{% endif %}",
+          "titel": "{{ titel|default('')|raw }}",
+          "auteur": "{{ auteur|default('')|raw }}",
+          "taal": "{{ taal|default('')|raw }}",
+          "formaat": "{{ formaat|default('')|raw }}",
+          "bestandsnaam": "{{ bestandsnaam|default('')|raw }}",
+          "informatieobjecttype": "{{ informatieobjecttype|default('')|raw }}",
+          "vertrouwelijkheidaanduiding": "{{ vertrouwelijkheidaanduiding|default('')|raw }}",
+          "zaakUrl": "{{ zaakUrl|default('')|raw }}"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "redacted-document-to-zgw-document"
+        },
+        "name": "filinq redacted copy to a Documenten API document",
+        "slug": "redacted-document-to-zgw-document",
+        "description": "Maps a filinq externalDocument released for write-back onto a NEW EnkelvoudigInformatieObject: the title gets the suffix (geanonimiseerd), the description names the original's identificatie and the processing date, and resultFileRef names the redacted file. An externalDocument carries no bronorganisatie, auteur, taal or informatieobjecttype: give them fixed values here for your case system, or the Documenten API refuses the create and the document reads writeback_failed with its message. Used by the synchronization filinq-redacted-writeback.",
+        "mapping": {
+          "bronorganisatie": "{{ bronorganisatie|default('')|raw }}",
+          "creatiedatum": "{{ 'now'|date('Y-m-d') }}",
+          "titel": "{{ title|default('')|raw }} (geanonimiseerd)",
+          "auteur": "{{ auteur|default('')|raw }}",
+          "taal": "{{ taal|default('')|raw }}",
+          "formaat": "{{ format|default('')|raw }}",
+          "bestandsnaam": "{{ filename|default('')|raw }}",
+          "informatieobjecttype": "{{ informatieobjecttype|default('')|raw }}",
+          "vertrouwelijkheidaanduiding": "{{ vertrouwelijkheidaanduiding|default('')|raw }}",
+          "beschrijving": "Geanonimiseerde kopie van {{ externalId|default('')|raw }}, verwerkt door Filinq op {{ 'now'|date('Y-m-d') }}.",
+          "resultFileRef": "{{ resultFileRef|default('')|raw }}",
+          "zaakUrl": "{{ zaakUrl|default('')|raw }}"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "filinq-case-system-delivery"
+        },
+        "name": "filinq deliveries to the case system",
+        "slug": "filinq-case-system-delivery",
+        "description": "Creates a new document in the case system for each filinq caseSystemDelivery in ready_for_writeback, relates it to the case when the delivery has a zaakUrl, and writes written_back with the document url, or writeback_failed with the case system's message, onto the delivery. It never updates a document it created. Disabled until an administrator links it: choose filinq's caseSystemDelivery schema as the source, set up and enable the Documenten API and Zaken API sources (zgw-set-documenten, zgw-set-zaken). The file is the first file attached to the delivery.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceTargetMapping": "case-system-delivery-to-zgw-document",
+        "targetId": "zgw-set-documenten",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/enkelvoudiginformatieobjecten",
+          "zgwDocument": {
+            "zakenSource": "zgw-set-zaken",
+            "zaakUrlField": "zaakUrl"
+          }
+        },
+        "conditions": [
+          {
+            "==": [
+              {
+                "var": "deliveryStatus"
+              },
+              "ready_for_writeback"
+            ]
+          }
+        ],
+        "writeBack": {
+          "onSuccess": {
+            "deliveryStatus": "written_back",
+            "resultExternalId": "{{ response.url }}"
+          },
+          "onFailure": {
+            "deliveryStatus": "writeback_failed",
+            "writeBackError": "{{ error.message }}"
+          }
+        },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "filinq-redacted-writeback"
+        },
+        "name": "filinq redacted copies to the case system",
+        "slug": "filinq-redacted-writeback",
+        "description": "Creates a new document in the case system for each filinq externalDocument in ready_for_writeback, from the redacted file in resultFileRef, titled with the suffix (geanonimiseerd), and writes written_back with the document url, or writeback_failed with the case system's message, onto the externalDocument. The original document is never updated, versioned or replaced. Disabled until an administrator links it: choose filinq's externalDocument schema as the source, give the mapping redacted-document-to-zgw-document your case system's bronorganisatie, auteur, taal and informatieobjecttype, and set up and enable the Documenten API and Zaken API sources (zgw-set-documenten, zgw-set-zaken). The copy is related to a case only when the object carries a zaakUrl.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceTargetMapping": "redacted-document-to-zgw-document",
+        "targetId": "zgw-set-documenten",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/enkelvoudiginformatieobjecten",
+          "zgwDocument": {
+            "zakenSource": "zgw-set-zaken",
+            "zaakUrlField": "zaakUrl",
+            "fileIdField": "resultFileRef"
+          }
+        },
+        "conditions": [
+          {
+            "==": [
+              {
+                "var": "processingStatus"
+              },
+              "ready_for_writeback"
+            ]
+          }
+        ],
+        "writeBack": {
+          "onSuccess": {
+            "processingStatus": "written_back",
+            "resultExternalId": "{{ response.url }}"
+          },
+          "onFailure": {
+            "processingStatus": "writeback_failed",
+            "writeBackError": "{{ error.message }}"
+          }
+        },
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
