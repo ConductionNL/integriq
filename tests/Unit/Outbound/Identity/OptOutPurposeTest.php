@@ -27,6 +27,7 @@ namespace OCA\Integriq\Tests\Unit\Outbound\Identity;
 use OCA\Integriq\Db\OptOut;
 use OCA\Integriq\Outbound\Identity\OptOutCategories;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
+use OCA\Integriq\Outbound\Identity\OptOutRowBuilder;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -200,6 +201,36 @@ class OptOutPurposeTest extends TestCase {
 		$this->assertSame('allowed', $marketing['code']);
 
 	}//end testAMarketingConsentOpensMarketingOnly()
+
+	/**
+	 * A row stored with a purpose but an old key gets the new key, so the next
+	 * write for the same wish finds it instead of adding a twin.
+	 *
+	 * @return void
+	 */
+	public function testARowWithAnOldKeyIsRekeyed(): void {
+		$row = new OptOut();
+		$row->setAddress('piet@example.org');
+		$row->setScope('channel');
+		$row->setChannel('email');
+		$row->setCaseRef('');
+		$row->setListRef('');
+		$row->setPurpose('marketing');
+		$row->setState(OptOut::STATE_OPTED_OUT);
+		$row->setDedupeKey(OptOut::keyFor(address: 'piet@example.org', scope: 'channel', ref: '', channel: 'email'));
+		$this->fx->table->insertIfAbsent($row);
+
+		$builder = new OptOutRowBuilder($this->fx->recipientKey(), $this->fx->clock(), $this->fx->categories());
+		$this->assertTrue($builder->rekey($row));
+		$this->fx->table->update($row);
+		$this->assertFalse($builder->rekey($row), 'a second run changes nothing');
+
+		$registry = $this->fx->registry();
+		$registry->record(['address' => 'piet@example.org', 'state' => 'opted-in', 'scope' => 'channel', 'channel' => 'email', 'purpose' => 'marketing', 'lawfulBasis' => 'consent', 'sourceApp' => 'pipelinq']);
+		$this->assertCount(1, $this->fx->table->rows);
+		$this->assertSame(OptOut::STATE_OPTED_IN, array_values($this->fx->table->rows)[0]->getState());
+
+	}//end testARowWithAnOldKeyIsRekeyed()
 
 	/**
 	 * Record an opt-out for piet@example.org on email.

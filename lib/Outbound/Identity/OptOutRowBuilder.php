@@ -149,6 +149,28 @@ class OptOutRowBuilder {
 	}//end validated()
 
 	/**
+	 * Give a stored row the purpose and key it has under the purpose rules.
+	 *
+	 * A row written before purposes were read kept its purpose out of its
+	 * key. Without a new key the next write for the same wish would miss it
+	 * and add a second row.
+	 *
+	 * @param OptOut $row The stored row.
+	 *
+	 * @return bool True when the row changed and needs saving.
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
+	 */
+	public function rekey(OptOut $row): bool {
+		$before = [(string)$row->getPurpose(), (string)$row->getDedupeKey()];
+		$row->setPurpose($this->categories->normalisePurpose((string)$row->getPurpose()));
+		$row->assignDedupeKey();
+
+		return $before !== [(string)$row->getPurpose(), (string)$row->getDedupeKey()];
+
+	}//end rekey()
+
+	/**
 	 * Move a stored row to the state a new request asks for.
 	 *
 	 * @param OptOut $stored The stored row.
