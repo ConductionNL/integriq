@@ -263,6 +263,72 @@ class OutboundSendDecisionRequestedListenerTest extends TestCase {
 	}//end testApplicationRegistersBothListeners()
 
 	/**
+	 * A probe on an opted-out address answers and writes no log row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-a-probe-answers-without-writing-req-ooa-012
+	 */
+	public function testAProbeWritesNoLogRow(): void {
+		$registry = $this->fx->registry();
+		$registry->record(['address' => '+31612345678', 'state' => 'opted-out', 'scope' => 'channel', 'channel' => 'sms', 'sourceApp' => 'pipelinq']);
+		$logged = count($this->fx->log->rows);
+
+		$class = self::DECISION_EVENT;
+		$event = new $class('pipelinq', 'sms', 'service', [['address' => '+31612345678']], 'probe-1', '', true, null, true);
+		$this->dispatcher(registry: $registry)->dispatchTyped($event);
+
+		$this->assertTrue($event->isProbe());
+		$this->assertTrue($event->isHandled());
+		$this->assertSame('opted-out', $event->getDecision('+31612345678')['code']);
+		$this->assertCount($logged, $this->fx->log->rows, 'a probe writes no log row');
+
+	}//end testAProbeWritesNoLogRow()
+
+	/**
+	 * A probe on an allowed number mints no link and stores no short link.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-a-probe-answers-without-writing-req-ooa-012
+	 */
+	public function testAProbeMintsNothing(): void {
+		$registry = $this->fx->registry();
+
+		$class = self::DECISION_EVENT;
+		$event = new $class('pipelinq', 'sms', 'service', [['address' => '+31687654321']], 'probe-2', '', false, null, true);
+		$this->dispatcher(registry: $registry)->dispatchTyped($event);
+
+		$this->assertTrue($event->getDecision('+31687654321')['send']);
+		$this->assertNull($event->getDecision('+31687654321')['unsubscribe']);
+		$this->assertSame([], $this->fx->shortLinks->rows);
+		$this->assertSame([], $this->fx->log->rows);
+
+	}//end testAProbeMintsNothing()
+
+	/**
+	 * A real ask still logs, and an event built without the flag is no probe.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-a-probe-answers-without-writing-req-ooa-012
+	 */
+	public function testARealAskStillLogs(): void {
+		$registry = $this->fx->registry();
+		$registry->record(['address' => '+31612345678', 'state' => 'opted-out', 'scope' => 'channel', 'channel' => 'sms', 'sourceApp' => 'pipelinq']);
+		$logged = count($this->fx->log->rows);
+
+		$class = self::DECISION_EVENT;
+		$event = new $class('pipelinq', 'sms', 'service', [['address' => '+31612345678']], 'send-1');
+		$this->dispatcher(registry: $registry)->dispatchTyped($event);
+
+		$this->assertFalse($event->isProbe());
+		$this->assertCount(($logged + 1), $this->fx->log->rows);
+		$this->assertSame(OptOutLogEntry::KIND_SUPPRESSED, end($this->fx->log->rows)->getKind());
+
+	}//end testARealAskStillLogs()
+
+	/**
 	 * A dispatcher with both listeners registered as Application registers them.
 	 *
 	 * @param OptOutRegistry $registry The registry.
