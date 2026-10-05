@@ -251,25 +251,38 @@ class StufZknClient implements StufZknProviderInterface {
 
 		$parts = [];
 		foreach (['code', 'omschrijving', 'details'] as $name) {
-			$found = $parsed->xpath('//*[local-name()="Fo03Bericht"]/*[local-name()="body"]/*[local-name()="' . $name . '"]');
-			if (is_array($found) === true && $found !== [] && trim((string)$found[0]) !== '') {
-				$parts[] = trim((string)$found[0]);
-			}
+			$parts[] = $this->firstText(xml: $parsed, path: '//*[local-name()="Fo03Bericht"]/*[local-name()="body"]/*[local-name()="' . $name . '"]');
 		}
 
+		$parts = array_values(array_filter($parts, static fn (string $part): bool => $part !== ''));
 		if ($parts === []) {
-			$found = $parsed->xpath('//*[local-name()="Fault"]/*[local-name()="faultstring"]');
-			if (is_array($found) === true && $found !== [] && trim((string)$found[0]) !== '') {
-				$parts[] = trim((string)$found[0]);
-			}
+			$parts[] = $this->firstText(xml: $parsed, path: '//*[local-name()="Fault"]/*[local-name()="faultstring"]');
 		}
 
-		if ($parts === []) {
+		$text = trim(implode(' ', $parts));
+		if ($text === '') {
 			return 'no fault details';
 		}
 
-		return implode(' ', $parts);
+		return $text;
 	}//end faultText()
+
+	/**
+	 * The trimmed text of the first node a path selects, '' when none.
+	 *
+	 * @param \SimpleXMLElement $xml  The parsed answer.
+	 * @param string            $path The XPath.
+	 *
+	 * @return string
+	 */
+	private function firstText(\SimpleXMLElement $xml, string $path): string {
+		$found = $xml->xpath($path);
+		if (is_array($found) === false || $found === []) {
+			return '';
+		}
+
+		return trim((string)$found[0]);
+	}//end firstText()
 
 	/**
 	 * POST an envelope with the SOAP headers, over mTLS when configured.

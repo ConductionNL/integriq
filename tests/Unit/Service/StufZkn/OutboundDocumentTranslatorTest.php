@@ -88,7 +88,7 @@ class OutboundDocumentTranslatorTest extends TestCase {
 	private function documentMessage(array $document=self::DOCUMENT): array {
 		return (new OutboundDocumentTranslator())->documentMessage(
 			document: $document,
-			documentIdentificatie: '0363-DOC-2026-000042',
+			documentId: '0363-DOC-2026-000042',
 			zaakIdentificatie: '0363-ZAAK-2026-0099',
 			documenttype: 'Besluit',
 			file: ['content' => 'ANON!', 'filename' => 'besluit-geanonimiseerd.pdf', 'mimeType' => 'application/pdf'],

@@ -124,7 +124,7 @@ class OutboundDocumentTranslator {
 	 * Build the `voegZaakdocumentToe_Lk01` kennisgeving (`edcLk01`).
 	 *
 	 * @param array                                                $document              The mapped delivery (ZGW field names).
-	 * @param string                                               $documentIdentificatie The identificatie from genereerDocumentIdentificatie.
+	 * @param string                                               $documentId The identificatie from genereerDocumentIdentificatie.
 	 * @param string                                               $zaakIdentificatie     The case the document belongs to.
 	 * @param string                                               $documenttype          The case type's document type description (`dct.omschrijving`).
 	 * @param array{content:string,filename:string,mimeType:string} $file                  The file, sent inline.
@@ -139,7 +139,7 @@ class OutboundDocumentTranslator {
 	 */
 	public function documentMessage(
 		array $document,
-		string $documentIdentificatie,
+		string $documentId,
 		string $zaakIdentificatie,
 		string $documenttype,
 		array $file,
@@ -147,7 +147,7 @@ class OutboundDocumentTranslator {
 		array $ontvanger,
 	): array {
 		$required = [
-			'identificatie' => $documentIdentificatie,
+			'identificatie' => $documentId,
 			'zaakIdentificatie' => $zaakIdentificatie,
 			'documenttype' => $documenttype,
 			'titel' => trim((string)($document['titel'] ?? '')),
@@ -187,7 +187,7 @@ class OutboundDocumentTranslator {
 
 		// The EDC element order of the ZDS 1.2 zkn0310 entity schema.
 		$fields = [
-			'identificatie' => $documentIdentificatie,
+			'identificatie' => $documentId,
 			'dct.omschrijving' => $documenttype,
 			'creatiedatum' => $this->stufDate(value: (string)($document['creatiedatum'] ?? '')),
 			'ontvangstdatum' => $this->stufDate(value: (string)($document['ontvangstdatum'] ?? '')),

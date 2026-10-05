@@ -120,7 +120,7 @@ class StufZdsDocumentDelivery {
 		// Refuse an incomplete document before the case system hands out an identificatie for it.
 		$this->translator->documentMessage(
 			document: $document,
-			documentIdentificatie: 'probe',
+			documentId: 'probe',
 			zaakIdentificatie: $zaakIdentificatie,
 			documenttype: $documenttype,
 			file: $file,
@@ -139,7 +139,7 @@ class StufZdsDocumentDelivery {
 
 		$message = $this->translator->documentMessage(
 			document: $document,
-			documentIdentificatie: $identificatie,
+			documentId: $identificatie,
 			zaakIdentificatie: $zaakIdentificatie,
 			documenttype: $documenttype,
 			file: $file,
