@@ -109,6 +109,15 @@ class RecipientKey {
 	public const CONFIG_SECRET = 'outbound.recipient_key_secret';
 
 	/**
+	 * The secret, once read. A sensitive app-config value is decrypted on
+	 * every read, which made a batch of 500 cost 300 ms; one read per request
+	 * is enough.
+	 *
+	 * @var string|null
+	 */
+	private ?string $secretCache = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the hashing secret.
@@ -224,13 +233,19 @@ class RecipientKey {
 	 * @return string The secret.
 	 */
 	private function secret(): string {
+		if ($this->secretCache !== null) {
+			return $this->secretCache;
+		}
+
 		$secret = $this->appConfig->getValueString('integriq', self::CONFIG_SECRET, '');
 		if (trim($secret) !== '') {
+			$this->secretCache = $secret;
 			return $secret;
 		}
 
 		$secret = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
 		$this->appConfig->setValueString('integriq', self::CONFIG_SECRET, $secret, false, true);
+		$this->secretCache = $secret;
 
 		return $secret;
 
