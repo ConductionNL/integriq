@@ -56,7 +56,7 @@
       "type": "custom",
       "component": "RecipientOptOutsPage",
       "title": "Opt-outs",
-      "_note": "Custom page: the opt-outs live in integriq's own table (integriq_opt_outs), not in OpenRegister, because the unsubscribe link writes them from a public request OpenRegister refuses. Read through GET /api/outbound/opt-outs, administrators only. The recipient_opt_out schema is read-only history (opt-outs-in-an-app-table-and-routing-rules-read-as-config).",
+      "_note": "Custom page, and no typed archetype fits: this is a list, but index and logs pages only read an OpenRegister register/schema, and these rows are not in OpenRegister. The opt-outs live in integriq's own table (integriq_opt_outs) because the unsubscribe link writes them from a public request OpenRegister refuses (ADR-099 section 9). Read through GET /api/outbound/opt-outs, administrators only, read only. The recipient_opt_out schema is read-only history (opt-outs-in-an-app-table-and-routing-rules-read-as-config, approved by Ruben 2026-10-05). Becomes an index page once the shared index page can read an app endpoint.",
       "config": {}
     }
   ],
