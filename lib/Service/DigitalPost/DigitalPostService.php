@@ -149,7 +149,8 @@ class DigitalPostService {
 			subject: $event->getSubject(),
 			body: $composed['body'],
 			address: (string)$decision['address'],
-			options: ['sourceApp' => $event->getSourceApp(), 'correlationId' => $event->getCorrelationId()]
+			options: ['sourceApp' => $event->getSourceApp(), 'correlationId' => $event->getCorrelationId(), 'caseRef' => $event->getCaseRef()],
+			decision: $decision
 		);
 		$result = $this->sendThroughProvider(providerId: $providerId, message: $message, config: $config);
 		$this->recordOutcome(logRow: $logRow, address: (string)$decision['address'], result: $result);

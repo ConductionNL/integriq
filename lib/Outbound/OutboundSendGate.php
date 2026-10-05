@@ -141,7 +141,10 @@ class OutboundSendGate {
 	 * @param string $subject The subject line.
 	 * @param string $body The body as it leaves.
 	 * @param string $address The recipient key.
-	 * @param array<string,mixed> $options `sourceApp`, `correlationId`, `context`.
+	 * @param array<string,mixed> $options `sourceApp`, `correlationId`, `caseRef`, `context`.
+	 * @param array<string,mixed>|null $decision The decision this send was made under. Its category
+	 *                                           and the case are kept on the row, so a retry asks again
+	 *                                           as the first send did.
 	 *
 	 * @return string|null The row uuid, or null when it could not be written.
 	 *
@@ -154,7 +157,21 @@ class OutboundSendGate {
 		string $body,
 		string $address,
 		array $options = [],
+		?array $decision = null,
 	): ?string {
+		if ($decision !== null) {
+			$context = ($options['context'] ?? []);
+			if (is_array($context) === false) {
+				$context = [];
+			}
+
+			$context['optOut'] = [
+				'category' => (string)($decision['category'] ?? ''),
+				'caseRef' => (string)($options['caseRef'] ?? ''),
+			];
+			$options['context'] = $context;
+		}
+
 		try {
 			$record = $this->recorder->start(
 				subjectRef: $subjectRef,
@@ -243,7 +260,7 @@ class OutboundSendGate {
 			$address = '(invalid address)';
 		}
 
-		$uuid = $this->open(channel: $channel, subjectRef: $subjectRef, subject: '', body: '', address: $address, options: $options);
+		$uuid = $this->open(channel: $channel, subjectRef: $subjectRef, subject: '', body: '', address: $address, options: $options, decision: $decision);
 		$this->failed(
 			uuid: $uuid,
 			address: $address,

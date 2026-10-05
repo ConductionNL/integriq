@@ -190,7 +190,15 @@ class SmsDispatchService {
 
 		$provider = $this->resolveProvider(configuration: $configuration);
 
-		$logRow = $this->gate->open(channel: 'sms', subjectRef: ($objectUri ?? ''), subject: '', body: $body, address: $e164, options: $gateOptions);
+		$logRow = $this->gate->open(
+			channel: 'sms',
+			subjectRef: ($objectUri ?? ''),
+			subject: '',
+			body: $body,
+			address: $e164,
+			options: $gateOptions,
+			decision: $decision
+		);
 
 		$message = $this->objectService->saveObject(
 			object: [

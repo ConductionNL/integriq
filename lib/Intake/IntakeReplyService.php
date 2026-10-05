@@ -112,7 +112,8 @@ class IntakeReplyService {
 			subject: '',
 			body: $composed['body'],
 			address: (string)$decision['address'],
-			options: $gateOptions
+			options: $gateOptions,
+			decision: $decision
 		);
 
 		$result = $adapter->reply($message, $composed['body']);

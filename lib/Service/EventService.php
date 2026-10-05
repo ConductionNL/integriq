@@ -2957,22 +2957,7 @@ class EventService {
 		}
 
 		$messages = $this->processEvent(event: $event);
-		if ($optOut !== null && $this->sendGate !== null) {
-			$address = (string)$optOut['decision']['address'];
-			$logRow = $this->sendGate->open(
-				channel: $optOut['channel'],
-				subjectRef: $request->getSubjectId(),
-				subject: $request->getSubjectLabel(),
-				body: (string)($payload['body'] ?? ''),
-				address: $address,
-				options: ['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId()]
-			);
-			if ($messages === []) {
-				$this->sendGate->failed(uuid: $logRow, address: $address, step: 'route', reason: 'No event subscription matched this delivery.');
-			} else {
-				$this->sendGate->handedOver(uuid: $logRow, address: $address, reference: (string)$event->getUuid());
-			}
-		}
+		$this->recordDelivery(request: $request, optOut: $optOut, payload: $payload, event: $event, messages: $messages);
 
 		return [
 			'event' => $event,
@@ -2980,6 +2965,51 @@ class EventService {
 			'refusal' => null,
 		];
 	}//end ingestDeliveryRequest()
+
+	/**
+	 * Keep the outbound log row of a personal delivery that was routed.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 * @param array<string,mixed>|null $optOut The opt-out decision, or null when no person was named.
+	 * @param array<string,mixed> $payload The payload as stored.
+	 * @param ObjectEntity $event The stored CloudEvent.
+	 * @param ObjectEntity[] $messages The delivery messages routing created.
+	 *
+	 * @return void
+	 */
+	private function recordDelivery(
+		DeliveryRequestedEvent $request,
+		?array $optOut,
+		array $payload,
+		ObjectEntity $event,
+		array $messages,
+	): void {
+		if ($optOut === null || $this->sendGate === null) {
+			return;
+		}
+
+		$address = (string)$optOut['decision']['address'];
+		$logRow = $this->sendGate->open(
+			channel: $optOut['channel'],
+			subjectRef: $request->getSubjectId(),
+			subject: $request->getSubjectLabel(),
+			body: (string)($payload['body'] ?? ''),
+			address: $address,
+			options: [
+				'sourceApp' => $request->getSourceApp(),
+				'correlationId' => $request->getCorrelationId(),
+				'caseRef' => (string)($payload['caseRef'] ?? ''),
+			],
+			decision: $optOut['decision']
+		);
+		if ($messages === []) {
+			$this->sendGate->failed(uuid: $logRow, address: $address, step: 'route', reason: 'No event subscription matched this delivery.');
+			return;
+		}
+
+		$this->sendGate->handedOver(uuid: $logRow, address: $address, reference: (string)$event->getUuid());
+
+	}//end recordDelivery()
 
 	/**
 	 * Ask the opt-out list about a delivery that names a personal recipient.
