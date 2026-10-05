@@ -63,6 +63,10 @@ class IntakeReplyOptOutTest extends TestCase {
 		$this->assertSame(ReplyResult::STATUS_SENT, $result->getStatus());
 		$this->assertSame(['Uw melding is in behandeling.'], $this->sentTexts, 'sent, with no unsubscribe line');
 		$this->assertSame([], $fx->log->ofKind('suppressed'));
+		$asked = $fx->log->ofKind('allowed-count');
+		$this->assertCount(1, $asked, 'the reply was asked, not skipped');
+		$this->assertSame('reply', $asked[0]->getCategory());
+		$this->assertSame('intake-uuid', $asked[0]->getCorrelationId());
 
 	}//end testAnOptedOutCitizenGetsTheAnswerToTheirOwnQuestion()
 
