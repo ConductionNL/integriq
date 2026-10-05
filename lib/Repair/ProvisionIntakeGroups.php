@@ -139,6 +139,8 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 * @return array<string, string>
 	 *
 	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#scenario-an-upgraded-instance-keeps-its-webhook-accounts
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WebhookProfiles is a static catalogue of constants, as in WebhookConnectionsSettingsController.
 	 */
 	private function intakeGroupOf(): array {
 		$groupOf = self::INTAKE_GROUP_OF;

@@ -244,15 +244,16 @@ class RenameDutchColumns implements IRepairStep {
 	private function direction(array $declared, string $dutch, string $english): ?array {
 		$declaresDutch = in_array($dutch, $declared, true);
 		$declaresEnglish = in_array($english, $declared, true);
-		if ($declaresEnglish === true && $declaresDutch === false) {
+		if ($declaresDutch === $declaresEnglish) {
+			// Both or neither: nothing tells which name is meant.
+			return null;
+		}
+
+		if ($declaresEnglish === true) {
 			return ['from' => $dutch, 'to' => $english, 'kind' => 'renamed'];
 		}
 
-		if ($declaresDutch === true && $declaresEnglish === false) {
-			return ['from' => $english, 'to' => $dutch, 'kind' => 'restored'];
-		}
-
-		return null;
+		return ['from' => $english, 'to' => $dutch, 'kind' => 'restored'];
 
 	}//end direction()
 

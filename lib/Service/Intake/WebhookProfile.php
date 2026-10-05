@@ -66,6 +66,8 @@ final class WebhookProfile {
 	 *
 	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
 	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#requirement-intake-messages-and-verdicts-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-iac-002
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) a readonly value object: one named, defaulted field per property, no behaviour.
 	 */
 	public function __construct(
 		public readonly string $authorizationType,
