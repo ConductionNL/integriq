@@ -22,6 +22,7 @@ namespace OCA\Integriq\Service\DigitalPost;
 
 use OCA\Integriq\Event\DigitalPostDeliveredEvent;
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
+use OCA\Integriq\Outbound\OutboundSendGate;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -55,6 +56,7 @@ class DigitalPostService {
 	 * @param OrObjectService $objectService OpenRegister's object-service facade.
 	 * @param IEventDispatcher $eventDispatcher The Nextcloud event dispatcher.
 	 * @param LoggerInterface $logger Structured logger.
+	 * @param OutboundSendGate $gate Asks the opt-out list, adds the link, keeps the outbound log row.
 	 */
 	public function __construct(
 		private readonly DigitalPostProviderRegistry $providers,
@@ -62,6 +64,7 @@ class DigitalPostService {
 		private readonly OrObjectService $objectService,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly OutboundSendGate $gate,
 	) {
 	}//end __construct()
 
@@ -73,6 +76,7 @@ class DigitalPostService {
 	 * @return void
 	 *
 	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
 	 */
 	public function handleSendRequest(DigitalPostSendRequestedEvent $event): void {
 		$config = $this->sourceConfig(sourceId: $event->getSourceId());
@@ -102,10 +106,44 @@ class DigitalPostService {
 			return;
 		}
 
+		// opt-out-before-send: the category decides, not the channel. A besluit
+		// by Berichtenbox is sent; a case update respects an opt-out. The
+		// recipient is a BSN, so the opt-out list keys it as a hash.
+		$gateOptions = [
+			'caseRef' => $event->getCaseRef(),
+			'sourceApp' => $event->getSourceApp(),
+			'correlationId' => $event->getCorrelationId(),
+		];
+		$decision = $this->gate->check(
+			channel: 'digital-post',
+			category: $event->getCategory(),
+			address: $event->getRecipient(),
+			options: $gateOptions
+		);
+		if ($decision['send'] !== true) {
+			$event->setHandled(true);
+			$event->setRefusal((string)$decision['reason'], (string)$decision['code']);
+			$this->gate->recordRefusal(
+				channel: 'digital-post',
+				subjectRef: $event->getCaseRef(),
+				decision: $decision,
+				options: $gateOptions
+			);
+
+			return;
+		}
+
+		$composed = $this->gate->compose(
+			body: $event->getBody(),
+			decision: $decision,
+			channel: 'digital-post',
+			caseRef: $event->getCaseRef()
+		);
+
 		$message = [
 			'recipient' => $event->getRecipient(),
 			'subject' => $event->getSubject(),
-			'body' => $event->getBody(),
+			'body' => $composed['body'],
 			'attachments' => $event->getAttachments(),
 			'requestedBy' => $event->getRequestedBy(),
 			'sourceApp' => $event->getSourceApp(),
@@ -127,7 +165,20 @@ class DigitalPostService {
 			return;
 		}
 
+		$logRow = $this->gate->open(
+			channel: 'digital-post',
+			subjectRef: $event->getCaseRef(),
+			subject: $event->getSubject(),
+			body: $composed['body'],
+			address: (string)$decision['address'],
+			options: $gateOptions
+		);
 		$result = $this->sendThroughProvider(providerId: $providerId, message: $message, config: $config);
+		if ($result->isRefused() === true) {
+			$this->gate->failed(uuid: $logRow, address: (string)$decision['address'], step: OutboundSendGate::STEP_SEND, reason: $result->getError());
+		} else {
+			$this->gate->handedOver(uuid: $logRow, address: (string)$decision['address'], reference: $result->getProviderReference());
+		}
 
 		// The attachments stay on the message whatever happened, which is what
 		// "a failed send keeps the letter" means: the PDF is still there to
