@@ -30,7 +30,11 @@ const optOuts = merged.pages.find((page) => page.id === 'RecipientOptOuts')
 describe('sender identity manifest fragment', () => {
 	it('adds the identities and the opt-outs pages', () => {
 		expect(identities.config.schema).toBe('sender_identity')
-		expect(optOuts.config.schema).toBe('recipient_opt_out')
+		// The opt-outs live in integriq's own table, so the page is the custom
+		// component that reads GET /api/outbound/opt-outs, not a schema page.
+		expect(optOuts.type).toBe('custom')
+		expect(optOuts.component).toBe('RecipientOptOutsPage')
+		expect(optOuts.config?.schema).toBeUndefined()
 	})
 
 	it('never puts key material in a column', () => {
@@ -47,15 +51,10 @@ describe('sender identity manifest fragment', () => {
 		expect(keys).toContain('holdWindowSeconds')
 	})
 
-	it('colours only the opt-out scopes the schema can hold', () => {
-		const register = read('lib/Settings/integriq_register.json')
-		const allowed =
-			register.components.schemas.recipient_opt_out.properties.scope.enum
-		const scope = optOuts.config.columns.find((column) => column.key === 'scope')
+	it('registers the opt-out page component', () => {
+		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
 
-		expect(Object.keys(scope.widgetProps.colorMap).sort()).toEqual(
-			[...allowed].sort(),
-		)
+		expect(registry).toMatch(/RecipientOptOutsPage: \{ kind: 'page', component: RecipientOptOutsPage \}/)
 	})
 
 	it('keeps the three quoting levels the schema declares', () => {

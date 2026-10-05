@@ -57,6 +57,7 @@ import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
 import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
+import RecipientOptOutsPage from './views/RecipientOptOuts/RecipientOptOutsPage.vue'
 import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
@@ -293,6 +294,7 @@ export default {
 	// not the generic OR object CRUD a CnIndexPage drives. See
 	// notificaties-api-subscriber REQ-008.
 	NotificatiesAbonnementenPage,
+	RecipientOptOutsPage,
 
 	// Execution trace detail (custom page): step-timeline + dry-run/forced
 	// Replay over one execution_trace, backed by the
@@ -330,6 +332,7 @@ export const registry = {
 		kind: 'page',
 		component: NotificatiesAbonnementenPage,
 	},
+	RecipientOptOutsPage: { kind: 'page', component: RecipientOptOutsPage },
 	MappingDetailPage: { kind: 'page', component: MappingDetailPage },
 	RuleDetailPage: { kind: 'page', component: RuleDetailPage },
 	SynchronizationDetailPage: {
