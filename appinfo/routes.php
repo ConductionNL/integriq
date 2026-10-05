@@ -118,6 +118,8 @@ return [
 		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
 		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
+		// The opt-out list, read from integriq's own table. Administrators only.
+		['name' => 'senderIdentity#optOuts', 'url' => '/api/outbound/opt-outs', 'verb' => 'GET'],
 
 		// The outbound call log, its replay and the verdicts
 		// (openspec/changes/archive/2026-09-28-outbound-call-delivery-and-replay). Reading a call

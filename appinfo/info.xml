@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.8-unstable.20261005120000</version>
+	<version>0.4.9-unstable.20261005140000</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -368,6 +368,11 @@
 			     name, and each connection's account in its intake group. Runs
 			     after the two connection migrations. Idempotent. -->
 			<step>OCA\Integriq\Repair\ProvisionIntakeGroups</step>
+			<!-- opt-outs-in-an-app-table-and-routing-rules-read-as-config: copies
+			     the recipient_opt_out objects into integriq_opt_outs, which the
+			     migration Version2Date20261005100000 created. Post-migration only:
+			     a first install has nothing to copy. Idempotent. -->
+			<step>OCA\Integriq\Repair\MigrateOptOutsToTable</step>
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes

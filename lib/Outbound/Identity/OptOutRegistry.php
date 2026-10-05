@@ -12,6 +12,13 @@
  * the send proceeds and the override is recorded, so it can be shown
  * afterwards.
  *
+ * The opt-outs live in integriq's own table (OptOutMapper), not in
+ * OpenRegister. The unsubscribe link writes one from a public request with no
+ * session, which OpenRegister refuses, and the read that decides whether to
+ * send must not be one a permission check can empty (integriq#2114). The
+ * `recipient_opt_out` schema is read-only history: MigrateOptOutsToTable copies
+ * it into the table and nothing writes it any more.
+ *
  * @category Outbound
  * @package  OCA\Integriq\Outbound\Identity
  *
@@ -31,10 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound\Identity;
 
-use DateTimeImmutable;
-use OCA\Integriq\Outbound\MessageRecorder;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\Integriq\Db\OptOut;
+use OCA\Integriq\Db\OptOutMapper;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 
 /**
@@ -45,7 +51,8 @@ use OCP\IAppConfig;
 class OptOutRegistry {
 
 	/**
-	 * The schema one opt-out is stored under.
+	 * The OpenRegister schema opt-outs were stored under before the table.
+	 * Read-only history: only MigrateOptOutsToTable reads it.
 	 *
 	 * @var string
 	 */
@@ -82,12 +89,14 @@ class OptOutRegistry {
 	/**
 	 * Constructor.
 	 *
-	 * @param ORObjectService $objectService Reads and writes the opt-outs.
+	 * @param OptOutMapper $mapper Reads and writes the opt-out table.
 	 * @param IAppConfig $appConfig Holds the protected categories for this instance.
+	 * @param ITimeFactory $time Stamps a new opt-out.
 	 */
 	public function __construct(
-		private readonly ORObjectService $objectService,
+		private readonly OptOutMapper $mapper,
 		private readonly IAppConfig $appConfig,
+		private readonly ITimeFactory $time,
 	) {
 
 	}//end __construct()
@@ -132,27 +141,53 @@ class OptOutRegistry {
 	 * @param string|null $caseRef The case, for a case scoped opt-out.
 	 * @param string $source Who or what added it.
 	 *
-	 * @return ObjectEntity The stored opt-out.
+	 * @return OptOut The stored opt-out. Adding the same one twice returns the first.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function add(
 		string $address,
 		string $scope = self::SCOPE_INSTANCE,
 		?string $caseRef = null,
 		string $source = 'unsubscribe-link',
-	): ObjectEntity {
-		return $this->objectService->saveObject(
-			object: [
-				'address' => strtolower(trim($address)),
-				'scope' => $scope,
-				'caseRef' => (string)$caseRef,
-				'source' => $source,
-				'createdAt' => (new DateTimeImmutable())->format('c'),
-			],
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
-		);
+	): OptOut {
+		$address = strtolower(trim($address));
+		$caseRef = (string)$caseRef;
+		if ($scope === self::SCOPE_INSTANCE) {
+			$caseRef = '';
+		}
+
+		$optOut = new OptOut();
+		$optOut->setAddress($address);
+		$optOut->setScope($scope);
+		$optOut->setCaseRef($caseRef);
+		$optOut->setSource($source);
+		$optOut->setCreatedAt($this->time->getTime());
+		$optOut->setDedupeKey(OptOut::keyFor(address: $address, scope: $scope, caseRef: $caseRef));
+
+		return $this->mapper->insertIfAbsent($optOut)['optOut'];
 
 	}//end add()
+
+	/**
+	 * One page of the opt-out list, newest first.
+	 *
+	 * @param int $limit  At most this many rows.
+	 * @param int $offset Skip this many.
+	 *
+	 * @return array{results:list<array<string,mixed>>,total:int} The page.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
+	 */
+	public function page(int $limit = 50, int $offset = 0): array {
+		$rows = array_map(
+			static fn (OptOut $optOut): array => $optOut->jsonSerialize(),
+			$this->mapper->findPage(limit: $limit, offset: $offset)
+		);
+
+		return ['results' => $rows, 'total' => $this->mapper->countAll()];
+
+	}//end page()
 
 	/**
 	 * Whether a category may never be stopped.
@@ -202,28 +237,9 @@ class OptOutRegistry {
 	 * @return array<string,mixed>|null The opt-out, or null.
 	 */
 	private function find(string $address, ?string $caseRef): ?array {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => MessageRecorder::REGISTER,
-					'schema' => self::SCHEMA,
-					'address' => strtolower(trim($address)),
-				],
-			]
-		);
-
-		$results = ($matches['results'] ?? $matches);
-		if (is_array($results) === false) {
-			return null;
-		}
-
 		$caseMatch = null;
-		foreach ($results as $row) {
-			if (($row instanceof ObjectEntity) === false) {
-				continue;
-			}
-
-			$optOut = $row->getObject();
+		foreach ($this->mapper->findForAddress(address: $address) as $row) {
+			$optOut = $row->jsonSerialize();
 			if (strtolower((string)($optOut['address'] ?? '')) !== strtolower(trim($address))) {
 				continue;
 			}

@@ -208,55 +208,110 @@ class SenderIdentityController extends Controller {
 	 *
 	 * No login, no account: the person following this link usually has
 	 * neither, and asking them to make one is asking them to keep receiving
-	 * the mail instead.
+	 * the mail instead. The opt-out goes into integriq's own table after the
+	 * signature is verified; nothing else is written and OpenRegister is not
+	 * touched (ADR-099 section 9 keeps runAsSystem() off request paths).
 	 *
 	 * @param string $token The signed token from the link.
 	 *
-	 * @return TemplateResponse The confirmation page.
+	 * @return TemplateResponse The confirmation page: 200 when stopped, 410 when the
+	 *         link expired, 400 when it does not verify.
 	 *
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 60, period: 60)]
 	public function unsubscribe(string $token): TemplateResponse {
-		$claim = $this->tokens->verify($token);
-		if ($claim === null || $claim['address'] === '') {
-			return new TemplateResponse(
-				$this->appName,
-				'unsubscribe',
-				[
-					'stopped' => false,
-					'message' => $this->l->t('This link is not valid. Nothing was changed.'),
-					'l10n' => $this->l,
-				],
-				TemplateResponse::RENDER_AS_GUEST
+		$claim = $this->tokens->inspect($token);
+
+		if ($claim['status'] === UnsubscribeTokenService::STATUS_EXPIRED) {
+			return $this->unsubscribePage(
+				state: 'expired',
+				message: $this->l->t('This link has expired. Nothing was changed. Use the link in a more recent message.'),
+				status: Http::STATUS_GONE
 			);
+		}
+
+		if ($claim['status'] !== UnsubscribeTokenService::STATUS_VALID || $claim['address'] === '') {
+			return $this->unsubscribePage(
+				state: 'invalid',
+				message: $this->l->t('This link is not valid. Nothing was changed.'),
+				status: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$source = 'unsubscribe-link';
+		if ($claim['format'] !== UnsubscribeTokenService::PREFIX_V2) {
+			$source = 'unsubscribe-link-v1';
 		}
 
 		$this->optOuts->add(
 			$claim['address'],
 			OptOutRegistry::SCOPE_CASE,
 			$claim['caseRef'],
-			'unsubscribe-link'
+			$source
 		);
 
-		return new TemplateResponse(
+		return $this->unsubscribePage(
+			state: 'stopped',
+			message: $this->l->t(
+				'You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.'
+			),
+			status: Http::STATUS_OK
+		);
+
+	}//end unsubscribe()
+
+	/**
+	 * The opt-outs on this instance, newest first, from integriq's table.
+	 *
+	 * Administrators only: no NoAdminRequired, so Nextcloud refuses everyone
+	 * else before this runs.
+	 *
+	 * @param int $limit  At most this many rows (1 to 500).
+	 * @param int $offset Skip this many.
+	 *
+	 * @return JSONResponse `{results, total}`.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function optOuts(int $limit = 50, int $offset = 0): JSONResponse {
+		return new JSONResponse($this->optOuts->page(limit: $limit, offset: $offset));
+
+	}//end optOuts()
+
+	/**
+	 * The guest page after following a link.
+	 *
+	 * @param string $state   `stopped`, `expired` or `invalid`.
+	 * @param string $message What happened, in the reader's language.
+	 * @param int    $status  The HTTP status.
+	 *
+	 * @return TemplateResponse The page.
+	 */
+	private function unsubscribePage(string $state, string $message, int $status): TemplateResponse {
+		$response = new TemplateResponse(
 			$this->appName,
 			'unsubscribe',
 			[
-				'stopped' => true,
-				'message' => $this->l->t(
-					'You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.'
-				),
+				'state' => $state,
+				'stopped' => ($state === 'stopped'),
+				'message' => $message,
 				'l10n' => $this->l,
 			],
 			TemplateResponse::RENDER_AS_GUEST
 		);
+		$response->setStatus($status);
 
-	}//end unsubscribe()
+		return $response;
+
+	}//end unsubscribePage()
 
 }//end class
