@@ -167,45 +167,78 @@ class UnsubscribeTokenService {
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function inspect(string $token): array {
-		$invalid = ['status' => self::STATUS_INVALID, 'format' => '', 'address' => '', 'caseRef' => ''];
 		$parts = explode('.', trim($token));
 
 		if (count($parts) === 3 && $parts[0] === self::PREFIX_V2) {
-			$signed = self::PREFIX_V2 . '.' . $parts[1];
-			if (hash_equals($this->sign(payload: $signed), $parts[2]) === false) {
-				return $invalid;
-			}
-
-			$claims = $this->decode(payload: $parts[1]);
-			if ($claims === null || isset($claims['e']) === false || is_int($claims['e']) === false) {
-				return $invalid;
-			}
-
-			if ($claims['e'] < $this->time->getTime()) {
-				return ['status' => self::STATUS_EXPIRED, 'format' => self::PREFIX_V2, 'address' => '', 'caseRef' => ''];
-			}
-
-			return $this->valid(claims: $claims, format: self::PREFIX_V2);
+			return $this->inspectV2(payload: $parts[1], signature: $parts[2]);
 		}
 
 		if (count($parts) === 2) {
-			// A link minted before expiry existed. See the class comment for
-			// why it is still honoured.
-			if (hash_equals($this->sign(payload: $parts[0]), $parts[1]) === false) {
-				return $invalid;
-			}
-
-			$claims = $this->decode(payload: $parts[0]);
-			if ($claims === null) {
-				return $invalid;
-			}
-
-			return $this->valid(claims: $claims, format: 'v1');
+			return $this->inspectV1(payload: $parts[0], signature: $parts[1]);
 		}
 
-		return $invalid;
+		return $this->invalid();
 
 	}//end inspect()
+
+	/**
+	 * Check a token in the current format.
+	 *
+	 * @param string $payload   The claims part.
+	 * @param string $signature The signature part.
+	 *
+	 * @return array{status:string,format:string,address:string,caseRef:string} The verdict.
+	 */
+	private function inspectV2(string $payload, string $signature): array {
+		if (hash_equals($this->sign(payload: self::PREFIX_V2 . '.' . $payload), $signature) === false) {
+			return $this->invalid();
+		}
+
+		$claims = $this->decode(payload: $payload);
+		if ($claims === null || is_int($claims['e'] ?? null) === false) {
+			return $this->invalid();
+		}
+
+		if ($claims['e'] < $this->time->getTime()) {
+			return ['status' => self::STATUS_EXPIRED, 'format' => self::PREFIX_V2, 'address' => '', 'caseRef' => ''];
+		}
+
+		return $this->valid(claims: $claims, format: self::PREFIX_V2);
+
+	}//end inspectV2()
+
+	/**
+	 * Check a link minted before expiry existed. See the class comment for
+	 * why it is still honoured.
+	 *
+	 * @param string $payload   The claims part.
+	 * @param string $signature The signature part.
+	 *
+	 * @return array{status:string,format:string,address:string,caseRef:string} The verdict.
+	 */
+	private function inspectV1(string $payload, string $signature): array {
+		if (hash_equals($this->sign(payload: $payload), $signature) === false) {
+			return $this->invalid();
+		}
+
+		$claims = $this->decode(payload: $payload);
+		if ($claims === null) {
+			return $this->invalid();
+		}
+
+		return $this->valid(claims: $claims, format: 'v1');
+
+	}//end inspectV1()
+
+	/**
+	 * The verdict for a token that does not verify.
+	 *
+	 * @return array{status:string,format:string,address:string,caseRef:string} The verdict.
+	 */
+	private function invalid(): array {
+		return ['status' => self::STATUS_INVALID, 'format' => '', 'address' => '', 'caseRef' => ''];
+
+	}//end invalid()
 
 	/**
 	 * How many days a new link stays valid on this instance.

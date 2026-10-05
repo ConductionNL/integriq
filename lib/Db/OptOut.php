@@ -135,6 +135,20 @@ class OptOut extends Entity implements JsonSerializable {
 	}//end keyFor()
 
 	/**
+	 * Set the dedupe key from this row's address, scope and case.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
+	 */
+	public function assignDedupeKey(): void {
+		$this->setDedupeKey(
+			self::keyFor(address: (string)$this->getAddress(), scope: (string)$this->getScope(), caseRef: (string)$this->getCaseRef())
+		);
+
+	}//end assignDedupeKey()
+
+	/**
 	 * The row as the opt-out list and the registry read it.
 	 *
 	 * @return array{id:int|null,address:string,scope:string,caseRef:string,source:string,createdAt:string}

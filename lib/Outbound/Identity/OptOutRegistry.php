@@ -165,7 +165,7 @@ class OptOutRegistry {
 		$optOut->setCaseRef($caseRef);
 		$optOut->setSource($source);
 		$optOut->setCreatedAt($this->time->getTime());
-		$optOut->setDedupeKey(OptOut::keyFor(address: $address, scope: $scope, caseRef: $caseRef));
+		$optOut->assignDedupeKey();
 
 		return $this->mapper->insertIfAbsent($optOut)['optOut'];
 

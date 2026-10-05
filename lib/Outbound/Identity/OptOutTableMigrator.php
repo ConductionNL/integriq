@@ -99,7 +99,8 @@ class OptOutTableMigrator {
 			}
 
 			$offset += self::PAGE;
-		} while (count($rows) === self::PAGE);
+			$fullPage = (count($rows) === self::PAGE);
+		} while ($fullPage === true);
 
 		return $result;
 
@@ -167,7 +168,7 @@ class OptOutTableMigrator {
 		$optOut->setCaseRef($caseRef);
 		$optOut->setSource((string)($object['source'] ?? 'openregister'));
 		$optOut->setCreatedAt($this->timestamp(value: (string)($object['createdAt'] ?? '')));
-		$optOut->setDedupeKey(OptOut::keyFor(address: $address, scope: $scope, caseRef: $caseRef));
+		$optOut->assignDedupeKey();
 		$optOut->setLegacyUuid($uuid);
 
 		return $optOut;
