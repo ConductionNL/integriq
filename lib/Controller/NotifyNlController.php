@@ -57,6 +57,14 @@ use Throwable;
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 class NotifyNlController extends Controller {
+
+	/**
+	 * The decision codes that refuse a send before any provider call (opt-out-before-send).
+	 *
+	 * @var array<int,string>
+	 */
+	public const REFUSAL_CODES = ['opted-out', 'no-consent', 'invalid-address', 'authority-unavailable'];
+
 	/**
 	 * Constructor.
 	 *
@@ -87,9 +95,11 @@ class NotifyNlController extends Controller {
 	 * Send one SMS message. The production binding for sibling apps' (e.g.
 	 * procest's) own local send adapter — mirrors PeppolController::participants().
 	 *
-	 * Expected JSON body: `{to, body, templateId, personalisation, sourceApp, objectUri}`.
+	 * Expected JSON body: `{to, body, templateId, personalisation, sourceApp, objectUri, category, caseRef}`.
+	 * `category` (default `service`) decides whether an opt-out stops the message.
 	 *
-	 * @return JSONResponse The created `sms_message` record, or a 400/502 error envelope.
+	 * @return JSONResponse The created `sms_message` record, a 400/502 error envelope, or 409 with
+	 *                      `error` set to the decision code when the opt-out list refused the send.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
 	 */
@@ -113,14 +123,7 @@ class NotifyNlController extends Controller {
 			);
 		}
 
-		$options = [];
-		if (isset($params['templateId']) === true) {
-			$options['templateId'] = $params['templateId'];
-		}
-
-		if (isset($params['personalisation']) === true && is_array($params['personalisation']) === true) {
-			$options['personalisation'] = $params['personalisation'];
-		}
+		$options = $this->sendOptions(params: $params);
 
 		$sourceApp = null;
 		if (isset($params['sourceApp']) === true) {
@@ -143,6 +146,14 @@ class NotifyNlController extends Controller {
 
 			return new JSONResponse($message->getObject() + ['id' => $message->getUuid()]);
 		} catch (SmsProviderException $exception) {
+			if (in_array($exception->getErrorCode(), self::REFUSAL_CODES, true) === true) {
+				// The opt-out list refused the send: no provider call happened.
+				return new JSONResponse(
+					['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
+					Http::STATUS_CONFLICT
+				);
+			}
+
 			$this->logger->warning('[NotifyNlController] send failed: ' . $exception->getMessage());
 			return new JSONResponse(
 				['error' => 'sms_send_failed', 'message' => $exception->getMessage()],
@@ -151,6 +162,38 @@ class NotifyNlController extends Controller {
 		}//end try
 
 	}//end send()
+
+	/**
+	 * The send options a request carries.
+	 *
+	 * @param array<string,mixed> $params The request parameters.
+	 *
+	 * @return array<string,mixed> `templateId`, `personalisation`, `category` (default `service`), `caseRef`.
+	 */
+	private function sendOptions(array $params): array {
+		$options = [];
+		if (isset($params['templateId']) === true) {
+			$options['templateId'] = $params['templateId'];
+		}
+
+		if (isset($params['personalisation']) === true && is_array($params['personalisation']) === true) {
+			$options['personalisation'] = $params['personalisation'];
+		}
+
+		// Opt-out-before-send: the category decides whether an opt-out stops
+		// the message. Default `service`.
+		$options['category'] = 'service';
+		if (is_string($params['category'] ?? null) === true && trim($params['category']) !== '') {
+			$options['category'] = trim($params['category']);
+		}
+
+		if (is_string($params['caseRef'] ?? null) === true) {
+			$options['caseRef'] = $params['caseRef'];
+		}
+
+		return $options;
+
+	}//end sendOptions()
 
 	/**
 	 * Poll the provider for a message's current delivery status.

@@ -37,6 +37,8 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
+use OCA\Integriq\Tests\Helpers\OptOutFixture;
+use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -164,7 +166,7 @@ class OutboundLogServicesTest extends TestCase {
 		$uuid = $this->recordedMessage();
 		$this->recorder->stepFailed($uuid, 'transport', 'connection refused');
 
-		$service = new OutboundRetryService($this->recorder, $this->eventService(1));
+		$service = new OutboundRetryService($this->recorder, $this->eventService(1), $this->optOuts()->gate());
 		$result = $service->retry($uuid, 'beheerder');
 
 		$this->assertTrue($result['succeeded']);
@@ -185,7 +187,7 @@ class OutboundLogServicesTest extends TestCase {
 		$uuid = $this->recordedMessage();
 		$this->recorder->stepFailed($uuid, 'transport', 'connection refused');
 
-		$service = new OutboundRetryService($this->recorder, $this->eventService(0));
+		$service = new OutboundRetryService($this->recorder, $this->eventService(0), $this->optOuts()->gate());
 		$result = $service->retry($uuid, 'beheerder');
 
 		$this->assertFalse($result['succeeded']);
@@ -205,7 +207,7 @@ class OutboundLogServicesTest extends TestCase {
 		$sent = $this->recordedMessage();
 		$this->recorder->handedOver($sent, 'jan@example.org');
 
-		$service = new OutboundRetryService($this->recorder, $this->eventService(1));
+		$service = new OutboundRetryService($this->recorder, $this->eventService(1), $this->optOuts()->gate());
 		$result = $service->retryAll([$failed, $sent], 'beheerder');
 
 		$this->assertSame(1, $result['succeeded']);
@@ -214,6 +216,119 @@ class OutboundLogServicesTest extends TestCase {
 		$this->assertStringContainsString('Nothing to retry', $result['items'][1]['detail']);
 
 	}//end testABulkRetryReportsEachItem()
+
+	/**
+	 * A recipient who opted out between the first attempt and the retry is
+	 * skipped and logged, through the same gate a first send uses; the
+	 * pipeline is not called for them.
+	 *
+	 * @return void
+	 */
+	public function testARetrySkipsARecipientWhoOptedOutSince(): void {
+		$optOuts = $this->optOuts();
+		$uuid = $this->recordedMessage();
+		$this->recorder->stepFailed($uuid, 'transport', 'connection refused');
+		$optOuts->registry()->add('jan@example.org');
+		$requests = [];
+
+		$service = new OutboundRetryService($this->recorder, $this->eventService(1, $requests), $optOuts->gate());
+		$result = $service->retry($uuid, 'beheerder');
+
+		$this->assertFalse($result['succeeded']);
+		$this->assertSame([], $result['retried']);
+		$this->assertSame(['jan@example.org'], $result['skipped']);
+		$this->assertSame([], $requests, 'nothing was re-dispatched');
+		$this->assertCount(1, $optOuts->log->ofKind('suppressed'));
+		$recipient = $this->records[$uuid]['recipients'][0];
+		$this->assertSame('opt-out', $recipient['failedStep']);
+		$this->assertStringStartsWith('opted-out', $recipient['reason']);
+		$this->assertCount(1, $this->records[$uuid]['attempts'], 'the skipped retry is recorded');
+
+	}//end testARetrySkipsARecipientWhoOptedOutSince()
+
+	/**
+	 * With two failed recipients and one opted out, only the other is re-sent.
+	 *
+	 * @return void
+	 */
+	public function testARetryResendsOnlyTheRecipientsTheListAllows(): void {
+		$optOuts = $this->optOuts();
+		$entity = $this->recorder->start(
+			'zaak/2026-0043',
+			'email',
+			'Uw zaak',
+			'Uw zaak is bijgewerkt.',
+			[['address' => 'jan@example.org'], ['address' => 'piet@example.org']],
+			['sourceApp' => 'dossiq', 'context' => ['optOut' => ['category' => 'case-update', 'caseRef' => 'zaak/2026-0043']]]
+		);
+		$uuid = (string)$entity->getUuid();
+		$this->recorder->stepFailed($uuid, 'transport', 'connection refused');
+		$optOuts->registry()->record(['address' => 'jan@example.org', 'state' => 'opted-out', 'scope' => 'case', 'ref' => 'zaak/2026-0043']);
+		$requests = [];
+
+		$service = new OutboundRetryService($this->recorder, $this->eventService(1, $requests), $optOuts->gate());
+		$result = $service->retry($uuid, 'beheerder');
+
+		$this->assertTrue($result['succeeded']);
+		$this->assertSame(['piet@example.org'], $result['retried']);
+		$this->assertSame(['jan@example.org'], $result['skipped']);
+		$this->assertSame(['piet@example.org'], $requests[0]->getPayload()['recipients']);
+		$this->assertSame('case-update', $optOuts->log->ofKind('suppressed')[0]->getCategory(), 'the first send\'s category is asked again');
+
+	}//end testARetryResendsOnlyTheRecipientsTheListAllows()
+
+	/**
+	 * A besluit is retried despite an opt-out, logged as an override.
+	 *
+	 * @return void
+	 */
+	public function testARetryOfABesluitPassesAnOptOut(): void {
+		$optOuts = $this->optOuts();
+		$entity = $this->recorder->start(
+			'zaak/2026-0044',
+			'email',
+			'Besluit',
+			'Hierbij het besluit.',
+			[['address' => 'jan@example.org']],
+			['sourceApp' => 'dossiq', 'context' => ['optOut' => ['category' => 'besluit', 'caseRef' => '']]]
+		);
+		$uuid = (string)$entity->getUuid();
+		$this->recorder->stepFailed($uuid, 'transport', 'connection refused');
+		$optOuts->registry()->add('jan@example.org');
+		$requests = [];
+
+		$result = (new OutboundRetryService($this->recorder, $this->eventService(1, $requests), $optOuts->gate()))->retry($uuid, 'beheerder');
+
+		$this->assertSame(['jan@example.org'], $result['retried']);
+		$this->assertCount(1, $optOuts->log->ofKind('override'));
+
+	}//end testARetryOfABesluitPassesAnOptOut()
+
+	/**
+	 * A send the gate opens keeps the category it was decided as, which is
+	 * what a later retry asks again.
+	 *
+	 * @return void
+	 */
+	public function testTheGateKeepsTheDecisionOnTheRecord(): void {
+		$gate = $this->optOuts()->gate($this->recorder);
+		$decision = $gate->check('email', 'reminder', 'jan@example.org', ['caseRef' => 'zaak/1']);
+
+		$uuid = $gate->open('email', 'zaak/1', 'Herinnering', 'Morgen', 'jan@example.org', ['caseRef' => 'zaak/1'], $decision);
+
+		$this->assertSame(['category' => 'reminder', 'caseRef' => 'zaak/1'], $this->records[$uuid]['context']['optOut']);
+
+	}//end testTheGateKeepsTheDecisionOnTheRecord()
+
+	/**
+	 * The opt-out services over in-memory tables.
+	 *
+	 * @return OptOutFixture The fixture.
+	 */
+	private function optOuts(): OptOutFixture {
+		return new OptOutFixture($this, $this->createMock(IDBConnection::class));
+
+	}//end optOuts()
 
 	/**
 	 * A forward is its own record, linked from both ends, and the original is
@@ -353,16 +468,18 @@ class OutboundLogServicesTest extends TestCase {
 	 * An event service whose ingest reports a number of matched routes.
 	 *
 	 * @param int $matched How many delivery routes pick the retry up.
+	 * @param array<int,DeliveryRequestedEvent> $requests Collects every request the pipeline got.
 	 *
 	 * @return EventService|MockObject The service.
 	 */
-	private function eventService(int $matched) {
+	private function eventService(int $matched, array &$requests = []) {
 		$eventService = $this->getMockBuilder(EventService::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['ingestDeliveryRequest'])
 			->getMock();
 		$eventService->method('ingestDeliveryRequest')->willReturnCallback(
-			function (DeliveryRequestedEvent $request) use ($matched): array {
+			function (DeliveryRequestedEvent $request) use ($matched, &$requests): array {
+				$requests[] = $request;
 				return [
 					'event' => ObjectServiceMockBuilder::objectEntity($this, [], 'event-uuid'),
 					'messages' => array_fill(0, $matched, 'route'),

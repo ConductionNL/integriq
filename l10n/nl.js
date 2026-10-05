@@ -1914,7 +1914,20 @@ OC.L10N.register(
         "Everything": "Alles",
         "This link has expired. Nothing was changed. Use the link in a more recent message.": "Deze link is verlopen. Er is niets gewijzigd. Gebruik de link in een recenter bericht.",
         "This link is not valid. Nothing was changed.": "Deze link is niet geldig. Er is niets gewijzigd.",
-        "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.": "U ontvangt geen berichten meer over deze zaak. Wettelijk verplichte berichten, zoals een besluit, worden nog wel verstuurd."
+        "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.": "U ontvangt geen berichten meer over deze zaak. Wettelijk verplichte berichten, zoals een besluit, worden nog wel verstuurd.",
+        "Stop these messages?": "Deze berichten stoppen?",
+        "Updates stopped": "Updates gestopt",
+        "This link has expired": "Deze link is verlopen",
+        "This link no longer works": "Deze link werkt niet meer",
+        "Stop these messages": "Deze berichten stoppen",
+        "Stop everything that is not statutory": "Alles stoppen wat niet wettelijk verplicht is",
+        "Done. You will no longer receive messages from us, except statutory notices such as a besluit.": "Gelukt. U krijgt geen berichten meer van ons, behalve wettelijk verplichte berichten zoals een besluit.",
+        "You will no longer receive these messages by %s.": "U krijgt deze berichten niet meer via %s.",
+        "You will no longer receive messages from this list.": "U krijgt geen berichten meer van deze lijst.",
+        "You will no longer receive messages from us.": "U krijgt geen berichten meer van ons.",
+        "You will no longer receive updates about this case.": "U krijgt geen updates meer over deze zaak.",
+        "Statutory notices, such as a besluit, are still sent.": "Wettelijk verplichte berichten, zoals een besluit, sturen we nog wel.",
+        "Statutory notices, such as a besluit, are still sent. Nothing has changed yet.": "Wettelijk verplichte berichten, zoals een besluit, sturen we nog wel. Er is nog niets veranderd."
     },
     "nplurals=2; plural=(n != 1);"
 )

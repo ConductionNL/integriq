@@ -209,7 +209,8 @@ class SourceRawReadContractTest extends TestCase {
 				$this->getMockBuilder(EventService::class)->disableOriginalConstructor()->getMock(),
 				$this->l10n(),
 				$logger,
-				$resolver
+				$resolver,
+				(new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate()
 			),
 			'Fsc' => new FscCallService(
 				$fake,

@@ -73,6 +73,11 @@ class DigitalPostSendRequestedEvent extends Event {
 	 * @param array<int,array<string,mixed>> $attachments Attachment references.
 	 * @param string $requestedBy The acting user or system id.
 	 * @param string $correlationId Caller-generated id, echoed on the concluded event.
+	 * @param string $category What kind of letter this is (opt-out-before-send): `besluit` and the
+	 *                         other exempt categories are always sent, `case-update` and `service`
+	 *                         respect opt-outs. Default `service`, so a caller that names none is
+	 *                         treated as an ordinary message, never as exempt.
+	 * @param string $caseRef The case the letter is about, so a case opt-out can match.
 	 */
 	public function __construct(
 		private readonly string $sourceApp,
@@ -83,9 +88,33 @@ class DigitalPostSendRequestedEvent extends Event {
 		private readonly array $attachments = [],
 		private readonly string $requestedBy = '',
 		private readonly string $correlationId = '',
+		private readonly string $category = 'service',
+		private readonly string $caseRef = '',
 	) {
 		parent::__construct();
 	}//end __construct()
+
+	/**
+	 * What kind of letter this is.
+	 *
+	 * @return string The category.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-exempt-categories-are-a-fixed-floor-req-ooa-004
+	 */
+	public function getCategory(): string {
+		return $this->category;
+	}//end getCategory()
+
+	/**
+	 * The case the letter is about, or empty.
+	 *
+	 * @return string The case ref.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	public function getCaseRef(): string {
+		return $this->caseRef;
+	}//end getCaseRef()
 
 	/**
 	 * The requesting app id.

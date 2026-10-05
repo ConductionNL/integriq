@@ -476,7 +476,7 @@ class IntakeRoutingServiceTest extends TestCase {
 			}
 		);
 
-		$service = new IntakeReplyService($objectService, $this->registry());
+		$service = new IntakeReplyService($objectService, $this->registry(), (new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate());
 		$result = $service->reply('intake-uuid', 'Dank voor uw melding.');
 
 		$this->assertSame(ReplyResult::STATUS_UNSUPPORTED, $result->getStatus());
@@ -497,7 +497,7 @@ class IntakeRoutingServiceTest extends TestCase {
 			new \OCP\AppFramework\Db\DoesNotExistException('no such object')
 		);
 
-		$service = new IntakeReplyService($objectService, $this->registry());
+		$service = new IntakeReplyService($objectService, $this->registry(), (new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate());
 
 		$this->expectException(IntakeChannelException::class);
 		$service->reply('missing', 'Hallo');

@@ -106,7 +106,8 @@ class SenderIdentityAlignmentContractTest extends TestCase {
 			$this->createMock(UnsubscribeTokenService::class),
 			$this->createMock(OptOutRegistry::class),
 			$this->createMock(HoldQueue::class),
-			$l
+			$l,
+			$this->createMock(\OCP\IURLGenerator::class)
 		);
 
 	}//end controller()

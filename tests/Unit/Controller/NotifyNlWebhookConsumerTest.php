@@ -108,7 +108,8 @@ class NotifyNlWebhookConsumerTest extends TestCase {
 			eventService: $this->createMock(EventService::class),
 			l: $this->webhookL10n(),
 			logger: new NullLogger(),
-			rawSourceResolver: $this->createMock(RawSourceResolver::class)
+			rawSourceResolver: $this->createMock(RawSourceResolver::class),
+			gate: (new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate()
 		);
 
 		return new NotifyNlController(

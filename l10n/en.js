@@ -3253,7 +3253,20 @@ OC.L10N.register(
         "Everything": "Everything",
         "This link has expired. Nothing was changed. Use the link in a more recent message.": "This link has expired. Nothing was changed. Use the link in a more recent message.",
         "This link is not valid. Nothing was changed.": "This link is not valid. Nothing was changed.",
-        "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.": "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent."
+        "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.": "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.",
+        "Stop these messages?": "Stop these messages?",
+        "Updates stopped": "Updates stopped",
+        "This link has expired": "This link has expired",
+        "This link no longer works": "This link no longer works",
+        "Stop these messages": "Stop these messages",
+        "Stop everything that is not statutory": "Stop everything that is not statutory",
+        "Done. You will no longer receive messages from us, except statutory notices such as a besluit.": "Done. You will no longer receive messages from us, except statutory notices such as a besluit.",
+        "You will no longer receive these messages by %s.": "You will no longer receive these messages by %s.",
+        "You will no longer receive messages from this list.": "You will no longer receive messages from this list.",
+        "You will no longer receive messages from us.": "You will no longer receive messages from us.",
+        "You will no longer receive updates about this case.": "You will no longer receive updates about this case.",
+        "Statutory notices, such as a besluit, are still sent.": "Statutory notices, such as a besluit, are still sent.",
+        "Statutory notices, such as a besluit, are still sent. Nothing has changed yet.": "Statutory notices, such as a besluit, are still sent. Nothing has changed yet."
     },
     "nplurals=2; plural=(n != 1);"
 )

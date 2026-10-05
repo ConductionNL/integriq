@@ -28,7 +28,7 @@ use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\SignatureStripper;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
-use OCA\Integriq\Tests\Helpers\InMemoryOptOutMapper;
+use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -403,21 +403,7 @@ class SenderIdentityTest extends TestCase {
 	 * @return MessageComposer The composer.
 	 */
 	private function composer(): MessageComposer {
-		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturn('');
-
-		return new MessageComposer(
-			new UnsubscribeTokenService(
-				$appConfig,
-				$this->createMock(ISecureRandom::class),
-				new OptOutRegistry(
-					new InMemoryOptOutMapper($this->createMock(IDBConnection::class)),
-					$appConfig,
-					$this->createMock(ITimeFactory::class)
-				),
-				$this->createMock(ITimeFactory::class),
-			)
-		);
+		return (new OptOutFixture($this, $this->createMock(IDBConnection::class)))->composer();
 
 	}//end composer()
 

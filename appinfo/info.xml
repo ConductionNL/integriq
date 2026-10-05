@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.9-unstable.20261005140000</version>
+	<version>0.4.9-unstable.20261006100000</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -113,6 +113,8 @@
 		     one, so the page built to answer "is my sync still going?"
 		     would answer it wrongly. -->
 		<job>OCA\Integriq\BackgroundJob\StaleRunSweepJob</job>
+		<!-- opt-out-before-send: the opt-out decision log is kept seven years. -->
+		<job>OCA\Integriq\BackgroundJob\OptOutLogRetentionJob</job>
 		<job>OCA\Integriq\BackgroundJob\EventRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\LtiKeyRetirementJob</job>
 		<job>OCA\Integriq\BackgroundJob\BankfeedSyncJob</job>

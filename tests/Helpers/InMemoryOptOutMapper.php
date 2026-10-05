@@ -39,6 +39,20 @@ class InMemoryOptOutMapper extends OptOutMapper {
 	public array $rows = [];
 
 	/**
+	 * How many batch reads ran.
+	 *
+	 * @var int
+	 */
+	public int $batchReads = 0;
+
+	/**
+	 * When true, every read throws, as a broken table does.
+	 *
+	 * @var bool
+	 */
+	public bool $failReads = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db A connection double; nothing reaches it.
@@ -63,6 +77,81 @@ class InMemoryOptOutMapper extends OptOutMapper {
 		);
 
 	}//end findForAddress()
+
+	/**
+	 * Every row of a batch of addresses.
+	 *
+	 * @param list<string> $addresses The keys.
+	 *
+	 * @return list<OptOut> The rows.
+	 */
+	public function findForAddresses(array $addresses): array {
+		if ($this->failReads === true) {
+			throw new \RuntimeException('the table cannot be read');
+		}
+
+		$this->batchReads++;
+
+		return array_values(
+			array_filter($this->rows, static fn (OptOut $row): bool => in_array($row->getAddress(), $addresses, true))
+		);
+
+	}//end findForAddresses()
+
+	/**
+	 * Every row of a batch of contacts.
+	 *
+	 * @param list<string> $contactRefs The contact refs.
+	 *
+	 * @return list<OptOut> The rows.
+	 */
+	public function findForContactRefs(array $contactRefs): array {
+		$contactRefs = array_values(array_filter($contactRefs, static fn (string $ref): bool => $ref !== ''));
+		if ($contactRefs === []) {
+			return [];
+		}
+
+		return array_values(
+			array_filter($this->rows, static fn (OptOut $row): bool => in_array((string)$row->getContactRef(), $contactRefs, true))
+		);
+
+	}//end findForContactRefs()
+
+	/**
+	 * The row of one legacy record.
+	 *
+	 * @param string $legacyRef The legacy id.
+	 *
+	 * @return OptOut|null The row.
+	 */
+	public function findByLegacyRef(string $legacyRef): ?OptOut {
+		foreach ($this->rows as $row) {
+			if ($row->getLegacyUuid() === $legacyRef) {
+				return $row;
+			}
+		}
+
+		return null;
+
+	}//end findByLegacyRef()
+
+	/**
+	 * Replace a stored row, as the real mapper's update does.
+	 *
+	 * @param \OCP\AppFramework\Db\Entity $entity The row.
+	 *
+	 * @return OptOut The row.
+	 */
+	public function update(\OCP\AppFramework\Db\Entity $entity): OptOut {
+		if ($this->failReads === true) {
+			throw new \RuntimeException('the table cannot be written');
+		}
+
+		$this->rows[$entity->getDedupeKey()] = $entity;
+
+		return $entity;
+
+	}//end update()
 
 	/**
 	 * One row by key.

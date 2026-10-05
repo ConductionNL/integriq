@@ -51,10 +51,16 @@ class MessageComposer {
 	 * @param string $body What the handler wrote.
 	 * @param array<int,array<string,mixed>> $history The case history, newest last, as
 	 *                                                `{at, from, text}`.
-	 * @param array<string,mixed> $options `recipient`, `caseRef`, `category`, `baseUrl`.
+	 * @param array<string,mixed> $options `recipient`, `caseRef`, `category`, `baseUrl`; or, for a
+	 *                                    send that was decided (opt-out-before-send), `decision`
+	 *                                    (from OptOutRegistry) and `channel`, so the link the
+	 *                                    decision carries is the one rendered.
 	 *
-	 * @return array{body:string,quotingLevel:string,unsubscribeLink:string|null} The composed body,
-	 *         the level used (which the log row records) and the link, when there is one.
+	 * @return array{body:string,quotingLevel:string,unsubscribeLink:string|null,headers:array<string,string>} The
+	 *         composed body, the level used (which the log row records), the link when there is
+	 *         one, and the List-Unsubscribe headers for an email.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
 	 */
 	public function compose(array $identity, string $body, array $history = [], array $options = []): array {
 		$level = (string)($identity['quotingLevel'] ?? SenderIdentityService::QUOTING_LAST);
@@ -72,6 +78,10 @@ class MessageComposer {
 		$quoted = $this->quote(level: $level, history: $history);
 		if ($quoted !== '') {
 			$composed .= "\n\n" . $quoted;
+		}
+
+		if (array_key_exists('decision', $options) === true) {
+			return $this->composeDecided(composed: $composed, level: $level, options: $options);
 		}
 
 		$link = null;
@@ -94,9 +104,60 @@ class MessageComposer {
 			'body' => $composed,
 			'quotingLevel' => $level,
 			'unsubscribeLink' => $link,
+			'headers' => [],
 		];
 
 	}//end compose()
+
+	/**
+	 * Add the unsubscribe material a decision carries, in the channel's form.
+	 *
+	 * An SMS gets the short text, an email the body line and the
+	 * List-Unsubscribe headers, every other channel the body line. A decision
+	 * without material (an exempt category, a reply) adds nothing.
+	 *
+	 * @param string $composed The body so far.
+	 * @param string $level The quoting level used.
+	 * @param array<string,mixed> $options `decision`, `channel`, `caseRef`.
+	 *
+	 * @return array{body:string,quotingLevel:string,unsubscribeLink:string|null,headers:array<string,string>} The result.
+	 */
+	private function composeDecided(string $composed, string $level, array $options): array {
+		$decision = ($options['decision'] ?? []);
+		$material = null;
+		if (is_array($decision) === true && is_array($decision['unsubscribe'] ?? null) === true) {
+			$material = $decision['unsubscribe'];
+		}
+
+		if ($material === null) {
+			return ['body' => $composed, 'quotingLevel' => $level, 'unsubscribeLink' => null, 'headers' => []];
+		}
+
+		$channel = (string)($options['channel'] ?? '');
+		$url = (string)($material['url'] ?? '');
+		if (in_array($channel, RecipientKey::PHONE_CHANNELS, true) === true) {
+			$smsText = (string)($material['smsText'] ?? '');
+			if ($smsText !== '') {
+				$composed .= "\n" . $smsText;
+			}
+
+			return ['body' => $composed, 'quotingLevel' => $level, 'unsubscribeLink' => $url, 'headers' => []];
+		}
+
+		$line = 'Geen berichten meer ontvangen: ';
+		if (trim((string)($options['caseRef'] ?? '')) !== '') {
+			$line = 'Geen updates meer over deze zaak ontvangen: ';
+		}
+
+		$composed .= "\n\n" . $line . $url;
+		$headers = [];
+		if ($channel === RecipientKey::CHANNEL_EMAIL && is_array($material['headers'] ?? null) === true) {
+			$headers = $material['headers'];
+		}
+
+		return ['body' => $composed, 'quotingLevel' => $level, 'unsubscribeLink' => $url, 'headers' => $headers];
+
+	}//end composeDecided()
 
 	/**
 	 * The quoted history for one level.

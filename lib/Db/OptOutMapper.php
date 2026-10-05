@@ -31,6 +31,7 @@ namespace OCA\Integriq\Db;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception as DbException;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -79,6 +80,83 @@ class OptOutMapper extends QBMapper {
 		return array_values($this->findEntities(query: $qb));
 
 	}//end findForAddress()
+
+	/**
+	 * Every row of a batch of addresses, in one query.
+	 *
+	 * @param list<string> $addresses The recipient keys, already normalised.
+	 *
+	 * @return list<OptOut> The rows.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
+	 */
+	public function findForAddresses(array $addresses): array {
+		return $this->findIn(column: 'address', values: $addresses);
+
+	}//end findForAddresses()
+
+	/**
+	 * Every row of a batch of sibling-app contacts, in one query.
+	 *
+	 * @param list<string> $contactRefs The contact refs.
+	 *
+	 * @return list<OptOut> The rows.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-contact-erasure-keeps-the-opt-out-req-ooa-010
+	 */
+	public function findForContactRefs(array $contactRefs): array {
+		return $this->findIn(column: 'contact_ref', values: $contactRefs);
+
+	}//end findForContactRefs()
+
+	/**
+	 * The row a migration wrote for one legacy record, or null.
+	 *
+	 * @param string $legacyRef The sibling app's record id.
+	 *
+	 * @return OptOut|null The row.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-record-wishes-through-a-public-change-event-req-ooa-003
+	 */
+	public function findByLegacyRef(string $legacyRef): ?OptOut {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->eq('legacy_uuid', $qb->createNamedParameter($legacyRef)))
+			->setMaxResults(1);
+
+		$rows = $this->findEntities(query: $qb);
+		if ($rows === []) {
+			return null;
+		}
+
+		return array_values($rows)[0];
+
+	}//end findByLegacyRef()
+
+	/**
+	 * Rows whose column is one of the values. Empty values are dropped; no
+	 * values reads nothing.
+	 *
+	 * @param string       $column The column.
+	 * @param list<string> $values The values.
+	 *
+	 * @return list<OptOut> The rows.
+	 */
+	private function findIn(string $column, array $values): array {
+		$values = array_values(array_unique(array_filter($values, static fn (string $value): bool => $value !== '')));
+		if ($values === []) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->in($column, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
+
+		return array_values($this->findEntities(query: $qb));
+
+	}//end findIn()
 
 	/**
 	 * One opt-out by its key, or null.

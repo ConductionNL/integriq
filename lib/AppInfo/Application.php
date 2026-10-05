@@ -56,6 +56,8 @@ use OCA\Integriq\Controller\MetricsController;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
+use OCA\Integriq\Event\OptOutChangeRequestedEvent;
+use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
 use OCA\Integriq\Event\MappingExecutionRequestedEvent;
@@ -136,6 +138,8 @@ use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\EventListener\DigitalPostSendRequestedListener;
+use OCA\Integriq\EventListener\OptOutChangeRequestedListener;
+use OCA\Integriq\EventListener\OutboundSendDecisionRequestedListener;
 use OCA\Integriq\Gateway\GatewayCatalogue;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
@@ -344,6 +348,11 @@ class Application extends App implements IBootstrap {
 		// replay) and writes the synchronous result slot back on the event.
 		$dispatcher->addServiceListener(eventName: DeliveryRequestedEvent::class, className: DeliveryRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DigitalPostSendRequestedEvent::class, className: DigitalPostSendRequestedListener::class);
+		// Opt-out-before-send (REQ-OOA-002, REQ-OOA-003): a sibling app asks
+		// whether it may message these people, and records a person's wish.
+		// Both answer synchronously from integriq's own opt-out table.
+		$dispatcher->addServiceListener(eventName: OutboundSendDecisionRequestedEvent::class, className: OutboundSendDecisionRequestedListener::class);
+		$dispatcher->addServiceListener(eventName: OptOutChangeRequestedEvent::class, className: OptOutChangeRequestedListener::class);
 		// A sibling app that still holds a call to a plain URL (dossiq's retired
 		// webhook steps) asks for the Source for that base URL here, so the call
 		// can run through `openconnector.source-call` like every other one.
