@@ -124,6 +124,13 @@ of them dispatches the command from its own request path in a change of its
 own. Until they do, 13.29 is met for errors from every app and for traces from
 integriq and from any app that dispatches the command.
 
+App absent: when integriq is not installed, nothing listens to
+`SpanExportRequestedEvent` and the class does not load. A sibling app that
+dispatches it SHALL guard with `class_exists()` and treat a missing class, or a
+`getResult()` that is still empty after dispatch, as "not exported". It never
+blocks or fails its own request on that. The error sink simply does not exist
+without integriq, and errors stay with Nextcloud's own logging.
+
 Fail closed: an error event carries the app, the level, the exception class,
 the file and line, and the message after integriq's redactor has run. Request
 bodies, step input and step output never leave. A sink that is down never

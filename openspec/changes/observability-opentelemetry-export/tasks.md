@@ -92,7 +92,8 @@ here fails on today's code, because none of these classes exists.
   - GIVEN export disabled WHEN dispatched THEN `queued: 0` with the reason `export-disabled`
 - [ ] Implement
 - [ ] Test: PHPUnit `tests/Unit/Listener/SpanExportRequestedListenerTest.php` dispatching the real event class through a real `IEventDispatcher` wired by `Application::register()`, so the test proves the caller reaches the listener
-- [ ] Cross-app contract: the docs page states the constructor, every span key and every result key. Opening the openregister and opencatalogi dispatches is not part of this task; record in the PR body that each app needs its own change to send spans.
+- [ ] Initialise the result to `['queued' => 0, 'rejected' => 0, 'reasons' => ['no-listener']]` in the event constructor, so a dispatch nobody handles answers "not exported" instead of an empty array. Test: `SpanExportRequestedEventTest::testAnUnhandledEventAnswersNotExported`.
+- [ ] Cross-app contract: the docs page states the constructor, every span key and every result key, and the `class_exists()` guard a sibling app needs when integriq is absent. Opening the openregister and opencatalogi dispatches is not part of this task; record in the PR body that each app needs its own change to send spans.
 
 ### Task 9: Admin settings for the error sink
 - **spec_ref**: openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008

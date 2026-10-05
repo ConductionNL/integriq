@@ -148,8 +148,9 @@ integriq's own traces, and answer through `getResult(): array` with the keys
 `queued` (int), `rejected` (int) and `reasons` (list of strings). A span with
 an attribute key outside the REQ-OTEL-003 allowlist SHALL have that attribute
 dropped, not the span. When export is disabled the result SHALL be
-`queued: 0` with the reason `export-disabled`. The event SHALL be handled
-without a Nextcloud session.
+`queued: 0` with the reason `export-disabled`. An event no listener handled
+SHALL answer `queued: 0` with the reason `no-listener`. The event SHALL be
+handled without a Nextcloud session.
 
 #### Scenario: an opencatalogi request is traced in the same collector
 - GIVEN export enabled, sampling at 100%, and a collector at `https://otel.example.org:4318`
