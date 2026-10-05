@@ -317,7 +317,11 @@ class OpenRegisterCredentialBridge {
 		$parts = explode('.', $token);
 		$payload = json_decode((string)base64_decode(strtr(($parts[1] ?? ''), '-_', '+/')), true);
 
-		return (is_array($payload) === true ? $payload : []);
+		if (is_array($payload) === false) {
+			return [];
+		}
+
+		return $payload;
 	}//end payloadOf()
 
 	/**

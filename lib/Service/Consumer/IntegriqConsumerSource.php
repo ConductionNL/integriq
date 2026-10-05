@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\ObjectService;
 /**
  * Reads integriq's `consumer` schema objects for OpenRegister's AuthorizationService.
  *
- * integriq keeps its consumers as objects of its own schema (register
+ * Integriq keeps its consumers as objects of its own schema (register
  * `integriq`, schema `consumer`); OpenRegister's checks look them up through
  * this source instead of OpenRegister's own consumer table (DECISIONS row 64,
  * Q5: pluggable consumer source, no data migration). The object itself rides
@@ -136,17 +136,34 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 */
 	private function resolve(ObjectEntity $consumer): ResolvedConsumer {
 		$data = $consumer->getObject();
-		$configuration = ($data['authorizationConfiguration'] ?? []);
-		$userId = ($data['userId'] ?? null);
+
 		$uuid = $consumer->getUuid();
+		if ($uuid === null || $uuid === '') {
+			$uuid = ($data['uuid'] ?? null);
+		}
+
+		$userId = ($data['userId'] ?? null);
+		if (is_string($userId) === false) {
+			$userId = null;
+		}
+
+		$authorizationType = null;
+		if (isset($data['authorizationType']) === true) {
+			$authorizationType = (string)$data['authorizationType'];
+		}
+
+		$configuration = ($data['authorizationConfiguration'] ?? []);
+		if (is_array($configuration) === false) {
+			$configuration = [];
+		}
 
 		return new ResolvedConsumer(
 			source: self::SOURCE,
-			uuid: ($uuid !== null && $uuid !== '' ? $uuid : ($data['uuid'] ?? null)),
+			uuid: $uuid,
 			name: (string)($data['name'] ?? ''),
-			userId: (is_string($userId) === true ? $userId : null),
-			authorizationType: (isset($data['authorizationType']) === true ? (string)$data['authorizationType'] : null),
-			configuration: (is_array($configuration) === true ? $configuration : []),
+			userId: $userId,
+			authorizationType: $authorizationType,
+			configuration: $configuration,
 			record: $consumer,
 		);
 	}//end resolve()
