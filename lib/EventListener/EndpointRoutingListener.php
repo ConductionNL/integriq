@@ -91,6 +91,12 @@ class EndpointRoutingListener implements IEventListener {
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
 	public function handle(Event $event): void {
+		// Narrow the event first, as SubscriptionSigningDefaultListener does: without
+		// OpenRegister's classes (CI's phpstan) `setModifiedData()` is otherwise looked up on Event.
+		if (($event instanceof ObjectCreatingEvent) === false && ($event instanceof ObjectUpdatingEvent) === false) {
+			return;
+		}
+
 		$entity = null;
 		if ($event instanceof ObjectCreatingEvent) {
 			$entity = $event->getObject();
