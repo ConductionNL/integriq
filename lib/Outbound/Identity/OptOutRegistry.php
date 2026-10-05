@@ -285,11 +285,15 @@ class OptOutRegistry {
 	 * @param string $correlationId The sender's correlation id.
 	 * @param string $baseUrl The instance url the link is built on.
 	 * @param string|null $inReplyTo The inbound message a reply answers.
+	 * @param bool $probe True to answer only: no log row, no link material.
 	 *
 	 * @return array<string,array<string,mixed>> One decision
 	 *         per recipient, keyed by the address as given.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) -- probe is the decision event's contract field, passed through.
+	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-a-probe-answers-without-writing-req-ooa-012
 	 */
 	public function decideMany(
 		string $channel,
@@ -300,10 +304,17 @@ class OptOutRegistry {
 		string $correlationId,
 		string $baseUrl = '',
 		?string $inReplyTo = null,
+		bool $probe = false,
 	): array {
 		$channel = strtolower(trim($channel));
 		$canonical = $this->categories->canonical(category: $category, inReplyTo: $inReplyTo, sourceApp: $sourceApp);
-		$context = ['channel' => $channel, 'category' => $canonical, 'sourceApp' => $sourceApp, 'correlationId' => $correlationId];
+		$context = [
+			'channel' => $channel,
+			'category' => $canonical,
+			'sourceApp' => $sourceApp,
+			'correlationId' => $correlationId,
+			'probe' => $probe,
+		];
 
 		$decisions = [];
 		foreach (array_chunk($recipients, self::CHUNK) as $chunk) {
@@ -562,7 +573,7 @@ class OptOutRegistry {
 	 * Decide one chunk with one table read.
 	 *
 	 * @param list<array<string,mixed>> $chunk The recipients.
-	 * @param array{channel:string,category:string,sourceApp:string,correlationId:string} $context The batch.
+	 * @param array{channel:string,category:string,sourceApp:string,correlationId:string,probe:bool} $context The batch.
 	 * @param bool $requiresConsent Whether consent is required.
 	 * @param string $baseUrl The instance url.
 	 *
@@ -617,7 +628,7 @@ class OptOutRegistry {
 	 * @param string|null $key The normalised address.
 	 * @param array<string,mixed> $recipient The recipient.
 	 * @param list<OptOut> $rows The rows of the chunk.
-	 * @param array{channel:string,category:string,sourceApp:string,correlationId:string} $context The batch.
+	 * @param array{channel:string,category:string,sourceApp:string,correlationId:string,probe:bool} $context The batch.
 	 * @param bool $requiresConsent Whether consent is required.
 	 * @param string $baseUrl The instance url.
 	 *
@@ -643,7 +654,7 @@ class OptOutRegistry {
 		}
 
 		$mine = $this->matcher->rowsOf(rows: $rows, key: $key, contactRef: (string)($recipient['contactRef'] ?? ''));
-		$optOut = $this->matcher->matchingOptOut(rows: $mine, recipient: $recipient, channel: $context['channel']);
+		$optOut = $this->matcher->matchingOptOut(rows: $mine, recipient: $recipient, channel: $context['channel'], category: $category);
 
 		if ($this->categories->isExempt($category) === true) {
 			if ($optOut === null) {
@@ -664,12 +675,19 @@ class OptOutRegistry {
 			return $this->suppress(code: self::CODE_OPTED_OUT, reason: $reason, key: $key, context: $context, detail: $detail);
 		}
 
-		if ($requiresConsent === true && $this->matcher->hasConsent(rows: $mine, recipient: $recipient, channel: $context['channel']) === false) {
+		$consented = $requiresConsent === false
+			|| $this->matcher->hasConsent(rows: $mine, recipient: $recipient, channel: $context['channel'], category: $category) === true;
+		if ($consented === false) {
 			$reason = 'No recorded consent permits this message.';
 			return $this->suppress(code: self::CODE_NO_CONSENT, reason: $reason, key: $key, context: $context, detail: []);
 		}
 
 		$decision = $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: $key, category: $category);
+		if ($context['probe'] === true) {
+			// A probe only shows a state: no token, no short link.
+			return $decision;
+		}
+
 		$decision['unsubscribe'] = $this->material(
 			key: $key,
 			recipient: $recipient,
@@ -688,7 +706,7 @@ class OptOutRegistry {
 	 * @param string $code The decision code.
 	 * @param string $reason Why.
 	 * @param string $key The normalised address, or empty.
-	 * @param array{channel:string,category:string,sourceApp:string,correlationId:string} $context The batch.
+	 * @param array{channel:string,category:string,sourceApp:string,correlationId:string,probe:bool} $context The batch.
 	 * @param array<string,mixed> $detail What else the log row says.
 	 *
 	 * @return array<string,mixed> The decision.
@@ -861,12 +879,17 @@ class OptOutRegistry {
 	 *
 	 * @param string $kind The kind.
 	 * @param string $address The recipient key, or empty.
-	 * @param array<string,string> $context `category`, `channel`, `sourceApp`, `correlationId`.
+	 * @param array<string,string|bool> $context `category`, `channel`, `sourceApp`, `correlationId`, and `probe` (true writes nothing).
 	 * @param array<string,mixed> $detail What else there is to say.
 	 *
 	 * @return void
 	 */
 	private function append(string $kind, string $address, array $context, array $detail): void {
+		if (($context['probe'] ?? false) === true) {
+			// A probe asked nothing that will be sent, so nothing is logged.
+			return;
+		}
+
 		$entry = new OptOutLogEntry();
 		$entry->setAt($this->time->getTime());
 		$entry->setKind($kind);

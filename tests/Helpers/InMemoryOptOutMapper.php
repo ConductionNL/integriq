@@ -147,6 +147,13 @@ class InMemoryOptOutMapper extends OptOutMapper {
 			throw new \RuntimeException('the table cannot be written');
 		}
 
+		// Like the table: an update moves the row by id, also when its key changed.
+		foreach ($this->rows as $key => $row) {
+			if ($row->getId() === $entity->getId() && $key !== $entity->getDedupeKey()) {
+				unset($this->rows[$key]);
+			}
+		}
+
 		$this->rows[$entity->getDedupeKey()] = $entity;
 
 		return $entity;
