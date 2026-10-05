@@ -278,7 +278,7 @@ class RenameDutchColumns implements IRepairStep {
 		try {
 			$raw = $this->db->executeQuery(
 				'SELECT properties FROM `*PREFIX*openregister_schemas` WHERE id = ?',
-				[(int)$match[1]]
+				[$match[1]]
 			)->fetchOne();
 		} catch (Exception $e) {
 			$this->logger->warning(
