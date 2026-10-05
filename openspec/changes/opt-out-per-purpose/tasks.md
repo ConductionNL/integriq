@@ -38,4 +38,4 @@ Approved by Ruben on 2026-10-05 (decisions 1 and 2 in the proposal). Tests fail 
 ## 4. Proof
 
 - [x] 4.1 Live proof on a fresh instance: marketing unsubscribe, stop everything, an old row, a probe against a real send.
-- [ ] 4.2 `composer check:strict`, npm lint, format and l10n on the final commit.
+- [x] 4.2 `composer check:strict`, npm lint, format and l10n on the final commit.
