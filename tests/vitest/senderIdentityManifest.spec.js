@@ -54,7 +54,9 @@ describe('sender identity manifest fragment', () => {
 	it('registers the opt-out page component', () => {
 		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
 
-		expect(registry).toMatch(/RecipientOptOutsPage: \{ kind: 'page', component: RecipientOptOutsPage \}/)
+		expect(registry).toMatch(
+			/RecipientOptOutsPage: \{ kind: 'page', component: RecipientOptOutsPage \}/,
+		)
 	})
 
 	it('keeps the three quoting levels the schema declares', () => {

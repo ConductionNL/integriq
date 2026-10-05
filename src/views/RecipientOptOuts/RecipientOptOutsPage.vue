@@ -16,7 +16,12 @@
 	<div class="recipientOptOuts">
 		<h2>{{ t('integriq', 'Opt-outs') }}</h2>
 		<p class="recipientOptOuts__intro">
-			{{ t('integriq', 'Addresses that asked not to be written to. Statutory notices, such as a besluit, are still sent.') }}
+			{{
+				t(
+					'integriq',
+					'Addresses that asked not to be written to. Statutory notices, such as a besluit, are still sent.',
+				)
+			}}
 		</p>
 
 		<NcLoadingIcon v-if="loading && !rows.length" :size="32" />
@@ -25,7 +30,12 @@
 			v-else-if="!rows.length"
 			data-testid="opt-outs-empty"
 			:name="t('integriq', 'No opt-outs yet')"
-			:description="t('integriq', 'An opt-out appears here when a recipient follows the unsubscribe link in a message.')">
+			:description="
+				t(
+					'integriq',
+					'An opt-out appears here when a recipient follows the unsubscribe link in a message.',
+				)
+			">
 			<template #icon>
 				<EmailOffOutline :size="48" />
 			</template>
@@ -53,7 +63,12 @@
 				</tbody>
 			</table>
 			<p class="recipientOptOuts__count">
-				{{ t('integriq', '{shown} of {total}', { shown: rows.length, total }) }}
+				{{
+					t('integriq', '{shown} of {total}', {
+						shown: rows.length,
+						total,
+					})
+				}}
 			</p>
 			<NcButton
 				v-if="rows.length < total"
@@ -83,6 +98,7 @@ export default {
 		NcLoadingIcon,
 		EmailOffOutline,
 	},
+
 	data() {
 		return {
 			rows: [],
@@ -90,9 +106,11 @@ export default {
 			loading: false,
 		}
 	},
+
 	mounted() {
 		this.load(0)
 	},
+
 	methods: {
 		t,
 		/**
@@ -112,12 +130,13 @@ export default {
 				const results = response.data?.results || []
 				this.rows = offset === 0 ? results : this.rows.concat(results)
 				this.total = Number(response.data?.total || 0)
-			} catch (err) {
+			} catch {
 				showError(t('integriq', 'Failed to load the opt-outs'))
 			} finally {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * A stored ISO date in the reader's locale.
 		 *
@@ -129,6 +148,7 @@ export default {
 			const date = new Date(value)
 			return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString()
 		},
+
 		/**
 		 * The scope as a reader says it.
 		 *
