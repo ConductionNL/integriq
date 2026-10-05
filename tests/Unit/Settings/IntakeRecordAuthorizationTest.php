@@ -59,6 +59,24 @@ class IntakeRecordAuthorizationTest extends TestCase {
 					'delete' => [],
 				],
 			],
+			'intake_message' => [
+				'intake_message',
+				[
+					'create' => [IntakeGroups::INTAKE_CHANNELS_INTAKE],
+					'read' => [IntakeGroups::INTAKE_CHANNELS_HANDLERS],
+					'update' => [IntakeGroups::INTAKE_CHANNELS_INTAKE, IntakeGroups::INTAKE_CHANNELS_HANDLERS],
+					'delete' => [],
+				],
+			],
+			'verdict' => [
+				'verdict',
+				[
+					'create' => [IntakeGroups::VERDICTS_INTAKE],
+					'read' => [IntakeGroups::VERDICTS_HANDLERS],
+					'update' => [IntakeGroups::VERDICTS_INTAKE, IntakeGroups::VERDICTS_HANDLERS],
+					'delete' => [],
+				],
+			],
 		];
 
 	}//end blocks()

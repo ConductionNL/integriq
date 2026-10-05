@@ -3,16 +3,19 @@
 /**
  * Integriq Intake Groups.
  *
- * The Nextcloud groups the authorization blocks of `dso_verzoek` and
- * `openformulieren_submission` name. Both schemas carry BSNs, so OpenRegister
- * grants them to these groups only (plus administrators):
+ * The Nextcloud groups the authorization blocks of `dso_verzoek`,
+ * `openformulieren_submission`, `intake_message` and `verdict` name. All four
+ * hold what a citizen or a partner sent in (`intake_message` can hold a BSN),
+ * so OpenRegister grants them to these groups only (plus administrators):
  *
- * - `dso-intake` and `openformulieren-intake`: the intake accounts. They may
- *   create and update. integriq puts the account of a connection in its group
- *   when an administrator chooses it, and the repair step does the same for
+ * - `dso-intake`, `openformulieren-intake`, `intakekanalen-intake` and
+ *   `verdicts-intake`: the intake accounts. They may create and update.
+ *   integriq puts the account of a connection in its group when an
+ *   administrator chooses it, and the repair step does the same for
  *   connections that already have one.
- * - `dso-behandelaars` and `openformulieren-behandelaars`: the handlers. They
- *   may read and update. An administrator fills them in Nextcloud's user
+ * - `dso-behandelaars`, `openformulieren-behandelaars`,
+ *   `intakekanalen-behandelaars` and `verdicts-behandelaars`: the handlers.
+ *   They may read and update. An administrator fills them in Nextcloud's user
  *   management (or through LDAP, SAML or OIDC group sync).
  *
  * OpenRegister can name a single account (`user:<uid>`), but the intake
@@ -82,7 +85,35 @@ class IntakeGroups {
 	public const OPEN_FORMULIEREN_HANDLERS = 'openformulieren-behandelaars';
 
 	/**
-	 * Every group the two authorization blocks name.
+	 * The group of the intake channel accounts: create and update on `intake_message`.
+	 *
+	 * @var string
+	 */
+	public const INTAKE_CHANNELS_INTAKE = 'intakekanalen-intake';
+
+	/**
+	 * The group of the intake message handlers: read and update on `intake_message`.
+	 *
+	 * @var string
+	 */
+	public const INTAKE_CHANNELS_HANDLERS = 'intakekanalen-behandelaars';
+
+	/**
+	 * The group of the verdicts webhook account: create and update on `verdict`.
+	 *
+	 * @var string
+	 */
+	public const VERDICTS_INTAKE = 'verdicts-intake';
+
+	/**
+	 * The group of the verdict handlers: read and update on `verdict`.
+	 *
+	 * @var string
+	 */
+	public const VERDICTS_HANDLERS = 'verdicts-behandelaars';
+
+	/**
+	 * Every group the authorization blocks name.
 	 *
 	 * @var list<string>
 	 */
@@ -91,6 +122,10 @@ class IntakeGroups {
 		self::DSO_HANDLERS,
 		self::OPEN_FORMULIEREN_INTAKE,
 		self::OPEN_FORMULIEREN_HANDLERS,
+		self::INTAKE_CHANNELS_INTAKE,
+		self::INTAKE_CHANNELS_HANDLERS,
+		self::VERDICTS_INTAKE,
+		self::VERDICTS_HANDLERS,
 	];
 
 	/**

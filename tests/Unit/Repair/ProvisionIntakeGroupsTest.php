@@ -21,7 +21,8 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\ProvisionIntakeGroups;
 use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Tests\Helpers\DsoConnectionWorld;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Tests\Helpers\WebhookWorld;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -30,7 +31,7 @@ use Psr\Container\ContainerInterface;
  * ProvisionIntakeGroups over the connection world.
  */
 class ProvisionIntakeGroupsTest extends TestCase {
-	use DsoConnectionWorld;
+	use WebhookWorld;
 
 	/**
 	 * A fresh world.
@@ -84,6 +85,10 @@ class ProvisionIntakeGroupsTest extends TestCase {
 				'dso-behandelaars' => [],
 				'openformulieren-intake' => ['of-intake'],
 				'openformulieren-behandelaars' => [],
+				'intakekanalen-intake' => [],
+				'intakekanalen-behandelaars' => [],
+				'verdicts-intake' => [],
+				'verdicts-behandelaars' => [],
 			],
 			$this->worldGroupMembers
 		);
@@ -111,4 +116,31 @@ class ProvisionIntakeGroupsTest extends TestCase {
 		$this->assertSame([], $this->worldGroupMembers['openformulieren-intake']);
 
 	}//end testASecondRunAndAnEmptyAccountChangeNothing()
+
+	/**
+	 * The account of an intake channel and of the verdicts webhook joins its
+	 * intake group; a webhook whose schema names no group enrols nobody.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#scenario-an-upgraded-instance-keeps-its-webhook-accounts
+	 */
+	public function testWebhookAccountsJoinTheirIntakeGroup(): void {
+		$this->addAccount(uid: 'channel-acc', grants: []);
+		$this->addAccount(uid: 'verdict-acc', grants: []);
+		$this->addAccount(uid: 'rod-acc', grants: []);
+		$this->addWebhookConsumer(profile: WebhookProfiles::intakeChannel(channelId: 'form-submission'), userId: 'channel-acc', uuid: 'c-form');
+		$this->addWebhookConsumer(profile: WebhookProfiles::intakeChannel(channelId: 'teams'), userId: 'channel-acc', uuid: 'c-teams');
+		$this->addWebhookConsumer(profile: WebhookProfiles::intakeChannel(channelId: 'verdicts'), userId: 'verdict-acc', uuid: 'c-verdicts');
+		$this->addWebhookConsumer(profile: WebhookProfiles::rod(), userId: 'rod-acc', uuid: 'c-rod');
+
+		$this->step()->run($this->createMock(IOutput::class));
+
+		$this->assertSame(['channel-acc'], $this->worldGroupMembers['intakekanalen-intake']);
+		$this->assertSame(['verdict-acc'], $this->worldGroupMembers['verdicts-intake']);
+		$this->assertSame([], $this->worldGroupMembers['intakekanalen-behandelaars']);
+		$this->assertSame([], $this->worldGroupMembers['verdicts-behandelaars']);
+		$this->assertNotContains('rod-acc', array_merge(...array_values($this->worldGroupMembers)));
+
+	}//end testWebhookAccountsJoinTheirIntakeGroup()
 }//end class

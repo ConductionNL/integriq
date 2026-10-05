@@ -7,9 +7,12 @@
  * bsn-intake-records-access-rules their authorization blocks grant them to
  * four groups only (plus administrators): the intake groups `dso-intake` and
  * `openformulieren-intake`, and the handler groups `dso-behandelaars` and
- * `openformulieren-behandelaars`.
+ * `openformulieren-behandelaars`. Since intake-message-and-verdict-access-rules
+ * `intake_message` and `verdict` follow the same pattern with
+ * `intakekanalen-intake`, `intakekanalen-behandelaars`, `verdicts-intake` and
+ * `verdicts-behandelaars`.
  *
- * This step makes an upgraded instance keep working. It creates the four
+ * This step makes an upgraded instance keep working. It creates the eight
  * groups when they are missing, and puts the account each connection
  * already acts as in its intake group. Without that, the account that stored
  * submissions until now would lose `create` and `update`, and every push would
@@ -40,6 +43,7 @@ namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Intake\IntakeGroups;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -86,7 +90,7 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
 	 */
 	public function getName(): string {
-		return 'Create the intake and handler groups for DSO verzoeken and Open Formulieren submissions';
+		return 'Create the intake and handler groups for DSO verzoeken, Open Formulieren submissions, intake messages and verdicts';
 
 	}//end getName()
 
@@ -113,7 +117,7 @@ class ProvisionIntakeGroups implements IRepairStep {
 			return;
 		}
 
-		foreach (self::INTAKE_GROUP_OF as $type => $groupId) {
+		foreach ($this->intakeGroupOf() as $type => $groupId) {
 			foreach ($connection->findConsumers(authorizationType: $type) as $consumer) {
 				$userId = (string)($consumer->getObject()['userId'] ?? '');
 				if ($userId === '' || $this->groups->isMember(groupId: $groupId, userId: $userId) === true) {
@@ -127,4 +131,24 @@ class ProvisionIntakeGroups implements IRepairStep {
 		}
 
 	}//end run()
+
+	/**
+	 * The intake group of each consumer type: DSO, Open Formulieren, and every
+	 * webhook whose schema grants one (the intake channels and the verdicts).
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#scenario-an-upgraded-instance-keeps-its-webhook-accounts
+	 */
+	private function intakeGroupOf(): array {
+		$groupOf = self::INTAKE_GROUP_OF;
+		foreach (WebhookProfiles::all() as $profile) {
+			if ($profile->intakeGroup !== null) {
+				$groupOf[$profile->authorizationType] = $profile->intakeGroup;
+			}
+		}
+
+		return $groupOf;
+
+	}//end intakeGroupOf()
 }//end class

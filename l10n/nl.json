@@ -1885,6 +1885,7 @@
         "Remove field": "Veld verwijderen",
         "Nobody can read the DSO requests yet. Add handlers to the group {group} under Accounts.": "Nog niemand kan de DSO-verzoeken lezen. Voeg behandelaars toe aan de groep {group} onder Accounts.",
         "Nobody can read the submissions yet. Add handlers to the group {group} under Accounts.": "Nog niemand kan de inzendingen lezen. Voeg behandelaars toe aan de groep {group} onder Accounts.",
+        "Nobody can read what this webhook stores yet. Add handlers to the group {group} under Accounts.": "Nog niemand kan lezen wat deze webhook opslaat. Voeg behandelaars toe aan de groep {group} onder Accounts.",
         "The delivery could not be stored. Try again later.": "De levering kon niet worden opgeslagen. Probeer het later opnieuw.",
         "%1$s deliveries are refused: no %1$s connection is configured.": "Leveringen van %1$s worden geweigerd: er is geen %1$s-koppeling ingesteld.",
         "%1$s deliveries are refused: the %1$s connection has no usable account.": "Leveringen van %1$s worden geweigerd: de %1$s-koppeling heeft geen bruikbaar account.",
