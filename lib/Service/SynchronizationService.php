@@ -44,6 +44,7 @@ use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Exception\TargetWriteRefusedException;
 use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
 use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
+use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
@@ -9229,6 +9230,12 @@ class SynchronizationService {
 			return $this->pushZgwDocument(synchronization: $synchronization, contract: $contract, targetConfig: $targetConfig, targetId: $targetId);
 		}
 
+		// REQ-CSD-002 over StUF-ZDS: genereerDocumentIdentificatie, then
+		// voegZaakdocumentToe; like the ZGW leg it creates once and never updates.
+		if (is_array($targetConfig['stufDocument'] ?? null) === true) {
+			return $this->pushStufDocument(synchronization: $synchronization, contract: $contract, targetConfig: $targetConfig, targetId: $targetId);
+		}
+
 		if ($targetId === null) {
 			if (isset($targetConfig['idInRequestBody']) === true) {
 				$targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
@@ -9403,6 +9410,106 @@ class SynchronizationService {
 	}//end pushZgwDocument()
 
 	/**
+	 * Push one delivery as a new document to a StUF-ZDS case system.
+	 *
+	 * The synchronization's target is a `stuf-zkn` source, read raw so its
+	 * token or certificate survives the render. `targetConfig.stufDocument`
+	 * holds `documenttype` (the `dct.omschrijving`; else the mapped object's
+	 * `documenttype`), `zaakIdentificatieField` (default `zaakIdentificatie`)
+	 * and where the file is, as for `zgwDocument`. The case system's document
+	 * identificatie becomes the contract's target id and is written back as
+	 * `{{ response.identificatie }}`; a contract that holds one sends nothing.
+	 *
+	 * @param array       $synchronization The push synchronization.
+	 * @param array       $contract        The contract.
+	 * @param array       $targetConfig    The target config (json = the mapped object).
+	 * @param string|null $targetId        The identificatie the contract holds, if any.
+	 *
+	 * @return array The contract, its targetId the document identificatie.
+	 *
+	 * @throws \Throwable When the delivery fails; the failure is written back first.
+	 *
+	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
+	 */
+	private function pushStufDocument(array $synchronization, array $contract, array $targetConfig, ?string $targetId): array {
+		if ($targetId !== null) {
+			return $contract;
+		}
+
+		$stuf     = $targetConfig['stufDocument'];
+		$document = (array)($targetConfig['json'] ?? []);
+
+		try {
+			$caseField = (string)($stuf['zaakIdentificatieField'] ?? 'zaakIdentificatie');
+			$case      = trim((string)($document[$caseField] ?? ''));
+			if ($case === '') {
+				throw new Exception('The object ' . (string)($contract['originId'] ?? '') . ' names no case in ' . $caseField . ' to add the document to.');
+			}
+
+			$file   = $this->zgwDocumentFile(zgw: $stuf, contract: $contract, document: $document, destination: 'the StUF-ZDS case system');
+			$result = $this->containerInterface->get(StufZdsDocumentDelivery::class)->deliver(
+				source: $this->rawSourceObject(id: (string)($synchronization['targetId'] ?? '')),
+				document: $document,
+				file: $file,
+				zaakIdentificatie: $case,
+				documenttype: (string)($stuf['documenttype'] ?? ($document['documenttype'] ?? ''))
+			);
+		} catch (\Throwable $e) {
+			$this->writeOutcomeBack(
+				synchronization: $synchronization,
+				contract: $contract,
+				outcome: OutcomeWriteBack::FAILURE,
+				context: ['status' => null, 'error' => ['message' => $this->outcomeWriteBack()->truncate(message: $e->getMessage()), 'status' => null]]
+			);
+			throw $e;
+		}//end try
+
+		$contract['targetId'] = $result['identificatie'];
+		$this->writeOutcomeBack(
+			synchronization: $synchronization,
+			contract: $contract,
+			outcome: OutcomeWriteBack::SUCCESS,
+			context: ['response' => $result, 'status' => 200, 'targetId' => $result['identificatie']]
+		);
+
+		return $contract;
+	}//end pushStufDocument()
+
+	/**
+	 * A source's object read raw, so its write-only credentials survive.
+	 *
+	 * Same read as CallService::resolveSourceForDispatch(): the engine, not the
+	 * user, needs the source, and a rendered read strips the token. Falls back
+	 * to the rendered source when the raw read fails, whose missing credential
+	 * the client then refuses.
+	 *
+	 * @param string $id The source id.
+	 *
+	 * @return array The source object.
+	 *
+	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
+	 */
+	private function rawSourceObject(string $id): array {
+		try {
+			$raw = $this->orObjectService->find(
+				id: $id,
+				register: 'integriq',
+				schema: 'source',
+				_rbac: false,
+				_multitenancy: false,
+				_render: false
+			);
+			if ($raw !== null) {
+				return $raw->getObject();
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning('Raw source read failed; using the rendered source.', ['sourceId' => $id, 'exception' => $e->getMessage()]);
+		}
+
+		return $this->findSourceObject(id: $id)->getObject();
+	}//end rawSourceObject()
+
+	/**
 	 * The file a ZGW document push delivers, found the way `fileUpload` finds one.
 	 *
 	 * `fileIdField` names a field of the mapped object that holds a Nextcloud
@@ -9411,7 +9518,8 @@ class SynchronizationService {
 	 *
 	 * @param array $zgw      The zgwDocument config (fileName, fileId, fileIdField, objectId).
 	 * @param array $contract The contract (originId = the source object).
-	 * @param array $document The mapped object.
+	 * @param array  $document    The mapped object.
+	 * @param string $destination Where the file goes, for the refusal message.
 	 *
 	 * @return array{content:string,filename:string,mimeType:string}
 	 *
@@ -9419,13 +9527,13 @@ class SynchronizationService {
 	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
-	private function zgwDocumentFile(array $zgw, array $contract, array $document): array {
+	private function zgwDocumentFile(array $zgw, array $contract, array $document, string $destination='the Documenten API'): array {
 		$field = (string)($zgw['fileIdField'] ?? '');
 		if ($field !== '') {
 			$fileId = (string)($document[$field] ?? '');
 			if ($fileId === '') {
 				$origin = (string)($contract['originId'] ?? '');
-				throw new Exception('The object ' . $origin . ' has no file id in ' . $field . ' to deliver to the Documenten API.');
+				throw new Exception('The object ' . $origin . ' has no file id in ' . $field . ' to deliver to ' . $destination . '.');
 			}
 
 			$zgw['fileId'] = $fileId;
@@ -9447,7 +9555,7 @@ class SynchronizationService {
 			}
 		}
 
-		throw new Exception('The object ' . (string)($contract['originId'] ?? '') . ' has no file to deliver to the Documenten API.');
+		throw new Exception('The object ' . (string)($contract['originId'] ?? '') . ' has no file to deliver to ' . $destination . '.');
 	}//end zgwDocumentFile()
 
 	/**

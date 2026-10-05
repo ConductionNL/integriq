@@ -47,7 +47,29 @@ An object without its file is not sent. It reads `writeback_failed` with the rea
 
 The title ends in "(geanonimiseerd)". The description names the original document and the date of processing. The copy is related to a case only when the object carries a `zaakUrl`.
 
+## Send to a StUF-ZDS case system
+
+A case system that speaks StUF-ZDS instead of the ZGW APIs gets the same document in two messages, as ZDS 1.2 describes:
+
+1. `genereerDocumentIdentificatie`: the case system hands out the document's identificatie.
+2. `voegZaakdocumentToe`: integriq adds the document with that identificatie to the case, with the file in the message.
+
+The identificatie is written back. Use `{{ response.identificatie }}` in the write-back, for example `"resultExternalId": "{{ response.identificatie }}"`. A fault from the case system is written back as `writeback_failed`, with its code and message in `writeBackError`.
+
+To send a synchronization over StUF-ZDS:
+
+1. Set up a source of type `stuf-zkn` with `configuration.provider` set to `rest`, `baseUrl`, your own `organisatie`, the token or certificate, and `ontvangerOrganisatie` (plus `ontvangerApplicatie` when the case system asks for it). When the case system has separate addresses for the two services, set `vrijeBerichtenUrl` and `ontvangAsynchroonUrl`.
+2. Choose that source as the synchronization's target.
+3. In the target configuration, replace `zgwDocument` with `stufDocument`:
+
+| Setting | Meaning |
+|---|---|
+| `documenttype` | the document type description the case type knows (`dct.omschrijving`), else the object's `documenttype` |
+| `zaakIdentificatieField` | the field that holds the case's identificatie, default `zaakIdentificatie` |
+| `fileIdField`, `fileName`, `fileId`, `objectId` | where the file is, as for `zgwDocument` |
+
+A source in `log` mode sends nothing, so integriq refuses to deliver through it rather than write back an identificatie that does not exist. A document without a title, a case or a document type is not sent.
+
 ## Not yet covered
 
-- A case system that speaks StUF-ZDS instead of the ZGW APIs. That leg is a later task.
 - Picking the destination per document. Each synchronization sends to one Documenten API.
