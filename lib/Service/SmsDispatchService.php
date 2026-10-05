@@ -247,7 +247,9 @@ class SmsDispatchService {
 
 			$result = $provider->send(sourceConfiguration: $configuration, to: $to, body: $body, options: $options);
 
-			$attempts[] = ['at' => (new DateTime())->format('c'), 'error' => null];
+			// An empty string, not null: the sms_message schema types `error` as a
+			// string and OpenRegister refuses null, which made every send 500.
+			$attempts[] = ['at' => (new DateTime())->format('c'), 'error' => ''];
 			$data['attempts'] = $attempts;
 			$data['providerMessageId'] = $result->providerMessageId;
 			$data['status'] = $result->status;
