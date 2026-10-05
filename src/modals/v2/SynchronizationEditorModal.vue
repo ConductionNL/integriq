@@ -271,6 +271,16 @@
 								(value) => updateDraft('targetConfig', value)
 							" />
 
+						<!-- REQ-CSD-001: only a register/schema source has an object
+						     to write the push's outcome back onto. -->
+						<SyncWriteBackFields
+							v-if="draft.sourceType === 'register/schema'"
+							:value="draft.writeBack"
+							:disabled="saving"
+							@update:value="
+								(value) => updateDraft('writeBack', value)
+							" />
+
 						<!-- Dry-run result. The row action discards this payload for a
 						     bare toast; here it is the point of pressing Test. -->
 						<template v-if="testError || testResult !== null">
@@ -491,6 +501,7 @@ import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from '../../views/Synchronization/SyncConfigWidget.vue'
 import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue'
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
+import SyncWriteBackFields from '../../views/Synchronization/SyncWriteBackFields.vue'
 import { NEXTCLOUD_FORM_KIND } from '../../views/Synchronization/formsBridge.js'
 import {
 	disappearancePolicyError,
@@ -532,6 +543,7 @@ export default {
 		SyncConfigWidget,
 		SyncMappingPicker,
 		SyncReferenceList,
+		SyncWriteBackFields,
 		ArrowRightIcon,
 		ContentSaveOutlineIcon,
 		DatabaseArrowLeftOutlineIcon,
@@ -894,6 +906,9 @@ export default {
 				}
 				base.conditions = normaliseConditions(this.item.conditions)
 			}
+			// writeBack is not in emptyDraft: the detail page shares that and
+			// does not edit it. Null means the record declares none.
+			base.writeBack = this.item?.writeBack ?? null
 			this.draft = base
 			this.originalSignature = JSON.stringify(base)
 		},
@@ -1033,6 +1048,33 @@ export default {
 		},
 
 		/**
+		 * The object to save: the draft merged over `item` so fields this
+		 * dialog does not edit survive, `conditions` in the schema's wire shape.
+		 * A write-back is sent when declared; one the user emptied is sent as
+		 * `{}` so the stored one does not survive the merge (REQ-CSD-001); a
+		 * record that never had one gets no `writeBack` key at all.
+		 *
+		 * @return {object} the payload for `confirm`
+		 *
+		 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-push-writes-its-outcome-back-onto-the-object-that-started-it-req-csd-001
+		 */
+		savePayload() {
+			const { writeBack, ...draft } = this.draft
+			const payload = {
+				...(this.item || {}),
+				...draft,
+				conditions: serializeConditions(this.draft.conditions),
+			}
+			delete payload.writeBack
+			if (writeBack) {
+				payload.writeBack = writeBack
+			} else if (this.item?.writeBack) {
+				payload.writeBack = {}
+			}
+			return payload
+		},
+
+		/**
 		 * Persist the draft through CnIndexPage's `confirm` binding rather than
 		 * saving here directly — that is what runs the index's list refresh and
 		 * keeps the write in the store the list reads from.
@@ -1060,11 +1102,7 @@ export default {
 					this.saveError = policyError
 					return
 				}
-				await this.confirm({
-					...(this.item || {}),
-					...this.draft,
-					conditions: serializeConditions(this.draft.conditions),
-				})
+				await this.confirm(this.savePayload())
 				showSuccess(
 					this.isCreate
 						? this.t('integriq', 'Synchronization created')
