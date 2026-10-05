@@ -87,15 +87,30 @@ Spec only until Ruben approves ConductionNL/hydra#739. Build in this order. The 
 - [ ] 5.3 Short SMS link table and `/u/{id}`.
   - files: `lib/Migration/`, `lib/Db/`, `lib/Controller/SenderIdentityController.php`, `appinfo/routes.php`
   - acceptance: `smsText` is at most 50 characters.
-- [ ] 5.4 Hash BSN recipients for digital post (if Ruben confirms design open decision 1).
+- [ ] 5.4 Hash BSN recipients for digital post (approved by Ruben 2026-10-05).
   - spec_ref: `#requirement-a-digital-post-recipient-is-never-stored-as-a-plain-bsn-req-ooa-008`
   - files: `lib/Outbound/Identity/OptOutRegistry.php`
 - [ ] 5.5 English and Dutch strings for the confirmation page in `l10n/en.json` and `l10n/nl.json`, then `npm run l10n:build`.
   - test: `npm run test:l10n`
 
-## 6. Verify
+## 6. Decisions from 2026-10-05
 
-- [ ] 6.1 Measure `decideMany()` with 500 recipients on the development instance. Record the number here.
-- [ ] 6.2 Live check on a throwaway instance: unsubscribe through the link, then send an SMS and a digital post `case-update` to the same person. Both are refused. A `besluit` goes out.
-- [ ] 6.3 `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` once, then `npm run lint`.
-- [ ] 6.4 The build PR says "Closes #2167".
+- [ ] 6.0a `reply` with `inReplyTo` passes an opt-out. The intake reply sets it.
+  - spec_ref: `specs/outbound-opt-out-authority/spec.md#requirement-a-direct-reply-to-a-citizen-s-message-passes-an-opt-out-req-ooa-009`
+  - files: `lib/Outbound/Identity/OptOutRegistry.php`, `lib/Intake/IntakeReplyService.php`
+  - test: `vendor/bin/phpunit --no-coverage --filter "OptOutRegistryTest|IntakeReply"`
+- [ ] 6.0b Retention job: delete `integriq_opt_out_log` entries older than 7 years.
+  - spec_ref: `#requirement-suppressions-and-overrides-are-logged-req-ooa-007`
+  - files: `lib/BackgroundJob/OptOutLogRetentionJob.php`, `appinfo/info.xml`
+  - test: `vendor/bin/phpunit --no-coverage --filter OptOutLogRetentionJob`
+- [ ] 6.0c `erase-contact` on `OptOutChangeRequestedEvent`: clear `contact_ref` and `evidence`, keep the opt-out.
+  - spec_ref: `#requirement-contact-erasure-keeps-the-opt-out-req-ooa-010`
+  - files: `lib/Outbound/Identity/OptOutRegistry.php`, `lib/EventListener/OptOutChangeRequestedListener.php`
+  - test: `vendor/bin/phpunit --no-coverage --filter OptOutChange`
+
+## 7. Verify
+
+- [ ] 7.1 Measure `decideMany()` with 500 recipients on the development instance. Record the number here.
+- [ ] 7.2 Live check on a throwaway instance: unsubscribe through the link, then send an SMS and a digital post `case-update` to the same person. Both are refused. A `besluit` goes out.
+- [ ] 7.3 `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` once, then `npm run lint`.
+- [ ] 7.4 The build PR says "Closes #2167".

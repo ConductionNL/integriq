@@ -16,7 +16,7 @@ The read stays on the mapper: `OptOutMapper::findForAddress()` (`lib/Db/OptOutMa
 
 ### The rules, in order
 
-1. Normalise the address. Email: trim and lowercase, as `add()` does today (`OptOutRegistry.php:156`). Phone: `PhoneNumberValidator::toE164()` (`lib/Service/Sms/PhoneNumberValidator.php:81`). Digital post: see section 6. An address that does not normalise gets code `invalid-address` and `send: false`.
+1. Normalise the address. Email: trim and lowercase, as `add()` does today (`OptOutRegistry.php:156`). Phone: `PhoneNumberValidator::toE164()` (`lib/Service/Sms/PhoneNumberValidator.php:81`). Digital post: see section 6. A `reply` with `inReplyTo` is allowed here, before any opt-out is read, and carries no link. An address that does not normalise gets code `invalid-address` and `send: false`.
 2. If the category is exempt: `send: true`. When any opt-out matched, `overridden: true`, code `exempt-override`, and a log entry.
 3. If any `opted-out` row matches (instance; or channel = this channel; or case = this caseRef; or list = this listRef): `send: false`, code `opted-out`.
 4. If `requiresConsent`: an `opted-in` row must match on channel, or on list when a listRef is given. A channel row does not open a list, and a list row does not open a channel, as pipelinq has it now (`pipelinq/lib/Service/ComplianceService.php:410-428`). The lawful basis must permit the send: `imported` never does, and `soft-opt-in` needs `evidence.objectionOffered`. Otherwise code `no-consent`.
@@ -42,7 +42,7 @@ Both listeners are registered in `lib/AppInfo/Application.php`, next to the exis
 | Sender | Where the ask goes | Category |
 |---|---|---|
 | `SmsDispatchService::sendMessage` (`lib/Service/SmsDispatchService.php:136`) | after E.164 normalisation (`:147`), before the provider send (`:200`) | `options['category']`, set from a new optional field on POST `/api/notifynl/messages` (`NotifyNlController::send`, action `sms.send` at `lib/Controller/NotifyNlController.php:104`). Default `service`. |
-| `IntakeReplyService::reply` (`lib/Intake/IntakeReplyService.php:67`) | before `$adapter->reply()` (`:82`) | `service` |
+| `IntakeReplyService::reply` (`lib/Intake/IntakeReplyService.php:67`) | before `$adapter->reply()` (`:82`) | `reply`, with the intake message uuid as `inReplyTo`. An opt-out does not stop it. |
 | `DigitalPostService::handleSendRequest` (`lib/Service/DigitalPost/DigitalPostService.php:77`) | after the source and provider checks, before the provider send (`:240`) | the event's new optional `category`. Default `service`. |
 | `EventService::ingestDeliveryRequest` (`lib/Service/EventService.php:2870`) | only when the payload names a personal `recipient` | the payload's `category`. Default `service`. |
 
@@ -86,7 +86,7 @@ A second migration adds `integriq_opt_out_log`: `id`, `at`, `kind` (`change`, `s
 
 ## 6. Digital post recipients are a BSN
 
-`DigitalPostSendRequestedEvent` names the recipient as "for example a BSN" (`lib/Event/DigitalPostSendRequestedEvent.php:70`). An opt-out keyed on a plain BSN puts a BSN in a table that has no reason to hold one. So the address for digital post is `bsn:` plus an HMAC-SHA256 of the BSN under an instance secret. The lookup is an equality match, so the hash works. The unsubscribe token carries the same hashed value, never the BSN. Open decision 1 below.
+`DigitalPostSendRequestedEvent` names the recipient as "for example a BSN" (`lib/Event/DigitalPostSendRequestedEvent.php:70`). An opt-out keyed on a plain BSN puts a BSN in a table that has no reason to hold one. So the address for digital post is `bsn:` plus an HMAC-SHA256 of the BSN under an instance secret. The lookup is an equality match, so the hash works. The unsubscribe token carries the same hashed value, never the BSN. Ruben approved this on 2026-10-05.
 
 ## 7. Performance
 
@@ -95,8 +95,15 @@ A second migration adds `integriq_opt_out_log`: `id`, `at`, `kind` (`change`, `s
 - The log writes one row per suppression or override and one count row per chunk.
 - Measure on the development instance: 500 recipients with 5 opt-outs, under 50 ms for the decision. Record the number in the task.
 
-## 8. Open decisions (integriq)
+## 8. Decisions (approved by Ruben 2026-10-05)
 
-1. **Hash the BSN** for digital post opt-outs, or store it plain? Recommended: hash.
-2. **The short link table** (`integriq_unsubscribe_short`), or SMS with the STOP keyword only? Recommended: the table, because NotifyNL inbound (`appinfo/routes.php:169`) has no keyword handling today.
-3. The fleet decisions in hydra's design section 12 also bind this change.
+The fleet decisions are in hydra's design section 12. The ones that shape this change:
+
+- **Fail closed.** The listener leaves the event unhandled when it cannot answer. Siblings then refuse non-exempt messages.
+- **Replies pass an opt-out.** `decideMany()` gives `send: true` for `reply` when `inReplyTo` is set, before the opt-out rule. The intake reply sets it to the intake message uuid. Without `inReplyTo`, `reply` reads as `service`.
+- **The table keeps its name**, `integriq_opt_outs`.
+- **Category over channel.** A digital post `besluit` is sent. A digital post `case-update` respects opt-outs.
+- **Erasure keeps the opt-out.** `OptOutChangeRequestedEvent` accepts state `erase-contact`: it clears `contact_ref` and `evidence` on the rows for that `contactRef`, and keeps the address and state.
+- **The short-link table is built** (section 5).
+- **The log is kept 7 years.** A daily `TimedJob` deletes `integriq_opt_out_log` entries older than that.
+- **BSNs are hashed** (section 6).

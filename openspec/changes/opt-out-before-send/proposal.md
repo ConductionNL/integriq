@@ -1,6 +1,6 @@
 # Ask the opt-out list before every send
 
-Part of the hydra change `opt-out-before-send` (ConductionNL/hydra#739). That change holds the fleet contract, the full sender table and the open decisions. This change is integriq's share.
+Part of the hydra change `opt-out-before-send` (ConductionNL/hydra#739). That change holds the fleet contract, the full sender table and Ruben's decisions of 2026-10-05. This change is integriq's share.
 
 ## Why
 

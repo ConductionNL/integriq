@@ -12,12 +12,12 @@ Before integriq sends a message to a person, it MUST ask `OptOutRegistry` for a 
 - **AND** the answer is 409 with `error: opted-out`
 - @e2e exclude provider send path, covered by PHPUnit
 
-#### Scenario: An intake reply to an opted-out sender is refused
+#### Scenario: An intake reply is asked as a reply
 
 - **GIVEN** an instance-wide opt-out for the sender of an intake message
 - **WHEN** a handler replies to that message
-- **THEN** the adapter is not called
-- **AND** the reply result names the refusal
+- **THEN** integriq decides with category `reply` and the intake message as `inReplyTo`
+- **AND** the reply is sent, because an opt-out does not stop a direct reply (REQ-OOA-009)
 - @e2e exclude adapter path, covered by PHPUnit
 
 #### Scenario: A digital post case update to an opted-out recipient is refused
@@ -90,7 +90,7 @@ integriq MUST publish `OCA\Integriq\Event\OptOutChangeRequestedEvent` and MUST r
 
 ### Requirement: The exempt categories are a fixed floor (REQ-OOA-004)
 
-integriq MUST treat `besluit`, `statutory`, `account` and `security` as exempt. It MUST accept `ontvangstbevestiging` and `invordering` as aliases of `statutory`. A value of `outbound.protected_categories` MUST NOT remove a floor category and MUST NOT add a category outside the floor. integriq MUST treat an empty or unknown category as `service` and MUST log a warning naming the source app.
+integriq MUST treat `besluit`, `statutory`, `account` and `security` as exempt. The category decides, never the channel: a digital post `besluit` is sent, a digital post `case-update` respects opt-outs. It MUST accept `ontvangstbevestiging` and `invordering` as aliases of `statutory`. A value of `outbound.protected_categories` MUST NOT remove a floor category and MUST NOT add a category outside the floor. integriq MUST treat an empty or unknown category as `service` and MUST log a warning naming the source app.
 
 #### Scenario: Config cannot remove besluit
 
@@ -158,7 +158,7 @@ For a non-exempt decision, integriq MUST return unsubscribe material: a link, a 
 
 ### Requirement: Suppressions and overrides are logged (REQ-OOA-007)
 
-integriq MUST write an append-only entry to `integriq_opt_out_log` for every suppressed recipient, every exempt override and every recorded change. Each entry MUST name the source app, category, channel and correlation id. For allowed recipients integriq MUST write one count entry per batch. The log MUST be readable by administrators only.
+integriq MUST write an append-only entry to `integriq_opt_out_log` for every suppressed recipient, every exempt override and every recorded change. Each entry MUST name the source app, category, channel and correlation id. For allowed recipients integriq MUST write one count entry per batch. The log MUST be readable by administrators only. Entries MUST be kept for 7 years and then deleted. Approved by Ruben on 2026-10-05.
 
 #### Scenario: A batch with one suppression
 
@@ -167,9 +167,16 @@ integriq MUST write an append-only entry to `integriq_opt_out_log` for every sup
 - **THEN** the log holds one `suppressed` entry and one `allowed-count` entry of 499 for `c-1`
 - @e2e exclude backend decision, covered by PHPUnit
 
+#### Scenario: Entries older than 7 years are deleted
+
+- **GIVEN** one log entry 7 years and 1 day old and one 6 years old
+- **WHEN** the daily retention job runs
+- **THEN** only the older entry is gone
+- @e2e exclude background job, covered by PHPUnit
+
 ### Requirement: A digital post recipient is never stored as a plain BSN (REQ-OOA-008)
 
-When the channel is digital post and the recipient is a BSN, integriq MUST store and match the opt-out under `bsn:` and an HMAC-SHA256 of the BSN with an instance secret. The plain BSN MUST NOT be written to the opt-out table, the log or the unsubscribe token.
+When the channel is digital post and the recipient is a BSN, integriq MUST store and match the opt-out under `bsn:` and an HMAC-SHA256 of the BSN with an instance secret. The plain BSN MUST NOT be written to the opt-out table, the log or the unsubscribe token. Approved by Ruben on 2026-10-05.
 
 #### Scenario: A Berichtenbox opt-out holds no BSN
 
@@ -177,3 +184,33 @@ When the channel is digital post and the recipient is a BSN, integriq MUST store
 - **WHEN** the recipient follows the link and confirms
 - **THEN** the table row's address starts with `bsn:` and does not contain `999993653`
 - @e2e exclude digital post flow, covered by PHPUnit
+
+### Requirement: A direct reply to a citizen's message passes an opt-out (REQ-OOA-009)
+
+integriq MUST allow a message with category `reply` and an `inReplyTo` reference whatever the recipient's opt-outs say, and MUST return no unsubscribe material for it. It MUST read a `reply` without `inReplyTo` as `service`. The intake reply MUST send as `reply` with the intake message uuid as `inReplyTo`. An opt-out covers updates and messages integriq or a sibling app starts. Approved by Ruben on 2026-10-05.
+
+#### Scenario: An opted-out citizen gets the answer to their own question
+
+- **GIVEN** an instance-wide opt-out for the sender of an intake message
+- **WHEN** a handler replies to that message
+- **THEN** the adapter sends the reply without an unsubscribe link
+- @e2e exclude adapter path, covered by PHPUnit
+
+#### Scenario: A reply without a reference is treated as an update
+
+- **GIVEN** an instance-wide opt-out for an address
+- **WHEN** a sibling app asks with category `reply` and no `inReplyTo`
+- **THEN** the decision reads `send: false` with code `opted-out`
+- @e2e exclude backend decision, covered by PHPUnit
+
+### Requirement: Contact erasure keeps the opt-out (REQ-OOA-010)
+
+When a sibling app erases a contact, integriq MUST accept `OptOutChangeRequestedEvent` with state `erase-contact` and a `contactRef`. It MUST clear `contact_ref` and `evidence` on every row for that contact, MUST keep the address and the state, and MUST write a `change` log entry without the evidence. Approved by Ruben on 2026-10-05.
+
+#### Scenario: An erased contact stays opted out
+
+- **GIVEN** an `opted-out` row for `jan@example.nl` with contact ref `c-1` and evidence
+- **WHEN** pipelinq erases contact `c-1`
+- **THEN** the row still reads `opted-out` for `jan@example.nl`
+- **AND** its contact ref and evidence are empty
+- @e2e exclude event path, covered by PHPUnit
