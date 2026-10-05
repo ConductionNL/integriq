@@ -13,10 +13,15 @@
  */
 
 $l = ($_['l10n'] ?? null);
-$stopped = (bool)($_['stopped'] ?? false);
+$state = (string)($_['state'] ?? (($_['stopped'] ?? false) === true ? 'stopped' : 'invalid'));
 $message = (string)($_['message'] ?? '');
+$headings = [
+	'stopped' => 'Updates gestopt',
+	'expired' => 'Deze link is verlopen',
+	'invalid' => 'Deze link werkt niet meer',
+];
 ?>
 <div class="guest-box">
-	<h2><?php p($stopped === true ? 'Updates gestopt' : 'Deze link werkt niet meer'); ?></h2>
+	<h2><?php p($headings[$state] ?? $headings['invalid']); ?></h2>
 	<p><?php p($message); ?></p>
 </div>

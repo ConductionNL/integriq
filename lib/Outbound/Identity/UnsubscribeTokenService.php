@@ -9,6 +9,15 @@
  * no link at all, rather than a link that refuses, so nobody is told they can
  * stop something they cannot.
  *
+ * Two formats. A new link is `v2.<claims>.<signature>`: the claims carry an
+ * expiry (`e`, unix time) and the signature covers the `v2.` prefix, so a
+ * signature from one format never verifies as the other. A link minted before
+ * 2026-10-05 is `<claims>.<signature>` with no expiry. Those are still
+ * honoured once their signature verifies: they are already in mail people
+ * have received, an opt-out is the recipient's own right, and the most a
+ * leaked old link can do is stop the non-statutory updates of one case for
+ * the one address it was minted for. Nothing mints the old format any more.
+ *
  * @category Outbound
  * @package  OCA\Integriq\Outbound\Identity
  *
@@ -28,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound\Identity;
 
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
 
@@ -46,71 +56,256 @@ class UnsubscribeTokenService {
 	public const CONFIG_SECRET = 'outbound.unsubscribe_secret';
 
 	/**
+	 * The app-config key holding how many days a new link stays valid.
+	 *
+	 * @var string
+	 */
+	public const CONFIG_TTL_DAYS = 'outbound.unsubscribe_ttl_days';
+
+	/**
+	 * How many days a new link stays valid unless the instance says otherwise.
+	 * A year: people unsubscribe from mail they kept, not only from today's.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_TTL_DAYS = 365;
+
+	/**
+	 * The prefix of the current token format.
+	 *
+	 * @var string
+	 */
+	public const PREFIX_V2 = 'v2';
+
+	/**
+	 * The token verifies and has not expired.
+	 *
+	 * @var string
+	 */
+	public const STATUS_VALID = 'valid';
+
+	/**
+	 * The signature verifies but the link is past its expiry.
+	 *
+	 * @var string
+	 */
+	public const STATUS_EXPIRED = 'expired';
+
+	/**
+	 * The token does not verify, so nothing in it is read.
+	 *
+	 * @var string
+	 */
+	public const STATUS_INVALID = 'invalid';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the signing secret.
 	 * @param ISecureRandom $random Mints the secret the first time one is needed.
 	 * @param OptOutRegistry $optOuts Says which categories carry no link at all.
+	 * @param ITimeFactory $time The clock the expiry is set and checked against.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly ISecureRandom $random,
 		private readonly OptOutRegistry $optOuts,
+		private readonly ITimeFactory $time,
 	) {
 
 	}//end __construct()
 
 	/**
-	 * Mint a token for one recipient and one case.
+	 * Mint a token for one recipient and one case, in the current format.
 	 *
 	 * @param string $address The recipient.
 	 * @param string $caseRef The case whose updates the link stops.
 	 *
 	 * @return string The token.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function mint(string $address, string $caseRef): string {
-		$claims = json_encode(['a' => strtolower(trim($address)), 'c' => $caseRef]);
-		if ($claims === false) {
-			$claims = '';
-		}
+		$expires = $this->time->getTime() + ($this->ttlDays() * 86400);
+		$payload = $this->encode(claims: ['a' => strtolower(trim($address)), 'c' => $caseRef, 'e' => $expires]);
+		$signed = self::PREFIX_V2 . '.' . $payload;
 
-		$payload = base64_encode($claims);
-		$payload = rtrim(strtr($payload, '+/', '-_'), '=');
-
-		return $payload . '.' . $this->sign(payload: $payload);
+		return $signed . '.' . $this->sign(payload: $signed);
 
 	}//end mint()
 
 	/**
-	 * Read a token back.
+	 * Read a token back, if it is valid.
 	 *
 	 * @param string $token The token.
 	 *
 	 * @return array{address:string,caseRef:string}|null What it says, or null when it does not
-	 *         verify. A token that does not verify is not read at all.
+	 *         verify or has expired. A token that does not verify is not read at all.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function verify(string $token): ?array {
+		$result = $this->inspect(token: $token);
+		if ($result['status'] !== self::STATUS_VALID) {
+			return null;
+		}
+
+		return ['address' => $result['address'], 'caseRef' => $result['caseRef']];
+
+	}//end verify()
+
+	/**
+	 * Say what a token is: valid, expired or invalid, and in which format.
+	 *
+	 * The claims of a token whose signature fails are never decoded. An
+	 * expired token reports no address either: nothing is done with it.
+	 *
+	 * @param string $token The token.
+	 *
+	 * @return array{status:string,format:string,address:string,caseRef:string} The verdict.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
+	 */
+	public function inspect(string $token): array {
 		$parts = explode('.', trim($token));
-		if (count($parts) !== 2) {
-			return null;
+
+		if (count($parts) === 3 && $parts[0] === self::PREFIX_V2) {
+			return $this->inspectV2(payload: $parts[1], signature: $parts[2]);
 		}
 
-		[$payload, $signature] = $parts;
+		if (count($parts) === 2) {
+			return $this->inspectV1(payload: $parts[0], signature: $parts[1]);
+		}
+
+		return $this->invalid();
+
+	}//end inspect()
+
+	/**
+	 * Check a token in the current format.
+	 *
+	 * @param string $payload   The claims part.
+	 * @param string $signature The signature part.
+	 *
+	 * @return array{status:string,format:string,address:string,caseRef:string} The verdict.
+	 */
+	private function inspectV2(string $payload, string $signature): array {
+		if (hash_equals($this->sign(payload: self::PREFIX_V2 . '.' . $payload), $signature) === false) {
+			return $this->invalid();
+		}
+
+		$claims = $this->decode(payload: $payload);
+		if ($claims === null || is_int($claims['e'] ?? null) === false) {
+			return $this->invalid();
+		}
+
+		if ($claims['e'] < $this->time->getTime()) {
+			return ['status' => self::STATUS_EXPIRED, 'format' => self::PREFIX_V2, 'address' => '', 'caseRef' => ''];
+		}
+
+		return $this->valid(claims: $claims, format: self::PREFIX_V2);
+
+	}//end inspectV2()
+
+	/**
+	 * Check a link minted before expiry existed. See the class comment for
+	 * why it is still honoured.
+	 *
+	 * @param string $payload   The claims part.
+	 * @param string $signature The signature part.
+	 *
+	 * @return array{status:string,format:string,address:string,caseRef:string} The verdict.
+	 */
+	private function inspectV1(string $payload, string $signature): array {
 		if (hash_equals($this->sign(payload: $payload), $signature) === false) {
-			return null;
+			return $this->invalid();
 		}
 
+		$claims = $this->decode(payload: $payload);
+		if ($claims === null) {
+			return $this->invalid();
+		}
+
+		return $this->valid(claims: $claims, format: 'v1');
+
+	}//end inspectV1()
+
+	/**
+	 * The verdict for a token that does not verify.
+	 *
+	 * @return array{status:string,format:string,address:string,caseRef:string} The verdict.
+	 */
+	private function invalid(): array {
+		return ['status' => self::STATUS_INVALID, 'format' => '', 'address' => '', 'caseRef' => ''];
+
+	}//end invalid()
+
+	/**
+	 * How many days a new link stays valid on this instance.
+	 *
+	 * @return int The days, at least one.
+	 */
+	private function ttlDays(): int {
+		$raw = trim($this->appConfig->getValueString('integriq', self::CONFIG_TTL_DAYS, ''));
+		if ($raw === '' || ctype_digit($raw) === false || (int)$raw < 1) {
+			return self::DEFAULT_TTL_DAYS;
+		}
+
+		return (int)$raw;
+
+	}//end ttlDays()
+
+	/**
+	 * A valid verdict from verified claims.
+	 *
+	 * @param array<string,mixed> $claims The claims.
+	 * @param string $format The token format.
+	 *
+	 * @return array{status:string,format:string,address:string,caseRef:string} The verdict.
+	 */
+	private function valid(array $claims, string $format): array {
+		return [
+			'status' => self::STATUS_VALID,
+			'format' => $format,
+			'address' => (string)($claims['a'] ?? ''),
+			'caseRef' => (string)($claims['c'] ?? ''),
+		];
+
+	}//end valid()
+
+	/**
+	 * Base64url-encode the claims.
+	 *
+	 * @param array<string,mixed> $claims The claims.
+	 *
+	 * @return string The payload.
+	 */
+	private function encode(array $claims): string {
+		$json = json_encode($claims);
+		if ($json === false) {
+			$json = '';
+		}
+
+		return rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
+
+	}//end encode()
+
+	/**
+	 * Decode a verified payload.
+	 *
+	 * @param string $payload The payload.
+	 *
+	 * @return array<string,mixed>|null The claims, or null when they are not an object.
+	 */
+	private function decode(string $payload): ?array {
 		$decoded = json_decode((string)base64_decode(strtr($payload, '-_', '+/'), false), true);
 		if (is_array($decoded) === false) {
 			return null;
 		}
 
-		return [
-			'address' => (string)($decoded['a'] ?? ''),
-			'caseRef' => (string)($decoded['c'] ?? ''),
-		];
+		return $decoded;
 
-	}//end verify()
+	}//end decode()
 
 	/**
 	 * The link to render in a message, or nothing at all.
@@ -121,6 +316,8 @@ class UnsubscribeTokenService {
 	 * @param string $baseUrl The instance's base url.
 	 *
 	 * @return string|null The link, or null when this category cannot be stopped.
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function linkFor(string $address, string $caseRef, string $category, string $baseUrl = ''): ?string {
 		if ($this->optOuts->isProtected($category) === true) {

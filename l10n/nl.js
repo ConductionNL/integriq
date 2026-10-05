@@ -1903,7 +1903,18 @@ OC.L10N.register(
         "Webhook connections": "Webhookkoppelingen",
         "Partners sign every delivery with a shared secret. Integriq checks the signature and stores the delivery as the account you choose per webhook.": "Partners ondertekenen elke levering met een gedeeld geheim. Integriq controleert de handtekening en slaat de levering op als het account dat je per webhook kiest.",
         "Loading the webhook connections…": "De webhookkoppelingen worden geladen…",
-        "Failed to load the webhook connections.": "De webhookkoppelingen konden niet worden geladen."
+        "Failed to load the webhook connections.": "De webhookkoppelingen konden niet worden geladen.",
+        "Addresses that asked not to be written to. Statutory notices, such as a besluit, are still sent.": "Adressen die gevraagd hebben geen berichten meer te krijgen. Wettelijk verplichte berichten, zoals een besluit, worden nog wel verstuurd.",
+        "No opt-outs yet": "Nog geen afmeldingen",
+        "An opt-out appears here when a recipient follows the unsubscribe link in a message.": "Een afmelding verschijnt hier zodra een ontvanger de afmeldlink in een bericht volgt.",
+        "{shown} of {total}": "{shown} van {total}",
+        "Show more": "Meer tonen",
+        "Failed to load the opt-outs": "De afmeldingen konden niet worden geladen",
+        "This case": "Deze zaak",
+        "Everything": "Alles",
+        "This link has expired. Nothing was changed. Use the link in a more recent message.": "Deze link is verlopen. Er is niets gewijzigd. Gebruik de link in een recenter bericht.",
+        "This link is not valid. Nothing was changed.": "Deze link is niet geldig. Er is niets gewijzigd.",
+        "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.": "U ontvangt geen berichten meer over deze zaak. Wettelijk verplichte berichten, zoals een besluit, worden nog wel verstuurd."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3246,7 +3246,19 @@
         "Webhook connections": "Webhook connections",
         "Partners sign every delivery with a shared secret. Integriq checks the signature and stores the delivery as the account you choose per webhook.": "Partners sign every delivery with a shared secret. Integriq checks the signature and stores the delivery as the account you choose per webhook.",
         "Loading the webhook connections…": "Loading the webhook connections…",
-        "Failed to load the webhook connections.": "Failed to load the webhook connections."
+        "Failed to load the webhook connections.": "Failed to load the webhook connections.",
+        "Opt-outs": "Opt-outs",
+        "Addresses that asked not to be written to. Statutory notices, such as a besluit, are still sent.": "Addresses that asked not to be written to. Statutory notices, such as a besluit, are still sent.",
+        "No opt-outs yet": "No opt-outs yet",
+        "An opt-out appears here when a recipient follows the unsubscribe link in a message.": "An opt-out appears here when a recipient follows the unsubscribe link in a message.",
+        "{shown} of {total}": "{shown} of {total}",
+        "Show more": "Show more",
+        "Failed to load the opt-outs": "Failed to load the opt-outs",
+        "This case": "This case",
+        "Everything": "Everything",
+        "This link has expired. Nothing was changed. Use the link in a more recent message.": "This link has expired. Nothing was changed. Use the link in a more recent message.",
+        "This link is not valid. Nothing was changed.": "This link is not valid. Nothing was changed.",
+        "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.": "You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent."
     },
     "plurals": {}
 }

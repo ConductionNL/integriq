@@ -115,23 +115,43 @@ test.describe('sender identity', () => {
 		page,
 		request,
 	}) => {
-		const seed = await request.post(`${OR_BASE}/recipient_opt_out`, {
+		// The opt-outs live in integriq's own table: the unsubscribe link
+		// writes them, and nothing an e2e run can sign adds one. So this reads
+		// the list the page reads and checks the page shows the same.
+		const list = await request.get(`${API_BASE}/outbound/opt-outs`, {
 			failOnStatusCode: false,
-			data: {
-				address: 'e2e-optout@example.org',
-				scope: 'instance',
-				source: 'administrator',
-				createdAt: new Date().toISOString(),
-			},
 		})
-		expect(seed.status(), 'seeding an opt-out must succeed').toBeLessThan(300)
+		expect(list.status(), 'an administrator reads the opt-out list').toBe(200)
+		const body = await list.json()
+		expect(Array.isArray(body.results)).toBe(true)
 
 		await page.goto(`${APP_BASE}/outbound/opt-outs`, {
 			waitUntil: 'domcontentloaded',
 		})
-		await expect(page.getByText('e2e-optout@example.org').first()).toBeVisible({
-			timeout: 20_000,
+		if (body.results.length === 0) {
+			await expect(page.getByTestId('opt-outs-empty')).toBeVisible({
+				timeout: 20_000,
+			})
+		} else {
+			await expect(
+				page.getByText(body.results[0].address).first(),
+			).toBeVisible({
+				timeout: 20_000,
+			})
+		}
+	})
+
+	test('an anonymous caller cannot read the opt-out list', async () => {
+		const anonymous = await playwrightRequest.newContext({
+			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
 		})
+
+		const resp = await anonymous.get(`${API_BASE}/outbound/opt-outs`, {
+			failOnStatusCode: false,
+		})
+
+		expect(resp.status()).toBeGreaterThanOrEqual(401)
+		await anonymous.dispose()
 	})
 
 	test('an anonymous caller cannot read the identities', async () => {

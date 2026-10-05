@@ -28,12 +28,15 @@ use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\SignatureStripper;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
+use OCA\Integriq\Tests\Helpers\InMemoryOptOutMapper;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -407,7 +410,12 @@ class SenderIdentityTest extends TestCase {
 			new UnsubscribeTokenService(
 				$appConfig,
 				$this->createMock(ISecureRandom::class),
-				new OptOutRegistry($this->objectService, $appConfig),
+				new OptOutRegistry(
+					new InMemoryOptOutMapper($this->createMock(IDBConnection::class)),
+					$appConfig,
+					$this->createMock(ITimeFactory::class)
+				),
+				$this->createMock(ITimeFactory::class),
 			)
 		);
 
