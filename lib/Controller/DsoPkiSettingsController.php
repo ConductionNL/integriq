@@ -120,6 +120,7 @@ class DsoPkiSettingsController extends Controller {
 				'rootCa' => (string)($trust['rootCa'] ?? ''),
 				'userId' => $userId,
 				'account' => $this->describeAccount(userId: $userId),
+				'handlerGroup' => $this->groups->describe(groupId: IntakeGroups::DSO_HANDLERS),
 			]
 		);
 

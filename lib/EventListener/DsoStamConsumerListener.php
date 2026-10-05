@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Service\Dso\DsoConnection;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -47,6 +48,8 @@ use Throwable;
  * @template-implements IEventListener<Event>
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-dso-stam-consumer-is-refused
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) WebhookProfiles is a final catalogue of pure lookups; there is nothing to inject.
  */
 class DsoStamConsumerListener implements IEventListener {
 
@@ -88,18 +91,14 @@ class DsoStamConsumerListener implements IEventListener {
 
 		$entity = $this->savedObject(event: $event);
 		$type = strtolower((string)($entity->getObject()['authorizationType'] ?? ''));
-		if (in_array($type, [DsoConnection::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE], true) === false
+		$webhook = WebhookProfiles::byAuthorizationType(authorizationType: $type);
+		if ((in_array($type, [DsoConnection::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE], true) === false && $webhook === null)
 			|| $this->isIntegriqConsumer(object: $entity) === false
 		) {
 			return;
 		}
 
-		$message = $this->l10n->t('Only one DSO connection is allowed. Edit the existing one instead.');
-		$code = 'dso_connection_exists';
-		if ($type === OpenFormulierenConnection::AUTHORIZATION_TYPE) {
-			$message = $this->l10n->t('Only one Open Formulieren connection is allowed. Edit the existing one instead.');
-			$code = 'openformulieren_connection_exists';
-		}
+		[$code, $message] = $this->refusal(type: $type, webhookLabel: $webhook?->label);
 
 		foreach ($this->connection->findConsumers(authorizationType: $type) as $existing) {
 			if ($existing->getUuid() === $entity->getUuid()) {
@@ -118,6 +117,35 @@ class DsoStamConsumerListener implements IEventListener {
 		}
 
 	}//end handle()
+
+	/**
+	 * The error code and message that refuse a second consumer of a type.
+	 *
+	 * @param string      $type         The consumer type, lower case.
+	 * @param string|null $webhookLabel The webhook's label, when a webhook profile runs on the type.
+	 *
+	 * @return array{0: string, 1: string} The code and the message.
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-one-consumer-per-webhook
+	 */
+	private function refusal(string $type, ?string $webhookLabel): array {
+		if ($type === OpenFormulierenConnection::AUTHORIZATION_TYPE) {
+			return [
+				'openformulieren_connection_exists',
+				$this->l10n->t('Only one Open Formulieren connection is allowed. Edit the existing one instead.'),
+			];
+		}
+
+		if ($webhookLabel !== null) {
+			return [
+				'webhook_connection_exists',
+				$this->l10n->t('Only one %s connection is allowed. Edit the existing one instead.', [$webhookLabel]),
+			];
+		}
+
+		return ['dso_connection_exists', $this->l10n->t('Only one DSO connection is allowed. Edit the existing one instead.')];
+
+	}//end refusal()
 
 	/**
 	 * The object being saved.

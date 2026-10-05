@@ -32,7 +32,8 @@ use OCA\Integriq\Exception\OsoProviderException;
 use OCA\Integriq\Exception\OsoTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\OsoService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -52,6 +53,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
  * @spec openspec/specs/oso-adapter/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the gate and its webhook-type constant replace the
+ * signature service; the HTTP, auth and provider types this controller answers with stay.
  */
 class OsoController extends Controller {
 	/**
@@ -60,7 +64,7 @@ class OsoController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param OsoService $osoService Export/import/retour orchestration logic.
-	 * @param WebhookSignatureService $signatureService HMAC verification for inbound webhooks.
+	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -70,7 +74,7 @@ class OsoController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly OsoService $osoService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,
@@ -133,9 +137,14 @@ class OsoController extends Controller {
 	/**
 	 * Receive an inbound OSO overstapdossier.
 	 *
+	 * The delivery authenticates the `oso-webhook` consumer, and every write runs
+	 * as that consumer's account. A missing connection, account or right, and
+	 * a write OpenRegister refuses, answer 503 so the partner retries.
+	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/changes/oso-inbound-on-the-consumer-model/specs/oso-adapter/spec.md#requirement-the-import-and-the-retour-act-as-the-oso-connections-account-req-020
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -149,9 +158,14 @@ class OsoController extends Controller {
 	/**
 	 * Receive an inbound OSO export acknowledgement/retour.
 	 *
+	 * The delivery authenticates the `oso-webhook` consumer, and every write runs
+	 * as that consumer's account. A missing connection, account or right, and
+	 * a write OpenRegister refuses, answer 503 so the partner retries.
+	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
+	 * @spec openspec/changes/oso-inbound-on-the-consumer-model/specs/oso-adapter/spec.md#requirement-the-import-and-the-retour-act-as-the-oso-connections-account-req-020
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -170,46 +184,34 @@ class OsoController extends Controller {
 	 * A verified request always acknowledges `{received: true}`, even when
 	 * `$handler` fails internally (never a 500).
 	 *
+	 * The delivery authenticates the `oso-webhook` consumer, and every write runs
+	 * as that consumer's account. A missing connection, account or right, and
+	 * a write OpenRegister refuses, answer 503 so the partner retries.
+	 *
 	 * @param callable $handler Receives the raw verified body; return value is ignored.
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
+	 * @spec openspec/changes/oso-inbound-on-the-consumer-model/specs/oso-adapter/spec.md#requirement-the-import-and-the-retour-act-as-the-oso-connections-account-req-020
 	 */
 	private function handleSignedInbound(callable $handler): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		try {
-			$source = $this->osoService->resolveActiveSource();
-		} catch (OsoProviderException) {
-			// No source configured => no secret to verify against => fail closed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$webhookConfig = ($source->getObject()['configuration']['webhookSignature'] ?? []);
-		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
-		$secret = (string)($webhookConfig['secret'] ?? '');
-		$headerName = ($webhookConfig['header'] ?? 'X-OpenConnector-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
-
-		$headerValue = (string)$this->request->getHeader($headerName);
-
-		$verified = $this->signatureService->verify(
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			config: ['scheme' => $scheme, 'secret' => $secret, 'toleranceSeconds' => $tolerance]
-		);
-
-		if ($verified === false) {
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		$identity = $this->gate->identify(profile: WebhookProfiles::OSO, rawBody: $rawBody, request: $this->request);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		try {
-			$handler($rawBody);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'[OsoController] inbound processing failed: ' . $exception->getMessage(),
-				['exception' => $exception]
+			$this->gate->deliver(
+				identity: $identity,
+				operation: function () use ($handler, $rawBody): void {
+					$handler($rawBody);
+				}
 			);
-		}
+		} catch (Throwable $exception) {
+			// The account's write was refused: answer 503 so OSO delivers again.
+			return $this->gate->notStored(profile: WebhookProfiles::OSO, reason: $exception->getMessage());
+		}//end try
 
 		return new JSONResponse(['received' => true]);
 	}//end handleSignedInbound()

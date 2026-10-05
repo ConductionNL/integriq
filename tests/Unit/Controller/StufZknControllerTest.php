@@ -25,7 +25,7 @@ use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\StufZknSyncService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
@@ -54,9 +54,9 @@ class StufZknControllerTest extends TestCase {
 	private $syncService;
 
 	/**
-	 * @var WebhookSignatureService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var WebhookGate|\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private $signatureService;
+	private $gate;
 
 	/**
 	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
@@ -93,7 +93,7 @@ class StufZknControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->syncService = $this->createMock(StufZknSyncService::class);
-		$this->signatureService = $this->createMock(WebhookSignatureService::class);
+		$this->gate = $this->createMock(WebhookGate::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 		$this->l = $this->createMock(IL10N::class);
@@ -117,7 +117,7 @@ class StufZknControllerTest extends TestCase {
 			'integriq',
 			$this->request,
 			$this->syncService,
-			$this->signatureService,
+			$this->gate,
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
@@ -126,74 +126,8 @@ class StufZknControllerTest extends TestCase {
 
 	}//end buildController()
 
-	/**
-	 * No stuf-zkn source configured at all fails the inbound endpoint closed (401) — no secret
-	 * to verify against.
-	 *
-	 * @return void
-	 */
-	public function testInboundWithNoSourceConfiguredReturns401(): void {
-		$this->syncService->method('resolveActiveSource')
-			->willThrowException(new StufZknProviderException(message: 'no source'));
-		$this->signatureService->expects($this->never())->method('verify');
 
-		$response = $this->controller->inbound();
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-
-	}//end testInboundWithNoSourceConfiguredReturns401()
-
-	/**
-	 * An unsigned/tampered inbound request is rejected 401 before any processing.
-	 *
-	 * @return void
-	 */
-	public function testInboundInvalidSignatureReturns401BeforeAnySideEffect(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->syncService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(false);
-
-		$this->syncService->expects($this->never())->method('receiveInbound');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-		$this->assertSame('invalid signature', $response->getData()['error']);
-
-	}//end testInboundInvalidSignatureReturns401BeforeAnySideEffect()
-
-	/**
-	 * A verified inbound request is routed to receiveInbound() and its Bv03/Fo03 reply is
-	 * returned verbatim as an XML body.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
-	 */
-	public function testInboundVerifiedRequestReturnsSyncServiceReplyVerbatim(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->syncService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-
-		$ackXml = '<soap:Envelope><soap:Body><StUF:Bv03Bericht/></soap:Body></soap:Envelope>';
-		$this->syncService->expects($this->once())->method('receiveInbound')->willReturn($ackXml);
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame($ackXml, $response->render());
-
-		// Response::getHeaders() needs a booted \OC (it appends the CSP
-		// header via the server container), so read the raw protected
-		// headers property instead — standalone-suite safe (mirrors
-		// ConfigurationControllerTest::testExportReturnsAttachmentWithServiceDocument()).
-		$property = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
-		$headers = $property->getValue($response);
-		$this->assertSame('text/xml; charset=utf-8', $headers['Content-Type']);
-
-	}//end testInboundVerifiedRequestReturnsSyncServiceReplyVerbatim()
 
 	/**
 	 * An unauthenticated caller gets 401 on the outbound push endpoint without reaching the

@@ -32,9 +32,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\Integriq\Intake\IntakeChannelSourceResolver;
 use OCA\Integriq\Outbound\Call\VerdictService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -45,6 +46,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Throwable;
 
 /**
  * Inbound verdicts, and reading them back.
@@ -69,8 +71,7 @@ class VerdictController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal reading verdicts back.
 	 * @param VerdictService $verdicts Stores and reads the verdicts.
-	 * @param IntakeChannelSourceResolver $sourceResolver Finds the signing secret.
-	 * @param WebhookSignatureService $signatureService Verifies the signature.
+	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IL10N $l Translations.
 	 */
 	public function __construct(
@@ -78,8 +79,7 @@ class VerdictController extends Controller {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly VerdictService $verdicts,
-		private readonly IntakeChannelSourceResolver $sourceResolver,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly WebhookGate $gate,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -101,34 +101,13 @@ class VerdictController extends Controller {
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
-		$configuration = $this->sourceResolver->configurationFor(self::CHANNEL_ID);
-		if ($configuration === null) {
-			// No source, no secret to verify against: an unverifiable verdict
-			// is not a verdict, and storing it would put an unsigned claim
-			// beside somebody's case.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$signature = ($configuration['webhookSignature'] ?? []);
-		if (is_array($signature) === false) {
-			$signature = [];
-		}
-
-		$verified = $this->signatureService->verify(
+		$identity = $this->gate->identify(
+			profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
 			rawBody: $rawBody,
-			headerValue: (string)$this->request->getHeader(
-				(string)($signature['header'] ?? 'X-OpenConnector-Signature')
-			),
-			config: [
-				'scheme' => (string)($signature['scheme'] ?? 'openconnector'),
-				'secret' => (string)($signature['secret'] ?? ''),
-				'toleranceSeconds' => (int)($signature['toleranceSeconds']
-					?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
-			]
+			request: $this->request
 		);
-
-		if ($verified === false) {
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		$body = $this->request->getParams();
@@ -139,15 +118,24 @@ class VerdictController extends Controller {
 		}
 
 		try {
-			$verdict = $this->verdicts->record(
-				(string)($body['objectRef'] ?? ''),
-				(string)($body['state'] ?? ''),
-				(string)($body['source'] ?? ''),
-				(string)($body['reason'] ?? ''),
-				$verdictPayload,
+			$verdict = $this->gate->deliver(
+				identity: $identity,
+				operation: fn (): ObjectEntity => $this->verdicts->record(
+					(string)($body['objectRef'] ?? ''),
+					(string)($body['state'] ?? ''),
+					(string)($body['source'] ?? ''),
+					(string)($body['reason'] ?? ''),
+					$verdictPayload,
+				)
 			);
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (Throwable $exception) {
+			// The account's write was refused: answer 503 so the checker delivers again.
+			return $this->gate->notStored(
+				profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
+				reason: $exception->getMessage()
+			);
 		}
 
 		return new JSONResponse(

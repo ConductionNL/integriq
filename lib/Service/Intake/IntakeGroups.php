@@ -159,6 +159,42 @@ class IntakeGroups {
 	}//end isMember()
 
 	/**
+	 * Whether the group has at least one member.
+	 *
+	 * A group that does not exist yet has none. The settings sections use
+	 * this to say that nobody can read the intake records yet.
+	 *
+	 * @param string $groupId The group id.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/intake-handler-group-notice/specs/intake-access/spec.md#requirement-the-connection-settings-say-when-nobody-can-read-the-intake-records-req-iac-001
+	 */
+	public function hasMembers(string $groupId): bool {
+		$group = $this->groupManager->get($groupId);
+		if ($group === null) {
+			return false;
+		}
+
+		return (int)$group->count() > 0;
+
+	}//end hasMembers()
+
+	/**
+	 * Its state for a settings section: the group id and whether it is empty.
+	 *
+	 * @param string $groupId The group id.
+	 *
+	 * @return array{id: string, empty: bool}
+	 *
+	 * @spec openspec/changes/intake-handler-group-notice/specs/intake-access/spec.md#requirement-the-connection-settings-say-when-nobody-can-read-the-intake-records-req-iac-001
+	 */
+	public function describe(string $groupId): array {
+		return ['id' => $groupId, 'empty' => ($this->hasMembers(groupId: $groupId) === false)];
+
+	}//end describe()
+
+	/**
 	 * Put the account in the group, creating the group when needed.
 	 *
 	 * @param string $groupId The group id.

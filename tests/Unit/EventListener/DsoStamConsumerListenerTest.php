@@ -60,7 +60,7 @@ class DsoStamConsumerListenerTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($this->slugged($schemaSlug));
 
 		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnArgument(0);
+		$l10n->method('t')->willReturnCallback(static fn (string $text, array $parameters = []): string => vsprintf($text, $parameters));
 
 		return new DsoStamConsumerListener(
 			connection: $this->buildWorldConnection(objectService: $this->buildWorldObjectService()),
@@ -223,4 +223,26 @@ class DsoStamConsumerListenerTest extends TestCase {
 		$this->assertFalse($event->isPropagationStopped());
 
 	}//end testAnOpenFormulierenConsumerNextToADsoConsumerPasses()
+
+	/**
+	 * A second consumer of a webhook on the consumer model is refused; another webhook's passes.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-one-consumer-per-webhook
+	 */
+	public function testASecondWebhookConsumerIsRefused(): void {
+		$this->worldConsumers['consumer-peppol'] = ['name' => 'Peppol', 'authorizationType' => 'peppol-webhook', 'userId' => 'p'];
+
+		$second = new ObjectCreatingEvent($this->consumer('consumer-peppol-2', 'peppol-webhook'));
+		$this->listener()->handle($second);
+		$this->assertTrue($second->isPropagationStopped());
+		$this->assertSame('webhook_connection_exists', $second->getErrors()['code']);
+		$this->assertStringContainsString('Only one Peppol connection', $second->getErrors()['message']);
+
+		$other = new ObjectCreatingEvent($this->consumer('consumer-rod', 'rod-webhook'));
+		$this->listener()->handle($other);
+		$this->assertFalse($other->isPropagationStopped());
+
+	}//end testASecondWebhookConsumerIsRefused()
 }//end class

@@ -31,6 +31,19 @@
 				{{ accountState.text }}
 			</p>
 
+			<NcNoteCard
+				v-if="handlerGroup.empty"
+				type="warning"
+				data-testid="admin-dso-handlers-empty">
+				{{
+					t(
+						'integriq',
+						'Nobody can read the DSO requests yet. Add handlers to the group {group} under Accounts.',
+						{ group: handlerGroup.id },
+					)
+				}}
+			</NcNoteCard>
+
 			<NcSelectUsers
 				v-model="account"
 				:inputLabel="t('integriq', 'Account the intake acts as')"
@@ -125,7 +138,13 @@
 import axios from '@nextcloud/axios'
 import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
 import { generateOcsUrl, generateUrl } from '@nextcloud/router'
-import { NcButton, NcPasswordField, NcSelect, NcSelectUsers } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcNoteCard,
+	NcPasswordField,
+	NcSelect,
+	NcSelectUsers,
+} from '@nextcloud/vue'
 
 /**
  * Admin editor for the DSO connection: the instance's one `dso-stam`
@@ -140,6 +159,7 @@ export default {
 
 	components: {
 		NcButton,
+		NcNoteCard,
 		NcPasswordField,
 		NcSelect,
 		NcSelectUsers,
@@ -158,6 +178,7 @@ export default {
 			rootCa: '',
 			account: null,
 			accountInfo: { state: 'none', displayName: '' },
+			handlerGroup: { id: '', empty: false },
 			accountOptions: [],
 			searchingAccounts: false,
 			accountError: '',
@@ -234,6 +255,7 @@ export default {
 				this.signingCertificate = data.signingCertificate || ''
 				this.intermediateChain = data.intermediateChain || ''
 				this.rootCa = data.rootCa || ''
+				this.handlerGroup = data.handlerGroup || { id: '', empty: false }
 				this.accountInfo = data.account || {
 					state: 'none',
 					displayName: '',

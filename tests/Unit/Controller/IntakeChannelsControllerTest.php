@@ -23,15 +23,16 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\IntakeChannelsController;
 use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
-use OCA\Integriq\Intake\IntakeChannelSourceResolver;
 use OCA\Integriq\Intake\IntakeReplyService;
 use OCA\Integriq\Intake\IntakeRoutingService;
 use OCA\Integriq\Intake\ReplyResult;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -76,13 +77,6 @@ class IntakeChannelsControllerTest extends TestCase {
 	private $registry;
 
 	/**
-	 * The source resolver double.
-	 *
-	 * @var IntakeChannelSourceResolver|MockObject
-	 */
-	private $sourceResolver;
-
-	/**
 	 * The routing service double.
 	 *
 	 * @var IntakeRoutingService|MockObject
@@ -99,9 +93,9 @@ class IntakeChannelsControllerTest extends TestCase {
 	/**
 	 * The signature verifier double.
 	 *
-	 * @var WebhookSignatureService|MockObject
+	 * @var WebhookGate|MockObject
 	 */
-	private $signatureService;
+	private $gate;
 
 	/**
 	 * The OR object service double.
@@ -143,10 +137,6 @@ class IntakeChannelsControllerTest extends TestCase {
 			->disableOriginalConstructor()
 			->onlyMethods(['get', 'has', 'describeAll'])
 			->getMock();
-		$this->sourceResolver = $this->getMockBuilder(IntakeChannelSourceResolver::class)
-			->disableOriginalConstructor()
-			->onlyMethods(['sourceFor', 'configurationFor'])
-			->getMock();
 		$this->routingService = $this->getMockBuilder(IntakeRoutingService::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['route', 'validateRule'])
@@ -155,10 +145,7 @@ class IntakeChannelsControllerTest extends TestCase {
 			->disableOriginalConstructor()
 			->onlyMethods(['reply'])
 			->getMock();
-		$this->signatureService = $this->getMockBuilder(WebhookSignatureService::class)
-			->disableOriginalConstructor()
-			->onlyMethods(['verify'])
-			->getMock();
+		$this->gate = $this->createMock(WebhookGate::class);
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
@@ -181,10 +168,9 @@ class IntakeChannelsControllerTest extends TestCase {
 					$this->userSession,
 					$this->actionAuth,
 					$this->registry,
-					$this->sourceResolver,
 					$this->routingService,
 					$this->replyService,
-					$this->signatureService,
+					$this->gate,
 					$this->objectService,
 					$l10n,
 				]
@@ -202,10 +188,7 @@ class IntakeChannelsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnsignedDeliveryIsRefusedBeforeTheBodyIsRead(): void {
-		$this->sourceResolver->method('configurationFor')->willReturn(
-			['webhookSignature' => ['secret' => 'shh', 'scheme' => 'openconnector']]
-		);
-		$this->signatureService->method('verify')->willReturn(false);
+		$this->signatureRefused();
 		$this->registry->expects($this->never())->method('get');
 		$this->routingService->expects($this->never())->method('route');
 
@@ -223,10 +206,7 @@ class IntakeChannelsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testARefusedDeliveryIsRecorded(): void {
-		$this->sourceResolver->method('configurationFor')->willReturn(
-			['webhookSignature' => ['secret' => 'shh']]
-		);
-		$this->signatureService->method('verify')->willReturn(false);
+		$this->signatureRefused();
 
 		$this->controller->inbound('messaging');
 
@@ -237,19 +217,23 @@ class IntakeChannelsControllerTest extends TestCase {
 	}//end testARefusedDeliveryIsRecorded()
 
 	/**
-	 * A channel with no source is refused too: no secret means nothing to
-	 * verify against, and an unverifiable payload is not an accepted one.
+	 * A channel with no connection answers 503 (the gate's answer), and the
+	 * adapter never sees the payload.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/intake-channels-on-the-consumer-model/specs/intake-channels/spec.md#scenario-each-channel-has-its-own-connection
 	 */
 	public function testAnUnconfiguredChannelIsRefused(): void {
-		$this->sourceResolver->method('configurationFor')->willReturn(null);
-		$this->signatureService->expects($this->never())->method('verify');
+		$this->gate->method('identify')->willReturn(
+			new JSONResponse(['error' => 'intakemessaging_connection_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE)
+		);
+		$this->registry->expects($this->never())->method('get');
 
 		$response = $this->controller->inbound('messaging');
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-		$this->assertSame('no configured channel source', $this->saved[0]['reason']);
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame([], $this->saved);
 
 	}//end testAnUnconfiguredChannelIsRefused()
 
@@ -277,10 +261,7 @@ class IntakeChannelsControllerTest extends TestCase {
 	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md
 	 */
 	public function testTheAdapterOnlyEverSeesTheSignedBody(): void {
-		$this->sourceResolver->method('configurationFor')->willReturn(
-			['webhookSignature' => ['secret' => 'shh']]
-		);
-		$this->signatureService->method('verify')->willReturn(true);
+		$this->deliveryAllowed();
 
 		// The merged set the framework would hand over: the signed body plus a
 		// key that was never signed, as a query string supplies it.
@@ -335,10 +316,7 @@ class IntakeChannelsControllerTest extends TestCase {
 	public function testAFormEncodedBodyIsDecodedFromTheSignedBytes(): void {
 		$controller = $this->controllerWithRawBody(rawBody: 'messageId=WA-2&text=hallo');
 
-		$this->sourceResolver->method('configurationFor')->willReturn(
-			['webhookSignature' => ['secret' => 'shh']]
-		);
-		$this->signatureService->method('verify')->willReturn(true);
+		$this->deliveryAllowed();
 		$this->request->method('getParams')->willReturn(['injected' => 'no']);
 
 		$seen = null;
@@ -386,10 +364,9 @@ class IntakeChannelsControllerTest extends TestCase {
 					$this->userSession,
 					$this->actionAuth,
 					$this->registry,
-					$this->sourceResolver,
 					$this->routingService,
 					$this->replyService,
-					$this->signatureService,
+					$this->gate,
 					$this->objectService,
 					$l10n,
 				]
@@ -403,10 +380,7 @@ class IntakeChannelsControllerTest extends TestCase {
 	}//end controllerWithRawBody()
 
 	public function testASignedDeliveryIsRouted(): void {
-		$this->sourceResolver->method('configurationFor')->willReturn(
-			['webhookSignature' => ['secret' => 'shh']]
-		);
-		$this->signatureService->method('verify')->willReturn(true);
+		$this->deliveryAllowed();
 		$this->request->method('getParams')->willReturn(['messageId' => 'WA-1']);
 
 		$adapter = $this->createMock(\OCA\Integriq\Intake\IntakeChannelAdapterInterface::class);
@@ -525,4 +499,26 @@ class IntakeChannelsControllerTest extends TestCase {
 
 	}//end signedInAs()
 
+	/**
+	 * The gate refuses the signature.
+	 *
+	 * @return void
+	 */
+	private function signatureRefused(): void {
+		$this->gate->method('identify')->willReturn(new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED));
+
+	}//end signatureRefused()
+
+	/**
+	 * The gate accepts the delivery and runs the work.
+	 *
+	 * @return void
+	 */
+	private function deliveryAllowed(): void {
+		$this->gate->method('identify')->willReturn(new DsoIdentity(account: $this->createMock(IUser::class), consumerUuid: 'consumer-1'));
+		$this->gate->method('deliver')->willReturnCallback(
+			static fn (DsoIdentity $identity, callable $operation): mixed => $operation()
+		);
+
+	}//end deliveryAllowed()
 }//end class

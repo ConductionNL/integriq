@@ -31,6 +31,7 @@ use InvalidArgumentException;
 use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
@@ -41,6 +42,8 @@ use OCP\Notification\INotifier;
  * Notifier for the DSO connection alerts.
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) WebhookProfiles is a final catalogue of pure lookups; there is nothing to inject.
  */
 class DsoConnectionNotifier implements INotifier {
 
@@ -106,6 +109,12 @@ class DsoConnectionNotifier implements INotifier {
 			return $this->finish(notification: $notification, subject: $subject);
 		}
 
+		$webhook = WebhookProfiles::byChannel(channel: $channel);
+		if ($webhook !== null) {
+			$subject = $this->webhookSubject(l: $l, label: $webhook->label, reason: $reason);
+			return $this->finish(notification: $notification, subject: $subject);
+		}
+
 		$subject = match ($reason) {
 			'no_connection', 'ambiguous_connection' => $l->t('DSO-LV pushes are refused: no DSO connection is configured.'),
 			'no_account', 'account_unknown', 'account_disabled' => $l->t('DSO-LV pushes are refused: the DSO connection has no usable account.'),
@@ -148,6 +157,29 @@ class DsoConnectionNotifier implements INotifier {
 		};
 
 	}//end openFormulierenSubject()
+
+	/**
+	 * The subject of an alert of a signed webhook on the consumer model.
+	 *
+	 * @param IL10N  $l      The localisation.
+	 * @param string $label  The webhook's partner name.
+	 * @param string $reason The alert reason.
+	 *
+	 * @return string The subject.
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-a-connection-without-a-usable-account-refuses-with-503
+	 */
+	private function webhookSubject(IL10N $l, string $label, string $reason): string {
+		return match ($reason) {
+			'no_connection', 'ambiguous_connection' => $l->t('%1$s deliveries are refused: no %1$s connection is configured.', [$label]),
+			'no_account', 'account_unknown', 'account_disabled' => $l->t('%1$s deliveries are refused: the %1$s connection has no usable account.', [$label]),
+			'account_lacks_rights', 'rights_unverifiable' => $l->t('%1$s deliveries are refused: the %1$s connection account cannot store them.', [$label]),
+			DsoConnectionAlerts::REASON_DELIVERY_NOT_STORED => $l->t('A %s delivery could not be stored. The sender will deliver it again.', [$label]),
+			DsoConnectionAlerts::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the %s webhook acts as.', [$label]),
+			default => $l->t('The %s connection needs attention.', [$label]),
+		};
+
+	}//end webhookSubject()
 
 	/**
 	 * Set the subject, the link to the admin section and the icon.

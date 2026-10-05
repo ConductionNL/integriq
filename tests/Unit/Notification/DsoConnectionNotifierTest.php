@@ -41,7 +41,7 @@ class DsoConnectionNotifierTest extends TestCase {
 	 */
 	private function render(array $parameters): string {
 		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnArgument(0);
+		$l10n->method('t')->willReturnCallback(static fn (string $text, array $parameters = []): string => vsprintf($text, $parameters));
 		$factory = $this->createMock(IFactory::class);
 		$factory->method('get')->willReturn($l10n);
 		$urls = $this->createMock(IURLGenerator::class);
@@ -106,4 +106,27 @@ class DsoConnectionNotifierTest extends TestCase {
 		);
 
 	}//end testAnAlertWithoutAChannelIsADsoAlert()
+
+	/**
+	 * An alert of a webhook on the consumer model names that webhook.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-a-connection-without-a-usable-account-refuses-with-503
+	 */
+	public function testAWebhookAlertNamesTheWebhook(): void {
+		$this->assertSame(
+			'Peppol deliveries are refused: the Peppol connection has no usable account.',
+			$this->render(['reason' => 'no_account', 'channel' => 'peppol'])
+		);
+		$this->assertSame(
+			'Choose the account the StUF-ZKN webhook acts as.',
+			$this->render(['reason' => 'choose_account', 'channel' => 'stufzkn'])
+		);
+		$this->assertSame(
+			'A Verdicts delivery could not be stored. The sender will deliver it again.',
+			$this->render(['reason' => 'delivery_not_stored', 'channel' => 'intakeverdicts'])
+		);
+
+	}//end testAWebhookAlertNamesTheWebhook()
 }//end class
