@@ -80,7 +80,7 @@ class OptOutMatcher {
 				continue;
 			}
 
-			if (OptOutCategories::purposeCovers(purpose: (string)$row->getPurpose(), category: $category) === false) {
+			if ($this->purposeCovers(purpose: (string)$row->getPurpose(), category: $category) === false) {
 				continue;
 			}
 
@@ -92,6 +92,25 @@ class OptOutMatcher {
 		return null;
 
 	}//end matchingOptOut()
+
+	/**
+	 * Whether a row with this purpose covers a message of this category: an
+	 * empty purpose covers every category, otherwise the category's group must match.
+	 *
+	 * @param string $purpose The row's purpose.
+	 * @param string $category The canonical category.
+	 *
+	 * @return bool True when the row covers it.
+	 */
+	private function purposeCovers(string $purpose, string $category): bool {
+		$purpose = strtolower(trim($purpose));
+		if ($purpose === OptOutCategories::PURPOSE_ALL) {
+			return true;
+		}
+
+		return ((OptOutCategories::PURPOSE_OF[strtolower(trim($category))] ?? null) === $purpose);
+
+	}//end purposeCovers()
 
 	/**
 	 * Whether a row's scope covers this send.
@@ -139,7 +158,7 @@ class OptOutMatcher {
 				continue;
 			}
 
-			if (OptOutCategories::purposeCovers(purpose: (string)$row->getPurpose(), category: $category) === false) {
+			if ($this->purposeCovers(purpose: (string)$row->getPurpose(), category: $category) === false) {
 				continue;
 			}
 

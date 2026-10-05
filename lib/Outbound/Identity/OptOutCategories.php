@@ -288,26 +288,6 @@ class OptOutCategories {
 	}//end normalisePurpose()
 
 	/**
-	 * Whether a row with this purpose covers a message of this category.
-	 *
-	 * @param string $purpose The row's purpose.
-	 * @param string $category The canonical category.
-	 *
-	 * @return bool True when the row covers it.
-	 *
-	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
-	 */
-	public static function purposeCovers(string $purpose, string $category): bool {
-		$purpose = strtolower(trim($purpose));
-		if ($purpose === self::PURPOSE_ALL) {
-			return true;
-		}
-
-		return ((self::PURPOSE_OF[strtolower(trim($category))] ?? null) === $purpose);
-
-	}//end purposeCovers()
-
-	/**
 	 * Whether an opt-out can never stop this category.
 	 *
 	 * @param string $category The category, canonical or not.

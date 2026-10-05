@@ -413,7 +413,10 @@ class SenderIdentityController extends Controller {
 	private function describe(array $claim): string {
 		if ($claim['purpose'] === OptOutCategories::PURPOSE_MARKETING) {
 			if ($claim['scope'] === OptOutRegistry::SCOPE_CHANNEL) {
-				return $this->l->t('You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.', [$claim['channel']]);
+				return $this->l->t(
+					'You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.',
+					[$claim['channel']]
+				);
 			}
 
 			return $this->l->t('You will no longer receive newsletters and campaigns from us. Other messages, such as appointment reminders, still arrive.');

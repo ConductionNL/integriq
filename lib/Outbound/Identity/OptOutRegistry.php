@@ -290,6 +290,8 @@ class OptOutRegistry {
 	 * @return array<string,array<string,mixed>> One decision
 	 *         per recipient, keyed by the address as given.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) -- probe is the decision event's contract field, passed through.
+	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
 	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-a-probe-answers-without-writing-req-ooa-012
 	 */
@@ -673,7 +675,9 @@ class OptOutRegistry {
 			return $this->suppress(code: self::CODE_OPTED_OUT, reason: $reason, key: $key, context: $context, detail: $detail);
 		}
 
-		if ($requiresConsent === true && $this->matcher->hasConsent(rows: $mine, recipient: $recipient, channel: $context['channel'], category: $category) === false) {
+		$consented = $requiresConsent === false
+			|| $this->matcher->hasConsent(rows: $mine, recipient: $recipient, channel: $context['channel'], category: $category) === true;
+		if ($consented === false) {
 			$reason = 'No recorded consent permits this message.';
 			return $this->suppress(code: self::CODE_NO_CONSENT, reason: $reason, key: $key, context: $context, detail: []);
 		}
