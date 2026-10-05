@@ -22,7 +22,7 @@ hydra's section 4 lists the categories. Section 7 maps pipelinq's `consentRecord
 | `service` | `case-update`, `reminder`, `service` | a link in any of those messages |
 | empty | every non-exempt category | "Stop everything", STOP keyword, migrated `messagingConsentRecord`, every row written before this change |
 
-- The exempt floor (`besluit`, `statutory`, `account`, `security`) is never stopped. An opt-out of any purpose still logs an override when it would have matched.
+- The exempt floor (`besluit`, `statutory`, `account`, `security`) is never stopped. An override is logged when a row with an empty purpose matched, because only that row would have stopped it.
 - `reply` passes every opt-out, as today.
 - A purpose given as a category name normalises to its group: `case-update` and `reminder` become `service`. `all` becomes empty. An unknown purpose becomes empty and logs a warning. Empty is the safe reading: it stops more, never less.
 
