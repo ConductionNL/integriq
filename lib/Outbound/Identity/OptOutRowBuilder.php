@@ -43,10 +43,12 @@ class OptOutRowBuilder {
 	 *
 	 * @param RecipientKey $recipientKey Normalises the address per channel.
 	 * @param ITimeFactory $time Stamps the row.
+	 * @param OptOutCategories $categories Normalises the purpose.
 	 */
 	public function __construct(
 		private readonly RecipientKey $recipientKey,
 		private readonly ITimeFactory $time,
+		private readonly OptOutCategories $categories,
 	) {
 
 	}//end __construct()
@@ -88,7 +90,7 @@ class OptOutRowBuilder {
 		}
 
 		$row->setState($state);
-		$row->setPurpose((string)($request['purpose'] ?? ''));
+		$row->setPurpose($this->categories->normalisePurpose((string)($request['purpose'] ?? '')));
 		$row->setContactRef((string)($request['contactRef'] ?? ''));
 		$row->setLawfulBasis((string)($request['lawfulBasis'] ?? ''));
 		$row->setEvidence(null);
@@ -164,10 +166,6 @@ class OptOutRowBuilder {
 		$stored->setUpdatedAt((int)$row->getUpdatedAt());
 		if ((string)$row->getContactRef() !== '') {
 			$stored->setContactRef((string)$row->getContactRef());
-		}
-
-		if ((string)$row->getPurpose() !== '') {
-			$stored->setPurpose((string)$row->getPurpose());
 		}
 
 		if ($row->getState() === OptOut::STATE_OPTED_IN) {

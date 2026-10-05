@@ -138,6 +138,40 @@ class OptOutCategories {
 	];
 
 	/**
+	 * The purpose of an opt-out that stops marketing only.
+	 *
+	 * @var string
+	 */
+	public const PURPOSE_MARKETING = 'marketing';
+
+	/**
+	 * The purpose of an opt-out that stops case updates, reminders and service messages.
+	 *
+	 * @var string
+	 */
+	public const PURPOSE_SERVICE = 'service';
+
+	/**
+	 * The purpose of an opt-out that stops every category that is not exempt.
+	 * Every row written before purposes were read has it.
+	 *
+	 * @var string
+	 */
+	public const PURPOSE_ALL = '';
+
+	/**
+	 * Which purpose each non-exempt category belongs to.
+	 *
+	 * @var array<string,string>
+	 */
+	public const PURPOSE_OF = [
+		self::MARKETING => self::PURPOSE_MARKETING,
+		self::CASE_UPDATE => self::PURPOSE_SERVICE,
+		self::REMINDER => self::PURPOSE_SERVICE,
+		self::SERVICE => self::PURPOSE_SERVICE,
+	];
+
+	/**
 	 * The aliases that always hold, so existing config and callers keep working.
 	 *
 	 * @var array<string,string>
@@ -202,6 +236,76 @@ class OptOutCategories {
 		return self::SERVICE;
 
 	}//end canonical()
+
+	/**
+	 * The purpose a message of this category belongs to.
+	 *
+	 * Empty for an exempt category and for `reply`: no opt-out stops those,
+	 * so their links and checks have no purpose to name.
+	 *
+	 * @param string $category The canonical category.
+	 *
+	 * @return string `marketing`, `service` or empty.
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
+	 */
+	public function purposeOf(string $category): string {
+		return (self::PURPOSE_OF[strtolower(trim($category))] ?? self::PURPOSE_ALL);
+
+	}//end purposeOf()
+
+	/**
+	 * The stored purpose for what a caller sent.
+	 *
+	 * `marketing` and `service` stay. A category name becomes its group, so
+	 * `reminder` is `service`. `all` and empty mean everything. Anything else
+	 * also means everything, with a warning: an unknown purpose stops more,
+	 * never less.
+	 *
+	 * @param string $purpose What the caller sent.
+	 *
+	 * @return string `marketing`, `service` or empty.
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
+	 */
+	public function normalisePurpose(string $purpose): string {
+		$purpose = strtolower(trim($purpose));
+		if ($purpose === '' || $purpose === 'all') {
+			return self::PURPOSE_ALL;
+		}
+
+		if (isset(self::PURPOSE_OF[$purpose]) === true) {
+			return self::PURPOSE_OF[$purpose];
+		}
+
+		$this->logger->warning(
+			'[OptOutCategories] unknown opt-out purpose, stored as everything',
+			['purpose' => $purpose]
+		);
+
+		return self::PURPOSE_ALL;
+
+	}//end normalisePurpose()
+
+	/**
+	 * Whether a row with this purpose covers a message of this category.
+	 *
+	 * @param string $purpose The row's purpose.
+	 * @param string $category The canonical category.
+	 *
+	 * @return bool True when the row covers it.
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
+	 */
+	public static function purposeCovers(string $purpose, string $category): bool {
+		$purpose = strtolower(trim($purpose));
+		if ($purpose === self::PURPOSE_ALL) {
+			return true;
+		}
+
+		return ((self::PURPOSE_OF[strtolower(trim($category))] ?? null) === $purpose);
+
+	}//end purposeCovers()
 
 	/**
 	 * Whether an opt-out can never stop this category.

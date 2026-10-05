@@ -161,7 +161,7 @@ class OptOutFixture {
 			$this->log,
 			$this->tokens(),
 			$this->logger(),
-			new OptOutRowBuilder($this->recipientKey(), $this->clock())
+			new OptOutRowBuilder($this->recipientKey(), $this->clock(), $this->categories())
 		);
 
 	}//end registry()

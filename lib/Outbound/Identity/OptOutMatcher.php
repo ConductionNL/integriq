@@ -64,17 +64,23 @@ class OptOutMatcher {
 	 * @param list<OptOut> $rows The recipient's rows.
 	 * @param array<string,mixed> $recipient The recipient.
 	 * @param string $channel The channel.
+	 * @param string $category The canonical category. A row stops it only when its purpose covers it.
 	 *
 	 * @return OptOut|null The opt-out.
 	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
 	 */
-	public function matchingOptOut(array $rows, array $recipient, string $channel): ?OptOut {
+	public function matchingOptOut(array $rows, array $recipient, string $channel, string $category): ?OptOut {
 		$caseRef = (string)($recipient['caseRef'] ?? '');
 		$listRef = (string)($recipient['listRef'] ?? '');
 		foreach ($rows as $row) {
 			$state = (string)$row->getState();
 			if ($state !== '' && $state !== OptOut::STATE_OPTED_OUT) {
+				continue;
+			}
+
+			if (OptOutCategories::purposeCovers(purpose: (string)$row->getPurpose(), category: $category) === false) {
 				continue;
 			}
 
@@ -119,15 +125,21 @@ class OptOutMatcher {
 	 * @param list<OptOut> $rows The recipient's rows.
 	 * @param array<string,mixed> $recipient The recipient.
 	 * @param string $channel The channel.
+	 * @param string $category The canonical category. A consent permits it only when its purpose covers it.
 	 *
 	 * @return bool True when a consent permits it.
 	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-marketing-needs-recorded-consent-req-ooa-005
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
 	 */
-	public function hasConsent(array $rows, array $recipient, string $channel): bool {
+	public function hasConsent(array $rows, array $recipient, string $channel, string $category): bool {
 		$listRef = (string)($recipient['listRef'] ?? '');
 		foreach ($rows as $row) {
 			if ((string)$row->getState() !== OptOut::STATE_OPTED_IN || $row->getWithdrawnAt() !== null) {
+				continue;
+			}
+
+			if (OptOutCategories::purposeCovers(purpose: (string)$row->getPurpose(), category: $category) === false) {
 				continue;
 			}
 
