@@ -368,23 +368,16 @@ class OpenRegisterCredentialBridge {
 	 * @throws AuthenticationException On an OpenRegister without the entry points.
 	 */
 	private function assertEntryPoints(): void {
-		$missing = [];
-		if (interface_exists(ConsumerSource::class) === false) {
-			$missing[] = 'ConsumerSource';
-		}
-
+		$available = interface_exists(ConsumerSource::class);
 		foreach (self::REQUIRED_ENTRY_POINTS as $method) {
-			if (is_callable([$this->authorization, $method]) === false) {
-				$missing[] = $method;
-			}
+			$available = ($available === true && is_callable([$this->authorization, $method]) === true);
 		}
 
-		if ($missing !== []) {
+		if ($available === false) {
 			throw new AuthenticationException(
 				message: 'Inbound authentication is unavailable',
 				details: [
 					'reason' => 'This OpenRegister does not offer the public credential checks integriq needs; update OpenRegister. The call is refused.',
-					'missing' => $missing,
 				]
 			);
 		}

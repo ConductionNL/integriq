@@ -20,10 +20,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\ICache;
@@ -39,7 +40,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Consumer-backed apiKey enforcement (REQ-CON-001).
  */
-class AuthorizationServiceApiKeyTest extends TestCase {
+class OpenRegisterCredentialBridgeApiKeyTest extends TestCase {
 
 	/**
 	 * @var ORObjectService|MockObject
@@ -71,14 +72,14 @@ class AuthorizationServiceApiKeyTest extends TestCase {
 	/**
 	 * Build an AuthorizationService wired to the shared mocks.
 	 *
-	 * @return AuthorizationService The service under test.
+	 * @return OpenRegisterCredentialBridge The service under test.
 	 */
-	private function makeService(): AuthorizationService {
+	private function makeService(): OpenRegisterCredentialBridge {
 		$cache = $this->createMock(ICache::class);
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
-		return new AuthorizationService(
+		return OpenRegisterCredentials::bridge(
 			$this->userManager,
 			$this->userSession,
 			$this->orObjectService,

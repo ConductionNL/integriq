@@ -32,6 +32,7 @@ use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\MessageValidation\EndpointMessageGate;
@@ -132,7 +133,7 @@ class EndpointService {
 	 * @param ORObjectService $orObjectService OpenRegister object service for register/schema CRUD.
 	 * @param IConfig $config Nextcloud system configuration.
 	 * @param StorageService $storageService Service used for file part and attachment storage.
-	 * @param AuthorizationService $authorizationService Service used to authorize incoming endpoint requests.
+	 * @param OpenRegisterCredentialBridge $authorizationService Service used to authorize incoming endpoint requests.
 	 * @param ContainerInterface $containerInterface PSR container used to resolve optional services.
 	 * @param SynchronizationService $synchronizationService Service used to dispatch endpoint synchronizations.
 	 * @param RuleService $ruleService Service used to load and resolve endpoint rules.
@@ -177,7 +178,7 @@ class EndpointService {
 		private readonly ORObjectService $orObjectService,
 		private readonly IConfig $config,
 		private readonly StorageService $storageService,
-		private readonly AuthorizationService $authorizationService,
+		private readonly OpenRegisterCredentialBridge $authorizationService,
 		private readonly ContainerInterface $containerInterface,
 		private readonly SynchronizationService $synchronizationService,
 		private readonly RuleService $ruleService,
@@ -3216,7 +3217,7 @@ class EndpointService {
 		// and a `requesttoken`, nothing more. Running it after the guard would
 		// 403 every such request before the session was ever consulted, which
 		// is exactly the defect being fixed. CSRF is verified inside
-		// {@see AuthorizationService::authorizeNcSession()}, because the
+		// {@see OpenRegisterCredentialBridge::authorizeNcSession()}, because the
 		// dispatch route is #[NoCSRFRequired] and NC has therefore already
 		// skipped its own check by this point.
 		if ($authenticationType === 'nc-session') {

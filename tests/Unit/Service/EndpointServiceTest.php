@@ -18,7 +18,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\FlowRunnerService;
@@ -115,7 +115,7 @@ class EndpointServiceTest extends TestCase {
 		$config = $this->createMock(IConfig::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$storageService = $this->createMock(StorageService::class);
-		$authService = $this->createMock(AuthorizationService::class);
+		$authService = $this->createMock(OpenRegisterCredentialBridge::class);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$container = $this->container;
 		$syncService = $this->createMock(SynchronizationService::class);
@@ -532,7 +532,7 @@ class EndpointServiceTest extends TestCase {
 			$this->orObjectService,
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->container,
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
@@ -639,7 +639,7 @@ class EndpointServiceTest extends TestCase {
 					$this->orObjectService,
 					$this->createMock(IConfig::class),
 					$this->createMock(StorageService::class),
-					$this->createMock(AuthorizationService::class),
+					$this->createMock(OpenRegisterCredentialBridge::class),
 					$this->container,
 					$this->createMock(SynchronizationService::class),
 					$this->createMock(RuleService::class),
@@ -716,7 +716,7 @@ class EndpointServiceTest extends TestCase {
 			$this->orObjectService,
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$container,
 			$syncService,
 			$ruleService,

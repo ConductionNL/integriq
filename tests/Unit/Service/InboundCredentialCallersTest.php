@@ -48,10 +48,9 @@ use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
 use OCA\Integriq\Tests\Helpers\ArrayCache;
+use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
-use OCA\OpenRegister\Db\ConsumerMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\AuthorizationService as OpenRegisterAuthorizationService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICacheFactory;
@@ -208,17 +207,13 @@ class InboundCredentialCallersTest extends TestCase {
 	 * @return OpenRegisterCredentialBridge
 	 */
 	private function credentials(): OpenRegisterCredentialBridge {
-		return new OpenRegisterCredentialBridge(
-			authorization: new OpenRegisterAuthorizationService(
-				userManager: $this->userManager,
-				userSession: $this->userSession,
-				consumerMapper: $this->createMock(ConsumerMapper::class),
-				cacheFactory: $this->cacheFactory,
-				groupManager: $this->groupManager,
-				request: $this->request,
-			),
-			objectService: $this->objectService,
-			userSession: $this->userSession,
+		return OpenRegisterCredentials::bridge(
+			$this->userManager,
+			$this->userSession,
+			$this->objectService,
+			$this->groupManager,
+			$this->cacheFactory,
+			$this->request,
 		);
 	}//end credentials()
 
@@ -308,7 +303,11 @@ class InboundCredentialCallersTest extends TestCase {
 		$this->assertInstanceOf(JSONResponse::class, $result);
 		$this->assertSame(401, $result->getStatus());
 		$this->assertSame($error, $result->getData()['error']);
-		$this->assertNotContains($this->alice, $this->actingUsers, 'a refused call must not leave the consumer\'s user acting');
+		// OpenRegister makes the consumer's user act once it verified the
+		// token; integriq's lifetime cap runs after that and must undo it.
+		// What counts is who is acting when the refusal reaches the caller.
+		$acting = end($this->actingUsers);
+		$this->assertFalse($acting === $this->alice, 'a refused call must not leave the consumer\'s user acting');
 	}//end assertRefused()
 
 	/**

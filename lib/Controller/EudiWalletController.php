@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EudiIssuanceException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EudiCredentialOfferService;
 use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiStatusListService;
@@ -86,7 +86,7 @@ class EudiWalletController extends Controller {
 	 * @param EudiCredentialOfferService $offerService Offer/token/credential/revocation lifecycle.
 	 * @param EudiIssuerKeyService $keyService Issuer signing-key service (metadata JWKS).
 	 * @param EudiStatusListService $statusListService Status-list token publish.
-	 * @param AuthorizationService $authorizationService Reused consumer JWT bearer verification (REQ-001).
+	 * @param OpenRegisterCredentialBridge $authorizationService Reused consumer JWT bearer verification (REQ-001).
 	 * @param IThrottler $throttler Brute-force throttler for rejected credential presentations.
 	 * @param LoggerInterface $logger Logger for protocol-level rejections.
 	 */
@@ -96,7 +96,7 @@ class EudiWalletController extends Controller {
 		private readonly EudiCredentialOfferService $offerService,
 		private readonly EudiIssuerKeyService $keyService,
 		private readonly EudiStatusListService $statusListService,
-		private readonly AuthorizationService $authorizationService,
+		private readonly OpenRegisterCredentialBridge $authorizationService,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -190,7 +190,7 @@ class EudiWalletController extends Controller {
 	 * REQ-001 verbatim (no new auth mechanism, design.md D-TRUST/proposal.md):
 	 * requires a `Authorization: Bearer <jwt>` header whose issuer resolves
 	 * to a registered `consumer` object via
-	 * {@see AuthorizationService::authorizeJwt()}.
+	 * {@see OpenRegisterCredentialBridge::authorizeJwt()}.
 	 *
 	 * @return string|JSONResponse The resolved consumer's uuid, or a 401
 	 *                             JSONResponse when authentication fails.

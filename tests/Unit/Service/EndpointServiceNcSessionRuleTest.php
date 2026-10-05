@@ -17,7 +17,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Exception\AuthenticationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http\JSONResponse;
@@ -35,7 +35,7 @@ use ReflectionClass;
 class EndpointServiceNcSessionRuleTest extends TestCase {
 
 	/**
-	 * @var AuthorizationService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var OpenRegisterCredentialBridge|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $authorizationService;
 
@@ -52,7 +52,7 @@ class EndpointServiceNcSessionRuleTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->authorizationService = $this->createMock(AuthorizationService::class);
+		$this->authorizationService = $this->createMock(OpenRegisterCredentialBridge::class);
 
 		$reflection = new ReflectionClass(EndpointService::class);
 		$this->service = $reflection->newInstanceWithoutConstructor();
