@@ -30,6 +30,9 @@ namespace OCA\Integriq\Intake;
 
 use DateTimeImmutable;
 use OCA\Integriq\Exception\IntakeChannelException;
+use OCA\Integriq\Outbound\Identity\OptOutCategories;
+use OCA\Integriq\Outbound\Identity\RecipientKey;
+use OCA\Integriq\Outbound\OutboundSendGate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -46,10 +49,12 @@ class IntakeReplyService {
 	 *
 	 * @param ORObjectService $objectService Reads the message and records the reply.
 	 * @param IntakeChannelRegistry $registry The channels this instance has.
+	 * @param OutboundSendGate $gate Asks the opt-out list and keeps the outbound log row.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly IntakeChannelRegistry $registry,
+		private readonly OutboundSendGate $gate,
 	) {
 
 	}//end __construct()
@@ -63,6 +68,8 @@ class IntakeReplyService {
 	 * @return ReplyResult What happened.
 	 *
 	 * @throws IntakeChannelException When the message is unknown, or its channel is.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-a-direct-reply-to-a-citizen-s-message-passes-an-opt-out-req-ooa-009
 	 */
 	public function reply(string $messageUuid, string $text): ReplyResult {
 		$stored = $this->findMessage(messageUuid: $messageUuid);
@@ -79,12 +86,66 @@ class IntakeReplyService {
 			return $result;
 		}
 
-		$result = $adapter->reply($message, $text);
+		// opt-out-before-send: a direct answer to the citizen's own message is
+		// asked as `reply` with the message as `inReplyTo`. An opt-out does not
+		// stop it (Ruben, 2026-10-05); only an unusable address or an
+		// unreadable list can, and it carries no unsubscribe link.
+		[$channel, $address] = $this->recipientOf(message: $message);
+		$gateOptions = ['sourceApp' => 'integriq', 'correlationId' => $messageUuid, 'inReplyTo' => $messageUuid];
+		$decision = $this->gate->check(
+			channel: $channel,
+			category: OptOutCategories::REPLY,
+			address: $address,
+			options: $gateOptions
+		);
+		if ($decision['send'] !== true) {
+			$this->gate->recordRefusal(channel: $channel, subjectRef: $messageUuid, decision: $decision, options: $gateOptions);
+			$result = ReplyResult::failed($message->getChannelId(), (string)$decision['code'] . ': ' . (string)$decision['reason']);
+			$this->record(stored: $stored, object: $object, text: $text, result: $result);
+			return $result;
+		}
+
+		$composed = $this->gate->compose(body: $text, decision: $decision, channel: $channel);
+		$logRow = $this->gate->open(
+			channel: $channel,
+			subjectRef: $messageUuid,
+			subject: '',
+			body: $composed['body'],
+			address: (string)$decision['address'],
+			options: $gateOptions
+		);
+
+		$result = $adapter->reply($message, $composed['body']);
 		$this->record(stored: $stored, object: $object, text: $text, result: $result);
+		if ($result->getStatus() === ReplyResult::STATUS_SENT) {
+			$this->gate->handedOver(uuid: $logRow, address: (string)$decision['address'], reference: $result->getReference());
+		} else {
+			$this->gate->failed(uuid: $logRow, address: (string)$decision['address'], step: OutboundSendGate::STEP_SEND, reason: (string)$result->getDetail());
+		}
 
 		return $result;
 
 	}//end reply()
+
+	/**
+	 * The channel and address a reply goes to, as the opt-out list keys them.
+	 *
+	 * @param InboundMessage $message The message replied to.
+	 *
+	 * @return array{0:string,1:string} The channel and the address.
+	 */
+	private function recipientOf(InboundMessage $message): array {
+		$correspondent = $message->getCorrespondent();
+		$email = trim((string)($correspondent['address'] ?? ''));
+		$phone = trim((string)($correspondent['phone'] ?? ''));
+
+		return match ($message->getChannelId()) {
+			RecipientKey::CHANNEL_MESSAGING => [RecipientKey::CHANNEL_MESSAGING, $phone],
+			RecipientKey::CHANNEL_TEAMS => [RecipientKey::CHANNEL_TEAMS, trim((string)($correspondent['id'] ?? ''))],
+			default => ($email !== '' ? [RecipientKey::CHANNEL_EMAIL, $email] : [RecipientKey::CHANNEL_SMS, $phone]),
+		};
+
+	}//end recipientOf()
 
 	/**
 	 * Find the stored message.

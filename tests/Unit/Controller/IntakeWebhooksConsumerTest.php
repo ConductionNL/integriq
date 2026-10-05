@@ -222,7 +222,7 @@ class IntakeWebhooksConsumerTest extends TestCase {
 				schemaMapper: $this->createMock(SchemaMapper::class),
 				logger: new NullLogger()
 			),
-			replyService: new IntakeReplyService(objectService: $this->objectService, registry: $registry),
+			replyService: new IntakeReplyService(objectService: $this->objectService, registry: $registry, gate: (new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate()),
 			gate: $this->buildWorldGate(objectService: $this->objectService),
 			orObjectService: $this->objectService,
 			l: $this->webhookL10n()
