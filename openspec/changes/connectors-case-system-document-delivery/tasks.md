@@ -51,8 +51,20 @@ Kind: code. Size M. Half for filinq `generate-store-in-case-system` and `zgw-doc
 - **files**: `lib/Service/StufZkn/` (outbound document translator)
 - **acceptance_criteria**:
   - GIVEN a StUF-ZDS destination WHEN a delivery is pushed THEN a `voegZaakdocumentToe` message with the file is sent and the returned identificatie is written back
-- [ ] Implement
-- [ ] Test (PHPUnit against a recorded StUF answer)
+- [x] Implement. `lib/Service/StufZkn/OutboundDocumentTranslator.php` (Di02, Du02 read, `edcLk01`),
+      `lib/Service/StufZkn/StufZdsDocumentDelivery.php` (genereerDocumentIdentificatie, then
+      voegZaakdocumentToe; design D6), `StufZknClient::exchange()` (answer back, Fo03 refusal text),
+      and `SynchronizationService::pushStufDocument()`, chosen by `targetConfig.stufDocument`
+      (`documenttype`, `zaakIdentificatieField`, file settings as `zgwDocument`); the identificatie
+      becomes the contract's target id and `{{ response.identificatie }}`. Docs: the StUF-ZDS
+      section of `docs/features/case-system-document-delivery.md`.
+- [x] Test (PHPUnit against a recorded StUF answer)
+      `tests/Unit/Service/StufZkn/OutboundDocumentTranslatorTest.php` (5) and
+      `tests/Unit/Service/SynchronizationStufDocumentPushTest.php` (5, through the real
+      `updateTarget()` with the real delivery, translator and client over Guzzle answering the
+      Du02, Bv03 and Fo03 fixtures in `tests/fixtures/stuf-zds/`): identificatie written back,
+      a held identificatie sends nothing, a Fo03 written back as failed, a log-mode source refused,
+      a delivery without a case refused before sending.
 
 ### Task 4: Seeded synchronizations, docs and strings
 - **spec_ref**: `openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002`

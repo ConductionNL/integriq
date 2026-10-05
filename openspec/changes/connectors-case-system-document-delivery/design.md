@@ -35,6 +35,16 @@ Both synchronizations ship with an empty `sourceId`, like the ZGW set pushes, an
 
 The redacted copy's file is the id in `resultFileRef`, read through `targetConfig.zgwDocument.fileIdField`. The delivery's file is the first file attached to it, until filinq names its file field. An `externalDocument` carries no `bronorganisatie`, `auteur`, `taal` or `informatieobjecttype`; the mapping reads them from the object when present, and the administrator fills them in otherwise.
 
+## D6. The StUF-ZDS leg asks the case system for the identificatie first
+
+Decided 2026-10-05 while building Task 3. A ZDS 1.2 `voegZaakdocumentToe_Lk01` answer is a plain Bv03 and carries no identificatie; the document's identificatie is handed out beforehand by `genereerDocumentIdentificatie_Di02` (answer Du02). So the push sends both: Di02, then an `edcLk01` with that identificatie, the metadata in ZDS element order, the file inline as `inhoud` (`StUF:bestandsnaam`, `xmime:contentType`), and `isRelevantVoor` (EDCZAK) to the case by its identificatie. "The returned identificatie" in REQ-CSD-002 is the Du02's.
+
+- A push chooses the leg with `targetConfig.stufDocument` (`documenttype` for `dct.omschrijving`, `zaakIdentificatieField`, and the file settings of `zgwDocument`), against a `stuf-zkn` source read raw like CallService reads a source for dispatch.
+- The mapping stays in ZGW vocabulary; the translator converts dates (`20261005`) and the confidentiality value (upper case). One mapping serves both legs.
+- `StufZknClient::exchange()` returns the answer and refuses a Fo03 with its `code` and `omschrijving`, which are written back. `send()` keeps its behaviour for `zakLk01`.
+- A source in `log` mode is refused: the log provider returns a made-up reference, and writing that back would claim a document the case system does not have.
+- The fixtures are shaped after the ZDS 1.2 message examples; no live StUF-ZDS endpoint was available, and the envelope is not validated against the StUF XSD set (not in the repo). The first run against a real case system settles it.
+
 ## Declarative versus imperative
 
 | Behaviour | Path | Rationale |
