@@ -384,6 +384,52 @@ class UnsubscribeLinkTest extends TestCase {
 	}//end testStopEverythingWritesAnInstanceOptOut()
 
 	/**
+	 * The link in a marketing mail stops marketing, and says so; stop
+	 * everything from the same link writes an instance row with no purpose.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
+	 */
+	public function testAMarketingLinkStopsMarketing(): void {
+		$material = $this->tokens()->materialFor('piet@example.org', 'channel', 'email', '', 'marketing', 'https://gem.nl');
+		$token = substr($material['url'], (strrpos($material['url'], '/') + 1));
+		$controller = $this->controller();
+
+		$page = $controller->unsubscribe($token);
+		$this->assertStringContainsString('newsletters and campaigns', $page->getParams()['message']);
+		$this->assertTrue($page->getParams()['offerAll']);
+
+		$done = $controller->unsubscribeConfirm($token);
+		$this->assertStringContainsString('newsletters and campaigns', $done->getParams()['message']);
+		$row = array_values($this->table->rows)[0];
+		$this->assertSame('marketing', $row->getPurpose());
+		$this->assertSame('channel', $row->getScope());
+
+		$controller->unsubscribeConfirm($token, 'all');
+		$this->assertSame(2, $this->table->countAll());
+		$everything = array_values($this->table->rows)[1];
+		$this->assertSame('instance', $everything->getScope());
+		$this->assertSame('', $everything->getPurpose());
+
+	}//end testAMarketingLinkStopsMarketing()
+
+	/**
+	 * An instance link that stops only marketing still offers to stop everything.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
+	 */
+	public function testAnInstanceMarketingLinkOffersEverything(): void {
+		$token = $this->tokens()->mintScoped('piet@example.org', 'instance', '', '', 'marketing');
+
+		$this->assertTrue($this->controller()->unsubscribe($token)->getParams()['offerAll']);
+		$this->assertFalse($this->controller()->unsubscribe($this->tokens()->mintScoped('piet@example.org', 'instance', '', ''))->getParams()['offerAll']);
+
+	}//end testAnInstanceMarketingLinkOffersEverything()
+
+	/**
 	 * A version 2 link minted before this change still stops its case.
 	 *
 	 * @return void
