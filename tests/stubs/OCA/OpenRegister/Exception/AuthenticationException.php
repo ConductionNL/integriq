@@ -1,5 +1,7 @@
 <?php
 
+// Copy of openregister development 75088d6237 lib/Exception/AuthenticationException.php (only @spec lines dropped), so integriq's tests run OpenRegister's real credential checks.
+
 /**
  * Authentication Exception.
  *
@@ -40,7 +42,6 @@ class AuthenticationException extends Exception {
 	 * @param string $message A human-readable error message
 	 * @param array $details Structured details about the failure
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(string $message, array $details) {
 		$this->details = $details;
@@ -53,7 +54,6 @@ class AuthenticationException extends Exception {
 	 *
 	 * @return array The details array.
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getDetails(): array {
 		return $this->details;

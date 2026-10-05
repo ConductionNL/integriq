@@ -1,5 +1,7 @@
 <?php
 
+// Copy of openregister development 75088d6237 lib/Service/AuthorizationService.php (only @spec lines dropped), so integriq's tests run OpenRegister's real credential checks.
+
 /**
  * Authorization Service for validating incoming API requests.
  *
@@ -51,7 +53,6 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class AuthorizationService {
 
@@ -122,7 +123,6 @@ class AuthorizationService {
 	 *
 	 * @return ResolvedConsumer|null The consumer, with its store's own row in `record`.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function getResolvedConsumer(): ?ResolvedConsumer {
 		return $this->resolvedConsumer;
@@ -175,7 +175,6 @@ class AuthorizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
 	 */
 	private function claimConsumerToken(ResolvedConsumer $consumer, string $mechanism, ?string $reference): void {
 		if ($this->tokenContext === null) {
@@ -233,7 +232,6 @@ class AuthorizationService {
 	 *
 	 * @throws AuthenticationException If the token is missing iat, expired, not yet valid, issued in the future or replayed.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function validatePayload(array $payload): void {
 		(new JwtValidator(cacheFactory: $this->cacheFactory))->validateClaims(payload: $payload);
@@ -249,7 +247,6 @@ class AuthorizationService {
 	 *
 	 * @throws AuthenticationException If the token is invalid.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function authorizeJwt(string $authorization, ?ConsumerSource $consumers=null): void {
 		$this->resolvedConsumer = null;
@@ -308,7 +305,6 @@ class AuthorizationService {
 	 *
 	 * @throws AuthenticationException If credentials are invalid or the user is outside the allow-list.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 *
 	 * @orphan-auth exclude cross-app entry point; caller is integriq's endpoint runtime (gate 23 gap 2)
 	 */
@@ -352,7 +348,6 @@ class AuthorizationService {
 	 *
 	 * @throws AuthenticationException If the token is invalid, the request carried no Bearer header, or the user is outside the allow-list.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 *
 	 * @orphan-auth exclude cross-app entry point; caller is integriq's endpoint runtime (gate 23 gap 2)
 	 */
@@ -406,7 +401,6 @@ class AuthorizationService {
 	 *
 	 * @throws AuthenticationException Without a signed-in user, without a passing CSRF check, or outside the allow-list.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 *
 	 * @orphan-auth exclude cross-app entry point; caller is integriq's endpoint runtime (gate 23 gap 2)
 	 */
@@ -443,7 +437,6 @@ class AuthorizationService {
 	 *
 	 * @psalm-suppress UndefinedClass SecurityException is a private Nextcloud internal class
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
 	 */
 	public function corsAfterController(IRequest $request, Response $response): Response {
 		$origin = $request->getHeader('Origin');
@@ -479,7 +472,6 @@ class AuthorizationService {
 	 *
 	 * @throws AuthenticationException If the API key is invalid.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 *
 	 * @orphan-auth exclude cross-app entry point; caller is integriq's endpoint runtime (gate 23 gap 2)
 	 */

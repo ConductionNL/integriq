@@ -1,5 +1,7 @@
 <?php
 
+// Copy of openregister development 75088d6237 lib/Service/Consumer/ConsumerSource.php (only @spec lines dropped), so integriq's tests run OpenRegister's real credential checks.
+
 /**
  * Where AuthorizationService looks up the consumer behind a credential.
  *
@@ -15,7 +17,6 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +32,6 @@ namespace OCA\OpenRegister\Service\Consumer;
  * to the authorize call, so the checks stay in one place while the data stays
  * where the app keeps it.
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 interface ConsumerSource {
 
@@ -42,7 +42,6 @@ interface ConsumerSource {
 	 *
 	 * @return ResolvedConsumer|null The consumer, or null when there is none.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function findByIssuer(string $issuer): ?ResolvedConsumer;
 
@@ -55,7 +54,6 @@ interface ConsumerSource {
 	 *
 	 * @return ResolvedConsumer|null The consumer, or null when none matches.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function findByApiKey(string $apiKey): ?ResolvedConsumer;
 }//end interface

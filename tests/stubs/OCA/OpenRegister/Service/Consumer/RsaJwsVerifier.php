@@ -1,5 +1,7 @@
 <?php
 
+// Copy of openregister development 75088d6237 lib/Service/Consumer/RsaJwsVerifier.php (only @spec lines dropped), so integriq's tests run OpenRegister's real credential checks.
+
 /**
  * RS* and PS* signature checks for a JWT, against an RSA public key.
  *
@@ -15,7 +17,6 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +42,6 @@ use Throwable;
  * Only the pinned algorithm is loaded into the verifier, so the token's
  * header cannot select another one.
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class RsaJwsVerifier {
 
@@ -54,7 +54,6 @@ class RsaJwsVerifier {
 	 *
 	 * @return bool True when the signature is valid; false for anything else, including a key that is not RSA.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function verify(string $token, string $algorithm, string $key): bool {
 		$verifierAlgorithm = $this->asymmetricAlgorithm(algorithm: $algorithm);

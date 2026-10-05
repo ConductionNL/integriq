@@ -1,5 +1,7 @@
 <?php
 
+// Copy of openregister development 75088d6237 lib/Service/Consumer/JwtValidator.php (only @spec lines dropped), so integriq's tests run OpenRegister's real credential checks.
+
 /**
  * Signature and claim checks for a JWT presented by an API consumer.
  *
@@ -15,7 +17,6 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +34,6 @@ use OCP\ICacheFactory;
  * The algorithm always comes from the consumer's stored configuration, never
  * from the token: only that algorithm is loaded into the verifier.
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class JwtValidator {
 
@@ -60,7 +60,6 @@ class JwtValidator {
 	 *
 	 * @param ICacheFactory|null $cacheFactory Distributed cache that remembers used token ids.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function __construct(
 		private readonly ?ICacheFactory $cacheFactory = null,
@@ -83,7 +82,6 @@ class JwtValidator {
 	 *
 	 * @throws AuthenticationException When the token is empty or malformed, or names no issuer.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function decode(string $token): array {
 		if ($token === '') {
@@ -128,7 +126,6 @@ class JwtValidator {
 	 *
 	 * @throws AuthenticationException When no algorithm is pinned, the header differs, the algorithm is unsupported or the signature fails.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function verifyPinned(string $token, array $header, array $configuration): void {
 		$algorithm = ($configuration['algorithm'] ?? null);
@@ -175,7 +172,6 @@ class JwtValidator {
 	 *
 	 * @return bool True when the signature is valid.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function verifySignature(string $token, string $algorithm, string $key): bool {
 		$parts = explode('.', $token);
@@ -206,7 +202,6 @@ class JwtValidator {
 	 *
 	 * @throws AuthenticationException When a claim refuses the token.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function validateClaims(array $payload): void {
 		$now = new DateTime();

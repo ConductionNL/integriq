@@ -1,5 +1,7 @@
 <?php
 
+// Copy of openregister development 75088d6237 lib/Service/Consumer/ResolvedConsumer.php (only @spec lines dropped), so integriq's tests run OpenRegister's real credential checks.
+
 /**
  * The consumer a credential authenticated as, whatever store it came from.
  *
@@ -15,7 +17,6 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +30,6 @@ namespace OCA\OpenRegister\Service\Consumer;
  * so a caller that keys rate limits or call logs on it gets back exactly what
  * its source handed in.
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 final class ResolvedConsumer {
 
@@ -44,7 +44,6 @@ final class ResolvedConsumer {
 	 * @param array<string, mixed> $configuration              The authorization configuration: algorithm, key or secret, grants.
 	 * @param mixed                $record                     The store's own row.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function __construct(
 		public readonly string $source,

@@ -1,5 +1,7 @@
 <?php
 
+// Copy of openregister development 75088d6237 lib/Service/Consumer/EndpointAllowList.php (only @spec lines dropped), so integriq's tests run OpenRegister's real credential checks.
+
 /**
  * An endpoint's users/groups allow-list for a credential-authenticated user.
  *
@@ -15,7 +17,6 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +32,6 @@ use OCP\IUser;
  * Empty lists allow every authenticated user; otherwise the user must be named
  * (uid or e-mail address) or be in one of the groups.
  *
- * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class EndpointAllowList {
 
@@ -40,7 +40,6 @@ class EndpointAllowList {
 	 *
 	 * @param IGroupManager|null $groupManager Group lookups; without it only the users list can admit.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function __construct(
 		private readonly ?IGroupManager $groupManager = null,
@@ -58,7 +57,6 @@ class EndpointAllowList {
 	 *
 	 * @throws AuthenticationException When the user is in neither list.
 	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function assertAllowed(IUser $user, array $users, array $groups): void {
 		if (empty($users) === true && empty($groups) === true) {
