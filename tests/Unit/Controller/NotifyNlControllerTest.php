@@ -179,7 +179,7 @@ class NotifyNlControllerTest extends TestCase {
 
 		$this->dispatchService->expects($this->once())
 			->method('sendMessage')
-			->with('+31612345678', 'hello', ['templateId' => 'tmpl-1', 'personalisation' => ['name' => 'Jan']], 'procest', null)
+			->with('+31612345678', 'hello', ['templateId' => 'tmpl-1', 'personalisation' => ['name' => 'Jan'], 'category' => 'service'], 'procest', null)
 			->willReturn($message);
 
 		$response = $this->controller->send();
@@ -189,6 +189,26 @@ class NotifyNlControllerTest extends TestCase {
 		$this->assertSame('sms-uuid-1', $response->getData()['id']);
 
 	}//end testSendReturnsCreatedMessage()
+
+	/**
+	 * An opt-out refusal answers 409 with the decision code, and the
+	 * category in the request reaches the service.
+	 *
+	 * @return void
+	 */
+	public function testSendAnswersConflictWhenTheOptOutListRefuses(): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678', 'body' => 'hello', 'category' => 'reminder']);
+		$this->dispatchService->expects($this->once())
+			->method('sendMessage')
+			->with('0612345678', 'hello', ['category' => 'reminder'], null, null)
+			->willThrowException(new SmsProviderException(message: 'This address opted out (instance).', errorCode: 'opted-out'));
+
+		$response = $this->controller->send();
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame('opted-out', $response->getData()['error']);
+
+	}//end testSendAnswersConflictWhenTheOptOutListRefuses()
 
 	/**
 	 * A dispatch-service failure is mapped to a 502 error envelope, never a crash.

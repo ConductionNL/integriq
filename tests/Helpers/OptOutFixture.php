@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Helpers;
 
 use OCA\Integriq\Outbound\Identity\MessageComposer;
+use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Outbound\OutboundSendGate;
 use OCA\Integriq\Outbound\Identity\OptOutCategories;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\RecipientKey;
@@ -182,6 +184,20 @@ class OptOutFixture {
 		);
 
 	}//end tokens()
+
+	/**
+	 * The send gate over the real registry and composer.
+	 *
+	 * @param MessageRecorder|null $recorder The recorder, or a double that records nothing.
+	 *
+	 * @return OutboundSendGate The gate.
+	 */
+	public function gate(?MessageRecorder $recorder = null): OutboundSendGate {
+		$recorder = ($recorder ?? $this->test->getMockBuilder(MessageRecorder::class)->disableOriginalConstructor()->getMock());
+
+		return new OutboundSendGate($this->registry(), $this->composer(), $recorder, $this->logger());
+
+	}//end gate()
 
 	/**
 	 * The composer.

@@ -33,6 +33,7 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\Integriq\Exception\SmsProviderException;
+use OCA\Integriq\Outbound\OutboundSendGate;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\DeliveryResult;
 use OCA\Integriq\Service\Sms\LogSmsProvider;
@@ -102,6 +103,7 @@ class SmsDispatchService {
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
+	 * @param OutboundSendGate $gate Asks the opt-out list, adds the unsubscribe text, keeps the log row.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -111,6 +113,7 @@ class SmsDispatchService {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
+		private readonly OutboundSendGate $gate,
 	) {
 
 	}//end __construct()
@@ -122,16 +125,20 @@ class SmsDispatchService {
 	 * @param string $to The raw recipient phone number (normalised to E.164 before dispatch).
 	 * @param string $body Free-text body (audit context — template providers ignore it for the wire
 	 *                     call).
-	 * @param array $options Provider-specific send options (e.g. `templateId`, `personalisation`).
+	 * @param array $options Provider-specific send options (e.g. `templateId`, `personalisation`), plus
+	 *                       `category` (default `service`) and `caseRef` for the opt-out decision.
 	 * @param string|null $sourceApp Slug of the producing app (e.g. `procest`), stored for audit.
 	 * @param string|null $objectUri Optional reference to the producing app's own object.
 	 *
 	 * @return ObjectEntity The created `sms_message` record.
 	 *
 	 * @throws SmsProviderException When the recipient is not a valid phone number, no active SMS source is
-	 *                              configured, or the provider rejects/cannot reach the request.
+	 *                              configured, the opt-out list refuses the send (error code `opted-out`,
+	 *                              `no-consent` or `authority-unavailable`), or the provider rejects/cannot
+	 *                              reach the request.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
 	 */
 	public function sendMessage(
 		string $to,
@@ -151,7 +158,39 @@ class SmsDispatchService {
 			);
 		}
 
+		$caseRef = (string)($options['caseRef'] ?? '');
+		$gateOptions = ['caseRef' => $caseRef, 'sourceApp' => ($sourceApp ?? 'integriq'), 'correlationId' => ($objectUri ?? '')];
+		$decision = $this->gate->check(
+			channel: 'sms',
+			category: (string)($options['category'] ?? 'service'),
+			address: $e164,
+			options: $gateOptions
+		);
+		if ($decision['send'] !== true) {
+			$this->gate->recordRefusal(channel: 'sms', subjectRef: ($objectUri ?? ''), decision: $decision, options: $gateOptions);
+			throw new SmsProviderException(message: (string)$decision['reason'], errorCode: (string)$decision['code']);
+		}
+
+		$composed = $this->gate->compose(body: $body, decision: $decision, channel: 'sms', caseRef: $caseRef);
+		$body = $composed['body'];
+		$smsText = (string)($decision['unsubscribe']['smsText'] ?? '');
+		if ($smsText !== '') {
+			$personalisation = ($options['personalisation'] ?? []);
+			if (is_array($personalisation) === false) {
+				$personalisation = [];
+			}
+
+			// A NotifyNL template renders this as ((unsubscribe)); the body above
+			// carries it for a provider that sends the body as is.
+			$personalisation['unsubscribe'] = $smsText;
+			$options['personalisation'] = $personalisation;
+		}
+
+		unset($options['category'], $options['caseRef']);
+
 		$provider = $this->resolveProvider(configuration: $configuration);
+
+		$logRow = $this->gate->open(channel: 'sms', subjectRef: ($objectUri ?? ''), subject: '', body: $body, address: $e164, options: $gateOptions);
 
 		$message = $this->objectService->saveObject(
 			object: [
@@ -169,7 +208,16 @@ class SmsDispatchService {
 			schema: self::SCHEMA_MESSAGE
 		);
 
-		return $this->attemptSend(message: $message, provider: $provider, to: $e164, body: $body, options: $options);
+		$sent = $this->attemptSend(message: $message, provider: $provider, to: $e164, body: $body, options: $options);
+		$sentData = $sent->getObject();
+		if ((string)($sentData['status'] ?? '') === 'failed') {
+			$this->gate->failed(uuid: $logRow, address: $e164, step: OutboundSendGate::STEP_SEND, reason: (string)($sentData['detail'] ?? ''));
+			return $sent;
+		}
+
+		$this->gate->handedOver(uuid: $logRow, address: $e164, reference: (string)($sentData['providerMessageId'] ?? ''));
+
+		return $sent;
 	}//end sendMessage()
 
 	/**

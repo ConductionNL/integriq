@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Tests\Helpers\OptOutFixture;
+use OCP\IDBConnection;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
@@ -40,6 +42,13 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md
  */
 class SmsDispatchServiceTest extends TestCase {
+
+	/**
+	 * The opt-out services over in-memory tables.
+	 *
+	 * @var OptOutFixture
+	 */
+	private OptOutFixture $optOuts;
 
 	/**
 	 * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
@@ -93,6 +102,7 @@ class SmsDispatchServiceTest extends TestCase {
 		$this->l = $this->createMock(IL10N::class);
 		$this->l->method('t')->willReturnArgument(0);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->optOuts = new OptOutFixture($this, $this->createMock(IDBConnection::class));
 
 		$this->service = new SmsDispatchService(
 			$this->objectService,
@@ -101,7 +111,8 @@ class SmsDispatchServiceTest extends TestCase {
 			$this->eventService,
 			$this->l,
 			$this->logger,
-			new RawSourceResolver($this->objectService, $this->logger)
+			new RawSourceResolver($this->objectService, $this->logger),
+			$this->optOuts->gate()
 		);
 
 	}//end setUp()
@@ -216,6 +227,80 @@ class SmsDispatchServiceTest extends TestCase {
 		$this->assertSame('MOCK-SMS-1', $result->getObject()['providerMessageId']);
 
 	}//end testSendMessageCreatesAndSendsMessage()
+
+	/**
+	 * An opted-out number is refused before the message is stored and
+	 * before the provider is called, with the code the controller maps to 409.
+	 *
+	 * @return void
+	 */
+	public function testSendMessageRefusesAnOptedOutNumber(): void {
+		$source = $this->entity(['type' => 'sms', 'configuration' => ['provider' => 'log']]);
+		$this->objectService->method('findAll')->willReturn(['results' => [$source], 'total' => 1]);
+		$this->optOuts->registry()->add('+31612345678');
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->logProvider->expects($this->never())->method('send');
+
+		try {
+			$this->service->sendMessage(to: '0612345678', body: 'hello', options: ['category' => 'service']);
+			$this->fail('an opted-out number must not be sent to');
+		} catch (SmsProviderException $exception) {
+			$this->assertSame('opted-out', $exception->getErrorCode());
+		}
+
+		$this->assertCount(1, $this->optOuts->log->ofKind('suppressed'));
+
+	}//end testSendMessageRefusesAnOptedOutNumber()
+
+	/**
+	 * A security SMS to the same number still goes out, with no stop text.
+	 *
+	 * @return void
+	 */
+	public function testSendMessageSendsAnExemptMessageDespiteAnOptOut(): void {
+		$source = $this->entity(['type' => 'sms', 'configuration' => ['provider' => 'log']]);
+		$this->objectService->method('findAll')->willReturn(['results' => [$source], 'total' => 1]);
+		$this->optOuts->registry()->add('+31612345678');
+		$this->objectService->method('saveObject')->willReturn($this->entity(['status' => 'queued', 'attempts' => []], 'sms-uuid-1'));
+		$this->logProvider->expects($this->once())
+			->method('send')
+			->with($this->anything(), '+31612345678', 'Uw code is 123456', $this->callback(static fn (array $o): bool => isset($o['personalisation']['unsubscribe']) === false))
+			->willReturn(new DeliveryResult('MOCK-SMS-2', 'queued', null));
+
+		$this->service->sendMessage(to: '0612345678', body: 'Uw code is 123456', options: ['category' => 'security']);
+
+		$this->assertCount(1, $this->optOuts->log->ofKind('override'));
+
+	}//end testSendMessageSendsAnExemptMessageDespiteAnOptOut()
+
+	/**
+	 * An allowed SMS carries the short stop text, in the body and as
+	 * personalisation for a NotifyNL template, at most 50 characters.
+	 *
+	 * @return void
+	 */
+	public function testSendMessageAddsTheShortStopText(): void {
+		$this->optOuts->baseUrl = 'https://gem.nl';
+		$source = $this->entity(['type' => 'sms', 'configuration' => ['provider' => 'log']]);
+		$this->objectService->method('findAll')->willReturn(['results' => [$source], 'total' => 1]);
+		$this->objectService->method('saveObject')->willReturn($this->entity(['status' => 'queued', 'attempts' => []], 'sms-uuid-1'));
+		$sent = [];
+		$this->logProvider->method('send')->willReturnCallback(
+			function (array $config, string $to, string $body, array $options) use (&$sent): DeliveryResult {
+				$sent = ['body' => $body, 'options' => $options];
+				return new DeliveryResult('MOCK-SMS-3', 'queued', null);
+			}
+		);
+
+		$this->service->sendMessage(to: '0612345678', body: 'Uw afspraak is morgen.', options: ['category' => 'reminder']);
+
+		$text = (string)$sent['options']['personalisation']['unsubscribe'];
+		$this->assertLessThanOrEqual(50, mb_strlen($text));
+		$this->assertStringStartsWith('Stop: gem.nl/apps/integriq/u/', $text);
+		$this->assertSame("Uw afspraak is morgen.\n" . $text, $sent['body']);
+		$this->assertArrayNotHasKey('category', $sent['options'], 'the decision options do not reach the provider');
+
+	}//end testSendMessageAddsTheShortStopText()
 
 	/**
 	 * A provider failure marks the message failed (never throws out of sendMessage) and emits one event.
