@@ -50,6 +50,8 @@ use OCP\AppFramework\Db\Entity;
  * @method string|null getDetail()
  * @method void setDetail(?string $detail)
  *
+ * @SuppressWarnings(PHPMD.ShortVariable) -- `$at` mirrors the `at` column the design names.
+ *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-suppressions-and-overrides-are-logged-req-ooa-007
  */
 class OptOutLogEntry extends Entity implements JsonSerializable {

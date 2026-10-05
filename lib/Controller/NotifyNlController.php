@@ -123,25 +123,7 @@ class NotifyNlController extends Controller {
 			);
 		}
 
-		$options = [];
-		if (isset($params['templateId']) === true) {
-			$options['templateId'] = $params['templateId'];
-		}
-
-		if (isset($params['personalisation']) === true && is_array($params['personalisation']) === true) {
-			$options['personalisation'] = $params['personalisation'];
-		}
-
-		// Opt-out-before-send: the category decides whether an opt-out stops
-		// the message. Default `service`.
-		$options['category'] = 'service';
-		if (isset($params['category']) === true && is_string($params['category']) === true && trim($params['category']) !== '') {
-			$options['category'] = trim($params['category']);
-		}
-
-		if (isset($params['caseRef']) === true && is_string($params['caseRef']) === true) {
-			$options['caseRef'] = $params['caseRef'];
-		}
+		$options = $this->sendOptions(params: $params);
 
 		$sourceApp = null;
 		if (isset($params['sourceApp']) === true) {
@@ -180,6 +162,38 @@ class NotifyNlController extends Controller {
 		}//end try
 
 	}//end send()
+
+	/**
+	 * The send options a request carries.
+	 *
+	 * @param array<string,mixed> $params The request parameters.
+	 *
+	 * @return array<string,mixed> `templateId`, `personalisation`, `category` (default `service`), `caseRef`.
+	 */
+	private function sendOptions(array $params): array {
+		$options = [];
+		if (isset($params['templateId']) === true) {
+			$options['templateId'] = $params['templateId'];
+		}
+
+		if (isset($params['personalisation']) === true && is_array($params['personalisation']) === true) {
+			$options['personalisation'] = $params['personalisation'];
+		}
+
+		// Opt-out-before-send: the category decides whether an opt-out stops
+		// the message. Default `service`.
+		$options['category'] = 'service';
+		if (is_string($params['category'] ?? null) === true && trim($params['category']) !== '') {
+			$options['category'] = trim($params['category']);
+		}
+
+		if (is_string($params['caseRef'] ?? null) === true) {
+			$options['caseRef'] = $params['caseRef'];
+		}
+
+		return $options;
+
+	}//end sendOptions()
 
 	/**
 	 * Poll the provider for a message's current delivery status.

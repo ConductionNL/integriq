@@ -106,30 +106,8 @@ class DigitalPostService {
 			return;
 		}
 
-		// Opt-out-before-send: the category decides, not the channel. A besluit
-		// by Berichtenbox is sent; a case update respects an opt-out. The
-		// recipient is a BSN, so the opt-out list keys it as a hash.
-		$gateOptions = [
-			'caseRef' => $event->getCaseRef(),
-			'sourceApp' => $event->getSourceApp(),
-			'correlationId' => $event->getCorrelationId(),
-		];
-		$decision = $this->gate->check(
-			channel: 'digital-post',
-			category: $event->getCategory(),
-			address: $event->getRecipient(),
-			options: $gateOptions
-		);
-		if ($decision['send'] !== true) {
-			$event->setHandled(true);
-			$event->setRefusal((string)$decision['reason'], (string)$decision['code']);
-			$this->gate->recordRefusal(
-				channel: 'digital-post',
-				subjectRef: $event->getCaseRef(),
-				decision: $decision,
-				options: $gateOptions
-			);
-
+		$decision = $this->askOptOuts(event: $event);
+		if ($decision === null) {
 			return;
 		}
 
@@ -171,14 +149,10 @@ class DigitalPostService {
 			subject: $event->getSubject(),
 			body: $composed['body'],
 			address: (string)$decision['address'],
-			options: $gateOptions
+			options: ['sourceApp' => $event->getSourceApp(), 'correlationId' => $event->getCorrelationId()]
 		);
 		$result = $this->sendThroughProvider(providerId: $providerId, message: $message, config: $config);
-		if ($result->isRefused() === true) {
-			$this->gate->failed(uuid: $logRow, address: (string)$decision['address'], step: OutboundSendGate::STEP_SEND, reason: $result->getError());
-		} else {
-			$this->gate->handedOver(uuid: $logRow, address: (string)$decision['address'], reference: $result->getProviderReference());
-		}
+		$this->recordOutcome(logRow: $logRow, address: (string)$decision['address'], result: $result);
 
 		// The attachments stay on the message whatever happened, which is what
 		// "a failed send keeps the letter" means: the PDF is still there to
@@ -196,6 +170,59 @@ class DigitalPostService {
 
 		$event->setMessageId($messageId);
 	}//end handleSendRequest()
+
+	/**
+	 * Ask the opt-out list about this letter.
+	 *
+	 * The category decides, not the channel (opt-out-before-send): a besluit
+	 * by Berichtenbox is sent, a case update respects an opt-out. The
+	 * recipient is a BSN, so the opt-out list keys it as a hash. A refusal is
+	 * written onto the event and logged.
+	 *
+	 * @param DigitalPostSendRequestedEvent $event The request.
+	 *
+	 * @return array<string,mixed>|null The allowing decision, or null when the send was refused.
+	 */
+	private function askOptOuts(DigitalPostSendRequestedEvent $event): ?array {
+		$gateOptions = [
+			'caseRef' => $event->getCaseRef(),
+			'sourceApp' => $event->getSourceApp(),
+			'correlationId' => $event->getCorrelationId(),
+		];
+		$decision = $this->gate->check(
+			channel: 'digital-post',
+			category: $event->getCategory(),
+			address: $event->getRecipient(),
+			options: $gateOptions
+		);
+		if ($decision['send'] === true) {
+			return $decision;
+		}
+
+		$event->setHandled(true);
+		$event->setRefusal((string)$decision['reason'], (string)$decision['code']);
+		$this->gate->recordRefusal(channel: 'digital-post', subjectRef: $event->getCaseRef(), decision: $decision, options: $gateOptions);
+
+		return null;
+	}//end askOptOuts()
+
+	/**
+	 * Note on the outbound log row whether the provider took the letter.
+	 *
+	 * @param string|null $logRow The row.
+	 * @param string $address The recipient key.
+	 * @param DigitalPostResult $result What the provider answered.
+	 *
+	 * @return void
+	 */
+	private function recordOutcome(?string $logRow, string $address, DigitalPostResult $result): void {
+		if ($result->isRefused() === true) {
+			$this->gate->failed(uuid: $logRow, address: $address, step: OutboundSendGate::STEP_SEND, reason: $result->getError());
+			return;
+		}
+
+		$this->gate->handedOver(uuid: $logRow, address: $address, reference: $result->getProviderReference());
+	}//end recordOutcome()
 
 	/**
 	 * Ask every provider what became of the letters it took.

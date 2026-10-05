@@ -119,9 +119,10 @@ class IntakeReplyService {
 		$this->record(stored: $stored, object: $object, text: $text, result: $result);
 		if ($result->getStatus() === ReplyResult::STATUS_SENT) {
 			$this->gate->handedOver(uuid: $logRow, address: (string)$decision['address'], reference: $result->getReference());
-		} else {
-			$this->gate->failed(uuid: $logRow, address: (string)$decision['address'], step: OutboundSendGate::STEP_SEND, reason: (string)$result->getDetail());
+			return $result;
 		}
+
+		$this->gate->failed(uuid: $logRow, address: (string)$decision['address'], step: OutboundSendGate::STEP_SEND, reason: (string)$result->getDetail());
 
 		return $result;
 

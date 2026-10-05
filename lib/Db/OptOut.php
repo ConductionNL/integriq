@@ -69,6 +69,9 @@ use OCP\AppFramework\Db\Entity;
  * @method int getUpdatedAt()
  * @method void setUpdatedAt(int $updatedAt)
  *
+ * @SuppressWarnings(PHPMD.TooManyFields) -- one field per column of integriq_opt_outs; the consent
+ * columns pipelinq's records need (opt-out-before-send design section 4) are part of the row.
+ *
  * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
  */
 class OptOut extends Entity implements JsonSerializable {

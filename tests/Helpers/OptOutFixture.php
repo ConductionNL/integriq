@@ -28,6 +28,7 @@ use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Outbound\OutboundSendGate;
 use OCA\Integriq\Outbound\Identity\OptOutCategories;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
+use OCA\Integriq\Outbound\Identity\OptOutRowBuilder;
 use OCA\Integriq\Outbound\Identity\RecipientKey;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -159,7 +160,8 @@ class OptOutFixture {
 			$this->recipientKey(),
 			$this->log,
 			$this->tokens(),
-			$this->logger()
+			$this->logger(),
+			new OptOutRowBuilder($this->recipientKey(), $this->clock())
 		);
 
 	}//end registry()

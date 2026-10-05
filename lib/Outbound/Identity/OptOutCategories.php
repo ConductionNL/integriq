@@ -251,18 +251,13 @@ class OptOutCategories {
 		}
 
 		foreach ($decoded as $key => $value) {
-			$alias = strtolower(trim((string)$key));
-			$target = strtolower(trim((string)$value));
-			if (is_int($key) === true) {
-				$alias = $target;
-			}
-
-			if (in_array($target, self::FLOOR, true) === true && is_int($key) === false && $alias !== '') {
-				$aliases[$alias] = $target;
+			$accepted = $this->acceptedAlias(key: $key, value: $value);
+			if ($accepted === true) {
 				continue;
 			}
 
-			if (in_array($alias, self::FLOOR, true) === true || isset(self::DEFAULT_ALIASES[$alias]) === true) {
+			if (is_array($accepted) === true) {
+				$aliases[$accepted[0]] = $accepted[1];
 				continue;
 			}
 
@@ -275,5 +270,33 @@ class OptOutCategories {
 		return $aliases;
 
 	}//end aliases()
+
+	/**
+	 * What one config entry means.
+	 *
+	 * A map entry `alias => floor category` adds an alias. A list entry that
+	 * names a floor category or a default alias changes nothing. Anything
+	 * else is not accepted.
+	 *
+	 * @param int|string $key The entry key.
+	 * @param mixed $value The entry value.
+	 *
+	 * @return array{0:string,1:string}|bool The alias and its target, true when the entry is a
+	 *         harmless no-op, false when it is not accepted.
+	 */
+	private function acceptedAlias(int|string $key, mixed $value): array|bool {
+		$target = strtolower(trim((string)$value));
+		if (is_int($key) === true) {
+			return (in_array($target, self::FLOOR, true) === true || isset(self::DEFAULT_ALIASES[$target]) === true);
+		}
+
+		$alias = strtolower(trim($key));
+		if ($alias !== '' && in_array($target, self::FLOOR, true) === true) {
+			return [$alias, $target];
+		}
+
+		return false;
+
+	}//end acceptedAlias()
 
 }//end class

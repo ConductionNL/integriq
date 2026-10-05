@@ -188,6 +188,13 @@ class OptOutRegistry {
 	public const CHUNK = 500;
 
 	/**
+	 * The matching and consent rules. Pure, so built here rather than injected.
+	 *
+	 * @var OptOutMatcher
+	 */
+	private readonly OptOutMatcher $matcher;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OptOutMapper $mapper Reads and writes the opt-out table.
@@ -198,6 +205,7 @@ class OptOutRegistry {
 	 * @param OptOutLogMapper $log The append-only decision log.
 	 * @param UnsubscribeTokenService $tokens Builds the unsubscribe material.
 	 * @param LoggerInterface $logger Warns about failures that are answered closed.
+	 * @param OptOutRowBuilder $rows Builds and changes rows for record().
 	 */
 	public function __construct(
 		private readonly OptOutMapper $mapper,
@@ -208,7 +216,9 @@ class OptOutRegistry {
 		private readonly OptOutLogMapper $log,
 		private readonly UnsubscribeTokenService $tokens,
 		private readonly LoggerInterface $logger,
+		private readonly OptOutRowBuilder $rows,
 	) {
+		$this->matcher = new OptOutMatcher();
 
 	}//end __construct()
 
@@ -417,15 +427,17 @@ class OptOutRegistry {
 			}
 		}
 
-		$row = $this->rowFor(request: $request);
+		$row = $this->rows->rowFor(request: $request);
 		$stored = $this->mapper->findByKey(dedupeKey: $row->getDedupeKey());
 		$previous = '';
+		if ($stored !== null) {
+			$previous = (string)$stored->getState();
+			$this->rows->applyChange(stored: $stored, row: $row, previous: $previous);
+			$stored = $this->mapper->update($stored);
+		}
+
 		if ($stored === null) {
 			$stored = $this->mapper->insertIfAbsent($row)['optOut'];
-		} else {
-			$previous = (string)$stored->getState();
-			$this->applyChange(stored: $stored, row: $row, previous: $previous);
-			$stored = $this->mapper->update($stored);
 		}
 
 		$this->append(
@@ -621,97 +633,72 @@ class OptOutRegistry {
 	): array {
 		$category = $context['category'];
 		if ($key === null) {
-			$decision = $this->decision(
-				send: false,
-				code: self::CODE_INVALID_ADDRESS,
-				reason: 'This address cannot be used on the "' . $context['channel'] . '" channel.',
-				key: '',
-				category: $category
-			);
-			$this->append(kind: OptOutLogEntry::KIND_SUPPRESSED, address: '', context: $context, detail: ['code' => self::CODE_INVALID_ADDRESS]);
-			return $decision;
+			$reason = 'This address cannot be used on the "' . $context['channel'] . '" channel.';
+			return $this->suppress(code: self::CODE_INVALID_ADDRESS, reason: $reason, key: '', context: $context, detail: []);
 		}
 
 		if ($category === OptOutCategories::REPLY) {
-			return $this->decision(
-				send: true,
-				code: self::CODE_ALLOWED,
-				reason: 'A direct reply is sent whatever the opt-outs say.',
-				key: $key,
-				category: $category
-			);
+			$reason = 'A direct reply is sent whatever the opt-outs say.';
+			return $this->decision(send: true, code: self::CODE_ALLOWED, reason: $reason, key: $key, category: $category);
 		}
 
-		$mine = $this->rowsOf(rows: $rows, key: $key, contactRef: (string)($recipient['contactRef'] ?? ''));
-		$optOut = $this->matchingOptOut(rows: $mine, recipient: $recipient, channel: $context['channel']);
+		$mine = $this->matcher->rowsOf(rows: $rows, key: $key, contactRef: (string)($recipient['contactRef'] ?? ''));
+		$optOut = $this->matcher->matchingOptOut(rows: $mine, recipient: $recipient, channel: $context['channel']);
 
 		if ($this->categories->isExempt($category) === true) {
 			if ($optOut === null) {
-				return $this->decision(
-					send: true,
-					code: self::CODE_ALLOWED,
-					reason: '',
-					key: $key,
-					category: $category
-				);
+				return $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: $key, category: $category);
 			}
 
-			$this->append(
-				kind: OptOutLogEntry::KIND_OVERRIDE,
-				address: $key,
-				context: $context,
-				detail: ['scope' => (string)$optOut->getScope(), 'optOutId' => $optOut->getId()]
-			);
-			$decision = $this->decision(
-				send: true,
-				code: self::CODE_EXEMPT_OVERRIDE,
-				reason: 'Category "' . $category . '" cannot be stopped by an opt-out.',
-				key: $key,
-				category: $category
-			);
+			$detail = ['scope' => (string)$optOut->getScope(), 'optOutId' => $optOut->getId()];
+			$this->append(kind: OptOutLogEntry::KIND_OVERRIDE, address: $key, context: $context, detail: $detail);
+			$reason = 'Category "' . $category . '" cannot be stopped by an opt-out.';
+			$decision = $this->decision(send: true, code: self::CODE_EXEMPT_OVERRIDE, reason: $reason, key: $key, category: $category);
 			$decision['overridden'] = true;
 			return $decision;
 		}
 
 		if ($optOut !== null) {
-			$this->append(
-				kind: OptOutLogEntry::KIND_SUPPRESSED,
-				address: $key,
-				context: $context,
-				detail: ['code' => self::CODE_OPTED_OUT, 'scope' => (string)$optOut->getScope()]
-			);
-			return $this->decision(
-				send: false,
-				code: self::CODE_OPTED_OUT,
-				reason: 'This address opted out (' . $optOut->getScope() . ').',
-				key: $key,
-				category: $category
-			);
+			$reason = 'This address opted out (' . $optOut->getScope() . ').';
+			$detail = ['scope' => (string)$optOut->getScope()];
+			return $this->suppress(code: self::CODE_OPTED_OUT, reason: $reason, key: $key, context: $context, detail: $detail);
 		}
 
-		if ($requiresConsent === true && $this->hasConsent(rows: $mine, recipient: $recipient, channel: $context['channel']) === false) {
-			$this->append(kind: OptOutLogEntry::KIND_SUPPRESSED, address: $key, context: $context, detail: ['code' => self::CODE_NO_CONSENT]);
-			return $this->decision(
-				send: false,
-				code: self::CODE_NO_CONSENT,
-				reason: 'No recorded consent permits this message.',
-				key: $key,
-				category: $category
-			);
+		if ($requiresConsent === true && $this->matcher->hasConsent(rows: $mine, recipient: $recipient, channel: $context['channel']) === false) {
+			$reason = 'No recorded consent permits this message.';
+			return $this->suppress(code: self::CODE_NO_CONSENT, reason: $reason, key: $key, context: $context, detail: []);
 		}
 
-		$decision = $this->decision(
-			send: true,
-			code: self::CODE_ALLOWED,
-			reason: '',
+		$decision = $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: $key, category: $category);
+		$decision['unsubscribe'] = $this->material(
 			key: $key,
-			category: $category
+			recipient: $recipient,
+			channel: $context['channel'],
+			category: $category,
+			baseUrl: $baseUrl
 		);
-		$decision['unsubscribe'] = $this->material(key: $key, recipient: $recipient, channel: $context['channel'], category: $category, baseUrl: $baseUrl);
 
 		return $decision;
 
 	}//end decideOne()
+
+	/**
+	 * Refuse one recipient and log the suppression.
+	 *
+	 * @param string $code The decision code.
+	 * @param string $reason Why.
+	 * @param string $key The normalised address, or empty.
+	 * @param array{channel:string,category:string,sourceApp:string,correlationId:string} $context The batch.
+	 * @param array<string,mixed> $detail What else the log row says.
+	 *
+	 * @return array<string,mixed> The decision.
+	 */
+	private function suppress(string $code, string $reason, string $key, array $context, array $detail): array {
+		$this->append(kind: OptOutLogEntry::KIND_SUPPRESSED, address: $key, context: $context, detail: ['code' => $code] + $detail);
+
+		return $this->decision(send: false, code: $code, reason: $reason, key: $key, category: $context['category']);
+
+	}//end suppress()
 
 	/**
 	 * Read every row of a chunk: by address and by contact, in one query each.
@@ -737,131 +724,6 @@ class OptOutRegistry {
 		return array_values($rows);
 
 	}//end readRows()
-
-	/**
-	 * The rows that belong to one recipient: same address, or same contact.
-	 *
-	 * @param list<OptOut> $rows The chunk's rows.
-	 * @param string $key The address.
-	 * @param string $contactRef The contact, or empty.
-	 *
-	 * @return list<OptOut> The recipient's rows.
-	 */
-	private function rowsOf(array $rows, string $key, string $contactRef): array {
-		return array_values(
-			array_filter(
-				$rows,
-				static fn (OptOut $row): bool => $row->getAddress() === $key
-					|| ($contactRef !== '' && (string)$row->getContactRef() === $contactRef)
-			)
-		);
-
-	}//end rowsOf()
-
-	/**
-	 * The opt-out that stops this send, if any.
-	 *
-	 * @param list<OptOut> $rows The recipient's rows.
-	 * @param array<string,mixed> $recipient The recipient.
-	 * @param string $channel The channel.
-	 *
-	 * @return OptOut|null The opt-out.
-	 */
-	private function matchingOptOut(array $rows, array $recipient, string $channel): ?OptOut {
-		$caseRef = (string)($recipient['caseRef'] ?? '');
-		$listRef = (string)($recipient['listRef'] ?? '');
-		foreach ($rows as $row) {
-			$state = (string)$row->getState();
-			if ($state !== '' && $state !== OptOut::STATE_OPTED_OUT) {
-				continue;
-			}
-
-			if ($this->covers(row: $row, channel: $channel, caseRef: $caseRef, listRef: $listRef) === true) {
-				return $row;
-			}
-		}
-
-		return null;
-
-	}//end matchingOptOut()
-
-	/**
-	 * Whether a row's scope covers this send.
-	 *
-	 * @param OptOut $row The row.
-	 * @param string $channel The channel.
-	 * @param string $caseRef The case, or empty.
-	 * @param string $listRef The list, or empty.
-	 *
-	 * @return bool True when it covers it.
-	 */
-	private function covers(OptOut $row, string $channel, string $caseRef, string $listRef): bool {
-		return match ((string)$row->getScope()) {
-			self::SCOPE_INSTANCE => true,
-			self::SCOPE_CHANNEL => $channel !== '' && (string)$row->getChannel() === $channel,
-			self::SCOPE_CASE => $caseRef !== '' && (string)$row->getCaseRef() === $caseRef,
-			self::SCOPE_LIST => $listRef !== '' && (string)$row->getListRef() === $listRef,
-			default => false,
-		};
-
-	}//end covers()
-
-	/**
-	 * Whether a recorded consent permits a send that requires one.
-	 *
-	 * With a list ref only a list row counts; without one only a channel row.
-	 * A channel consent does not open a list and a list consent does not open
-	 * a channel. `imported` never permits; `soft-opt-in` needs the evidence
-	 * that an objection was offered.
-	 *
-	 * @param list<OptOut> $rows The recipient's rows.
-	 * @param array<string,mixed> $recipient The recipient.
-	 * @param string $channel The channel.
-	 *
-	 * @return bool True when a consent permits it.
-	 */
-	private function hasConsent(array $rows, array $recipient, string $channel): bool {
-		$listRef = (string)($recipient['listRef'] ?? '');
-		foreach ($rows as $row) {
-			if ((string)$row->getState() !== OptOut::STATE_OPTED_IN || $row->getWithdrawnAt() !== null) {
-				continue;
-			}
-
-			$scope = (string)$row->getScope();
-			$matches = ($scope === self::SCOPE_CHANNEL && $listRef === '' && (string)$row->getChannel() === $channel);
-			if ($listRef !== '') {
-				$matches = ($scope === self::SCOPE_LIST && (string)$row->getListRef() === $listRef);
-			}
-
-			if ($matches === true && $this->basisPermits(row: $row) === true) {
-				return true;
-			}
-		}
-
-		return false;
-
-	}//end hasConsent()
-
-	/**
-	 * Whether a consent row's lawful basis permits a send.
-	 *
-	 * @param OptOut $row The row.
-	 *
-	 * @return bool True when it does.
-	 */
-	private function basisPermits(OptOut $row): bool {
-		$basis = (string)$row->getLawfulBasis();
-		if ($basis === 'imported') {
-			return false;
-		}
-
-		if ($basis === 'soft-opt-in') {
-			return (($row->evidenceArray()['objectionOffered'] ?? false) === true);
-		}
-
-		return true;
-
-	}//end basisPermits()
 
 	/**
 	 * The unsubscribe material for an allowed recipient.
@@ -956,118 +818,6 @@ class OptOutRegistry {
 		return $decisions;
 
 	}//end uniform()
-
-	/**
-	 * Build the row a request asks for, its dedupe key set.
-	 *
-	 * @param array<string,mixed> $request The request.
-	 *
-	 * @return OptOut The row.
-	 *
-	 * @throws InvalidArgumentException When the request is incomplete.
-	 */
-	private function rowFor(array $request): OptOut {
-		$state = (string)($request['state'] ?? '');
-		if (in_array($state, [OptOut::STATE_OPTED_OUT, OptOut::STATE_OPTED_IN], true) === false) {
-			throw new InvalidArgumentException('State must be opted-out, opted-in or erase-contact, not "' . $state . '".');
-		}
-
-		$scope = (string)($request['scope'] ?? self::SCOPE_INSTANCE);
-		if (in_array($scope, self::SCOPES, true) === false) {
-			throw new InvalidArgumentException('Scope must be instance, channel, case or list, not "' . $scope . '".');
-		}
-
-		$channel = strtolower(trim((string)($request['channel'] ?? '')));
-		$ref = trim((string)($request['ref'] ?? ''));
-		if ($scope === self::SCOPE_CHANNEL && $channel === '') {
-			throw new InvalidArgumentException('A channel scope needs a channel.');
-		}
-
-		if (in_array($scope, [self::SCOPE_CASE, self::SCOPE_LIST], true) === true && $ref === '') {
-			throw new InvalidArgumentException('A ' . $scope . ' scope needs a ref.');
-		}
-
-		$key = $this->recipientKey->normalise(channel: $channel, address: (string)($request['address'] ?? ''));
-		if ($key === null) {
-			throw new InvalidArgumentException('The address cannot be used on the "' . $channel . '" channel.');
-		}
-
-		$evidence = ($request['evidence'] ?? null);
-		$now = $this->time->getTime();
-
-		$row = new OptOut();
-		$row->setAddress($key);
-		$row->setScope($scope);
-		$row->setChannel($channel);
-		$row->setCaseRef('');
-		$row->setListRef('');
-		if ($scope === self::SCOPE_CASE) {
-			$row->setCaseRef($ref);
-		}
-
-		if ($scope === self::SCOPE_LIST) {
-			$row->setListRef($ref);
-		}
-
-		$row->setState($state);
-		$row->setPurpose((string)($request['purpose'] ?? ''));
-		$row->setContactRef((string)($request['contactRef'] ?? ''));
-		$row->setLawfulBasis((string)($request['lawfulBasis'] ?? ''));
-		$row->setEvidence(null);
-		if (is_array($evidence) === true && $evidence !== []) {
-			$row->setEvidence((string)json_encode($evidence));
-		}
-
-		$row->setSource((string)($request['source'] ?? ''));
-		$row->setSourceApp((string)($request['sourceApp'] ?? ''));
-		$legacyRef = trim((string)($request['legacyRef'] ?? ''));
-		$row->setLegacyUuid(null);
-		if ($legacyRef !== '') {
-			$row->setLegacyUuid($legacyRef);
-		}
-
-		$row->setCreatedAt($now);
-		$row->setUpdatedAt($now);
-		$row->assignDedupeKey();
-
-		return $row;
-
-	}//end rowFor()
-
-	/**
-	 * Move a stored row to the state a new request asks for.
-	 *
-	 * @param OptOut $stored The stored row.
-	 * @param OptOut $row The requested row.
-	 * @param string $previous The stored row's state before.
-	 *
-	 * @return void
-	 */
-	private function applyChange(OptOut $stored, OptOut $row, string $previous): void {
-		$stored->setState((string)$row->getState());
-		$stored->setSource((string)$row->getSource());
-		$stored->setSourceApp((string)$row->getSourceApp());
-		$stored->setUpdatedAt((int)$row->getUpdatedAt());
-		if ((string)$row->getContactRef() !== '') {
-			$stored->setContactRef((string)$row->getContactRef());
-		}
-
-		if ((string)$row->getPurpose() !== '') {
-			$stored->setPurpose((string)$row->getPurpose());
-		}
-
-		if ($row->getState() === OptOut::STATE_OPTED_IN) {
-			$stored->setLawfulBasis((string)$row->getLawfulBasis());
-			$stored->setEvidence($row->getEvidence());
-			$stored->setWithdrawnAt(null);
-			return;
-		}
-
-		if ($previous === OptOut::STATE_OPTED_IN) {
-			$stored->setWithdrawnAt((int)$row->getUpdatedAt());
-		}
-
-	}//end applyChange()
 
 	/**
 	 * Clear a contact's link and evidence on every row, keeping the opt-out.

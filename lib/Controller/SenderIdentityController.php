@@ -325,7 +325,9 @@ class SenderIdentityController extends Controller {
 
 		if ($claim['format'] !== UnsubscribeTokenService::PREFIX_V3) {
 			$this->optOuts->add($claim['address'], OptOutRegistry::SCOPE_CASE, $claim['caseRef'], $source);
-		} else {
+		}
+
+		if ($claim['format'] === UnsubscribeTokenService::PREFIX_V3) {
 			$this->optOuts->record(
 				[
 					'address' => $claim['address'],
