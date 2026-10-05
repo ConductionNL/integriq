@@ -61,8 +61,13 @@ final class WebhookProfile {
 	 * @param string|null  $legacyChannelId   The `source.configuration.channelId` too, for intake channels.
 	 * @param string       $defaultHeader     The signature header when the trust names none.
 	 * @param string       $defaultScheme     The signature scheme when the trust names none.
+	 * @param string|null  $intakeGroup       The group the schema's authorization block grants the account, or null when it grants no group.
+	 * @param string|null  $handlerGroup      The group that reads what the webhook stores, or null.
 	 *
 	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
+	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#requirement-intake-messages-and-verdicts-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-iac-002
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) a readonly value object: one named, defaulted field per property, no behaviour.
 	 */
 	public function __construct(
 		public readonly string $authorizationType,
@@ -74,6 +79,8 @@ final class WebhookProfile {
 		public readonly ?string $legacyChannelId = null,
 		public readonly string $defaultHeader = self::DEFAULT_HEADER,
 		public readonly string $defaultScheme = self::DEFAULT_SCHEME,
+		public readonly ?string $intakeGroup = null,
+		public readonly ?string $handlerGroup = null,
 	) {
 
 	}//end __construct()

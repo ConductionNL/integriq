@@ -89,15 +89,15 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * one assertion short of guarding what the PR documents (integriq#2104 review
 	 * 5266971176).
 	 *
-	 * The seven closed schemas NOT listed here — app_connection, consumer,
-	 * event, lti_platform, lti_tool, rule, source — grant deliberately and are
-	 * covered by `CLOSED` only.
+	 * The closed schemas NOT listed here (app_connection, consumer, event,
+	 * lti_platform, lti_tool, rule, source, and the intake records dso_verzoek,
+	 * openformulieren_submission, intake_message and verdict) grant deliberately
+	 * and are covered by `CLOSED` only.
 	 *
 	 * @var array<int,string>
 	 */
 	private const DENY_ALL = [
 		'digitalPostMessage',
-		'intake_message',
 		'intake_routing_rule',
 		'mail_message',
 		'mapping_version',
@@ -106,7 +106,6 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'recipient_key',
 		'recipient_opt_out',
 		'sender_identity',
-		'verdict',
 	];
 
 	/**

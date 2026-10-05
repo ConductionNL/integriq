@@ -32,6 +32,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\Dso\DsoConnection;
+use OCA\Integriq\Service\Intake\IntakeGroups;
 use OCA\Integriq\Service\Intake\WebhookConnection;
 use OCA\Integriq\Service\Intake\WebhookProfile;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
@@ -75,6 +76,7 @@ class WebhookConnectionsSettingsController extends Controller {
 	 * @param WebhookConnection $webhooks      Finds and checks each webhook's consumer and account.
 	 * @param ORObjectService   $objectService Saves a consumer as the administrator, under RBAC.
 	 * @param IGroupManager     $groupManager  Tells an administrator account apart.
+	 * @param IntakeGroups      $groups        Puts a webhook's account in the intake group its schema grants.
 	 * @param IL10N             $l             Field errors and warnings.
 	 * @param LoggerInterface   $logger        Diagnostics.
 	 *
@@ -85,6 +87,7 @@ class WebhookConnectionsSettingsController extends Controller {
 		private readonly WebhookConnection $webhooks,
 		private readonly ORObjectService $objectService,
 		private readonly IGroupManager $groupManager,
+		private readonly IntakeGroups $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -185,6 +188,8 @@ class WebhookConnectionsSettingsController extends Controller {
 			);
 		}
 
+		$this->withdrawPrevious(profile: $profile, consumer: $consumer, userId: $userId);
+
 		return new JSONResponse(['connection' => $this->describe(profile: $profile), 'warnings' => $warnings]);
 
 	}//end setConfig()
@@ -225,9 +230,81 @@ class WebhookConnectionsSettingsController extends Controller {
 			'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
 			'userId' => $userId,
 			'account' => $this->describeAccount(profile: $profile, userId: $userId),
+			'handlerGroup' => $this->describeHandlerGroup(profile: $profile),
 		];
 
 	}//end describe()
+
+	/**
+	 * The handler group of a webhook and whether it is empty, or null when its schema names none.
+	 *
+	 * @param WebhookProfile $profile The webhook.
+	 *
+	 * @return array{id: string, empty: bool}|null
+	 *
+	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#requirement-the-webhook-settings-say-when-nobody-can-read-what-a-webhook-stores-req-iac-003
+	 */
+	private function describeHandlerGroup(WebhookProfile $profile): ?array {
+		if ($profile->handlerGroup === null) {
+			return null;
+		}
+
+		return $this->groups->describe(groupId: $profile->handlerGroup);
+
+	}//end describeHandlerGroup()
+
+	/**
+	 * Take the account the webhook used before out of its intake group.
+	 *
+	 * Several intake channels share one intake group, so the account stays a
+	 * member while another channel of the same group still acts as it.
+	 *
+	 * @param WebhookProfile    $profile  The webhook.
+	 * @param ObjectEntity|null $consumer The consumer as it was before the save.
+	 * @param string            $userId   The account it has now, or ''.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#scenario-the-chosen-account-joins-the-intake-group
+	 */
+	private function withdrawPrevious(WebhookProfile $profile, ?ObjectEntity $consumer, string $userId): void {
+		$previous = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
+		if ($profile->intakeGroup === null || $previous === '' || $previous === $userId) {
+			return;
+		}
+
+		if ($this->usedElsewhere(profile: $profile, userId: $previous) === true) {
+			return;
+		}
+
+		$this->groups->withdraw(groupId: $profile->intakeGroup, userId: $previous);
+
+	}//end withdrawPrevious()
+
+	/**
+	 * Whether another webhook with the same intake group acts as the account.
+	 *
+	 * @param WebhookProfile $profile The webhook being saved.
+	 * @param string         $userId  The uid.
+	 *
+	 * @return bool
+	 */
+	private function usedElsewhere(WebhookProfile $profile, string $userId): bool {
+		foreach (WebhookProfiles::all() as $other) {
+			if ($other->authorizationType === $profile->authorizationType || $other->intakeGroup !== $profile->intakeGroup) {
+				continue;
+			}
+
+			foreach ($this->webhooks->findConsumers(profile: $other) as $consumer) {
+				if ((string)($consumer->getObject()['userId'] ?? '') === $userId) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+
+	}//end usedElsewhere()
 
 	/**
 	 * The consumer data to save, keeping the stored secret when none was sent.
@@ -280,7 +357,7 @@ class WebhookConnectionsSettingsController extends Controller {
 			return $this->l->t('Account %s does not exist.', [$userId]);
 		}
 
-		$missing = $this->webhooks->missingRights(profile: $profile, userId: $userId);
+		$missing = $this->checkRights(profile: $profile, userId: $userId);
 		if ($missing === null) {
 			$warnings[] = $this->l->t('The rights of account %s could not be checked. Deliveries are refused until they can be.', [$userId]);
 		} elseif ($missing !== []) {
@@ -294,6 +371,37 @@ class WebhookConnectionsSettingsController extends Controller {
 		return null;
 
 	}//end accountError()
+
+	/**
+	 * The rights the account lacks, after putting it in the webhook's intake group.
+	 *
+	 * The authorization block grants the intake group, so the chosen account
+	 * joins it before its rights are checked. It leaves again when the check
+	 * still refuses it and it was not a member before.
+	 *
+	 * @param WebhookProfile $profile The webhook.
+	 * @param string         $userId  The chosen uid.
+	 *
+	 * @return list<string>|null The missing actions, or null when they could not be checked.
+	 *
+	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#scenario-the-chosen-account-joins-the-intake-group
+	 */
+	private function checkRights(WebhookProfile $profile, string $userId): ?array {
+		if ($profile->intakeGroup === null) {
+			return $this->webhooks->missingRights(profile: $profile, userId: $userId);
+		}
+
+		$wasMember = $this->groups->isMember(groupId: $profile->intakeGroup, userId: $userId);
+		$this->groups->enrol(groupId: $profile->intakeGroup, userId: $userId);
+
+		$missing = $this->webhooks->missingRights(profile: $profile, userId: $userId);
+		if ($missing !== null && $missing !== [] && $wasMember === false) {
+			$this->groups->withdraw(groupId: $profile->intakeGroup, userId: $userId);
+		}
+
+		return $missing;
+
+	}//end checkRights()
 
 	/**
 	 * The one-line state of an account.

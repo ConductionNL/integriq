@@ -2504,9 +2504,22 @@
         "slug": "verdict",
         "title": "Verdict",
         "icon": "Gavel",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
         "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/specs/outbound-call-log/spec.md.",
+        "authorization": {
+          "create": [
+            "verdicts-intake"
+          ],
+          "read": [
+            "verdicts-behandelaars"
+          ],
+          "update": [
+            "verdicts-intake",
+            "verdicts-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "objectRef",
           "state",
@@ -5732,9 +5745,22 @@
         "slug": "intake_message",
         "title": "Intake Message",
         "icon": "InboxArrowDown",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "One message an intake channel delivered, in the normalised shape every consumer reads",
         "description": "An Intake Message is one message delivered by a channel adapter, normalised so no consuming app contains channel-specific code. A routing rule decides which case type it opens; a message matching no rule is held with its reason rather than dropped or opened as a default case. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
+        "authorization": {
+          "create": [
+            "intakekanalen-intake"
+          ],
+          "read": [
+            "intakekanalen-behandelaars"
+          ],
+          "update": [
+            "intakekanalen-intake",
+            "intakekanalen-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "channelId",
           "status"

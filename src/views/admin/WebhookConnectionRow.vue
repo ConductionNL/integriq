@@ -15,6 +15,21 @@
 			{{ accountState.text }}
 		</p>
 
+		<NcNoteCard
+			v-if="connection.handlerGroup && connection.handlerGroup.empty"
+			type="warning"
+			:data-testid="
+				'admin-webhook-handlers-empty-' + connection.authorizationType
+			">
+			{{
+				t(
+					'integriq',
+					'Nobody can read what this webhook stores yet. Add handlers to the group {group} under Accounts.',
+					{ group: connection.handlerGroup.id },
+				)
+			}}
+		</NcNoteCard>
+
 		<NcSelectUsers
 			v-model="account"
 			:inputLabel="t('integriq', 'Account the webhook acts as')"
@@ -61,6 +76,7 @@ import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
 import { generateOcsUrl, generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
+	NcNoteCard,
 	NcPasswordField,
 	NcSelect,
 	NcSelectUsers,
@@ -78,6 +94,7 @@ export default {
 
 	components: {
 		NcButton,
+		NcNoteCard,
 		NcPasswordField,
 		NcSelect,
 		NcSelectUsers,

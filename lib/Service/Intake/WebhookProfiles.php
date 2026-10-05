@@ -329,13 +329,18 @@ final class WebhookProfiles {
 	 * @return WebhookProfile
 	 *
 	 * @spec openspec/changes/intake-channels-on-the-consumer-model/specs/intake-channels/spec.md#requirement-a-channel-acts-as-its-connections-account-req-ic-020
+	 * @spec openspec/changes/intake-message-and-verdict-access-rules/specs/intake-access/spec.md#requirement-intake-messages-and-verdicts-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-iac-002
 	 */
 	public static function intakeChannel(string $channelId): WebhookProfile {
 		$schema = 'intake_message';
 		$label = 'Intake channel ' . $channelId;
+		$intakeGroup = IntakeGroups::INTAKE_CHANNELS_INTAKE;
+		$handlerGroup = IntakeGroups::INTAKE_CHANNELS_HANDLERS;
 		if ($channelId === 'verdicts') {
 			$schema = 'verdict';
 			$label = 'Verdicts';
+			$intakeGroup = IntakeGroups::VERDICTS_INTAKE;
+			$handlerGroup = IntakeGroups::VERDICTS_HANDLERS;
 		}
 
 		return new WebhookProfile(
@@ -344,7 +349,9 @@ final class WebhookProfiles {
 			label: $label,
 			schema: $schema,
 			legacySourceType: 'intake-channel',
-			legacyChannelId: $channelId
+			legacyChannelId: $channelId,
+			intakeGroup: $intakeGroup,
+			handlerGroup: $handlerGroup
 		);
 
 	}//end intakeChannel()

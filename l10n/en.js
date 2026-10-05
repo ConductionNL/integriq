@@ -3218,6 +3218,7 @@ OC.L10N.register(
         "Remove field": "Remove field",
         "Nobody can read the DSO requests yet. Add handlers to the group {group} under Accounts.": "Nobody can read the DSO requests yet. Add handlers to the group {group} under Accounts.",
         "Nobody can read the submissions yet. Add handlers to the group {group} under Accounts.": "Nobody can read the submissions yet. Add handlers to the group {group} under Accounts.",
+        "Nobody can read what this webhook stores yet. Add handlers to the group {group} under Accounts.": "Nobody can read what this webhook stores yet. Add handlers to the group {group} under Accounts.",
         "The delivery could not be stored. Try again later.": "The delivery could not be stored. Try again later.",
         "%1$s deliveries are refused: no %1$s connection is configured.": "%1$s deliveries are refused: no %1$s connection is configured.",
         "%1$s deliveries are refused: the %1$s connection has no usable account.": "%1$s deliveries are refused: the %1$s connection has no usable account.",

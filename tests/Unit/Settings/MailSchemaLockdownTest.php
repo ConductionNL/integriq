@@ -33,11 +33,14 @@ class MailSchemaLockdownTest extends TestCase {
 	 * Every schema the review found open, including `sender_identity`, which is
 	 * closed by its own fragment because it also held a secret.
 	 *
+	 * `intake_message` and `verdict` left this list on 2026-10-05: they grant
+	 * their intake and handler groups now (intake-message-and-verdict-access-rules,
+	 * guarded by IntakeRecordAuthorizationTest).
+	 *
 	 * @var array<int,string>
 	 */
 	private const LOCKED_SCHEMAS = [
 		'digitalPostMessage',
-		'intake_message',
 		'intake_routing_rule',
 		'mail_message',
 		'mapping_version',
@@ -45,7 +48,6 @@ class MailSchemaLockdownTest extends TestCase {
 		'recipient_key',
 		'recipient_opt_out',
 		'sender_identity',
-		'verdict',
 	];
 
 	/**
