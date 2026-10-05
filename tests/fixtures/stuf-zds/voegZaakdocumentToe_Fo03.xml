@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:StUF="http://www.egem.nl/StUF/StUF0301">
+  <soap:Body>
+    <soap:Fault>
+      <faultcode>soap:Server</faultcode>
+      <faultstring>Proces voor afhandelen bericht geeft fout</faultstring>
+      <detail>
+        <StUF:Fo03Bericht>
+          <StUF:stuurgegevens>
+            <StUF:berichtcode>Fo03</StUF:berichtcode>
+            <StUF:referentienummer>ZSH-77312</StUF:referentienummer>
+            <StUF:tijdstipBericht>20261005093014</StUF:tijdstipBericht>
+            <StUF:crossRefnummer>ZDS-REQUEST</StUF:crossRefnummer>
+          </StUF:stuurgegevens>
+          <StUF:body>
+            <StUF:code>StUF058</StUF:code>
+            <StUF:plek>server</StUF:plek>
+            <StUF:omschrijving>Zaak 0363-ZAAK-2026-0099 bestaat niet</StUF:omschrijving>
+          </StUF:body>
+        </StUF:Fo03Bericht>
+      </detail>
+    </soap:Fault>
+  </soap:Body>
+</soap:Envelope>

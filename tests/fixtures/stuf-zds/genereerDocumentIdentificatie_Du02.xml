@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:StUF="http://www.egem.nl/StUF/StUF0301" xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310">
+  <soap:Body>
+    <zkn:genereerDocumentIdentificatie_Du02>
+      <zkn:stuurgegevens>
+        <StUF:berichtcode>Du02</StUF:berichtcode>
+        <StUF:zender>
+          <StUF:organisatie>0363</StUF:organisatie>
+          <StUF:applicatie>ZSH</StUF:applicatie>
+        </StUF:zender>
+        <StUF:ontvanger>
+          <StUF:organisatie>0363</StUF:organisatie>
+          <StUF:applicatie>integriq</StUF:applicatie>
+        </StUF:ontvanger>
+        <StUF:referentienummer>ZSH-77310</StUF:referentienummer>
+        <StUF:tijdstipBericht>20261005093012</StUF:tijdstipBericht>
+        <StUF:crossRefnummer>ZDS-REQUEST</StUF:crossRefnummer>
+        <StUF:functie>genereerDocumentidentificatie</StUF:functie>
+      </zkn:stuurgegevens>
+      <zkn:document StUF:entiteittype="EDC" StUF:functie="entiteit">
+        <zkn:identificatie>0363-DOC-2026-000042</zkn:identificatie>
+      </zkn:document>
+    </zkn:genereerDocumentIdentificatie_Du02>
+  </soap:Body>
+</soap:Envelope>
