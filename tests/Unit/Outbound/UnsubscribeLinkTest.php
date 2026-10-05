@@ -35,6 +35,7 @@ use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Tests\Helpers\InMemoryOptOutMapper;
+use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
@@ -43,6 +44,7 @@ use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -55,6 +57,13 @@ use RuntimeException;
  * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
  */
 class UnsubscribeLinkTest extends TestCase {
+
+	/**
+	 * The opt-out services, kept for one test so the short link table is shared.
+	 *
+	 * @var OptOutFixture|null
+	 */
+	private ?OptOutFixture $fixture = null;
 
 	/**
 	 * The signing secret the app config holds.
@@ -152,7 +161,7 @@ class UnsubscribeLinkTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 		$token = $this->tokens()->mint('Jan@Example.org', 'zaak/1');
 
-		$response = $this->controller()->unsubscribe($token);
+		$response = $this->controller()->unsubscribeConfirm($token);
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame('stopped', $response->getParams()['state']);
@@ -174,8 +183,8 @@ class UnsubscribeLinkTest extends TestCase {
 		$token = $this->tokens()->mint('jan@example.org', 'zaak/1');
 		$controller = $this->controller();
 
-		$controller->unsubscribe($token);
-		$second = $controller->unsubscribe($token);
+		$controller->unsubscribeConfirm($token);
+		$second = $controller->unsubscribeConfirm($token);
 
 		$this->assertSame(Http::STATUS_OK, $second->getStatus());
 		$this->assertSame(1, $this->table->countAll());
@@ -243,7 +252,7 @@ class UnsubscribeLinkTest extends TestCase {
 		$payload = rtrim(strtr(base64_encode('{"a":"jan@example.org","c":"zaak\/1"}'), '+/', '-_'), '=');
 		$token = $payload . '.' . hash_hmac('sha256', $payload, self::SECRET);
 
-		$response = $this->controller()->unsubscribe($token);
+		$response = $this->controller()->unsubscribeConfirm($token);
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$row = array_values($this->table->rows)[0];
@@ -272,7 +281,7 @@ class UnsubscribeLinkTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheDecisionReadsTheTable(): void {
-		$this->controller()->unsubscribe($this->tokens()->mint('jan@example.org', 'zaak/1'));
+		$this->controller()->unsubscribeConfirm($this->tokens()->mint('jan@example.org', 'zaak/1'));
 		$registry = $this->registry();
 
 		$this->assertFalse($registry->decide('jan@example.org', 'status-update', 'zaak/1')['send']);
@@ -334,6 +343,82 @@ class UnsubscribeLinkTest extends TestCase {
 	}//end testTheListReadsTheTable()
 
 	/**
+	 * Opening a version 3 link with GET asks to confirm and writes nothing;
+	 * the POST writes a channel opt-out and answers 200 without a redirect.
+	 *
+	 * @return void
+	 */
+	public function testAGetDoesNotUnsubscribeAndAPostDoes(): void {
+		$token = $this->tokens()->mintScoped('+31612345678', 'channel', 'sms', '');
+		$controller = $this->controller();
+
+		$page = $controller->unsubscribe($token);
+		$this->assertSame(Http::STATUS_OK, $page->getStatus());
+		$this->assertSame('confirm', $page->getParams()['state']);
+		$this->assertSame('/index.php/apps/integriq/unsubscribe/' . $token, $page->getParams()['action']);
+		$this->assertSame(0, $this->table->countAll(), 'a GET writes nothing');
+
+		$done = $controller->unsubscribeConfirm($token);
+		$this->assertSame(Http::STATUS_OK, $done->getStatus());
+		$this->assertSame('stopped', $done->getParams()['state']);
+		$row = array_values($this->table->rows)[0];
+		$this->assertSame('opted-out', $row->getState());
+		$this->assertSame('channel', $row->getScope());
+		$this->assertSame('sms', $row->getChannel());
+
+	}//end testAGetDoesNotUnsubscribeAndAPostDoes()
+
+	/**
+	 * "Stop everything" writes an instance opt-out.
+	 *
+	 * @return void
+	 */
+	public function testStopEverythingWritesAnInstanceOptOut(): void {
+		$token = $this->tokens()->mint('jan@example.org', 'zaak/1');
+
+		$this->controller()->unsubscribeConfirm($token, 'all');
+
+		$row = array_values($this->table->rows)[0];
+		$this->assertSame('instance', $row->getScope());
+
+	}//end testStopEverythingWritesAnInstanceOptOut()
+
+	/**
+	 * A version 2 link minted before this change still stops its case.
+	 *
+	 * @return void
+	 */
+	public function testAVersionTwoLinkStillStopsACase(): void {
+		$payload = rtrim(strtr(base64_encode('{"a":"jan@example.org","c":"zaak\/9","e":1999999999}'), '+/', '-_'), '=');
+		$token = 'v2.' . $payload . '.' . hash_hmac('sha256', 'v2.' . $payload, self::SECRET);
+
+		$this->assertSame('confirm', $this->controller()->unsubscribe($token)->getParams()['state']);
+		$this->controller()->unsubscribeConfirm($token);
+
+		$row = array_values($this->table->rows)[0];
+		$this->assertSame('case', $row->getScope());
+		$this->assertSame('zaak/9', $row->getCaseRef());
+
+	}//end testAVersionTwoLinkStillStopsACase()
+
+	/**
+	 * A short SMS id opens the same confirmation; an unknown one is refused.
+	 *
+	 * @return void
+	 */
+	public function testAShortLinkOpensTheConfirmation(): void {
+		$material = $this->tokens()->materialFor('+31612345678', 'channel', 'sms', '', 'service', 'https://gem.nl');
+		$shortId = substr((string)$material['smsText'], -10);
+
+		$page = $this->controller()->shortLink($shortId);
+
+		$this->assertSame('confirm', $page->getParams()['state']);
+		$this->assertSame(0, $this->table->countAll());
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller()->shortLink('ZZZZZZZZZZ')->getStatus());
+
+	}//end testAShortLinkOpensTheConfirmation()
+
+	/**
 	 * The controller over the real services.
 	 *
 	 * @return SenderIdentityController The controller.
@@ -344,6 +429,10 @@ class UnsubscribeLinkTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 		$registry = $this->registry();
+		$urls = $this->createMock(IURLGenerator::class);
+		$urls->method('linkToRoute')->willReturnCallback(
+			static fn (string $route, array $params = []): string => '/index.php/apps/integriq/unsubscribe/' . ($params['token'] ?? '')
+		);
 
 		return new SenderIdentityController(
 			'integriq',
@@ -355,7 +444,8 @@ class UnsubscribeLinkTest extends TestCase {
 			$this->tokens(registry: $registry),
 			$registry,
 			$this->createMock(HoldQueue::class),
-			$l
+			$l,
+			$urls
 		);
 
 	}//end controller()
@@ -366,7 +456,7 @@ class UnsubscribeLinkTest extends TestCase {
 	 * @return OptOutRegistry The registry.
 	 */
 	private function registry(): OptOutRegistry {
-		return new OptOutRegistry($this->table, $this->appConfig(), $this->clock());
+		return $this->fixture()->registry();
 
 	}//end registry()
 
@@ -378,14 +468,29 @@ class UnsubscribeLinkTest extends TestCase {
 	 * @return UnsubscribeTokenService The service.
 	 */
 	private function tokens(?OptOutRegistry $registry = null): UnsubscribeTokenService {
-		return new UnsubscribeTokenService(
-			$this->appConfig(),
-			$this->createMock(ISecureRandom::class),
-			($registry ?? $this->registry()),
-			$this->clock()
-		);
+		return $this->fixture()->tokens();
 
 	}//end tokens()
+
+	/**
+	 * The opt-out services over this test's table, config and clock.
+	 *
+	 * @return OptOutFixture The fixture.
+	 */
+	private function fixture(): OptOutFixture {
+		if ($this->fixture !== null && $this->fixture->table === $this->table) {
+			return $this->fixture;
+		}
+
+		return $this->fixture = new OptOutFixture(
+			$this,
+			$this->createMock(IDBConnection::class),
+			$this->table,
+			fn (): array => $this->config,
+			fn (): int => $this->now
+		);
+
+	}//end fixture()
 
 	/**
 	 * The app config double over $this->config.
