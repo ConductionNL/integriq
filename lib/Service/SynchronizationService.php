@@ -9358,7 +9358,7 @@ class SynchronizationService {
 		$document = (array)($targetConfig['json'] ?? []);
 
 		try {
-			$file = $this->zgwDocumentFile(zgw: $zgw, contract: $contract);
+			$file = $this->zgwDocumentFile(zgw: $zgw, contract: $contract, document: $document);
 			$document['bestandsnaam'] = (string)($document['bestandsnaam'] ?? $file['filename']);
 			$document['formaat']      = (string)($document['formaat'] ?? $file['mimeType']);
 
@@ -9405,8 +9405,13 @@ class SynchronizationService {
 	/**
 	 * The file a ZGW document push delivers, found the way `fileUpload` finds one.
 	 *
-	 * @param array $zgw      The zgwDocument config (fileName, fileId, objectId).
+	 * `fileIdField` names a field of the mapped object that holds a Nextcloud
+	 * file id (filinq's `resultFileRef` on a redacted copy); its value is used
+	 * as `fileId`, and an empty value is refused before anything is sent.
+	 *
+	 * @param array $zgw      The zgwDocument config (fileName, fileId, fileIdField, objectId).
 	 * @param array $contract The contract (originId = the source object).
+	 * @param array $document The mapped object.
 	 *
 	 * @return array{content:string,filename:string,mimeType:string}
 	 *
@@ -9414,7 +9419,18 @@ class SynchronizationService {
 	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
-	private function zgwDocumentFile(array $zgw, array $contract): array {
+	private function zgwDocumentFile(array $zgw, array $contract, array $document): array {
+		$field = (string)($zgw['fileIdField'] ?? '');
+		if ($field !== '') {
+			$fileId = (string)($document[$field] ?? '');
+			if ($fileId === '') {
+				$origin = (string)($contract['originId'] ?? '');
+				throw new Exception('The object ' . $origin . ' has no file id in ' . $field . ' to deliver to the Documenten API.');
+			}
+
+			$zgw['fileId'] = $fileId;
+		}
+
 		$probe = [
 			'json' => [],
 			'fileUpload' => array_intersect_key($zgw, array_flip(['fileName', 'fileId', 'objectId'])) + ['fieldName' => 'inhoud'],

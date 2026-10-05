@@ -59,8 +59,24 @@ Kind: code. Size M. Half for filinq `generate-store-in-case-system` and `zgw-doc
 - **files**: `lib/Settings/integriq_seed_data.json`, `docs/features/`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the seed is imported THEN `zgw-documenten-push` and `object-to-zgw-document` exist and the two synchronizations are disabled
-- [ ] Implement
+- [x] Implement. `lib/Settings/register.d/case-system-delivery.json` (design D5): the
+      synchronizations `filinq-case-system-delivery` and `filinq-redacted-writeback` and the
+      mappings `case-system-delivery-to-zgw-document` and `redacted-document-to-zgw-document`.
+      `zgw-documenten-push` and `object-to-zgw-document` already exist (zgw-connectors-for-dossiq,
+      `zgw-consumer-sets.json`), as the pass-through write-back of edits; this task seeds its own.
+      Both synchronizations ship unbound (`sourceId` empty) on the dormant `zgw-set-documenten` and
+      `zgw-set-zaken` sources, push only an object in `ready_for_writeback` (list-shaped
+      `conditions`, which needed the engine fix in `fix/sync-conditions-list-shape`), and write
+      back onto `deliveryStatus` / `processingStatus`. `zgwDocument.fileIdField` (new) reads the
+      redacted file from `resultFileRef`. Docs `docs/features/case-system-document-delivery.md`.
+      Strings: none; seed objects are not translated (check:schema-l10n scans schemas only).
 - [ ] Test (PHPUnit on the seed; an end-to-end run with filinq and Open Zaak on a dev instance, recorded in the PR)
+      PHPUnit done: `tests/Unit/Settings/CaseSystemDeliverySeedTest.php` (6: seeds unbound on
+      dormant sources, accepted by the register, both mappings through the real MappingService
+      and validated against Documenten 1.4.2, conditions through the engine's own check) and
+      `SynchronizationZgwDocumentPushTest` (5, two for `fileIdField`). Owed: the end-to-end run;
+      filinq has not built `caseSystemDelivery` or `externalDocument` yet (filinq development
+      f0fa284c), and the delivery's file field is unnamed (for-ruben note).
 
 ## Verification
 - [ ] `openspec validate connectors-case-system-document-delivery --strict` passes
