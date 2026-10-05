@@ -10,16 +10,41 @@ Kind: code. Size M. Half for filinq `generate-store-in-case-system` and `zgw-doc
 - **acceptance_criteria**:
   - GIVEN a push with write-back WHEN the target answers 201 THEN the source object carries the success fields and the push is not triggered again
   - GIVEN a failure after the last retry WHEN the budget is spent THEN the failure fields are written once
-- [ ] Implement
-- [ ] Test (PHPUnit with real `ObjectEntity` instances)
+- [x] Implement. Engine and schema done: `synchronization.writeBack` (1.2.0, both registers;
+      `OutcomeWriteBack` fills `{{ response.* }}`, `{{ status }}`, `{{ targetId }}`,
+      `{{ error.message }}`); `writeObjectToTarget()` writes `onSuccess` after an accepted create
+      or update and `onFailure` after a 4xx/5xx answer or a transport failure, silently onto the
+      `register/schema` source object. CallService spends the retry budget before it returns, so
+      each attempt writes once. Editor: `SyncWriteBackFields.vue` in the synchronization editor's
+      target column, shown for a `register/schema` source (field and value rows for On success and
+      On failure, the placeholders named); an emptied write-back saves `{}`
+      (`tests/vitest/syncWriteBackEditor.spec.js`).
+- [x] Test (PHPUnit with real `ObjectEntity` instances)
+      `tests/Unit/Service/SynchronizationOutcomeWriteBackTest.php`, 8 tests through the real
+      `updateTarget()`: accepted create (silent save, url as external id, own fields kept),
+      refusal with the ZGW `detail` written once, a message-less 503, a transport failure
+      rethrown, an update with `{{ targetId }}`, no write-back declared, an api source, both
+      registers.
 
 ### Task 2: ZGW create, parts upload and case relation
 - **spec_ref**: `openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002`
 - **files**: `lib/Service/ZgwVersion/InformatieObjectTranslator.php`, a ZGW document push handler, `lib/Settings/configurations/zgw-documenten.json`
 - **acceptance_criteria**:
   - GIVEN a recorded Documenten API that answers with two `bestandsdelen` WHEN a delivery is pushed THEN both parts are uploaded, the object is unlocked, and with `zaakUrl` a ZaakInformatieObject is created
-- [ ] Implement
-- [ ] Test (PHPUnit against recorded exchanges; one run against Open Zaak in the dev compose)
+- [x] Implement. `lib/Service/CaseSystem/ZgwDocumentDelivery.php`: creates the
+      EnkelvoudigInformatieObject with `bestandsomvang` (inline base64 when `inline`, for a
+      Documenten API 1.0), PUTs each `bestandsdeel` as multipart with the lock in volgnummer
+      order, refuses parts that do not add up to the file, unlocks, and with `zaakUrl` creates the
+      ZaakInformatieObject; a refusal after the create deletes the new document. The push handler
+      is `SynchronizationService::pushZgwDocument()`, chosen by `targetConfig.zgwDocument`
+      (`zakenSource`, `zaakUrlField`, `inline`, and `fileName`/`fileId`/`objectId` read like
+      `fileUpload`); a contract that holds a document url sends nothing (never updates); the
+      outcome is written back as in Task 1. The translator header points at the new class.
+- [ ] Test (PHPUnit against recorded exchanges; one run against Open Zaak in the dev compose).
+      PHPUnit done: `tests/Unit/Service/CaseSystem/ZgwDocumentDeliveryTest.php` (7, bodies
+      validated against Documenten 1.4.2 and Zaken 1.5.1) and
+      `tests/Unit/Service/SynchronizationZgwDocumentPushTest.php` (3, through the real
+      `updateTarget()`). Owed: the run against Open Zaak in the dev compose.
 
 ### Task 3: StUF-ZDS document message
 - **spec_ref**: `openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002`

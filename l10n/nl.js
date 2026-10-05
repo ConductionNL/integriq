@@ -1868,7 +1868,16 @@ OC.L10N.register(
         "Remove this kind": "Deze soort verwijderen",
         "Add a kind": "Soort toevoegen",
         "Answer from test data": "Antwoorden met testgegevens",
-        "Answers from built-in example cases instead of the case system. Nothing is stored.": "Antwoordt met ingebouwde voorbeeldzaken in plaats van het zaaksysteem. Er wordt niets opgeslagen."
+        "Answers from built-in example cases instead of the case system. Nothing is stored.": "Antwoordt met ingebouwde voorbeeldzaken in plaats van het zaaksysteem. Er wordt niets opgeslagen.",
+        "Write-back": "Terugschrijven",
+        "On success": "Bij succes",
+        "Fields to set when the target accepted the object": "Velden die worden gezet als het doel het object heeft geaccepteerd",
+        "On failure": "Bij mislukken",
+        "Fields to set when the target refused the object or could not be reached": "Velden die worden gezet als het doel het object weigerde of niet bereikbaar was",
+        "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent.": "Bij een push vanuit een register/schema-bron: velden die na elke poging op het bronobject worden gezet, stil geschreven zodat de push niet opnieuw start. Een waarde mag {{ response.* }}, {{ status }}, {{ targetId }} of {{ error.message }} bevatten. onFailure wordt geschreven zodra het herhaalbudget van de bron op is.",
+        "After each push, these fields are set on the object that started it. A value may hold {placeholders}.": "Na elke push worden deze velden gezet op het object dat de push startte. Een waarde mag {placeholders} bevatten.",
+        "Add field": "Veld toevoegen",
+        "Remove field": "Veld verwijderen"
     },
     "nplurals=2; plural=(n != 1);"
 )
