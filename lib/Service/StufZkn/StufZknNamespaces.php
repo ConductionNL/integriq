@@ -75,6 +75,14 @@ final class StufZknNamespaces {
 	public const XSI = 'http://www.w3.org/2001/XMLSchema-instance';
 
 	/**
+	 * XML-binary Optimized Packaging media type namespace — carries
+	 * `xmime:contentType` on a document's inline `inhoud`.
+	 *
+	 * @var string
+	 */
+	public const XMIME = 'http://www.w3.org/2005/05/xmlmime';
+
+	/**
 	 * Private constructor — constants-only class.
 	 */
 	private function __construct() {

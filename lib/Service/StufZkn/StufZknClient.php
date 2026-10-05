@@ -194,6 +194,96 @@ class StufZknClient implements StufZknProviderInterface {
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-rest-provider-sends-the-expected-content-type-and-mtls-routing
 	 */
 	public function send(array $sourceConfiguration, string $referenceNumber, string $envelopeXml): string {
+		$response = $this->post(sourceConfiguration: $sourceConfiguration, soapAction: '""', envelopeXml: $envelopeXml, url: '');
+
+		$status = $response->getStatusCode();
+		$body = (string)$response->getBody();
+		if ($status < 200 || $status >= 300) {
+			throw new StufZknProviderException(message: 'StUF-ZKN consumer endpoint responded with HTTP ' . $status . '.');
+		}
+
+		return $this->extractRef(body: $body, referenceNumber: $referenceNumber);
+	}//end send()
+
+	/**
+	 * Send one ZDS message and return the case system's answer.
+	 *
+	 * Unlike {@see send()}, the caller needs the answer itself (a Du02 carries
+	 * the document identificatie) and a refusal in the case system's own
+	 * words: a non-2xx answer throws with the Fo03 `code` and `omschrijving`,
+	 * else the SOAP `faultstring`, else the HTTP status.
+	 *
+	 * @param array  $sourceConfiguration The `stuf-zkn` source's `configuration` object.
+	 * @param string $soapAction          The ZDS SOAPAction (quoted), e.g. the voegZaakdocumentToe_Lk01 action.
+	 * @param string $envelopeXml         The rendered envelope.
+	 * @param string $url                 The service address; '' for `configuration.baseUrl`.
+	 *
+	 * @return string The answer body.
+	 *
+	 * @throws StufZknProviderException When the request fails or the case system refuses it.
+	 *
+	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
+	 */
+	public function exchange(array $sourceConfiguration, string $soapAction, string $envelopeXml, string $url=''): string {
+		$response = $this->post(sourceConfiguration: $sourceConfiguration, soapAction: $soapAction, envelopeXml: $envelopeXml, url: $url);
+
+		$status = $response->getStatusCode();
+		$body = (string)$response->getBody();
+		if ($status >= 200 && $status < 300) {
+			return $body;
+		}
+
+		throw new StufZknProviderException(message: 'The case system answered HTTP ' . $status . ': ' . $this->faultText(body: $body));
+	}//end exchange()
+
+	/**
+	 * The refusal text of a SOAP fault: Fo03 code and omschrijving, else faultstring.
+	 *
+	 * @param string $body The answer body.
+	 *
+	 * @return string The text, or 'no fault details' when the body carries none.
+	 */
+	private function faultText(string $body): string {
+		$parsed = $this->xmlParser->parse(xml: $body);
+		if ($parsed === null) {
+			return 'no fault details';
+		}
+
+		$parts = [];
+		foreach (['code', 'omschrijving', 'details'] as $name) {
+			$found = $parsed->xpath('//*[local-name()="Fo03Bericht"]/*[local-name()="body"]/*[local-name()="' . $name . '"]');
+			if (is_array($found) === true && $found !== [] && trim((string)$found[0]) !== '') {
+				$parts[] = trim((string)$found[0]);
+			}
+		}
+
+		if ($parts === []) {
+			$found = $parsed->xpath('//*[local-name()="Fault"]/*[local-name()="faultstring"]');
+			if (is_array($found) === true && $found !== [] && trim((string)$found[0]) !== '') {
+				$parts[] = trim((string)$found[0]);
+			}
+		}
+
+		if ($parts === []) {
+			return 'no fault details';
+		}
+
+		return implode(' ', $parts);
+	}//end faultText()
+
+	/**
+	 * POST an envelope with the SOAP headers, over mTLS when configured.
+	 *
+	 * @param array  $sourceConfiguration The `stuf-zkn` source's `configuration` object.
+	 * @param string $soapAction          The SOAPAction header value.
+	 * @param string $envelopeXml         The rendered envelope.
+	 * @param string $url                 The address; '' for `configuration.baseUrl`.
+	 *
+	 * @return ResponseInterface The answer, whatever its status.
+	 *
+	 * @throws StufZknProviderException When no address is configured or the transport fails.
+	 */
+	private function post(array $sourceConfiguration, string $soapAction, string $envelopeXml, string $url): ResponseInterface {
 		$baseUrl = trim((string)($sourceConfiguration['baseUrl'] ?? ''));
 		if ($baseUrl === '') {
 			throw new StufZknProviderException(
@@ -201,12 +291,16 @@ class StufZknClient implements StufZknProviderInterface {
 			);
 		}
 
+		if (trim($url) === '') {
+			$url = $baseUrl;
+		}
+
 		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
 		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
 
 		$headers = [
 			'Content-Type' => 'text/xml; charset=utf-8',
-			'SOAPAction' => '""',
+			'SOAPAction' => $soapAction,
 			'Accept' => 'text/xml, application/soap+xml',
 		];
 		if ($useMtls === false) {
@@ -223,7 +317,7 @@ class StufZknClient implements StufZknProviderInterface {
 			$response = $this->dispatch(
 				useMtls: $useMtls,
 				authConfig: $authConfig,
-				url: $baseUrl,
+				url: $url,
 				requestOptions: $requestOptions
 			);
 		} catch (MtlsTransportException $exception) {
@@ -246,14 +340,8 @@ class StufZknClient implements StufZknProviderInterface {
 			);
 		}//end try
 
-		$status = $response->getStatusCode();
-		$body = (string)$response->getBody();
-		if ($status < 200 || $status >= 300) {
-			throw new StufZknProviderException(message: 'StUF-ZKN consumer endpoint responded with HTTP ' . $status . '.');
-		}
-
-		return $this->extractRef(body: $body, referenceNumber: $referenceNumber);
-	}//end send()
+		return $response;
+	}//end post()
 
 	/**
 	 * Dispatch the request over mTLS when configured, else over the existing token-mode path.
