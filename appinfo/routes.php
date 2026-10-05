@@ -121,7 +121,7 @@ return [
 		// opt-out-before-send: GET only shows the page, POST writes (also the
 		// RFC 8058 one-click), and an SMS carries a short id resolved here.
 		['name' => 'senderIdentity#unsubscribeConfirm', 'url' => '/unsubscribe/{token}', 'verb' => 'POST', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
-		['name' => 'senderIdentity#shortLink', 'url' => '/u/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[A-Za-z0-9]{10}']],
+		['name' => 'senderIdentity#shortLink', 'url' => '/u/{shortToken}', 'verb' => 'GET', 'requirements' => ['shortToken' => '[A-Za-z0-9]{10}']],
 		// The opt-out list, read from integriq's own table. Administrators only.
 		['name' => 'senderIdentity#optOuts', 'url' => '/api/outbound/opt-outs', 'verb' => 'GET'],
 		// The opt-out decision log. Administrators only.

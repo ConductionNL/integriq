@@ -241,7 +241,8 @@ class SenderIdentityController extends Controller {
 	/**
 	 * Resolve a short SMS link to its token and show the same confirmation.
 	 *
-	 * @param string $id The ten-character id from the SMS.
+	 * @param string $shortToken The ten-character id from the SMS. It is the capability: random,
+	 *                           and it resolves only to a token whose signature is checked next.
 	 *
 	 * @return TemplateResponse The confirmation page, or 400 when the id is unknown or expired.
 	 *
@@ -253,8 +254,8 @@ class SenderIdentityController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 60, period: 60)]
-	public function shortLink(string $id): TemplateResponse {
-		$token = $this->tokens->resolveShort($id);
+	public function shortLink(string $shortToken): TemplateResponse {
+		$token = $this->tokens->resolveShort($shortToken);
 		if ($token === null) {
 			return $this->unsubscribePage(
 				state: 'invalid',
