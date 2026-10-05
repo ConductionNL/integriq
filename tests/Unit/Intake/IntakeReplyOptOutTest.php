@@ -50,6 +50,13 @@ class IntakeReplyOptOutTest extends TestCase {
 	public array $sentTexts = [];
 
 	/**
+	 * The last intake_message payload saved.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private array $saved = [];
+
+	/**
 	 * An opted-out sender still gets the answer to their own question.
 	 *
 	 * @return void
@@ -67,6 +74,7 @@ class IntakeReplyOptOutTest extends TestCase {
 		$this->assertCount(1, $asked, 'the reply was asked, not skipped');
 		$this->assertSame('reply', $asked[0]->getCategory());
 		$this->assertSame('intake-uuid', $asked[0]->getCorrelationId());
+		$this->assertSame('', $this->saved['replies'][0]['detail'], 'the schema types detail as a string, so never null');
 
 	}//end testAnOptedOutCitizenGetsTheAnswerToTheirOwnQuestion()
 
@@ -119,7 +127,10 @@ class IntakeReplyOptOutTest extends TestCase {
 			)
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			fn (array $object) => ObjectServiceMockBuilder::objectEntity($this, $object, 'intake-uuid')
+			function (array $object) {
+				$this->saved = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'intake-uuid');
+			}
 		);
 
 		$resolver = $this->getMockBuilder(IntakeChannelSourceResolver::class)

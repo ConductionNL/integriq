@@ -194,8 +194,12 @@ class IntakeReplyService {
 			$replies = [];
 		}
 
+		// Nulls become empty strings: the intake_message schema types every
+		// reply field as a string and OpenRegister refuses null, so a sent
+		// reply (no detail) or one without a channel reference would 500
+		// after it had already left.
 		$replies[] = array_merge(
-			$result->toArray(),
+			array_map(static fn ($value) => ($value ?? ''), $result->toArray()),
 			[
 				'text' => $text,
 				'at' => (new DateTimeImmutable())->format('c'),
