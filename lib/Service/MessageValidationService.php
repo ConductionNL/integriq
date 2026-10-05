@@ -70,7 +70,7 @@ class MessageValidationService {
 	 */
 	public function validate(array $messageSchema, mixed $payload, array $context = []): ValidationOutcome {
 		$kind = (string)($messageSchema['kind'] ?? '');
-		$document = (string)($messageSchema['document'] ?? '');
+		$document = self::documentText(document: ($messageSchema['document'] ?? ''));
 
 		return match ($kind) {
 			'json-schema' => $this->jsonSchema->check(schema: $document, payload: $payload),
@@ -95,7 +95,7 @@ class MessageValidationService {
 	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
 	 */
 	public function documentProblem(array $messageSchema): ?string {
-		$document = (string)($messageSchema['document'] ?? '');
+		$document = self::documentText(document: ($messageSchema['document'] ?? ''));
 
 		return match ((string)($messageSchema['kind'] ?? '')) {
 			'json-schema' => $this->jsonSchema->documentProblem(schema: $document),
@@ -104,4 +104,27 @@ class MessageValidationService {
 			default => null,
 		};
 	}//end documentProblem()
+
+	/**
+	 * The document as text, whatever shape OpenRegister handed it back in.
+	 *
+	 * OpenRegister decodes a stored text that parses as JSON, so a JSON Schema
+	 * or JSON OpenAPI document comes back from a read as an array, while an
+	 * XSD or YAML document stays text. A cast turned the array into "Array",
+	 * and every message was refused as "does not parse". An array or object is
+	 * encoded back to JSON, which every checker parses (JSON is YAML too).
+	 *
+	 * @param mixed $document The stored document.
+	 *
+	 * @return string The document text.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 */
+	private static function documentText(mixed $document): string {
+		if (is_array($document) === true || is_object($document) === true) {
+			return (string)json_encode($document, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
+		}
+
+		return (string)$document;
+	}//end documentText()
 }//end class
