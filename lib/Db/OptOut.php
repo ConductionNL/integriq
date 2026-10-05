@@ -48,10 +48,44 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDedupeKey(string $dedupeKey)
  * @method string|null getLegacyUuid()
  * @method void setLegacyUuid(?string $legacyUuid)
+ * @method string getState()
+ * @method void setState(string $state)
+ * @method string getChannel()
+ * @method void setChannel(string $channel)
+ * @method string getPurpose()
+ * @method void setPurpose(string $purpose)
+ * @method string getListRef()
+ * @method void setListRef(string $listRef)
+ * @method string getContactRef()
+ * @method void setContactRef(string $contactRef)
+ * @method string getLawfulBasis()
+ * @method void setLawfulBasis(string $lawfulBasis)
+ * @method string|null getEvidence()
+ * @method void setEvidence(?string $evidence)
+ * @method int|null getWithdrawnAt()
+ * @method void setWithdrawnAt(?int $withdrawnAt)
+ * @method string getSourceApp()
+ * @method void setSourceApp(string $sourceApp)
+ * @method int getUpdatedAt()
+ * @method void setUpdatedAt(int $updatedAt)
  *
  * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
  */
 class OptOut extends Entity implements JsonSerializable {
+
+	/**
+	 * The person asked not to be written to.
+	 *
+	 * @var string
+	 */
+	public const STATE_OPTED_OUT = 'opted-out';
+
+	/**
+	 * The person gave consent, with a lawful basis and evidence.
+	 *
+	 * @var string
+	 */
+	public const STATE_OPTED_IN = 'opted-in';
 
 	/**
 	 * The recipient address, lower case.
@@ -103,6 +137,76 @@ class OptOut extends Entity implements JsonSerializable {
 	protected $legacyUuid = null;
 
 	/**
+	 * `opted-out` or `opted-in`.
+	 *
+	 * @var string
+	 */
+	protected $state = self::STATE_OPTED_OUT;
+
+	/**
+	 * The channel a `channel` scoped row covers; empty for every channel.
+	 *
+	 * @var string
+	 */
+	protected $channel = '';
+
+	/**
+	 * What the consent is for, for example `marketing`.
+	 *
+	 * @var string
+	 */
+	protected $purpose = '';
+
+	/**
+	 * The list a `list` scoped row covers.
+	 *
+	 * @var string
+	 */
+	protected $listRef = '';
+
+	/**
+	 * The sibling app's contact, so a changed address still matches.
+	 *
+	 * @var string
+	 */
+	protected $contactRef = '';
+
+	/**
+	 * The AVG article 6 basis of an `opted-in` row.
+	 *
+	 * @var string
+	 */
+	protected $lawfulBasis = '';
+
+	/**
+	 * What was shown when consent was given, as JSON.
+	 *
+	 * @var string|null
+	 */
+	protected $evidence = null;
+
+	/**
+	 * When an `opted-in` row was withdrawn, as a unix timestamp.
+	 *
+	 * @var int|null
+	 */
+	protected $withdrawnAt = null;
+
+	/**
+	 * The app that recorded it.
+	 *
+	 * @var string
+	 */
+	protected $sourceApp = '';
+
+	/**
+	 * When the state last changed, as a unix timestamp.
+	 *
+	 * @var int
+	 */
+	protected $updatedAt = 0;
+
+	/**
 	 * Declare the column types.
 	 *
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
@@ -115,43 +219,89 @@ class OptOut extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'createdAt', type: 'integer');
 		$this->addType(fieldName: 'dedupeKey', type: 'string');
 		$this->addType(fieldName: 'legacyUuid', type: 'string');
+		$this->addType(fieldName: 'state', type: 'string');
+		$this->addType(fieldName: 'channel', type: 'string');
+		$this->addType(fieldName: 'purpose', type: 'string');
+		$this->addType(fieldName: 'listRef', type: 'string');
+		$this->addType(fieldName: 'contactRef', type: 'string');
+		$this->addType(fieldName: 'lawfulBasis', type: 'string');
+		$this->addType(fieldName: 'evidence', type: 'string');
+		$this->addType(fieldName: 'withdrawnAt', type: 'integer');
+		$this->addType(fieldName: 'sourceApp', type: 'string');
+		$this->addType(fieldName: 'updatedAt', type: 'integer');
 
 	}//end __construct()
 
 	/**
 	 * The key that makes one opt-out one row.
 	 *
+	 * The channel is appended only when it is not empty, so a row from before
+	 * channels existed keeps the key it has.
+	 *
 	 * @param string $address The recipient.
-	 * @param string $scope   Instance wide or one case.
-	 * @param string $caseRef The case, or empty.
+	 * @param string $scope   Instance, channel, case or list.
+	 * @param string $ref     The case for a case scope, the list for a list scope, or empty.
+	 * @param string $channel The channel, or empty.
 	 *
 	 * @return string The key.
 	 *
-	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-record-wishes-through-a-public-change-event-req-ooa-003
 	 */
-	public static function keyFor(string $address, string $scope, string $caseRef): string {
-		return hash('sha256', strtolower(trim($address)) . "\n" . $scope . "\n" . $caseRef);
+	public static function keyFor(string $address, string $scope, string $ref, string $channel = ''): string {
+		$material = strtolower(trim($address)) . "\n" . $scope . "\n" . $ref;
+		if ($channel !== '') {
+			$material .= "\n" . $channel;
+		}
+
+		return hash('sha256', $material);
 
 	}//end keyFor()
 
 	/**
-	 * Set the dedupe key from this row's address, scope and case.
+	 * Set the dedupe key from this row's address, scope, ref and channel.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-record-wishes-through-a-public-change-event-req-ooa-003
 	 */
 	public function assignDedupeKey(): void {
+		$ref = (string)$this->getCaseRef();
+		if ($this->getScope() === 'list') {
+			$ref = (string)$this->getListRef();
+		}
+
 		$this->setDedupeKey(
-			self::keyFor(address: (string)$this->getAddress(), scope: (string)$this->getScope(), caseRef: (string)$this->getCaseRef())
+			self::keyFor(
+				address: (string)$this->getAddress(),
+				scope: (string)$this->getScope(),
+				ref: $ref,
+				channel: (string)$this->getChannel()
+			)
 		);
 
 	}//end assignDedupeKey()
 
 	/**
+	 * The evidence as an array.
+	 *
+	 * @return array<string,mixed> The evidence, empty when there is none.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-marketing-needs-recorded-consent-req-ooa-005
+	 */
+	public function evidenceArray(): array {
+		$decoded = json_decode((string)$this->getEvidence(), true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return $decoded;
+
+	}//end evidenceArray()
+
+	/**
 	 * The row as the opt-out list and the registry read it.
 	 *
-	 * @return array{id:int|null,address:string,scope:string,caseRef:string,source:string,createdAt:string}
+	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
@@ -163,8 +313,33 @@ class OptOut extends Entity implements JsonSerializable {
 			'caseRef' => (string)$this->getCaseRef(),
 			'source' => (string)$this->getSource(),
 			'createdAt' => gmdate('c', (int)$this->getCreatedAt()),
+			'state' => (string)($this->getState() ?? self::STATE_OPTED_OUT),
+			'channel' => (string)$this->getChannel(),
+			'purpose' => (string)$this->getPurpose(),
+			'listRef' => (string)$this->getListRef(),
+			'contactRef' => (string)$this->getContactRef(),
+			'lawfulBasis' => (string)$this->getLawfulBasis(),
+			'withdrawnAt' => $this->formatTime(time: $this->getWithdrawnAt()),
+			'sourceApp' => (string)$this->getSourceApp(),
+			'updatedAt' => $this->formatTime(time: $this->getUpdatedAt()),
 		];
 
 	}//end jsonSerialize()
+
+	/**
+	 * A timestamp as ISO 8601, or null when it is not set.
+	 *
+	 * @param int|null $time The unix time.
+	 *
+	 * @return string|null The time.
+	 */
+	private function formatTime(?int $time): ?string {
+		if ($time === null || $time === 0) {
+			return null;
+		}
+
+		return gmdate('c', $time);
+
+	}//end formatTime()
 
 }//end class
