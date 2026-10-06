@@ -7,6 +7,17 @@ depends_on: []
 
 ## Summary
 
+Serve the read half of the VNG Catalogi API (`catalogussen` and `informatieobjecttypen`) over the OpenRegister schema that holds the organisation's document types, so a Documenten API needs no second catalogue.
+
+- Rows: Woo row 17.18 "The product serves the catalogue a standard document store needs, so no second catalogue is kept" (not statutory).
+- Wave: 2.
+- Depends on: `filinq/document-register` (outside this plan; https://github.com/ConductionNL/filinq/issues/481) for the `documentType` schema, and reuses `integriq/objecten-api-facade` (no issue; https://github.com/ConductionNL/integriq/tree/development/openspec/changes/objecten-api-facade).
+- Decision: none governs this row directly; the TOOI source for the information categories follows D3 (2026-10-05), the TOOI lists live once, in OpenRegister's concept register.
+
+Build rules: openspec/woo-build-rules.md
+
+## Overview
+
 Integriq serves the read half of the VNG Catalogi API for document types:
 `catalogussen` and `informatieobjecttypen`, as endpoint configuration over the
 OpenRegister schema that holds the organisation's document types (filinq's

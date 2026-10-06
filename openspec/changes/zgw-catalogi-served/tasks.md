@@ -61,7 +61,7 @@ binding, handler or starter set exists.
 
 ## Verification
 
-The building agent follows `~/memcap-work/woo-build/LANE-RULES-BUILD.md`:
+The building agent follows `openspec/woo-build-rules.md`:
 
 - [ ] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
 - [ ] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.
