@@ -7,6 +7,17 @@ depends_on: []
 
 ## Summary
 
+Make every outbound destination integriq sends data to say where it sits, list them on one admin page with an "EU only" or "not proven" verdict, and offer an opt-in EU-only mode that refuses calls elsewhere.
+
+- Rows: Woo row 17.11 "The whole thing runs on infrastructure inside the EU, provably" (not statutory), for the part integriq controls: its own outbound destinations.
+- Wave: 2.
+- Depends on: nothing in this plan. It builds on the archived spec `openspec/specs/connection-registry` on `development`.
+- Decision: no Ruben decision governs this row.
+
+Build rules: openspec/woo-build-rules.md
+
+## Overview
+
 Every outbound destination integriq sends data to says where it sits: a
 country, who said so, and on what evidence. One admin page lists every
 destination with its location, including hosts the call log shows that no
