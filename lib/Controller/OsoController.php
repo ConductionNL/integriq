@@ -164,6 +164,10 @@ class OsoController extends Controller {
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
+	 * @contract tests/Unit/Controller/XmlWebhooksConsumerTest.php — signed delivery stored as the
+	 *           connection's account, 503 without an account, 401 on a wrong signature
+	 *           (data provider `webhooks()`, which calls the method by name)
+	 *
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 * @spec openspec/changes/oso-inbound-on-the-consumer-model/specs/oso-adapter/spec.md#requirement-the-import-and-the-retour-act-as-the-oso-connections-account-req-020
 	 */
