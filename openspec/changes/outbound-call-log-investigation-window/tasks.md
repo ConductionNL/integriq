@@ -54,27 +54,9 @@ stores its body.
 - [ ] Test: PHPUnit `tests/Unit/BackgroundJob/LogCleanUpTaskTest.php` (`testExpiredBodiesAreStrippedAndTheRecordKept`, `testReplayRequestEndsWithTheErrorRetention`)
 - [ ] Wiring: assert the task is still registered in `appinfo/info.xml` `<background-jobs>` and runs the new step from `run()`
 
-### Task 5: The code allowlist
-- **spec_ref**: `openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010`
-- **files**: `lib/Outbound/Call/BodyCapturePolicy.php` (`LOG_BODY_ALLOWLIST`), `lib/Service/CallService.php` (`normaliseConfig()` honours `logBody` only for a listed caller, passed explicitly)
-- **acceptance_criteria**:
-  - GIVEN the SLO adapter WHEN it passes `logBody` THEN the response body is stored
-  - GIVEN any other class under `lib/` that passes `logBody` WHEN the suite runs THEN the scan test fails naming it
-- [ ] Implement
-- [ ] Test: PHPUnit `CallServiceBodyCaptureTest::testOnlyListedCallersPassLogBody` (scans `lib/` for `'logBody'` and compares against the allowlist)
-
-### Task 6: The source page
-- **spec_ref**: `openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008`
-- **files**: the source detail page, a dialog in its own file under `src/dialogs/` (hours, reason), `l10n/en.json`, `l10n/nl.json`, `docs/features/outbound-call-log.md`
-- **acceptance_criteria**:
-  - GIVEN a source without a window WHEN an administrator opens one THEN the page shows "Bodies are stored until {time}" and a button to stop early
-  - GIVEN a record in the call log WHEN it was not captured THEN the detail says "No body stored: no investigation window was open"
-- [ ] Implement
-- [ ] Test: Playwright `tests/e2e/outbound-call-log.spec.ts` (open a window, see a captured record, stop early)
-
 ## Verification
 
-The building agent follows `~/memcap-work/woo-build/LANE-RULES-BUILD.md`:
+The building agent follows `openspec/woo-build-rules.md`:
 
 - [ ] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
 - [ ] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.

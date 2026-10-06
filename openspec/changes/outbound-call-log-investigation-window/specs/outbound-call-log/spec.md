@@ -69,7 +69,7 @@ NOT be able to open a window.
 - GIVEN the source `zgw-zaken` without a window, and an administrator
 - WHEN she opens a window of 24 hours with the reason "melding 4711: verkeerde zaaktypen"
 - THEN calls to `zgw-zaken` in the next 24 hours store their request and response bodies, the record says `bodyCaptured: true`, and the source's audit trail names her and the reason
-- e2e: `tests/e2e/outbound-call-log.spec.ts`
+- @e2e exclude the page that opens a window is built in outbound-call-log-investigation-window-page-and-allowlist; covered here by PHPUnit `BodyCaptureControllerTest::testAnAdministratorOpensAWindowWithAReason` and `CallServiceBodyCaptureTest::testASuccessInsideAWindowStoresBothBodies`
 
 #### Scenario: the window switches itself off
 - GIVEN a window on `zgw-zaken` that ended one minute ago
@@ -113,17 +113,3 @@ succeeds or when the record's error retention ends.
 - WHEN an administrator with the replay permission replays it
 - THEN the original request is sent again, and after the replay succeeds the record no longer holds `replayRequest`
 - @e2e exclude a replay payload lifecycle; covered by PHPUnit `CallReplayServiceTest::testASuccessfulReplayRemovesTheReplayRequest`
-
-### Requirement: Code may keep bodies only for listed public-data callers (REQ-OCD-010)
-
-The per-call `logBody` option MUST be honoured only for callers on an allowlist
-held in one constant. The allowlist MUST contain exactly the callers whose data
-is public. On `development` at the time of writing that is
-`OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp`. A test MUST fail when a
-class outside the allowlist passes `logBody`.
-
-#### Scenario: a new caller cannot switch body logging on in code
-- GIVEN a class outside the allowlist that passes `logBody: true`
-- WHEN the test suite runs
-- THEN `CallServiceBodyCaptureTest::testOnlyListedCallersPassLogBody` fails, naming the class
-- @e2e exclude a source scan; covered by PHPUnit

@@ -7,6 +7,17 @@ depends_on: []
 
 ## Summary
 
+Store the bodies of outgoing calls only while an administrator has opened a bounded investigation window on that source, keep a failed call replayable, and age captured bodies out.
+
+- Rows: Woo row 13.23 "Outgoing request logging can be switched on for an investigation and switches itself off again" (not statutory). The row closes when the second part lands too.
+- Wave: 1.
+- Depends on: nothing. The second part, `integriq/outbound-call-log-investigation-window-page-and-allowlist`, depends on this one and builds item 6 of "What changes" (the code allowlist) and the source page.
+- Decision: D5 (2026-10-05), the row wins over REQ-OCD-001: body capture is opt-in and time-boxed.
+
+Build rules: openspec/woo-build-rules.md
+
+## Overview
+
 Integriq keeps the body of outgoing calls in its call log by default, and keeps
 it for as long as the record lives. This change turns that around. Status,
 timing and redacted headers stay on every record. The request and response
