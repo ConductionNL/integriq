@@ -3262,6 +3262,8 @@ OC.L10N.register(
         "Stop everything that is not statutory": "Stop everything that is not statutory",
         "Done. You will no longer receive messages from us, except statutory notices such as a besluit.": "Done. You will no longer receive messages from us, except statutory notices such as a besluit.",
         "You will no longer receive these messages by %s.": "You will no longer receive these messages by %s.",
+        "You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.": "You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.",
+        "You will no longer receive newsletters and campaigns from us. Other messages, such as appointment reminders, still arrive.": "You will no longer receive newsletters and campaigns from us. Other messages, such as appointment reminders, still arrive.",
         "You will no longer receive messages from this list.": "You will no longer receive messages from this list.",
         "You will no longer receive messages from us.": "You will no longer receive messages from us.",
         "You will no longer receive updates about this case.": "You will no longer receive updates about this case.",

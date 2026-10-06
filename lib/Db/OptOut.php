@@ -239,21 +239,29 @@ class OptOut extends Entity implements JsonSerializable {
 	 * The key that makes one opt-out one row.
 	 *
 	 * The channel is appended only when it is not empty, so a row from before
-	 * channels existed keeps the key it has.
+	 * channels existed keeps the key it has. The purpose is appended the same
+	 * way, behind a label so it can never read as a channel: a marketing
+	 * opt-out and a "stop everything" opt-out on one scope are two rows.
 	 *
 	 * @param string $address The recipient.
 	 * @param string $scope   Instance, channel, case or list.
 	 * @param string $ref     The case for a case scope, the list for a list scope, or empty.
 	 * @param string $channel The channel, or empty.
+	 * @param string $purpose The purpose, or empty for everything.
 	 *
 	 * @return string The key.
 	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-record-wishes-through-a-public-change-event-req-ooa-003
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
 	 */
-	public static function keyFor(string $address, string $scope, string $ref, string $channel = ''): string {
+	public static function keyFor(string $address, string $scope, string $ref, string $channel = '', string $purpose = ''): string {
 		$material = strtolower(trim($address)) . "\n" . $scope . "\n" . $ref;
 		if ($channel !== '') {
 			$material .= "\n" . $channel;
+		}
+
+		if ($purpose !== '') {
+			$material .= "\npurpose:" . $purpose;
 		}
 
 		return hash('sha256', $material);
@@ -261,7 +269,7 @@ class OptOut extends Entity implements JsonSerializable {
 	}//end keyFor()
 
 	/**
-	 * Set the dedupe key from this row's address, scope, ref and channel.
+	 * Set the dedupe key from this row's address, scope, ref, channel and purpose.
 	 *
 	 * @return void
 	 *
@@ -278,7 +286,8 @@ class OptOut extends Entity implements JsonSerializable {
 				address: (string)$this->getAddress(),
 				scope: (string)$this->getScope(),
 				ref: $ref,
-				channel: (string)$this->getChannel()
+				channel: (string)$this->getChannel(),
+				purpose: (string)$this->getPurpose()
 			)
 		);
 

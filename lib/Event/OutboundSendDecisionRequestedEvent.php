@@ -72,6 +72,7 @@ class OutboundSendDecisionRequestedEvent extends Event {
 	 * @param string $baseUrl The instance url the link is built on; empty for integriq's own.
 	 * @param bool $requiresConsent True for marketing and business-initiated WhatsApp.
 	 * @param string|null $inReplyTo The inbound message a `reply` answers.
+	 * @param bool $probe True to only show a state: no log row, no unsubscribe material.
 	 */
 	public function __construct(
 		private readonly string $sourceApp,
@@ -82,6 +83,7 @@ class OutboundSendDecisionRequestedEvent extends Event {
 		private readonly string $baseUrl = '',
 		private readonly bool $requiresConsent = false,
 		private readonly ?string $inReplyTo = null,
+		private readonly bool $probe = false,
 	) {
 		parent::__construct();
 
@@ -166,6 +168,20 @@ class OutboundSendDecisionRequestedEvent extends Event {
 		return $this->inReplyTo;
 
 	}//end getInReplyTo()
+
+	/**
+	 * Whether this ask only shows a state. A probe gets the same answer,
+	 * without unsubscribe material, and integriq writes no log row for it.
+	 * Ask without it before a real send, so the send is logged.
+	 *
+	 * @return bool True for a probe.
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-a-probe-answers-without-writing-req-ooa-012
+	 */
+	public function isProbe(): bool {
+		return $this->probe;
+
+	}//end isProbe()
 
 	/**
 	 * Record the decision for one recipient.

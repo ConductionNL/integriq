@@ -28,6 +28,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Outbound\Identity\DomainAlignmentChecker;
 use OCA\Integriq\Outbound\Identity\HoldQueue;
+use OCA\Integriq\Outbound\Identity\OptOutCategories;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
@@ -312,6 +313,7 @@ class SenderIdentityController extends Controller {
 					'address' => $claim['address'],
 					'state' => 'opted-out',
 					'scope' => OptOutRegistry::SCOPE_INSTANCE,
+					'purpose' => OptOutCategories::PURPOSE_ALL,
 					'source' => $source,
 					'sourceApp' => 'integriq',
 				]
@@ -336,6 +338,7 @@ class SenderIdentityController extends Controller {
 					'scope' => $claim['scope'],
 					'channel' => $claim['channel'],
 					'ref' => $claim['ref'],
+					'purpose' => $claim['purpose'],
 					'source' => $source,
 					'sourceApp' => 'integriq',
 				]
@@ -408,6 +411,17 @@ class SenderIdentityController extends Controller {
 	 * @return string The sentence.
 	 */
 	private function describe(array $claim): string {
+		if ($claim['purpose'] === OptOutCategories::PURPOSE_MARKETING) {
+			if ($claim['scope'] === OptOutRegistry::SCOPE_CHANNEL) {
+				return $this->l->t(
+					'You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.',
+					[$claim['channel']]
+				);
+			}
+
+			return $this->l->t('You will no longer receive newsletters and campaigns from us. Other messages, such as appointment reminders, still arrive.');
+		}
+
 		return match ($claim['scope']) {
 			OptOutRegistry::SCOPE_CHANNEL => $this->l->t('You will no longer receive these messages by %s.', [$claim['channel']]),
 			OptOutRegistry::SCOPE_LIST => $this->l->t('You will no longer receive messages from this list.'),
@@ -433,7 +447,8 @@ class SenderIdentityController extends Controller {
 		);
 		$params = $response->getParams();
 		$params['action'] = $this->urls->linkToRoute('integriq.senderIdentity.unsubscribeConfirm', ['token' => $token]);
-		$params['offerAll'] = ($claim['scope'] !== OptOutRegistry::SCOPE_INSTANCE);
+		// Offer to stop everything unless this link already does.
+		$params['offerAll'] = ($claim['scope'] !== OptOutRegistry::SCOPE_INSTANCE || $claim['purpose'] !== OptOutCategories::PURPOSE_ALL);
 		$response->setParams($params);
 
 		return $response;

@@ -1928,6 +1928,8 @@
         "Stop everything that is not statutory": "Alles stoppen wat niet wettelijk verplicht is",
         "Done. You will no longer receive messages from us, except statutory notices such as a besluit.": "Gelukt. U krijgt geen berichten meer van ons, behalve wettelijk verplichte berichten zoals een besluit.",
         "You will no longer receive these messages by %s.": "U krijgt deze berichten niet meer via %s.",
+        "You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.": "U krijgt geen nieuwsbrieven en campagnes meer via %s. Andere berichten, zoals afspraakherinneringen, blijven komen.",
+        "You will no longer receive newsletters and campaigns from us. Other messages, such as appointment reminders, still arrive.": "U krijgt geen nieuwsbrieven en campagnes meer van ons. Andere berichten, zoals afspraakherinneringen, blijven komen.",
         "You will no longer receive messages from this list.": "U krijgt geen berichten meer van deze lijst.",
         "You will no longer receive messages from us.": "U krijgt geen berichten meer van ons.",
         "You will no longer receive updates about this case.": "U krijgt geen updates meer over deze zaak.",

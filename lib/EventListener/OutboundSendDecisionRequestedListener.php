@@ -86,7 +86,8 @@ class OutboundSendDecisionRequestedListener implements IEventListener {
 				sourceApp: $event->getSourceApp(),
 				correlationId: $event->getCorrelationId(),
 				baseUrl: $event->getBaseUrl(),
-				inReplyTo: $event->getInReplyTo()
+				inReplyTo: $event->getInReplyTo(),
+				probe: $event->isProbe()
 			);
 		} catch (Throwable $exception) {
 			$event->setHandled(false);
