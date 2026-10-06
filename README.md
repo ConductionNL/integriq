@@ -279,6 +279,33 @@ Full documentation is available at **[conductionnl.github.io/integriq](https://c
 | [Security](docs/security-best-practices.md) | Security best practices and authentication patterns |
 | [User API](docs/user-api.md) | User management and authentication API reference |
 
+<!-- discovery:start -->
+## Standards & federation
+
+| Standard | Role | Access |
+|---|---|---|
+| [VNG Objecten API](https://github.com/maykinmedia/objects-api) 2 | Provides | Token, no login |
+| [VNG Objecttypen API](https://github.com/maykinmedia/objecttypes-api) 2 | Provides | Token, no login |
+| DSO-LV STAM koppelvlak (verzoeken receiver) | Provides | Token, no login |
+| StUF-ZKN kennisgevingen receiver (zakLk01) 3.10 | Provides | Token, no login |
+| StUF-ZKN client (outbound kennisgevingen and documents) 3.10 | Uses | — |
+| [LTI 1.3 / LTI Advantage (tool and platform, AGS, NRPS)](https://www.imsglobal.org/spec/lti/v1p3/) 1.3 | Provides | Token, no login |
+| [OpenID for Verifiable Credential Issuance (pre-authorized code; jwt_vc_json, dc+sd-jwt)](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) | Provides | Public |
+| [CloudEvents (HTTP binding) event publication](https://github.com/cloudevents/spec) | Provides | Nextcloud login |
+| [ZGW Notificaties API subscriber (abonnementen + callback)](https://vng-realisatie.github.io/gemma-zaken/standaard/notificaties/) | Uses | — |
+| [ZGW Zaken API client (case-system mapping)](https://vng-realisatie.github.io/gemma-zaken/standaard/zaken/) | Uses | — |
+| [ZGW Documenten API client (case-system mapping)](https://vng-realisatie.github.io/gemma-zaken/standaard/documenten/) | Uses | — |
+| [Peppol via an external Access Point (send, SMP lookup, inbound callback)](https://docs.peppol.eu/) | Uses | — |
+| Federatieve Service Connectiviteit (FSC) client | Uses | — |
+| VNG Klantinteracties API client | Uses | — |
+| Edukoppeling (WUS) clients: DUO ROD, DUO Verzuimloket | Uses | — |
+| Overstapservice Onderwijs (OSO) client | Uses | — |
+| UWLR / Edu-V exchange client | Uses | — |
+| PDOK Locatieserver geocoding client 3.1 | Uses | — |
+
+Other servers can read this list without logging in, from the Nextcloud capabilities endpoint (published by OpenRegister). Details, federation and admin switches: [docs/standards-and-federation.md](docs/standards-and-federation.md).
+<!-- discovery:end -->
+
 ## Standards & Compliance
 
 - **API standard:** OpenAPI Specification (OAS) for configuration export

@@ -4828,5 +4828,144 @@
         ]
       }
     ]
+  },
+  "discovery": {
+    "public": true,
+    "standards": [
+      {
+        "id": "objecten-api",
+        "name": "VNG Objecten API",
+        "version": "2",
+        "role": "provides",
+        "access": "token",
+        "endpoint": "/apps/integriq/api/v2/objects",
+        "specUrl": "https://github.com/maykinmedia/objects-api"
+      },
+      {
+        "id": "objecttypen-api",
+        "name": "VNG Objecttypen API",
+        "version": "2",
+        "role": "provides",
+        "access": "token",
+        "endpoint": "/apps/integriq/api/v2/objecttypes",
+        "specUrl": "https://github.com/maykinmedia/objecttypes-api"
+      },
+      {
+        "id": "dso",
+        "name": "DSO-LV STAM koppelvlak (verzoeken receiver)",
+        "role": "provides",
+        "access": "token",
+        "endpoint": "/apps/integriq/api/dso/stam/verzoeken"
+      },
+      {
+        "id": "stuf-zkn",
+        "name": "StUF-ZKN kennisgevingen receiver (zakLk01)",
+        "version": "3.10",
+        "role": "provides",
+        "access": "token",
+        "endpoint": "/apps/integriq/api/stuf-zkn/inbound"
+      },
+      {
+        "id": "stuf-zkn",
+        "name": "StUF-ZKN client (outbound kennisgevingen and documents)",
+        "version": "3.10",
+        "role": "consumes",
+        "access": "authenticated"
+      },
+      {
+        "id": "lti",
+        "name": "LTI 1.3 / LTI Advantage (tool and platform, AGS, NRPS)",
+        "version": "1.3",
+        "role": "provides",
+        "access": "token",
+        "endpoint": "/apps/integriq/api/lti",
+        "specUrl": "https://www.imsglobal.org/spec/lti/v1p3/"
+      },
+      {
+        "id": "openid4vci",
+        "name": "OpenID for Verifiable Credential Issuance (pre-authorized code; jwt_vc_json, dc+sd-jwt)",
+        "role": "provides",
+        "access": "public",
+        "endpoint": "/apps/integriq/.well-known/openid-credential-issuer",
+        "specUrl": "https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html"
+      },
+      {
+        "id": "cloudevents",
+        "name": "CloudEvents (HTTP binding) event publication",
+        "role": "provides",
+        "access": "authenticated",
+        "specUrl": "https://github.com/cloudevents/spec"
+      },
+      {
+        "id": "zgw-notificaties",
+        "name": "ZGW Notificaties API subscriber (abonnementen + callback)",
+        "role": "consumes",
+        "access": "token",
+        "endpoint": "/apps/integriq/api/notificaties/callback",
+        "specUrl": "https://vng-realisatie.github.io/gemma-zaken/standaard/notificaties/"
+      },
+      {
+        "id": "zgw-zaken",
+        "name": "ZGW Zaken API client (case-system mapping)",
+        "role": "consumes",
+        "access": "authenticated",
+        "specUrl": "https://vng-realisatie.github.io/gemma-zaken/standaard/zaken/"
+      },
+      {
+        "id": "zgw-documenten",
+        "name": "ZGW Documenten API client (case-system mapping)",
+        "role": "consumes",
+        "access": "authenticated",
+        "specUrl": "https://vng-realisatie.github.io/gemma-zaken/standaard/documenten/"
+      },
+      {
+        "id": "peppol",
+        "name": "Peppol via an external Access Point (send, SMP lookup, inbound callback)",
+        "role": "consumes",
+        "access": "token",
+        "endpoint": "/apps/integriq/api/peppol/inbound",
+        "specUrl": "https://docs.peppol.eu/"
+      },
+      {
+        "id": "fsc",
+        "name": "Federatieve Service Connectiviteit (FSC) client",
+        "role": "consumes",
+        "access": "authenticated"
+      },
+      {
+        "id": "klantinteracties",
+        "name": "VNG Klantinteracties API client",
+        "role": "consumes",
+        "access": "authenticated"
+      },
+      {
+        "id": "edukoppeling",
+        "name": "Edukoppeling (WUS) clients: DUO ROD, DUO Verzuimloket",
+        "role": "consumes",
+        "access": "authenticated"
+      },
+      {
+        "id": "oso",
+        "name": "Overstapservice Onderwijs (OSO) client",
+        "role": "consumes",
+        "access": "authenticated"
+      },
+      {
+        "id": "uwlr",
+        "name": "UWLR / Edu-V exchange client",
+        "role": "consumes",
+        "access": "authenticated"
+      },
+      {
+        "id": "pdok",
+        "name": "PDOK Locatieserver geocoding client",
+        "version": "3.1",
+        "role": "consumes",
+        "access": "authenticated"
+      }
+    ],
+    "links": {
+      "openid-credential-issuer": "/apps/integriq/.well-known/openid-credential-issuer"
+    }
   }
 }
