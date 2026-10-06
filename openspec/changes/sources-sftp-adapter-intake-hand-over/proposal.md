@@ -31,12 +31,17 @@ intake app through a typed event.
 
 1. `target: intake` with `intakeApp` on a watched-folder synchronization.
 2. `OCA\Integriq\Event\WatchedFileArrivedEvent`, constructed as
-   `new WatchedFileArrivedEvent(string $synchronizationId, string $intakeApp,
-   int $fileId, string $path, string $ownerUid)`, with `accept(string
-   $reference): void` and `getResult(): array` answering `accepted` (bool),
-   `intakeApp` (string) and `reference` (string or null). The result starts
-   as not accepted, and only a listener whose app id equals `intakeApp` may
-   accept.
+   `new WatchedFileArrivedEvent(string $synchronizationId, string $sourceId,
+   string $intakeApp, int $fileId, string $path, string $ownerUid)`, with the
+   getters `getSynchronizationId(): string`, `getSourceId(): string`,
+   `getIntakeApp(): string`, `getFileId(): int`, `getPath(): string` and
+   `getOwnerUid(): string`, `accept(string $appId, string $reference): bool`
+   and `getResult(): array` answering `accepted` (bool), `intakeApp` (string)
+   and `reference` (string or null). The result starts as not accepted.
+   `accept()` answers `false` and changes nothing unless `$appId` equals
+   `intakeApp`, the reference is not empty and the event was not accepted
+   before. The dispatcher carries no caller identity, so the app id argument
+   is how a listener says which app accepts.
 3. `docs/features/watched-folder.md` states that contract for filinq and any
    other intake, with the `class_exists()` guard a consumer needs when
    integriq is absent.
@@ -56,8 +61,9 @@ folder, is not moved or tagged, and is reported as `unclaimed` on the run.
 ## Dependencies
 
 - `integriq/sources-sftp-adapter-watched-folder`, the second part. Build after it has merged.
-- filinq's consumer is filinq's own open task
-  (`filinq/scan-intake-with-separator-sheets` task 3.2), not part of this
-  change. It needs its own test on the filinq side dispatching this same
-  class.
+- filinq's consumer is `filinq/scan-intake-from-a-watched-folder`
+  (https://github.com/ConductionNL/filinq/issues/1351), which carries out
+  task 3.2 of `filinq/scan-intake-with-separator-sheets`. It is not part of
+  this change. It names the identical signature and has its own test on the
+  filinq side dispatching this same class.
 - Wave 1. Implements decision D4.

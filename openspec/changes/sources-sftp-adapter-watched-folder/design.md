@@ -35,13 +35,15 @@ they are doubled.
 
 Target `intake`. The job dispatches
 `OCA\Integriq\Event\WatchedFileArrivedEvent`, constructed as
-`new WatchedFileArrivedEvent(string $synchronizationId, string $intakeApp,
-int $fileId, string $path, string $ownerUid)`. A consumer whose app id equals
-`intakeApp` calls `accept(string $reference)`. `getResult(): array` answers
+`new WatchedFileArrivedEvent(string $synchronizationId, string $sourceId,
+string $intakeApp, int $fileId, string $path, string $ownerUid)`, with a getter
+for each argument (REQ-SFTP-005 in `sources-sftp-adapter-intake-hand-over` is
+the contract). A consumer whose app id equals `intakeApp` calls
+`accept(string $appId, string $reference): bool`. `getResult(): array` answers
 `accepted` (bool), `intakeApp` (string) and `reference` (string or null), and
 starts as `['accepted' => false, 'intakeApp' => $intakeApp, 'reference' =>
 null]`. filinq's scan intake will call `ScanBatchService::receive()` from its
-listener and accept with the batch id.
+listener and accept as `filinq` with the batch uuid.
 
 After. Only when the save or the accept succeeded, the job moves the file to
 `processedPath` or assigns the system tag `integriq-ingested` through
