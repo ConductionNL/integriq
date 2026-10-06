@@ -90,7 +90,7 @@ final class OpenRegisterAutoloader {
 	 * Idempotent: a second call while registered is a no-op.
 	 *
 	 * @param \OCP\App\IAppManager|null $appManager Injected for tests; resolved
-	 *                                               from the server when null.
+	 *                                              from the server when null.
 	 *
 	 * @return bool True when the prefix is registered, false when OpenRegister
 	 *              is absent, disabled, or otherwise unresolvable — in which
