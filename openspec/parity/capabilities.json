@@ -510,7 +510,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/CallService.php:1194-1260 dispatchRequest() builds a Guzzle request from source location/config when sourceData['type'] !== 'soap'; lib/Settings/integriq_register.json:145 source.type enum includes 'api'"
+				"evidence": "lib/Service/CallService.php:1194-1260 dispatchRequest() builds a Guzzle request from source location/config when sourceData['type'] !== 'soap'; lib/Settings/integriq_register.json:145 source.type enum includes 'api'",
+				"spec": "openspec/specs/http-call-engine"
 			},
 			"reachedOn": "/sources index -> create/edit Source (type=api, location, headers) -> SourcesController#test (POST /api/sources/test/{id}) or any Endpoint of targetType=api proxying through CallService::call()",
 			"note": "Plain REST/HTTP calling is the base of the engine: location + headers + method, Guzzle underneath.",
@@ -542,7 +543,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/CallService.php:1215-1220 dispatchRequest() branches to `new SOAPService($this->cookieJar)` when sourceData['type']==='soap'; lib/Service/SOAPService.php:44-75 builds a WSDL-based SOAP engine (Soap\\Engine, ExtSoapDriver) and calls callSoapSource(); src/modals/v2/SourceFormFields.vue:324 type option {id:'soap', label:'SOAP'}"
+				"evidence": "lib/Service/CallService.php:1215-1220 dispatchRequest() branches to `new SOAPService($this->cookieJar)` when sourceData['type']==='soap'; lib/Service/SOAPService.php:44-75 builds a WSDL-based SOAP engine (Soap\\Engine, ExtSoapDriver) and calls callSoapSource(); src/modals/v2/SourceFormFields.vue:324 type option {id:'soap', label:'SOAP'}",
+				"spec": "openspec/specs/http-call-engine"
 			},
 			"reachedOn": "/sources index -> create Source, type = SOAP -> source detail Test connection (SourcesController#test) or an Endpoint proxying to it",
 			"note": "Requires ext-soap/ext-xsd per the code comment; no separate check that those extensions are enabled at runtime.",
@@ -607,7 +609,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Twig/AuthenticationExtension.php:35 registers Twig function oauthToken -> lib/Twig/AuthenticationRuntime.php:54 oauthToken($source) -> lib/Service/AuthenticationService.php:280 fetchOAuthTokens() (client-credentials and password grants, createClientCredentialConfig/createPasswordConfig at lines 189/240); CallService's call-Twig sandbox allows the 'oauthToken' function (CallService.php:222-224)"
+				"evidence": "lib/Twig/AuthenticationExtension.php:35 registers Twig function oauthToken -> lib/Twig/AuthenticationRuntime.php:54 oauthToken($source) -> lib/Service/AuthenticationService.php:280 fetchOAuthTokens() (client-credentials and password grants, createClientCredentialConfig/createPasswordConfig at lines 189/240); CallService's call-Twig sandbox allows the 'oauthToken' function (CallService.php:222-224)",
+				"spec": "openspec/specs/authentication-twig"
 			},
 			"reachedOn": "/sources/:id edit form -> 'headers' or 'configuration' JSON field, admin writes e.g. {\"Authorization\": \"Bearer {{ oauthToken(source) }}\"} referencing configuration.authentication.* (grant_type/tokenUrl/client_id/client_secret)",
 			"note": "No dedicated OAuth UI: the admin hand-writes the Twig call into a generic JSON field, same limitation noted on src-auth-basic. The token is fetched fresh on every call (no cache found in AuthenticationRuntime/oauthToken), so it can never be stale, which trivially satisfies 'refreshed before it expires' at the cost of one extra token-endpoint round trip per call.",
@@ -639,7 +642,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Twig/AuthenticationExtension.php:36 registers jwtToken -> lib/Service/AuthenticationService.php:518 fetchJWTToken(), which builds and signs a JWT from configuration (getJWK/getRSJWK/getHSJWK/generateJWT at lines 359-518)"
+				"evidence": "lib/Twig/AuthenticationExtension.php:36 registers jwtToken -> lib/Service/AuthenticationService.php:518 fetchJWTToken(), which builds and signs a JWT from configuration (getJWK/getRSJWK/getHSJWK/generateJWT at lines 359-518)",
+				"spec": "openspec/specs/authentication-twig"
 			},
 			"reachedOn": "/sources/:id edit form -> headers/configuration JSON field, admin writes {{ jwtToken(source) }} into an Authorization header, referencing configuration.authentication JWK/algorithm settings",
 			"note": "Same manual-wiring caveat as OAuth: no dedicated JWT UI, it is a Twig function the admin must call themselves in a free-form field.",
@@ -671,7 +675,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/CallService.php:649-670 getCertificate() writes config['cert']/config['ssl_key'] to temp files and hands them to Guzzle as client-cert options; these keys are populated from the source's free-form 'configuration' object via mergeSourceConfiguration()/applyConfigDot() (CallService.php:835-845), since configuration.cert/configuration.ssl_key are not schema-rejected outside the credentialRef broker path (lib/Settings/integriq_register.json:245 explicitly says cert/ssl_key are only rejected 'in v1' for the credentialRef/broker branch)"
+				"evidence": "lib/Service/CallService.php:649-670 getCertificate() writes config['cert']/config['ssl_key'] to temp files and hands them to Guzzle as client-cert options; these keys are populated from the source's free-form 'configuration' object via mergeSourceConfiguration()/applyConfigDot() (CallService.php:835-845), since configuration.cert/configuration.ssl_key are not schema-rejected outside the credentialRef broker path (lib/Settings/integriq_register.json:245 explicitly says cert/ssl_key are only rejected 'in v1' for the credentialRef/broker branch)",
+				"spec": "openspec/specs/mtls-client-certificate-transport"
 			},
 			"reachedOn": "/sources/:id edit form -> generic 'configuration' JSON field, admin sets configuration.cert / configuration.ssl_key (PEM strings) -> any call through that source",
 			"note": "No dedicated certificate-upload UI field; a PKIoverheid client cert is pasted as PEM text into the generic configuration JSON object. The dedicated MtlsConfigResolver/MtlsCertificateBundle machinery (lib/Service/Mtls/) is wired only into the DSO/StufZkn/IWMO/FSC bridge clients, not into this generic CallService path.",
@@ -703,7 +708,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php: ['name'=>'sources#test','url'=>'/api/sources/test/{id}','verb'=>'POST']; lib/Controller/SourcesController.php:249-320 test() calls SourceTestService::run() and returns the raw result or a 502 on failure; src/modals/v2/TestSourceModal.vue:294 axios.post(/apps/integriq/api/sources/test/${this.sourceId})"
+				"evidence": "appinfo/routes.php: ['name'=>'sources#test','url'=>'/api/sources/test/{id}','verb'=>'POST']; lib/Controller/SourcesController.php:249-320 test() calls SourceTestService::run() and returns the raw result or a 502 on failure; src/modals/v2/TestSourceModal.vue:294 axios.post(/apps/integriq/api/sources/test/${this.sourceId})",
+				"spec": "openspec/specs/http-call-engine"
 			},
 			"reachedOn": "/sources/:id detail page, Test connection action -> TestSourceModal.vue",
 			"provider": "integriq",
@@ -734,7 +740,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Automatic trip: lib/Service/CallService.php:2198-2221 recordFailure() increments circuitBreakerFailureCount and opens the breaker once it reaches circuitBreakerThreshold; lib/Service/CallService.php:1972-2002 guardCircuitBreaker() blocks dispatch while open and probes after cooldown. Manual reset: routes.php 'sources#resetCircuitBreaker' POST /api/sources/{id}/circuit-breaker/reset -> SourcesController.php:388 resetCircuitBreaker() -> CallService::resetCircuitBreaker(); src/components/CircuitBreakerBadge.vue:208 axios.post(.../circuit-breaker/reset), wired into SourceDetail via src/manifest.json:1312 bodyWidgets[].component=CircuitBreakerBadge"
+				"evidence": "Automatic trip: lib/Service/CallService.php:2198-2221 recordFailure() increments circuitBreakerFailureCount and opens the breaker once it reaches circuitBreakerThreshold; lib/Service/CallService.php:1972-2002 guardCircuitBreaker() blocks dispatch while open and probes after cooldown. Manual reset: routes.php 'sources#resetCircuitBreaker' POST /api/sources/{id}/circuit-breaker/reset -> SourcesController.php:388 resetCircuitBreaker() -> CallService::resetCircuitBreaker(); src/components/CircuitBreakerBadge.vue:208 axios.post(.../circuit-breaker/reset), wired into SourceDetail via src/manifest.json:1312 bodyWidgets[].component=CircuitBreakerBadge",
+				"spec": "openspec/specs/http-call-engine"
 			},
 			"reachedOn": "/sources/:id detail page, Circuit breaker body widget (Reset breaker button, shown when open)",
 			"note": "A manual 'trip' route also exists (SourcesController#tripCircuitBreaker) but CircuitBreakerBadge.vue only renders a Reset button, no Trip button; grep found no frontend caller of the trip endpoint, so it is admin-API-only, not reachable from any page.",
@@ -799,7 +806,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationService.php:6084-6234 fetchObjectsFromSource()/fetchAllPagesOptimized() (usesPagination, currentPage, RFC5988 next-link handling per comment at line 96) drive multi-page fetches; lib/Service/SynchronizationService.php:7911 paginationValueFor() advances the per-page cursor; @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002"
+				"evidence": "lib/Service/SynchronizationService.php:6084-6234 fetchObjectsFromSource()/fetchAllPagesOptimized() (usesPagination, currentPage, RFC5988 next-link handling per comment at line 96) drive multi-page fetches; lib/Service/SynchronizationService.php:7911 paginationValueFor() advances the per-page cursor; @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/:id detail page (source config pagination settings) -> scheduled/manual sync run",
 			"provider": "integriq",
@@ -830,7 +838,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "lib/Settings/register.d/99-source-secrets-writeonly.json marks source.apikey/secret/password/jwt/authenticationConfig writeOnly:true; lib/Settings/register.d/99-source-nested-auth-writeonly.json adds x-openregister-writeonly-paths for nested configuration.authentication.* (client_secret/password/secret/private_key/encryptedToken/encryptedApiKey/mtls) and configuration.directory.authentication.*. Per the fragment's own comment, OpenRegister's render boundary (or#386/or#459/or#460/or#462) strips these on EVERY rendered read, including admin reads and @self.relations, while CallService still reads the raw value via _render:false (CallService.php ~L2141 per the comment)."
+				"evidence": "lib/Settings/register.d/99-source-secrets-writeonly.json marks source.apikey/secret/password/jwt/authenticationConfig writeOnly:true; lib/Settings/register.d/99-source-nested-auth-writeonly.json adds x-openregister-writeonly-paths for nested configuration.authentication.* (client_secret/password/secret/private_key/encryptedToken/encryptedApiKey/mtls) and configuration.directory.authentication.*. Per the fragment's own comment, OpenRegister's render boundary (or#386/or#459/or#460/or#462) strips these on EVERY rendered read, including admin reads and @self.relations, while CallService still reads the raw value via _render:false (CallService.php ~L2141 per the comment).",
+				"spec": "openspec/specs/source-credential-custody"
 			},
 			"reachedOn": "/sources index and /sources/:id detail, any generic object read of a source; the value is never present in the response body",
 			"note": "Enforcement mechanism (schema-driven writeOnly stripping) lives in OpenRegister; integriq supplies the schema annotations declaring which fields are secret.",
@@ -895,7 +904,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "lib/Service/BrokeredCallService.php:98 BROKER_CLASS='OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService'; :173 hasCredentialRef(), :442 prepare(), :494 dispatch() resolve+redeem a configuration.authentication.credentialRef ({credentialId}|{credentialName}) against OpenRegister's credential register (CREDENTIAL_REGISTER/CREDENTIAL_SCHEMA, :885-886) and dispatch in-process without embedding the secret on the source; src/dialogs/LinkSourceDialog.vue and src/modals/v2/SourceFormFields.vue:9-23 (brokered-credential NcSelect, GET /apps/openregister/api/credentials) let an operator pick an existing credential for a source"
+				"evidence": "lib/Service/BrokeredCallService.php:98 BROKER_CLASS='OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService'; :173 hasCredentialRef(), :442 prepare(), :494 dispatch() resolve+redeem a configuration.authentication.credentialRef ({credentialId}|{credentialName}) against OpenRegister's credential register (CREDENTIAL_REGISTER/CREDENTIAL_SCHEMA, :885-886) and dispatch in-process without embedding the secret on the source; src/dialogs/LinkSourceDialog.vue and src/modals/v2/SourceFormFields.vue:9-23 (brokered-credential NcSelect, GET /apps/openregister/api/credentials) let an operator pick an existing credential for a source",
+				"change": "2026-07-15-source-broker-credentials"
 			},
 			"reachedOn": "/sources/:id edit form, 'Brokered credential (OpenRegister)' switch -> NcSelect of the signed-in user's OpenRegister credentials",
 			"note": "The credential storage and broker logic live in OpenRegister (CredentialBrokerService); integriq only configures/dispatches through it via credentialRef.",
@@ -927,7 +937,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "routes.php 'sources#logs' GET /api/sources/logs; lib/Controller/SourcesController.php:88-240 logs() (AuthorizedAdminSetting, filters, pagination, date_from/date_to); manifest page SourceLogs route /sources/logs schema call_log"
+				"evidence": "routes.php 'sources#logs' GET /api/sources/logs; lib/Controller/SourcesController.php:88-240 logs() (AuthorizedAdminSetting, filters, pagination, date_from/date_to); manifest page SourceLogs route /sources/logs schema call_log",
+				"spec": "openspec/specs/logs-and-statistics"
 			},
 			"reachedOn": "/sources/logs page",
 			"provider": "integriq",
@@ -958,7 +969,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Flow/FetchFileNode.php (openconnector.fetch-file flow node, runs a configured fetch_file Rule against every synced item through SynchronizationService); lib/BackgroundJob/FetchFilesJob.php; lib/Service/StorageService.php stores fetched files into Nextcloud Files"
+				"evidence": "lib/Flow/FetchFileNode.php (openconnector.fetch-file flow node, runs a configured fetch_file Rule against every synced item through SynchronizationService); lib/BackgroundJob/FetchFilesJob.php; lib/Service/StorageService.php stores fetched files into Nextcloud Files",
+				"spec": "openspec/specs/synchronization-files"
 			},
 			"reachedOn": "/synchronizations/:id detail -> Rules of type fetch_file attached to the sync (Rules/RuleDetail pages configure the rule; the fetch itself runs during a sync run, not from a page action)",
 			"note": "Per FetchFileNode.php's own doc comment, the fetch is fire-and-forget: a green step means the fetch was dispatched, not that the file is present yet, worth knowing for anyone testing this live.",
@@ -1087,7 +1099,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/CallService.php:1094 renderConfiguration() applies renderValue() (CallService.php:314-336, Twig createTemplate().render(context:['source'=>$sourceData])) recursively over the whole merged call config (headers, query, body) before dispatch; sandboxed Twig environment CallService.php:216-224"
+				"evidence": "lib/Service/CallService.php:1094 renderConfiguration() applies renderValue() (CallService.php:314-336, Twig createTemplate().render(context:['source'=>$sourceData])) recursively over the whole merged call config (headers, query, body) before dispatch; sandboxed Twig environment CallService.php:216-224",
+				"spec": "openspec/specs/http-call-engine"
 			},
 			"reachedOn": "/sources/:id edit form, any header/body/query value in 'headers' or 'configuration' containing {{ ... }} is rendered against the source's own fields at call time",
 			"provider": "integriq",
@@ -1118,7 +1131,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:927-930 Sources index page column 'circuitBreakerState' shown per row; lib/Service/ConnectionStatusResolver.php:74-502 resolve() derives a status (declared-unavailable/switched-off/simulated/observed/ok) per app connection; lib/Service/ConnectionProbeService.php:85-232 probeDue()/probe()/testSource() runs an hourly health probe against linked sources"
+				"evidence": "src/manifest.json:927-930 Sources index page column 'circuitBreakerState' shown per row; lib/Service/ConnectionStatusResolver.php:74-502 resolve() derives a status (declared-unavailable/switched-off/simulated/observed/ok) per app connection; lib/Service/ConnectionProbeService.php:85-232 probeDue()/probe()/testSource() runs an hourly health probe against linked sources",
+				"change": "2026-09-29-connection-registry"
 			},
 			"reachedOn": "/sources index (circuitBreakerState column) and /connections index (AppConnections page, resolved status per connection)",
 			"note": "There is no single 'source health' dashboard widget; the at-a-glance view is the circuitBreakerState column on the Sources list plus the separate Connections page's resolved status.",
@@ -1150,7 +1164,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:1876-1900 handleSchemaRequest() resolves targetType='register/schema' targetId '<register>/<schema>' to a mapper and serves CRUD (GET/POST/PUT/PATCH/DELETE) against it, lines 1913-2030; appinfo/routes.php catch-all 'endpoints#handlePath' GET/PUT/PATCH/POST/DELETE '/api/endpoint/{_path}'"
+				"evidence": "lib/Service/EndpointService.php:1876-1900 handleSchemaRequest() resolves targetType='register/schema' targetId '<register>/<schema>' to a mapper and serves CRUD (GET/POST/PUT/PATCH/DELETE) against it, lines 1913-2030; appinfo/routes.php catch-all 'endpoints#handlePath' GET/PUT/PATCH/POST/DELETE '/api/endpoint/{_path}'",
+				"spec": "openspec/specs/endpoint-runtime"
 			},
 			"reachedOn": "/endpoints index -> create Endpoint (targetType=register/schema) -> published at /api/endpoint/{path}",
 			"provider": "integriq",
@@ -1181,7 +1196,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:2174-2266 handleSourceRequest() resolves targetType='api' to a Source via targetId, renders the upstream path (renderEndpointPath, CallService), then proxies via CallService::call() and returns the upstream's response/status"
+				"evidence": "lib/Service/EndpointService.php:2174-2266 handleSourceRequest() resolves targetType='api' to a Source via targetId, renders the upstream path (renderEndpointPath, CallService), then proxies via CallService::call() and returns the upstream's response/status",
+				"spec": "openspec/specs/endpoint-runtime"
 			},
 			"reachedOn": "/endpoints index -> create Endpoint (targetType=api, targetId=source) -> /api/endpoint/{path}",
 			"provider": "integriq",
@@ -1212,7 +1228,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/EndpointsController.php:144-153 handlePath() resolves the endpoint via endpointCacheService.findByPathRegex(path, method), lib/Service/EndpointCacheService.php:107-131 matches only endpoints whose stored 'method' equals the incoming request method; a path matching one endpoint's regex but not its method returns 404 (\"No matching endpoint found for path and method\")"
+				"evidence": "lib/Controller/EndpointsController.php:144-153 handlePath() resolves the endpoint via endpointCacheService.findByPathRegex(path, method), lib/Service/EndpointCacheService.php:107-131 matches only endpoints whose stored 'method' equals the incoming request method; a path matching one endpoint's regex but not its method returns 404 (\"No matching endpoint found for path and method\")",
+				"spec": "openspec/specs/endpoint-runtime"
 			},
 			"reachedOn": "/endpoints/:id edit form, 'method' field (single HTTP verb) on the endpoint schema",
 			"note": "An endpoint declares exactly one method, not a set; choosing several accepted methods for one endpoint means creating several endpoint rows on the same path.",
@@ -1244,7 +1261,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:1400 getPathParameters() extracts named segments from the inbound path against endpointArray; lib/Service/EndpointService.php:2174-2222 buildUpstreamPathContext()/renderEndpointPath() substitutes those (plus query/body) into the upstream path template for a targetType=api proxy, e.g. '/hydra/label/{owner}/{repo}' per the doc comment at line ~2195"
+				"evidence": "lib/Service/EndpointService.php:1400 getPathParameters() extracts named segments from the inbound path against endpointArray; lib/Service/EndpointService.php:2174-2222 buildUpstreamPathContext()/renderEndpointPath() substitutes those (plus query/body) into the upstream path template for a targetType=api proxy, e.g. '/hydra/label/{owner}/{repo}' per the doc comment at line ~2195",
+				"spec": "openspec/specs/endpoint-runtime"
 			},
 			"reachedOn": "/endpoints/:id edit form, path segments written as {{ name }}/{name} in the endpoint path, consumed by both register/schema (as an object id) and source-proxy (as upstream path template) targets",
 			"provider": "integriq",
@@ -1341,7 +1359,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/RateLimit/InboundRateLimitService.php:91 enforce(consumerKey, rateLimit, quota) -> lib/Service/EndpointService.php:977-1058 enforceInboundRateLimit()/enforceConsumerScope() and :1096-1129 applyRateLimitDecision(), called from dispatchAfterBeforeRules() before schema/source dispatch; per-tier limits configured on api_product.tiers (lib/Settings/register.d/api-product-gateway.json 'tiers': rateLimit{requestsPerWindow,windowSeconds}, quota{limit,period})"
+				"evidence": "lib/Service/RateLimit/InboundRateLimitService.php:91 enforce(consumerKey, rateLimit, quota) -> lib/Service/EndpointService.php:977-1058 enforceInboundRateLimit()/enforceConsumerScope() and :1096-1129 applyRateLimitDecision(), called from dispatchAfterBeforeRules() before schema/source dispatch; per-tier limits configured on api_product.tiers (lib/Settings/register.d/api-product-gateway.json 'tiers': rateLimit{requestsPerWindow,windowSeconds}, quota{limit,period})",
+				"spec": "openspec/specs/api-product-gateway"
 			},
 			"reachedOn": "/products (ApiProducts index/detail), tiers configuration; enforced as a machine route on every call through that product's endpoints",
 			"provider": "integriq",
@@ -1372,7 +1391,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/RateLimit/RateLimitDecision.php:60-93 constructor takes $retryAfter and toHeaders() emits 'Retry-After' when allowed===false, alongside RateLimit-Limit/Remaining/Reset; lib/Service/EndpointService.php:1113-1130 applyRateLimitDecision() returns a 429 JSONResponse with $decision->toHeaders() when over budget"
+				"evidence": "lib/Service/RateLimit/RateLimitDecision.php:60-93 constructor takes $retryAfter and toHeaders() emits 'Retry-After' when allowed===false, alongside RateLimit-Limit/Remaining/Reset; lib/Service/EndpointService.php:1113-1130 applyRateLimitDecision() returns a 429 JSONResponse with $decision->toHeaders() when over budget",
+				"spec": "openspec/specs/api-product-gateway"
 			},
 			"reachedOn": "machine route: any over-limit caller of an api_product-scoped endpoint gets Retry-After on the 429 response",
 			"provider": "integriq",
@@ -1403,7 +1423,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/register.d/api-product-gateway.json api_product schema: 'productSlug' groups every version-row of the same logical product (design.md Decision 1), 'version' (semver), 'status' (deprecated), 'sunsetDate' (required when deprecated); lib/Service/EndpointService.php:1282-1332 buildDeprecationHeaders() emits RFC 8594 Deprecation/Sunset headers on every response served through a deprecated product version's endpoints"
+				"evidence": "lib/Settings/register.d/api-product-gateway.json api_product schema: 'productSlug' groups every version-row of the same logical product (design.md Decision 1), 'version' (semver), 'status' (deprecated), 'sunsetDate' (required when deprecated); lib/Service/EndpointService.php:1282-1332 buildDeprecationHeaders() emits RFC 8594 Deprecation/Sunset headers on every response served through a deprecated product version's endpoints",
+				"spec": "openspec/specs/api-product-gateway"
 			},
 			"reachedOn": "/products index -> ApiProductDetail page, create a new version row under the same productSlug, mark the old one status=deprecated with a sunsetDate",
 			"provider": "integriq",
@@ -1727,7 +1748,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php + lib/Controller/EndpointsController.php:141-142 handlePath() is #[NoCSRFRequired] #[PublicPage], every endpoint is reachable without a Nextcloud session by construction; lib/Controller/EndpointsController.php:283-286 isSimpleEndpoint() additionally requires isPublic===true to opt an endpoint into the fast GET-only schema path; access restriction (when wanted) is opt-in via an 'authentication' rule in the endpoint's rule pipeline, not the other way around"
+				"evidence": "appinfo/routes.php + lib/Controller/EndpointsController.php:141-142 handlePath() is #[NoCSRFRequired] #[PublicPage], every endpoint is reachable without a Nextcloud session by construction; lib/Controller/EndpointsController.php:283-286 isSimpleEndpoint() additionally requires isPublic===true to opt an endpoint into the fast GET-only schema path; access restriction (when wanted) is opt-in via an 'authentication' rule in the endpoint's rule pipeline, not the other way around",
+				"spec": "openspec/specs/endpoint-runtime"
 			},
 			"reachedOn": "/endpoints/:id edit form, isPublic flag (fast-path opt-in) and, more generally, every endpoint is anonymously callable unless an authentication Rule is attached",
 			"note": "The architecture is inverted from a typical gateway: everything is public by default (PublicPage route) and an operator opts INTO auth via a Rule, rather than opting into anonymous access from a default-closed state. isPublic itself only controls eligibility for the optimisation fast-path, not general reachability.",
@@ -1759,7 +1781,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/EventListener/EndpointCacheInvalidationListener.php:69-95 handle() calls endpointCacheService->clearCache() whenever an integriq 'endpoint' object fires ObjectCreatedEvent/ObjectUpdatedEvent/ObjectDeletedEvent; lib/AppInfo/Application.php:311-313 registers this listener for all three OpenRegister events; the next request re-fetches fresh data via EndpointCacheService::refreshCache()/fetchEndpointsFromOr()"
+				"evidence": "lib/EventListener/EndpointCacheInvalidationListener.php:69-95 handle() calls endpointCacheService->clearCache() whenever an integriq 'endpoint' object fires ObjectCreatedEvent/ObjectUpdatedEvent/ObjectDeletedEvent; lib/AppInfo/Application.php:311-313 registers this listener for all three OpenRegister events; the next request re-fetches fresh data via EndpointCacheService::refreshCache()/fetchEndpointsFromOr()",
+				"spec": "openspec/specs/endpoint-runtime"
 			},
 			"reachedOn": "machine path: saving an Endpoint (any page that edits one) fires the OR event, which clears the routing cache for the very next inbound request",
 			"provider": "integriq",
@@ -1790,7 +1813,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/ConsumersController.php:1-48 is a DI-only placeholder; consumer CRUD runs entirely through OpenRegister's generic object API (frontend-api-paths.txt: LinkSourceDialog.vue:268 -> /apps/openregister/api/objects/integriq/source, and ConsumerEditorModal.vue against /apps/openregister/api/objects/integriq/consumer); consumer schema in lib/Settings/integriq_register.json and register.d/consumer-form-fields.json declares name/domains/ips/authorizationType/authorizationConfiguration/rateLimit/quota."
+				"evidence": "lib/Controller/ConsumersController.php:1-48 is a DI-only placeholder; consumer CRUD runs entirely through OpenRegister's generic object API (frontend-api-paths.txt: LinkSourceDialog.vue:268 -> /apps/openregister/api/objects/integriq/source, and ConsumerEditorModal.vue against /apps/openregister/api/objects/integriq/consumer); consumer schema in lib/Settings/integriq_register.json and register.d/consumer-form-fields.json declares name/domains/ips/authorizationType/authorizationConfiguration/rateLimit/quota.",
+				"spec": "openspec/specs/consumer-management"
 			},
 			"reachedOn": "/consumers index page (manifest-pages.txt: Consumers | /consumers | index | integriq consumer), edit dialog src/modals/v2/ConsumerEditorModal.vue",
 			"note": "The consumers tab has no dedicated controller of its own; every read/write goes straight through OpenRegister's generic object API, which is also why the write-only credential fix (99-consumer-secrets-writeonly.json) had to land as a schema fragment rather than a controller change.",
@@ -1822,7 +1846,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/AuthorizationService.php:810 authorizeApiKey() checks rule-inline keys (814-825) then falls back to resolveConsumerByApiKey() (832, defined at 872) matching consumer.authorizationConfiguration.apiKey; wired from lib/Service/EndpointService.php:3010 inside the endpoint rule pipeline's 'apikey' case."
+				"evidence": "lib/Service/AuthorizationService.php:810 authorizeApiKey() checks rule-inline keys (814-825) then falls back to resolveConsumerByApiKey() (832, defined at 872) matching consumer.authorizationConfiguration.apiKey; wired from lib/Service/EndpointService.php:3010 inside the endpoint rule pipeline's 'apikey' case.",
+				"spec": "openspec/specs/authorization-jwt"
 			},
 			"reachedOn": "consumer authorizationType=apiKey field (src/modals/v2/ConsumerEditorModal.vue, consumerDraft.js:76) or an endpoint rule's apikey authentication config (src/views/Rule/actionForms/AuthenticationForm.vue) -> machine route: any gateway endpoint whose rule sets authentication.type=apikey",
 			"note": "Two independent credential sources are checked: a rule-inline key map (legacy, per endpoint) and a consumer-backed apiKey (the newer, reusable path).",
@@ -1854,7 +1879,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/AuthorizationService.php:368 authorizeJwt() verifies signature/algorithm-confusion guard/expiry/jti-replay, resolving the issuer consumer via findIssuer() at 132; wired from lib/Service/EndpointService.php:3021 ('jwt'/'jwt-zgw' rule case) and lib/Controller/EudiWalletController.php:210."
+				"evidence": "lib/Service/AuthorizationService.php:368 authorizeJwt() verifies signature/algorithm-confusion guard/expiry/jti-replay, resolving the issuer consumer via findIssuer() at 132; wired from lib/Service/EndpointService.php:3021 ('jwt'/'jwt-zgw' rule case) and lib/Controller/EudiWalletController.php:210.",
+				"spec": "openspec/specs/authorization-jwt"
 			},
 			"reachedOn": "consumer authorizationType=jwt + authorizationConfiguration.publicKey/algorithm (ConsumerEditorModal.vue) -> machine route: any gateway endpoint rule with authentication.type=jwt",
 			"note": "The hint's worry (openregister found authorizeJwt without caller) does not hold inside integriq: two real callers exist.",
@@ -1952,7 +1978,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/ConsumerScopeService.php:90 isAllowed() matches the request's client IP (IRequest::getRemoteAddress(), never a spoofable forwarded header) against consumer.ips/domains via lib/Service/Scope/IpMatcher.php and ReverseDnsResolver.php; wired from lib/Service/EndpointService.php:1058 enforceConsumerScope(), called at 1064, which runs after authentication and before rate limiting."
+				"evidence": "lib/Service/ConsumerScopeService.php:90 isAllowed() matches the request's client IP (IRequest::getRemoteAddress(), never a spoofable forwarded header) against consumer.ips/domains via lib/Service/Scope/IpMatcher.php and ReverseDnsResolver.php; wired from lib/Service/EndpointService.php:1058 enforceConsumerScope(), called at 1064, which runs after authentication and before rate limiting.",
+				"spec": "openspec/specs/consumer-management"
 			},
 			"reachedOn": "consumer ips/domains fields (ConsumerEditorModal.vue, consumerDraft.js:152-153) -> machine route: every gateway endpoint call for a consumer with ips/domains configured",
 			"note": "Absent = unrestricted, an empty configured list rejects everything, documented and matched by the code.",
@@ -2050,7 +2077,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/AuthorizationService.php:824 sets setVolatileActiveUser() from a rule-inline key's mapped userId, and 846-851 does the same from consumer.userId when a consumer-backed apiKey matches; authorizeJwt() does the equivalent for the JWT issuer path."
+				"evidence": "lib/Service/AuthorizationService.php:824 sets setVolatileActiveUser() from a rule-inline key's mapped userId, and 846-851 does the same from consumer.userId when a consumer-backed apiKey matches; authorizeJwt() does the equivalent for the JWT issuer path.",
+				"spec": "openspec/specs/consumer-management"
 			},
 			"reachedOn": "consumer userId field or an endpoint rule's apiKey->userId map -> machine route: any authenticated gateway call runs the rest of the pipeline as that Nextcloud user",
 			"provider": "integriq",
@@ -2081,7 +2109,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "api_product schema in lib/Settings/register.d/api-product-gateway.json (endpoints uuids array + tiers map with rateLimit/quota/requiresApproval); src/views/ApiProducts/ApiProductDetail.vue is a bespoke custom page (endpoint picker, tier editor) since a generic OR detail page cannot express it."
+				"evidence": "api_product schema in lib/Settings/register.d/api-product-gateway.json (endpoints uuids array + tiers map with rateLimit/quota/requiresApproval); src/views/ApiProducts/ApiProductDetail.vue is a bespoke custom page (endpoint picker, tier editor) since a generic OR detail page cannot express it.",
+				"spec": "openspec/specs/api-product-gateway"
 			},
 			"reachedOn": "/products index page + /products/:id (manifest-pages.txt: ApiProducts, ApiProductDetail custom component)",
 			"provider": "integriq",
@@ -2112,7 +2141,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:505-506 productSubscriptions#approve/#reject; lib/Controller/ProductSubscriptionsController.php:209 approve() and 250 reject() delegate to ApprovalService and flip the subscription's status; called from src/views/ApiProducts/ApiProductDetail.vue:602 and :631 (frontend-api-paths.txt)."
+				"evidence": "appinfo/routes.php:505-506 productSubscriptions#approve/#reject; lib/Controller/ProductSubscriptionsController.php:209 approve() and 250 reject() delegate to ApprovalService and flip the subscription's status; called from src/views/ApiProducts/ApiProductDetail.vue:602 and :631 (frontend-api-paths.txt).",
+				"spec": "openspec/specs/api-product-gateway"
 			},
 			"reachedOn": "/products/:id detail page, pending-subscriptions section (ApiProductDetail.vue)",
 			"note": "This is a separate approve/reject mechanism from the generic HITL Approvals page (ApprovalsController), both exist, this row is the product-subscription-specific one the hint named.",
@@ -2144,7 +2174,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:504 productSubscriptions#analytics; lib/Controller/ProductSubscriptionsController.php:310 analytics() reads bounded call_log rows for request count/error rate; called from src/views/ApiProducts/ApiProductDetail.vue:455 (frontend-api-paths.txt)."
+				"evidence": "appinfo/routes.php:504 productSubscriptions#analytics; lib/Controller/ProductSubscriptionsController.php:310 analytics() reads bounded call_log rows for request count/error rate; called from src/views/ApiProducts/ApiProductDetail.vue:455 (frontend-api-paths.txt).",
+				"spec": "openspec/specs/api-product-gateway"
 			},
 			"reachedOn": "/products/:id detail page, analytics panel (ApiProductDetail.vue)",
 			"provider": "integriq",
@@ -2304,7 +2335,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "Integriq's own code confirms OpenRegister organisation-scopes objects by default: lib/Service/ExecutionTraceService.php:154-160 documents deliberately leaving 'OR's [own access-control] layer... at its defaults' for a caller-supplied id read, and every system-context engine lookup (AuthorizationService::findIssuer/resolveConsumerByApiKey, EndpointService::getRuleById/getEndpointById) explicitly passes _multitenancy:false ONLY to bypass that default for cross-tenant auth resolution; ordinary admin CRUD (Consumers/Sources/Endpoints pages) calls the generic /apps/openregister/api/objects/integriq/... endpoints with no such override, leaving OR's default organisation scoping in force."
+				"evidence": "Integriq's own code confirms OpenRegister organisation-scopes objects by default: lib/Service/ExecutionTraceService.php:154-160 documents deliberately leaving 'OR's [own access-control] layer... at its defaults' for a caller-supplied id read, and every system-context engine lookup (AuthorizationService::findIssuer/resolveConsumerByApiKey, EndpointService::getRuleById/getEndpointById) explicitly passes _multitenancy:false ONLY to bypass that default for cross-tenant auth resolution; ordinary admin CRUD (Consumers/Sources/Endpoints pages) calls the generic /apps/openregister/api/objects/integriq/... endpoints with no such override, leaving OR's default organisation scoping in force.",
+				"spec": "openspec/specs/organisation-bridge"
 			},
 			"reachedOn": "every integriq admin page (Consumers, Sources, Endpoints, ...) that reads/writes through OpenRegister's generic object API",
 			"note": "Verified from integriq's own comments about OR's behaviour, not from reading OpenRegister's source directly, since it is a sibling app; confidence on the exact mechanism is therefore secondhand.",
@@ -2369,7 +2401,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/ScimController.php:371 authorize() calls AuthorizationService::authorizeApiKey(header, keys: []), the empty keys array forces every match through the consumer-backed path, never the legacy rule-inline one, and rejects with an undifferentiated 401 on failure; called at the top of every SCIM route handler (lines 124, 151, 176, 216, 259, 300, 327), all registered #[PublicPage] in appinfo/routes.php:140-148 precisely because this check replaces the NC session."
+				"evidence": "lib/Controller/ScimController.php:371 authorize() calls AuthorizationService::authorizeApiKey(header, keys: []), the empty keys array forces every match through the consumer-backed path, never the legacy rule-inline one, and rejects with an undifferentiated 401 on failure; called at the top of every SCIM route handler (lines 124, 151, 176, 216, 259, 300, 327), all registered #[PublicPage] in appinfo/routes.php:140-148 precisely because this check replaces the NC session.",
+				"change": "harden-scim-consumer-authorization"
 			},
 			"reachedOn": "machine route: POST/GET/PUT/PATCH/DELETE /api/scim/v2/Users and /Groups, called by an outside identity system",
 			"provider": "integriq",
@@ -2400,7 +2433,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/MappingService.php:277 executeMapping() applies a mapping's key->value dot-notation rules (mapping.getMapping()) against input data; the editor UI is a bespoke custom page."
+				"evidence": "lib/Service/MappingService.php:277 executeMapping() applies a mapping's key->value dot-notation rules (mapping.getMapping()) against input data; the editor UI is a bespoke custom page.",
+				"spec": "openspec/specs/mapping-editor-ui"
 			},
 			"reachedOn": "/mappings/:id detail page (manifest-pages.txt: MappingDetail | custom | MappingDetailPage | integriq mapping)",
 			"provider": "integriq",
@@ -2431,7 +2465,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/MappingService.php:169 renderTemplateString() renders a Twig template string against the mapping input; called from within executeMapping() (around line 330) for any mapping value that is not a direct dot-path match."
+				"evidence": "lib/Service/MappingService.php:169 renderTemplateString() renders a Twig template string against the mapping input; called from within executeMapping() (around line 330) for any mapping value that is not a direct dot-path match.",
+				"spec": "openspec/specs/mapping-and-search"
 			},
 			"reachedOn": "/mappings/:id editor, expression/template value fields",
 			"provider": "integriq",
@@ -2462,7 +2497,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:384 mappings#test; lib/Controller/MappingsController.php:145 test() runs a mapping against sample input with optional schema validation and returns the result; called from src/components/mapping/MappingResultPanel.vue:503 and src/views/Synchronization/SyncMappingPreview.vue:322 (frontend-api-paths.txt)."
+				"evidence": "appinfo/routes.php:384 mappings#test; lib/Controller/MappingsController.php:145 test() runs a mapping against sample input with optional schema validation and returns the result; called from src/components/mapping/MappingResultPanel.vue:503 and src/views/Synchronization/SyncMappingPreview.vue:322 (frontend-api-paths.txt).",
+				"spec": "openspec/specs/mapping-editor-ui"
 			},
 			"reachedOn": "/mappings/:id editor's test panel (MappingResultPanel.vue) and the synchronization mapping preview (SyncMappingPreview.vue)",
 			"provider": "integriq",
@@ -2493,7 +2529,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/MappingService.php:405 handleCast() implements roughly 20 cast kinds (string/bool/?bool/int/float/array/date/url/base64/json/moneyStringToInt/intToMoneyString/etc), invoked from executeMapping()'s cast loop."
+				"evidence": "lib/Service/MappingService.php:405 handleCast() implements roughly 20 cast kinds (string/bool/?bool/int/float/array/date/url/base64/json/moneyStringToInt/intToMoneyString/etc), invoked from executeMapping()'s cast loop.",
+				"spec": "openspec/specs/mapping-and-search"
 			},
 			"reachedOn": "/mappings/:id editor, cast configuration per field",
 			"provider": "integriq",
@@ -2524,7 +2561,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/MappingService.php:339 'Unset unwanted key's' loop deletes every key named in mapping.getUnset() from the output dot-array."
+				"evidence": "lib/Service/MappingService.php:339 'Unset unwanted key's' loop deletes every key named in mapping.getUnset() from the output dot-array.",
+				"spec": "openspec/specs/mapping-and-search"
 			},
 			"reachedOn": "/mappings/:id editor, unset field list",
 			"provider": "integriq",
@@ -2555,7 +2593,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/MappingService.php:277-301 executeMapping()'s $list===true branch iterates the input array and recursively calls executeMapping() per item, building a mapped list."
+				"evidence": "lib/Service/MappingService.php:277-301 executeMapping()'s $list===true branch iterates the input array and recursively calls executeMapping() per item, building a mapped list.",
+				"spec": "openspec/specs/mapping-and-search"
 			},
 			"reachedOn": "/mappings/:id editor, invoked with list=true from synchronization/endpoint pipelines mapping paginated result sets",
 			"provider": "integriq",
@@ -2652,7 +2691,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/Call/MappingVersionService.php:46 snapshots a mapping before it is used, injected into lib/Outbound/Call/CallReplayService.php:70; call_log schema carries mapping/mappingVersion/attempts[].mappingVersion fields (lib/Settings/integriq_register.json:2107, 2121), rendered generically on the call_log-backed logs pages."
+				"evidence": "lib/Outbound/Call/MappingVersionService.php:46 snapshots a mapping before it is used, injected into lib/Outbound/Call/CallReplayService.php:70; call_log schema carries mapping/mappingVersion/attempts[].mappingVersion fields (lib/Settings/integriq_register.json:2107, 2121), rendered generically on the call_log-backed logs pages.",
+				"change": "outbound-call-log-investigation-window"
 			},
 			"reachedOn": "/sources/logs, /endpoints/logs (manifest-pages.txt logs pages on the call_log schema) show which mapping version a call ran under; replay offers the snapshot vs current version",
 			"provider": "integriq",
@@ -2716,7 +2756,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationService.php references mapping-by-id fields at multiple points (sourceHashMapping:3762, sourceTargetMapping-driven executeMapping:4533, updateMapping:8182, deleteMapping:8121, generic save_object.mapping:8300/8310, processMappingRule:8463); lib/Flow/ApplyMappingNode.php:195/200/242 lets a flow step reference a mapping id via config['mapping'] with optionsFrom pointed at /apps/openregister/api/objects/integriq/mapping, the same mapping objects are resolved by id from synchronizations, endpoint rules and flows."
+				"evidence": "lib/Service/SynchronizationService.php references mapping-by-id fields at multiple points (sourceHashMapping:3762, sourceTargetMapping-driven executeMapping:4533, updateMapping:8182, deleteMapping:8121, generic save_object.mapping:8300/8310, processMappingRule:8463); lib/Flow/ApplyMappingNode.php:195/200/242 lets a flow step reference a mapping id via config['mapping'] with optionsFrom pointed at /apps/openregister/api/objects/integriq/mapping, the same mapping objects are resolved by id from synchronizations, endpoint rules and flows.",
+				"spec": "openspec/specs/mapping-and-search"
 			},
 			"reachedOn": "any synchronization/endpoint-rule/flow-step mapping picker that references a saved mapping by id",
 			"provider": "integriq",
@@ -2747,7 +2788,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "MappingService::renderTemplateString (lib/Service/MappingService.php:169) runs full Twig, loops, conditionals, filters, with app-specific additions in lib/Twig/MappingExtension.php:51-89 (b64enc/b64dec/json_decode/slugify filters, generateUuid/executeMapping/getFileContents/getFiles/getTargetIdByOriginId/getOriginIdByTargetId functions)."
+				"evidence": "MappingService::renderTemplateString (lib/Service/MappingService.php:169) runs full Twig, loops, conditionals, filters, with app-specific additions in lib/Twig/MappingExtension.php:51-89 (b64enc/b64dec/json_decode/slugify filters, generateUuid/executeMapping/getFileContents/getFiles/getTargetIdByOriginId/getOriginIdByTargetId functions).",
+				"spec": "openspec/specs/mapping-and-search"
 			},
 			"reachedOn": "/mappings/:id editor, any expression/template value field",
 			"note": "Twig is a general-purpose templating engine reused for this, not a transformation DSL purpose-built the way DataWeave is, but it delivers the same practical capability (complex, loop/condition-capable transformations).",
@@ -2850,7 +2892,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Action/SynchronizationAction.php:35 is the job-runner action; its __invoke path calls this.synchronizationService->synchronize() at line 111. lib/Service/JobService.php:462 executeJob() resolves 'job'.jobClass from the DI container and runs it on a cron pass (JobTask.php:88-90 wraps JobService::run()), so a job record whose jobClass names SynchronizationAction runs a synchronization on schedule."
+				"evidence": "lib/Action/SynchronizationAction.php:35 is the job-runner action; its __invoke path calls this.synchronizationService->synchronize() at line 111. lib/Service/JobService.php:462 executeJob() resolves 'job'.jobClass from the DI container and runs it on a cron pass (JobTask.php:88-90 wraps JobService::run()), so a job record whose jobClass names SynchronizationAction runs a synchronization on schedule.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations index + /synchronizations/:id detail page (SynchronizationEditorModal.vue / SynchronizationDetailPage.vue) configure the sync; a job (Jobs page, /jobs) with jobClass=SynchronizationAction runs it on a cron schedule",
 			"provider": "integriq",
@@ -2881,7 +2924,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "synchronization.syncMode/cursorWatermark/sourceConfig.cursorField declared in lib/Settings/integriq_register.json:1713-1722; lib/Service/SynchronizationService.php computes the new high-watermark from cursorField across fetched records (~line 3469-3493) and only reads it when syncMode=incremental (per the schema description at line 1722); wired into the fetch/twig context at line 6038 ($twigContext['cursor'])."
+				"evidence": "synchronization.syncMode/cursorWatermark/sourceConfig.cursorField declared in lib/Settings/integriq_register.json:1713-1722; lib/Service/SynchronizationService.php computes the new high-watermark from cursorField across fetched records (~line 3469-3493) and only reads it when syncMode=incremental (per the schema description at line 1722); wired into the fetch/twig context at line 6038 ($twigContext['cursor']).",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/:id editor, syncMode=incremental + sourceConfig.cursorField",
 			"provider": "integriq",
@@ -2912,7 +2956,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:368 synchronizations#resetCursor; SynchronizationService.php:3501-3521 clears cursorWatermark to null without touching syncMode; called from src/views/Synchronization/SynchronizationDetailPage.vue:1062-1068 resetCursor() via the button at line 197."
+				"evidence": "appinfo/routes.php:368 synchronizations#resetCursor; SynchronizationService.php:3501-3521 clears cursorWatermark to null without touching syncMode; called from src/views/Synchronization/SynchronizationDetailPage.vue:1062-1068 resetCursor() via the button at line 197.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/:id detail page, 'reset cursor' button (SynchronizationDetailPage.vue:197)",
 			"provider": "integriq",
@@ -2975,7 +3020,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "synchronization_contract schema tracks originId/targetId/originHash/targetHash/sourceLastChecked per record; lib/Service/SynchronizationService.php finds/upserts contracts keyed by (synchronizationId, originId) (~lines 1027-1121); the page renders the schema generically."
+				"evidence": "synchronization_contract schema tracks originId/targetId/originHash/targetHash/sourceLastChecked per record; lib/Service/SynchronizationService.php finds/upserts contracts keyed by (synchronizationId, originId) (~lines 1027-1121); the page renders the schema generically.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/contracts index page (manifest-pages.txt: SynchronizationContracts | index | integriq synchronization_contract)",
 			"provider": "integriq",
@@ -3006,7 +3052,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Ownership/DisappearancePolicy.php declares three real policies (DELETE, MARK_ENDED, KEEP_AND_FLAG, defaulting to DELETE when unset) read via fromSourceConfig(); lib/Service/SynchronizationService.php:3832 deleteInvalidObjects() calls it (line ~3853) and is itself called from the real cleanup path at line 2797. sourceConfig (where disappearancePolicy lives) is editable as a JSON config block in src/modals/v2/SynchronizationEditorModal.vue:133-138 / SynchronizationDetailPage.vue:114-117, though there is no dedicated dropdown specifically for this key."
+				"evidence": "lib/Service/Ownership/DisappearancePolicy.php declares three real policies (DELETE, MARK_ENDED, KEEP_AND_FLAG, defaulting to DELETE when unset) read via fromSourceConfig(); lib/Service/SynchronizationService.php:3832 deleteInvalidObjects() calls it (line ~3853) and is itself called from the real cleanup path at line 2797. sourceConfig (where disappearancePolicy lives) is editable as a JSON config block in src/modals/v2/SynchronizationEditorModal.vue:133-138 / SynchronizationDetailPage.vue:114-117, though there is no dedicated dropdown specifically for this key.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/:id editor, sourceConfig.disappearancePolicy (JSON config block, no dedicated form field)",
 			"note": "Reachable only by hand-editing the sourceConfig JSON, not through a labelled dropdown, worth a live check to confirm an admin can actually discover and set this.",
@@ -3041,7 +3088,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:367 synchronizations#test; called from src/modals/v2/runTargets.js:499 and src/modals/v2/SynchronizationEditorModal.vue:840 (frontend-api-paths.txt); SynchronizationService::synchronize() accepts an $isTest flag that short-circuits persistence."
+				"evidence": "appinfo/routes.php:367 synchronizations#test; called from src/modals/v2/runTargets.js:499 and src/modals/v2/SynchronizationEditorModal.vue:840 (frontend-api-paths.txt); SynchronizationService::synchronize() accepts an $isTest flag that short-circuits persistence.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/:id detail page and the synchronization editor's 'test' action",
 			"provider": "integriq",
@@ -3072,7 +3120,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:366 synchronizations#run; called from src/modals/v2/runTargets.js:505 (frontend-api-paths.txt)."
+				"evidence": "appinfo/routes.php:366 synchronizations#run; called from src/modals/v2/runTargets.js:505 (frontend-api-paths.txt).",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/:id detail page, 'run now' action",
 			"provider": "integriq",
@@ -3103,7 +3152,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationRunProgressService.php (start/tick/finish/writeCount) is resolved and used inside SynchronizationService.php:628-629 during a run; lib/BackgroundJob/StaleRunSweepJob.php sweeps runs that stopped ticking. The synchronization_run schema this writes to is rendered generically."
+				"evidence": "lib/Service/SynchronizationRunProgressService.php (start/tick/finish/writeCount) is resolved and used inside SynchronizationService.php:628-629 during a run; lib/BackgroundJob/StaleRunSweepJob.php sweeps runs that stopped ticking. The synchronization_run schema this writes to is rendered generically.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronization-runs index page (manifest-pages.txt: SynchronizationRuns | index | integriq synchronization_run)",
 			"provider": "integriq",
@@ -3134,7 +3184,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:436-441 syncDeadLetter#index/show/replay/discard/bulkReplay/bulkDiscard; lib/Controller/SyncDeadLetterController.php implements them; called from src/views/Synchronization/SyncDeadLetterPage.vue and src/modals/Synchronization/SyncDeadLetterDetailModal.vue (frontend-api-paths.txt: /apps/integriq/api/sync-dead-letter*)."
+				"evidence": "appinfo/routes.php:436-441 syncDeadLetter#index/show/replay/discard/bulkReplay/bulkDiscard; lib/Controller/SyncDeadLetterController.php implements them; called from src/views/Synchronization/SyncDeadLetterPage.vue and src/modals/Synchronization/SyncDeadLetterDetailModal.vue (frontend-api-paths.txt: /apps/integriq/api/sync-dead-letter*).",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/dead-letters page and /synchronizations (SyncDeadLetterPage.vue)",
 			"provider": "integriq",
@@ -3165,7 +3216,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationService.php:2158-2159 applies JsonLogic::apply(synchronization.conditions, serializedObject) and skips the record when it evaluates false; conditions are configured via the shared conditions builder (syncDraft.js normaliseConditions/EMPTY_ROOT_GROUP)."
+				"evidence": "lib/Service/SynchronizationService.php:2158-2159 applies JsonLogic::apply(synchronization.conditions, serializedObject) and skips the record when it evaluates false; conditions are configured via the shared conditions builder (syncDraft.js normaliseConditions/EMPTY_ROOT_GROUP).",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/:id editor, conditions builder",
 			"provider": "integriq",
@@ -3196,7 +3248,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationService.php:4478-4516 compares originHash against the stored contract's originHash (plus mapping/config staleness checks) and returns resultAction:'skip' when nothing changed, without writing the target."
+				"evidence": "lib/Service/SynchronizationService.php:4478-4516 compares originHash against the stored contract's originHash (plus mapping/config staleness checks) and returns resultAction:'skip' when nothing changed, without writing the target.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "automatic, every synchronization run (no separate UI control needed)",
 			"provider": "integriq",
@@ -3227,7 +3280,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationService.php:8466 dispatches a rule's 'fetch_file' case to processFetchFileRule() (defined 9625, ending 9702), which calls fetchFile()/saveFetchedFile() (8686/8860) to attach a fetched file to the synced object; lib/Flow/FetchFileNode.php exposes the same as a flow step."
+				"evidence": "lib/Service/SynchronizationService.php:8466 dispatches a rule's 'fetch_file' case to processFetchFileRule() (defined 9625, ending 9702), which calls fetchFile()/saveFetchedFile() (8686/8860) to attach a fetched file to the synced object; lib/Flow/FetchFileNode.php exposes the same as a flow step.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "a synchronization or endpoint rule of type fetch_file (AddEndpointRuleModal.vue / rule editor)",
 			"provider": "integriq",
@@ -3291,7 +3345,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:374-376 tablesBridge#status/tables/columns; lib/Controller/TablesBridgeController.php implements them; called from src/views/Synchronization/SyncConfigWidget.vue:776 and TablesColumnMapping.vue:196 (frontend-api-paths.txt); 'nextcloud-table' is a real sourceType/targetType option (syncDraft.js NEXTCLOUD_TABLE_OPTION) shown when the backend reports the Tables app enabled."
+				"evidence": "appinfo/routes.php:374-376 tablesBridge#status/tables/columns; lib/Controller/TablesBridgeController.php implements them; called from src/views/Synchronization/SyncConfigWidget.vue:776 and TablesColumnMapping.vue:196 (frontend-api-paths.txt); 'nextcloud-table' is a real sourceType/targetType option (syncDraft.js NEXTCLOUD_TABLE_OPTION) shown when the backend reports the Tables app enabled.",
+				"spec": "openspec/specs/tables-bridge"
 			},
 			"reachedOn": "/synchronizations/:id editor, sourceType/targetType = Nextcloud Table",
 			"provider": "integriq",
@@ -3322,7 +3377,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:379-381 formsBridge#status/forms/questions; lib/Controller/FormsBridgeController.php implements them; called from src/views/Synchronization/SyncConfigWidget.vue:838 and FormsFieldMapping.vue:179 (frontend-api-paths.txt); 'nextcloud-form' is a source-only sourceType option (syncDraft.js NEXTCLOUD_FORM_OPTION)."
+				"evidence": "appinfo/routes.php:379-381 formsBridge#status/forms/questions; lib/Controller/FormsBridgeController.php implements them; called from src/views/Synchronization/SyncConfigWidget.vue:838 and FormsFieldMapping.vue:179 (frontend-api-paths.txt); 'nextcloud-form' is a source-only sourceType option (syncDraft.js NEXTCLOUD_FORM_OPTION).",
+				"spec": "openspec/specs/nextcloud-forms-connector"
 			},
 			"reachedOn": "/synchronizations/:id editor, sourceType = Nextcloud Form",
 			"provider": "integriq",
@@ -3386,7 +3442,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Every fetched record is keyed to a synchronization_contract by (synchronizationId, originId) (lib/Service/SynchronizationService.php ~1027-1121, with explicit duplicate-key detection at line 1090); a re-fetch of the same source record resolves the SAME contract and updates it (or skips it, see sync-skip-unchanged) rather than creating a second target object."
+				"evidence": "Every fetched record is keyed to a synchronization_contract by (synchronizationId, originId) (lib/Service/SynchronizationService.php ~1027-1121, with explicit duplicate-key detection at line 1090); a re-fetch of the same source record resolves the SAME contract and updates it (or skips it, see sync-skip-unchanged) rather than creating a second target object.",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "automatic, every synchronization run",
 			"note": "This covers the sync PULL path; there is no generic idempotency-key mechanism for inbound webhook/gateway deliveries (not checked as part of this row).",
@@ -3450,7 +3507,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/EventListener/RegistrySubscriptionRequestedListener.php:51-109 handles OpenRegister's RegistrySubscriptionRequestedEvent and delegates to lib/Service/Registry/SubscriptionRequestHandler.php:62 handle(), which resolves a real provider (lib/Service/Registry/KvkMutatieProvider.php, register.d/kvk-mutatieservice-source.json) and records the subscription (SubscriptionRoster::add); the listener is registered in lib/AppInfo/Application.php:244 and lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered as a background job in appinfo/info.xml:143 to poll for updates."
+				"evidence": "lib/EventListener/RegistrySubscriptionRequestedListener.php:51-109 handles OpenRegister's RegistrySubscriptionRequestedEvent and delegates to lib/Service/Registry/SubscriptionRequestHandler.php:62 handle(), which resolves a real provider (lib/Service/Registry/KvkMutatieProvider.php, register.d/kvk-mutatieservice-source.json) and records the subscription (SubscriptionRoster::add); the listener is registered in lib/AppInfo/Application.php:244 and lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered as a background job in appinfo/info.xml:143 to poll for updates.",
+				"change": "2026-09-29-registry-subscription-connector"
 			},
 			"reachedOn": "machine/event route: OpenRegister dispatches RegistrySubscriptionRequestedEvent when a field on an integriq-managed object asks to follow a base registry (e.g. KVK mutatieservice)",
 			"provider": "integriq",
@@ -3484,7 +3542,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:2813-2833 Flows (/flows, type index) and FlowDetail (/flows/:id, type flow) pages, config.app 'openconnector'; src/views/Flow/FlowDetailSidebar.vue:11 CnFlowSidebar shares useFlowStore with the canvas. Two engines coexist: legacy step flows run on integriq's own lib/Service/FlowRunnerService.php (step loop lines 253-346, step types at 364-370); new flows are graphs executed by OpenRegister's FlowEngine (nextcloud-vue useFlowStore.js:1445,1661 POST /apps/openregister/api/flows, /apps/openregister/api/flows/{id}/run), with integriq contributing its own node types via lib/Flow/FlowNodeListener.php:100-110 (RegisterFlowNodesEvent)."
+				"evidence": "src/manifest.json:2813-2833 Flows (/flows, type index) and FlowDetail (/flows/:id, type flow) pages, config.app 'openconnector'; src/views/Flow/FlowDetailSidebar.vue:11 CnFlowSidebar shares useFlowStore with the canvas. Two engines coexist: legacy step flows run on integriq's own lib/Service/FlowRunnerService.php (step loop lines 253-346, step types at 364-370); new flows are graphs executed by OpenRegister's FlowEngine (nextcloud-vue useFlowStore.js:1445,1661 POST /apps/openregister/api/flows, /apps/openregister/api/flows/{id}/run), with integriq contributing its own node types via lib/Flow/FlowNodeListener.php:100-110 (RegisterFlowNodesEvent).",
+				"spec": "openspec/specs/flow-orchestration"
 			},
 			"reachedOn": "/flows (Flows index) -> /flows/:id (FlowDetail, CnFlowEditorPage canvas)",
 			"note": "Two flow engines run side by side: FlowRunnerService for un-migrated legacy step flows, OpenRegister's generic FlowEngine graph canvas for new/migrated ones (lib/Repair/MigrateFlowStepsToGraph.php documents the coexistence and is not a defect).",
@@ -3516,7 +3575,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/FlowRunnerService.php:286-301 'branch' step type selects the next step via JsonLogic (selectBranchTarget); openspec/specs/flow-orchestration/spec.md:152-194 REQ-004. Migrated/new graph flows get the same behaviour from OpenRegister's own RouterNode/SwitchNode (openregister lib/Service/Flow/Nodes/SwitchNode.php, RouterNode.php), reachable through the same canvas."
+				"evidence": "lib/Service/FlowRunnerService.php:286-301 'branch' step type selects the next step via JsonLogic (selectBranchTarget); openspec/specs/flow-orchestration/spec.md:152-194 REQ-004. Migrated/new graph flows get the same behaviour from OpenRegister's own RouterNode/SwitchNode (openregister lib/Service/Flow/Nodes/SwitchNode.php, RouterNode.php), reachable through the same canvas.",
+				"spec": "openspec/specs/flow-orchestration"
 			},
 			"reachedOn": "/flows/:id (FlowDetail canvas), branch step/node",
 			"provider": "integriq",
@@ -3580,7 +3640,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "openregister lib/Service/Flow/Nodes/SubFlowNode.php implements calling one flow from another; integriq's own lib/Service/FlowRunnerService.php:364-370 has no subflow step type. FlowNodeRegistry (openregister lib/Service/Flow/FlowNodeRegistry.php:194-260) serves one shared, cross-app node catalogue, so SubFlowNode is available on integriq's /flows canvas for graph-format flows."
+				"evidence": "openregister lib/Service/Flow/Nodes/SubFlowNode.php implements calling one flow from another; integriq's own lib/Service/FlowRunnerService.php:364-370 has no subflow step type. FlowNodeRegistry (openregister lib/Service/Flow/FlowNodeRegistry.php:194-260) serves one shared, cross-app node catalogue, so SubFlowNode is available on integriq's /flows canvas for graph-format flows.",
+				"change": "2026-07-15-visual-flow-orchestration"
 			},
 			"reachedOn": "/flows/:id (FlowDetail canvas), subflow node from OpenRegister's shared node catalogue",
 			"note": "Only reachable for the new graph-format flows (post-migration), not for legacy step flows still on FlowRunnerService.",
@@ -3645,7 +3706,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:2047-2054 Jobs page (/jobs, index, schema job) with interval config; lib/Service/JobIntervalCron.php (interval/cron computation); lib/Service/JobService.php:511 nextRunDt computed from jobConfig['interval']."
+				"evidence": "src/manifest.json:2047-2054 Jobs page (/jobs, index, schema job) with interval config; lib/Service/JobIntervalCron.php (interval/cron computation); lib/Service/JobService.php:511 nextRunDt computed from jobConfig['interval'].",
+				"spec": "openspec/specs/job-scheduling"
 			},
 			"reachedOn": "/jobs (Jobs index) -> job form",
 			"provider": "integriq",
@@ -3676,7 +3738,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "_lane/frontend-api-paths.txt: /apps/integriq/api/jobs/run/${rowId(item)} and /apps/integriq/api/jobs/test/${rowId(item)}, both called from src/modals/v2/runTargets.js:568,601; appinfo/routes.php jobs#run and jobs#test routes backing them."
+				"evidence": "_lane/frontend-api-paths.txt: /apps/integriq/api/jobs/run/${rowId(item)} and /apps/integriq/api/jobs/test/${rowId(item)}, both called from src/modals/v2/runTargets.js:568,601; appinfo/routes.php jobs#run and jobs#test routes backing them.",
+				"spec": "openspec/specs/job-management"
 			},
 			"reachedOn": "/jobs (Jobs index) row action, Run/Test",
 			"provider": "integriq",
@@ -3707,7 +3770,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:2156-2164 JobLogs page (/jobs/logs, type logs, schema job_log); src/manifest.json:2893-2899 nav entry 'Every scheduled run, and how it ended.'"
+				"evidence": "src/manifest.json:2156-2164 JobLogs page (/jobs/logs, type logs, schema job_log); src/manifest.json:2893-2899 nav entry 'Every scheduled run, and how it ended.'",
+				"spec": "openspec/specs/job-management"
 			},
 			"reachedOn": "/jobs/logs (JobLogs)",
 			"provider": "integriq",
@@ -3738,7 +3802,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:2306-2313 Rules page (/rules, index, schema rule); lib/Service/RuleService.php; lib/Service/EndpointService.php handleRuleProcessing() applies rules (before/after timing, action types error/mapping/synchronization/javascript/authentication/download/upload/locking/fetch_file/write_file/etc, see src/views/Rule/ruleDraft.js:65-81) to endpoint traffic."
+				"evidence": "src/manifest.json:2306-2313 Rules page (/rules, index, schema rule); lib/Service/RuleService.php; lib/Service/EndpointService.php handleRuleProcessing() applies rules (before/after timing, action types error/mapping/synchronization/javascript/authentication/download/upload/locking/fetch_file/write_file/etc, see src/views/Rule/ruleDraft.js:65-81) to endpoint traffic.",
+				"spec": "openspec/specs/rule-pipeline"
 			},
 			"reachedOn": "/rules (Rules index)",
 			"provider": "integriq",
@@ -3769,7 +3834,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:2344-2352 RuleDetail (/rules/:id, type custom, component RuleDetailPage): 'the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.' src/modals/v2/RuleEditorModal.vue and src/views/Rule/actionForms/* provide the no-code action forms."
+				"evidence": "src/manifest.json:2344-2352 RuleDetail (/rules/:id, type custom, component RuleDetailPage): 'the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.' src/modals/v2/RuleEditorModal.vue and src/views/Rule/actionForms/* provide the no-code action forms.",
+				"spec": "openspec/specs/rule-editor-ui"
 			},
 			"reachedOn": "/rules/:id (RuleDetailPage)",
 			"note": "The form only offers the 17 action types listed in ruleDraft.js ACTION_TYPES; 8 more the backend accepts (audit_trail, override, custom, composite_fanout, referentienummer, avg_bsn_policy, selfurl_hal, flow) have no authoring UI (ruleDraft.js:56-63) and can only be set by seeding a rule from a configuration import.",
@@ -3801,7 +3867,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/FlowRunnerService.php:303-313 'approval' step type calls dispatchApproval() (defined at :522) then suspendFlowRun() (:696); lib/Flow/ApprovalRequestNode.php is the equivalent node for graph-format flows; src/manifest.json:2800-2802 Approvals page (/approvals, custom ApprovalsIndex) and ApprovalDetail (/approvals/:id)."
+				"evidence": "lib/Service/FlowRunnerService.php:303-313 'approval' step type calls dispatchApproval() (defined at :522) then suspendFlowRun() (:696); lib/Flow/ApprovalRequestNode.php is the equivalent node for graph-format flows; src/manifest.json:2800-2802 Approvals page (/approvals, custom ApprovalsIndex) and ApprovalDetail (/approvals/:id).",
+				"spec": "openspec/specs/approval-workflow"
 			},
 			"reachedOn": "/approvals (ApprovalsIndex) -> /approvals/:id (ApprovalDetail); flow suspends mid-run until decided",
 			"provider": "integriq",
@@ -3832,7 +3899,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/changes/hitl-on-shared-tasks/tasks.md section 1 fully checked ([x] 1.1-1.4); lib/Service/ApprovalService.php:922 calls OpenRegister's ORTaskService::import() from every suspend path, writing the returned uuid back onto the approval_request as taskUuid (:927); completeApproval()/reject() close the mirrored task (tasks.md 1.2)."
+				"evidence": "openspec/changes/hitl-on-shared-tasks/tasks.md section 1 fully checked ([x] 1.1-1.4); lib/Service/ApprovalService.php:922 calls OpenRegister's ORTaskService::import() from every suspend path, writing the returned uuid back onto the approval_request as taskUuid (:927); completeApproval()/reject() close the mirrored task (tasks.md 1.2).",
+				"change": "hitl-on-shared-tasks"
 			},
 			"reachedOn": "no dedicated integriq page; the mirrored task surfaces in OpenRegister's own shared task inbox, not in /approvals",
 			"note": "A mirror failure never blocks the approval (logged, not thrown), so this degrades to no task-list entry rather than a broken approval. Follow-ups 2.1-2.4 (task-first resolution, driving decisions from the shared inbox, translation) are explicitly not done yet (tasks.md section 2, all unchecked).",
@@ -3930,7 +3998,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/hermiq",
-				"evidence": "hermiq lib/Flow/HermiqAgentNode.php:102-104 is step type hermiq.agent-step and :235 execute() runs an agent turn for each item and puts the answer on it (with expectJson parsing, :391); hermiq lib/Flow/HermiqFlowNodeListener.php:73 registers it on OpenRegister's RegisterFlowNodesEvent, wired at hermiq lib/AppInfo/Application.php:156-161 (hermiq development 7cac4471b); openregister lib/Service/Flow/FlowNodeRegistry.php:574 dispatches that event to fill the node catalogue the flow canvas reads (openregister development 5cda2f04)."
+				"evidence": "hermiq lib/Flow/HermiqAgentNode.php:102-104 is step type hermiq.agent-step and :235 execute() runs an agent turn for each item and puts the answer on it (with expectJson parsing, :391); hermiq lib/Flow/HermiqFlowNodeListener.php:73 registers it on OpenRegister's RegisterFlowNodesEvent, wired at hermiq lib/AppInfo/Application.php:156-161 (hermiq development 7cac4471b); openregister lib/Service/Flow/FlowNodeRegistry.php:574 dispatches that event to fill the node catalogue the flow canvas reads (openregister development 5cda2f04).",
+				"spec": "openspec/specs/flow-orchestration"
 			},
 			"reachedOn": "flow canvas node palette, Agent step (hermiq installed)",
 			"provider": "openregister",
@@ -3995,7 +4064,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:3274-3289 FlowRuns page (/flow-runs, type logs, schema flow_run, rowDetail: true) for legacy step-engine runs, with appendLog() calls in lib/Service/FlowRunnerService.php writing the per-step trail. For graph-format flows, nextcloud-vue's CnFlowSidebar.vue:200-277 (Runs tab, store.runs / store.inspectRun) shows run history and per-step traces inline in FlowDetail."
+				"evidence": "src/manifest.json:3274-3289 FlowRuns page (/flow-runs, type logs, schema flow_run, rowDetail: true) for legacy step-engine runs, with appendLog() calls in lib/Service/FlowRunnerService.php writing the per-step trail. For graph-format flows, nextcloud-vue's CnFlowSidebar.vue:200-277 (Runs tab, store.runs / store.inspectRun) shows run history and per-step traces inline in FlowDetail.",
+				"change": "2026-07-15-visual-flow-orchestration"
 			},
 			"reachedOn": "/flow-runs (legacy flows); /flows/:id sidebar 'Runs' tab (graph flows)",
 			"note": "The manifest's own note on FlowRuns says: 'A flow you could draw and never watch... nothing in src/ read it, so a run that failed overnight left no trace a user could reach' before this page was added, which is useful context on how recent this fix is.",
@@ -4027,7 +4097,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/flow-workflowengine-operations/spec.md: registers SynchronizationService/EndpointService/EventService as NC core OCP\\WorkflowEngine operations ('Run synchronization', 'Call endpoint', 'Fire CloudEvent'). lib/AppInfo/Application.php:298 calls registerWorkflowEngineOperations() (defined :868-890), feature-detected on IAppManager::isEnabledForAnyUser('workflowengine'); lib/WorkflowEngine/CallEndpointOperation.php, RunSynchronizationOperation.php, FireCloudEventOperation.php, RegisterOperationsListener.php implement the three operations."
+				"evidence": "openspec/specs/flow-workflowengine-operations/spec.md: registers SynchronizationService/EndpointService/EventService as NC core OCP\\WorkflowEngine operations ('Run synchronization', 'Call endpoint', 'Fire CloudEvent'). lib/AppInfo/Application.php:298 calls registerWorkflowEngineOperations() (defined :868-890), feature-detected on IAppManager::isEnabledForAnyUser('workflowengine'); lib/WorkflowEngine/CallEndpointOperation.php, RunSynchronizationOperation.php, FireCloudEventOperation.php, RegisterOperationsListener.php implement the three operations.",
+				"spec": "openspec/specs/flow-workflowengine-operations"
 			},
 			"reachedOn": "Nextcloud's own Settings > Flow admin page, operation picker for a File (or other) entity",
 			"provider": "integriq",
@@ -4122,7 +4193,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/EventListener/CloudEventListener.php:32-46 forwards OpenRegister ObjectCreated/Updated/Deleted events to EventService; lib/Service/EventService.php processes and dispatches matching event_subscription rows. src/manifest.json:2547-2553 CloudEvents index (/cloud-events/events, schema event)."
+				"evidence": "lib/EventListener/CloudEventListener.php:32-46 forwards OpenRegister ObjectCreated/Updated/Deleted events to EventService; lib/Service/EventService.php processes and dispatches matching event_subscription rows. src/manifest.json:2547-2553 CloudEvents index (/cloud-events/events, schema event).",
+				"spec": "openspec/specs/events-cloudevents"
 			},
 			"reachedOn": "automatic on any register/schema object change matching an active subscription; visible via /cloud-events/events and /cloud-events/logs",
 			"provider": "integriq",
@@ -4153,7 +4225,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "No dedicated inbound CloudEvents decoder exists: lib/Broker/CloudEventHttpBinding.php only has render() (outbound encoding), no decode/parse method (`grep -n 'function ' lib/Broker/CloudEventHttpBinding.php` shows render/dataContentType/binaryBody/headerValue only). The generic inbound path is an Endpoint + Rule (lib/Service/EndpointService.php handleRuleProcessing()): any outside system can POST a body (including a CloudEvent JSON payload) to an Endpoint, and a Rule can act on it (mapping/synchronization/job/etc). lib/Controller/NotificatiesSubscriberController.php's callback() is the one purpose-built inbound-notification-to-CloudEvent normalizer, but it is ZGW-specific (see evt-zgw-subscribe)."
+				"evidence": "No dedicated inbound CloudEvents decoder exists: lib/Broker/CloudEventHttpBinding.php only has render() (outbound encoding), no decode/parse method (`grep -n 'function ' lib/Broker/CloudEventHttpBinding.php` shows render/dataContentType/binaryBody/headerValue only). The generic inbound path is an Endpoint + Rule (lib/Service/EndpointService.php handleRuleProcessing()): any outside system can POST a body (including a CloudEvent JSON payload) to an Endpoint, and a Rule can act on it (mapping/synchronization/job/etc). lib/Controller/NotificatiesSubscriberController.php's callback() is the one purpose-built inbound-notification-to-CloudEvent normalizer, but it is ZGW-specific (see evt-zgw-subscribe).",
+				"spec": "openspec/specs/events-cloudevents"
 			},
 			"reachedOn": "generic: any registered Endpoint URL, acted on via its attached Rules",
 			"note": "There is no CloudEvents-aware inbound receiver that validates ce-id/ce-type/ce-source and turns it into an integriq event/subscription match; only generic endpoint+rule handling, or the ZGW-specific Notificaties callback.",
@@ -4188,7 +4261,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:412-416 events#subscriptions (GET/POST), events#updateSubscription, events#unsubscribe; src/manifest.json:1991-2028 Webhooks page (/webhooks, index, schema event_subscription, addLabel 'Add Webhook') is documented as 'a webhook is an EventSubscription with a delivery sink URL (push/pull)'."
+				"evidence": "appinfo/routes.php:412-416 events#subscriptions (GET/POST), events#updateSubscription, events#unsubscribe; src/manifest.json:1991-2028 Webhooks page (/webhooks, index, schema event_subscription, addLabel 'Add Webhook') is documented as 'a webhook is an EventSubscription with a delivery sink URL (push/pull)'.",
+				"spec": "openspec/specs/events-cloudevents"
 			},
 			"reachedOn": "/webhooks (Webhooks index) -> add/edit subscription; machine route: POST /api/events/subscriptions",
 			"provider": "integriq",
@@ -4219,7 +4293,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/EventsController.php generateSigningSecret()/rotateSigningSecret() (routes appinfo/routes.php:422-423); lib/Service/EventService.php:572-587 signs the raw outbound body with the subscription's signingSecret (X-OpenConnector-Signature header) when configured, including a rotation grace period. src/manifest.json:2018-2021 Webhooks page 'manage-signing' row action opens src/modals/Subscription/SubscriptionSigningModal.vue."
+				"evidence": "lib/Controller/EventsController.php generateSigningSecret()/rotateSigningSecret() (routes appinfo/routes.php:422-423); lib/Service/EventService.php:572-587 signs the raw outbound body with the subscription's signingSecret (X-OpenConnector-Signature header) when configured, including a rotation grace period. src/manifest.json:2018-2021 Webhooks page 'manage-signing' row action opens src/modals/Subscription/SubscriptionSigningModal.vue.",
+				"spec": "openspec/specs/webhook-signing"
 			},
 			"reachedOn": "/webhooks (Webhooks index) row action 'Webhook signing'",
 			"provider": "integriq",
@@ -4286,7 +4361,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EventService.php:392-456 evaluateFilters() supports multiple filter dialects per subscription, called from the subscription-matching path at :371."
+				"evidence": "lib/Service/EventService.php:392-456 evaluateFilters() supports multiple filter dialects per subscription, called from the subscription-matching path at :371.",
+				"spec": "openspec/specs/events-cloudevents"
 			},
 			"reachedOn": "/webhooks (Webhooks index) subscription form, 'types'/filter fields",
 			"provider": "integriq",
@@ -4317,7 +4393,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EventService.php:83-110 documents baseSeconds/factor/capSeconds(6h max)/maxRetries; resolveRetryPolicy() at :737-751 reads per-subscription retryPolicy overrides falling back to defaults; scheduling logic at :753-811. src/modals/EventSubscription/SubscriptionActionFields.vue:10-13 documents the formData.retryPolicy authoring fields."
+				"evidence": "lib/Service/EventService.php:83-110 documents baseSeconds/factor/capSeconds(6h max)/maxRetries; resolveRetryPolicy() at :737-751 reads per-subscription retryPolicy overrides falling back to defaults; scheduling logic at :753-811. src/modals/EventSubscription/SubscriptionActionFields.vue:10-13 documents the formData.retryPolicy authoring fields.",
+				"spec": "openspec/specs/events-cloudevents"
 			},
 			"reachedOn": "/webhooks (Webhooks index) subscription form, retry policy fields",
 			"provider": "integriq",
@@ -4348,7 +4425,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:426-431 events#deadLetterIndex, events#bulkReplay, events#bulkDiscard, events#deadLetterShow, events#replay, events#discard; src/views/EventDelivery/EventDeliveriesPage.vue:294,319 call /api/events/dead-letter and its bulk verb; src/modals/EventDelivery/EventDeliveryDetailModal.vue:254 per-item replay/discard. src/views/Operations/DeadLettersPage.vue merges this queue with sync-dead-letter under one Dead letters page (/dead-letters)."
+				"evidence": "appinfo/routes.php:426-431 events#deadLetterIndex, events#bulkReplay, events#bulkDiscard, events#deadLetterShow, events#replay, events#discard; src/views/EventDelivery/EventDeliveriesPage.vue:294,319 call /api/events/dead-letter and its bulk verb; src/modals/EventDelivery/EventDeliveryDetailModal.vue:254 per-item replay/discard. src/views/Operations/DeadLettersPage.vue merges this queue with sync-dead-letter under one Dead letters page (/dead-letters).",
+				"spec": "openspec/specs/dead-letter-replay"
 			},
 			"reachedOn": "/dead-letters (DeadLettersPage), Events queue -> Replay/Discard, single or bulk",
 			"provider": "integriq",
@@ -4415,7 +4493,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:321-325 notificatiesSubscriber#index/create/update/destroy (/api/notificaties/abonnementen) and notificatiesSubscriber#callback (/api/notificaties/callback/{abonnementId}, the inbound push receiver); lib/Controller/NotificatiesSubscriberController.php; src/manifest.json:2029-2038 NotificatiesAbonnementenPage (/notificaties/abonnementen, custom) documented as 'create/update/delete also register/update/delete against the remote ZGW Notificaties API and provision/cascade-delete a companion consumer.'"
+				"evidence": "appinfo/routes.php:321-325 notificatiesSubscriber#index/create/update/destroy (/api/notificaties/abonnementen) and notificatiesSubscriber#callback (/api/notificaties/callback/{abonnementId}, the inbound push receiver); lib/Controller/NotificatiesSubscriberController.php; src/manifest.json:2029-2038 NotificatiesAbonnementenPage (/notificaties/abonnementen, custom) documented as 'create/update/delete also register/update/delete against the remote ZGW Notificaties API and provision/cascade-delete a companion consumer.'",
+				"spec": "openspec/specs/notificaties-api-connector"
 			},
 			"reachedOn": "/notificaties/abonnementen (NotificatiesAbonnementenPage)",
 			"provider": "integriq",
@@ -4478,7 +4557,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/EventListener/CloudEventListener.php:32-46 documents two guards ('the recursion bug'): a firehose gate (skip entirely when zero active subscriptions) and a self-reference guard (SELF_SCHEMAS = event/event_message/event_subscription never re-forwarded, lines 51-63). lib/Service/Event/EventLoopGuard.php:57-211 is the dedicated service (decide(), carriesMarker(), stamp(), chain())."
+				"evidence": "lib/EventListener/CloudEventListener.php:32-46 documents two guards ('the recursion bug'): a firehose gate (skip entirely when zero active subscriptions) and a self-reference guard (SELF_SCHEMAS = event/event_message/event_subscription never re-forwarded, lines 51-63). lib/Service/Event/EventLoopGuard.php:57-211 is the dedicated service (decide(), carriesMarker(), stamp(), chain()).",
+				"spec": "openspec/specs/events-cloudevents"
 			},
 			"reachedOn": "automatic, no UI: enforced on every object-change event before a CloudEvent is even persisted",
 			"provider": "integriq",
@@ -4509,7 +4589,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/EventListener/NextcloudFileEventListener.php, NextcloudFileTagEventListener.php, NextcloudCalendarEventListener.php, NextcloudFormsEventListener.php, NextcloudTablesEventListener.php normalize NC core events into CloudEvents (per openspec/changes/nc-events-start-or-flows/proposal.md: 'Integriq's event hub already normalizes Nextcloud core events (files, calendar, Tables, Forms) into CloudEvents')."
+				"evidence": "lib/EventListener/NextcloudFileEventListener.php, NextcloudFileTagEventListener.php, NextcloudCalendarEventListener.php, NextcloudFormsEventListener.php, NextcloudTablesEventListener.php normalize NC core events into CloudEvents (per openspec/changes/nc-events-start-or-flows/proposal.md: 'Integriq's event hub already normalizes Nextcloud core events (files, calendar, Tables, Forms) into CloudEvents').",
+				"change": "2026-09-28-nc-events-start-or-flows"
 			},
 			"reachedOn": "automatic: file/calendar/Forms/Tables activity in Nextcloud -> event_subscription matching -> /cloud-events pages",
 			"provider": "integriq",
@@ -4540,7 +4621,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:419 events#pull (/api/events/subscriptions/{subscriptionId}/pull, GET); lib/Controller/EventsController.php:397-429 pull() rejects non-pull-style subscriptions (400) and otherwise calls EventService::pullEvents() with limit/cursor."
+				"evidence": "appinfo/routes.php:419 events#pull (/api/events/subscriptions/{subscriptionId}/pull, GET); lib/Controller/EventsController.php:397-429 pull() rejects non-pull-style subscriptions (400) and otherwise calls EventService::pullEvents() with limit/cursor.",
+				"spec": "openspec/specs/events-cloudevents"
 			},
 			"reachedOn": "machine route: GET /api/events/subscriptions/{id}/pull (subscription style: pull)",
 			"provider": "integriq",
@@ -4603,7 +4685,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:1338-1345 SourceLogs (/sources/logs, type logs, schema call_log) and :1589-1596 EndpointLogs (/endpoints/logs, same schema) render inbound and outbound calls."
+				"evidence": "src/manifest.json:1338-1345 SourceLogs (/sources/logs, type logs, schema call_log) and :1589-1596 EndpointLogs (/endpoints/logs, same schema) render inbound and outbound calls.",
+				"spec": "openspec/specs/logs-and-statistics"
 			},
 			"reachedOn": "/sources/logs (SourceLogs), /endpoints/logs (EndpointLogs)",
 			"provider": "integriq",
@@ -4667,7 +4750,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:3168-3172 Traces page (/traces, type logs, schema execution_trace); :3262-3271 TraceDetail (/traces/:id, custom TraceDetailPage) 'renders one execution_trace's ordered step timeline (type/duration/status per step, expandable redacted input/output)'."
+				"evidence": "src/manifest.json:3168-3172 Traces page (/traces, type logs, schema execution_trace); :3262-3271 TraceDetail (/traces/:id, custom TraceDetailPage) 'renders one execution_trace's ordered step timeline (type/duration/status per step, expandable redacted input/output)'.",
+				"spec": "openspec/specs/execution-trace"
 			},
 			"reachedOn": "/traces (Traces index) -> /traces/:id (TraceDetail)",
 			"provider": "integriq",
@@ -4698,7 +4782,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "_lane/frontend-api-paths.txt: /apps/integriq/api/execution-traces/${this.traceId}/replay called twice from src/views/ExecutionTrace/TraceDetailPage.vue:232,260. src/manifest.json:3266 TraceDetail note: 'a Replay action (dry-run preview shown first; a separate confirmation step is required before a forced replay).'"
+				"evidence": "_lane/frontend-api-paths.txt: /apps/integriq/api/execution-traces/${this.traceId}/replay called twice from src/views/ExecutionTrace/TraceDetailPage.vue:232,260. src/manifest.json:3266 TraceDetail note: 'a Replay action (dry-run preview shown first; a separate confirmation step is required before a forced replay).'",
+				"spec": "openspec/specs/execution-trace"
 			},
 			"reachedOn": "/traces/:id (TraceDetail), Replay action",
 			"provider": "integriq",
@@ -4798,7 +4883,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:420-435 Dashboard page (/, type dashboard) with dateRange enabled; the widgets note (:435) describes four lead counts backed by schema enums (synchronization_run.status, sync_item_dead_letter.status, event_message.status, source.circuitBreakerState) plus volume charts over time."
+				"evidence": "src/manifest.json:420-435 Dashboard page (/, type dashboard) with dateRange enabled; the widgets note (:435) describes four lead counts backed by schema enums (synchronization_run.status, sync_item_dead_letter.status, event_message.status, source.circuitBreakerState) plus volume charts over time.",
+				"spec": "openspec/specs/logs-and-statistics"
 			},
 			"reachedOn": "/ (Dashboard)",
 			"provider": "integriq",
@@ -4829,7 +4915,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:2985-2989 OperationalHealth (/reports/operational-health, type dashboard): 'The Reports hub cards six log surfaces, which answer \"what happened to this one thing\". Nothing aggregated them, so \"how is it going\" had no page at all.' Charts read synchronization_run.status, execution_trace.status, event_message.status, sync_item_dead_letter.phase."
+				"evidence": "src/manifest.json:2985-2989 OperationalHealth (/reports/operational-health, type dashboard): 'The Reports hub cards six log surfaces, which answer \"what happened to this one thing\". Nothing aggregated them, so \"how is it going\" had no page at all.' Charts read synchronization_run.status, execution_trace.status, event_message.status, sync_item_dead_letter.phase.",
+				"spec": "openspec/specs/logs-and-statistics"
 			},
 			"reachedOn": "/reports -> Operational health -> /reports/operational-health",
 			"provider": "integriq",
@@ -4860,7 +4947,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:21 metrics#index (/api/metrics, GET); lib/Controller/MetricsController.php extends OpenRegister AppHost's GenericMetricsController, wired by an explicit factory in lib/AppInfo/Application.php::registerAppHostObservability(); lib/Observability/IntegriqMetricsProvider.php:64,788 implements IMetricsProvider::metrics()."
+				"evidence": "appinfo/routes.php:21 metrics#index (/api/metrics, GET); lib/Controller/MetricsController.php extends OpenRegister AppHost's GenericMetricsController, wired by an explicit factory in lib/AppInfo/Application.php::registerAppHostObservability(); lib/Observability/IntegriqMetricsProvider.php:64,788 implements IMetricsProvider::metrics().",
+				"spec": "openspec/specs/prometheus-metrics"
 			},
 			"reachedOn": "machine route: GET /api/metrics (admin-only, no #[NoAdminRequired])",
 			"note": "The generic controller/collection plumbing is OpenRegister's AppHost observability package; integriq supplies its own IntegriqMetricsProvider content.",
@@ -4892,7 +4980,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:22 health#index (/api/health, GET); lib/Controller/HealthController.php delegates to OpenRegister AppHost's GenericHealthController (null-injected and reporting 503 with the missing dependency named when OpenRegister is disabled, rather than a bare DI 500)."
+				"evidence": "appinfo/routes.php:22 health#index (/api/health, GET); lib/Controller/HealthController.php delegates to OpenRegister AppHost's GenericHealthController (null-injected and reporting 503 with the missing dependency named when OpenRegister is disabled, rather than a bare DI 500).",
+				"spec": "openspec/specs/logs-and-statistics"
 			},
 			"reachedOn": "machine route: GET /api/health",
 			"provider": "integriq",
@@ -4987,7 +5076,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/BackgroundJob/LogCleanUpTask.php: 'Runs periodically to remove old call logs and job logs from the database and prevent storage bloat', extends TimedJob; appinfo/info.xml:110 registers it as a background job."
+				"evidence": "lib/BackgroundJob/LogCleanUpTask.php: 'Runs periodically to remove old call logs and job logs from the database and prevent storage bloat', extends TimedJob; appinfo/info.xml:110 registers it as a background job.",
+				"spec": "openspec/specs/logs-and-statistics"
 			},
 			"reachedOn": "automatic background job, no page (registered in appinfo/info.xml)",
 			"provider": "integriq",
@@ -5018,7 +5108,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:504 productSubscriptions#analytics (/api/products/{productId}/analytics, GET, admin-only per spec_ref); src/views/ApiProducts/ApiProductDetail.vue:448-459 loadAnalytics() calls it, tagged openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007."
+				"evidence": "appinfo/routes.php:504 productSubscriptions#analytics (/api/products/{productId}/analytics, GET, admin-only per spec_ref); src/views/ApiProducts/ApiProductDetail.vue:448-459 loadAnalytics() calls it, tagged openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007.",
+				"spec": "openspec/specs/api-product-gateway"
 			},
 			"reachedOn": "/products/:id (ApiProductDetail), analytics tab",
 			"note": "This is per-API-PRODUCT analytics (a gateway construct wrapping one or more endpoints/consumers), not a fleet-wide usage-by-consumer report; it satisfies the capability but at the product's own scope.",
@@ -5050,7 +5141,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/BodyRedactor.php: 'Removes credential material from a body before it is stored... Redaction runs before the write, never on read... Mirrors the snapshot redaction of execution-trace REQ-003.' Used by lib/Outbound/MessageRecorder.php and lib/Outbound/Call/CallRecorder.php. TraceDetail's own step timeline separately redacts input/output before storage (src/manifest.json:3266)."
+				"evidence": "lib/Outbound/BodyRedactor.php: 'Removes credential material from a body before it is stored... Redaction runs before the write, never on read... Mirrors the snapshot redaction of execution-trace REQ-003.' Used by lib/Outbound/MessageRecorder.php and lib/Outbound/Call/CallRecorder.php. TraceDetail's own step timeline separately redacts input/output before storage (src/manifest.json:3266).",
+				"spec": "openspec/specs/logs-and-statistics"
 			},
 			"reachedOn": "automatic on write, no toggle needed; redacted values are what SourceLogs/EndpointLogs/OutboundMessages/TraceDetail ever display",
 			"provider": "integriq",
@@ -5081,7 +5173,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json:2847-2900 Reports page (/reports, type reports) with categories health/traffic/components/protocols, cards for Operational health, Traces, Source logs, Endpoint logs, Job logs and more."
+				"evidence": "src/manifest.json:2847-2900 Reports page (/reports, type reports) with categories health/traffic/components/protocols, cards for Operational health, Traces, Source logs, Endpoint logs, Job logs and more.",
+				"spec": "openspec/specs/logs-and-statistics"
 			},
 			"reachedOn": "/reports (Reports hub)",
 			"provider": "integriq",
@@ -5320,7 +5413,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:223 zgwVersionTranslate#translate -> lib/Controller/ZgwVersionTranslateController.php:100 translate() -> lib/Service/ZgwVersionTranslationService.php; manifest page ZgwTranslations (src/manifest.json:2949-2954, route /messages/zgw-translations, schema integriq zgw_version_translation_log) renders the log generically."
+				"evidence": "appinfo/routes.php:223 zgwVersionTranslate#translate -> lib/Controller/ZgwVersionTranslateController.php:100 translate() -> lib/Service/ZgwVersionTranslationService.php; manifest page ZgwTranslations (src/manifest.json:2949-2954, route /messages/zgw-translations, schema integriq zgw_version_translation_log) renders the log generically.",
+				"spec": "openspec/specs/zgw-version-translation"
 			},
 			"reachedOn": "machine route: POST /api/zgw-translate (authenticated NC-session call from sibling apps on a different ZGW version); results viewable at /messages/zgw-translations",
 			"provider": "integriq",
@@ -5351,7 +5445,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:607-616 ten objectenApi# routes (objecttypes, objecttype, objecttypeVersion, objects, search, createObject, object, replaceObject, updateObject, deleteObject) -> lib/Controller/ObjectenApiController.php (methods at lines 101-380), gated by ObjectenTokenService per routes.php comment."
+				"evidence": "appinfo/routes.php:607-616 ten objectenApi# routes (objecttypes, objecttype, objecttypeVersion, objects, search, createObject, object, replaceObject, updateObject, deleteObject) -> lib/Controller/ObjectenApiController.php (methods at lines 101-380), gated by ObjectenTokenService per routes.php comment.",
+				"spec": "openspec/specs/object-service-shim"
 			},
 			"reachedOn": "machine route: GET/POST /api/v2/objects and /api/v2/objecttypes (external suppliers presenting 'Authorization: Token <key>', no Nextcloud session)",
 			"note": "Sibling row lists dossiq:12.3 as provider, but the Objecten/Objecttypen API is actually served by integriq's own ObjectenApiController, not dossiq.",
@@ -5386,7 +5481,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:204-205 stufZkn#inbound/outbound -> lib/Controller/StufZknController.php:121 inbound(), :171 outbound(); lib/Service/StufZkn/StufZknClient.php implements StufZknProviderInterface as a real SOAP/Digikoppeling-transport binding alongside lib/Service/StufZkn/LogStufZknProvider.php (mock default); manifest page StufMessages (src/manifest.json:2909-2914, /messages/stuf, schema stuf_message)."
+				"evidence": "appinfo/routes.php:204-205 stufZkn#inbound/outbound -> lib/Controller/StufZknController.php:121 inbound(), :171 outbound(); lib/Service/StufZkn/StufZknClient.php implements StufZknProviderInterface as a real SOAP/Digikoppeling-transport binding alongside lib/Service/StufZkn/LogStufZknProvider.php (mock default); manifest page StufMessages (src/manifest.json:2909-2914, /messages/stuf, schema stuf_message).",
+				"spec": "openspec/specs/stuf-zkn-bridge"
 			},
 			"reachedOn": "machine route: POST /api/stuf-zkn/inbound (legacy case system SOAP push) and /api/stuf-zkn/kennisgevingen (outbound push from sibling apps); viewable at /messages/stuf",
 			"provider": "integriq",
@@ -5452,7 +5548,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:38 dSO#receiveRequest -> lib/Controller/DSOController.php:132 receiveRequest() (machine webhook with real PKI/HMAC signature verification per routes.php comment); routes.php:47-50 dSO#listVerzoeken/status/handoff/postOutbound -> DSOController.php:221,250,290,353. A repo-wide search of src/ finds zero calls to /api/dso/verzoeken anywhere, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue, no verzoeken review page."
+				"evidence": "appinfo/routes.php:38 dSO#receiveRequest -> lib/Controller/DSOController.php:132 receiveRequest() (machine webhook with real PKI/HMAC signature verification per routes.php comment); routes.php:47-50 dSO#listVerzoeken/status/handoff/postOutbound -> DSOController.php:221,250,290,353. A repo-wide search of src/ finds zero calls to /api/dso/verzoeken anywhere, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue, no verzoeken review page.",
+				"spec": "openspec/specs/dso-omgevingsloket"
 			},
 			"reachedOn": "machine route: POST /api/dso/stam/verzoeken (Omgevingsloket STAM push); the staff review/handoff surface (list, status, handoff) has no page reaching it",
 			"note": "Live-defect candidate: an operator has no way to see or hand off a received Omgevingsloket application anywhere in the UI, even though the backend read/handoff/outbound surface is fully built.",
@@ -5484,7 +5581,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:623-624 dsoPkiSettings#getConfig/setConfig -> lib/Controller/DsoPkiSettingsController.php:71 getConfig(), :114 setConfig(); src/views/admin/DsoPkiSettings.vue:164,188 axios calls to /apps/integriq/api/admin/dso-pki-config."
+				"evidence": "appinfo/routes.php:623-624 dsoPkiSettings#getConfig/setConfig -> lib/Controller/DsoPkiSettingsController.php:71 getConfig(), :114 setConfig(); src/views/admin/DsoPkiSettings.vue:164,188 axios calls to /apps/integriq/api/admin/dso-pki-config.",
+				"spec": "openspec/specs/dso-omgevingsloket"
 			},
 			"reachedOn": "Beheer > Integriq admin settings, DSO PKI section (DsoPkiSettings.vue)",
 			"provider": "integriq",
@@ -5515,7 +5613,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Adapters/Digikoppeling/{DigikoppelingAdapter,Ebms2ReliableMessagingService,WsSecuritySigner,WusProfileService,PkiOverheidCredentialResolver,GroteBerichtenReference}.php are used by lib/Service/StufZkn/StufZknClient.php, lib/Adapters/Berichtenbox/BerichtenboxClient.php and lib/Gateway/DigikoppelingBrokerResolver.php; lib/Service/CatalogRegistryService.php:232 lists it as a static Catalog descriptor ('adapter:digikoppeling'). No dedicated route or page of its own exists anywhere in appinfo/routes.php or src/."
+				"evidence": "lib/Adapters/Digikoppeling/{DigikoppelingAdapter,Ebms2ReliableMessagingService,WsSecuritySigner,WusProfileService,PkiOverheidCredentialResolver,GroteBerichtenReference}.php are used by lib/Service/StufZkn/StufZknClient.php, lib/Adapters/Berichtenbox/BerichtenboxClient.php and lib/Gateway/DigikoppelingBrokerResolver.php; lib/Service/CatalogRegistryService.php:232 lists it as a static Catalog descriptor ('adapter:digikoppeling'). No dedicated route or page of its own exists anywhere in appinfo/routes.php or src/.",
+				"spec": "openspec/specs/digikoppeling-adapter"
 			},
 			"reachedOn": "used internally as the transport for StUF-ZKN outbound and Berichtenbox send; listed for information on the /store Catalog page",
 			"note": "Works only as a transport dependency consumed by other capabilities (StUF-ZKN, Berichtenbox), not as a directly callable feature of its own.",
@@ -5547,7 +5646,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:214-215 fsc#listServices/call -> lib/Controller/FscController.php:92 listServices(), :114 call() -> lib/Service/FscCallService.php; manifest page FscCalls (src/manifest.json:2941-2946, /messages/fsc, schema fsc_call)."
+				"evidence": "appinfo/routes.php:214-215 fsc#listServices/call -> lib/Controller/FscController.php:92 listServices(), :114 call() -> lib/Service/FscCallService.php; manifest page FscCalls (src/manifest.json:2941-2946, /messages/fsc, schema fsc_call).",
+				"spec": "openspec/specs/fsc-connectivity"
 			},
 			"reachedOn": "machine route: POST /api/fsc/call (authenticated NC-session call from sibling apps reaching another organisation's published service); logged at /messages/fsc",
 			"provider": "integriq",
@@ -5578,7 +5678,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/PropertySource/Provider/BrpPropertySource.php:36 const ID='brp', :73 suggest(), :111 resolve() implements PropertySourceProviderInterface, reached via appinfo/routes.php:521-522 propertySource#suggest/{provider}, #resolve/{provider}; lib/Settings/register.d/brp-haalcentraal-source.json seed source is surfaced on /store via lib/Service/CatalogRegistryService.php collectFromSeedFragments()."
+				"evidence": "lib/PropertySource/Provider/BrpPropertySource.php:36 const ID='brp', :73 suggest(), :111 resolve() implements PropertySourceProviderInterface, reached via appinfo/routes.php:521-522 propertySource#suggest/{provider}, #resolve/{provider}; lib/Settings/register.d/brp-haalcentraal-source.json seed source is surfaced on /store via lib/Service/CatalogRegistryService.php collectFromSeedFragments().",
+				"change": "2026-09-29-registry-backed-field-source"
 			},
 			"reachedOn": "GET /api/property-sources/brp/suggest|resolve, called by any OpenRegister field declaring x-openregister-property-source: brp; the BRP source template is installable from /store",
 			"provider": "integriq",
@@ -5609,7 +5710,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/PropertySource/Provider/KvkPropertySource.php:36-ish const ID='kvk', :73 suggest(), :111 resolve() implements PropertySourceProviderInterface, reached via appinfo/routes.php:521-522 propertySource#suggest/{provider}, #resolve/{provider}; lib/Settings/register.d/kvk-source.json seed source surfaced on /store."
+				"evidence": "lib/PropertySource/Provider/KvkPropertySource.php:36-ish const ID='kvk', :73 suggest(), :111 resolve() implements PropertySourceProviderInterface, reached via appinfo/routes.php:521-522 propertySource#suggest/{provider}, #resolve/{provider}; lib/Settings/register.d/kvk-source.json seed source surfaced on /store.",
+				"change": "2026-09-29-registry-backed-field-source"
 			},
 			"reachedOn": "GET /api/property-sources/kvk/suggest|resolve, called by any OpenRegister field declaring x-openregister-property-source: kvk; the KvK source template is installable from /store",
 			"provider": "integriq",
@@ -5640,7 +5742,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Registry/KvkMutatieProvider.php:47 registryId(), :71 subscribe(), :94 unsubscribe(), :107 pollChanges() extends AbstractSourceSubscriptionProvider; lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered in appinfo/info.xml:143 as a TimedJob and calls postChanges() (line 117) to persist polled changes."
+				"evidence": "lib/Service/Registry/KvkMutatieProvider.php:47 registryId(), :71 subscribe(), :94 unsubscribe(), :107 pollChanges() extends AbstractSourceSubscriptionProvider; lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered in appinfo/info.xml:143 as a TimedJob and calls postChanges() (line 117) to persist polled changes.",
+				"change": "2026-09-29-registry-subscription-connector"
 			},
 			"reachedOn": "background job RegistrySubscriptionPollJob (cron) polls subscribed KvK mutatieservice sources and posts changes",
 			"provider": "integriq",
@@ -5672,7 +5775,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:478-481 pdok#suggestAction/lookupAction/freeAction/reverseAction -> lib/Controller/PdokController.php:78,107,153,183 -> lib/Connectors/PdokConnector.php:142,157,174,192 (real implementation, with normalize()/writeThrough() at 394/564). A case-insensitive grep of src/ for 'pdok' returns zero matches anywhere in integriq's own frontend; the only mention is the Catalog descriptor at lib/Service/CatalogRegistryService.php:218 ('adapter:pdok'). Reached cross-app (added 2026-09-26): dossiq src/services/pdokService.js:72 builds /apps/{integriq}/api/pdok and calls suggest, lookup, free and reverse (:141, :175, :198, :221); dossiq src/components/map/AddressSearch.vue:53,80 calls suggest() and is hosted by src/components/map/LocationPicker.vue.",
-				"readOn": "2026-09-26"
+				"readOn": "2026-09-26",
+				"spec": "openspec/specs/pdok-adapter"
 			},
 			"reachedOn": "dossiq's address search (AddressSearch.vue inside LocationPicker.vue) calls /api/pdok/*; integriq's own frontend does not",
 			"note": "Re-rated no to yes on 2026-09-26: 'no page reaches it' was wrong, dossiq's frontend calls the PDOK routes.",
@@ -5741,7 +5845,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:94 digitalPostProviders#providers -> lib/Controller/DigitalPostProvidersController.php -> lib/Service/DigitalPost/DigitalPostProviderRegistry.php; src/modals/v2/SourceFormFields.vue:628 axios.get('/apps/integriq/api/digital-post/providers')."
+				"evidence": "appinfo/routes.php:94 digitalPostProviders#providers -> lib/Controller/DigitalPostProvidersController.php -> lib/Service/DigitalPost/DigitalPostProviderRegistry.php; src/modals/v2/SourceFormFields.vue:628 axios.get('/apps/integriq/api/digital-post/providers').",
+				"change": "berichtenbox-digital-post-adapter"
 			},
 			"reachedOn": "source creation/edit form, digital post provider dropdown (SourceFormFields.vue:628)",
 			"provider": "integriq",
@@ -5772,7 +5877,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:192-193 iwmoIjw#createMessage/inbound -> lib/Controller/IwmoIjwController.php; `grep -rln 'implements IwmoIjwProviderInterface' lib/` finds only lib/Service/IwmoIjw/LogIwmoIjwProvider.php, no Rest/real binding; manifest page IwmoMessages (src/manifest.json:2925-2930, /messages/iwmo, schema iwmo_ijw_message)."
+				"evidence": "appinfo/routes.php:192-193 iwmoIjw#createMessage/inbound -> lib/Controller/IwmoIjwController.php; `grep -rln 'implements IwmoIjwProviderInterface' lib/` finds only lib/Service/IwmoIjw/LogIwmoIjwProvider.php, no Rest/real binding; manifest page IwmoMessages (src/manifest.json:2925-2930, /messages/iwmo, schema iwmo_ijw_message).",
+				"spec": "openspec/specs/iwmo-ijw-adapter"
 			},
 			"reachedOn": "machine route: POST /api/iwmo-ijw/berichten (sibling apps' social-domain case modules); viewable at /messages/iwmo",
 			"note": "Only a Log/mock outbound provider ships; there is no real StUF iWmo/iJw network binding, so outbound delivery is always simulated today.",
@@ -5837,7 +5943,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/BackgroundJob/RISPollJob.php:110 pollIBabs() calls the real lib/Service/IBabsConnectorService.php; :225-231 pollNotuBiz() only logs 'RISPollJob: NotuBiz poll, besluit retrieval not yet implemented for NotuBiz' and returns without calling lib/Service/NotuBizConnectorService.php's poll path; manifest page RisSyncRecords (src/manifest.json:2957-2962, /messages/ris, schema ris_sync_record)."
+				"evidence": "lib/BackgroundJob/RISPollJob.php:110 pollIBabs() calls the real lib/Service/IBabsConnectorService.php; :225-231 pollNotuBiz() only logs 'RISPollJob: NotuBiz poll, besluit retrieval not yet implemented for NotuBiz' and returns without calling lib/Service/NotuBizConnectorService.php's poll path; manifest page RisSyncRecords (src/manifest.json:2957-2962, /messages/ris, schema ris_sync_record).",
+				"spec": "openspec/specs/ibabs-notubiz-connector"
 			},
 			"reachedOn": "background job RISPollJob polls iBabs sources on a schedule; NotuBiz sources are accepted in configuration but never actually polled",
 			"note": "Concrete, explicitly logged gap: iBabs besluit retrieval works, NotuBiz does not, even though both are named as supported sources.",
@@ -5872,7 +5979,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:231-233 openFormulieren#inbound/status/handoff -> lib/Controller/OpenFormulierenController.php -> lib/Service/OpenFormulierenIntakeService.php; manifest page FormSubmissions (src/manifest.json:2965-2970, /messages/form-submissions, schema openformulieren_submission)."
+				"evidence": "appinfo/routes.php:231-233 openFormulieren#inbound/status/handoff -> lib/Controller/OpenFormulierenController.php -> lib/Service/OpenFormulierenIntakeService.php; manifest page FormSubmissions (src/manifest.json:2965-2970, /messages/form-submissions, schema openformulieren_submission).",
+				"spec": "openspec/specs/open-formulieren-intake"
 			},
 			"reachedOn": "machine route: POST /api/open-formulieren/submissions (signed webhook); viewable at /messages/form-submissions",
 			"provider": "integriq",
@@ -5903,7 +6011,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:179 kiss#createCustomerContact -> lib/Controller/KissController.php -> lib/Service/KissSyncService.php:127 injects the real lib/Service/Kiss/KlantinteractiesClient.php REST binding alongside lib/Service/Kiss/LogKlantinteractiesProvider.php (mock), resolved per-configuration at KissSyncService.php:384 resolveProvider(); lib/BackgroundJob/KissPullJob.php is the cron-driven pull side."
+				"evidence": "appinfo/routes.php:179 kiss#createCustomerContact -> lib/Controller/KissController.php -> lib/Service/KissSyncService.php:127 injects the real lib/Service/Kiss/KlantinteractiesClient.php REST binding alongside lib/Service/Kiss/LogKlantinteractiesProvider.php (mock), resolved per-configuration at KissSyncService.php:384 resolveProvider(); lib/BackgroundJob/KissPullJob.php is the cron-driven pull side.",
+				"spec": "openspec/specs/kiss-kcc-bridge"
 			},
 			"reachedOn": "machine route: POST /api/kiss/klantcontacten (sibling apps' own contact-moment services, e.g. procest); pull side via KissPullJob cron",
 			"provider": "integriq",
@@ -5934,7 +6043,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:89 cti#events -> lib/Controller/CtiController.php:92 events() -> lib/Service/Kiss/CtiEventIntake.php:161 handle() verifies, deduplicates and dispatches a typed lib/Event/CallEvent via IEventDispatcher; lib/Service/Kiss/WebhookCtiProvider.php is a real binding alongside LogCtiProvider.php (mock)."
+				"evidence": "appinfo/routes.php:89 cti#events -> lib/Controller/CtiController.php:92 events() -> lib/Service/Kiss/CtiEventIntake.php:161 handle() verifies, deduplicates and dispatches a typed lib/Event/CallEvent via IEventDispatcher; lib/Service/Kiss/WebhookCtiProvider.php is a real binding alongside LogCtiProvider.php (mock).",
+				"change": "kcc-cti-adapter"
 			},
 			"reachedOn": "machine route: POST /api/cti/{sourceId}/events (PBX webhook, #[PublicPage]) -> dispatches CallEvent for a consuming app (e.g. dossiq) to show next to the caller's details",
 			"note": "Integriq delivers the event; the 'next to the caller's details' display itself lives in the consuming case app (matches sibling row dossiq:6.13), not in integriq's own UI.",
@@ -6275,7 +6385,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:283 eudiWallet#createOffer, :277 resolveOffer, :278 token, :279 credential -> lib/Controller/EudiWalletController.php:295 createOffer(), :367 resolveOffer(), :394 token(), :419 credential() -> lib/Service/EudiCredentialOfferService.php."
+				"evidence": "appinfo/routes.php:283 eudiWallet#createOffer, :277 resolveOffer, :278 token, :279 credential -> lib/Controller/EudiWalletController.php:295 createOffer(), :367 resolveOffer(), :394 token(), :419 credential() -> lib/Service/EudiCredentialOfferService.php.",
+				"spec": "openspec/specs/eudi-wallet-credential-issuance"
 			},
 			"reachedOn": "machine route: POST /api/eudi/credential-offers (consumer-gated, e.g. learniq requests an offer), then the citizen's wallet completes the OpenID4VCI token/credential exchange over the public routes",
 			"provider": "integriq",
@@ -6309,7 +6420,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:284 eudiWallet#revoke -> lib/Controller/EudiWalletController.php:334 revoke() -> lib/Service/EudiCredentialOfferService.php:787 revoke(), which at line 810 calls $this->statusListService->revokeIndex() (lib/Service/EudiStatusListService.php:188), the same status list the wallet reads via appinfo/routes.php:280 eudiWallet#statusList -> EudiWalletController.php:451 statusList()."
+				"evidence": "appinfo/routes.php:284 eudiWallet#revoke -> lib/Controller/EudiWalletController.php:334 revoke() -> lib/Service/EudiCredentialOfferService.php:787 revoke(), which at line 810 calls $this->statusListService->revokeIndex() (lib/Service/EudiStatusListService.php:188), the same status list the wallet reads via appinfo/routes.php:280 eudiWallet#statusList -> EudiWalletController.php:451 statusList().",
+				"spec": "openspec/specs/eudi-wallet-credential-issuance"
 			},
 			"reachedOn": "machine route: POST /api/eudi/credential-offers/{id}/revoke flips the bit in the status list the wallet checks at GET /api/eudi/status-lists/{id}",
 			"provider": "integriq",
@@ -6376,7 +6488,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:140-148 (9 routes: listUsers, createUser, getUser, updateUser x2, deleteUser, listGroups, updateGroup x2) -> lib/Controller/ScimController.php: listUsers:123, getUser:150, createUser:175, updateUser:215, deleteUser:258, listGroups:299, updateGroup:326 -> lib/Directory/ScimProvisioningService.php."
+				"evidence": "appinfo/routes.php:140-148 (9 routes: listUsers, createUser, getUser, updateUser x2, deleteUser, listGroups, updateGroup x2) -> lib/Controller/ScimController.php: listUsers:123, getUser:150, createUser:175, updateUser:215, deleteUser:258, listGroups:299, updateGroup:326 -> lib/Directory/ScimProvisioningService.php.",
+				"change": "directory-and-group-sync"
 			},
 			"reachedOn": "machine route: a SCIM 2.0 client (identity system) calls /api/scim/v2/Users|Groups with its own credential, no Nextcloud session",
 			"provider": "integriq",
@@ -6407,7 +6520,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:67-69 directorySync#connections/run/runs -> lib/Controller/DirectorySyncController.php -> lib/Directory/DirectorySyncService.php; manifest page DirectoryRuns (/directory-runs, schema synchronization_log); src/manifest.json:976-984 Sources index row actions 'preview-directory-run'/'run-directory-sync' -> previewDirectorySyncHandler/runDirectorySyncHandler (src/registry.js:65-66) -> src/modals/Directory/DirectoryRunModal.vue:164 axios.post to /api/directory/connections/{id}/run."
+				"evidence": "appinfo/routes.php:67-69 directorySync#connections/run/runs -> lib/Controller/DirectorySyncController.php -> lib/Directory/DirectorySyncService.php; manifest page DirectoryRuns (/directory-runs, schema synchronization_log); src/manifest.json:976-984 Sources index row actions 'preview-directory-run'/'run-directory-sync' -> previewDirectorySyncHandler/runDirectorySyncHandler (src/registry.js:65-66) -> src/modals/Directory/DirectoryRunModal.vue:164 axios.post to /api/directory/connections/{id}/run.",
+				"change": "directory-and-group-sync"
 			},
 			"reachedOn": "Sources index page, row action 'Run directory sync' on a directory-type source -> DirectoryRunModal.vue:164; results at /directory-runs",
 			"provider": "integriq",
@@ -6439,7 +6553,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Directory/GroupMappingResolver.php is injected into lib/Directory/DirectorySyncService.php:95 and lib/Directory/ScimProvisioningService.php:172, both of which are reachable (see id-directory, id-scim)."
+				"evidence": "lib/Directory/GroupMappingResolver.php is injected into lib/Directory/DirectorySyncService.php:95 and lib/Directory/ScimProvisioningService.php:172, both of which are reachable (see id-directory, id-scim).",
+				"change": "directory-and-group-sync"
 			},
 			"reachedOn": "internal to directory sync (id-directory) and SCIM provisioning (id-scim); no separate UI, it resolves the mapping declared on the connection",
 			"provider": "integriq",
@@ -6506,7 +6621,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:248 lti#agsScore -> lib/Controller/LtiController.php:295 agsScore() -> lib/Service/Lti/LtiAgsService.php:282 receiveScore()."
+				"evidence": "appinfo/routes.php:248 lti#agsScore -> lib/Controller/LtiController.php:295 agsScore() -> lib/Service/Lti/LtiAgsService.php:282 receiveScore().",
+				"spec": "openspec/specs/lti-platform"
 			},
 			"reachedOn": "machine route: POST /api/lti/{deployment}/ags/lineitems/{lineItemId}/scores (external Tool posts a grade back over LTI AGS)",
 			"provider": "integriq",
@@ -6540,7 +6656,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:296-298 psd2#connect/callback/discoverAccounts -> lib/Controller/Psd2Controller.php -> lib/Service/Psd2/RestPsd2AggregatorProvider.php (real) / LogPsd2AggregatorProvider.php (mock). Grep of src/ (manifest.json, registry.js, all .vue/.js) for 'psd2', 'Psd2', 'bankfeed', 'Bankfeed' returns zero matches, and frontend-api-paths.txt lists no /api/psd2/* call."
+				"evidence": "appinfo/routes.php:296-298 psd2#connect/callback/discoverAccounts -> lib/Controller/Psd2Controller.php -> lib/Service/Psd2/RestPsd2AggregatorProvider.php (real) / LogPsd2AggregatorProvider.php (mock). Grep of src/ (manifest.json, registry.js, all .vue/.js) for 'psd2', 'Psd2', 'bankfeed', 'Bankfeed' returns zero matches, and frontend-api-paths.txt lists no /api/psd2/* call.",
+				"spec": "openspec/specs/psd2-ais-bank-feed-connector"
 			},
 			"reachedOn": "nothing reaches it: no page or row action initiates /api/psd2/connect",
 			"note": "Backend (including the real aggregator binding) is built and the redirect-based SCA consent flow is implemented, but no UI anywhere starts it.",
@@ -6605,7 +6722,8 @@
 			"built": {
 				"state": "built",
 				"owner": "nextcloud/server",
-				"evidence": "Integriq's own routes (e.g. appinfo/routes.php:584-585 user#login/logout) and its admin settings page (src/main.js:178 registers /settings/admin/integriq) sit entirely behind Nextcloud's own session/auth middleware; no integriq-specific login bypass or custom auth guard was found anywhere in lib/Controller/ or lib/AppInfo/Application.php."
+				"evidence": "Integriq's own routes (e.g. appinfo/routes.php:584-585 user#login/logout) and its admin settings page (src/main.js:178 registers /settings/admin/integriq) sit entirely behind Nextcloud's own session/auth middleware; no integriq-specific login bypass or custom auth guard was found anywhere in lib/Controller/ or lib/AppInfo/Application.php.",
+				"spec": "none"
 			},
 			"reachedOn": "the standard Nextcloud login page/SSO redirect (user_oidc/user_saml, if enabled), then Beheer > Integriq at /settings/admin/integriq",
 			"note": "This is platform behaviour inherited from Nextcloud, not integriq-specific code; not independently verified beyond confirming no custom bypass exists.",
@@ -6673,7 +6791,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:75 mailIntake#import -> lib/Controller/MailIntakeController.php:108 import() reads the uploaded 'file', parses it with lib/Service/Mail/MessageParser.php (EmlParser.php 363 lines, MsgParser.php 317 lines + CompoundFileReader.php for OLE .msg) and hands it to MailIntakeService.php:135 intake(). NO frontend caller: grep -rn 'mail-intake' src/ = 0 hits, not in frontend-api-paths.txt; no upload control on the MailMessages logs page (src/manifest.d/mail-intake.json)."
+				"evidence": "appinfo/routes.php:75 mailIntake#import -> lib/Controller/MailIntakeController.php:108 import() reads the uploaded 'file', parses it with lib/Service/Mail/MessageParser.php (EmlParser.php 363 lines, MsgParser.php 317 lines + CompoundFileReader.php for OLE .msg) and hands it to MailIntakeService.php:135 intake(). NO frontend caller: grep -rn 'mail-intake' src/ = 0 hits, not in frontend-api-paths.txt; no upload control on the MailMessages logs page (src/manifest.d/mail-intake.json).",
+				"spec": "openspec/specs/mail-intake"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Real .eml and .msg parsing exists behind a session-gated admin route, but no page has an upload button, so a user cannot import a file. The result is a mail_message, not a case; linking to a case depends on a sibling app handling MessageReceivedEvent.",
@@ -6845,7 +6964,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:96 intakeChannels#reply -> lib/Controller/IntakeChannelsController.php:265 reply() (ActionAuthService 'intake.reply') -> lib/Intake/IntakeReplyService.php:67 reply() -> adapter reply(): TeamsChannelAdapter.php:217 (Bot Framework POST, mock short-circuit :231) and MessagingChannelAdapter.php:151 (POST to replyEndpoint :175, mock returns MOCK-REPLY :166); form and public-space adapters refuse. NO frontend caller: '/api/intake/messages/{id}/reply' absent from frontend-api-paths.txt; IntakeMessages logs page declares no action."
+				"evidence": "appinfo/routes.php:96 intakeChannels#reply -> lib/Controller/IntakeChannelsController.php:265 reply() (ActionAuthService 'intake.reply') -> lib/Intake/IntakeReplyService.php:67 reply() -> adapter reply(): TeamsChannelAdapter.php:217 (Bot Framework POST, mock short-circuit :231) and MessagingChannelAdapter.php:151 (POST to replyEndpoint :175, mock returns MOCK-REPLY :166); form and public-space adapters refuse. NO frontend caller: '/api/intake/messages/{id}/reply' absent from frontend-api-paths.txt; IntakeMessages logs page declares no action.",
+				"change": "intake-channels-beyond-mail"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Channel-aware reply code is real for Teams and the generic messaging channel, but no page has a reply button, and it is a staff action with no other caller.",
@@ -6877,7 +6997,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "IntakeMessages page (/messages/intake, logs, schema intake_message) in src/manifest.d/intake-channels.json lists every channel's messages with status/rule/reason columns, fed by lib/Intake/IntakeRoutingService.php:123 route() via machine route appinfo/routes.php:84. Mail lands on a separate MailMessages page (src/manifest.d/mail-intake.json). No assign action: no route assigns an intake_message to a case (grep -n 'assign' appinfo/routes.php in intake block = 0), and the logs page declares no actions."
+				"evidence": "IntakeMessages page (/messages/intake, logs, schema intake_message) in src/manifest.d/intake-channels.json lists every channel's messages with status/rule/reason columns, fed by lib/Intake/IntakeRoutingService.php:123 route() via machine route appinfo/routes.php:84. Mail lands on a separate MailMessages page (src/manifest.d/mail-intake.json). No assign action: no route assigns an intake_message to a case (grep -n 'assign' appinfo/routes.php in intake block = 0), and the logs page declares no actions.",
+				"change": "intake-channels-beyond-mail"
 			},
 			"reachedOn": "IntakeMessages page (/messages/intake), read-only",
 			"note": "One read-only inbox across the non-mail channels exists, and mail sits on a second page. Staff cannot assign a held message to a case from it; assignment only happens automatically via a routing rule.",
@@ -6945,7 +7066,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/pipelinq",
-				"evidence": "lib/Settings/register.d/whatsapp-cloud-api-source.json and whatsapp-bsp-source.json seed source objects with configuration.mock:true (:22); their $comment names OpenRegister MessageDispatchProvider and pipelinq WhatsAppAdapter as the sender, 'this source is a pure transport'. No WhatsApp send code in integriq (grep -rli whatsapp lib/*.php = 0 outside CatalogRegistryService). lib/Intake/Adapter/MessagingChannelAdapter.php:52 'messaging' channel only receives and replies via a generic replyEndpoint (:175), with no WhatsApp-specific logic."
+				"evidence": "lib/Settings/register.d/whatsapp-cloud-api-source.json and whatsapp-bsp-source.json seed source objects with configuration.mock:true (:22); their $comment names OpenRegister MessageDispatchProvider and pipelinq WhatsAppAdapter as the sender, 'this source is a pure transport'. No WhatsApp send code in integriq (grep -rli whatsapp lib/*.php = 0 outside CatalogRegistryService). lib/Intake/Adapter/MessagingChannelAdapter.php:52 'messaging' channel only receives and replies via a generic replyEndpoint (:175), with no WhatsApp-specific logic.",
+				"change": "2026-07-15-seed-messaging-sources"
 			},
 			"reachedOn": "Sources page (/sources) shows the seeded whatsapp sources; no send action in integriq",
 			"note": "Integriq only supplies two WhatsApp source configs, shipped in mock mode, and the generic HTTP engine. Template gating, session windows and the actual send live in pipelinq and OpenRegister.",
@@ -7360,7 +7482,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:559 configuration#export; lib/Controller/ConfigurationController.php:97-118 (configuration.export action gate at :104, ConfigurationService::exportConfiguration at :110, attachment header at :116); src/dialogs/ExportConfigurationDialog.vue:134 lists OR configuration groups, :178 POSTs the export; opened by src/handlers/actionHandlers.js:190 via src/modals/v2/ModalHost.vue:59,172; header action export-configuration on the Store page src/manifest.json:4014-4017"
+				"evidence": "appinfo/routes.php:559 configuration#export; lib/Controller/ConfigurationController.php:97-118 (configuration.export action gate at :104, ConfigurationService::exportConfiguration at :110, attachment header at :116); src/dialogs/ExportConfigurationDialog.vue:134 lists OR configuration groups, :178 POSTs the export; opened by src/handlers/actionHandlers.js:190 via src/modals/v2/ModalHost.vue:59,172; header action export-configuration on the Store page src/manifest.json:4014-4017",
+				"spec": "openspec/specs/configuration-export-import"
 			},
 			"reachedOn": "Store page (/store) header action Export configuration, ExportConfigurationDialog",
 			"note": "Export is per OpenRegister configuration group the user picks, not literally the whole instance in one go. The sibling GET /api/registers/{id}/export (routes.php:561, ConfigurationController.php:141) has no frontend caller.",
@@ -7392,7 +7515,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:562-563; lib/Controller/ConfigurationController.php:182-213 previewImport (ConfigurationImportPreviewService::preview), :234 import requires confirmed:true then re-previews and calls importConfiguration; lib/Service/ConfigurationImportPreviewService.php:122 returns creates/updates/collisions/unresolvedReferences/credentialsNeedingReentry; src/dialogs/ImportPreviewDialog.vue:334 preview call, :361 confirmed import; opened by src/handlers/actionHandlers.js:179 via ModalHost.vue:56,171; header action src/manifest.json:4020-4023"
+				"evidence": "appinfo/routes.php:562-563; lib/Controller/ConfigurationController.php:182-213 previewImport (ConfigurationImportPreviewService::preview), :234 import requires confirmed:true then re-previews and calls importConfiguration; lib/Service/ConfigurationImportPreviewService.php:122 returns creates/updates/collisions/unresolvedReferences/credentialsNeedingReentry; src/dialogs/ImportPreviewDialog.vue:334 preview call, :361 confirmed import; opened by src/handlers/actionHandlers.js:179 via ModalHost.vue:56,171; header action src/manifest.json:4020-4023",
+				"spec": "openspec/specs/configuration-export-import"
 			},
 			"reachedOn": "Store page (/store) header action Import configuration, ImportPreviewDialog",
 			"note": "Two-step flow is enforced server side: import without confirmed:true is rejected with 400, both gated by the configuration.import action.",
@@ -7424,7 +7548,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:571-574; lib/Controller/EnvironmentController.php:85 index (environment.manage); lib/Controller/PromotionController.php:92 preview, :139 confirm (environment.promote); lib/Service/PromotionService.php:264 preview, :298 promote dispatching to the target's /api/configurations/import* via CallService (:70,:78,:379), :478 writes a promotion_audit object; src/modals/PromotePreviewModal.vue:334 GET /api/environments, :437 preview, :474 confirm; header action Promote configuration on Sources src/manifest.json:954; environments listed and created per source by the src-environments object-list widget on SourceDetail src/manifest.json:1161-1191 (allowCreate true)"
+				"evidence": "appinfo/routes.php:571-574; lib/Controller/EnvironmentController.php:85 index (environment.manage); lib/Controller/PromotionController.php:92 preview, :139 confirm (environment.promote); lib/Service/PromotionService.php:264 preview, :298 promote dispatching to the target's /api/configurations/import* via CallService (:70,:78,:379), :478 writes a promotion_audit object; src/modals/PromotePreviewModal.vue:334 GET /api/environments, :437 preview, :474 confirm; header action Promote configuration on Sources src/manifest.json:954; environments listed and created per source by the src-environments object-list widget on SourceDetail src/manifest.json:1161-1191 (allowCreate true)",
+				"spec": "openspec/specs/environments-and-promotion"
 			},
 			"reachedOn": "Sources page (/sources) header action Promote configuration (PromotePreviewModal); environments managed in the Environments widget on SourceDetail (/sources/:id)",
 			"note": "There is no standalone Environments page (withdrawn, src/manifest.d/environments-and-promotion.json); environments are created through the generic OR object-list, so POST /api/environments (EnvironmentController.php:118) with its source-reference validation has no frontend caller. promotion_audit objects have no page.",
@@ -7509,7 +7634,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Store page src/manifest.json:3965 (type index, schema catalog_item, cardComponent CatalogItemCard registered at src/registry.js:36,117); menu entry src/manifest.json:209; src/store/catalog.js:89 lists catalog_item via OR, :109 GET /api/catalog/items/{id}/status, :127 POST instantiate; src/components/CatalogItemCard.vue:161 opens CatalogItemDetailDialog; appinfo/routes.php:512-513; lib/Controller/CatalogController.php:102 status, :152 instantiate (catalog.instantiate gate :159, source created from seed template :266-272); items materialised by lib/Repair/MaterializeCatalogItems.php (appinfo/info.xml:268) from lib/Service/CatalogRegistryService.php (OR IntegrationRegistry providers plus seeded templates)"
+				"evidence": "Store page src/manifest.json:3965 (type index, schema catalog_item, cardComponent CatalogItemCard registered at src/registry.js:36,117); menu entry src/manifest.json:209; src/store/catalog.js:89 lists catalog_item via OR, :109 GET /api/catalog/items/{id}/status, :127 POST instantiate; src/components/CatalogItemCard.vue:161 opens CatalogItemDetailDialog; appinfo/routes.php:512-513; lib/Controller/CatalogController.php:102 status, :152 instantiate (catalog.instantiate gate :159, source created from seed template :266-272); items materialised by lib/Repair/MaterializeCatalogItems.php (appinfo/info.xml:268) from lib/Service/CatalogRegistryService.php (OR IntegrationRegistry providers plus seeded templates)",
+				"spec": "openspec/specs/connector-catalog"
 			},
 			"reachedOn": "Store page (/store), card click opens CatalogItemDetailDialog with Enable/Instantiate",
 			"note": "Store is local: it lists adapters and seeded templates shipped with this instance, not a remote marketplace. Creating a source still hits the source schema's admin-only data-layer lock.",
@@ -7541,7 +7667,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/ConnectionRegistryService.php:46 reads each enabled app's lib/Settings/connections.json, :93 sync, :121 syncChangedDeclarations, validated by lib/Service/ConnectionDeclarationValidator.php against lib/Settings/connections.schema.json; run by repair step lib/Repair/SyncConnectionDeclarations.php (appinfo/info.xml:273), hourly lib/BackgroundJob/ConnectionHealthJob.php (info.xml:138) and AppEnable/AppDisable plus status/refresh event listeners (lib/AppInfo/Application.php:274-277); AppConnections page src/manifest.json:837 (index, schema app_connection, admin permission, folder sidebar per app), menu src/manifest.json:266"
+				"evidence": "lib/Service/ConnectionRegistryService.php:46 reads each enabled app's lib/Settings/connections.json, :93 sync, :121 syncChangedDeclarations, validated by lib/Service/ConnectionDeclarationValidator.php against lib/Settings/connections.schema.json; run by repair step lib/Repair/SyncConnectionDeclarations.php (appinfo/info.xml:273), hourly lib/BackgroundJob/ConnectionHealthJob.php (info.xml:138) and AppEnable/AppDisable plus status/refresh event listeners (lib/AppInfo/Application.php:274-277); AppConnections page src/manifest.json:837 (index, schema app_connection, admin permission, folder sidebar per app), menu src/manifest.json:266",
+				"change": "2026-09-29-connection-registry"
 			},
 			"reachedOn": "App connections page (/connections), admin only",
 			"note": "Rows are written only by the declaration sync, so the page is populated by real declarations; add, edit and delete are deliberately off. At least five sibling apps ship a connections.json in the local workspace (hermiq, openbuild, openregister, pipelinq, portaliq), not checked against their development branches.",
@@ -7576,7 +7703,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:553 connections#link; lib/Controller/ConnectionsController.php:83-84 (#[AuthorizedAdminSetting]) delegating to ConnectionProbeService::linkSource/linkTemplate (:130,:133) which links and probes at once; src/dialogs/LinkSourceDialog.vue:262 lists app_connection, :268 lists sources, :360 POSTs the link; opened by src/handlers/actionHandlers.js:214 via ModalHost.vue:63,174; header action Add integration src/manifest.json:908"
+				"evidence": "appinfo/routes.php:553 connections#link; lib/Controller/ConnectionsController.php:83-84 (#[AuthorizedAdminSetting]) delegating to ConnectionProbeService::linkSource/linkTemplate (:130,:133) which links and probes at once; src/dialogs/LinkSourceDialog.vue:262 lists app_connection, :268 lists sources, :360 POSTs the link; opened by src/handlers/actionHandlers.js:214 via ModalHost.vue:63,174; header action Add integration src/manifest.json:908",
+				"change": "2026-09-29-connection-registry"
 			},
 			"reachedOn": "App connections page (/connections) header action Add integration, LinkSourceDialog",
 			"note": "Admin only. The dialog can either link an existing source or create one from the connection's template, and shows the probe result immediately.",
@@ -7608,7 +7736,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:18-20; lib/Controller/SetupController.php:113 status, :146 saveConfig, :198 runAction (load-demo-data), all #[AuthorizedAdminSetting]; manifest setup block src/manifest.json:3-37 (welcome, demo-data choice, load-demo-data run-action, summary); rendered by @conduction/nextcloud-vue 2.39.0 (package-lock.json:2428) CnAppRoot which mounts CnSetupWizard and calls /apps/{appId}/api/setup/* (nextcloud-vue v2.39.0 src/composables/useSetupStatus.js:151, CnSetupWizard.vue:696,707); plus a getting-started walkthrough tour src/manifest.json:4207"
+				"evidence": "appinfo/routes.php:18-20; lib/Controller/SetupController.php:113 status, :146 saveConfig, :198 runAction (load-demo-data), all #[AuthorizedAdminSetting]; manifest setup block src/manifest.json:3-37 (welcome, demo-data choice, load-demo-data run-action, summary); rendered by @conduction/nextcloud-vue 2.39.0 (package-lock.json:2428) CnAppRoot which mounts CnSetupWizard and calls /apps/{appId}/api/setup/* (nextcloud-vue v2.39.0 src/composables/useSetupStatus.js:151, CnSetupWizard.vue:696,707); plus a getting-started walkthrough tour src/manifest.json:4207",
+				"change": "wizard-dataset-card-load"
 			},
 			"reachedOn": "Integriq SPA shell: optional setup wizard auto-opens once for an admin; walkthrough tour on first visit",
 			"note": "The setup routes are absent from frontend-api-paths.txt because the shared library, not app code, calls them. The wizard only offers demo data, so it guides little real configuration; the walkthrough tour covers source, sync and traces.",
@@ -7640,7 +7769,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/info.xml:4 id integriq, :90 nextcloud min 32 max 35, :42 php 8.3; licence EUPL-1.2 (info.xml:23); hard dependency on openregister recorded in the comment at info.xml:34-41"
+				"evidence": "appinfo/info.xml:4 id integriq, :90 nextcloud min 32 max 35, :42 php 8.3; licence EUPL-1.2 (info.xml:23); hard dependency on openregister recorded in the comment at info.xml:34-41",
+				"spec": "none"
 			},
 			"reachedOn": "Nextcloud app install (apps page / occ app:enable integriq)",
 			"note": "Runs inside any self-hosted Nextcloud 32 to 35 with OpenRegister installed; the openregister dependency is not enforced by info.xml, so installing without it leaves every entity without storage.",
@@ -7672,7 +7802,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/info.xml:43 pgsql min 10, :44 sqlite, :45 mysql min 8.0; storage is OpenRegister objects (single migration lib/Migration/Version2Date20260908000000.php); lib/Service/SettingsService.php:80 branches PostgreSQL vs DATE_ADD for the rebase SQL"
+				"evidence": "appinfo/info.xml:43 pgsql min 10, :44 sqlite, :45 mysql min 8.0; storage is OpenRegister objects (single migration lib/Migration/Version2Date20260908000000.php); lib/Service/SettingsService.php:80 branches PostgreSQL vs DATE_ADD for the rebase SQL",
+				"spec": "none"
 			},
 			"reachedOn": "Nextcloud install on any of the three databases",
 			"note": "All three are declared and data lives in OpenRegister tables. The one raw-SQL path, SettingsService rebase, emits DATE_ADD for every non-Postgres platform (SQLite has no DATE_ADD) and targets legacy openconnector_* tables, but no page calls it.",
@@ -7771,7 +7902,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "Audit trail sidebar tab {type: audit} declared on SourceDetail src/manifest.json:1323-1328, EndpointDetail :1579, ConsumerDetail :1924, CloudEventDetail :2704; the trail itself is OpenRegister's generic per-object audit log; integriq adds only domain-specific records (promotion_audit lib/Service/PromotionService.php:478, approval audit block src/views/Approvals/ApprovalDetail.vue:59-64, dead-letter replay stamps)"
+				"evidence": "Audit trail sidebar tab {type: audit} declared on SourceDetail src/manifest.json:1323-1328, EndpointDetail :1579, ConsumerDetail :1924, CloudEventDetail :2704; the trail itself is OpenRegister's generic per-object audit log; integriq adds only domain-specific records (promotion_audit lib/Service/PromotionService.php:478, approval audit block src/views/Approvals/ApprovalDetail.vue:59-64, dead-letter replay stamps)",
+				"spec": "openspec/specs/openconnector-or-adoption"
 			},
 			"reachedOn": "Audit trail tab in the sidebar of Source, Endpoint, Consumer and CloudEvent detail pages",
 			"note": "The info.xml claim (appinfo/info.xml description line 'keep a per-object audit trail') is OpenRegister's generic audit trail surfaced in integriq's pages; integriq adds nothing to it. Mapping, rule and synchronization detail pages are custom pages and were not confirmed to show the tab.",
@@ -7836,7 +7968,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/DemoDataService.php:46 imports lib/Settings/integriq_mock_register.json (201 objects), :202 install via ConfigurationService::importFromApp :228; triggered by lib/Controller/SetupController.php:198 runAction load-demo-data from the manifest setup step src/manifest.json:14-30"
+				"evidence": "lib/Service/DemoDataService.php:46 imports lib/Settings/integriq_mock_register.json (201 objects), :202 install via ConfigurationService::importFromApp :228; triggered by lib/Controller/SetupController.php:198 runAction load-demo-data from the manifest setup step src/manifest.json:14-30",
+				"change": "wizard-dataset-card-load"
 			},
 			"reachedOn": "Setup wizard step Load the example data (admin, SPA shell)",
 			"note": "Demo data is on demand only through the setup wizard; there is no occ command for it. lib/Settings/integriq_seed_data.json is orphaned: grep for 'seed_data' in lib and appinfo finds no loader (only a comment in src/modals/v2/consumerDraft.js:61).",
@@ -7967,7 +8100,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/integriq_register.json:673,1390,1499,1828,1966,2219,2391,2590 declare x-openregister-mcp read tools (search/get) on 8 schemas, consumed by OpenRegister's SchemaDerivedToolProvider (openregister lib/Mcp/BuiltIn/SchemaDerivedToolProvider.php, local checkout); lib/Mcp does not exist (ls: no such directory); grep 'McpTool|IMcpScannable' lib: 0 hits; openspec/changes/hermiq-ai-tooling/tasks.md 0 of 22 ticked"
+				"evidence": "lib/Settings/integriq_register.json:673,1390,1499,1828,1966,2219,2391,2590 declare x-openregister-mcp read tools (search/get) on 8 schemas, consumed by OpenRegister's SchemaDerivedToolProvider (openregister lib/Mcp/BuiltIn/SchemaDerivedToolProvider.php, local checkout); lib/Mcp does not exist (ls: no such directory); grep 'McpTool|IMcpScannable' lib: 0 hits; openspec/changes/hermiq-ai-tooling/tasks.md 0 of 22 ticked",
+				"spec": "openspec/specs/openconnector-mcp-tool-surface"
 			},
 			"reachedOn": "An MCP client connected to OpenRegister's MCP server (read tools only)",
 			"note": "An assistant can search and read eight integriq schemas through OpenRegister's schema-derived MCP tools. The governed action tools (run or test a sync, test a source, replay dead letters) in hermiq-ai-tooling are specified only. Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-08-17-declared-actions-and-mcp-scope; the missing half is integriq's own work, so the owner moved to ConductionNL/integriq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
@@ -7999,7 +8133,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Datasource/DashboardDatasourceService.php:140 resolve(sourceId, valueExpr, params, ttl); HTTP facade appinfo/routes.php:351 -> lib/Controller/DatasourceController.php:84 (egress guard strips url/host); capability advertised lib/Capabilities.php:69 registered at lib/AppInfo/Application.php:690; docs/developers/dashboard-http-datasource.md; consumer ConductionNL/launchpad development lib/Service/LiveTileService.php:146,156 calls Service\\Datasource\\DashboardDatasourceService::resolve in-process (fetched via gh api ?ref=development)"
+				"evidence": "lib/Service/Datasource/DashboardDatasourceService.php:140 resolve(sourceId, valueExpr, params, ttl); HTTP facade appinfo/routes.php:351 -> lib/Controller/DatasourceController.php:84 (egress guard strips url/host); capability advertised lib/Capabilities.php:69 registered at lib/AppInfo/Application.php:690; docs/developers/dashboard-http-datasource.md; consumer ConductionNL/launchpad development lib/Service/LiveTileService.php:146,156 calls Service\\Datasource\\DashboardDatasourceService::resolve in-process (fetched via gh api ?ref=development)",
+				"spec": "openspec/specs/dashboard-http-datasource"
 			},
 			"reachedOn": "LaunchPad live-data tile widget (in-process PHP call); the /api/datasource/{sourceId}/resolve HTTP route itself has no caller",
 			"note": "The hint's CardfeedController is the corporate card feed enrolment, unrelated to dashboards. A stale local launchpad checkout (d2f3afd2, 2026-09-05) still duck-typed OCA\\OpenConnector\\Service\\DashboardDataSourceService::resolveDashboardValue, which never existed; current development fixed it.",
@@ -8031,7 +8166,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/integration.js:80 registerIntegration id sync-contract (renderMode mount, SyncedFromTab); bundle built at webpack.config.js:24-34 and loaded on every page via Util::addInitScript in lib/AppInfo/Application.php:316-327; backend provider lib/Service/Integration/SynchronizationContractProvider.php:163 list; src/integration/SyncedFromTab.vue:34-55 renders synchronization link, subtitle and origin id"
+				"evidence": "src/integration.js:80 registerIntegration id sync-contract (renderMode mount, SyncedFromTab); bundle built at webpack.config.js:24-34 and loaded on every page via Util::addInitScript in lib/AppInfo/Application.php:316-327; backend provider lib/Service/Integration/SynchronizationContractProvider.php:163 list; src/integration/SyncedFromTab.vue:34-55 renders synchronization link, subtitle and origin id",
+				"spec": "openspec/specs/synced-from-tab"
 			},
 			"reachedOn": "Synced from tab/widget on OpenRegister object detail pages in any app",
 			"note": "Other apps' records show which synchronization wrote them, with a deep link and origin id. Call logs or run logs are not shown there. The hint's leaf-integrations.json is the opposite direction (integriq consuming OR's files, deck, talk and calendar leaves on its own source and synchronization pages).",
@@ -8065,7 +8201,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "All eight portals ship as seeded source + mapping + synchronization + weekly job fragments: lib/Settings/register.d/tenderned-connector.json:8 (source), :82 (sync), :101 (targetId spectr/tender), :117 (job interval); boamp-france-connector.json:8/:59/:79; germany-bund-connector.json:8/:55/:74; latvia-iub-connector.json:8/:62/:76; sweden-avropa-connector.json:8/:59/:73; austria-datagvat-connector.json:8/:64/:79; greece-diavgeia-connector.json:8/:55/:73; australia-austender-connector.json:8/:63/:77. Fragments are merged and imported by lib/Repair/InitializeRegister.php:136-178 and turned into Store cards by lib/Service/CatalogRegistryService.php:319-386. grep for a spectr register definition in lib/Settings = 0 hits.",
 				"portalsFound": "tenderned, boamp-france, germany-bund, latvia-iub, sweden-avropa, austria-opentender, greece-diavgeia, australia-austender (8 of 8)",
-				"rating_readerRating": "partial"
+				"rating_readerRating": "partial",
+				"spec": "openspec/specs/connector-catalog"
 			},
 			"reachedOn": "/store (catalog_item source-template cards, instantiate via POST /api/catalog/items/{id}/instantiate) and /sources, /synchronizations",
 			"note": "Every named portal exists as a working keyless HTTP source with a live-verified mapping, but every synchronization targets spectr/tender, a register integriq does not ship, so out of the box the enabled weekly jobs have nowhere to write unless the Specter register is installed. Germany ports only the govdata CKAN path and TenderNed carries a documented 0-based pagination offset bug that skips page 2. Re-rated partial to no by the lane: every one of the eight synchronizations targets spectr/tender (e.g. lib/Settings/register.d/tenderned-connector.json:101) and grep for a spectr register in lib/Settings returns 0, so on a stock install the weekly jobs that ship enabled fetch and then have no register to write to. A declaration that breaks the path is a no, not a partial. It becomes yes on an instance that also carries the Specter register.",
@@ -8097,7 +8234,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/register.d/endoflife-date-source.json:6-69 (eol_product and eol_cycle schemas in the integriq register), :150 (endoflife-date source, https://endoflife.date/api, auth none); lib/Settings/register.d/endoflife-date-source-cycles.json:49,113,177,241,305,369,433,497 (eight synchronizations targeting integriq/eol_cycle with daily jobs); tests/Integration/EndoflifeDateLiveSyncTest.php:58; tests/Unit/Service/EndoflifeDateSyncTest.php"
+				"evidence": "lib/Settings/register.d/endoflife-date-source.json:6-69 (eol_product and eol_cycle schemas in the integriq register), :150 (endoflife-date source, https://endoflife.date/api, auth none); lib/Settings/register.d/endoflife-date-source-cycles.json:49,113,177,241,305,369,433,497 (eight synchronizations targeting integriq/eol_cycle with daily jobs); tests/Integration/EndoflifeDateLiveSyncTest.php:58; tests/Unit/Service/EndoflifeDateSyncTest.php",
+				"spec": "openspec/specs/endoflife-date-source"
 			},
 			"reachedOn": "/sources and /synchronizations (the endoflife-date source and its eight syncs); no integriq page lists eol_cycle itself",
 			"note": "Integriq pulls endoflife.date cycles for eight fixed products (php, nodejs, python, postgresql, mysql, nextcloud, wordpress, laravel) into its own eol_cycle schema daily. Writing those dates onto a software record is the consuming app's job (stackiq), and adding a ninth product needs a new mapping, sync and job per product.",
@@ -8201,7 +8339,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/register.d/nextcloud-marketplace-connector.json:8 (source nextcloud-appstore, https://apps.nextcloud.com/api/v1, auth none), :63 (sync, endpoint /apps.json, resultsPosition _root), :77 (targetId spectr/marketplaceApp), :93 (weekly job); tests/Unit/Settings/Wave0GatheringConnectorRegisterFragmentTest.php:54",
-				"rating_readerRating": "partial"
+				"rating_readerRating": "partial",
+				"change": "native-data-gathering-provider"
 			},
 			"reachedOn": "/store (source-template:nextcloud-appstore card) and /sources, /synchronizations",
 			"note": "The source and mapping read the whole App Store catalog in one keyless call, but the sync writes to spectr/marketplaceApp, a register integriq does not ship, so it only lands anywhere on an instance that has the Specter register. Re-rated partial to no by the lane: the sync targets spectr/marketplaceApp (nextcloud-marketplace-connector.json:77), a register integriq does not ship, so the enabled weekly job has nowhere to write on a stock install.",
@@ -8234,7 +8373,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/register.d/dpg-registry-connector.json:8 (source dpg-registry, https://raw.githubusercontent.com/DPGAlliance/dpg-api/main/docs/dpgs, auth none), :55 (sync, endpoint /index.json), :69 (targetId spectr/marketplaceApp), :85 (weekly job); tests/Unit/Settings/Wave0GatheringConnectorRegisterFragmentTest.php:55",
-				"rating_readerRating": "partial"
+				"rating_readerRating": "partial",
+				"change": "native-data-gathering-provider"
 			},
 			"reachedOn": "/store (source-template:dpg-registry card) and /sources, /synchronizations",
 			"note": "Reads the DPG Alliance's GitHub-hosted index.json (the old api.digitalpublicgoods.net is dead), but like the other Specter feeds it writes to spectr/marketplaceApp, which integriq does not ship. Re-rated partial to no by the lane: the sync targets spectr/marketplaceApp (dpg-registry-connector.json:69), a register integriq does not ship, so the enabled weekly job has nowhere to write on a stock install.",
@@ -8374,7 +8514,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationService.php:5694-5696 (updateTarget case 'api' calls writeObjectToTarget), :8067-8200 (writeObjectToTarget POSTs new objects, PUTs updates, DELETEs removals against the target source, with updateEndpoint/deleteEndpoint/idPosition knobs), :4688 (register/schema to api path); lib/EventListener/ObjectUpdatedEventListener.php:66 (object events trigger handleObjectEventSynchronization); src/views/Synchronization/syncDraft.js:48-52 (target type 'API' offered in the editor); example configurations/woo-elastic/synchronizations/publication-to-elastic.json (register/schema to api)"
+				"evidence": "lib/Service/SynchronizationService.php:5694-5696 (updateTarget case 'api' calls writeObjectToTarget), :8067-8200 (writeObjectToTarget POSTs new objects, PUTs updates, DELETEs removals against the target source, with updateEndpoint/deleteEndpoint/idPosition knobs), :4688 (register/schema to api path); lib/EventListener/ObjectUpdatedEventListener.php:66 (object events trigger handleObjectEventSynchronization); src/views/Synchronization/syncDraft.js:48-52 (target type 'API' offered in the editor); example configurations/woo-elastic/synchronizations/publication-to-elastic.json (register/schema to api)",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations/:id (SynchronizationDetailPage, target type API)",
 			"note": "Outbound push to any HTTP system is real and generic, triggered by object create/update events or runs. No pre-configured national register target ships, so pushing to a specific register still means configuring the source, mapping and endpoints yourself.",
@@ -8548,7 +8689,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationService.php synchronize() pulls base data into a register on a schedule (row sync-create); lib/Service/EndpointService.php:1876-1900 handleSchemaRequest() serves that register to consuming applications (row gw-endpoint); lib/EventListener/CloudEventListener.php:32-46 pushes every change to subscribers (row evt-publish)"
+				"evidence": "lib/Service/SynchronizationService.php synchronize() pulls base data into a register on a schedule (row sync-create); lib/Service/EndpointService.php:1876-1900 handleSchemaRequest() serves that register to consuming applications (row gw-endpoint); lib/EventListener/CloudEventListener.php:32-46 pushes every change to subscribers (row evt-publish)",
+				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations fills the store, /endpoints publishes it at /api/endpoint/{path}, /webhooks pushes changes",
 			"note": "Gemeente Stein 2021 integratieplatform, requirement 166860 (distribution component fed from NedMagazijn); Goeree-Overflakkee tendered datadistributie- en integratiesoftware on 2026-06-07 (TenderNed 428120) and Deventer for the DOWR municipalities on 2026-05-29 (TenderNed 426662). Integriq: The central store itself is OpenRegister; integriq fills it and distributes from it.",
@@ -8652,7 +8794,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/info.xml:23 EUPL-1.2 licence; a connector is configuration (source, mapping, synchronisation) that any admin authors on /sources, /mappings and /synchronizations and ships as a configuration file: appinfo/routes.php:559 configuration#export and :562-563 previewImport/import (rows plt-export, plt-import-preview)"
+				"evidence": "appinfo/info.xml:23 EUPL-1.2 licence; a connector is configuration (source, mapping, synchronisation) that any admin authors on /sources, /mappings and /synchronizations and ships as a configuration file: appinfo/routes.php:559 configuration#export and :562-563 previewImport/import (rows plt-export, plt-import-preview)",
+				"spec": "none"
 			},
 			"reachedOn": "Store page (/store) Export and Import configuration; /sources, /mappings, /synchronizations editors",
 			"note": "Gemeente Stein wens W2 (requirement 20242).",
@@ -8720,7 +8863,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:1876-2266 gateway endpoints (register-backed and proxied); lib/Service/SynchronizationService.php and lib/Service/FlowRunnerService.php run message flows between systems; lib/Service/EventService.php dispatches events (rows gw-endpoint, gw-proxy, sync-create, auto-flow-canvas, evt-publish)"
+				"evidence": "lib/Service/EndpointService.php:1876-2266 gateway endpoints (register-backed and proxied); lib/Service/SynchronizationService.php and lib/Service/FlowRunnerService.php run message flows between systems; lib/Service/EventService.php dispatches events (rows gw-endpoint, gw-proxy, sync-create, auto-flow-canvas, evt-publish)",
+				"spec": "openspec/specs/endpoint-runtime"
 			},
 			"reachedOn": "/endpoints, /synchronizations, flow canvas, /webhooks in one app",
 			"note": "Gemeente Lansingerland, Api Gateway en ESB, published 2026-07-17; Stein 166856 asks one platform for orchestration, national facilities and distribution.",
@@ -9102,7 +9246,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json Endpoints index page (/endpoints) and the Sources pages edit routes and upstreams as records; lib/EventListener/EndpointCacheInvalidationListener.php:69-95 applies a saved change without a restart (row gw-hot-reload)"
+				"evidence": "src/manifest.json Endpoints index page (/endpoints) and the Sources pages edit routes and upstreams as records; lib/EventListener/EndpointCacheInvalidationListener.php:69-95 applies a saved change without a restart (row gw-hot-reload)",
+				"change": "2026-07-14-revive-dead-capabilities"
 			},
 			"reachedOn": "/endpoints and /sources index and detail pages",
 			"note": "Open APISIX request 2026-06-19 for a simpler interface for services and routes.",
@@ -9412,7 +9557,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Adapters/Digikoppeling/WsSecuritySigner.php:99 signs a SOAP Body with a WS-Security X.509 enveloped signature and verifies replies, used by lib/Adapters/Digikoppeling/WusProfileService.php:56 for Digikoppeling WUS calls (row nl-digikoppeling); grep -iE 'xmlenc|EncryptedData' over lib/ finds no message encryption"
+				"evidence": "lib/Adapters/Digikoppeling/WsSecuritySigner.php:99 signs a SOAP Body with a WS-Security X.509 enveloped signature and verifies replies, used by lib/Adapters/Digikoppeling/WusProfileService.php:56 for Digikoppeling WUS calls (row nl-digikoppeling); grep -iE 'xmlenc|EncryptedData' over lib/ finds no message encryption",
+				"spec": "openspec/specs/digikoppeling-adapter"
 			},
 			"reachedOn": "Digikoppeling WUS calls from StUF-ZKN and Berichtenbox clients",
 			"note": "Frank!Framework 10.2.0 (2026-07-17) added SOAP encrypt and decrypt methods. Integriq: Signing only, and only on the Digikoppeling WUS path; no encryption.",
@@ -9480,7 +9626,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "integriq's flow canvas (src/manifest.json:2813-2833 Flows and FlowDetail pages) runs graphs on OpenRegister's node catalogue, which has ConductionNL/openregister development lib/Service/Flow/Nodes/ObjectReadNode.php and lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table"
+				"evidence": "integriq's flow canvas (src/manifest.json:2813-2833 Flows and FlowDetail pages) runs graphs on OpenRegister's node catalogue, which has ConductionNL/openregister development lib/Service/Flow/Nodes/ObjectReadNode.php and lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table",
+				"spec": "none"
 			},
 			"reachedOn": "/flows/:id canvas, object read and write nodes against a register",
 			"note": "n8n 1.119.0 (2025-11-03) took data tables out of beta. Integriq: The table is an OpenRegister register; integriq consumes the nodes.",
@@ -9687,7 +9834,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:2174-2266 handleSourceRequest() proxies any HTTP call, so an A2A JSON-RPC endpoint can be published behind an integriq endpoint; grep -riE '\\ba2a\\b|agent.?card' over lib/ and src/ finds nothing, so the agent card is not rewritten and must be edited by hand to point at the gateway"
+				"evidence": "lib/Service/EndpointService.php:2174-2266 handleSourceRequest() proxies any HTTP call, so an A2A JSON-RPC endpoint can be published behind an integriq endpoint; grep -riE '\\ba2a\\b|agent.?card' over lib/ and src/ finds nothing, so the agent card is not rewritten and must be edited by hand to point at the gateway",
+				"spec": "openspec/specs/endpoint-runtime"
 			},
 			"reachedOn": "/endpoints with targetType=api",
 			"note": "MuleSoft Omni Gateway 1.9.3 added an A2A Agent Card policy (release note 2026-06-11) that rewrites the agent card URL to the gateway's public URL. Integriq: Custom work: generic proxying only, no A2A handling.",
