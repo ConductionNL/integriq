@@ -212,7 +212,7 @@ class BerichtenboxClientHttp extends BerichtenboxClient {
 	 * @return array<string,array{code:string,stadium:string}> BerichtID => outcome.
 	 */
 	public function parseResult(string $xml): array {
-		if (LogiusSchema::errors(xml: $xml, schema: 'BerichtVerwerkService/Response/GLOBEBatchResponse.xsd') !== []) {
+		if ((new LogiusSchema())->errors(xml: $xml, schema: 'BerichtVerwerkService/Response/GLOBEBatchResponse.xsd') !== []) {
 			// Left unprocessed at the adapter, so an operator can look at it.
 			$this->logger->warning('digital-post.berichtenbox.result-invalid', ['length' => strlen($xml)]);
 			return [];
@@ -225,7 +225,11 @@ class BerichtenboxClientHttp extends BerichtenboxClient {
 
 		$outcomes = [];
 		$letters = $xpath->query('//r:Bericht');
-		foreach (($letters === false ? [] : $letters) as $letter) {
+		if ($letters === false) {
+			return [];
+		}
+
+		foreach ($letters as $letter) {
 			$berichtId = strtolower(trim((string)$xpath->evaluate('string(BerichtID)', $letter)));
 			$outcomes[$berichtId] = [
 				'code' => trim((string)$xpath->evaluate('string(VerwerkingsCode)', $letter)),

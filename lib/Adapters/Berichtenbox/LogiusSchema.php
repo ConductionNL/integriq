@@ -39,7 +39,7 @@ final class LogiusSchema {
 	 *
 	 * @return string The real path.
 	 */
-	public static function directory(): string {
+	public function directory(): string {
 		return (string)realpath(__DIR__ . '/Logius');
 	}//end directory()
 
@@ -51,8 +51,8 @@ final class LogiusSchema {
 	 *
 	 * @return array<int,string> The errors, empty when the document is valid.
 	 */
-	public static function errors(string $xml, string $schema): array {
-		$directory = self::directory();
+	public function errors(string $xml, string $schema): array {
+		$directory = $this->directory();
 		$previousLoader = libxml_get_external_entity_loader();
 		$previousErrors = libxml_use_internal_errors(true);
 		libxml_set_external_entity_loader(
@@ -68,18 +68,7 @@ final class LogiusSchema {
 		);
 
 		try {
-			$document = new DOMDocument();
-			if ($xml === '' || $document->loadXML($xml, LIBXML_NONET) === false) {
-				$errors = ['The document is not XML.'];
-			} else {
-				$valid = $document->schemaValidate($directory . '/' . $schema, LIBXML_NONET);
-				$errors = array_map(static fn ($error) => trim($error->message), libxml_get_errors());
-				if ($valid === true) {
-					$errors = [];
-				} elseif ($errors === []) {
-					$errors = ['The document does not validate.'];
-				}
-			}
+			$errors = $this->validate(xml: $xml, schemaPath: $directory . '/' . $schema);
 		} finally {
 			libxml_clear_errors();
 			libxml_use_internal_errors($previousErrors);
@@ -88,4 +77,30 @@ final class LogiusSchema {
 
 		return $errors;
 	}//end errors()
+
+	/**
+	 * Load and validate, with the loader already in place.
+	 *
+	 * @param string $xml The document.
+	 * @param string $schemaPath The schema path.
+	 *
+	 * @return array<int,string> The errors.
+	 */
+	private function validate(string $xml, string $schemaPath): array {
+		$document = new DOMDocument();
+		if ($xml === '' || $document->loadXML($xml, LIBXML_NONET) === false) {
+			return ['The document is not XML.'];
+		}
+
+		if ($document->schemaValidate($schemaPath, LIBXML_NONET) === true) {
+			return [];
+		}
+
+		$errors = array_map(static fn ($error) => trim($error->message), libxml_get_errors());
+		if ($errors === []) {
+			return ['The document does not validate.'];
+		}
+
+		return $errors;
+	}//end validate()
 }//end class

@@ -87,7 +87,9 @@ class BerichtenboxCheck implements ISetupCheck {
 		$problems = [];
 		if ($findings['waiting'] > 0) {
 			$problems[] = $this->l10n->n(
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 				'%n Berichtenbox letter has waited more than 24 hours for a result from Logius. Its status stays sent; check the ebMS adapter and the Leveranciersportaal.',
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 				'%n Berichtenbox letters have waited more than 24 hours for a result from Logius. Their status stays sent; check the ebMS adapter and the Leveranciersportaal.',
 				$findings['waiting']
 			);
@@ -95,8 +97,11 @@ class BerichtenboxCheck implements ISetupCheck {
 
 		foreach ($findings['certificates'] as $certificate) {
 			$problems[] = match ($certificate['problem']) {
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 				'missing' => $this->l10n->t('Berichtenbox source %s has no PKIoverheid certificate. Upload it under Administration settings, Integriq.', [$certificate['slug']]),
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 				'expires-soon' => $this->l10n->t('The PKIoverheid certificate of Berichtenbox source %1$s expires on %2$s. Upload its successor before then, or every letter is refused.', [$certificate['slug'], $certificate['validTo']]),
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
 				default => $this->l10n->t('The PKIoverheid certificate of Berichtenbox source %1$s cannot be used (%2$s). Every letter is refused until a usable one is uploaded.', [$certificate['slug'], $certificate['problem']]),
 			};
 		}

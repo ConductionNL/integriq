@@ -312,10 +312,7 @@ class DigitalPostService {
 				continue;
 			}
 
-			$provider = $this->providers->get($providerId);
-			if ($provider instanceof DigitalPostStatusAcknowledger) {
-				$provider->statusRecorded($reference, $config);
-			}
+			$this->providers->get($providerId)->statusRecorded($reference, $config);
 
 			$this->announce(messageId: $messageId, previousStatus: $previous, result: $result, requestedBy: (string)($message['requestedBy'] ?? ''));
 			$changed++;

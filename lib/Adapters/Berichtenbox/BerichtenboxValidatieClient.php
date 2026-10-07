@@ -92,9 +92,17 @@ class BerichtenboxValidatieClient {
 			$this->egressGuard->assertAllowed(url: $endpoint);
 			$bundle = $this->mtlsConfigResolver->resolve(authConfig: (array)($config['authentication'] ?? []));
 		} catch (EgressRefusedException $e) {
-			throw new BerichtenboxException('The subscription check endpoint may not be called: ' . $e->getMessage(), BerichtenboxException::CODE_NOT_CONFIGURED, $e);
+			throw new BerichtenboxException(
+				message: 'The subscription check endpoint may not be called: ' . $e->getMessage(),
+				reason: BerichtenboxException::CODE_NOT_CONFIGURED,
+				previous: $e
+			);
 		} catch (MtlsConfigurationException $e) {
-			throw new BerichtenboxException('The PKIoverheid certificate cannot be used: ' . $e->getMessage(), BerichtenboxException::CODE_NOT_CONFIGURED, $e);
+			throw new BerichtenboxException(
+				message: 'The PKIoverheid certificate cannot be used: ' . $e->getMessage(),
+				reason: BerichtenboxException::CODE_NOT_CONFIGURED,
+				previous: $e
+			);
 		}
 
 		try {
@@ -114,7 +122,11 @@ class BerichtenboxValidatieClient {
 				$bundle
 			);
 		} catch (MtlsTransportException $e) {
-			throw new BerichtenboxException('The subscription check did not reach Logius: ' . $e->getMessage(), BerichtenboxException::CODE_SUBSCRIPTION_FAULT, $e);
+			throw new BerichtenboxException(
+				message: 'The subscription check did not reach Logius: ' . $e->getMessage(),
+				reason: BerichtenboxException::CODE_SUBSCRIPTION_FAULT,
+				previous: $e
+			);
 		}
 
 		return $this->answers(xml: (string)$response->getBody(), status: $response->getStatusCode(), asked: $bsns);
@@ -166,7 +178,10 @@ class BerichtenboxValidatieClient {
 		libxml_clear_errors();
 		libxml_use_internal_errors($previous);
 		if ($loaded === false) {
-			throw new BerichtenboxException(sprintf('The subscription check answered HTTP %d without a SOAP body.', $status), BerichtenboxException::CODE_SUBSCRIPTION_FAULT);
+			throw new BerichtenboxException(
+				message: sprintf('The subscription check answered HTTP %d without a SOAP body.', $status),
+				reason: BerichtenboxException::CODE_SUBSCRIPTION_FAULT
+			);
 		}
 
 		$xpath = new DOMXPath($document);
@@ -175,6 +190,40 @@ class BerichtenboxValidatieClient {
 		$xpath->registerNamespace('t', self::NS_TYPES);
 		$xpath->registerNamespace('k', self::NS_SHARED);
 
+		$this->assertNoFault(xpath: $xpath);
+
+		$answers = [];
+		$items = $xpath->query('/s:Envelope/s:Body/w:ValidateAbonnementenResponse/w:ValidateAbonnementenResult/t:Abonnement');
+		if ($items === false) {
+			$items = [];
+		}
+
+		foreach ($items as $item) {
+			$bsn = trim((string)$xpath->evaluate('string(t:klant/k:Key)', $item));
+			$answers[$bsn] = (trim((string)$xpath->evaluate('string(t:isBerichtSturen)', $item)) === 'true');
+		}
+
+		foreach ($asked as $bsn) {
+			if (array_key_exists($bsn, $answers) === false) {
+				throw new BerichtenboxException(
+					message: 'Logius did not answer the subscription check for every BSN asked.',
+					reason: BerichtenboxException::CODE_SUBSCRIPTION_FAULT
+				);
+			}
+		}
+
+		return $answers;
+	}//end answers()
+	/**
+	 * Throw when the answer is a SOAP fault, with the fault's own message.
+	 *
+	 * @param DOMXPath $xpath The answer, with the SOAP and shared namespaces registered.
+	 *
+	 * @return void
+	 *
+	 * @throws BerichtenboxException On a fault.
+	 */
+	private function assertNoFault(DOMXPath $xpath): void {
 		$fault = $xpath->query('/s:Envelope/s:Body/s:Fault');
 		if ($fault !== false && $fault->length > 0) {
 			$detail = trim((string)$xpath->evaluate('string(/s:Envelope/s:Body/s:Fault/detail//k:Message)'));
@@ -183,22 +232,10 @@ class BerichtenboxValidatieClient {
 				$detail = trim((string)$xpath->evaluate('string(/s:Envelope/s:Body/s:Fault/faultstring)'));
 			}
 
-			throw new BerichtenboxException(trim('Logius refused the subscription check: ' . $kind . ' ' . $detail), BerichtenboxException::CODE_SUBSCRIPTION_FAULT);
+			throw new BerichtenboxException(
+				message: trim('Logius refused the subscription check: ' . $kind . ' ' . $detail),
+				reason: BerichtenboxException::CODE_SUBSCRIPTION_FAULT
+			);
 		}
-
-		$answers = [];
-		$items = $xpath->query('/s:Envelope/s:Body/w:ValidateAbonnementenResponse/w:ValidateAbonnementenResult/t:Abonnement');
-		foreach (($items === false ? [] : $items) as $item) {
-			$bsn = trim((string)$xpath->evaluate('string(t:klant/k:Key)', $item));
-			$answers[$bsn] = (trim((string)$xpath->evaluate('string(t:isBerichtSturen)', $item)) === 'true');
-		}
-
-		foreach ($asked as $bsn) {
-			if (array_key_exists($bsn, $answers) === false) {
-				throw new BerichtenboxException('Logius did not answer the subscription check for every BSN asked.', BerichtenboxException::CODE_SUBSCRIPTION_FAULT);
-			}
-		}
-
-		return $answers;
-	}//end answers()
+	}//end assertNoFault()
 }//end class

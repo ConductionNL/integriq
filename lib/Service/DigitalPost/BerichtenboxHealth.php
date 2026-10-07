@@ -176,7 +176,10 @@ class BerichtenboxHealth {
 		$limit = $now->getTimestamp() - (self::RESULT_WAIT_HOURS * 3600);
 		$waiting = 0;
 		foreach (($result['results'] ?? $result) as $entity) {
-			$letter = ($entity instanceof ObjectEntity ? $entity->getObject() : (array)$entity);
+			$letter = (array)$entity;
+			if ($entity instanceof ObjectEntity) {
+				$letter = $entity->getObject();
+			}
 			if ((string)($letter['providerId'] ?? '') !== BerichtenboxProvider::ID
 				|| (string)($letter['status'] ?? '') !== DigitalPostResult::STATUS_SENT
 				|| ($letter['simulated'] ?? false) === true

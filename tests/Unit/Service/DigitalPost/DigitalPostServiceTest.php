@@ -28,7 +28,6 @@ use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
-use OCA\Integriq\Service\DigitalPost\DigitalPostStatusAcknowledger;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcher;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -450,7 +449,7 @@ class DigitalPostServiceTest extends TestCase {
 	 */
 	public function testAStatusIsAcknowledgedOnlyOnceStored(): void {
 		$acknowledged = [];
-		$provider = $this->createMockForIntersectionOfInterfaces([DigitalPostProviderInterface::class, DigitalPostStatusAcknowledger::class]);
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
 		$provider->method('getProviderId')->willReturn('berichtenbox');
 		$provider->method('status')->willReturn(DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, 'ref-1'));
 		$provider->method('statusRecorded')->willReturnCallback(

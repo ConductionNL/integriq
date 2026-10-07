@@ -40,7 +40,7 @@ use Throwable;
  *
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-one-berichtenbox-code-path-built-on-the-client-that-ships-req-dpa-006
  */
-class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostStatusAcknowledger {
+class BerichtenboxProvider implements DigitalPostProviderInterface {
 	/**
 	 * The provider id a source configuration names.
 	 */
@@ -61,7 +61,7 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 	 *
 	 * @var array<string,array{kind:string,id:string,event?:string}>
 	 */
-	private array $pendingAcknowledgements = [];
+	private array $pendingAcks = [];
 
 	/**
 	 * Constructor.
@@ -108,16 +108,25 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 					'title' => 'Certificate',
 					'description' => 'Set by the certificate upload: the fingerprint of the stored certificate. Never the certificate or its key.',
 				],
-				'adapterUrl' => ['type' => 'string', 'title' => 'ebMS adapter URL', 'description' => 'The base of the adapter\'s REST API, for ebms-admin …/service/rest/v19/ebms.'],
+				'adapterUrl' => [
+					'type' => 'string',
+					'title' => 'ebMS adapter URL',
+					'description' => 'The base of the adapter\'s REST API, for ebms-admin …/service/rest/v19/ebms.',
+				],
 				'cpaId' => ['type' => 'string', 'title' => 'CPA id'],
 				'fromPartyId' => ['type' => 'string', 'title' => 'Your party id', 'description' => 'Defaults to the sender OIN.'],
 				'toPartyId' => ['type' => 'string', 'title' => 'Logius party id'],
 				'service' => ['type' => 'string', 'title' => 'CPA service'],
-				'wusEndpoint' => ['type' => 'string', 'title' => 'Subscription check endpoint', 'description' => 'The ValidateAbonnementen URL Logius gives you.'],
+				'wusEndpoint' => [
+					'type' => 'string',
+					'title' => 'Subscription check endpoint',
+					'description' => 'The ValidateAbonnementen URL Logius gives you.',
+				],
 				'berichtTypes' => [
 					'type' => 'object',
 					'title' => 'BerichtType per category',
-					'description' => 'Letter category (besluit, case-update, statutory, service) to the BerichtType code you made in the Leveranciersportaal, at most 8 characters.',
+					'description' => 'Letter category (besluit, case-update, statutory, service) to the BerichtType code '
+						. 'you made in the Leveranciersportaal, at most 8 characters.',
 					'additionalProperties' => ['type' => 'string', 'maxLength' => 8],
 				],
 			],
@@ -224,11 +233,11 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 		$transportMessageId = EbmsAdapterClient::messageIdFor($reference);
 		$result = ($this->client->results($config)[$reference] ?? null);
 		if ($result !== null) {
-			$this->pendingAcknowledgements[$reference] = ['kind' => 'result', 'id' => $result['resultMessageId']];
+			$this->pendingAcks[$reference] = ['kind' => 'result', 'id' => $result['resultMessageId']];
 			if (isset($this->client->transportEvents($config)[$transportMessageId]) === true) {
 				// The transport event for this letter goes with its result, so
 				// nothing is left waiting at the adapter.
-				$this->pendingAcknowledgements[$reference]['event'] = $transportMessageId;
+				$this->pendingAcks[$reference]['event'] = $transportMessageId;
 			}
 			$extra = ['resultCode' => $result['code'], 'resultStage' => $result['stadium']];
 
@@ -236,8 +245,13 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 				return DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, $providerReference, $simulated, $extra);
 			}
 
+			$stage = $result['stadium'];
+			if ($stage === '') {
+				$stage = 'unknown';
+			}
+
 			return DigitalPostResult::refused(
-				sprintf('Logius did not place the letter: %s (stage %s).', $result['code'], ($result['stadium'] === '' ? 'unknown' : $result['stadium'])),
+				sprintf('Logius did not place the letter: %s (stage %s).', $result['code'], $stage),
 				'logius_' . $result['code'],
 				$providerReference,
 				$extra
@@ -246,7 +260,7 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 
 		$event = ($this->client->transportEvents($config)[$transportMessageId] ?? null);
 		if ($event === 'FAILED' || $event === 'EXPIRED') {
-			$this->pendingAcknowledgements[$reference] = ['kind' => 'event', 'id' => $transportMessageId];
+			$this->pendingAcks[$reference] = ['kind' => 'event', 'id' => $transportMessageId];
 
 			return DigitalPostResult::refused(
 				sprintf('The letter was not delivered to Logius: the ebMS adapter reports %s.', $event),
@@ -276,12 +290,12 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 	 */
 	public function statusRecorded(string $providerReference, array $config): void {
 		$reference = strtolower($providerReference);
-		$pending = ($this->pendingAcknowledgements[$reference] ?? null);
+		$pending = ($this->pendingAcks[$reference] ?? null);
 		if ($pending === null) {
 			return;
 		}
 
-		unset($this->pendingAcknowledgements[$reference]);
+		unset($this->pendingAcks[$reference]);
 		if ($pending['kind'] === 'result') {
 			$this->client->resultProcessed($pending['id'], $config);
 			if (isset($pending['event']) === true) {

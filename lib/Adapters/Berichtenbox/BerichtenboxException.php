@@ -57,7 +57,7 @@ class BerichtenboxException extends RuntimeException {
 	 * @param Throwable|null $previous The cause.
 	 */
 	public function __construct(string $message, private readonly string $reason, ?Throwable $previous = null) {
-		parent::__construct($message, 0, $previous);
+		parent::__construct(message: $message, code: 0, previous: $previous);
 	}//end __construct()
 
 	/**

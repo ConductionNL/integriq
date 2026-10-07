@@ -80,4 +80,21 @@ interface DigitalPostProviderInterface {
 	 * @return array<int,array<string,mixed>> The inbound items, each with a sender and a document.
 	 */
 	public function pollInbound(array $config = []): array;
+
+	/**
+	 * The status this provider reported for a reference is stored; the provider may let go of it.
+	 *
+	 * Some providers hand out a status once: the Berichtenbox result waits at the
+	 * ebMS adapter until it is marked processed. Marking it before the letter is
+	 * saved would lose it when the save fails, so the service calls this only
+	 * after the save succeeded. A provider with nothing to release does nothing.
+	 *
+	 * @param string $providerReference The provider's reference.
+	 * @param array<string,mixed> $config The source configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#scenario-a-result-is-not-lost-when-saving-fails
+	 */
+	public function statusRecorded(string $providerReference, array $config): void;
 }//end interface

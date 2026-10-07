@@ -94,7 +94,7 @@ class EbmsAdapterClient {
 				'service' => (string)($config['service'] ?? ''),
 				'action' => (string)($config['requestAction'] ?? self::ACTION_REQUEST),
 				'conversationId' => $batch->berichtId,
-				'messageId' => self::messageIdFor($batch->berichtId),
+				'messageId' => self::messageIdFor(berichtId: $batch->berichtId),
 			],
 			static fn (string $value): bool => $value !== ''
 		);
@@ -117,7 +117,7 @@ class EbmsAdapterClient {
 
 		$messageId = trim((string)$response->getBody());
 		if ($messageId === '') {
-			return self::messageIdFor($batch->berichtId);
+			return self::messageIdFor(berichtId: $batch->berichtId);
 		}
 
 		return $messageId;
@@ -134,7 +134,11 @@ class EbmsAdapterClient {
 		$query = http_build_query(['cpaId' => (string)($config['cpaId'] ?? ''), 'action' => (string)($config['resultAction'] ?? self::ACTION_RESULT)]);
 		$ids = json_decode((string)$this->call(config: $config, method: 'GET', path: 'messages/unprocessed?' . $query)->getBody(), true);
 
-		return array_values(array_filter(array_map('strval', is_array($ids) === true ? $ids : [])));
+		if (is_array($ids) === false) {
+			return [];
+		}
+
+		return array_values(array_filter(array_map('strval', $ids)));
 	}//end unprocessedResults()
 
 	/**
@@ -188,7 +192,11 @@ class EbmsAdapterClient {
 
 		$events = json_decode((string)$this->call(config: $config, method: 'GET', path: 'events/unprocessed?' . $query)->getBody(), true);
 		$byId = [];
-		foreach ((is_array($events) === true ? $events : []) as $event) {
+		if (is_array($events) === false) {
+			return $byId;
+		}
+
+		foreach ($events as $event) {
 			if (is_array($event) === true && isset($event['messageId'], $event['type']) === true) {
 				$byId[(string)$event['messageId']] = (string)$event['type'];
 			}
@@ -248,7 +256,10 @@ class EbmsAdapterClient {
 		$status = $response->getStatusCode();
 		if ($status < 200 || $status >= 300) {
 			$detail = trim(mb_substr(strip_tags((string)$response->getBody()), 0, 300));
-			throw new BerichtenboxException(sprintf('The ebMS adapter answered HTTP %d to %s %s: %s', $status, $method, strtok($path, '?'), $detail), BerichtenboxException::CODE_TRANSPORT);
+			throw new BerichtenboxException(
+				message: sprintf('The ebMS adapter answered HTTP %d to %s %s: %s', $status, $method, strtok($path, '?'), $detail),
+				reason: BerichtenboxException::CODE_TRANSPORT
+			);
 		}
 
 		return $response;

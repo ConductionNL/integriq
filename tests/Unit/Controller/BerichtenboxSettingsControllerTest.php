@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\BerichtenboxSettingsController;
 use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettings;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -96,9 +97,7 @@ class BerichtenboxSettingsControllerTest extends TestCase {
 			$request,
 			$store,
 			$objectService,
-			new MtlsConfigResolver($crypto),
-			$crypto,
-			$this->createMock(IAppConfig::class),
+			new BerichtenboxSourceSettings(new MtlsConfigResolver($crypto), $crypto, $l, $this->createMock(IAppConfig::class)),
 			$l,
 			$this->createMock(LoggerInterface::class)
 		);

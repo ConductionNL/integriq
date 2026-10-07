@@ -92,7 +92,7 @@ class BerichtenboxLetterBuilder {
 
 		$bsn = trim((string)($message['recipient'] ?? ''));
 		if (preg_match('/^\d{1,9}$/', $bsn) !== 1) {
-			$this->refuse('GebruikerID must be a BSN of at most 9 digits.');
+			$this->refuse(reason: 'GebruikerID must be a BSN of at most 9 digits.');
 		}
 
 		$subject = (string)($message['subject'] ?? '');
@@ -149,9 +149,9 @@ class BerichtenboxLetterBuilder {
 	 * @throws BerichtenboxException When it does not validate, naming what failed.
 	 */
 	public function assertValid(string $xml): void {
-		$errors = LogiusSchema::errors(xml: $xml, schema: 'BerichtVerwerkService/Request/GLOBEBatchRequest.xsd');
+		$errors = (new LogiusSchema())->errors(xml: $xml, schema: 'BerichtVerwerkService/Request/GLOBEBatchRequest.xsd');
 		if ($errors !== []) {
-			$this->refuse('The letter does not validate against the Logius schema: ' . implode(' ', $errors));
+			$this->refuse(reason: 'The letter does not validate against the Logius schema: ' . implode(' ', $errors));
 		}
 	}//end assertValid()
 
@@ -197,7 +197,7 @@ class BerichtenboxLetterBuilder {
 		}
 
 		if (count($attachments) > self::MAX_ATTACHMENTS) {
-			$this->refuse(sprintf('A letter carries at most %d attachments; this one has %d.', self::MAX_ATTACHMENTS, count($attachments)));
+			$this->refuse(reason: sprintf('A letter carries at most %d attachments; this one has %d.', self::MAX_ATTACHMENTS, count($attachments)));
 		}
 
 		$total = 0;
@@ -208,12 +208,12 @@ class BerichtenboxLetterBuilder {
 			if ((string)($attachment['encoding'] ?? '') === 'base64') {
 				$bytes = base64_decode($content, true);
 				if ($bytes === false) {
-					$this->refuse(sprintf('Attachment %d is not valid base64.', $index + 1));
+					$this->refuse(reason: sprintf('Attachment %d is not valid base64.', $index + 1));
 				}
 			}
 
 			if (str_starts_with((string)$bytes, '%PDF-') === false) {
-				$this->refuse(sprintf('Attachment %d is not a PDF. The Berichtenbox takes PDF attachments only.', $index + 1));
+				$this->refuse(reason: sprintf('Attachment %d is not a PDF. The Berichtenbox takes PDF attachments only.', $index + 1));
 			}
 
 			$total += strlen((string)$bytes);
@@ -233,7 +233,8 @@ class BerichtenboxLetterBuilder {
 		}//end foreach
 
 		if ($total > self::MAX_ATTACHMENT_BYTES) {
-			$this->refuse(sprintf('The attachments are %d kB together; the Berichtenbox takes at most 500 kB before base64.', (int)ceil($total / 1024)));
+			$kilobytes = (int)ceil($total / 1024);
+			$this->refuse(reason: sprintf('The attachments are %d kB together; the Berichtenbox takes at most 500 kB before base64.', $kilobytes));
 		}
 	}//end attachments()
 
@@ -252,11 +253,11 @@ class BerichtenboxLetterBuilder {
 	private function assertLength(string $field, string $value, int $min, int $max): void {
 		$length = mb_strlen($value);
 		if ($length < $min) {
-			$this->refuse(sprintf('%s is empty; the Berichtenbox needs one.', $field));
+			$this->refuse(reason: sprintf('%s is empty; the Berichtenbox needs one.', $field));
 		}
 
 		if ($length > $max) {
-			$this->refuse(sprintf('%s has %d characters; the Berichtenbox takes at most %d. Nothing was cut to fit.', $field, $length, $max));
+			$this->refuse(reason: sprintf('%s has %d characters; the Berichtenbox takes at most %d. Nothing was cut to fit.', $field, $length, $max));
 		}
 	}//end assertLength()
 
