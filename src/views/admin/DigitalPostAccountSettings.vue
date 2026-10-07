@@ -146,13 +146,14 @@ export default {
 		 */
 		apply(account) {
 			this.account = account
-			this.selected = account && account.userId
-				? {
-						id: account.userId,
-						user: account.userId,
-						displayName: account.displayName || account.userId,
-					}
-				: null
+			this.selected =
+				account && account.userId
+					? {
+							id: account.userId,
+							user: account.userId,
+							displayName: account.displayName || account.userId,
+						}
+					: null
 		},
 
 		/**
@@ -212,7 +213,10 @@ export default {
 				showError(
 					Array.isArray(body.errors)
 						? body.errors.join(' ')
-						: this.t('integriq', 'Failed to save the digital post account.'),
+						: this.t(
+								'integriq',
+								'Failed to save the digital post account.',
+							),
 				)
 			} finally {
 				this.saving = false
