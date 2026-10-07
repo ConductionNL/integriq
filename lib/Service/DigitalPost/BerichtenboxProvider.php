@@ -59,7 +59,7 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 	/**
 	 * What to tell the adapter once a status is stored, per provider reference.
 	 *
-	 * @var array<string,array{kind:string,id:string}>
+	 * @var array<string,array{kind:string,id:string,event?:string}>
 	 */
 	private array $pendingAcknowledgements = [];
 
@@ -221,9 +221,15 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 		$simulated = ($this->client->flavour() === 'mock');
 		$reference = strtolower($providerReference);
 
+		$transportMessageId = EbmsAdapterClient::messageIdFor($reference);
 		$result = ($this->client->results($config)[$reference] ?? null);
 		if ($result !== null) {
 			$this->pendingAcknowledgements[$reference] = ['kind' => 'result', 'id' => $result['resultMessageId']];
+			if (isset($this->client->transportEvents($config)[$transportMessageId]) === true) {
+				// The transport event for this letter goes with its result, so
+				// nothing is left waiting at the adapter.
+				$this->pendingAcknowledgements[$reference]['event'] = $transportMessageId;
+			}
 			$extra = ['resultCode' => $result['code'], 'resultStage' => $result['stadium']];
 
 			if ($result['code'] === 'Verwerkt') {
@@ -238,7 +244,6 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 			);
 		}
 
-		$transportMessageId = EbmsAdapterClient::messageIdFor($reference);
 		$event = ($this->client->transportEvents($config)[$transportMessageId] ?? null);
 		if ($event === 'FAILED' || $event === 'EXPIRED') {
 			$this->pendingAcknowledgements[$reference] = ['kind' => 'event', 'id' => $transportMessageId];
@@ -279,6 +284,10 @@ class BerichtenboxProvider implements DigitalPostProviderInterface, DigitalPostS
 		unset($this->pendingAcknowledgements[$reference]);
 		if ($pending['kind'] === 'result') {
 			$this->client->resultProcessed($pending['id'], $config);
+			if (isset($pending['event']) === true) {
+				$this->client->eventProcessed($pending['event'], $config);
+			}
+
 			return;
 		}
 

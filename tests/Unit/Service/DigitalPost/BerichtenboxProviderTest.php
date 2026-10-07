@@ -330,6 +330,23 @@ class BerichtenboxProviderTest extends TestCase {
 	}//end testAProcessedLetterBecomesDeliveredAndIsAcknowledgedAfterStoring()
 
 	/**
+	 * A letter whose result arrived lets go of its transport event too, so nothing waits at the adapter (bbx-live).
+	 *
+	 * @return void
+	 */
+	public function testAResultAlsoReleasesTheTransportEvent(): void {
+		$client = new RecordingBerichtenboxClient();
+		$client->results = ['b1' => ['code' => 'Verwerkt', 'stadium' => 'NA', 'resultMessageId' => 'r1']];
+		$client->events = [EbmsAdapterClient::messageIdFor('b1') => 'DELIVERED'];
+		$provider = $this->provider($client);
+
+		$provider->status('b1', $this->config());
+		$provider->statusRecorded('b1', $this->config());
+
+		$this->assertSame([['resultProcessed', 'r1'], ['eventProcessed', EbmsAdapterClient::messageIdFor('b1')]], $client->calls);
+	}//end testAResultAlsoReleasesTheTransportEvent()
+
+	/**
 	 * Any other code makes the letter failed, with the code and stage, keeping its reference.
 	 *
 	 * @return void
