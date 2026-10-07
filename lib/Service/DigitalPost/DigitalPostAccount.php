@@ -216,6 +216,42 @@ class DigitalPostAccount {
 	}//end runAs()
 
 	/**
+	 * The state of the account, for the admin setting and the setup check.
+	 *
+	 * @return array{configured: bool, userId: string, state: string, displayName: string, message: string}
+	 *         `state` is `ok`, or the reason the account is not usable.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#scenario-the-setup-check-names-an-unusable-account
+	 */
+	public function describe(): array {
+		$userId = '';
+		$configured = false;
+		try {
+			$consumer = $this->findConsumer();
+			$configured = ($consumer !== null);
+			$userId = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
+			$account = $this->resolve();
+		} catch (DsoConnectionUnavailableException $exception) {
+			return [
+				'configured' => $configured,
+				'userId' => $userId,
+				'state' => $exception->getReason(),
+				'displayName' => $userId,
+				'message' => $exception->getMessage(),
+			];
+		}
+
+		return [
+			'configured' => true,
+			'userId' => $userId,
+			'state' => 'ok',
+			'displayName' => (string)$account->getDisplayName(),
+			'message' => '',
+		];
+
+	}//end describe()
+
+	/**
 	 * Log a refusal and tell the administrators (once an hour per reason).
 	 *
 	 * @param DsoConnectionUnavailableException $exception Why there is no usable account.
