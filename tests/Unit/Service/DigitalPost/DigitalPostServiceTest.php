@@ -28,6 +28,7 @@ use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
+use OCA\Integriq\Service\DigitalPost\DigitalPostStatusAcknowledger;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcher;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -62,6 +63,13 @@ class DigitalPostServiceTest extends TestCase {
 	private array $dispatched = [];
 
 	/**
+	 * Whether the doubled object service refuses every write.
+	 *
+	 * @var bool
+	 */
+	private bool $failSaves = false;
+
+	/**
 	 * The opt-out services, once built.
 	 *
 	 * @var OptOutFixture|null
@@ -77,6 +85,7 @@ class DigitalPostServiceTest extends TestCase {
 		parent::setUp();
 		$this->saved = [];
 		$this->dispatched = [];
+		$this->failSaves = false;
 		$this->optOuts = null;
 	}//end setUp()
 
@@ -109,8 +118,9 @@ class DigitalPostServiceTest extends TestCase {
 	private function service(DigitalPostProviderInterface $provider, ?array $sourceConfig): DigitalPostService {
 		$store = $this->getMockBuilder(ConnectionStore::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findSourceBySlug'])
+			->onlyMethods(['findSourceBySlug', 'readSourceRaw'])
 			->getMock();
+		$store->method('readSourceRaw')->willReturnArgument(0);
 
 		if ($sourceConfig === null) {
 			$store->method('findSourceBySlug')->willReturn(null);
@@ -123,6 +133,10 @@ class DigitalPostServiceTest extends TestCase {
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) {
+				if ($this->failSaves === true) {
+					throw new \RuntimeException('OpenRegister refused the write');
+				}
+
 				$this->saved[] = $object;
 				$entity = $this->createMock(ObjectEntity::class);
 				$entity->method('getUuid')->willReturn(($uuid ?? 'msg-1'));
@@ -405,6 +419,56 @@ class DigitalPostServiceTest extends TestCase {
 		$this->assertSame(DigitalPostResult::STATUS_DELIVERED, $this->dispatched[0]->getStatus());
 		$this->assertSame(DigitalPostResult::STATUS_SENT, $this->dispatched[0]->getPreviousStatus());
 	}//end testAStatusPollAnnouncesOnlyRealChanges()
+
+	/**
+	 * A provider's own refusal code reaches the sending app, so it can tell
+	 * "not subscribed" from "opted out".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-opt-out-and-category-rules-run-first-and-do-not-change-req-dpa-014
+	 */
+	public function testAProviderRefusalCodeReachesTheSendingApp(): void {
+		$service = $this->service(
+			$this->provider('berichtenbox', DigitalPostResult::refused('Not subscribed. Nothing was sent.', 'not_subscribed')),
+			['providerId' => 'berichtenbox']
+		);
+		$event = $this->request('besluit');
+
+		$service->handleSendRequest($event);
+
+		$this->assertSame('not_subscribed', $event->getRefusal()['code']);
+		$this->assertSame('besluit', $this->saved[0]['category']);
+	}//end testAProviderRefusalCodeReachesTheSendingApp()
+
+	/**
+	 * A status is acknowledged to the provider only after it is stored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#scenario-a-result-is-not-lost-when-saving-fails
+	 */
+	public function testAStatusIsAcknowledgedOnlyOnceStored(): void {
+		$acknowledged = [];
+		$provider = $this->createMockForIntersectionOfInterfaces([DigitalPostProviderInterface::class, DigitalPostStatusAcknowledger::class]);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$provider->method('status')->willReturn(DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, 'ref-1'));
+		$provider->method('statusRecorded')->willReturnCallback(
+			function (string $reference) use (&$acknowledged): void {
+				$acknowledged[] = $reference;
+			}
+		);
+		$message = ['uuid' => 'msg-1', 'providerId' => 'berichtenbox', 'providerReference' => 'ref-1', 'status' => 'sent', 'sourceId' => 'berichtenbox-source'];
+
+		$this->failSaves = true;
+		$this->assertSame(0, $this->service($provider, ['providerId' => 'berichtenbox'])->pollStatuses([$message]));
+		$this->assertSame([], $acknowledged, 'A status that was not stored stays with the provider for the next run.');
+		$this->assertSame([], $this->dispatched);
+
+		$this->failSaves = false;
+		$this->assertSame(1, $this->service($provider, ['providerId' => 'berichtenbox'])->pollStatuses([$message]));
+		$this->assertSame(['ref-1'], $acknowledged);
+	}//end testAStatusIsAcknowledgedOnlyOnceStored()
 
 	/**
 	 * Health answers what a source page shows: last send, last error, queue

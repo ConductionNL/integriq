@@ -162,6 +162,8 @@ class DigitalPostService {
 			'sourceId' => $event->getSourceId(),
 			'providerId' => $providerId,
 			'correlationId' => $event->getCorrelationId(),
+			'category' => $event->getCategory(),
+			'caseRef' => $event->getCaseRef(),
 			'status' => DigitalPostResult::STATUS_QUEUED,
 			'lastError' => '',
 			'simulated' => false,
@@ -198,7 +200,14 @@ class DigitalPostService {
 		$this->announce(messageId: $messageId, previousStatus: DigitalPostResult::STATUS_QUEUED, result: $result, requestedBy: $event->getRequestedBy());
 
 		if ($result->isRefused() === true) {
-			$event->setRefusal($result->getError(), 'provider_refused');
+			// A provider that knows why (`not_subscribed`) says so; anything else
+			// stays the generic provider refusal the sending apps already read.
+			$code = $result->getCode();
+			if ($code === '') {
+				$code = 'provider_refused';
+			}
+
+			$event->setRefusal($result->getError(), $code);
 
 			return;
 		}
@@ -297,7 +306,17 @@ class DigitalPostService {
 				continue;
 			}
 
-			$this->persist(message: array_merge($message, $result->toArray()), uuid: $messageId);
+			$saved = $this->persist(message: array_merge($message, $result->toArray()), uuid: $messageId);
+			if ($saved === null) {
+				// Not stored, so the provider keeps the status for the next run.
+				continue;
+			}
+
+			$provider = $this->providers->get($providerId);
+			if ($provider instanceof DigitalPostStatusAcknowledger) {
+				$provider->statusRecorded($reference, $config);
+			}
+
 			$this->announce(messageId: $messageId, previousStatus: $previous, result: $result, requestedBy: (string)($message['requestedBy'] ?? ''));
 			$changed++;
 		}//end foreach
@@ -398,7 +417,8 @@ class DigitalPostService {
 			return null;
 		}
 
-		$data = $source->getObject();
+		// Unrendered, so the encrypted transport certificate is still there.
+		$data = $this->connectionStore->readSourceRaw(source: $source)->getObject();
 		$config = ($data['configuration'] ?? []);
 		if (is_string($config) === true) {
 			$config = json_decode($config, true);
