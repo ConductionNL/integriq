@@ -6240,6 +6240,101 @@
 			}
 		},
 		{
+			"id": "nl-oso",
+			"area": "nl-standards",
+			"name": "Send and receive a pupil transfer file through the Overstapservice Onderwijs (OSO).",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/oso-adapter/spec.md is the main spec; code at lib/Service/Oso/OsoProviderInterface.php. Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/oso-adapter"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
+			"id": "nl-rod",
+			"area": "nl-standards",
+			"name": "Report enrolments to DUO through the Register Onderwijsdeelnemers (ROD).",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/rod-adapter/spec.md is the main spec; code at lib/Service/Rod/RodProviderInterface.php. Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/rod-adapter"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
+			"id": "nl-swv-handoff",
+			"area": "nl-standards",
+			"name": "Hand a support request over to a samenwerkingsverband (SWV) system.",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/swv-handoff/spec.md is the main spec; code at lib/sources.seed.json. Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/swv-handoff"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
+			"id": "nl-uwlr-eduv",
+			"area": "nl-standards",
+			"name": "Exchange pupil and group data over UWLR, Edu-V, Basispoort and Entree.",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/uwlr-eduv-adapter/spec.md is the main spec; code at lib/Service/UwlrEduV/UwlrEduVProviderInterface.php. Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/uwlr-eduv-adapter"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
+			"id": "nl-klantinteracties",
+			"area": "nl-standards",
+			"name": "Serve customer contacts through the VNG Klantinteracties API.",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/vng-klantinteracties-adapter/spec.md is the main spec; code at lib/Service/EndpointService.php (@spec vng-klantinteracties-adapter). Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/vng-klantinteracties-adapter"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
 			"id": "id-digid",
 			"area": "identity",
 			"name": "Let citizens log in with DigiD through a broker.",
@@ -8782,6 +8877,82 @@
 				"wso2": "source read at v4.7.0 (carbon-apimgt v9.33.122, apim-apps v9.3.194), not driven: API Manager ships no connectors to business applications: grep -rliE \"tenderned|endoflife|end-of-life|opencorporates|xwiki|sharepoint|digital public goods|navigator|pinkroccade|centric|nedgraphics|deepl|\\bsbb\\b\" over carbon-apimgt/components, product-apim/all-in-one-apim/modules/distribution and the portal locale files finds nothing relevant (tally in _lane/r-wso2/grep-misc.txt; \"translat\" hits only image and internal service code), and the only prebuilt backends are AI model providers (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:12115 /llm-providers); an outside API can be fronted only as a generic proxied API (carbon-apimgt/components/apimgt/org.wso2.carbon.apimgt.rest.api.publisher.v1/src/main/resources/publisher-api.yaml:5310); grep -rliE \"pinkroccade|centric|nedgraphics\" finds nothing",
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'pinkroccade|iburgerzaken|centric|\\bgws\\b|nedgraphics|civision|cipers' over java, xml, ts and properties outside test folders finds nothing; the shipped business connectors are SAP (sap/src/main/java/org/frankframework/extensions/sap/SapSender.java:23), Exchange, SendGrid, CMIS, Akamai, iDIN and Tibco"
 			}
+		},
+		{
+			"id": "con-card-feed",
+			"area": "connectors",
+			"name": "Import corporate card transactions from a card-program provider for other apps.",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/corporate-card-feed/spec.md is the main spec; code at lib/Service/Cardfeed/. Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/corporate-card-feed"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
+			"id": "con-endpoint-workspace",
+			"area": "connectors",
+			"name": "Connect device and workspace managers such as Intune, Jamf or Citrix.",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/endpoint-workspace-connectors/spec.md is the main spec; code at lib/Service/Adapter/EndpointWorkspace/. Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/endpoint-workspace-connectors"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
+			"id": "con-lvs-results",
+			"area": "connectors",
+			"name": "Import test results from a pupil tracking system such as Cito, IEP, Boom or Dia.",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/lvs-result-import/spec.md is the main spec; code at lib/sources.seed.json. Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/lvs-result-import"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
+			"id": "con-slo-curriculum",
+			"area": "connectors",
+			"name": "Import an SLO curriculum as a framework of learning goals.",
+			"source": "spec-round-2026-10-07",
+			"integriq": "yes",
+			"built": {
+				"state": "built",
+				"owner": "ConductionNL/integriq",
+				"evidence": "openspec/specs/slo-curriculum-import/spec.md is the main spec; code at lib/Settings/register.d/slo-curriculum-source.json. Added in the spec round reverse check; not live-checked.",
+				"spec": "openspec/specs/slo-curriculum-import"
+			},
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
 		},
 		{
 			"id": "plt-third-party-connectors",
