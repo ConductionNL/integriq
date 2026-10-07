@@ -1,12 +1,12 @@
 # Tasks: berichtenbox-client (integriq)
 
-Spec only until Ruben approves design.md and its open decisions. Tests fail first, through the real path, as the digital post account. Every proof before Logius preproductie runs against the fake and says so.
+Ruben approved the decisions on 2026-10-07 (design.md section 12). Tests fail first, through the real path, as the digital post account. Every proof before Logius preproductie runs against the fake and says so.
 
 Archive order: `berichtenbox-digital-post-adapter` archives first. This change modifies and renames requirements in its `digital-post-adapter` spec, and `openspec archive` refuses that until the spec exists.
 
 ## 0. Decisions before building
 
-- [ ] 0.1 Ruben decides D1 to D8 in design.md section 12.
+- [x] 0.1 Ruben decided D1 to D8 on 2026-10-07, all as recommended (design.md section 12).
 - [ ] 0.2 The questions Q1 to Q9 go to Logius (through the Logius business consultant), with the answers recorded in design.md. Q2 (CPA values) and Q3 (which limit wins) block task 3.
 
 ## 1. Vendored contract and the fake

@@ -200,41 +200,18 @@ Every live proof before preproductie is therefore a proof against the fake, and 
 - **The XSD package is inconsistent with itself.** `GLOBEBatchRequest.xsd` imports `GLOBEBatchRequestTypes.xsd`, the package ships `GLOBEBatchRequestTypes_128ch.xsd`. The vendored copy keeps the file names and a catalog maps the import (Q3).
 - **WUS volume.** One subscription check per letter is fine for case work and wrong for a bulk mailing. Bulk use needs the ebMS AbonnementService (D4).
 
-## 12. Open decisions for Ruben
+## 12. Decisions (approved by Ruben 2026-10-07)
 
-Recommended option first in each.
+Ruben took the recommended option in each, on integriq#2578.
 
-**D1. Who connects to Logius.**
-(a) Each customer organisation connects with its own OIN and certificate. Conduction delivers the software. (b) Conduction connects once as intermediary for all its customers, with a Verwerkersovereenkomst each. (c) Customers use an existing intermediary, and integriq speaks that intermediary's API instead.
-Recommended: (a) for the first customer, because it needs no new legal role for Conduction. (b) is worth a separate decision once a second customer asks.
-
-**D2. How the ebMS leg is built.**
-(a) Through an operator-run ebMS adapter over its REST API, with ebms-core as the reference. (b) Finish integriq's own ebMS2 stack in PHP. (c) Leave ebMS to an intermediary only.
-Recommended: (a). It is what S1 assumes, it is open source, and it keeps ebMS reliability out of PHP.
-
-**D3. Where the WUS certificate lives.**
-(a) Integriq's mTLS transport, encrypted at rest with `ICrypto`, named by `certificateRef`. (b) Wait for OpenRegister's credential broker. (c) Route WUS through a reverse proxy that holds the key.
-Recommended: (a). It exists, it is tested, and Berichtenbox needs no signing.
-
-**D4. How the subscription is checked.**
-(a) WUS `ValidateAbonnementen` per letter, no cache. (b) A daily ebMS AbonnementService "Volledig" plus "Mutaties", cached at most 7 days. (c) Both: WUS for single letters, the cache for batches.
-Recommended: (a) now, (c) when a bulk sender appears.
-
-**D5. How strong the pre-Logius proof is.**
-(a) The XSD-validating fake from section 8. (b) Also two ebms-core instances, so the ebMS wire is exercised.
-Recommended: (a) for this change. (b) when D2 (a) is built.
-
-**D6. Resending a failed letter.**
-(a) No resend in this change. A failed letter stays failed, as today. (b) An admin resend that reuses `batchId` and `berichtId`.
-Recommended: (a). A resend is its own change, for every provider.
-
-**D7. When a letter with no result counts as lost.**
-(a) Warn in the setup check after 24 hours, never change the status by guessing. (b) Mark it `failed` after a fixed window.
-Recommended: (a), until Logius says how long a result can take (Q5).
-
-**D8. Berichtenbox voor bedrijven.**
-(a) Out of scope. This interface sends to citizens only (`SoortGebruiker` is fixed `Burger`, S3). (b) Specify it now.
-Recommended: (a). Business post moves to BBO, which has no published interface yet (S10, S11).
+- **D1. Who connects to Logius.** Each customer organisation connects with its own OIN and certificate. Conduction delivers the software. Connecting as intermediary is a separate decision, once a second customer asks.
+- **D2. How the ebMS leg is built.** Through an ebMS adapter the operator runs, over its REST API, with ebms-core as the reference.
+- **D3. Where the WUS certificate lives.** In integriq's existing mTLS transport, encrypted at rest with `ICrypto`, named by `certificateRef`.
+- **D4. How the subscription is checked.** WUS `ValidateAbonnementen` once per letter, with no cache.
+- **D5. How strong the pre-Logius proof is.** The XSD-validating fake from section 8.
+- **D6. Resending a failed letter.** No resend in this change. A failed letter stays failed.
+- **D7. When a letter with no result counts as lost.** The setup check warns after 24 hours. The status is never changed by guessing.
+- **D8. Berichtenbox voor bedrijven.** Out of scope. This interface sends to citizens only.
 
 ### Questions only Logius can answer
 
