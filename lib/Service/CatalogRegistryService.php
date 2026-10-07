@@ -321,19 +321,19 @@ class CatalogRegistryService {
 			[
 				'slug' => 'adapter:berichtenbox',
 				'name' => 'Berichtenbox (Logius)',
-				'description' => 'Logius Berichtenbox voor Burgers, over the Berichtenbox Koppelvlak (BBK 1.7): the message '
-					. 'box a citizen reads in MijnOverheid. It needs two credentials, and it sends nothing without either: '
-					. 'Logius BBK OAuth 2.0 client credentials, and a PKIoverheid Services-server certificate, held by the '
-					. 'credential broker and named on the source by reference rather than by value. Ships mock while '
-					. '`logius.berichtenbox.feature_flag` is unset, and every send is then reported as simulated. With the '
-					. 'flag set the mock is not served at all: a send is refused, naming what is missing, because a '
-					. 'simulated delivery on a flagged instance is indistinguishable from a real one.',
+				'description' => 'MijnOverheid Berichtenbox: letters to the message box a citizen reads in MijnOverheid. '
+					. 'Letters go over Digikoppeling ebMS through an ebMS adapter you run; the subscription is checked over '
+					. 'Digikoppeling WUS before every letter. It needs a Logius aansluiting, a PKIoverheid certificate with '
+					. 'your OIN (uploaded under Administration settings, Integriq, and stored encrypted) and the CPA values '
+					. 'Logius gives you. Ships mock while `logius.berichtenbox.feature_flag` is unset, and every send is then '
+					. 'reported as simulated. With the flag set the mock is not served: a source that lacks a value is '
+					. 'refused, naming each one. Logius reports delivered or not, never read.',
 				'category' => 'Government messaging',
 				'kind' => 'adapter',
 				'mechanism' => 'flag-gated',
 				'flagKey' => 'logius.berichtenbox.feature_flag',
 				'sourceTemplateSlug' => '',
-				'standards' => ['BBK 1.7'],
+				'standards' => ['Digikoppeling ebMS2', 'Digikoppeling WUS', 'PKIoverheid'],
 				'icon' => 'EmailOutline',
 			],
 			[

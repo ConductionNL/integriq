@@ -4065,7 +4065,7 @@
         "slug": "digitalPostMessage",
         "title": "Digital Post Message",
         "icon": "EmailOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "authorization": {
           "create": [
             "digitale-post-verzenders"
@@ -4155,6 +4155,41 @@
             "type": "string",
             "description": "Caller-generated id, echoed on every status change",
             "title": "Correlation ID"
+          },
+          "category": {
+            "type": "string",
+            "description": "The letter's category (besluit, case-update, statutory, service), as the sending app gave it",
+            "title": "Category"
+          },
+          "caseRef": {
+            "type": "string",
+            "description": "The case the letter belongs to, when the sending app named one",
+            "title": "Case Reference"
+          },
+          "batchId": {
+            "type": "string",
+            "description": "Berichtenbox: the BatchID GUID of the GLOBE-R-BV-Request batch that carried the letter",
+            "title": "Batch Id"
+          },
+          "transportMessageId": {
+            "type": "string",
+            "description": "Berichtenbox: the ebMS message id the adapter sent the batch under",
+            "title": "Transport Message Id"
+          },
+          "berichtType": {
+            "type": "string",
+            "description": "Berichtenbox: the BerichtType code the letter was sent under",
+            "title": "Bericht Type"
+          },
+          "resultCode": {
+            "type": "string",
+            "description": "Berichtenbox: the VerwerkingsCode Logius answered, for example Verwerkt or NietActiefOfGeabonneerd",
+            "title": "Result Code"
+          },
+          "resultStage": {
+            "type": "string",
+            "description": "Berichtenbox: the Stadium Logius answered with the code",
+            "title": "Result Stage"
           },
           "providerReference": {
             "type": "string",
