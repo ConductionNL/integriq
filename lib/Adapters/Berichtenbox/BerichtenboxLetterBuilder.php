@@ -149,17 +149,8 @@ class BerichtenboxLetterBuilder {
 	 * @throws BerichtenboxException When it does not validate, naming what failed.
 	 */
 	public function assertValid(string $xml): void {
-		$document = new DOMDocument();
-		$previous = libxml_use_internal_errors(true);
-		try {
-			$valid = ($document->loadXML($xml, LIBXML_NONET) === true) && $document->schemaValidate(self::schemaPath(), LIBXML_NONET);
-			$errors = array_map(static fn ($error) => trim($error->message), libxml_get_errors());
-		} finally {
-			libxml_clear_errors();
-			libxml_use_internal_errors($previous);
-		}
-
-		if ($valid === false) {
+		$errors = LogiusSchema::errors(xml: $xml, schema: 'BerichtVerwerkService/Request/GLOBEBatchRequest.xsd');
+		if ($errors !== []) {
 			$this->refuse('The letter does not validate against the Logius schema: ' . implode(' ', $errors));
 		}
 	}//end assertValid()

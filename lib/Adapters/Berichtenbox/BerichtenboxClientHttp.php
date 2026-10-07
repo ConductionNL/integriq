@@ -212,19 +212,14 @@ class BerichtenboxClientHttp extends BerichtenboxClient {
 	 * @return array<string,array{code:string,stadium:string}> BerichtID => outcome.
 	 */
 	public function parseResult(string $xml): array {
-		$document = new DOMDocument();
-		$previous = libxml_use_internal_errors(true);
-		$valid = ($xml !== '' && $document->loadXML($xml, LIBXML_NONET) === true
-			&& $document->schemaValidate(__DIR__ . '/Logius/BerichtVerwerkService/Response/GLOBEBatchResponse.xsd', LIBXML_NONET) === true);
-		libxml_clear_errors();
-		libxml_use_internal_errors($previous);
-
-		if ($valid === false) {
+		if (LogiusSchema::errors(xml: $xml, schema: 'BerichtVerwerkService/Response/GLOBEBatchResponse.xsd') !== []) {
 			// Left unprocessed at the adapter, so an operator can look at it.
 			$this->logger->warning('digital-post.berichtenbox.result-invalid', ['length' => strlen($xml)]);
 			return [];
 		}
 
+		$document = new DOMDocument();
+		$document->loadXML($xml, LIBXML_NONET);
 		$xpath = new DOMXPath($document);
 		$xpath->registerNamespace('r', 'http://schemas.rdw.nl/GEB/BerichtVerwerkService/BerichtResultaat/Types/2009/01');
 

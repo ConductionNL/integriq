@@ -194,6 +194,25 @@ class BerichtenboxLetterBuilderTest extends TestCase {
 	}//end testABerichtTypeOverEightCharactersIsRefused()
 
 	/**
+	 * Under Nextcloud's XXE guard, an entity loader that refuses everything, the
+	 * schema still loads, and the guard is back in place afterwards (bbx-live).
+	 *
+	 * @return void
+	 */
+	public function testTheSchemaLoadsUnderNextcloudsEntityLoaderAndLeavesItInPlace(): void {
+		$guard = static fn (?string $public, ?string $system, array $context) => null;
+		libxml_set_external_entity_loader($guard);
+		try {
+			$batch = (new BerichtenboxLetterBuilder())->build($this->message(), self::OIN, 'BESLUIT');
+
+			$this->assertNotSame('', $batch->xml);
+			$this->assertSame($guard, libxml_get_external_entity_loader());
+		} finally {
+			libxml_set_external_entity_loader(null);
+		}
+	}//end testTheSchemaLoadsUnderNextcloudsEntityLoaderAndLeavesItInPlace()
+
+	/**
 	 * A document the schema rejects is caught by the same check the builder runs.
 	 *
 	 * @return void
