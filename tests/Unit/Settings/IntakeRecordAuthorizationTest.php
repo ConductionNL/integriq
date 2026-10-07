@@ -77,6 +77,26 @@ class IntakeRecordAuthorizationTest extends TestCase {
 					'delete' => [],
 				],
 			],
+			// digital-post-service-account-and-log-redaction (REQ-DPA-007): the
+			// digital post account stores the letter and its outbound log row.
+			'digitalPostMessage' => [
+				'digitalPostMessage',
+				[
+					'create' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'read' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'update' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'delete' => [],
+				],
+			],
+			'outbound_message' => [
+				'outbound_message',
+				[
+					'create' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'read' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'update' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'delete' => [],
+				],
+			],
 		];
 
 	}//end blocks()
