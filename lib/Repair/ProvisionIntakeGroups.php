@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Intake\IntakeGroups;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
@@ -51,9 +52,11 @@ use Psr\Container\ContainerInterface;
 use Throwable;
 
 /**
- * Creates the intake and handler groups and enrols the existing intake accounts.
+ * Creates the intake and handler groups and enrols the existing intake accounts,
+ * and the digital post account in the group its schema grants.
  *
  * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
+ * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
  */
 class ProvisionIntakeGroups implements IRepairStep {
 
@@ -65,6 +68,7 @@ class ProvisionIntakeGroups implements IRepairStep {
 	private const INTAKE_GROUP_OF = [
 		DsoConnection::AUTHORIZATION_TYPE => IntakeGroups::DSO_INTAKE,
 		OpenFormulierenConnection::AUTHORIZATION_TYPE => IntakeGroups::OPEN_FORMULIEREN_INTAKE,
+		DigitalPostAccount::AUTHORIZATION_TYPE => IntakeGroups::DIGITAL_POST_SENDERS,
 	];
 
 	/**
@@ -90,7 +94,7 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
 	 */
 	public function getName(): string {
-		return 'Create the intake and handler groups for DSO verzoeken, Open Formulieren submissions, intake messages and verdicts';
+		return 'Create the intake and handler groups for DSO verzoeken, Open Formulieren submissions, intake messages and verdicts, and the digital post group';
 
 	}//end getName()
 

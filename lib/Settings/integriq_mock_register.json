@@ -4065,7 +4065,19 @@
         "slug": "digitalPostMessage",
         "title": "Digital Post Message",
         "icon": "EmailOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "Audit and lifecycle record for one letter sent through a configured digital post source",
         "description": "A Digital Post Message tracks one letter a fleet app asked integriq to send, from queued through the provider's acceptance to whatever became of it. A failed send keeps the message and its attachments, so the letter can be retried rather than rewritten. See openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002.",
         "required": [
