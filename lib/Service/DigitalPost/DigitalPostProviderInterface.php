@@ -33,6 +33,8 @@ interface DigitalPostProviderInterface {
 	 * The provider id a source configuration names.
 	 *
 	 * @return string Provider id, for example `berichtenbox`.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
 	 */
 	public function getProviderId(): string;
 
@@ -40,6 +42,8 @@ interface DigitalPostProviderInterface {
 	 * What this binding has to be configured with.
 	 *
 	 * @return array<string,mixed> A JSON-schema-shaped description of the configuration.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
 	 */
 	public function getConfigSchema(): array;
 
@@ -49,6 +53,8 @@ interface DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return array<int,string> The refusals, empty when the binding may be activated.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
 	 */
 	public function activationRefusals(array $config): array;
 
@@ -59,6 +65,8 @@ interface DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return DigitalPostResult What the provider answered.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
 	 */
 	public function send(array $message, array $config = []): DigitalPostResult;
 
@@ -69,6 +77,8 @@ interface DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return DigitalPostResult The status the provider reports.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
 	 */
 	public function status(string $providerReference, array $config = []): DigitalPostResult;
 
@@ -78,6 +88,25 @@ interface DigitalPostProviderInterface {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return array<int,array<string,mixed>> The inbound items, each with a sender and a document.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
 	 */
 	public function pollInbound(array $config = []): array;
+
+	/**
+	 * The status this provider reported for a reference is stored; the provider may let go of it.
+	 *
+	 * Some providers hand out a status once: the Berichtenbox result waits at the
+	 * ebMS adapter until it is marked processed. Marking it before the letter is
+	 * saved would lose it when the save fails, so the service calls this only
+	 * after the save succeeded. A provider with nothing to release does nothing.
+	 *
+	 * @param string $providerReference The provider's reference.
+	 * @param array<string,mixed> $config The source configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#scenario-a-result-is-not-lost-when-saving-fails
+	 */
+	public function statusRecorded(string $providerReference, array $config): void;
 }//end interface
