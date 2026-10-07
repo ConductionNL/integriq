@@ -395,6 +395,92 @@ class OptOutRegistryTest extends TestCase {
 	}//end testAnErasedContactStaysOptedOut()
 
 	/**
+	 * An erasure redacts the person's earlier log entries: hashed key, kind, decision and date stay.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/outbound-opt-out-authority/spec.md#scenario-the-earlier-entries-no-longer-show-the-address
+	 *
+	 * @return void
+	 */
+	public function testAnErasureRedactsTheEarlierLogEntries(): void {
+		$registry = $this->fx->registry();
+		$registry->record(
+			[
+				'address' => 'jan@example.nl',
+				'state' => 'opted-out',
+				'scope' => 'instance',
+				'contactRef' => 'c-1',
+				'source' => 'voorkeuren-formulier',
+				'lawfulBasis' => 'consent',
+				'evidence' => ['form' => 'voorkeuren'],
+				'sourceApp' => 'pipelinq',
+				'correlationId' => 'corr-jan-1',
+			]
+		);
+		$registry->decideMany('email', 'case-update', false, [['address' => 'jan@example.nl']], 'dossiq', 'corr-jan-2');
+		$before = [];
+		foreach ($this->fx->log->rows as $entry) {
+			$before[(int)$entry->getId()] = ['at' => $entry->getAt(), 'kind' => $entry->getKind()];
+		}
+
+		$this->fx->now += 60;
+		$registry->record(['state' => 'erase-contact', 'contactRef' => 'c-1', 'sourceApp' => 'pipelinq', 'correlationId' => 'corr-erase']);
+
+		$keys = [];
+		foreach ($this->fx->log->rows as $entry) {
+			$json = json_encode($entry->jsonSerialize());
+			$this->assertStringNotContainsString('jan@example.nl', $json);
+			$this->assertStringNotContainsString('voorkeuren', $json);
+			$this->assertStringNotContainsString('corr-jan', $json);
+			$this->assertStringNotContainsString('consent', $json);
+			$keys[] = $entry->getAddress();
+		}
+
+		$this->assertCount(3, $this->fx->log->rows, 'the erasure appends one entry and deletes none');
+		$this->assertCount(1, array_unique($keys), 'every entry of the person carries the same hashed key');
+		$this->assertStringStartsWith('h:', $keys[0]);
+		foreach ($before as $id => $kept) {
+			$entry = $this->fx->log->rows[$id - 1];
+			$this->assertSame($kept['at'], $entry->getAt(), 'the date stays');
+			$this->assertSame($kept['kind'], $entry->getKind(), 'the kind stays');
+			$this->assertTrue($entry->detailArray()['redacted']);
+		}
+
+		$this->assertSame('opted-out', $this->fx->log->rows[0]->detailArray()['state'], 'the decision stays');
+		$this->assertArrayNotHasKey('evidence', $this->fx->log->rows[0]->detailArray());
+		$this->assertArrayNotHasKey('source', $this->fx->log->rows[0]->detailArray());
+		$this->assertSame('opted-out', $this->fx->log->rows[1]->detailArray()['code'], 'the suppression keeps its code');
+		$this->assertSame('', $this->fx->log->rows[0]->getCorrelationId());
+		$erasure = $this->fx->log->rows[2];
+		$this->assertSame('erase-contact', $erasure->detailArray()['state']);
+		$this->assertSame($keys[0], $erasure->getAddress(), 'the erasure entry names the hashed key, not the address');
+
+	}//end testAnErasureRedactsTheEarlierLogEntries()
+
+	/**
+	 * Another person's entries are untouched, and a later send is logged as before.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/outbound-opt-out-authority/spec.md#scenario-another-persons-entries-are-untouched
+	 *
+	 * @return void
+	 */
+	public function testAnErasureLeavesOthersAndLaterEntriesAlone(): void {
+		$registry = $this->fx->registry();
+		$registry->record(['address' => 'jan@example.nl', 'state' => 'opted-out', 'scope' => 'instance', 'contactRef' => 'c-1', 'evidence' => ['form' => 'voorkeuren']]);
+		$registry->record(['address' => 'kees@example.nl', 'state' => 'opted-out', 'scope' => 'instance', 'contactRef' => 'c-2', 'evidence' => ['form' => 'balie']]);
+		$kees = json_encode($this->fx->log->rows[1]->jsonSerialize());
+
+		$registry->record(['state' => 'erase-contact', 'contactRef' => 'c-1', 'sourceApp' => 'pipelinq']);
+		$registry->decideMany('email', 'case-update', false, [['address' => 'jan@example.nl']], 'dossiq', 'corr-after');
+
+		$this->assertSame($kees, json_encode($this->fx->log->rows[1]->jsonSerialize()), 'kees is untouched');
+		$after = $this->fx->log->rows[3];
+		$this->assertSame(OptOutLogEntry::KIND_SUPPRESSED, $after->getKind());
+		$this->assertSame('jan@example.nl', $after->getAddress(), 'a send after the erasure is logged as before');
+		$this->assertSame('corr-after', $after->getCorrelationId());
+
+	}//end testAnErasureLeavesOthersAndLaterEntriesAlone()
+
+	/**
 	 * A digital post BSN is stored, logged and minted as a hash only.
 	 *
 	 * @return void
