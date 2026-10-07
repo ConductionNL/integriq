@@ -3547,7 +3547,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/openregister",
-				"change": "ConductionNL/openregister openspec/changes/flow-code-step-in-a-sidecar",
+				"change": "openregister/flow-code-step-in-a-sidecar",
 				"evidence": "lib/Service/FlowRunnerService.php:364-370 dispatchStep() match only accepts call/mapping/synchronization/event, default throws 'Unsupported flow step type'. Checked OpenRegister's node catalogue too (the graph engine integriq's canvas also uses): `grep -rn 'ScriptNode\\|CodeNode' openregister/lib/Service/Flow/` = 0 hits; no code/script node exists in either engine."
 			},
 			"reachedOn": "nothing reaches it",
@@ -3612,7 +3612,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/openregister",
-				"change": "ConductionNL/openregister openspec/changes/store-over-federated-config",
+				"change": "openregister/store-over-federated-config",
 				"evidence": "lib/Flow/FlowTemplate.php is a `{{dotted.path}}` placeholder-string renderer for a flow item's json, unrelated to starter/ready-made flows (see its docblock lines 3-25). Checked src/store/catalog.js and lib/Controller/CatalogController.php:152 instantiate() (connector-catalog): that action creates a SOURCE from a seeded template (openspec/specs/connector-catalog/spec.md scenario), not a flow. Checked nextcloud-vue's CnFlowsPage.vue/CnFlowEditorPage.vue for a template picker: none found."
 			},
 			"reachedOn": "nothing reaches it",
@@ -3962,7 +3962,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/openregister",
-				"change": "ConductionNL/openregister openspec/changes/flow-error-branch-and-step-retry",
+				"change": "openregister/flow-error-branch-and-step-retry",
 				"evidence": "lib/Service/FlowRunnerService.php:330-341 onError only supports stop/continue/dead_letter (openspec/specs/flow-orchestration/spec.md:247-289 REQ-006); none of the three branches to a fallback path, and none retries automatically. openregister's FlowRunService::retry() (lib/Service/Flow/FlowRunService.php:818-835) only queues a brand-new run of the WHOLE flow from the start, manually, not a per-step fallback+retry."
 			},
 			"reachedOn": "nothing reaches it",
@@ -5149,7 +5149,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"change": "openspec/changes/zgw-connectors-for-dossiq",
+				"change": "zgw-connectors-for-dossiq",
 				"evidence": "lib/Settings/configurations/zgw-zaken.json (source.isEnabled=false, target.register/schema empty, chosenBy operator); openspec/changes/zgw-connectors-for-dossiq/tasks.md Task 1 'Implement' unchecked and Task 2 names lib/Service/ConfigurationSetInstaller.php, which does not exist anywhere in lib/. Generic import (lib/Service/ConfigurationService.php:1037 importConfiguration()) requires an OAS-shaped {components:{sources,mappings,...}} payload, a different shape than this descriptor, so it cannot even be imported through the existing generic pipeline."
 			},
 			"reachedOn": "nothing reaches it",
@@ -5182,7 +5182,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"change": "openspec/changes/zgw-connectors-for-dossiq",
+				"change": "zgw-connectors-for-dossiq",
 				"evidence": "lib/Settings/configurations/zgw-documenten.json (source.isEnabled=false); same missing lib/Service/ConfigurationSetInstaller.php as zgw-zaken (openspec/changes/zgw-connectors-for-dossiq/tasks.md)."
 			},
 			"reachedOn": "nothing reaches it",
@@ -5704,7 +5704,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"change": "openspec/changes/berichtenbox-digital-post-adapter",
+				"change": "berichtenbox-digital-post-adapter",
 				"evidence": "lib/Service/DigitalPost/BerichtenboxProvider.php:156 calls BerichtenboxClient::dispatch(), and lib/AppInfo/Application.php:703-721 resolves that client to BerichtenboxClientMock (the result is marked simulated, BerichtenboxProvider.php:163) or, with logius.berichtenbox.feature_flag on, to lib/Adapters/Berichtenbox/BerichtenboxClientUnavailable.php, which always throws (:62-65). The live BerichtenboxClientHttp that lib/Adapters/Berichtenbox/BerichtenboxClient.php:14-17 names does not exist in lib/; it is Task 8 of the open change openspec/changes/berichtenbox-digital-post-adapter (tasks.md:54-63), blocked on Logius BBK credentials, a PKIoverheid certificate and OpenRegister issueSigningMaterial. The send path before the client is built: lib/EventListener/DigitalPostSendRequestedListener.php, lib/Service/DigitalPost/DigitalPostService.php, provider list at appinfo/routes.php:93."
 			},
 			"reachedOn": "event: a case app (e.g. dossiq) dispatches its send-requested event -> DigitalPostSendRequestedListener -> DigitalPostService -> Berichtenbox binding; the provider is chosen in the source form (SourceFormFields.vue:628)",
@@ -5804,7 +5804,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"change": "openspec/changes/peppol-readable-payloads-and-scoped-consumer",
+				"change": "peppol-readable-payloads-and-scoped-consumer",
 				"evidence": "lib/Service/Peppol/RestPeppolAccessPointProvider.php binds a REST access point next to the log mock, and participant lookup works (appinfo/routes.php:56 peppol#participants, lib/Controller/PeppolController.php:94-110). Sending does not: lib/Service/PeppolOutboundConsumer.php:113 and :118 compare the register and schema OpenRegister stores as ids with the slugs integriq and event, so every outbound.requested event is dropped (integriq#1222, comment of 28 Sep), and a transmission that did start would hand the access point the file reference instead of the UBL (lib/Service/PeppolTransmissionService.php:262, RestPeppolAccessPointProvider.php:116-120). Receiving is half: the signed callback (appinfo/routes.php:59, PeppolController.php:149) republishes the access point's own reference (PeppolTransmissionService.php:390-401), which the receiving app cannot open."
 			},
 			"reachedOn": "machine route: GET /api/peppol/participants/{peppolId} (production binding for shillinq's participant lookup) and POST /api/peppol/inbound (signed AP delivery callback); viewable at /messages/peppol",
@@ -6470,7 +6470,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"change": "openspec/changes/connectors-lti-platform-launch",
+				"change": "connectors-lti-platform-launch",
 				"evidence": "appinfo/routes.php:283-305 has 13 lti# route entries -> lib/Controller/LtiController.php; the OIDC login and launch routes (:283-285, LtiController.php:141-224) are the Tool role, where an external platform launches into Nextcloud. Corrections round 8 (2026-09-28), integriq#1508: the Platform-role launch that embeds an external tool, lib/Service/Lti/LtiLaunchService.php:419-473 initiatePlatformLaunch(), has no route and no caller at 966d645, and it skips the OIDC login redirect to the tool that openspec/specs/lti-platform/spec.md:226-234 (REQ-LTI-006) requires, so no external tool can be launched from a lesson."
 			},
 			"reachedOn": "nothing reaches it: the Platform-role launch, lib/Service/Lti/LtiLaunchService.php:419-473 initiatePlatformLaunch(), has no route and no caller",
@@ -6572,7 +6572,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"change": "openspec/changes/portal-idp-broker-config",
+				"change": "portal-idp-broker-config",
 				"evidence": "openspec/changes/portal-idp-broker-config/proposal.md states 'Status: blocked, do not start design/tasks artifacts until Open Decisions D1-D5 are recorded'; `find . -iname '*PortalIdp*'` outside openspec/ returns nothing in lib/ or src/."
 			},
 			"reachedOn": "nothing reaches it; the change is explicitly blocked and unimplemented",
@@ -8858,7 +8858,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/openregister",
-				"change": "ConductionNL/openregister openspec/changes/credential-outside-vault-reference",
+				"change": "openregister/credential-outside-vault-reference",
 				"evidence": "lib/Service/BrokeredCallService.php:98 and :442-494 resolve a credentialRef against OpenRegister's credential broker, so the secret is not stored on the source; grep -riE 'hashicorp|secretsmanager|keyvault' over lib/ finds nothing, so no outside secrets manager is supported"
 			},
 			"reachedOn": "/sources/:id edit form, 'Brokered credential (OpenRegister)' switch",
