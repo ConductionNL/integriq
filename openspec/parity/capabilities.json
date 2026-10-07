@@ -6251,12 +6251,12 @@
 				"evidence": "openspec/specs/oso-adapter/spec.md is the main spec; code at lib/Service/Oso/OsoProviderInterface.php. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/oso-adapter"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "nl-rod",
@@ -6270,12 +6270,12 @@
 				"evidence": "openspec/specs/rod-adapter/spec.md is the main spec; code at lib/Service/Rod/RodProviderInterface.php. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/rod-adapter"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "nl-swv-handoff",
@@ -6289,12 +6289,12 @@
 				"evidence": "openspec/specs/swv-handoff/spec.md is the main spec; code at lib/sources.seed.json. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/swv-handoff"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "nl-uwlr-eduv",
@@ -6308,12 +6308,12 @@
 				"evidence": "openspec/specs/uwlr-eduv-adapter/spec.md is the main spec; code at lib/Service/UwlrEduV/UwlrEduVProviderInterface.php. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/uwlr-eduv-adapter"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "nl-klantinteracties",
@@ -6327,12 +6327,12 @@
 				"evidence": "openspec/specs/vng-klantinteracties-adapter/spec.md is the main spec; code at lib/Service/EndpointService.php (@spec vng-klantinteracties-adapter). Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/vng-klantinteracties-adapter"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "id-digid",
@@ -7680,12 +7680,12 @@
 				"change": "platform-connector-set-sharing"
 			},
 			"note": "Research-gated: the transport design waits for Ruben's reading of the OCM research report. OpenRegister owns the transport (ADR-022).",
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "plt-git",
@@ -8890,12 +8890,12 @@
 				"evidence": "openspec/specs/corporate-card-feed/spec.md is the main spec; code at lib/Service/Cardfeed/. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/corporate-card-feed"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "con-endpoint-workspace",
@@ -8909,12 +8909,12 @@
 				"evidence": "openspec/specs/endpoint-workspace-connectors/spec.md is the main spec; code at lib/Service/Adapter/EndpointWorkspace/. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/endpoint-workspace-connectors"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "con-lvs-results",
@@ -8928,12 +8928,12 @@
 				"evidence": "openspec/specs/lvs-result-import/spec.md is the main spec; code at lib/sources.seed.json. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/lvs-result-import"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "con-slo-curriculum",
@@ -8947,12 +8947,12 @@
 				"evidence": "openspec/specs/slo-curriculum-import/spec.md is the main spec; code at lib/Settings/register.d/slo-curriculum-source.json. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/slo-curriculum-import"
 			},
-			"n8n": "unchecked",
-			"tyk": "unchecked",
-			"apisix": "unchecked",
-			"mulesoft": "unchecked",
-			"wso2": "unchecked",
-			"frank": "unchecked"
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown"
 		},
 		{
 			"id": "plt-third-party-connectors",
