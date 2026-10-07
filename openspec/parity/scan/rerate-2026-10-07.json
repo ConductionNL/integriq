@@ -1,0 +1,66 @@
+{
+	"_comment": "Spec round part 2 (7 Oct 2026, decision 78): re-read of the rows whose linked change was archived while the row still read specified or building. Code read on integriq origin/development 254619dff, openregister origin/development 26ff809cfb, pipelinq origin/development. Folded into capabilities.json by the lane's fold script (built.state, built.evidence, built.change, built.readOn, the integriq rating, reachedOn).",
+	"system": "integriq",
+	"entries": [
+		{
+			"id": "id-digid",
+			"cap": "Let citizens log in with DigiD through a broker.",
+			"verdict": "gap",
+			"owner_repo": "ConductionNL/integriq",
+			"from": {"state": "building", "integriq": "no", "change": "2026-09-29-identity-broker-browser-login"},
+			"state": "specified",
+			"integriq": "no",
+			"change": "portal-idp-broker-config",
+			"evidence": "The browser half is built and archived (openspec/changes/archive/2026-09-29-identity-broker-browser-login, 9 of 11 tasks ticked; the two open ones are the strict run and the portaliq live walk): appinfo/routes.php:402-404 idpBroker#start and #callback for digid|eherkenning|eidas, lib/Controller/IdpBrokerController.php:147 start() and :192 callback(), lib/Auth/Idp/IdpLoginService.php. The container binds GovernmentIdpAdapterInterface to LogGovernmentIdpAdapter only (lib/AppInfo/Application.php:591-596), and that adapter throws on every call (lib/Auth/Idp/LogGovernmentIdpAdapter.php:93 beginAuthentication and :109 readAssertion both end in refuse() at :128), so start() catches the refusal at IdpBrokerController.php:159 and no citizen gets logged in. Missing: the vendor SAML Service Provider or OIDC Relying Party adapter, which openspec/changes/portal-idp-broker-config carries and which is blocked on Open Decisions D1 to D5 (broker vendor and contract).",
+			"reachedOn": "GET /apps/integriq/api/idp/digid/start exists and answers with a refusal: the only bound adapter is LogGovernmentIdpAdapter"
+		},
+		{
+			"id": "id-eherkenning",
+			"cap": "Let companies log in with eHerkenning.",
+			"verdict": "gap",
+			"owner_repo": "ConductionNL/integriq",
+			"from": {"state": "building", "integriq": "no", "change": "2026-09-29-identity-broker-browser-login"},
+			"state": "specified",
+			"integriq": "no",
+			"change": "portal-idp-broker-config",
+			"evidence": "Same path as id-digid, archived in openspec/changes/archive/2026-09-29-identity-broker-browser-login: appinfo/routes.php:402-404 accept eherkenning, lib/Controller/IdpBrokerController.php:147 and :192, and an eHerkenning envelope carries the vestigingsnummer as branch (lib/Auth/Idp/SubjectEnvelope.php:69). The only bound adapter is LogGovernmentIdpAdapter (lib/AppInfo/Application.php:591-596), which refuses every call (lib/Auth/Idp/LogGovernmentIdpAdapter.php:93, :109, :128). Missing: the vendor adapter in openspec/changes/portal-idp-broker-config, blocked on Open Decisions D1 to D5.",
+			"reachedOn": "GET /apps/integriq/api/idp/eherkenning/start exists and answers with a refusal: the only bound adapter is LogGovernmentIdpAdapter"
+		},
+		{
+			"id": "con-library-size",
+			"cap": "Pick from hundreds of ready-made connectors for common business software.",
+			"verdict": "have",
+			"owner_repo": "ConductionNL/integriq",
+			"from": {"state": "building", "integriq": "no", "change": "2026-09-29-connectors-catalogue-expansion"},
+			"state": "built",
+			"integriq": "partial",
+			"change": "2026-09-29-connectors-catalogue-expansion",
+			"evidence": "The change is archived with every task ticked (openspec/changes/archive/2026-09-29-connectors-catalogue-expansion/tasks.md, 10 of 10; shipped in 6bdb8bdae). The mechanism is in the tree: a pinned APIs.guru snapshot (lib/Settings/connector-templates/saas/snapshot/index.json), a reviewed allow-list (lib/Settings/connector-templates/saas/allow-list.json, 2 entries: Google Sheets, Slack), scripts/generate-connector-templates.php and scripts/ConnectorTemplateGenerator.php, curated templates (saas/salesforce-rest.json, backoffice/alfresco-cmis.json), read by lib/Service/Catalog/ConnectorTemplateLibrary.php:30 and listed by lib/Service/CatalogRegistryService.php:233 collectFromTemplates(); the Store shows them under the 'Generated templates' tier (src/manifest.json:4426-4428). Rated partial, not yes: the Store holds about 40 cards, not hundreds; growing it is data (allow-list entries), not code, and no change schedules that growth.",
+			"reachedOn": "/store, tier 'Generated templates', plus the source-template cards from lib/Settings/register.d"
+		},
+		{
+			"id": "con-opencorporates",
+			"cap": "Look up companies abroad through OpenCorporates.",
+			"verdict": "sibling-has",
+			"owner_repo": "ConductionNL/openregister",
+			"from": {"state": "specified", "integriq": "partial", "change": "openregister/2026-10-05-integration-kvk-opencorporates"},
+			"state": "built",
+			"integriq": "partial",
+			"change": "openregister/2026-10-05-integration-kvk-opencorporates",
+			"evidence": "OpenRegister built and archived the lookup (openspec/changes/archive/2026-10-05-integration-kvk-opencorporates, 11 tasks ticked, none open): openregister appinfo/routes.php:929 companyLookup#openCorporatesSearch GET /api/integrations/opencorporates/search, lib/Controller/CompanyLookupController.php:150 openCorporatesSearch(), lib/Service/Integration/Providers/OpenCorporatesProvider.php:73 SOURCE_ID 'opencorporates' routed through the source integriq seeds. Integriq ships that source: lib/Settings/register.d/opencorporates-source.json:9 slug opencorporates, :20 configuration.mock true, :52 isEnabled true. A user reaches the search in pipelinq: lib/Service/OpenCorporatesApiClient.php:213 calls the OpenRegister endpoint, used by lib/Service/ProspectDiscoveryService.php. Rated partial: integriq's source answers with a canned mock until an admin adds an api_token and removes the mock flag, and integriq has no screen of its own for the search.",
+			"reachedOn": "pipelinq prospect discovery through GET /apps/openregister/api/integrations/opencorporates/search over integriq's opencorporates source; in integriq, /store (source-template:opencorporates) and /sources"
+		},
+		{
+			"id": "con-xwiki",
+			"cap": "Read pages from an XWiki.",
+			"verdict": "sibling-has",
+			"owner_repo": "ConductionNL/openregister",
+			"from": {"state": "specified", "integriq": "partial", "change": "openregister/2026-10-05-integration-xwiki-query-search"},
+			"state": "built",
+			"integriq": "partial",
+			"change": "openregister/2026-10-05-integration-xwiki-query-search",
+			"evidence": "OpenRegister built and archived the query search (openspec/changes/archive/2026-10-05-integration-xwiki-query-search, 10 tasks ticked, none open): openregister appinfo/routes.php:915 xwikiLinks#search GET /api/integrations/xwiki/search, lib/Controller/XwikiLinksController.php:303 search(), next to the object-linked routes at :914-918 and lib/Service/Integration/Providers/XwikiProvider.php. Integriq ships the source it reads through: lib/Settings/register.d/xwiki-source.json:9 slug xwiki, :21 isEnabled false with a dev-stack placeholder location. pipelinq calls the search: lib/Service/XWikiService.php:229 searchViaOpenRegister(), served by lib/Controller/XWikiController.php. Rated partial: integriq's source ships disabled with a placeholder URL, so nothing reads pages until an admin sets the real location and enables it, and integriq has no screen of its own for wiki pages.",
+			"reachedOn": "pipelinq's XWikiController search through GET /apps/openregister/api/integrations/xwiki/search, and OpenRegister's object xWiki links, over integriq's xwiki source; in integriq, /store (source-template:xwiki) and /sources"
+		}
+	]
+}
