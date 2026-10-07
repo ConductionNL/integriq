@@ -216,6 +216,33 @@ class DigitalPostAccount {
 	}//end runAs()
 
 	/**
+	 * Run an operation as the account, or refuse out loud when there is no usable one.
+	 *
+	 * Without a usable account the operation does not run: the refusal is
+	 * logged, the administrators are told, and `$refuse` gets the reason.
+	 *
+	 * @param string                 $what      What is being done, for the log (`send`, `status poll`).
+	 * @param callable(): void       $operation The operation, run as the account.
+	 * @param callable(string): void $refuse    Called with the reason when there is no usable account.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
+	 */
+	public function runOrRefuse(string $what, callable $operation, callable $refuse): void {
+		try {
+			$account = $this->resolve();
+		} catch (DsoConnectionUnavailableException $exception) {
+			$this->alert(exception: $exception, what: $what);
+			$refuse($exception->getMessage());
+			return;
+		}
+
+		$this->runAs(account: $account, operation: $operation);
+
+	}//end runOrRefuse()
+
+	/**
 	 * The state of the account, for the admin setting and the setup check.
 	 *
 	 * @return array{configured: bool, userId: string, state: string, displayName: string, message: string}

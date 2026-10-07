@@ -93,6 +93,8 @@ class DigitalPostAccountCheck implements ISetupCheck {
 	 * @return SetupResult
 	 *
 	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#scenario-the-setup-check-names-an-unusable-account
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SetupResult's named constructors are the only way Nextcloud offers to build one.
 	 */
 	public function run(): SetupResult {
 		try {

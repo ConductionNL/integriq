@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
@@ -100,15 +99,8 @@ class DigitalPostStatusJob extends TimedJob {
 	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
 	 */
 	public function poll(): void {
-		try {
-			$account = $this->account->resolve();
-		} catch (DsoConnectionUnavailableException $exception) {
-			$this->account->alert(exception: $exception, what: 'status poll');
-			return;
-		}
-
-		$this->account->runAs(
-			account: $account,
+		$this->account->runOrRefuse(
+			what: 'status poll',
 			operation: function (): void {
 				$open = $this->openMessages();
 				if ($open === []) {
@@ -119,6 +111,10 @@ class DigitalPostStatusJob extends TimedJob {
 				if ($changed > 0) {
 					$this->logger->info('digital-post.status.changed', ['count' => $changed]);
 				}
+			},
+			refuse: static function (string $reason): void {
+				// Logged and raised to the administrators already; nothing is polled.
+				unset($reason);
 			}
 		);
 	}//end poll()

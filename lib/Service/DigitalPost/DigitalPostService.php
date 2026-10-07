@@ -22,7 +22,6 @@ namespace OCA\Integriq\Service\DigitalPost;
 
 use OCA\Integriq\Event\DigitalPostDeliveredEvent;
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
-use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Outbound\OutboundSendGate;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -116,23 +115,14 @@ class DigitalPostService {
 			return;
 		}
 
-		try {
-			$account = $this->account->resolve();
-		} catch (DsoConnectionUnavailableException $exception) {
-			$event->setHandled(true);
-			$event->setRefusal(
-				$exception->getMessage() . ' The letter cannot be stored, so nothing was sent.',
-				self::CODE_NO_SERVICE_ACCOUNT
-			);
-			$this->account->alert(exception: $exception, what: 'send');
-
-			return;
-		}
-
-		$this->account->runAs(
-			account: $account,
+		$this->account->runOrRefuse(
+			what: 'send',
 			operation: function () use ($event, $providerId, $config): void {
 				$this->sendAsAccount(event: $event, providerId: $providerId, config: $config);
+			},
+			refuse: static function (string $reason) use ($event): void {
+				$event->setHandled(true);
+				$event->setRefusal($reason . ' The letter cannot be stored, so nothing was sent.', self::CODE_NO_SERVICE_ACCOUNT);
 			}
 		);
 

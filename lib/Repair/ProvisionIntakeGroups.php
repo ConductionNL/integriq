@@ -94,7 +94,8 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
 	 */
 	public function getName(): string {
-		return 'Create the intake and handler groups for DSO verzoeken, Open Formulieren submissions, intake messages and verdicts, and the digital post group';
+		return 'Create the intake and handler groups for DSO verzoeken, Open Formulieren submissions, intake messages and verdicts, '
+			. 'and the digital post group';
 
 	}//end getName()
 
