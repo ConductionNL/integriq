@@ -22,6 +22,7 @@ namespace OCA\Integriq\Service\DigitalPost;
 
 use OCA\Integriq\Event\DigitalPostDeliveredEvent;
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Outbound\OutboundSendGate;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -49,6 +50,13 @@ class DigitalPostService {
 	public const SCHEMA = 'digitalPostMessage';
 
 	/**
+	 * The refusal code when there is no usable digital post account.
+	 *
+	 * @var string
+	 */
+	public const CODE_NO_SERVICE_ACCOUNT = 'no_service_account';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param DigitalPostProviderRegistry $providers The bindings.
@@ -57,6 +65,7 @@ class DigitalPostService {
 	 * @param IEventDispatcher $eventDispatcher The Nextcloud event dispatcher.
 	 * @param LoggerInterface $logger Structured logger.
 	 * @param OutboundSendGate $gate Asks the opt-out list, adds the link, keeps the outbound log row.
+	 * @param DigitalPostAccount $account The service account every digital post write runs as.
 	 */
 	public function __construct(
 		private readonly DigitalPostProviderRegistry $providers,
@@ -65,6 +74,7 @@ class DigitalPostService {
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
 		private readonly OutboundSendGate $gate,
+		private readonly DigitalPostAccount $account,
 	) {
 	}//end __construct()
 
@@ -106,6 +116,40 @@ class DigitalPostService {
 			return;
 		}
 
+		try {
+			$account = $this->account->resolve();
+		} catch (DsoConnectionUnavailableException $exception) {
+			$event->setHandled(true);
+			$event->setRefusal(
+				$exception->getMessage() . ' The letter cannot be stored, so nothing was sent.',
+				self::CODE_NO_SERVICE_ACCOUNT
+			);
+			$this->account->alert(exception: $exception, what: 'send');
+
+			return;
+		}
+
+		$this->account->runAs(
+			account: $account,
+			operation: function () use ($event, $providerId, $config): void {
+				$this->sendAsAccount(event: $event, providerId: $providerId, config: $config);
+			}
+		);
+
+	}//end handleSendRequest()
+
+	/**
+	 * Ask the opt-outs, store, send and record, as the digital post account.
+	 *
+	 * @param DigitalPostSendRequestedEvent $event      The request.
+	 * @param string                        $providerId The provider the source names.
+	 * @param array<string,mixed>           $config     The source configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
+	 */
+	private function sendAsAccount(DigitalPostSendRequestedEvent $event, string $providerId, array $config): void {
 		$decision = $this->askOptOuts(event: $event);
 		if ($decision === null) {
 			return;
@@ -170,7 +214,7 @@ class DigitalPostService {
 		}
 
 		$event->setMessageId($messageId);
-	}//end handleSendRequest()
+	}//end sendAsAccount()
 
 	/**
 	 * Ask the opt-out list about this letter.

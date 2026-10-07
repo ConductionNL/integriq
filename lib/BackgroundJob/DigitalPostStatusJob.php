@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -55,12 +57,14 @@ class DigitalPostStatusJob extends TimedJob {
 	 * @param DigitalPostService $service The digital post service.
 	 * @param OrObjectService $objectService OpenRegister's object-service facade.
 	 * @param LoggerInterface $logger Structured logger.
+	 * @param DigitalPostAccount $account The service account the poll reads and writes as.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly DigitalPostService $service,
 		private readonly OrObjectService $objectService,
 		private readonly LoggerInterface $logger,
+		private readonly DigitalPostAccount $account,
 	) {
 		parent::__construct(time: $time);
 
@@ -81,16 +85,43 @@ class DigitalPostStatusJob extends TimedJob {
 	protected function run($argument): void {
 		unset($argument);
 
-		$open = $this->openMessages();
-		if ($open === []) {
+		$this->poll();
+	}//end run()
+
+	/**
+	 * Poll every open message as the digital post account.
+	 *
+	 * The job runs with nobody signed in, so the read and the status updates
+	 * run as the service account. Without a usable account nothing is polled,
+	 * and the administrators are told.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
+	 */
+	public function poll(): void {
+		try {
+			$account = $this->account->resolve();
+		} catch (DsoConnectionUnavailableException $exception) {
+			$this->account->alert(exception: $exception, what: 'status poll');
 			return;
 		}
 
-		$changed = $this->service->pollStatuses($open);
-		if ($changed > 0) {
-			$this->logger->info('digital-post.status.changed', ['count' => $changed]);
-		}
-	}//end run()
+		$this->account->runAs(
+			account: $account,
+			operation: function (): void {
+				$open = $this->openMessages();
+				if ($open === []) {
+					return;
+				}
+
+				$changed = $this->service->pollStatuses($open);
+				if ($changed > 0) {
+					$this->logger->info('digital-post.status.changed', ['count' => $changed]);
+				}
+			}
+		);
+	}//end poll()
 
 	/**
 	 * Messages that have left but have not finished.

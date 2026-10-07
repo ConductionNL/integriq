@@ -113,6 +113,13 @@ class IntakeGroups {
 	public const VERDICTS_HANDLERS = 'verdicts-behandelaars';
 
 	/**
+	 * The group of the digital post service account: create, read and update on `digitalPostMessage`.
+	 *
+	 * @var string
+	 */
+	public const DIGITAL_POST_SENDERS = 'digitale-post-verzenders';
+
+	/**
 	 * Every group the authorization blocks name.
 	 *
 	 * @var list<string>
@@ -126,6 +133,7 @@ class IntakeGroups {
 		self::INTAKE_CHANNELS_HANDLERS,
 		self::VERDICTS_INTAKE,
 		self::VERDICTS_HANDLERS,
+		self::DIGITAL_POST_SENDERS,
 	];
 
 	/**
