@@ -11,55 +11,67 @@ Archive order: `berichtenbox-digital-post-adapter` archives first. This change m
 
 ## 1. Vendored contract and the fake
 
-- [ ] 1.1 Vendor the Logius XSD package and the example messages under `tests/fixtures/berichtenbox/logius/`, with `SOURCE.md` (URL, download date, sha256 per file) and an XML catalog that maps the `GLOBEBatchRequestTypes.xsd` import to the shipped `_128ch` file.
+- [x] 1.1 Vendor the Logius XSD package and the example messages under `tests/fixtures/berichtenbox/logius/`, with `SOURCE.md` (URL, download date, sha256 per file) and an XML catalog that maps the `GLOBEBatchRequestTypes.xsd` import to the shipped `_128ch` file.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-tests-and-live-proofs-run-against-a-fake-built-from-the-official-files-req-dpa-013`
   - files: `tests/fixtures/berichtenbox/logius/`, `tests/Unit/Adapters/Berichtenbox/VendoredContractTest.php`
-- [ ] 1.2 The fake: the ebms-core REST subset, XSD validation of every letter, results that validate against the response XSD, WUS `ValidateAbonnementen` behind a test CA, fixed test BSNs per outcome, a `fail` file for 503.
+  - built: the schemas live in `lib/Adapters/Berichtenbox/Logius/` (shipped, because the client validates every letter at runtime), the example messages and both original zips in `tests/fixtures/berichtenbox/logius/`, `SOURCE.md` with a sha256 per file. Instead of an XML catalog, `GLOBEBatchRequestTypes.xsd` is a byte-identical copy of the `_128ch` file. Found: the Logius example letter breaks its own XSD (`BerichtType` "Berichttype" has 11 characters, the XSD allows 8).
+- [x] 1.2 The fake: the ebms-core REST subset, XSD validation of every letter, results that validate against the response XSD, WUS `ValidateAbonnementen` behind a test CA, fixed test BSNs per outcome, a `fail` file for 503.
   - files: `tests/fake/berichtenbox/fake.py`, its own tests, `tests/fake/berichtenbox/README.md`
 
 ## 2. Contract
 
-- [ ] 2.1 Rewrite `BerichtenboxClient` to `checkSubscriptions`, `deliver`, `collectResults`, `transportEvents`. Remove `verifyWebhook` and `checkMailbox`. Update the mock, the refusing binding and `BerichtenboxSourceAdapter`.
+- [x] 2.1 Rewrite `BerichtenboxClient` to `checkSubscriptions`, `deliver`, `collectResults`, `transportEvents`. Remove `verifyWebhook` and `checkMailbox`. Update the mock, the refusing binding and `BerichtenboxSourceAdapter`.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-one-berichtenbox-code-path-built-on-the-client-that-ships-req-dpa-006`
   - files: `lib/Adapters/Berichtenbox/*.php`, `lib/Sources/Berichtenbox/BerichtenboxSourceAdapter.php`, their tests
-- [ ] 2.2 Rewrite the `adapter:berichtenbox` catalog text and `BerichtenboxProvider::getConfigSchema()`: MijnOverheid Berichtenbox, Digikoppeling ebMS and WUS, PKIoverheid, ebMS adapter. Drop OAuth, BBK 1.7 and `priority`. Add `adapterUrl`, `adapterAuth`, `cpaId`, `fromPartyId`, `toPartyId`, `service`, `berichtTypes`, `wusEndpoint`.
+  - built: the contract is `checkSubscriptions`, `deliver`, `results`, `transportEvents`, `resultProcessed`, `eventProcessed`, `configurationRefusals`. `BerichtenboxClientUnavailable` and `BerichtenboxSourceAdapter` are removed: the source adapter had no caller, and the live binding now refuses an incomplete source itself, naming each missing value.
+- [x] 2.2 Rewrite the `adapter:berichtenbox` catalog text and `BerichtenboxProvider::getConfigSchema()`: MijnOverheid Berichtenbox, Digikoppeling ebMS and WUS, PKIoverheid, ebMS adapter. Drop OAuth, BBK 1.7 and `priority`. Add `adapterUrl`, `adapterAuth`, `cpaId`, `fromPartyId`, `toPartyId`, `service`, `berichtTypes`, `wusEndpoint`.
   - files: `lib/Service/CatalogRegistryService.php`, `lib/Service/DigitalPost/BerichtenboxProvider.php`, `tests/e2e/digital-post-source.spec.ts`
+  - built: `adapterAuth` is an optional adapter token, stored encrypted under `authentication.encryptedToken`.
 
 ## 3. Live binding
 
-- [ ] 3.1 `BerichtenboxLetterBuilder`: one batch, one letter, GUIDs, Zulu dates, `\r\n`, spaced URLs, `Referentie` only when it fits, validation against the vendored XSD, refusals that name the field and the limit.
+- [x] 3.1 `BerichtenboxLetterBuilder`: one batch, one letter, GUIDs, Zulu dates, `\r\n`, spaced URLs, `Referentie` only when it fits, validation against the vendored XSD, refusals that name the field and the limit.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-the-letter-is-built-to-the-official-schema-and-its-limits-req-dpa-010`
   - files: `lib/Adapters/Berichtenbox/BerichtenboxLetterBuilder.php`, its test
-- [ ] 3.2 WUS subscription check over `MtlsTransportService`: SOAP 1.1 request per the WSDL, `isBerichtSturen` per BSN, faults as refusals.
+- [x] 3.2 WUS subscription check over `MtlsTransportService`: SOAP 1.1 request per the WSDL, `isBerichtSturen` per BSN, faults as refusals.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-the-subscription-is-checked-before-every-send-req-dpa-009`
   - files: `lib/Adapters/Berichtenbox/BerichtenboxValidatieClient.php`, its test
-- [ ] 3.3 `BerichtenboxClientHttp`: deliver through the adapter REST API, collect results and transport events, mark processed only after save.
+- [x] 3.3 `BerichtenboxClientHttp`: deliver through the adapter REST API, collect results and transport events, mark processed only after save.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-the-live-binding-speaks-the-interface-logius-publishes-req-dpa-008`
   - files: `lib/Adapters/Berichtenbox/BerichtenboxClientHttp.php`, its test
-- [ ] 3.4 Binding selection in `Application.php`: flag on and complete source gives the live binding; anything missing keeps the refusing binding and names each missing value.
+- [x] 3.4 Binding selection in `Application.php`: flag on and complete source gives the live binding; anything missing keeps the refusing binding and names each missing value.
   - files: `lib/AppInfo/Application.php`, `lib/Adapters/Berichtenbox/BerichtenboxClientUnavailable.php`, their tests
-- [ ] 3.5 Certificate: `certificateRef` resolves through `MtlsConfigResolver`; expiry, wrong passphrase and missing material fail closed; no key in logs or API responses; setup check warns 30 days before expiry.
+  - built: the flag selects `BerichtenboxClientHttp`; its `configurationRefusals()` is the refusing path.
+- [x] 3.5 Certificate: `certificateRef` resolves through `MtlsConfigResolver`; expiry, wrong passphrase and missing material fail closed; no key in logs or API responses; setup check warns 30 days before expiry.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004`
   - files: `lib/Service/DigitalPost/BerichtenboxProvider.php`, `lib/SetupCheck/DigitalPostAccountCheck.php`, their tests
 
 ## 4. Provider and statuses
 
-- [ ] 4.1 `BerichtenboxProvider::send()`: category to BerichtType, subscription check, build, deliver, store `batchId`, `berichtId`, `transportMessageId`; `not_subscribed` distinct from `opted-out`.
+- [x] 4.1 `BerichtenboxProvider::send()`: category to BerichtType, subscription check, build, deliver, store `batchId`, `berichtId`, `transportMessageId`; `not_subscribed` distinct from `opted-out`.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-opt-out-and-category-rules-run-first-and-do-not-change-req-dpa-014`
   - files: `lib/Service/DigitalPost/BerichtenboxProvider.php`, `lib/Settings/integriq_register.json` (`digitalPostMessage` gains `batchId` and `transportMessageId`, minor version bump), their tests
-- [ ] 4.2 Status job: one collect per live source, the mapping table in design.md section 6, never `read`, `DigitalPostDeliveredEvent` per change.
+- [x] 4.2 Status job: one collect per live source, the mapping table in design.md section 6, never `read`, `DigitalPostDeliveredEvent` per change.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011`
   - files: `lib/BackgroundJob/DigitalPostStatusJob.php`, `lib/Service/DigitalPost/DigitalPostService.php`, their tests
-- [ ] 4.3 `pollInbound()` returns nothing on a live source.
+- [x] 4.3 `pollInbound()` returns nothing on a live source.
   - spec_ref: `specs/digital-post-adapter/spec.md#requirement-a-live-berichtenbox-source-has-no-inbound-post-req-dpa-012`
   - files: `lib/Service/DigitalPost/BerichtenboxProvider.php`, its test
 
 ## 5. Live proof against the fake
 
 - [ ] 5.1 dossiq to integriq to the fake: a subscribed besluit reaches `delivered`; a not-subscribed citizen is refused with `not_subscribed` and nothing is posted; an opted-out case update is refused before the subscription check; a 51-character subject is refused; a `BijlageTeGroot` result becomes `failed`; an `EXPIRED` transport event becomes `failed`; the status job runs with no session.
-- [ ] 5.2 Record every request the fake saw, and confirm every recorded letter validates against the vendored XSD.
+  - done on bbx-live 2026-10-08 (`~/memcap-work/fleet-appdir/bbx-live/commands.md`): subscribed besluit `delivered`, not subscribed refused before submission, `BerichtTypeNietOndersteund` and a malformed letter (`XmlValidatieTegenXsdValtNegatiefUit`) `failed`, 51-character subject refused, `EXPIRED` `failed`, adapter 503 refused, no result left `sent` with the 24-hour warning, status job with no session. Not run live: the opted-out case update (covered by DigitalPostServiceTest; the opt-out list runs before the provider is called) and `BijlageTeGroot` (the fake supports it).
+- [x] 5.2 Record every request the fake saw, and confirm every recorded letter validates against the vendored XSD.
 
 ## 6. Logius preproductie (after the aansluiting, not in this PR)
 
 - [ ] 6.1 Run checklist "Testen Berichtenbox MijnOverheid" 1.4 against preproductie with two test DigiD accounts.
 - [ ] 6.2 Write the test report for Logius.
+
+## Found live (bbx-live, 2026-10-08)
+
+- [x] 7.1 Nextcloud's XXE guard, an external entity loader that refuses everything, also refused the vendored schema file, so every live letter was refused as `invalid_letter` while the unit suite was green. `LogiusSchema` lets libxml read the vendored directory only, for one validation, and restores the loader. A unit test with a null loader is red without the fix.
+  - files: `lib/Adapters/Berichtenbox/LogiusSchema.php`, `tests/Unit/Adapters/Berichtenbox/BerichtenboxLetterBuilderTest.php`
+- [x] 7.2 A letter whose result arrived before its transport event was polled left that event waiting at the adapter. A result now releases the event too.
+  - files: `lib/Service/DigitalPost/BerichtenboxProvider.php`, `tests/Unit/Service/DigitalPost/BerichtenboxProviderTest.php`
