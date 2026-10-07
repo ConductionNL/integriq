@@ -8970,8 +8970,9 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/info.xml:23 EUPL-1.2 licence; a connector is configuration (source, mapping, synchronisation) that any admin authors on /sources, /mappings and /synchronizations and ships as a configuration file: appinfo/routes.php:559 configuration#export and :562-563 previewImport/import (rows plt-export, plt-import-preview)",
-				"spec": "none"
+				"evidence": "A connector is configuration any admin authors without code: Sources, Mappings and Synchronizations on /sources, /mappings and /synchronizations (src/manifest.json:918, :2470, :2589), exported as one redacted file through appinfo/routes.php:637 configuration#export (lib/Controller/ConfigurationController.php:97, src/dialogs/ExportConfigurationDialog.vue) and imported elsewhere through :640-641 previewImport/import (src/dialogs/ImportPreviewDialog.vue), both gated by lib/actions.seed.json:64-65; appinfo/info.xml:23 EUPL-1.2 licence. Specified after the fact as REQ-011 in openspec/specs/configuration-export-import (rows plt-export, plt-import-preview).",
+				"spec": "openspec/specs/configuration-export-import",
+				"readOn": "2026-10-07"
 			},
 			"reachedOn": "Store page (/store) Export and Import configuration; /sources, /mappings, /synchronizations editors",
 			"note": "Gemeente Stein wens W2 (requirement 20242).",
@@ -9802,8 +9803,9 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "integriq's flow canvas (src/manifest.json:2813-2833 Flows and FlowDetail pages) runs graphs on OpenRegister's node catalogue, which has ConductionNL/openregister development lib/Service/Flow/Nodes/ObjectReadNode.php and lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table",
-				"spec": "none"
+				"evidence": "integriq's flow canvas (src/manifest.json:3147-3168 Flows and FlowDetail pages, which mount nextcloud-vue CnFlowIndexPage and CnFlowDetail per openspec/specs/flow-orchestration REQ-017) runs graphs on OpenRegister's node catalogue, which has ConductionNL/openregister development lib/Service/Flow/Nodes/ObjectReadNode.php and lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table",
+				"spec": "none",
+				"readOn": "2026-10-07"
 			},
 			"reachedOn": "/flows/:id canvas, object read and write nodes against a register",
 			"note": "n8n 1.119.0 (2025-11-03) took data tables out of beta. Integriq: The table is an OpenRegister register; integriq consumes the nodes.",
