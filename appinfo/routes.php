@@ -708,6 +708,9 @@ return [
 		['name' => 'webhookConnectionsSettings#setConfig', 'url' => '/api/admin/webhook-connections/{authorizationType}', 'verb' => 'PUT'],
 		['name' => 'digitalPostAccountSettings#getConfig', 'url' => '/api/admin/digital-post-account', 'verb' => 'GET'],
 		['name' => 'digitalPostAccountSettings#setConfig', 'url' => '/api/admin/digital-post-account', 'verb' => 'PUT'],
+		// berichtenbox-client: one MijnOverheid Berichtenbox source per organisation, certificate stored encrypted. Admin-only via #[AuthorizedAdminSetting].
+		['name' => 'berichtenboxSettings#getConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'GET'],
+		['name' => 'berichtenboxSettings#setConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
 		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
