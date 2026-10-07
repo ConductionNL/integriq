@@ -73,7 +73,7 @@ class SourceGatewayTransport implements GatewayTransport {
 				source: $source,
 				endpoint: (string)($config['endpoint'] ?? ''),
 				method: (string)($config['method'] ?? 'POST'),
-				config: ['body' => $payload]
+				config: ['json' => $payload]
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
