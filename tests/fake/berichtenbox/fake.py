@@ -42,7 +42,7 @@ import ssl
 import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from lxml import etree
 
@@ -215,7 +215,8 @@ class AdapterHandler(BaseHTTPRequestHandler):
     def route(self):
         parsed = urlparse(self.path)
         match = re.search(r'/ebms/(.*)$', parsed.path)
-        return (match.group(1) if match else None), parse_qs(parsed.query), parsed.path
+        # JAX-RS decodes path parameters, so an encoded '@' in a message id is the same id.
+        return (unquote(match.group(1)) if match else None), parse_qs(parsed.query), parsed.path
 
     def authorised(self):
         token = self.state.args.adapter_token
