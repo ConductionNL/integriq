@@ -407,3 +407,22 @@ specifically to avoid relying on REQ-009 for this case.
 - WHEN the Source is exported and then imported into an environment where a `source`-type or `register`/`schema` slug map entry happens to also be named `"prod-api-key"`
 - THEN the `credentialRef.credentialName` value is NOT rewritten by REQ-004's translation (it is not a member of the translated field set), and remains the literal string `"prod-api-key"` on both export and import
 
+
+### Requirement: A connector built by a party other than the supplier ships as a configuration file (REQ-011)
+
+The system SHALL let a party other than the supplier (an implementation partner, a municipality's own staff) build a connector without writing code, by authoring its Sources, Mappings and Synchronizations on integriq's own editor pages (`src/manifest.json` pages at `/sources`, `/mappings` and `/synchronizations`), and SHALL let that party ship the connector to another instance as one configuration file: exported through `POST /api/configurations/{id}/export` (REQ-006, `appinfo/routes.php:637`, `lib/Controller/ConfigurationController.php:97`, opened from the Store page header in `src/dialogs/ExportConfigurationDialog.vue`) and imported on the receiving instance through the preview and confirm pair (REQ-007 and REQ-008, `appinfo/routes.php:640-641`, `src/dialogs/ImportPreviewDialog.vue`). Authoring, export and import MUST require no change to integriq's code and no release by the supplier. Export and import MUST stay gated by the `configuration.export` and `configuration.import` actions (`lib/actions.seed.json:64-65`, seeded `["admin"]`), and the file MUST carry no credentials (REQ-005), so the receiving admin re-enters them (REQ-009).
+
+Notes: This describes existing behaviour and changes none of REQ-001 to REQ-010. It answers the tender wish for third-party connector authorship (Gemeente Stein W2, requirement 20242), capability row `plt-third-party-connectors`.
+
+#### Scenario: A partner's connector moves to a municipality's instance as a file
+- GIVEN a partner admin on instance A authored a Source, a Mapping and a Synchronization that together read a back-office system, and grouped them in one configuration
+- WHEN the partner exports that configuration from the Store page
+- AND an admin on instance B previews and confirms the import of the downloaded file
+- THEN instance B holds the same Source, Mapping and Synchronization, linked by slug
+- AND no integriq code or app release was involved
+- AND the imported Source is listed under `credentialsNeedingReentry`
+
+#### Scenario: A user without the import action cannot install a connector file
+- GIVEN a non-admin user whose groups are not mapped to `configuration.import`
+- WHEN that user posts a connector file to the import or preview endpoint
+- THEN the request is refused and no Source, Mapping or Synchronization is written

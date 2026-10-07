@@ -6341,12 +6341,13 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "building",
-				"change": "2026-09-29-identity-broker-browser-login",
+				"state": "specified",
+				"change": "portal-idp-broker-config",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Browser half built in 2026-09-29-identity-broker-browser-login: GET /api/idp/digid/start and GET|POST .../callback (lib/Controller/IdpBrokerController.php, lib/Auth/Idp/IdpLoginService.php) call beginAuthentication() and readAssertion() on the adapter the container binds. Still missing: the vendor SAML Service Provider or OIDC Relying Party behind GovernmentIdpAdapterInterface; LogGovernmentIdpAdapter is still the only production implementation, so a start refuses. That half waits on Open Decision D1 (broker vendor and contract, openspec/changes/archive/2026-07-15-portal-idp-broker/proposal.md), which is Ruben's."
+				"evidence": "The browser half is built and archived (openspec/changes/archive/2026-09-29-identity-broker-browser-login, 9 of 11 tasks ticked; the two open ones are the strict run and the portaliq live walk): appinfo/routes.php:402-404 idpBroker#start and #callback for digid|eherkenning|eidas, lib/Controller/IdpBrokerController.php:147 start() and :192 callback(), lib/Auth/Idp/IdpLoginService.php. The container binds GovernmentIdpAdapterInterface to LogGovernmentIdpAdapter only (lib/AppInfo/Application.php:591-596), and that adapter throws on every call (lib/Auth/Idp/LogGovernmentIdpAdapter.php:93 beginAuthentication and :109 readAssertion both end in refuse() at :128), so start() catches the refusal at IdpBrokerController.php:159 and no citizen gets logged in. Missing: the vendor SAML Service Provider or OIDC Relying Party adapter, which openspec/changes/portal-idp-broker-config carries and which is blocked on Open Decisions D1 to D5 (broker vendor and contract).",
+				"readOn": "2026-10-07"
 			},
-			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete a DigiD authentication",
+			"reachedOn": "GET /apps/integriq/api/idp/digid/start exists and answers with a refusal: the only bound adapter is LogGovernmentIdpAdapter",
 			"note": "The spec calls this a deliberately dormant seam, but even the wiring around it (issuing the code the exchange step redeems) has no caller, see id-envelope for the specific dead path.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -6377,12 +6378,13 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "building",
-				"change": "2026-09-29-identity-broker-browser-login",
+				"state": "specified",
+				"change": "portal-idp-broker-config",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Browser half built in 2026-09-29-identity-broker-browser-login: GET /api/idp/eherkenning/start and GET|POST .../callback (lib/Controller/IdpBrokerController.php, lib/Auth/Idp/IdpLoginService.php) call beginAuthentication() and readAssertion() on the adapter the container binds, and an eHerkenning envelope carries the vestigingsnummer as branch. Still missing: the vendor SAML Service Provider or OIDC Relying Party behind GovernmentIdpAdapterInterface; LogGovernmentIdpAdapter is still the only production implementation, so a start refuses. That half waits on Open Decision D1 (broker vendor and contract, openspec/changes/archive/2026-07-15-portal-idp-broker/proposal.md), which is Ruben's."
+				"evidence": "Same path as id-digid, archived in openspec/changes/archive/2026-09-29-identity-broker-browser-login: appinfo/routes.php:402-404 accept eherkenning, lib/Controller/IdpBrokerController.php:147 and :192, and an eHerkenning envelope carries the vestigingsnummer as branch (lib/Auth/Idp/SubjectEnvelope.php:69). The only bound adapter is LogGovernmentIdpAdapter (lib/AppInfo/Application.php:591-596), which refuses every call (lib/Auth/Idp/LogGovernmentIdpAdapter.php:93, :109, :128). Missing: the vendor adapter in openspec/changes/portal-idp-broker-config, blocked on Open Decisions D1 to D5.",
+				"readOn": "2026-10-07"
 			},
-			"reachedOn": "nothing reaches it: no route exists anywhere to begin or complete an eHerkenning authentication",
+			"reachedOn": "GET /apps/integriq/api/idp/eherkenning/start exists and answers with a refusal: the only bound adapter is LogGovernmentIdpAdapter",
 			"note": "Same dormant/unwired seam as id-digid.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8363,12 +8365,13 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "lib/Settings/register.d/opencorporates-source.json:8 (source seed, location https://api.opencorporates.com/v0.4, auth apikey), :20 (configuration.mock true with a canned /companies/search body); lib/Service/CatalogRegistryService.php:91 (Store category 'Company data'). The lookup logic lives in openregister lib/Service/Integration/Providers/OpenCorporatesProvider.php. grep -i opencorporates in integriq lib/src outside the catalog service = 0 hits. Specified in ConductionNL/openregister openspec/changes/integration-kvk-opencorporates (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/2026-10-05-integration-kvk-opencorporates"
+				"evidence": "OpenRegister built and archived the lookup (openspec/changes/archive/2026-10-05-integration-kvk-opencorporates, 11 tasks ticked, none open): openregister appinfo/routes.php:929 companyLookup#openCorporatesSearch GET /api/integrations/opencorporates/search, lib/Controller/CompanyLookupController.php:150 openCorporatesSearch(), lib/Service/Integration/Providers/OpenCorporatesProvider.php:73 SOURCE_ID 'opencorporates' routed through the source integriq seeds. Integriq ships that source: lib/Settings/register.d/opencorporates-source.json:9 slug opencorporates, :20 configuration.mock true, :52 isEnabled true. A user reaches the search in pipelinq: lib/Service/OpenCorporatesApiClient.php:213 calls the OpenRegister endpoint, used by lib/Service/ProspectDiscoveryService.php. Rated partial: integriq's source answers with a canned mock until an admin adds an api_token and removes the mock flag, and integriq has no screen of its own for the search.",
+				"change": "openregister/2026-10-05-integration-kvk-opencorporates",
+				"readOn": "2026-10-07"
 			},
-			"reachedOn": "/store (source-template:opencorporates card) and /sources; the company search itself is reached through the OpenRegister integration leaf",
+			"reachedOn": "pipelinq prospect discovery through GET /apps/openregister/api/integrations/opencorporates/search over integriq's opencorporates source; in integriq, /store (source-template:opencorporates) and /sources",
 			"note": "Integriq only ships the source template, and it ships in mock mode, so every lookup returns a canned Conduction B.V. result until an admin adds an API token and removes the mock flag. The actual company search belongs to OpenRegister's OpenCorporatesProvider.",
 			"providerDetail": "openregister (OpenCorporatesProvider leaf) over an integriq source",
 			"provider": "openregister",
@@ -8397,12 +8400,13 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "lib/Settings/register.d/xwiki-source.json:8 (source seed, location http://xwiki:8080/xwiki placeholder), :21 (isEnabled false); lib/Service/CatalogRegistryService.php:92 (Store category 'Document / CMS'). Page reading lives in openregister lib/Service/Integration/Providers/XwikiProvider.php. grep -i xwiki in integriq lib/src outside the catalog service = 0 hits. Specified in ConductionNL/openregister openspec/changes/integration-xwiki-query-search (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/2026-10-05-integration-xwiki-query-search"
+				"evidence": "OpenRegister built and archived the query search (openspec/changes/archive/2026-10-05-integration-xwiki-query-search, 10 tasks ticked, none open): openregister appinfo/routes.php:915 xwikiLinks#search GET /api/integrations/xwiki/search, lib/Controller/XwikiLinksController.php:303 search(), next to the object-linked routes at :914-918 and lib/Service/Integration/Providers/XwikiProvider.php. Integriq ships the source it reads through: lib/Settings/register.d/xwiki-source.json:9 slug xwiki, :21 isEnabled false with a dev-stack placeholder location. pipelinq calls the search: lib/Service/XWikiService.php:229 searchViaOpenRegister(), served by lib/Controller/XWikiController.php. Rated partial: integriq's source ships disabled with a placeholder URL, so nothing reads pages until an admin sets the real location and enables it, and integriq has no screen of its own for wiki pages.",
+				"change": "openregister/2026-10-05-integration-xwiki-query-search",
+				"readOn": "2026-10-07"
 			},
-			"reachedOn": "/store (source-template:xwiki card) and /sources; page reading is reached through the OpenRegister xWiki integration leaf",
+			"reachedOn": "pipelinq's XWikiController search through GET /apps/openregister/api/integrations/xwiki/search, and OpenRegister's object xWiki links, over integriq's xwiki source; in integriq, /store (source-template:xwiki) and /sources",
 			"note": "Integriq ships a dormant source pointing at a dev-stack hostname; an admin must set the real URL and auth and enable it. Reading pages is OpenRegister's XwikiProvider, integriq has no xWiki-specific code.",
 			"providerDetail": "openregister (XwikiProvider leaf) over an integriq source",
 			"provider": "openregister",
@@ -8641,15 +8645,16 @@
 			"area": "connectors",
 			"name": "Pick from hundreds of ready-made connectors for common business software.",
 			"source": "competitor-derived",
-			"integriq": "no",
+			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "The mechanism is built (connectors-catalogue-expansion, 29 Sep 2026): a pinned APIs.guru snapshot (2,529 APIs), a reviewed allow-list and scripts/generate-connector-templates.php write generated Store templates. The allow-list holds two (Google Sheets, Slack) plus curated Salesforce and Alfresco, so the Store is not near hundreds; the count grows by adding allow-list entries.",
+				"evidence": "The change is archived with every task ticked (openspec/changes/archive/2026-09-29-connectors-catalogue-expansion/tasks.md, 10 of 10; shipped in 6bdb8bdae). The mechanism is in the tree: a pinned APIs.guru snapshot (lib/Settings/connector-templates/saas/snapshot/index.json), a reviewed allow-list (lib/Settings/connector-templates/saas/allow-list.json, 2 entries: Google Sheets, Slack), scripts/generate-connector-templates.php and scripts/ConnectorTemplateGenerator.php, curated templates (saas/salesforce-rest.json, backoffice/alfresco-cmis.json), read by lib/Service/Catalog/ConnectorTemplateLibrary.php:30 and listed by lib/Service/CatalogRegistryService.php:233 collectFromTemplates(); the Store shows them under the 'Generated templates' tier (src/manifest.json:4426-4428). Rated partial, not yes: the Store holds about 40 cards, not hundreds; growing it is data (allow-list entries), not code, and no change schedules that growth.",
 				"catalogCount": "about 35 catalog_item cards (25 source templates + 6 static + 4 adapters), about 43 connectors counting configuration templates",
-				"change": "2026-09-29-connectors-catalogue-expansion"
+				"change": "2026-09-29-connectors-catalogue-expansion",
+				"readOn": "2026-10-07"
 			},
-			"reachedOn": "Store > Generated templates",
+			"reachedOn": "/store, tier 'Generated templates', plus the source-template cards from lib/Settings/register.d",
 			"note": "The Store holds roughly 35 entries, not hundreds, and that count is padded: two environment placeholder sources (environment-local-source, environment-acceptance-source) become connector cards, and SmartDocuments and Xential each appear twice (adapter and source template). About ten of the real ones are Specter feeds that write to a register integriq does not ship.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8965,8 +8970,9 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/info.xml:23 EUPL-1.2 licence; a connector is configuration (source, mapping, synchronisation) that any admin authors on /sources, /mappings and /synchronizations and ships as a configuration file: appinfo/routes.php:559 configuration#export and :562-563 previewImport/import (rows plt-export, plt-import-preview)",
-				"spec": "none"
+				"evidence": "A connector is configuration any admin authors without code: Sources, Mappings and Synchronizations on /sources, /mappings and /synchronizations (src/manifest.json:918, :2470, :2589), exported as one redacted file through appinfo/routes.php:637 configuration#export (lib/Controller/ConfigurationController.php:97, src/dialogs/ExportConfigurationDialog.vue) and imported elsewhere through :640-641 previewImport/import (src/dialogs/ImportPreviewDialog.vue), both gated by lib/actions.seed.json:64-65; appinfo/info.xml:23 EUPL-1.2 licence. Specified after the fact as REQ-011 in openspec/specs/configuration-export-import (rows plt-export, plt-import-preview).",
+				"spec": "openspec/specs/configuration-export-import",
+				"readOn": "2026-10-07"
 			},
 			"reachedOn": "Store page (/store) Export and Import configuration; /sources, /mappings, /synchronizations editors",
 			"note": "Gemeente Stein wens W2 (requirement 20242).",
@@ -9797,8 +9803,9 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "integriq's flow canvas (src/manifest.json:2813-2833 Flows and FlowDetail pages) runs graphs on OpenRegister's node catalogue, which has ConductionNL/openregister development lib/Service/Flow/Nodes/ObjectReadNode.php and lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table",
-				"spec": "none"
+				"evidence": "integriq's flow canvas (src/manifest.json:3147-3168 Flows and FlowDetail pages, which mount nextcloud-vue CnFlowIndexPage and CnFlowDetail per openspec/specs/flow-orchestration REQ-017) runs graphs on OpenRegister's node catalogue, which has ConductionNL/openregister development lib/Service/Flow/Nodes/ObjectReadNode.php and lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table",
+				"spec": "none",
+				"readOn": "2026-10-07"
 			},
 			"reachedOn": "/flows/:id canvas, object read and write nodes against a register",
 			"note": "n8n 1.119.0 (2025-11-03) took data tables out of beta. Integriq: The table is an OpenRegister register; integriq consumes the nodes.",
