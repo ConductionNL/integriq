@@ -17,7 +17,7 @@ Follows `opt-out-before-send` (integriq#2533) and `opt-out-per-purpose` (integri
 
 - A consumer with `authorizationType` `digital-post` names the account in `userId`, as every other consumer does.
 - Every send and every status poll runs as that account through OpenRegister's `ObjectService::runAs()` (`setVolatileActiveUser()`, restored in a `finally`). The person who asked stays in `requestedBy`.
-- `digitalPostMessage` gets an authorization block that grants the group `digitale-post-verzenders`. The repair step creates the group and enrols the account.
+- `digitalPostMessage` and `outbound_message` leave the deny-all lockdown fragment and grant the group `digitale-post-verzenders` in the register. The repair step creates the group and enrols the account.
 - An admin setting picks the account. A setup check says when digital post is configured but cannot be stored.
 - On `erase-contact`, every earlier log entry for the erased addresses keeps only a hashed key, its kind, its decision fields and its date. The erasure's own entry is written with the hashed key.
 
@@ -35,7 +35,7 @@ Follows `opt-out-before-send` (integriq#2533) and `opt-out-per-purpose` (integri
 - `lib/Controller/DigitalPostAccountSettingsController.php`, `src/views/admin/DigitalPostAccountSettings.vue`: the admin setting.
 - `lib/SetupCheck/DigitalPostAccountCheck.php`, `lib/Repair/ProvisionIntakeGroups.php`, `lib/Service/Intake/IntakeGroups.php`.
 - `lib/Notification/DsoConnectionNotifier.php`: the digital post alert texts.
-- `lib/Settings/integriq_register.json`: `digitalPostMessage` 1.1.0 with an authorization block.
+- `lib/Settings/integriq_register.json`, `lib/Settings/register.d/99-mail-schemas-lockdown.json`: `digitalPostMessage` and `outbound_message` 1.1.0 grant the group.
 - `lib/Outbound/Identity/OptOutRegistry.php`, `lib/Db/OptOutLogMapper.php`, `lib/Outbound/Identity/RecipientKey.php`: the redaction.
 
 ## Rollback
