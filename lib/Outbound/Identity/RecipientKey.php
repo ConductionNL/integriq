@@ -102,6 +102,13 @@ class RecipientKey {
 	public const BSN_PREFIX = 'bsn:';
 
 	/**
+	 * The prefix of a hashed key that is not a BSN: an erased address in the log.
+	 *
+	 * @var string
+	 */
+	public const HASH_PREFIX = 'h:';
+
+	/**
 	 * The app-config key holding the BSN hashing secret.
 	 *
 	 * @var string
@@ -184,6 +191,28 @@ class RecipientKey {
 		return self::BSN_PREFIX . hash_hmac('sha256', trim($bsn), $this->secret());
 
 	}//end hashBsn()
+
+	/**
+	 * The hashed form of a recipient key, for a log entry that may no longer name the address.
+	 *
+	 * A key that is already a hash (a BSN, or an earlier redaction) is returned as is,
+	 * so every entry of one person carries the same key.
+	 *
+	 * @param string $key The normalised key.
+	 *
+	 * @return string `h:` plus the HMAC, or the key when it is already hashed or empty.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/outbound-opt-out-authority/spec.md#requirement-an-erasure-redacts-the-earlier-log-entries-req-ooa-013
+	 */
+	public function hashKey(string $key): string {
+		$key = trim($key);
+		if ($key === '' || str_starts_with($key, self::BSN_PREFIX) === true || str_starts_with($key, self::HASH_PREFIX) === true) {
+			return $key;
+		}
+
+		return self::HASH_PREFIX . hash_hmac('sha256', $key, $this->secret());
+
+	}//end hashKey()
 
 	/**
 	 * An email address, or null when it is not one.

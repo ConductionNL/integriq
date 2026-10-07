@@ -97,11 +97,9 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * @var array<int,string>
 	 */
 	private const DENY_ALL = [
-		'digitalPostMessage',
 		'intake_routing_rule',
 		'mail_message',
 		'mapping_version',
-		'outbound_message',
 		'payment_intent',
 		'recipient_key',
 		'recipient_opt_out',

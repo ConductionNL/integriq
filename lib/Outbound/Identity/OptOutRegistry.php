@@ -118,6 +118,13 @@ class OptOutRegistry {
 	public const STATE_ERASE_CONTACT = 'erase-contact';
 
 	/**
+	 * The detail fields a redacted log entry keeps: the decision, nothing about the person.
+	 *
+	 * @var list<string>
+	 */
+	private const REDACTION_KEEPS = ['state', 'previousState', 'keptState', 'scope', 'code'];
+
+	/**
 	 * The app-config key that turns the check off in integriq's own senders.
 	 *
 	 * @var string
@@ -857,6 +864,7 @@ class OptOutRegistry {
 		}
 
 		$rows = $this->mapper->findForContactRefs(contactRefs: [$contactRef]);
+		$this->redactLog(addresses: array_map(static fn ($row): string => (string)$row->getAddress(), $rows));
 		foreach ($rows as $row) {
 			$row->setContactRef('');
 			$row->setEvidence(null);
@@ -864,7 +872,7 @@ class OptOutRegistry {
 			$this->mapper->update($row);
 			$this->append(
 				kind: OptOutLogEntry::KIND_CHANGE,
-				address: (string)$row->getAddress(),
+				address: $this->recipientKey->hashKey(key: (string)$row->getAddress()),
 				context: ['category' => '', 'channel' => (string)$row->getChannel(), 'sourceApp' => $sourceApp, 'correlationId' => $correlationId],
 				detail: ['state' => self::STATE_ERASE_CONTACT, 'keptState' => (string)$row->getState(), 'scope' => (string)$row->getScope()]
 			);
@@ -873,6 +881,30 @@ class OptOutRegistry {
 		return count($rows);
 
 	}//end eraseContact()
+
+	/**
+	 * Redact every earlier log entry of these addresses.
+	 *
+	 * The entry keeps its date, kind, category, channel and decision, under a
+	 * hashed key. The address, the correlation id and the evidence go. This is
+	 * the one change a log entry ever gets; new entries stay append-only.
+	 *
+	 * @param list<string> $addresses The erased rows' addresses.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/outbound-opt-out-authority/spec.md#requirement-an-erasure-redacts-the-earlier-log-entries-req-ooa-013
+	 */
+	private function redactLog(array $addresses): void {
+		foreach ($this->log->findForAddresses(addresses: $addresses) as $entry) {
+			$kept = array_intersect_key($entry->detailArray(), array_flip(self::REDACTION_KEEPS));
+			$entry->setAddress($this->recipientKey->hashKey(key: (string)$entry->getAddress()));
+			$entry->setCorrelationId('');
+			$entry->setDetail((string)json_encode($kept + ['redacted' => true]));
+			$this->log->redact(entry: $entry);
+		}
+
+	}//end redactLog()
 
 	/**
 	 * Append one log row.

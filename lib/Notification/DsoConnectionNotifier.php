@@ -109,6 +109,10 @@ class DsoConnectionNotifier implements INotifier {
 			return $this->finish(notification: $notification, subject: $subject);
 		}
 
+		if ($channel === DsoConnectionUnavailableException::CHANNEL_DIGITAL_POST) {
+			return $this->finish(notification: $notification, subject: $this->digitalPostSubject(l: $l, reason: $reason));
+		}
+
 		$webhook = WebhookProfiles::byChannel(channel: $channel);
 		if ($webhook !== null) {
 			$subject = $this->webhookSubject(l: $l, label: $webhook->label, reason: $reason);
@@ -157,6 +161,26 @@ class DsoConnectionNotifier implements INotifier {
 		};
 
 	}//end openFormulierenSubject()
+
+	/**
+	 * The text of a digital post account alert.
+	 *
+	 * @param IL10N  $l      The localisation.
+	 * @param string $reason The reason.
+	 *
+	 * @return string The parsed subject.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#scenario-a-missing-or-disabled-account-refuses-the-send-out-loud
+	 */
+	private function digitalPostSubject(IL10N $l, string $reason): string {
+		return match ($reason) {
+			'no_connection', 'ambiguous_connection', 'no_account' => $l->t('Digital post is not sent: no digital post account is set.'),
+			'account_unknown', 'account_disabled' => $l->t('Digital post is not sent: the digital post account is missing or disabled.'),
+			'account_lacks_rights', 'rights_unverifiable' => $l->t('Digital post is not sent: the digital post account cannot store letters.'),
+			default => $l->t('The digital post account needs attention.'),
+		};
+
+	}//end digitalPostSubject()
 
 	/**
 	 * The subject of an alert of a signed webhook on the consumer model.

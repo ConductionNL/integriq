@@ -706,6 +706,8 @@ return [
 		// public-webhooks-on-the-consumer-model: one consumer and account per signed public webhook.
 		['name' => 'webhookConnectionsSettings#getConfig', 'url' => '/api/admin/webhook-connections', 'verb' => 'GET'],
 		['name' => 'webhookConnectionsSettings#setConfig', 'url' => '/api/admin/webhook-connections/{authorizationType}', 'verb' => 'PUT'],
+		['name' => 'digitalPostAccountSettings#getConfig', 'url' => '/api/admin/digital-post-account', 'verb' => 'GET'],
+		['name' => 'digitalPostAccountSettings#setConfig', 'url' => '/api/admin/digital-post-account', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
 		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])

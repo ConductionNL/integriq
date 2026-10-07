@@ -130,6 +130,7 @@ use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\Tables\TablesClientInterface;
 use OCA\Integriq\Service\Tables\TablesOcsClient;
 use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
+use OCA\Integriq\SetupCheck\DigitalPostAccountCheck;
 use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\Integriq\Sources\Berichtenbox\BerichtenboxSourceAdapter;
 use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
@@ -920,6 +921,7 @@ class Application extends App implements IBootstrap {
 		// The check uses IAppManager only (no OCA\OpenRegister\* reference) so it
 		// is safe to run while OpenRegister is disabled (REQ-ADM-003).
 		$context->registerSetupCheck(OpenRegisterDependencyCheck::class);
+		$context->registerSetupCheck(DigitalPostAccountCheck::class);
 
 		// HITL approval workflow: the actionable approver notification is
 		// dispatched imperatively (ApprovalService::notifyApprovers(), see

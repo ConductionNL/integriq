@@ -117,4 +117,43 @@ class OptOutLogMapper extends QBMapper {
 
 	}//end deleteOlderThan()
 
+	/**
+	 * Every entry for one of these addresses, oldest first.
+	 *
+	 * @param list<string> $addresses The recipient keys.
+	 *
+	 * @return list<OptOutLogEntry> The entries.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/outbound-opt-out-authority/spec.md#requirement-an-erasure-redacts-the-earlier-log-entries-req-ooa-013
+	 */
+	public function findForAddresses(array $addresses): array {
+		$addresses = array_values(array_filter(array_unique($addresses), static fn (string $address): bool => $address !== ''));
+		if ($addresses === []) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->in('address', $qb->createNamedParameter($addresses, IQueryBuilder::PARAM_STR_ARRAY)))
+			->orderBy('id', 'ASC');
+
+		return array_values($this->findEntities(query: $qb));
+
+	}//end findForAddresses()
+
+	/**
+	 * Overwrite a redacted entry. The only change an entry ever gets after it is written.
+	 *
+	 * @param OptOutLogEntry $entry The redacted entry.
+	 *
+	 * @return OptOutLogEntry The entry.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/outbound-opt-out-authority/spec.md#requirement-an-erasure-redacts-the-earlier-log-entries-req-ooa-013
+	 */
+	public function redact(OptOutLogEntry $entry): OptOutLogEntry {
+		return $this->update(entity: $entry);
+
+	}//end redact()
+
 }//end class

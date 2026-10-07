@@ -24,6 +24,7 @@ use OCA\Integriq\BackgroundJob\DigitalPostInboundJob;
 use OCA\Integriq\Event\DigitalPostDeliveredEvent;
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
@@ -34,6 +35,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IDBConnection;
+use OCP\IUser;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
@@ -142,9 +144,28 @@ class DigitalPostServiceTest extends TestCase {
 			$objectService,
 			$dispatcher,
 			$this->createMock(LoggerInterface::class),
-			$this->optOuts()->gate()
+			$this->optOuts()->gate(),
+			$this->account()
 		);
 	}//end service()
+
+	/**
+	 * A digital post account that is always usable and runs the operation as given.
+	 *
+	 * The account itself is covered by DigitalPostServiceAccountTest.
+	 *
+	 * @return DigitalPostAccount
+	 */
+	private function account(): DigitalPostAccount {
+		$account = $this->getMockBuilder(DigitalPostAccount::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['resolve', 'runAs'])
+			->getMock();
+		$account->method('resolve')->willReturn($this->createMock(IUser::class));
+		$account->method('runAs')->willReturnCallback(static fn (IUser $user, callable $operation): mixed => $operation());
+
+		return $account;
+	}//end account()
 
 	/**
 	 * The opt-out services over in-memory tables, one per test.

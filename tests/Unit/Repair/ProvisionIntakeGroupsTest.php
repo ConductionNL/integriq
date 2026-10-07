@@ -89,6 +89,7 @@ class ProvisionIntakeGroupsTest extends TestCase {
 				'intakekanalen-behandelaars' => [],
 				'verdicts-intake' => [],
 				'verdicts-behandelaars' => [],
+				'digitale-post-verzenders' => [],
 			],
 			$this->worldGroupMembers
 		);
@@ -143,4 +144,21 @@ class ProvisionIntakeGroupsTest extends TestCase {
 		$this->assertNotContains('rod-acc', array_merge(...array_values($this->worldGroupMembers)));
 
 	}//end testWebhookAccountsJoinTheirIntakeGroup()
+
+	/**
+	 * The digital post account joins the group its schema grants.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
+	 */
+	public function testTheDigitalPostAccountJoinsItsGroup(): void {
+		$this->addAccount(uid: 'digitalepost', grants: []);
+		$this->worldConsumers['c-digital-post'] = ['name' => 'Digital post', 'authorizationType' => 'digital-post', 'userId' => 'digitalepost'];
+
+		$this->step()->run($this->createMock(IOutput::class));
+
+		$this->assertSame(['digitalepost'], $this->worldGroupMembers['digitale-post-verzenders']);
+
+	}//end testTheDigitalPostAccountJoinsItsGroup()
 }//end class
