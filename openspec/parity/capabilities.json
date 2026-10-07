@@ -7448,6 +7448,26 @@
 			}
 		},
 		{
+			"id": "plt-share-config",
+			"area": "platform",
+			"name": "Share a connector set with another instance through the store.",
+			"source": "spec-round-2026-10-07",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Integriq's import takes an uploaded document only and environment promotion pushes to one peer through CallService; there is no store or OCM sharing path (for-ruben/config-sharing-over-ocm-research.md A2, 3 Oct 2026). Build decision 57: sharing is a research question; only the decided part is specified.",
+				"change": "platform-connector-set-sharing"
+			},
+			"note": "Research-gated: the transport design waits for Ruben's reading of the OCM research report. OpenRegister owns the transport (ADR-022).",
+			"n8n": "unchecked",
+			"tyk": "unchecked",
+			"apisix": "unchecked",
+			"mulesoft": "unchecked",
+			"wso2": "unchecked",
+			"frank": "unchecked"
+		},
+		{
 			"id": "plt-git",
 			"area": "platform",
 			"name": "Keep the integration setup under version control in git.",
