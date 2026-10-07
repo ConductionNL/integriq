@@ -95,6 +95,8 @@ final class DigitalPostResult {
 	 * @param array<string,mixed> $extra Provider fields written onto the message.
 	 *
 	 * @return self An accepted result.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-live-binding-speaks-the-interface-logius-publishes-req-dpa-008
 	 */
 	public static function accepted(string $status, ?string $providerReference = null, bool $simulated = false, array $extra = []): self {
 		return new self($status, $providerReference, '', $simulated, '', $extra);
@@ -109,6 +111,8 @@ final class DigitalPostResult {
 	 * @param array<string,mixed> $extra Provider fields written onto the message.
 	 *
 	 * @return self A failed result.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-opt-out-and-category-rules-run-first-and-do-not-change-req-dpa-014
 	 */
 	public static function refused(string $error, string $code = '', ?string $providerReference = null, array $extra = []): self {
 		return new self(self::STATUS_FAILED, $providerReference, $error, false, $code, $extra);
@@ -172,6 +176,8 @@ final class DigitalPostResult {
 	 * The result as it is written onto the message.
 	 *
 	 * @return array<string,mixed> Serialisable result.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-live-binding-speaks-the-interface-logius-publishes-req-dpa-008
 	 */
 	public function toArray(): array {
 		return array_merge(

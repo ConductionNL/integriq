@@ -36,6 +36,8 @@ interface DigitalPostStatusAcknowledger {
 	 * @param array<string,mixed> $config The source configuration.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#scenario-a-result-is-not-lost-when-saving-fails
 	 */
 	public function statusRecorded(string $providerReference, array $config): void;
 }//end interface

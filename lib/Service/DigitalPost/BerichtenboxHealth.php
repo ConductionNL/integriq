@@ -65,6 +65,8 @@ class BerichtenboxHealth {
 	 * @param DateTimeImmutable $now The time to measure from.
 	 *
 	 * @return array{sources:int,waiting:int,certificates:array<int,array{slug:string,problem:string,validTo:string}>}
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
 	 */
 	public function findings(DateTimeImmutable $now): array {
 		$sources = $this->sources();
