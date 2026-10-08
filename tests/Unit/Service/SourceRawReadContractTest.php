@@ -73,7 +73,6 @@ use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
 use OCA\Integriq\Service\StufZknSyncService;
 use OCA\Integriq\Tests\Helpers\NestedWriteOnlyRenderBoundaryObjectService;
-use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
@@ -175,7 +174,6 @@ class SourceRawReadContractTest extends TestCase {
 			),
 			'Dso' => new DsoIngestService(
 				$fake,
-				$this->getMockBuilder(HandoffService::class)->disableOriginalConstructor()->getMock(),
 				new DsoRequestTranslator(),
 				new LogDsoConnectorProvider(),
 				$this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),

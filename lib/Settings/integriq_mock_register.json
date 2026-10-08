@@ -4065,7 +4065,19 @@
         "slug": "digitalPostMessage",
         "title": "Digital Post Message",
         "icon": "EmailOutline",
-        "version": "1.0.0",
+        "version": "1.2.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "Audit and lifecycle record for one letter sent through a configured digital post source",
         "description": "A Digital Post Message tracks one letter a fleet app asked integriq to send, from queued through the provider's acceptance to whatever became of it. A failed send keeps the message and its attachments, so the letter can be retried rather than rewritten. See openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002.",
         "required": [
@@ -4143,6 +4155,41 @@
             "type": "string",
             "description": "Caller-generated id, echoed on every status change",
             "title": "Correlation ID"
+          },
+          "category": {
+            "type": "string",
+            "description": "The letter's category (besluit, case-update, statutory, service), as the sending app gave it",
+            "title": "Category"
+          },
+          "caseRef": {
+            "type": "string",
+            "description": "The case the letter belongs to, when the sending app named one",
+            "title": "Case Reference"
+          },
+          "batchId": {
+            "type": "string",
+            "description": "Berichtenbox: the BatchID GUID of the GLOBE-R-BV-Request batch that carried the letter",
+            "title": "Batch Id"
+          },
+          "transportMessageId": {
+            "type": "string",
+            "description": "Berichtenbox: the ebMS message id the adapter sent the batch under",
+            "title": "Transport Message Id"
+          },
+          "berichtType": {
+            "type": "string",
+            "description": "Berichtenbox: the BerichtType code the letter was sent under",
+            "title": "Bericht Type"
+          },
+          "resultCode": {
+            "type": "string",
+            "description": "Berichtenbox: the VerwerkingsCode Logius answered, for example Verwerkt or NietActiefOfGeabonneerd",
+            "title": "Result Code"
+          },
+          "resultStage": {
+            "type": "string",
+            "description": "Berichtenbox: the Stadium Logius answered with the code",
+            "title": "Result Stage"
           },
           "providerReference": {
             "type": "string",
@@ -4444,9 +4491,9 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.5.0",
-        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
-        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "version": "1.6.0",
+        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping; the case system makes the case",
+        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped | failed, isolated per verzoek. Integriq declares no case handoff: the case system (dossiq) reads the mapped verzoek and makes one case on the case type in mappedCaseTypes. handed_off survives only on records from the retired manual handoff. See openspec/changes/retire-dso-case-handoff.",
         "authorization": {
           "create": [
             "dso-intake"
@@ -4774,36 +4821,6 @@
             "title": "Activity unmapped"
           }
         },
-        "x-openregister-handoff": [
-          {
-            "id": "verzoek-to-case",
-            "targetSemanticType": "https://openregister.app/ns#Case",
-            "trigger": "manual",
-            "mapping": {
-              "title": {
-                "from": "mappedTitle"
-              },
-              "summary": {
-                "from": "mappedSummary"
-              },
-              "channel": {
-                "from": "mappedChannel"
-              },
-              "source": {
-                "provenance": true
-              },
-              "priority": {
-                "from": "mappedPriority"
-              }
-            },
-            "whenUnavailable": "queue",
-            "onSuccess": {
-              "set": {
-                "status": "handed_off"
-              }
-            }
-          }
-        ],
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -5023,7 +5040,19 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "One message the product sent to a person, per recipient and per step",
         "description": "An Outbound Message records what was sent, to whom, on which channel, and the point at which it failed. The record is per recipient because the failure is: three people on one ontvangstbevestiging can have three outcomes. The body is redacted before it is stored and readable only behind its own action (outbound.read-body), distinct from seeing that a message was sent. A forward is its own linked record, never an edit to the original, because Awb 2:3 asks for provability. See openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md.",
         "required": [

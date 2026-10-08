@@ -18,6 +18,7 @@ mTLS transport `iwmo-ijw-adapter`/`fsc-connectivity`/`dso-connector-adapter`
 already use.
 
 ## Requirements
+
 ### Requirement: Shared XXE-hardened StUF XML parsing (REQ-000)
 
 The system MUST provide `Service\Stuf\StufXmlParser::parse()`, extracted
@@ -305,3 +306,28 @@ invocation, not merely declared.
 - THEN `StufZknSyncService::retryFailed()` SHALL be invoked exactly once per run — proving wiring, not just declaration
 - @e2e exclude backend orphaned-capability proof — covered by PHPUnit
 
+### Requirement: The inbound endpoint acts as the StUF-ZKN connection's account (REQ-020)
+
+`POST /api/stuf-zkn/inbound` MUST authenticate a delivery against the `stuf-zkn-webhook` consumer, as REQ-CM-020 of `consumer-management` describes, and MUST run every OpenRegister write as that consumer's account. A bad signature MUST answer 401. A missing connection, account or right MUST answer 503 and write nothing. A write OpenRegister refuses MUST answer 503, never 200. Ruben approved this model on 2026-10-04.
+
+#### Scenario: A signed delivery without a session is stored as the connection's account
+
+- GIVEN a `stuf-zkn-webhook` consumer whose account may write `stuf_message`
+- WHEN the StUF-ZKN sender posts a correctly signed delivery without a session
+- THEN it is stored
+- AND every write runs as that account
+- @e2e exclude server-to-server webhook: covered by PHPUnit and the live proof
+
+#### Scenario: A connection without a usable account answers 503
+
+- GIVEN a `stuf-zkn-webhook` consumer without an account
+- WHEN a correctly signed delivery arrives
+- THEN the answer is 503 and nothing is written
+- @e2e exclude server-to-server webhook: covered by PHPUnit and the live proof
+
+#### Scenario: A wrong signature answers 401
+
+- GIVEN a `stuf-zkn-webhook` consumer
+- WHEN a delivery arrives signed with another secret
+- THEN the answer is 401 and nothing is written
+- @e2e exclude server-to-server webhook: covered by PHPUnit and the live proof

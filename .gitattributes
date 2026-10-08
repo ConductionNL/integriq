@@ -20,3 +20,7 @@ bin/console text eol=lf
 LICENSE export-ignore
 README.md export-ignore
 update-deps.sh export-ignore
+
+# The Logius Berichtenbox contract is vendored byte for byte (see lib/Adapters/Berichtenbox/Logius/SOURCE.md).
+lib/Adapters/Berichtenbox/Logius/** -text
+tests/fixtures/berichtenbox/logius/** -text

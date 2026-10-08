@@ -5,13 +5,10 @@
  *
  * Controller for the DSO / Omgevingsloket STAM koppelvlak: the signed
  * inbound endpoint (receives vergunningaanvragen, meldingen, and
- * informatieverzoeken from DSO-LV), plus the authenticated read/handoff/
- * outbound surface added by dso-connector-adapter — a status-read and list
- * endpoint, the handoff-trigger endpoint that executes the declared
- * `verzoek-to-case` handoff under the calling user's own session/RBAC (see
- * design.md §1 for why this is a separate, authenticated step rather than
- * automatic at webhook-receipt time), and the outbound status/besluit-post
- * endpoint.
+ * informatieverzoeken from DSO-LV), plus the authenticated read/outbound
+ * surface added by dso-connector-adapter: a status-read and list endpoint and
+ * the outbound status/besluit-post endpoint. Integriq makes no case: the case
+ * system reads the mapped `dso_verzoek` (retire-dso-case-handoff).
  *
  * @category Controller
  * @package  OCA\Integriq\Controller
@@ -41,8 +38,6 @@ use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Exception\HandoffException;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -58,18 +53,17 @@ use Throwable;
 
 /**
  * Controller for the DSO STAM koppelvlak inbound endpoint plus the
- * authenticated dso-connector-adapter read/handoff/outbound surface.
+ * authenticated dso-connector-adapter read/outbound surface.
  *
  * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- the handoff-trigger error mapping
- * legitimately switches on DsoTranslationException/HandoffException/NotAuthorizedException/
- * Throwable in addition to the controller's normal HTTP/auth collaborators (mirrors
- * OpenFormulierenController's error-mapping breadth).
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- the error mapping switches on
+ * DsoTranslationException/DsoProviderException/Throwable in addition to the controller's
+ * normal HTTP/auth collaborators.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) -- this controller now spans the inbound
- * webhook (parser/signatureVerifier) and the authenticated read/handoff/outbound surface
+ * webhook (parser/signatureVerifier) and the authenticated read/outbound surface
  * (ingestService/actionAuth/userSession/l) added by dso-connector-adapter; splitting it would
  * fragment one cohesive DSO feature into two controllers for no behavioural benefit.
  */
@@ -83,9 +77,9 @@ class DSOController extends Controller {
 	 * @param LoggerInterface $logger Logger for error handling.
 	 * @param DsoConnection $connection The dso-stam consumer: signature, account, rights, runAs().
 	 * @param DsoConnectionAlerts $alerts Admin notifications when a push is refused with 503.
-	 * @param DsoIngestService $ingestService dso_verzoek persistence, mapping, handoff, outbound.
+	 * @param DsoIngestService $ingestService dso_verzoek persistence, mapping, outbound.
 	 * @param ActionAuthService $actionAuth The action authorization service.
-	 * @param IUserSession $userSession The user session (status/list/handoff/outbound
+	 * @param IUserSession $userSession The user session (status/list/outbound
 	 *                                  endpoints).
 	 * @param IL10N $l The localization service.
 	 *
@@ -397,70 +391,6 @@ class DSOController extends Controller {
 
 		return new JSONResponse($result);
 	}//end status()
-
-	/**
-	 * Trigger the declared `verzoek-to-case` handoff for a `mapped`
-	 * verzoek, as the authenticated caller — never a system-account
-	 * shortcut (design.md §1).
-	 *
-	 * @param string $id The `dso_verzoek` uuid.
-	 *
-	 * @return JSONResponse The engine's execute() result, or a 400/401/403/404/409 error envelope.
-	 *
-	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-005
-	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	public function handoff(string $id = ''): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'dso.handoff');
-
-		if ($id === '') {
-			return new JSONResponse(
-				['error' => 'missing_id', 'message' => $this->l->t('The verzoek id is required')],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		try {
-			$result = $this->ingestService->handoff(uuid: $id);
-			return new JSONResponse($result);
-		} catch (DsoTranslationException $exception) {
-			return new JSONResponse(
-				['error' => 'verzoek_not_ready', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_REQUEST
-			);
-		} catch (HandoffException $exception) {
-			$status = Http::STATUS_CONFLICT;
-			if ($exception->getErrorCode() === HandoffException::NOT_DECLARED) {
-				$status = Http::STATUS_NOT_FOUND;
-			}
-
-			return new JSONResponse(
-				['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
-				$status
-			);
-		} catch (NotAuthorizedException $exception) {
-			return new JSONResponse(
-				['error' => 'handoff_not_authorized', 'message' => $exception->getMessage()],
-				Http::STATUS_FORBIDDEN
-			);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'[DSOController] handoff failed unexpectedly: ' . $exception->getMessage(),
-				['exception' => $exception]
-			);
-			return new JSONResponse(
-				['error' => 'handoff_failed', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_GATEWAY
-			);
-		}//end try
-
-	}//end handoff()
 
 	/**
 	 * Build and dispatch one outbound `status` (voortgangsinformatie) or

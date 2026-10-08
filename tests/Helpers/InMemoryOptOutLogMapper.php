@@ -97,6 +97,28 @@ class InMemoryOptOutLogMapper extends OptOutLogMapper {
 	}//end deleteOlderThan()
 
 	/**
+	 * Every entry for one of these addresses, oldest first.
+	 *
+	 * @param list<string> $addresses The recipient keys.
+	 *
+	 * @return list<OptOutLogEntry>
+	 */
+	public function findForAddresses(array $addresses): array {
+		return array_values(array_filter($this->rows, static fn (OptOutLogEntry $row): bool => in_array($row->getAddress(), $addresses, true)));
+	}//end findForAddresses()
+
+	/**
+	 * Overwrite a redacted entry (the rows hold the same objects).
+	 *
+	 * @param OptOutLogEntry $entry The entry.
+	 *
+	 * @return OptOutLogEntry
+	 */
+	public function redact(OptOutLogEntry $entry): OptOutLogEntry {
+		return $entry;
+	}//end redact()
+
+	/**
 	 * The rows of one kind.
 	 *
 	 * @param string $kind The kind.
