@@ -429,7 +429,7 @@ class DsoIngestService {
 
 	/**
 	 * List dso_verzoek records, optionally filtered by status (e.g. `mapped`
-	 * — the set the case system turns into cases).
+	 * is the set the case system turns into cases).
 	 *
 	 * @param string|null $status Optional status filter.
 	 * @param integer $limit Maximum number of records to return.
