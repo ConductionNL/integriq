@@ -37,7 +37,6 @@ use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Tests\Helpers\DsoConnectionWorld;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
 use OCP\AppFramework\Http;
@@ -51,7 +50,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Tests for the DSO STAM koppelvlak controller plus the authenticated
- * read/handoff/outbound surface added by dso-connector-adapter.
+ * read/outbound surface added by dso-connector-adapter.
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
@@ -507,7 +506,6 @@ class DSOControllerTest extends TestCase {
 
 		$this->ingestService = new DsoIngestService(
 			objectService: $objectService,
-			handoffService: $this->getMockBuilder(HandoffService::class)->disableOriginalConstructor()->getMock(),
 			translator: new DsoRequestTranslator(),
 			logProvider: new LogDsoConnectorProvider(),
 			restProvider: $this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
@@ -629,40 +627,6 @@ class DSOControllerTest extends TestCase {
 	}//end testStatusReturnsVerzoekRecord()
 
 	/**
-	 * Test that handoff() returns 400 when the verzoek is not yet mapped.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-005
-	 */
-	public function testHandoffReturns400WhenNotReady(): void {
-		$this->ingestService->method('handoff')
-			->willThrowException(new DsoTranslationException(message: 'not mapped yet'));
-
-		$response = $this->controller->handoff(id: 'v1');
-
-		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-
-	}//end testHandoffReturns400WhenNotReady()
-
-	/**
-	 * Test that handoff() returns the engine's execute() result on success.
-	 *
-	 * @return void
-	 */
-	public function testHandoffReturnsExecuteResultOnSuccess(): void {
-		$this->ingestService->method('handoff')
-			->with('v1')
-			->willReturn(['status' => 'executed', 'target' => ['uuid' => 'case-1'], 'correlationId' => 'corr-1']);
-
-		$response = $this->controller->handoff(id: 'v1');
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame('executed', $response->getData()['status']);
-
-	}//end testHandoffReturnsExecuteResultOnSuccess()
-
-	/**
 	 * Test that postOutbound() maps a "no active source" failure to 503.
 	 *
 	 * @return void
@@ -718,7 +682,6 @@ class DSOControllerTest extends TestCase {
 
 		$this->ingestService = new DsoIngestService(
 			objectService: $this->worldObjectService,
-			handoffService: $this->getMockBuilder(HandoffService::class)->disableOriginalConstructor()->getMock(),
 			translator: new DsoRequestTranslator(),
 			logProvider: new LogDsoConnectorProvider(),
 			restProvider: $this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
