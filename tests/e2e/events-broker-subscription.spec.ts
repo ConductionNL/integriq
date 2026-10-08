@@ -60,12 +60,18 @@ test.describe('broker subscriptions', () => {
 		const body = await created.json()
 		const id = body.id ?? body.uuid ?? body['@self']?.id
 
+		// The list filters on schema properties, and `uuid` is a property of
+		// event_subscription that a created row leaves empty. So read the list
+		// and find the row by its object id.
 		const list = await request.get(SUBSCRIPTIONS, {
-			params: { uuid: String(id) },
+			params: { limit: 500 },
 			failOnStatusCode: false,
 		})
 		expect(list.status()).toBe(200)
-		const stored = (await list.json()).results[0]
+		const stored = ((await list.json()).results ?? []).find(
+			(row: Record<string, unknown>) => row.id === id,
+		)
+		expect(stored, 'the created subscription is in the list').toBeTruthy()
 		expect(stored.action.kind).toBe('broker')
 		expect(stored.action.brokerId).toBe('rabbitmq')
 		expect(stored.action.topic).toBe('zaken')
