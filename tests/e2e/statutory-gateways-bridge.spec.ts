@@ -12,13 +12,14 @@
  */
 
 import { expect, test } from '@playwright/test'
+import { anonymousRequest } from './support/anonymous.ts'
 
 const API_BASE = '/index.php/apps/integriq/api/gateways'
 
 test.describe('on-premise bridges', () => {
 	// @e2e statutory-gateways::a-revoked-bridge-stops-answering
-	test('an anonymous request cannot revoke a bridge', async ({ playwright }) => {
-		const anonymous = await playwright.request.newContext()
+	test('an anonymous request cannot revoke a bridge', async () => {
+		const anonymous = await anonymousRequest()
 		try {
 			const resp = await anonymous.post(
 				`${API_BASE}/bridges/pw-e2e-bridge/revoke`,

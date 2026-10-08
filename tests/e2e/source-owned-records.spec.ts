@@ -19,6 +19,7 @@
 import type { APIRequestContext } from '@playwright/test'
 
 import { expect, test } from '@playwright/test'
+import { anonymousRequest } from './support/anonymous.ts'
 
 const API_BASE = '/index.php/apps/integriq/api'
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
@@ -126,10 +127,8 @@ test.describe('records owned by an external source', () => {
 	})
 
 	// @e2e source-owned-records::a-handler-cannot-quietly-remove-a-brp-person
-	test('an anonymous request can delete nothing at all', async ({
-		playwright,
-	}) => {
-		const anonymous = await playwright.request.newContext()
+	test('an anonymous request can delete nothing at all', async () => {
+		const anonymous = await anonymousRequest()
 		try {
 			const resp = await anonymous.delete(
 				`${API_BASE}/ownership/pw-e2e-does-not-exist?schema=contact`,

@@ -16,9 +16,10 @@
 
 import type { APIRequestContext } from '@playwright/test'
 
-import { expect, request as playwrightRequest, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { createHmac } from 'node:crypto'
 import { APP_BASE } from './spec-coverage/_helpers.ts'
+import { anonymousRequest } from './support/anonymous.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
@@ -210,9 +211,7 @@ test.describe('intake channels', () => {
 		// The least privileged principal that should be refused. A rule decides
 		// what opens a case, so an unauthenticated 2xx here would be the whole
 		// intake surface open to anyone.
-		const anonymous = await playwrightRequest.newContext({
-			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
-		})
+		const anonymous = await anonymousRequest()
 
 		const resp = await anonymous.post(`${API_BASE}/intake/routing-rules`, {
 			failOnStatusCode: false,
