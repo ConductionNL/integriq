@@ -28,7 +28,8 @@ use Jose\Component\Signature\Algorithm\RS256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\Integriq\Exception\LtiValidationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Service\Lti\LtiJwksResolverService;
 use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCA\Integriq\Service\Lti\LtiLaunchService;
@@ -68,13 +69,13 @@ class LtiLaunchServiceTest extends TestCase {
 	/**
 	 * Build a real AuthorizationService instance (reused, not mocked, for iat/exp/nbf).
 	 *
-	 * @return AuthorizationService
+	 * @return OpenRegisterCredentialBridge
 	 */
-	private function makeAuthorizationService(): AuthorizationService {
+	private function makeAuthorizationService(): OpenRegisterCredentialBridge {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn(new ArrayCache());
 
-		return new AuthorizationService(
+		return OpenRegisterCredentials::bridge(
 			$this->createMock(IUserManager::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),

@@ -25,7 +25,7 @@ use OCA\Integriq\Controller\ScimController;
 use OCA\Integriq\Directory\ScimProvisioningService;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -50,7 +50,7 @@ class ScimControllerTest extends TestCase {
 	private $provisioningService;
 
 	/**
-	 * @var AuthorizationService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var OpenRegisterCredentialBridge|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $authorizationService;
 
@@ -62,7 +62,7 @@ class ScimControllerTest extends TestCase {
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
 		$this->provisioningService = $this->createMock(ScimProvisioningService::class);
-		$this->authorizationService = $this->createMock(AuthorizationService::class);
+		$this->authorizationService = $this->createMock(OpenRegisterCredentialBridge::class);
 
 		// The default is an authenticated call that resolves to a named consumer,
 		// which is what every pre-existing test assumed implicitly. REQ-DS-007
@@ -347,7 +347,7 @@ class ScimControllerTest extends TestCase {
 	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-a-scim-call-is-answered-as-a-named-consumer-req-ds-007
 	 */
 	public function testACallThatNamesNoConsumerIsRefused(): void {
-		$unattributable = $this->createMock(AuthorizationService::class);
+		$unattributable = $this->createMock(OpenRegisterCredentialBridge::class);
 		$unattributable->method('getResolvedConsumer')->willReturn(null);
 		$this->authorizationService = $unattributable;
 

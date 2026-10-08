@@ -20,6 +20,12 @@
              files copied from openregister development 8e001f4ec1 (peer app, absent here). -->
         <file name="tests/stubs/OCA/OpenRegister/Mcp/Attribute/McpTool.php" />
         <file name="tests/stubs/OCA/OpenRegister/Mcp/IMcpScannableServices.php" />
+        <!-- gate 23 (consumer-auth-on-openregister): OpenRegister's credential checks, the
+             real files copied from openregister development 75088d6237. -->
+        <file name="tests/stubs/OCA/OpenRegister/Exception/AuthenticationException.php" />
+        <file name="tests/stubs/OCA/OpenRegister/Service/AuthorizationService.php" />
+        <file name="tests/stubs/OCA/OpenRegister/Service/Consumer/ConsumerSource.php" />
+        <file name="tests/stubs/OCA/OpenRegister/Service/Consumer/ResolvedConsumer.php" />
     </stubs>
     <issueHandlers>
         <UndefinedDocblockClass errorLevel="suppress"/>

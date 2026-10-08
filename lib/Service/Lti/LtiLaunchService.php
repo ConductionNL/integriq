@@ -38,7 +38,7 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OCA\Integriq\Exception\LtiValidationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -117,7 +117,7 @@ class LtiLaunchService {
 	 * Constructor.
 	 *
 	 * @param LtiRegistrationResolverService $resolver Registration/deployment lookups.
-	 * @param AuthorizationService $authorizationService Reused for iat/exp/nbf validation (no reimplementation).
+	 * @param OpenRegisterCredentialBridge $authorizationService Reused for iat/exp/nbf validation (no reimplementation).
 	 * @param LtiJwksResolverService $jwksResolver External JWKS resolution (REQ-LTI-003).
 	 * @param LtiKeyService $keyService This instance's own signing keys.
 	 * @param ICacheFactory $cacheFactory Cache factory for nonce + launch-reference storage.
@@ -125,7 +125,7 @@ class LtiLaunchService {
 	 */
 	public function __construct(
 		private readonly LtiRegistrationResolverService $resolver,
-		private readonly AuthorizationService $authorizationService,
+		private readonly OpenRegisterCredentialBridge $authorizationService,
 		private readonly LtiJwksResolverService $jwksResolver,
 		private readonly LtiKeyService $keyService,
 		ICacheFactory $cacheFactory,
@@ -259,7 +259,7 @@ class LtiLaunchService {
 
 		[$payload, $platform] = $this->verifyIdTokenSignature(idToken: $idToken, registrationType: 'lti_platform');
 
-		// Iat/exp/nbf — reused from AuthorizationService, no reimplementation (design.md D6).
+		// Iat/exp/nbf/jti: OpenRegister's check through the bridge, no reimplementation (design.md D6).
 		$this->validateTiming(payload: $payload);
 
 		$platformData = $platform->getObject();
@@ -575,7 +575,7 @@ class LtiLaunchService {
 	 * REQ-LTI-003, resolving the issuing registration from the (still
 	 * unverified at this point) `iss` claim first — the same "decode payload
 	 * to find the issuer, THEN cryptographically verify before trusting any
-	 * claim" shape {@see \OCA\Integriq\Service\AuthorizationService::authorizeJwt()}
+	 * claim" shape {@see \OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge::authorizeJwt()}
 	 * already uses. No claim is trusted for any authorization decision until
 	 * signature verification (step 4 below) succeeds.
 	 *
@@ -689,7 +689,7 @@ class LtiLaunchService {
 
 	/**
 	 * Delegate `iat`/`exp`/`nbf`/`jti`-replay validation to the existing
-	 * {@see AuthorizationService::validatePayload()} (design.md D6 — no
+	 * {@see OpenRegisterCredentialBridge::validatePayload()} (design.md D6 — no
 	 * reimplementation), converting its generic `AuthenticationException`
 	 * into an {@see LtiValidationException} carrying the HTTP 401 this
 	 * adapter's callers rely on (a plain `AuthenticationException` is NOT an
