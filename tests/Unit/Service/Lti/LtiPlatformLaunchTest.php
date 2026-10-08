@@ -23,7 +23,7 @@ use OCA\Integriq\Controller\LtiPlatformController;
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\Exception\LtiValidationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Lti\LtiAgsService;
 use OCA\Integriq\Service\Lti\LtiCustomParameterReader;
 use OCA\Integriq\Service\Lti\LtiJwksResolverService;
@@ -779,7 +779,7 @@ class LtiPlatformLaunchTest extends TestCase {
 
 		return new LtiLaunchService(
 			$this->makeResolver(),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->createMock(LtiJwksResolverService::class),
 			$keyService,
 			$cacheFactory,

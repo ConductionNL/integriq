@@ -11,7 +11,7 @@
  * and a rejection is logged.
  *
  * The credential is the app's existing consumer-backed API key store, resolved
- * by `AuthorizationService::authorizeApiKey()`. No new secret is introduced and
+ * by `OpenRegisterCredentialBridge::authorizeApiKey()` (OpenRegister's check). No new secret is introduced and
  * none is written into this package.
  *
  * @category Controller
@@ -38,7 +38,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Directory\ScimProvisioningService;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -94,7 +94,7 @@ class ScimController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param ScimProvisioningService $provisioningService Applies the SCIM call.
-	 * @param AuthorizationService $authorizationService The existing inbound credential check.
+	 * @param OpenRegisterCredentialBridge $authorizationService The existing inbound credential check.
 	 * @param LoggerInterface $logger Logger for rejections.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
@@ -103,7 +103,7 @@ class ScimController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly ScimProvisioningService $provisioningService,
-		private readonly AuthorizationService $authorizationService,
+		private readonly OpenRegisterCredentialBridge $authorizationService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

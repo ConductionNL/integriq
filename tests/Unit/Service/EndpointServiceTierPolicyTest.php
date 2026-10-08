@@ -25,7 +25,7 @@ use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\Integriq\Service\ApprovalService;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\ConsumerScopeService;
 use OCA\Integriq\Service\EndpointService;
@@ -73,7 +73,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 	private $orObjectService;
 
 	/**
-	 * @var AuthorizationService|MockObject
+	 * @var OpenRegisterCredentialBridge|MockObject
 	 */
 	private $authorizationService;
 
@@ -94,7 +94,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		parent::setUp();
 
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
-		$this->authorizationService = $this->createMock(AuthorizationService::class);
+		$this->authorizationService = $this->createMock(OpenRegisterCredentialBridge::class);
 		$this->rateLimitService = $this->createMock(InboundRateLimitService::class);
 
 		$objectService = $this->createMock(ObjectService::class);

@@ -30,7 +30,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EndpointTargetResolver;
@@ -190,7 +190,7 @@ class OriPublicEndpointsTest extends TestCase {
 			$orObjectService,
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->createMock(ContainerInterface::class),
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),

@@ -13,10 +13,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -35,7 +36,7 @@ use PHPUnit\Framework\TestCase;
  * make it safe rather than merely functional: no session is a refusal, no CSRF
  * token is a refusal, and the users/groups allow-list is honoured.
  */
-class AuthorizationServiceNcSessionTest extends TestCase {
+class OpenRegisterCredentialBridgeNcSessionTest extends TestCase {
 
 	/**
 	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
@@ -53,9 +54,9 @@ class AuthorizationServiceNcSessionTest extends TestCase {
 	private $request;
 
 	/**
-	 * @var AuthorizationService
+	 * @var OpenRegisterCredentialBridge
 	 */
-	private AuthorizationService $service;
+	private OpenRegisterCredentialBridge $service;
 
 	/**
 	 * Build the service with fully mocked collaborators.
@@ -72,7 +73,7 @@ class AuthorizationServiceNcSessionTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
-		$this->service = new AuthorizationService(
+		$this->service = OpenRegisterCredentials::bridge(
 			$this->createMock(IUserManager::class),
 			$this->userSession,
 			ObjectServiceMockBuilder::make($this),

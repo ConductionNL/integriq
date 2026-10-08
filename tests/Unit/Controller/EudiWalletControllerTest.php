@@ -20,7 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\EudiWalletController;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EudiIssuanceException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EudiCredentialOfferService;
 use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiStatusListService;
@@ -83,7 +83,7 @@ class EudiWalletControllerTest extends TestCase {
 		$this->offerService = $this->createMock(EudiCredentialOfferService::class);
 		$this->keyService = $this->createMock(EudiIssuerKeyService::class);
 		$this->statusListService = $this->createMock(EudiStatusListService::class);
-		$this->authorizationService = $this->createMock(AuthorizationService::class);
+		$this->authorizationService = $this->createMock(OpenRegisterCredentialBridge::class);
 
 		$this->request->method('getServerProtocol')->willReturn('https');
 		$this->request->method('getServerHost')->willReturn('example.test');

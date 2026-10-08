@@ -23,7 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\NotificatiesSubscriberController;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -64,7 +64,7 @@ class NotificatiesSubscriberControllerCallbackTest extends TestCase {
 	private $subscriberService;
 
 	/**
-	 * @var AuthorizationService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var OpenRegisterCredentialBridge|\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private $authorizationService;
 
@@ -101,7 +101,7 @@ class NotificatiesSubscriberControllerCallbackTest extends TestCase {
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
 		$this->subscriberService = $this->createMock(NotificatiesSubscriberService::class);
-		$this->authorizationService = $this->createMock(AuthorizationService::class);
+		$this->authorizationService = $this->createMock(OpenRegisterCredentialBridge::class);
 		$this->orObjectService = $this->createMock(OrObjectService::class);
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
