@@ -231,6 +231,10 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
+	 * @contract tests/Unit/Controller/XmlWebhooksConsumerTest.php — signed delivery stored as the
+	 *           connection's account, 503 without an account, 401 on a wrong signature
+	 *           (data provider `webhooks()`, which calls the method by name)
+	 *
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-processing
 	 * @spec openspec/changes/uwlr-eduv-retour-on-the-consumer-model/specs/uwlr-eduv-adapter/spec.md#requirement-the-retour-acts-as-the-uwlr-and-edu-v-connections-account-req-020
 	 */
