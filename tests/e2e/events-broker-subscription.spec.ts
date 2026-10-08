@@ -76,7 +76,8 @@ test.describe('broker subscriptions', () => {
 		expect(stored.action.brokerId).toBe('rabbitmq')
 		expect(stored.action.topic).toBe('zaken')
 		expect(stored.action.routingKey).toBe('zaak.created')
-		expect(stored.protocolSettings.broker.password).toBeUndefined()
+		// protocolSettings is writeOnly, so the list may leave it out entirely.
+		expect(stored.protocolSettings?.broker?.password).toBeUndefined()
 	})
 
 	// @e2e events-cloudevents::kafka-offers-only-the-modes-it-supports

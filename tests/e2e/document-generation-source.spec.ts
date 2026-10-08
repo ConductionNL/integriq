@@ -17,6 +17,7 @@
 
 import { expect, test } from '@playwright/test'
 import { APP_BASE } from './spec-coverage/_helpers.ts'
+import { withRequestToken } from './support/requestToken.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
@@ -50,6 +51,7 @@ test('a vendor source without a credential reference cannot be activated', async
 
 	const activated = await request.post(
 		`${API_BASE}/document-generation/sources/${sourceId}/activate`,
+		{ failOnStatusCode: false, headers: await withRequestToken(request) },
 	)
 
 	expect(
@@ -86,6 +88,7 @@ test('a mock-mode source lists the vendor templates, and stores none of them', a
 
 	const listed = await request.get(
 		`${API_BASE}/document-generation/sources/${sourceId}/templates`,
+		{ headers: await withRequestToken(request) },
 	)
 	expect(listed.status(), 'list the vendor templates').toBe(200)
 	const templates = (await listed.json()).templates ?? []
