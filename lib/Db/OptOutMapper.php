@@ -159,6 +159,25 @@ class OptOutMapper extends QBMapper {
 	}//end findIn()
 
 	/**
+	 * Every row that carries a purpose. Few: only rows written since purposes
+	 * existed, so the re-key migration reads them in one query.
+	 *
+	 * @return list<OptOut> The rows.
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
+	 */
+	public function findWithPurpose(): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->isNotNull('purpose'))
+			->andWhere($qb->expr()->neq('purpose', $qb->createNamedParameter('')));
+
+		return array_values($this->findEntities(query: $qb));
+
+	}//end findWithPurpose()
+
+	/**
 	 * One opt-out by its key, or null.
 	 *
 	 * @param string $dedupeKey The key from OptOut::keyFor().

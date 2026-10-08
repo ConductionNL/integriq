@@ -244,6 +244,49 @@ class ConnectionStore {
 	}//end findSourceBySlug()
 
 	/**
+	 * Re-read a located source raw, so its write-only credentials survive.
+	 *
+	 * A rendered read strips `configuration.authentication.mtls` and its
+	 * siblings for everyone, admins included (99-source-nested-auth-writeonly).
+	 * The Berichtenbox binding needs the encrypted certificate to present it, so
+	 * it re-reads the one source it already found, by uuid, unrendered. This is
+	 * a read of integriq's own configuration from a background or event context
+	 * with no user, the same read `CallService::resolveSourceForDispatch()`
+	 * makes, so RBAC is off for the read only. Nothing is written here.
+	 *
+	 * @param ObjectEntity $source The source as a rendered read returned it.
+	 *
+	 * @return ObjectEntity The raw source, or the one passed in when the re-read fails.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
+	 */
+	public function readSourceRaw(ObjectEntity $source): ObjectEntity {
+		$uuid = (string)$source->getUuid();
+		if ($uuid === '') {
+			return $source;
+		}
+
+		try {
+			$raw = $this->objectService->find(
+				id: $uuid,
+				register: self::REGISTER,
+				schema: 'source',
+				_rbac: false,
+				_multitenancy: false,
+				_render: false
+			);
+		} catch (\Throwable) {
+			return $source;
+		}
+
+		if ($raw instanceof ObjectEntity) {
+			return $raw;
+		}
+
+		return $source;
+	}//end readSourceRaw()
+
+	/**
 	 * Create a source.
 	 *
 	 * @param array<string,mixed> $payload The source data.

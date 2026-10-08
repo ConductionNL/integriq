@@ -73,12 +73,16 @@ final class DigitalPostResult {
 	 * @param string|null $providerReference The provider's own reference for this message.
 	 * @param string $error The provider's reason, when it refused.
 	 * @param bool $simulated Whether this went to a binding that sends nothing.
+	 * @param string $code A stable refusal code, for example `not_subscribed`. Empty for a provider's own refusal.
+	 * @param array<string,mixed> $extra Provider fields written onto the message, for example `batchId`.
 	 */
 	public function __construct(
 		private readonly string $status,
 		private readonly ?string $providerReference = null,
 		private readonly string $error = '',
 		private readonly bool $simulated = false,
+		private readonly string $code = '',
+		private readonly array $extra = [],
 	) {
 	}//end __construct()
 
@@ -88,23 +92,40 @@ final class DigitalPostResult {
 	 * @param string $status The status it reported.
 	 * @param string|null $providerReference The provider's reference.
 	 * @param bool $simulated Whether the binding sends nothing.
+	 * @param array<string,mixed> $extra Provider fields written onto the message.
 	 *
 	 * @return self An accepted result.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-live-binding-speaks-the-interface-logius-publishes-req-dpa-008
 	 */
-	public static function accepted(string $status, ?string $providerReference = null, bool $simulated = false): self {
-		return new self($status, $providerReference, '', $simulated);
+	public static function accepted(string $status, ?string $providerReference = null, bool $simulated = false, array $extra = []): self {
+		return new self($status, $providerReference, '', $simulated, '', $extra);
 	}//end accepted()
 
 	/**
 	 * The send was refused, in whoever's words refused it.
 	 *
 	 * @param string $error The reason.
+	 * @param string $code A stable code the sending app can act on, empty for a provider's own refusal.
+	 * @param string|null $providerReference The provider's reference, when the provider had taken the message.
+	 * @param array<string,mixed> $extra Provider fields written onto the message.
 	 *
 	 * @return self A failed result.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-opt-out-and-category-rules-run-first-and-do-not-change-req-dpa-014
 	 */
-	public static function refused(string $error): self {
-		return new self(self::STATUS_FAILED, null, $error);
+	public static function refused(string $error, string $code = '', ?string $providerReference = null, array $extra = []): self {
+		return new self(self::STATUS_FAILED, $providerReference, $error, false, $code, $extra);
 	}//end refused()
+
+	/**
+	 * The stable refusal code, when the refusal has one.
+	 *
+	 * @return string The code, empty when there is none.
+	 */
+	public function getCode(): string {
+		return $this->code;
+	}//end getCode()
 
 	/**
 	 * The status this message is in.
@@ -155,13 +176,18 @@ final class DigitalPostResult {
 	 * The result as it is written onto the message.
 	 *
 	 * @return array<string,mixed> Serialisable result.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-live-binding-speaks-the-interface-logius-publishes-req-dpa-008
 	 */
 	public function toArray(): array {
-		return [
-			'status' => $this->status,
-			'providerReference' => $this->providerReference,
-			'lastError' => $this->error,
-			'simulated' => $this->simulated,
-		];
+		return array_merge(
+			$this->extra,
+			[
+				'status' => $this->status,
+				'providerReference' => $this->providerReference,
+				'lastError' => $this->error,
+				'simulated' => $this->simulated,
+			]
+		);
 	}//end toArray()
 }//end class

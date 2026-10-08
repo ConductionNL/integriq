@@ -7,6 +7,17 @@ depends_on: []
 
 ## Summary
 
+Export each integriq execution trace as OpenTelemetry spans to a collector an administrator configures, and carry W3C `traceparent` in and out.
+
+- Rows: closes matrix row `integriq:obs-otel`, and is the first half of Woo row 13.29 "Errors and traces go to a monitoring service the organisation chooses, configured without code" (not statutory). 13.29 closes when the second part lands.
+- Wave: 1.
+- Depends on: nothing. The second part, `integriq/observability-opentelemetry-export-errors-and-app-spans`, depends on this one.
+- Decision: no Ruben decision governs this row.
+
+Build rules: openspec/woo-build-rules.md
+
+## Overview
+
 Integriq keeps a trace of every execution, with its steps and their timing,
 but the trace only lives in integriq's own register. An operations team that
 runs Jaeger, Tempo, Grafana or any OpenTelemetry collector cannot see an

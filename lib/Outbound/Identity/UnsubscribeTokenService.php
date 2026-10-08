@@ -191,21 +191,26 @@ class UnsubscribeTokenService {
 	 * @param string $scope `instance`, `channel`, `case` or `list`.
 	 * @param string $channel The channel a channel stop covers.
 	 * @param string $ref The case or list.
+	 * @param string $purpose What the link stops: `marketing`, `service`, or empty for everything.
 	 *
 	 * @return string The token.
 	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
 	 */
-	public function mintScoped(string $address, string $scope, string $channel, string $ref): string {
-		$payload = $this->encode(
-			claims: [
-				'a' => strtolower(trim($address)),
-				's' => $scope,
-				'ch' => $channel,
-				'r' => $ref,
-				'e' => $this->expiry(),
-			]
-		);
+	public function mintScoped(string $address, string $scope, string $channel, string $ref, string $purpose = ''): string {
+		$claims = [
+			'a' => strtolower(trim($address)),
+			's' => $scope,
+			'ch' => $channel,
+			'r' => $ref,
+			'e' => $this->expiry(),
+		];
+		if ($purpose !== '') {
+			$claims['p'] = $purpose;
+		}
+
+		$payload = $this->encode(claims: $claims);
 		$signed = self::PREFIX_V3 . '.' . $payload;
 
 		return $signed . '.' . $this->sign(payload: $signed);
@@ -240,7 +245,7 @@ class UnsubscribeTokenService {
 	 *
 	 * @param string $token The token.
 	 *
-	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string} The verdict.
+	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string,purpose:string} The verdict.
 	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
 	 */
@@ -266,7 +271,7 @@ class UnsubscribeTokenService {
 	 * @param string $payload   The claims part.
 	 * @param string $signature The signature part.
 	 *
-	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string} The verdict.
+	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string,purpose:string} The verdict.
 	 */
 	private function inspectPrefixed(string $prefix, string $payload, string $signature): array {
 		if (hash_equals($this->sign(payload: $prefix . '.' . $payload), $signature) === false) {
@@ -296,7 +301,7 @@ class UnsubscribeTokenService {
 	 * @param string $payload   The claims part.
 	 * @param string $signature The signature part.
 	 *
-	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string} The verdict.
+	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string,purpose:string} The verdict.
 	 */
 	private function inspectV1(string $payload, string $signature): array {
 		if (hash_equals($this->sign(payload: $payload), $signature) === false) {
@@ -315,7 +320,7 @@ class UnsubscribeTokenService {
 	/**
 	 * The verdict for a token that does not verify.
 	 *
-	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string} The verdict.
+	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string,purpose:string} The verdict.
 	 */
 	private function invalid(): array {
 		return [
@@ -326,6 +331,7 @@ class UnsubscribeTokenService {
 			'scope' => '',
 			'channel' => '',
 			'ref' => '',
+			'purpose' => '',
 		];
 
 	}//end invalid()
@@ -361,7 +367,7 @@ class UnsubscribeTokenService {
 	 * @param array<string,mixed> $claims The claims.
 	 * @param string $format The token format.
 	 *
-	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string} The verdict.
+	 * @return array{status:string,format:string,address:string,caseRef:string,scope:string,channel:string,ref:string,purpose:string} The verdict.
 	 */
 	private function valid(array $claims, string $format): array {
 		if ($format !== self::PREFIX_V3) {
@@ -375,6 +381,7 @@ class UnsubscribeTokenService {
 				'scope' => OptOutRegistry::SCOPE_CASE,
 				'channel' => '',
 				'ref' => $caseRef,
+				'purpose' => '',
 			];
 		}
 
@@ -393,6 +400,8 @@ class UnsubscribeTokenService {
 			'scope' => $scope,
 			'channel' => (string)($claims['ch'] ?? ''),
 			'ref' => $ref,
+			// A v3 link minted before purposes stops everything in its scope.
+			'purpose' => (string)($claims['p'] ?? ''),
 		];
 
 	}//end valid()
@@ -497,7 +506,13 @@ class UnsubscribeTokenService {
 			$baseUrl = rtrim($this->urls->getAbsoluteURL('/'), '/');
 		}
 
-		$token = $this->mintScoped(address: $address, scope: $scope, channel: $channel, ref: $ref);
+		$token = $this->mintScoped(
+			address: $address,
+			scope: $scope,
+			channel: $channel,
+			ref: $ref,
+			purpose: $this->categories->purposeOf($category)
+		);
 		$url = $baseUrl . '/index.php/apps/integriq/unsubscribe/' . $token;
 
 		$smsText = null;

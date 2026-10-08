@@ -129,4 +129,27 @@ class DsoConnectionNotifierTest extends TestCase {
 		);
 
 	}//end testAWebhookAlertNamesTheWebhook()
+
+	/**
+	 * A digital post alert says letters are not sent and why.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#scenario-a-missing-or-disabled-account-refuses-the-send-out-loud
+	 */
+	public function testADigitalPostAlertSaysLettersAreNotSent(): void {
+		$this->assertSame(
+			'Digital post is not sent: no digital post account is set.',
+			$this->render(['reason' => 'no_connection', 'channel' => 'digitalpost'])
+		);
+		$this->assertSame(
+			'Digital post is not sent: the digital post account is missing or disabled.',
+			$this->render(['reason' => 'account_disabled', 'channel' => 'digitalpost'])
+		);
+		$this->assertSame(
+			'Digital post is not sent: the digital post account cannot store letters.',
+			$this->render(['reason' => 'account_lacks_rights', 'channel' => 'digitalpost'])
+		);
+
+	}//end testADigitalPostAlertSaysLettersAreNotSent()
 }//end class

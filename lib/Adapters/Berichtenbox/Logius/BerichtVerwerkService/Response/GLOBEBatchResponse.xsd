@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Version 3.0 - June 2010 -->
+<xs:schema xmlns="http://schemas.rdw.nl/GEB/BerichtVerwerkService/Types/2009/01" xmlns:ns1="http://schemas.rdw.nl/GEB/BerichtVerwerkService/BerichtResultaat/Types/2009/01" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://schemas.rdw.nl/GEB/BerichtVerwerkService/Types/2009/01" elementFormDefault="unqualified" attributeFormDefault="unqualified">
+	<xs:import namespace="http://schemas.rdw.nl/GEB/BerichtVerwerkService/BerichtResultaat/Types/2009/01" schemaLocation="GLOBEBatchResponseTypes.xsd"/>
+	<xs:element name="BerichtVerwerkResponse">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="BatchInformatie">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="BerichtLeverancierCode" type="xs:string"/>
+							<xs:element name="BatchID" type="ns1:guid"/>
+							<xs:element name="TotaalAantalOntvangenBerichten" type="xs:int"/>
+							<xs:element name="AantalBerichtenSuccesvolVerwerkt" type="xs:int"/>
+							<xs:element name="AantalBerichtenGeenActieveBoxOfGeabonneertOpLeverancier" type="xs:int"/>
+							<xs:element name="AantalBerichtenMetTechnischProbleem" type="xs:int"/>
+							<xs:element name="AantalBerichtenBerichtTypeNietCorrect" type="xs:int"/>
+							<xs:element name="AantalBerichtenPublicatieDatumNietCorrect" type="xs:int"/>
+							<xs:element name="AantalBerichtenAanmaakDatumNietCorrect" type="xs:int"/>
+							<xs:element name="DatumOntvangen" type="xs:dateTime"/>
+							<xs:element name="DatumVerwerkt" type="xs:dateTime"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Berichten">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element ref="ns1:Bericht" minOccurs="0" maxOccurs="1000"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

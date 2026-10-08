@@ -32,8 +32,8 @@ use OCA\Integriq\Mcp\IntegriqScannableServices;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientHttp;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
-use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientUnavailable;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
@@ -130,8 +130,9 @@ use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\Tables\TablesClientInterface;
 use OCA\Integriq\Service\Tables\TablesOcsClient;
 use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
+use OCA\Integriq\SetupCheck\BerichtenboxCheck;
+use OCA\Integriq\SetupCheck\DigitalPostAccountCheck;
 use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
-use OCA\Integriq\Sources\Berichtenbox\BerichtenboxSourceAdapter;
 use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
 use OCA\Integriq\Service\Registry\KvkMutatieProvider;
 use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
@@ -250,21 +251,18 @@ class Application extends App implements IBootstrap {
 		include_once __DIR__ . '/../../vendor/autoload.php';
 
 		// LOAD-ORDER HAZARD: OC_App::getEnabledApps() sort()s the app list and
-		// Coordinator::registerApps() calls registerAutoloading() then register()
-		// one app at a time, so this method runs BEFORE OCA\OpenRegister\ is
-		// autoloadable (this app sorts before `openregister`). Any AppHost
-		// reference here — including a class_exists() probe — therefore answers
-		// FALSE on a perfectly healthy instance. Put OpenRegister's prefix on the
-		// autoloader ourselves; registerAutoloading() touches only the autoloader
-		// and is idempotent ($alreadyRegistered key guard). Deliberately NOT
-		// IAppManager::loadApp(), which would mark OpenRegister loaded and boot it
-		// before its own register() had run.
-		try {
-			$openRegisterPath = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppPath('openregister');
-			\OC_App::registerAutoloading('openregister', $openRegisterPath);
-		} catch (\Throwable) {
-			// OpenRegister absent/disabled — fall through to the degraded path.
-		}
+		// Coordinator::registerApps() registers each app's autoloader then calls
+		// its register() one app at a time, so this method runs BEFORE
+		// OCA\OpenRegister\ is autoloadable (this app sorts before
+		// `openregister`). Any AppHost reference here — including a
+		// class_exists() probe — therefore answers FALSE on a perfectly healthy
+		// instance. Put OpenRegister's prefix on the autoloader ourselves, via
+		// public API only (Nextcloud 35 removed \OC_App::registerAutoloading()).
+		// Deliberately NOT IAppManager::loadApp(), which would mark OpenRegister
+		// loaded and boot it before its own register() had run. Returns false
+		// (never throws) when OpenRegister is absent or disabled — fall through
+		// to the degraded path.
+		OpenRegisterAutoloader::register();
 
 		$this->assertStorageMigrated();
 
@@ -850,13 +848,12 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
-		// Wave-4 external-API low-volume families.
-		//
-		// - Logius Berichtenbox (BBK 1.7 — burgerportaal-mijnoverheid-bridge,
-		// procest berichtenbox-integration spec). The abstract
-		// BerichtenboxClient resolves to BerichtenboxClientMock by
-		// default; flip `logius.berichtenbox.feature_flag` and bind
-		// the BerichtenboxClientHttp implementation to activate.
+		// MijnOverheid Berichtenbox. The client resolves to the mock until
+		// `logius.berichtenbox.feature_flag` is set, and to the live binding
+		// after (REQ-DPA-005, REQ-DPA-008). The live binding refuses a source
+		// that lacks a value it needs and names each one; the mock is never
+		// served to a flagged instance, so a simulated delivery cannot pass
+		// for a real one.
 		$context->registerService(
 			BerichtenboxClient::class,
 			static function ($c) {
@@ -864,27 +861,11 @@ class Application extends App implements IBootstrap {
 				$raw = $config->getValueString('integriq', 'logius.berichtenbox.feature_flag', '0');
 				$live = ($raw === '1' || strtolower($raw) === 'true');
 
-				// REQ-DPA-005: the flag selects the binding, and on a flagged
-				// instance the mock is not served at all. An operator who turns
-				// the flag on is asking for real letters; a simulated delivery
-				// there would be indistinguishable from a real one. Until
-				// BerichtenboxClientHttp exists, a flagged instance resolves to
-				// a binding that refuses and names what is missing.
 				if ($live === true) {
-					return $c->get(BerichtenboxClientUnavailable::class);
+					return $c->get(BerichtenboxClientHttp::class);
 				}
 
 				return $c->get(BerichtenboxClientMock::class);
-			}
-		);
-		$context->registerService(
-			BerichtenboxSourceAdapter::class,
-			static function ($c) {
-				return new BerichtenboxSourceAdapter(
-					config: $c->get('OCP\IAppConfig'),
-					logger: $c->get('Psr\Log\LoggerInterface'),
-					berichtenboxClient: $c->get(BerichtenboxClient::class)
-				);
 			}
 		);
 
@@ -923,6 +904,8 @@ class Application extends App implements IBootstrap {
 		// The check uses IAppManager only (no OCA\OpenRegister\* reference) so it
 		// is safe to run while OpenRegister is disabled (REQ-ADM-003).
 		$context->registerSetupCheck(OpenRegisterDependencyCheck::class);
+		$context->registerSetupCheck(DigitalPostAccountCheck::class);
+		$context->registerSetupCheck(BerichtenboxCheck::class);
 
 		// HITL approval workflow: the actionable approver notification is
 		// dispatched imperatively (ApprovalService::notifyApprovers(), see

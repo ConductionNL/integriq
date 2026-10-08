@@ -43,10 +43,12 @@ class OptOutRowBuilder {
 	 *
 	 * @param RecipientKey $recipientKey Normalises the address per channel.
 	 * @param ITimeFactory $time Stamps the row.
+	 * @param OptOutCategories $categories Normalises the purpose.
 	 */
 	public function __construct(
 		private readonly RecipientKey $recipientKey,
 		private readonly ITimeFactory $time,
+		private readonly OptOutCategories $categories,
 	) {
 
 	}//end __construct()
@@ -88,7 +90,7 @@ class OptOutRowBuilder {
 		}
 
 		$row->setState($state);
-		$row->setPurpose((string)($request['purpose'] ?? ''));
+		$row->setPurpose($this->categories->normalisePurpose((string)($request['purpose'] ?? '')));
 		$row->setContactRef((string)($request['contactRef'] ?? ''));
 		$row->setLawfulBasis((string)($request['lawfulBasis'] ?? ''));
 		$row->setEvidence(null);
@@ -147,6 +149,28 @@ class OptOutRowBuilder {
 	}//end validated()
 
 	/**
+	 * Give a stored row the purpose and key it has under the purpose rules.
+	 *
+	 * A row written before purposes were read kept its purpose out of its
+	 * key. Without a new key the next write for the same wish would miss it
+	 * and add a second row.
+	 *
+	 * @param OptOut $row The stored row.
+	 *
+	 * @return bool True when the row changed and needs saving.
+	 *
+	 * @spec openspec/changes/opt-out-per-purpose/specs/outbound-opt-out-authority/spec.md#requirement-an-opt-out-stops-only-its-own-purpose-req-ooa-011
+	 */
+	public function rekey(OptOut $row): bool {
+		$before = [(string)$row->getPurpose(), (string)$row->getDedupeKey()];
+		$row->setPurpose($this->categories->normalisePurpose((string)$row->getPurpose()));
+		$row->assignDedupeKey();
+
+		return $before !== [(string)$row->getPurpose(), (string)$row->getDedupeKey()];
+
+	}//end rekey()
+
+	/**
 	 * Move a stored row to the state a new request asks for.
 	 *
 	 * @param OptOut $stored The stored row.
@@ -164,10 +188,6 @@ class OptOutRowBuilder {
 		$stored->setUpdatedAt((int)$row->getUpdatedAt());
 		if ((string)$row->getContactRef() !== '') {
 			$stored->setContactRef((string)$row->getContactRef());
-		}
-
-		if ((string)$row->getPurpose() !== '') {
-			$stored->setPurpose((string)$row->getPurpose());
 		}
 
 		if ($row->getState() === OptOut::STATE_OPTED_IN) {

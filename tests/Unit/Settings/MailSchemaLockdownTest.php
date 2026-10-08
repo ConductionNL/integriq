@@ -36,15 +36,16 @@ class MailSchemaLockdownTest extends TestCase {
 	 * `intake_message` and `verdict` left this list on 2026-10-05: they grant
 	 * their intake and handler groups now (intake-message-and-verdict-access-rules,
 	 * guarded by IntakeRecordAuthorizationTest).
+	 * `digitalPostMessage` and `outbound_message` left it on 2026-10-07: they
+	 * grant the digital post account's group now
+	 * (digital-post-service-account-and-log-redaction, same guard).
 	 *
 	 * @var array<int,string>
 	 */
 	private const LOCKED_SCHEMAS = [
-		'digitalPostMessage',
 		'intake_routing_rule',
 		'mail_message',
 		'mapping_version',
-		'outbound_message',
 		'recipient_key',
 		'recipient_opt_out',
 		'sender_identity',

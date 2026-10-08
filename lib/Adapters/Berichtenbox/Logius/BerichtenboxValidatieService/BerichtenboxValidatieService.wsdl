@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<wsdl:definitions name="BerichtenboxValidatieService" targetNamespace="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsa10="http://www.w3.org/2005/08/addressing"
+	xmlns:wsx="http://schemas.xmlsoap.org/ws/2004/09/mex" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
+	xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+	xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsap="http://schemas.xmlsoap.org/ws/2004/08/addressing/policy"
+	xmlns:msc="http://schemas.microsoft.com/ws/2005/12/wsdl/contract" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+	xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl"
+	xmlns:tns="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/">
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01/Imports">
+			<xsd:import schemaLocation="xsd0.xsd" namespace="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01" />
+			<xsd:import schemaLocation="xsd1.xsd" namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+			<xsd:import schemaLocation="xsd2.xsd" namespace="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/Types/2009/01" />
+			<xsd:import schemaLocation="xsd3.xsd" namespace="http://schemas.rdw.nl/GEB/Shared/Types/2009/01" />
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="IBerichtenboxValidatieService_ValidateAbonnementen_InputMessage">
+		<wsdl:part name="parameters" element="tns:ValidateAbonnementen" />
+	</wsdl:message>
+	<wsdl:message name="IBerichtenboxValidatieService_ValidateAbonnementen_OutputMessage">
+		<wsdl:part name="parameters" element="tns:ValidateAbonnementenResponse" />
+	</wsdl:message>
+	<wsdl:message name="IBerichtenboxValidatieService_ValidateAbonnementen_DependentServiceFaultFault_FaultMessage">
+		<wsdl:part name="detail" element="q1:DependentServiceFault" xmlns:q1="http://schemas.rdw.nl/GEB/Shared/Types/2009/01" />
+	</wsdl:message>
+	<wsdl:message name="IBerichtenboxValidatieService_ValidateAbonnementen_ApplicationFaultFault_FaultMessage">
+		<wsdl:part name="detail" element="q2:ApplicationFault" xmlns:q2="http://schemas.rdw.nl/GEB/Shared/Types/2009/01" />
+	</wsdl:message>
+	<wsdl:portType name="IBerichtenboxValidatieService">
+		<wsdl:operation name="ValidateAbonnementen">
+			<wsdl:input wsaw:Action="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01/IBerichtenboxValidatieService/ValidateAbonnementen"
+				message="tns:IBerichtenboxValidatieService_ValidateAbonnementen_InputMessage" />
+			<wsdl:output wsaw:Action="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01/IBerichtenboxValidatieService/ValidateAbonnementenResponse"
+				message="tns:IBerichtenboxValidatieService_ValidateAbonnementen_OutputMessage" />
+			<wsdl:fault wsaw:Action="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01/IBerichtenboxValidatieService/ValidateAbonnementenDependentServiceFaultFault"
+				name="DependentServiceFaultFault" message="tns:IBerichtenboxValidatieService_ValidateAbonnementen_DependentServiceFaultFault_FaultMessage" />
+			<wsdl:fault wsaw:Action="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01/IBerichtenboxValidatieService/ValidateAbonnementenApplicationFaultFault"
+				name="ApplicationFaultFault" message="tns:IBerichtenboxValidatieService_ValidateAbonnementen_ApplicationFaultFault_FaultMessage" />
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="BasicHttpBinding_IBerichtenboxValidatieService" type="tns:IBerichtenboxValidatieService">
+		<soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="ValidateAbonnementen">
+			<soap:operation soapAction="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/2009/01/IBerichtenboxValidatieService/ValidateAbonnementen"
+				style="document" />
+			<wsdl:input>
+				<soap:body use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" />
+			</wsdl:output>
+			<wsdl:fault name="DependentServiceFaultFault">
+				<soap:fault name="DependentServiceFaultFault" use="literal" />
+			</wsdl:fault>
+			<wsdl:fault name="ApplicationFaultFault">
+				<soap:fault name="ApplicationFaultFault" use="literal" />
+			</wsdl:fault>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="BerichtenboxValidatieService">
+		<wsdl:port name="BasicHttpBinding_IBerichtenboxValidatieService" binding="tns:BasicHttpBinding_IBerichtenboxValidatieService">
+			<soap:address location="http://rdw64825.ot.tld:9002/BerichtenboxValidatieService" />
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>

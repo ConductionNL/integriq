@@ -34,8 +34,6 @@ use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Exception\HandoffException;
-use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUser;
@@ -44,8 +42,8 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
- * Tests for verzoek ingest (persist + translate), the authenticated handoff
- * trigger, and the outbound status/besluit post — including per-verzoek/
+ * Tests for verzoek ingest (persist + translate)
+ * and the outbound status/besluit post, including per-verzoek/
  * per-message failure isolation and the not-configured outbound path.
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
@@ -90,8 +88,6 @@ class DsoIngestServiceTest extends TestCase {
 	private int $mappingReads = 0;
 
 	private int $uuidCounter = 0;
-
-	private HandoffService $handoffService;
 
 	private DsoClient $restProvider;
 
@@ -206,10 +202,6 @@ class DsoIngestServiceTest extends TestCase {
 	private function buildService(): DsoIngestService {
 		$objectService = $this->buildObjectService();
 
-		$this->handoffService = $this->getMockBuilder(HandoffService::class)
-			->disableOriginalConstructor()
-			->getMock();
-
 		$this->restProvider = $this->getMockBuilder(DsoClient::class)
 			->disableOriginalConstructor()
 			->getMock();
@@ -224,7 +216,6 @@ class DsoIngestServiceTest extends TestCase {
 
 		return new DsoIngestService(
 			objectService: $objectService,
-			handoffService: $this->handoffService,
 			translator: new DsoRequestTranslator(),
 			logProvider: new LogDsoConnectorProvider(),
 			restProvider: $this->restProvider,
@@ -815,65 +806,6 @@ class DsoIngestServiceTest extends TestCase {
 		$this->assertCount(1, $failed);
 
 	}//end testListVerzoekenFiltersByStatus()
-
-	/**
-	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-005
-	 */
-	public function testHandoffSucceedsAndUpdatesVerzoek(): void {
-		$service = $this->buildService();
-		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
-		$this->assertSame('mapped', $request->getObject()['status']);
-
-		$this->handoffService->method('execute')->willReturn(
-			[
-				'status' => 'executed',
-				'target' => ['register' => 'procest', 'schema' => 'case', 'uuid' => 'case-uuid-1'],
-				'correlationId' => 'corr-1',
-			]
-		);
-
-		$result = $service->handoff(uuid: $request->getUuid());
-
-		$this->assertSame('executed', $result['status']);
-		$stored = $this->requestStore[$request->getUuid()]->getObject();
-		$this->assertSame('corr-1', $stored['correlationId']);
-		$this->assertSame('case-uuid-1', $stored['targetCase']['uuid']);
-
-	}//end testHandoffSucceedsAndUpdatesVerzoek()
-
-	/**
-	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-005
-	 */
-	public function testHandoffRejectsWhenVerzoekNotYetMapped(): void {
-		$service = $this->buildService();
-		$this->requestStore['v-received'] = $this->buildEntity(['status' => 'received'], 'v-received');
-
-		$this->expectException(DsoTranslationException::class);
-
-		$service->handoff(uuid: 'v-received');
-
-	}//end testHandoffRejectsWhenVerzoekNotYetMapped()
-
-	/**
-	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-005
-	 */
-	public function testHandoffFailureMarksVerzoekFailedAndRethrows(): void {
-		$service = $this->buildService();
-		$request = $service->ingest(parsedRequest: ['verzoekId' => 'dso-1', 'type' => 'aanvraag']);
-
-		$this->handoffService->method('execute')->willThrowException(
-			new HandoffException(errorCode: HandoffException::PROVIDER_UNAVAILABLE, message: 'no provider')
-		);
-
-		$this->expectException(HandoffException::class);
-
-		try {
-			$service->handoff(uuid: $request->getUuid());
-		} finally {
-			$this->assertSame('failed', $this->requestStore[$request->getUuid()]->getObject()['status']);
-		}
-
-	}//end testHandoffFailureMarksVerzoekFailedAndRethrows()
 
 	/**
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-outbound-status-besluit-post-with-per-message-audit-req-006
