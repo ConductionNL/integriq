@@ -437,8 +437,17 @@ class OpenRegisterCredentialBridge {
 	 */
 	private function refuseWeakHmacSecret(string $authorization, ConsumerSource $source): void {
 		$payload = $this->payloadOf(token: substr(string: $authorization, offset: strlen('Bearer ')));
-		$issuer = ($payload['iss'] ?? null);
-		if (is_string($issuer) === false || $issuer === '') {
+		// Read `iss` exactly as OpenRegister does — with a string cast — so a
+		// numeric issuer (`"iss": 12345`) reaches this guard too; it resolves
+		// to the consumer named "12345" there. Only a non-scalar is skipped,
+		// which OpenRegister refuses as unknown.
+		$raw = ($payload['iss'] ?? null);
+		if (is_scalar($raw) === false) {
+			return;
+		}
+
+		$issuer = (string)$raw;
+		if ($issuer === '') {
 			return;
 		}
 

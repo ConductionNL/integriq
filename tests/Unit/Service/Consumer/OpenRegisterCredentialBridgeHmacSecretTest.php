@@ -78,12 +78,12 @@ final class OpenRegisterCredentialBridgeHmacSecretTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	private function consumerWithSecret(string $algorithm, string $secret): void {
+	private function consumerWithSecret(string $algorithm, string $secret, string $name = 'zaaksysteem'): void {
 		$entity = new ObjectEntity();
 		$entity->setUuid('consumer-hmac');
 		$entity->setObject(
 			[
-				'name' => 'zaaksysteem',
+				'name' => $name,
 				'authorizationType' => 'jwt',
 				'authorizationConfiguration' => ['algorithm' => $algorithm, 'publicKey' => $secret],
 				'userId' => 'svc-zaaksysteem',
@@ -101,10 +101,10 @@ final class OpenRegisterCredentialBridgeHmacSecretTest extends TestCase {
 	 *
 	 * @return string
 	 */
-	private function tokenSignedWith(string $algorithm, string $secret): string {
+	private function tokenSignedWith(string $algorithm, string $secret, string|int $issuer = 'zaaksysteem'): string {
 		$encode = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
 		$header = $encode((string)json_encode(['alg' => $algorithm, 'typ' => 'JWT']));
-		$payload = $encode((string)json_encode(['iss' => 'zaaksysteem', 'iat' => time(), 'exp' => time() + 600]));
+		$payload = $encode((string)json_encode(['iss' => $issuer, 'iat' => time(), 'exp' => time() + 600]));
 		$hash = ['HS256' => 'sha256', 'HS384' => 'sha384', 'HS512' => 'sha512'][$algorithm];
 
 		return $header . '.' . $payload . '.' . $encode(hash_hmac($hash, $header . '.' . $payload, $secret, true));
@@ -117,7 +117,7 @@ final class OpenRegisterCredentialBridgeHmacSecretTest extends TestCase {
 	 * @return void
 	 */
 	public function testAShortOrEmptyHmacSecretIsRefused(): void {
-		foreach ([['HS256', ''], ['HS256', 'short'], ['HS256', str_repeat('k', 31)], ['HS384', str_repeat('k', 32)], ['HS512', str_repeat('k', 63)]] as [$algorithm, $secret]) {
+		foreach ([['HS256', ''], ['HS256', 'short'], ['HS256', str_repeat('k', 31)], ['HS384', str_repeat('k', 47)], ['HS512', str_repeat('k', 63)]] as [$algorithm, $secret]) {
 			$this->setUp();
 			$this->consumerWithSecret($algorithm, $secret);
 			$this->userSession->expects($this->never())->method('setVolatileActiveUser');
@@ -139,17 +139,38 @@ final class OpenRegisterCredentialBridgeHmacSecretTest extends TestCase {
 	 * @return void
 	 */
 	public function testASecretOfTheHashOutputSizeIsAccepted(): void {
-		$secret = str_repeat('k', 32);
-		$this->consumerWithSecret('HS256', $secret);
-		$user = $this->createMock(IUser::class);
-		$this->userManager->method('get')->with('svc-zaaksysteem')->willReturn($user);
-		$this->userSession->expects($this->once())->method('setVolatileActiveUser')->with($user);
+		foreach ([['HS256', 32], ['HS384', 48], ['HS512', 64]] as [$algorithm, $bytes]) {
+			$this->setUp();
+			$secret = str_repeat('k', $bytes);
+			$this->consumerWithSecret($algorithm, $secret);
+			$user = $this->createMock(IUser::class);
+			$this->userManager->method('get')->with('svc-zaaksysteem')->willReturn($user);
+			$this->userSession->expects($this->once())->method('setVolatileActiveUser')->with($user);
 
-		$bridge = $this->bridge();
-		$bridge->authorizeJwt('Bearer ' . $this->tokenSignedWith('HS256', $secret));
+			$bridge = $this->bridge();
+			$bridge->authorizeJwt('Bearer ' . $this->tokenSignedWith($algorithm, $secret));
 
-		$this->assertNotNull($bridge->getResolvedConsumer());
+			$this->assertNotNull($bridge->getResolvedConsumer(), $algorithm);
+		}
 	}//end testASecretOfTheHashOutputSizeIsAccepted()
+
+
+	/**
+	 * A numeric `iss` is read with the same string cast OpenRegister uses, so it cannot slip past the guard.
+	 *
+	 * @return void
+	 */
+	public function testANumericIssuerIsGuardedToo(): void {
+		$this->consumerWithSecret('HS256', 'short', name: '12345');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
+
+		try {
+			$this->bridge()->authorizeJwt('Bearer ' . $this->tokenSignedWith('HS256', 'short', issuer: 12345));
+			$this->fail('an integer iss naming an HS256 consumer with a short secret must be refused');
+		} catch (AuthenticationException $e) {
+			$this->assertStringContainsString('HMAC secret is shorter', (string)json_encode($e->getDetails()));
+		}
+	}//end testANumericIssuerIsGuardedToo()
 
 
 	/**
