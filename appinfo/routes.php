@@ -37,16 +37,12 @@ return [
 		// unchanged — `verzoeken` there is the DSO/STAM wire path, not code.
 		['name' => 'dSO#receiveRequest', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
-		// dso-connector-adapter: authenticated NC-session read/handoff/outbound
-		// surface completing the STAM koppelvlak above (which previously
-		// logged and dropped every verzoek — no persistence, no handoff, no
-		// outbound leg existed before this change). The handoff trigger
-		// deliberately requires a real authenticated actor (OpenRegister
-		// HandoffService v1 has no system-user privilege lane; see
-		// design.md §1, same constraint documented for open-formulieren-intake).
+		// dso-connector-adapter: authenticated NC-session read/outbound
+		// surface completing the STAM koppelvlak above. There is no case
+		// handoff: the case system (dossiq) makes the one case from the
+		// mapped dso_verzoek (retire-dso-case-handoff).
 		['name' => 'dSO#listVerzoeken', 'url' => '/api/dso/verzoeken', 'verb' => 'GET'],
 		['name' => 'dSO#status', 'url' => '/api/dso/verzoeken/{id}', 'verb' => 'GET'],
-		['name' => 'dSO#handoff', 'url' => '/api/dso/verzoeken/{id}/handoff', 'verb' => 'POST'],
 		['name' => 'dSO#postOutbound', 'url' => '/api/dso/verzoeken/{id}/status', 'verb' => 'POST'],
 
 		// Peppol Access Point connector (openspec/changes/peppol-access-point-connector).

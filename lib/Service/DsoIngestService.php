@@ -5,21 +5,19 @@
  *
  * Completes the dso-connector-adapter: persists an already-verified,
  * already-parsed DSO Verzoek ({@see DSOParserService::parseRequest()}) as a
- * `dso_verzoek` OR record (`received` -> `mapped`|`failed`), and executes
- * the separate, authenticated `verzoek-to-case` handoff through
- * OpenRegister's real `Handoff\HandoffService` under the calling user's own
- * RBAC — see design.md §1 for why this is NOT triggered automatically at
- * webhook-receipt time (HandoffService v1 has no system-user privilege
- * lane). Also drives the outbound leg: builds and dispatches a `status`
+ * `dso_verzoek` OR record (`received` -> `mapped`|`failed`). Integriq makes
+ * no case: the case system (dossiq) reads the mapped verzoek and files it
+ * on the case type in `mappedCaseTypes` (retire-dso-case-handoff). Also
+ * drives the outbound leg: builds and dispatches a `status`
  * (voortgangsinformatie) or `besluit` update back to DSO-LV via the
  * {@see Dso\DsoConnectorProviderInterface} seam, persisting a `dso_message`
  * audit row per attempt. Mirrors
- * {@see OpenFormulierenIntakeService} (ingest/handoff split) and
+ * {@see OpenFormulierenIntakeService} (ingest split) and
  * {@see IwmoIjwSyncService} (provider seam + per-message audit persistence).
  *
  * `DSOController` stays the thin HTTP/auth shell (signature verification +
  * payload parsing already lived there before this change; this service adds
- * the persistence/mapping/handoff/outbound steps that were previously
+ * the persistence/mapping/outbound steps that were previously
  * entirely missing — the controller logged and dropped every verzoek).
  *
  * @category Service
@@ -53,15 +51,13 @@ use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Drives dso_verzoek persistence/mapping, the authenticated handoff trigger,
- * and the outbound status/besluit post.
+ * Drives dso_verzoek persistence/mapping and the outbound status/besluit post.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -106,14 +102,6 @@ class DsoIngestService {
 	public const SOURCE_TYPE = 'dso';
 
 	/**
-	 * The declared `x-openregister-handoff` entry id on `dso_verzoek` (see
-	 * lib/Settings/integriq_register.json).
-	 *
-	 * @var string
-	 */
-	public const HANDOFF_ID = 'verzoek-to-case';
-
-	/**
 	 * Recognised outbound message kinds.
 	 *
 	 * @var array<int, string>
@@ -124,8 +112,7 @@ class DsoIngestService {
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService OR object service for source/verzoek/message persistence.
-	 * @param HandoffService $handoffService Executes the declared handoff under the caller's RBAC.
-	 * @param DsoRequestTranslator $translator Translates a parsed Verzoek into normalised handoff fields.
+	 * @param DsoRequestTranslator $translator Translates a parsed Verzoek into normalised fields.
 	 * @param LogDsoConnectorProvider $logProvider The sandbox outbound provider binding.
 	 * @param DsoClient $restProvider The generic REST outbound provider binding.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
@@ -135,7 +122,6 @@ class DsoIngestService {
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
-		private readonly HandoffService $handoffService,
 		private readonly DsoRequestTranslator $translator,
 		private readonly LogDsoConnectorProvider $logProvider,
 		private readonly DsoClient $restProvider,
@@ -443,7 +429,7 @@ class DsoIngestService {
 
 	/**
 	 * List dso_verzoek records, optionally filtered by status (e.g. `mapped`
-	 * — the set eligible for the handoff-trigger endpoint).
+	 * is the set the case system turns into cases).
 	 *
 	 * @param string|null $status Optional status filter.
 	 * @param integer $limit Maximum number of records to return.
@@ -468,59 +454,6 @@ class DsoIngestService {
 
 		return $list;
 	}//end listVerzoeken()
-
-	/**
-	 * Execute the declared `verzoek-to-case` handoff for a `mapped`
-	 * verzoek, as the calling (real, authenticated) user — never a
-	 * system-account shortcut (design.md §1).
-	 *
-	 * @param string $uuid The `dso_verzoek` uuid.
-	 *
-	 * @return array<string, mixed> The engine's `execute()` result (`{status, target, correlationId}`
-	 *                              or `{status: parked, queueEntry}`).
-	 *
-	 * @throws DsoTranslationException When the verzoek is unknown or not yet `mapped`.
-	 *
-	 * Also propagates OpenRegister's own `Handoff\HandoffException` (not-declared /
-	 * provider-unavailable) and `NotAuthorizedException` (RBAC refusal) unchanged —
-	 * omitted from the @throws tag because PHPStan cannot resolve cross-app
-	 * OCA\OpenRegister\Exception\* types as Throwable subtypes (same limitation
-	 * documented in phpstan.neon's `unknown class OCA\\OpenRegister\\` ignores).
-	 *
-	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-005
-	 */
-	public function handoff(string $uuid): array {
-		$request = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
-		if ($request instanceof ObjectEntity === false) {
-			throw new DsoTranslationException(message: 'No dso_verzoek found for uuid "' . $uuid . '".');
-		}
-
-		$data = $request->getObject();
-		if (($data['status'] ?? null) !== 'mapped') {
-			throw new DsoTranslationException(
-				message: 'Verzoek "' . $uuid . '" is not in "mapped" status (currently "'
-				. (string)($data['status'] ?? 'unknown') . '") — a handoff can only be triggered once mapping succeeded.'
-			);
-		}
-
-		try {
-			$result = $this->handoffService->execute(
-				register: self::REGISTER,
-				schema: self::SCHEMA_VERZOEK,
-				id: $uuid,
-				handoffId: self::HANDOFF_ID
-			);
-		} catch (Throwable $exception) {
-			$this->markFailed(request: $request, message: $exception->getMessage());
-			throw $exception;
-		}
-
-		if (($result['status'] ?? null) === 'executed') {
-			$this->recordHandoffSuccess(request: $request, result: $result);
-		}
-
-		return $result;
-	}//end handoff()
 
 	/**
 	 * Build and dispatch one outbound `status` (voortgangsinformatie) or
@@ -708,55 +641,4 @@ class DsoIngestService {
 
 		return $this->logProvider;
 	}//end resolveProvider()
-
-	/**
-	 * Best-effort persist the handoff's target/correlation metadata onto the
-	 * verzoek (`status` itself was already set by the engine's own
-	 * `onSuccess.set`).
-	 *
-	 * @param ObjectEntity $request The (pre-handoff) verzoek object.
-	 * @param array<string, mixed> $result The engine's `execute()` result (`status: executed`).
-	 *
-	 * @return void
-	 */
-	private function recordHandoffSuccess(ObjectEntity $request, array $result): void {
-		$target = (array)($result['target'] ?? []);
-		$correlationId = (string)($result['correlationId'] ?? '');
-
-		$current = $this->objectService->find(id: $request->getUuid(), register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
-		$data = $request->getObject();
-		if ($current instanceof ObjectEntity === true) {
-			$data = $current->getObject();
-		}
-
-		$data = array_merge($data, ['targetCase' => $target, 'correlationId' => $correlationId]);
-
-		$this->objectService->saveObject(
-			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_VERZOEK,
-			uuid: $request->getUuid()
-		);
-
-	}//end recordHandoffSuccess()
-
-	/**
-	 * Mark a verzoek `failed` after a handoff execution error — isolated to
-	 * this verzoek, never thrown past this method (the original exception
-	 * is rethrown by the caller separately).
-	 *
-	 * @param ObjectEntity $request The verzoek being handed off.
-	 * @param string $message The failure detail.
-	 *
-	 * @return void
-	 */
-	private function markFailed(ObjectEntity $request, string $message): void {
-		$this->objectService->saveObject(
-			object: array_merge($request->getObject(), ['status' => 'failed', 'errorDetail' => $message]),
-			register: self::REGISTER,
-			schema: self::SCHEMA_VERZOEK,
-			uuid: $request->getUuid()
-		);
-
-	}//end markFailed()
 }//end class
