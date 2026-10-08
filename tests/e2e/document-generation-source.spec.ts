@@ -16,8 +16,8 @@
  */
 
 import { expect, test } from '@playwright/test'
-import { APP_BASE } from './spec-coverage/_helpers.ts'
 import { withRequestToken } from './support/requestToken.ts'
+import { searchStore } from './support/store.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
@@ -113,8 +113,9 @@ test('a mock-mode source lists the vendor templates, and stores none of them', a
 test('the catalog carries both vendors, dormant', async ({ page }) => {
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-catalog-lists-both-vendors-dormant
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-catalog-lists-both-vendors-dormant
-	await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
-
+	// The Store pages its 85 items, so each vendor is searched for.
+	await searchStore(page, 'SmartDocuments')
 	await expect(page.getByText('SmartDocuments').first()).toBeVisible()
+	await searchStore(page, 'Xential')
 	await expect(page.getByText('Xential').first()).toBeVisible()
 })

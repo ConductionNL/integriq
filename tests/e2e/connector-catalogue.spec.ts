@@ -13,6 +13,7 @@
  */
 
 import { expect, test } from '@playwright/test'
+import { searchStore } from './support/store.ts'
 
 const OBJECTS = '/index.php/apps/openregister/api/objects/integriq'
 
@@ -42,7 +43,7 @@ test.describe('connector catalogue', () => {
 			expect(sourceSlugs).not.toContain(slug)
 		}
 
-		await page.goto('/index.php/apps/integriq/store')
+		await searchStore(page, 'Alfresco')
 		await expect(
 			page.getByText('Alfresco Content Services (CMIS 1.1)'),
 		).toBeVisible()
@@ -53,16 +54,20 @@ test.describe('connector catalogue', () => {
 		page,
 		request,
 	}) => {
-		await page.goto('/index.php/apps/integriq/store')
+		await searchStore(page, 'Salesforce')
 		await page
 			.getByRole('button', { name: 'Open catalog item Salesforce' })
 			.click()
 		await page.getByRole('button', { name: 'Instantiate' }).click()
 
-		const created = (await listObjects(request, 'source')).filter(
-			(source) => source.name === 'Salesforce',
-		)
-		expect(created).toHaveLength(1)
+		// The click returns before the source is written, so read the list
+		// until it lands rather than once.
+		const salesforceSources = async () =>
+			(await listObjects(request, 'source')).filter(
+				(source) => source.name === 'Salesforce',
+			)
+		await expect.poll(async () => (await salesforceSources()).length).toBe(1)
+		const created = await salesforceSources()
 		expect(created[0].location).toBe(
 			'https://MyDomainName.my.salesforce.com/services/data/v68.0',
 		)
@@ -74,8 +79,7 @@ test.describe('connector catalogue', () => {
 	test('GWS has no card, and the back-office README says why', async ({
 		page,
 	}) => {
-		await page.goto('/index.php/apps/integriq/store')
-		await page.getByRole('searchbox').fill('GWS')
+		await searchStore(page, 'GWS')
 		await expect(page.getByTestId('catalog-item-card')).toHaveCount(0)
 		// The reason lives in lib/Settings/connector-templates/backoffice/README.md,
 		// row "GWS (Centric)": iWMO and iJW through the GGK.
@@ -85,8 +89,8 @@ test.describe('connector catalogue', () => {
 	test('Google Sheets and Slack are generated, Salesforce is checked', async ({
 		page,
 	}) => {
-		await page.goto('/index.php/apps/integriq/store')
 		for (const name of ['Google Sheets', 'Slack']) {
+			await searchStore(page, name)
 			const card = page
 				.getByTestId('catalog-item-card')
 				.filter({ hasText: name })
@@ -94,6 +98,7 @@ test.describe('connector catalogue', () => {
 				'Generated from the API directory of',
 			)
 		}
+		await searchStore(page, 'Salesforce')
 		const salesforce = page
 			.getByTestId('catalog-item-card')
 			.filter({ hasText: 'Salesforce' })
