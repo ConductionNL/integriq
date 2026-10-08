@@ -6344,11 +6344,12 @@
 				"state": "specified",
 				"change": "portal-idp-broker-config",
 				"owner": "ConductionNL/integriq",
-				"evidence": "The browser half is built and archived (openspec/changes/archive/2026-09-29-identity-broker-browser-login, 9 of 11 tasks ticked; the two open ones are the strict run and the portaliq live walk): appinfo/routes.php:402-404 idpBroker#start and #callback for digid|eherkenning|eidas, lib/Controller/IdpBrokerController.php:147 start() and :192 callback(), lib/Auth/Idp/IdpLoginService.php. The container binds GovernmentIdpAdapterInterface to LogGovernmentIdpAdapter only (lib/AppInfo/Application.php:591-596), and that adapter throws on every call (lib/Auth/Idp/LogGovernmentIdpAdapter.php:93 beginAuthentication and :109 readAssertion both end in refuse() at :128), so start() catches the refusal at IdpBrokerController.php:159 and no citizen gets logged in. Missing: the vendor SAML Service Provider or OIDC Relying Party adapter, which openspec/changes/portal-idp-broker-config carries and which is blocked on Open Decisions D1 to D5 (broker vendor and contract).",
-				"readOn": "2026-10-07"
+				"evidence": "The browser half is built and archived (openspec/changes/archive/2026-09-29-identity-broker-browser-login, 9 of 11 tasks ticked; the two open ones are the strict run and the portaliq live walk): appinfo/routes.php:402-404 idpBroker#start and #callback for digid|eherkenning|eidas, lib/Controller/IdpBrokerController.php:147 start() and :192 callback(), lib/Auth/Idp/IdpLoginService.php. The container binds GovernmentIdpAdapterInterface to LogGovernmentIdpAdapter only (lib/AppInfo/Application.php:591-596), and that adapter throws on every call (lib/Auth/Idp/LogGovernmentIdpAdapter.php:93 beginAuthentication and :109 readAssertion both end in refuse() at :128), so start() catches the refusal at IdpBrokerController.php:159 and no citizen gets logged in. Missing: the live SAML Service Provider and OIDC Relying Party adapters, the per-organisation registration and the Beheer > Authenticatie screen, all specified in openspec/changes/portal-idp-broker-config.",
+				"readOn": "2026-10-07",
+				"decision": "94"
 			},
 			"reachedOn": "GET /apps/integriq/api/idp/digid/start exists and answers with a refusal: the only bound adapter is LogGovernmentIdpAdapter",
-			"note": "The spec calls this a deliberately dormant seam, but even the wiring around it (issuing the code the exchange step redeems) has no caller, see id-envelope for the specific dead path.",
+			"note": "The spec calls this a deliberately dormant seam, but even the wiring around it (issuing the code the exchange step redeems) has no caller, see id-envelope for the specific dead path. Decision 94 (Ruben, 8 Oct 2026) answers D1 to D5 of portal-idp-broker-config: vendor-neutral SAML 2.0 SP and OIDC RP adapter kinds, keys and SP certificates in the Keepiq vault read through the credential broker seam (fail closed), one SP registration per organisation with its own metadata URL, substantial as the floor (DigiD Basis and Midden refused with a clear message), Berichtenbox linkage deferred. The change is now a full spec (proposal, design, specs/idp-broker-configuration, tasks); state stays specified until it is built.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
@@ -6381,11 +6382,12 @@
 				"state": "specified",
 				"change": "portal-idp-broker-config",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Same path as id-digid, archived in openspec/changes/archive/2026-09-29-identity-broker-browser-login: appinfo/routes.php:402-404 accept eherkenning, lib/Controller/IdpBrokerController.php:147 and :192, and an eHerkenning envelope carries the vestigingsnummer as branch (lib/Auth/Idp/SubjectEnvelope.php:69). The only bound adapter is LogGovernmentIdpAdapter (lib/AppInfo/Application.php:591-596), which refuses every call (lib/Auth/Idp/LogGovernmentIdpAdapter.php:93, :109, :128). Missing: the vendor adapter in openspec/changes/portal-idp-broker-config, blocked on Open Decisions D1 to D5.",
-				"readOn": "2026-10-07"
+				"evidence": "Same path as id-digid, archived in openspec/changes/archive/2026-09-29-identity-broker-browser-login: appinfo/routes.php:402-404 accept eherkenning, lib/Controller/IdpBrokerController.php:147 and :192, and an eHerkenning envelope carries the vestigingsnummer as branch (lib/Auth/Idp/SubjectEnvelope.php:69). The only bound adapter is LogGovernmentIdpAdapter (lib/AppInfo/Application.php:591-596), which refuses every call (lib/Auth/Idp/LogGovernmentIdpAdapter.php:93, :109, :128). Missing: the live adapters and the per-organisation registration specified in openspec/changes/portal-idp-broker-config.",
+				"readOn": "2026-10-07",
+				"decision": "94"
 			},
 			"reachedOn": "GET /apps/integriq/api/idp/eherkenning/start exists and answers with a refusal: the only bound adapter is LogGovernmentIdpAdapter",
-			"note": "Same dormant/unwired seam as id-digid.",
+			"note": "Same dormant/unwired seam as id-digid. Decision 94 (Ruben, 8 Oct 2026) answers D1 to D5 of portal-idp-broker-config: vendor-neutral SAML 2.0 SP and OIDC RP adapter kinds, keys and SP certificates in the Keepiq vault read through the credential broker seam (fail closed), one SP registration per organisation with its own metadata URL, substantial as the floor (DigiD Basis and Midden refused with a clear message), Berichtenbox linkage deferred. The change is now a full spec (proposal, design, specs/idp-broker-configuration, tasks); state stays specified until it is built.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
@@ -6787,10 +6789,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"change": "portal-idp-broker-config",
-				"evidence": "openspec/changes/portal-idp-broker-config/proposal.md states 'Status: blocked, do not start design/tasks artifacts until Open Decisions D1-D5 are recorded'; `find . -iname '*PortalIdp*'` outside openspec/ returns nothing in lib/ or src/."
+				"evidence": "openspec/changes/portal-idp-broker-config specifies it after decision 94: an idpRegistration object per organisation and provider, configured in the Authenticatie section of integriq's admin settings (Beheer > Authenticatie, REQ-IDPC-008). `find . -iname '*IdpRegistration*'` outside openspec/ returns nothing in lib/ or src/.",
+				"decision": "94"
 			},
-			"reachedOn": "nothing reaches it; the change is explicitly blocked and unimplemented",
-			"note": "Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/portal-idp-broker-config, a blocked stub with a proposal only (proposal.md:6-9: blocked until Open Decisions D1 to D5 of the archived portal-idp-broker are recorded).",
+			"reachedOn": "nothing reaches it yet; the change is specified and unbuilt",
+			"note": "Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/portal-idp-broker-config, a blocked stub with a proposal only (proposal.md:6-9: blocked until Open Decisions D1 to D5 of the archived portal-idp-broker are recorded). Decision 94 (Ruben, 8 Oct 2026) answers D1 to D5 of portal-idp-broker-config: vendor-neutral SAML 2.0 SP and OIDC RP adapter kinds, keys and SP certificates in the Keepiq vault read through the credential broker seam (fail closed), one SP registration per organisation with its own metadata URL, substantial as the floor (DigiD Basis and Midden refused with a clear message), Berichtenbox linkage deferred. The change is now a full spec (proposal, design, specs/idp-broker-configuration, tasks); state stays specified until it is built.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "authentication-twig",
