@@ -1023,6 +1023,10 @@
 			"board": null,
 			"reason": "Engineering spec (tests, plumbing, migration or metadata); it delivers no screen."
 		},
+		"live-payment-providers": {
+			"board": null,
+			"reason": "A server-to-server payment API with a provider webhook; the checkout is shown by the calling app."
+		},
 		"openconnector-app-manifest": {
 			"board": null,
 			"reason": "Engineering spec (tests, plumbing, migration or metadata); it delivers no screen."
@@ -1063,9 +1067,21 @@
 			"board": null,
 			"reason": "Engineering spec (tests, plumbing, migration or metadata); it delivers no screen."
 		},
+		"software-catalogus-events": {
+			"board": null,
+			"reason": "Background enrichment of GEMMA model graphs for stackiq; it has no screen in integriq."
+		},
+		"source-requested-event": {
+			"board": null,
+			"reason": "A typed event between apps that creates a source; it has no browser surface."
+		},
 		"storage-uploads": {
 			"board": null,
 			"reason": "Engineering spec (tests, plumbing, migration or metadata); it delivers no screen."
+		},
+		"translation-service": {
+			"board": null,
+			"reason": "A translation service other apps call (decidiq minutes); no page in integriq."
 		},
 		"user-management-and-login": {
 			"board": null,
