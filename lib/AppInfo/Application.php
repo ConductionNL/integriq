@@ -133,6 +133,7 @@ use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
 use OCA\Integriq\SetupCheck\BerichtenboxCheck;
 use OCA\Integriq\SetupCheck\DigitalPostAccountCheck;
 use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
+use OCA\Integriq\SetupCheck\OpenRegisterEntryPointsCheck;
 use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
 use OCA\Integriq\Service\Registry\KvkMutatieProvider;
 use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
@@ -904,6 +905,10 @@ class Application extends App implements IBootstrap {
 		// The check uses IAppManager only (no OCA\OpenRegister\* reference) so it
 		// is safe to run while OpenRegister is disabled (REQ-ADM-003).
 		$context->registerSetupCheck(OpenRegisterDependencyCheck::class);
+		// Since gate 23 every credentialed inbound call is checked by
+		// OpenRegister; an OpenRegister older than 2.1.35 refuses them all
+		// with 401, and info.xml cannot say so. This check does.
+		$context->registerSetupCheck(OpenRegisterEntryPointsCheck::class);
 		$context->registerSetupCheck(DigitalPostAccountCheck::class);
 		$context->registerSetupCheck(BerichtenboxCheck::class);
 
