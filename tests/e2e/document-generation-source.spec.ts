@@ -38,7 +38,9 @@ test('a vendor source without a credential reference cannot be activated', async
 				providerId: 'smartdocuments',
 				baseUrl: 'https://vendor.invalid/v1',
 				mockMode: false,
-				authentication: {},
+				// No `authentication` block at all: the source schema types
+				// `credentialRef` as an object and refuses an empty block, so the
+				// absence is the only way to store a source without one.
 			},
 		},
 	})
@@ -75,7 +77,6 @@ test('a mock-mode source lists the vendor templates, and stores none of them', a
 				providerId: 'xential',
 				baseUrl: 'https://vendor.invalid',
 				mockMode: true,
-				authentication: {},
 			},
 		},
 	})
