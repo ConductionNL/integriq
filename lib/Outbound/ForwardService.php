@@ -65,6 +65,8 @@ class ForwardService {
 	 *
 	 * @throws InvalidArgumentException When no recipient is named, which would forward to nobody
 	 *                                  while recording that a forward happened.
+	 *
+	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
 	 */
 	public function forward(
 		string $uuid,
