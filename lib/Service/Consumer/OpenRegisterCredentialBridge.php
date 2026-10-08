@@ -62,7 +62,7 @@ class OpenRegisterCredentialBridge {
 	/**
 	 * The entry points integriq needs; an OpenRegister lacking one is refused.
 	 */
-	private const REQUIRED_ENTRY_POINTS = [
+	public const REQUIRED_ENTRY_POINTS = [
 		'authorizeJwt',
 		'authorizeApiKey',
 		'authorizeBasic',
@@ -70,6 +70,20 @@ class OpenRegisterCredentialBridge {
 		'authorizeNcSession',
 		'validatePayload',
 		'getResolvedConsumer',
+	];
+
+	/**
+	 * The shortest HMAC secret a consumer may verify with, in bytes (RFC 7518 §3.2).
+	 *
+	 * The web-token verifier this app used before gate 23 refused shorter
+	 * secrets ("Invalid key length."); OpenRegister's hash_hmac() takes any
+	 * secret, an empty one included. Until every OpenRegister in the field
+	 * carries that refusal itself, the bridge keeps it here.
+	 */
+	public const HMAC_MIN_SECRET_BYTES = [
+		'HS256' => 32,
+		'HS384' => 48,
+		'HS512' => 64,
 	];
 
 	/**
@@ -114,6 +128,7 @@ class OpenRegisterCredentialBridge {
 	public function authorizeJwt(string $authorization): void {
 		$this->resolvedConsumer = null;
 		$source = $this->source();
+		$this->refuseWeakHmacSecret(authorization: $authorization, source: $source);
 		try {
 			$this->authorization->authorizeJwt($authorization, $source);
 		} catch (OpenRegisterAuthenticationException $exception) {
@@ -372,12 +387,7 @@ class OpenRegisterCredentialBridge {
 	 * @throws AuthenticationException On an OpenRegister without the entry points.
 	 */
 	private function assertEntryPoints(): void {
-		$available = interface_exists(ConsumerSource::class);
-		foreach (self::REQUIRED_ENTRY_POINTS as $method) {
-			$available = ($available === true && is_callable([$this->authorization, $method]) === true);
-		}
-
-		if ($available === false) {
+		if (self::entryPointsAvailable(authorization: $this->authorization) === false) {
 			throw new AuthenticationException(
 				message: 'Inbound authentication is unavailable',
 				details: [
@@ -386,6 +396,74 @@ class OpenRegisterCredentialBridge {
 			);
 		}
 	}//end assertEntryPoints()
+
+
+	/**
+	 * Whether the running OpenRegister offers the public credential checks.
+	 *
+	 * Shared with the setup check, so an admin sees the same verdict a refused
+	 * call would give.
+	 *
+	 * @param object $authorization OpenRegister's AuthorizationService (any version).
+	 *
+	 * @return bool True when every required entry point is callable and the ConsumerSource interface exists.
+	 *
+	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 */
+	public static function entryPointsAvailable(object $authorization): bool {
+		$available = interface_exists(ConsumerSource::class);
+		foreach (self::REQUIRED_ENTRY_POINTS as $method) {
+			$available = ($available === true && is_callable([$authorization, $method]) === true);
+		}
+
+		return $available;
+	}//end entryPointsAvailable()
+
+
+	/**
+	 * Refuse a token whose issuer verifies with an HMAC secret below the algorithm's hash output.
+	 *
+	 * Runs before OpenRegister sees the token: the issuer is read from the
+	 * unverified payload only to look up its stored configuration, exactly as
+	 * OpenRegister does; nothing in the token is trusted here. An unknown
+	 * issuer is left to OpenRegister, which refuses it.
+	 *
+	 * @param string         $authorization The Authorization header value.
+	 * @param ConsumerSource $source        integriq's consumers.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the issuer's HMAC secret is too short.
+	 */
+	private function refuseWeakHmacSecret(string $authorization, ConsumerSource $source): void {
+		$payload = $this->payloadOf(token: substr(string: $authorization, offset: strlen('Bearer ')));
+		$issuer = ($payload['iss'] ?? null);
+		if (is_string($issuer) === false || $issuer === '') {
+			return;
+		}
+
+		$consumer = $source->findByIssuer(issuer: $issuer);
+		if ($consumer === null) {
+			return;
+		}
+
+		$algorithm = (string)($consumer->configuration['algorithm'] ?? '');
+		if (isset(self::HMAC_MIN_SECRET_BYTES[$algorithm]) === false) {
+			return;
+		}
+
+		$secret = (string)($consumer->configuration['publicKey'] ?? '');
+		if (strlen($secret) < self::HMAC_MIN_SECRET_BYTES[$algorithm]) {
+			throw new AuthenticationException(
+				message: 'The token could not be validated',
+				details: [
+					'reason' => 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output',
+					'algorithm' => $algorithm,
+					'minimum_bytes' => self::HMAC_MIN_SECRET_BYTES[$algorithm],
+				]
+			);
+		}
+	}//end refuseWeakHmacSecret()
 
 	/**
 	 * Carry OpenRegister's refusal over as integriq's, which every caller catches.

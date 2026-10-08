@@ -1,6 +1,23 @@
 # Changelog
 
 ## [Unreleased]
+### Security
+- A JWT consumer whose HMAC secret is shorter than the algorithm's hash output
+  (32 bytes for HS256, 48 for HS384, 64 for HS512; RFC 7518 §3.2) is refused
+  again. The web-token verifier this app used before the OpenRegister
+  delegation refused those secrets; OpenRegister's `hash_hmac()` did not, so
+  for that class of consumer any caller could mint a token. The bridge refuses
+  such an issuer before OpenRegister sees the token, and OpenRegister refuses
+  it too from the release that carries the same check.
+
+### Changed
+- Integriq's inbound authentication (endpoints, SCIM, Notificaties callbacks,
+  EUDI, LTI) is delegated to OpenRegister and needs OpenRegister 2.1.35 or
+  newer (the release with the public credential checks, OR#4361). On an older
+  OpenRegister every credentialed inbound call is refused with 401; a new
+  setup check in the administration overview says so before the first caller
+  does. Install or update OpenRegister first.
+
 ### Added
 - An install guide for the ZGW consumer sets (`docs/features/zgw-sets.md`), and
   the installer's refusals in Dutch and English. A schema bound to a ZGW store
