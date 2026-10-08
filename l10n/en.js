@@ -3390,7 +3390,19 @@ OC.L10N.register(
         "The PKIoverheid certificate of Berichtenbox source %1$s expires on %2$s. Upload its successor before then, or every letter is refused.": "The PKIoverheid certificate of Berichtenbox source %1$s expires on %2$s. Upload its successor before then, or every letter is refused.",
         "The PKIoverheid certificate of Berichtenbox source %1$s cannot be used (%2$s). Every letter is refused until a usable one is uploaded.": "The PKIoverheid certificate of Berichtenbox source %1$s cannot be used (%2$s). Every letter is refused until a usable one is uploaded.",
         "Every Berichtenbox source has a usable certificate, and no letter waits for a result.": "Every Berichtenbox source has a usable certificate, and no letter waits for a result.",
-        "%n Berichtenbox letter has waited more than 24 hours for a result from Logius. Its status stays sent; check the ebMS adapter and the Leveranciersportaal.": ["%n Berichtenbox letter has waited more than 24 hours for a result from Logius. Its status stays sent; check the ebMS adapter and the Leveranciersportaal.","%n Berichtenbox letters have waited more than 24 hours for a result from Logius. Their status stays sent; check the ebMS adapter and the Leveranciersportaal."]
+        "%n Berichtenbox letter has waited more than 24 hours for a result from Logius. Its status stays sent; check the ebMS adapter and the Leveranciersportaal.": ["%n Berichtenbox letter has waited more than 24 hours for a result from Logius. Its status stays sent; check the ebMS adapter and the Leveranciersportaal.","%n Berichtenbox letters have waited more than 24 hours for a result from Logius. Their status stays sent; check the ebMS adapter and the Leveranciersportaal."],
+        "Batch Id": "Batch Id",
+        "Bericht Type": "Bericht Type",
+        "Berichtenbox: the BatchID GUID of the GLOBE-R-BV-Request batch that carried the letter": "Berichtenbox: the BatchID GUID of the GLOBE-R-BV-Request batch that carried the letter",
+        "Berichtenbox: the BerichtType code the letter was sent under": "Berichtenbox: the BerichtType code the letter was sent under",
+        "Berichtenbox: the Stadium Logius answered with the code": "Berichtenbox: the Stadium Logius answered with the code",
+        "Berichtenbox: the VerwerkingsCode Logius answered, for example Verwerkt or NietActiefOfGeabonneerd": "Berichtenbox: the VerwerkingsCode Logius answered, for example Verwerkt or NietActiefOfGeabonneerd",
+        "Berichtenbox: the ebMS message id the adapter sent the batch under": "Berichtenbox: the ebMS message id the adapter sent the batch under",
+        "Result Code": "Result Code",
+        "Result Stage": "Result Stage",
+        "The case the letter belongs to, when the sending app named one": "The case the letter belongs to, when the sending app named one",
+        "The letter's category (besluit, case-update, statutory, service), as the sending app gave it": "The letter's category (besluit, case-update, statutory, service), as the sending app gave it",
+        "Transport Message Id": "Transport Message Id"
     },
     "nplurals=2; plural=(n != 1);"
 )
