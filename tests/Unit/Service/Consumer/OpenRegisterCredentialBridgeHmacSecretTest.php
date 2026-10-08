@@ -71,10 +71,11 @@ final class OpenRegisterCredentialBridgeHmacSecretTest extends TestCase {
 
 
 	/**
-	 * A JWT consumer named `zaaksysteem` verifying with the given HMAC secret.
+	 * A JWT consumer, `zaaksysteem` unless named otherwise, verifying with the given HMAC secret.
 	 *
 	 * @param string $algorithm The HS algorithm.
 	 * @param string $secret    The stored secret.
+	 * @param string $name      The consumer's name, which a token's `iss` names.
 	 *
 	 * @return void
 	 */
@@ -98,10 +99,11 @@ final class OpenRegisterCredentialBridgeHmacSecretTest extends TestCase {
 	 *
 	 * @param string $algorithm The HS algorithm.
 	 * @param string $secret    The signing secret.
+	 * @param mixed  $issuer    The `iss` claim, any JSON value.
 	 *
 	 * @return string
 	 */
-	private function tokenSignedWith(string $algorithm, string $secret, string|int $issuer = 'zaaksysteem'): string {
+	private function tokenSignedWith(string $algorithm, string $secret, mixed $issuer = 'zaaksysteem'): string {
 		$encode = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
 		$header = $encode((string)json_encode(['alg' => $algorithm, 'typ' => 'JWT']));
 		$payload = $encode((string)json_encode(['iss' => $issuer, 'iat' => time(), 'exp' => time() + 600]));
@@ -171,6 +173,28 @@ final class OpenRegisterCredentialBridgeHmacSecretTest extends TestCase {
 			$this->assertStringContainsString('HMAC secret is shorter', (string)json_encode($e->getDetails()));
 		}
 	}//end testANumericIssuerIsGuardedToo()
+
+
+	/**
+	 * An `iss` that is not a string or a number is refused here, before
+	 * OpenRegister casts it: an array would resolve to the consumer named "Array".
+	 *
+	 * @return void
+	 */
+	public function testANonScalarIssuerIsRefused(): void {
+		foreach (['list' => ['x'], 'object' => ['a' => 1]] as $case => $issuer) {
+			$this->setUp();
+			$this->consumerWithSecret('HS256', 'short', name: 'Array');
+			$this->userSession->expects($this->never())->method('setVolatileActiveUser');
+
+			try {
+				$this->bridge()->authorizeJwt('Bearer ' . $this->tokenSignedWith('HS256', 'short', issuer: $issuer));
+				$this->fail($case . ': a non-scalar iss must be refused before OpenRegister casts it to "Array"');
+			} catch (AuthenticationException $e) {
+				$this->assertStringContainsString('not a string or a number', (string)json_encode($e->getDetails()), $case);
+			}
+		}
+	}//end testANonScalarIssuerIsRefused()
 
 
 	/**

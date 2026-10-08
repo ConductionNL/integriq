@@ -433,23 +433,29 @@ class OpenRegisterCredentialBridge {
 	 *
 	 * @return void
 	 *
-	 * @throws AuthenticationException When the issuer's HMAC secret is too short.
+	 * @throws AuthenticationException When the issuer claim is not a string or a number, or the issuer's HMAC secret is too short.
 	 */
 	private function refuseWeakHmacSecret(string $authorization, ConsumerSource $source): void {
 		$payload = $this->payloadOf(token: substr(string: $authorization, offset: strlen('Bearer ')));
 		// Read `iss` exactly as OpenRegister does — with a string cast — so a
 		// numeric issuer (`"iss": 12345`) reaches this guard too; it resolves
-		// to the consumer named "12345" there. Only a non-scalar is skipped,
-		// which OpenRegister refuses as unknown.
+		// to the consumer named "12345" there. An empty `iss` is skipped:
+		// OpenRegister refuses it itself ("No issuer mentioned"). Any other
+		// non-scalar is refused here: OpenRegister only checks `empty()` and
+		// would cast `["x"]` to the consumer named "Array".
 		$raw = ($payload['iss'] ?? null);
-		if (is_scalar($raw) === false) {
+		if (empty($raw) === true) {
 			return;
 		}
 
-		$issuer = (string)$raw;
-		if ($issuer === '') {
-			return;
+		if (is_scalar($raw) === false) {
+			throw new AuthenticationException(
+				message: 'The token could not be validated',
+				details: ['reason' => 'The issuer claim is not a string or a number']
+			);
 		}
+
+		$issuer = (string)$raw;
 
 		$consumer = $source->findByIssuer(issuer: $issuer);
 		if ($consumer === null) {
