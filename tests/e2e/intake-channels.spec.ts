@@ -41,31 +41,67 @@ function sign(body: string): string {
 }
 
 /**
- * Seed the source that configures one channel's webhook secret.
+ * Configure one channel's webhook connection.
+ *
+ * Since the public webhooks moved onto the consumer model, a channel's trust
+ * and its account live on a `consumer` whose `authorizationType` is
+ * `intake-channel-<channelId>`, not on a source. A channel with no such
+ * consumer answers 503 (`no_connection`), and a channel with two answers 503
+ * as well, so a rerun reuses the consumer it finds instead of adding one.
  *
  * @param request The Playwright request context.
  * @param channelId The channel id.
  */
-async function seedChannelSource(
+async function seedChannelConsumer(
 	request: APIRequestContext,
 	channelId: string,
 ): Promise<void> {
-	const resp = await request.post(`${OR_BASE}/source`, {
+	const authorizationType = `intake-channel-${channelId}`
+	const data = {
+		name: `E2E ${channelId}`,
+		description: 'Seeded by tests/e2e/intake-channels.spec.ts',
+		authorizationType,
+		authorizationConfiguration: { scheme: 'openconnector', secret: SECRET },
+		userId: 'admin',
+	}
+
+	const found = await request.get(`${OR_BASE}/consumer`, {
 		failOnStatusCode: false,
-		data: {
-			name: `E2E ${channelId}`,
-			description: 'Seeded by tests/e2e/intake-channels.spec.ts',
-			type: 'intake-channel',
-			isEnabled: true,
-			configuration: {
-				channelId,
-				mock: true,
-				webhookSignature: { scheme: 'openconnector', secret: SECRET },
-			},
-		},
+		params: { authorizationType, _limit: 10 },
 	})
-	expect(resp.status(), 'seeding a channel source must succeed').toBeLessThan(300)
+	expect(found.status(), 'listing the channel consumers must succeed').toBe(200)
+	const existing = ((await found.json()).results ?? []) as Array<
+		Record<string, any>
+	>
+	expect(
+		existing.length,
+		`more than one ${authorizationType} consumer: the channel refuses every delivery until one is removed`,
+	).toBeLessThan(2)
+
+	const resp =
+		existing.length === 1
+			? await request.patch(
+					`${OR_BASE}/consumer/${existing[0].id ?? existing[0]['@self']?.id}`,
+					{ failOnStatusCode: false, data },
+				)
+			: await request.post(`${OR_BASE}/consumer`, {
+					failOnStatusCode: false,
+					data,
+				})
+	expect(
+		resp.status(),
+		'configuring a channel consumer must succeed',
+	).toBeLessThan(300)
 }
+
+/**
+ * The routing rules this file seeded, removed after each test.
+ *
+ * A rule is live for every later delivery on its channel. Left in place, the
+ * messaging rule of the routing test routes the message the next test needs
+ * to be unroutable.
+ */
+const seededRules: string[] = []
 
 /**
  * Seed one routing rule.
@@ -82,6 +118,8 @@ async function seedRule(
 		data: rule,
 	})
 	expect(resp.status(), 'seeding a routing rule must succeed').toBeLessThan(300)
+	const body = await resp.json()
+	seededRules.push(String(body.id ?? body['@self']?.id))
 }
 
 /**
@@ -115,9 +153,17 @@ async function deliver(
 }
 
 test.describe('intake channels', () => {
+	test.afterEach(async ({ request }) => {
+		for (const id of seededRules.splice(0)) {
+			await request.delete(`${OR_BASE}/intake_routing_rule/${id}`, {
+				failOnStatusCode: false,
+			})
+		}
+	})
+
 	test('two channels land on two different case types', async ({ request }) => {
-		await seedChannelSource(request, 'public-space-report')
-		await seedChannelSource(request, 'messaging')
+		await seedChannelConsumer(request, 'public-space-report')
+		await seedChannelConsumer(request, 'messaging')
 		await seedRule(request, {
 			name: 'E2E meldingen',
 			channelId: 'public-space-report',
@@ -164,7 +210,7 @@ test.describe('intake channels', () => {
 	})
 
 	test('an unroutable message is held, not lost', async ({ page, request }) => {
-		await seedChannelSource(request, 'messaging')
+		await seedChannelConsumer(request, 'messaging')
 
 		const externalId = `WA-unrouted-${Date.now()}`
 		const result = await deliver(request, 'messaging', {
