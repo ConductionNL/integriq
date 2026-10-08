@@ -95,6 +95,8 @@ class OpenRegisterEntryPointsCheck implements ISetupCheck {
 	 *
 	 * @return SetupResult
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SetupResult's named constructors are the only way Nextcloud offers to build one; the bridge's probe is static so the check and the bridge share one verdict.
+	 *
 	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function run(): SetupResult {
