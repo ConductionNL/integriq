@@ -54,10 +54,22 @@ class BerichtenboxSettingsControllerTest extends TestCase {
 	 */
 	private function certificate(string $serial = self::OIN, int $days = 30): array {
 		$key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+		openssl_pkey_export($key, $keyPem);
+
+		if ($days < 0) {
+			// openssl_csr_sign() refuses a negative validity ("Days must be between
+			// 0 and ...", returns false), so an already-expired certificate is a
+			// fixture: self-signed, same subject shape, valid 2024-01-01 to
+			// 2025-01-01, its private key discarded. The resolver refuses expiry
+			// before it checks the key, so a fresh key is enough here.
+			$pem = (string)file_get_contents(__DIR__ . '/../../fixtures/berichtenbox/expired-sender.crt');
+
+			return [$pem, $keyPem];
+		}
+
 		$csr = openssl_csr_new(['commonName' => 'integriq test sender', 'serialNumber' => $serial], $key);
 		$x509 = openssl_csr_sign($csr, null, $key, $days);
 		openssl_x509_export($x509, $pem);
-		openssl_pkey_export($key, $keyPem);
 
 		return [$pem, $keyPem];
 	}//end certificate()
@@ -170,6 +182,7 @@ class BerichtenboxSettingsControllerTest extends TestCase {
 		$response = $this->controller(['certificate' => ['certificatePem' => $pem, 'privateKeyPem' => $key]], new AesTestCrypto())->setConfig('berichtenbox');
 
 		$this->assertSame(400, $response->getStatus());
+		$this->assertStringContainsString('expired', $response->getData()['fieldErrors']['certificate']);
 		$this->assertSame([], $this->saved);
 	}//end testAnExpiredCertificateIsRefused()
 

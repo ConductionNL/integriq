@@ -24,6 +24,7 @@ use DateTimeImmutable;
 use DOMDocument;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxException;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxLetterBuilder;
+use OCA\Integriq\Adapters\Berichtenbox\LogiusSchema;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -79,9 +80,10 @@ class BerichtenboxLetterBuilderTest extends TestCase {
 			now: new DateTimeImmutable('2026-10-07T22:00:00+02:00')
 		);
 
-		$document = new DOMDocument();
-		$document->loadXML($batch->xml);
-		$this->assertTrue($document->schemaValidate(BerichtenboxLetterBuilder::schemaPath()));
+		// Through LogiusSchema, not DOMDocument::schemaValidate() directly: under
+		// Nextcloud's bootstrap the external entity loader refuses the schema's
+		// own imports, so the direct call is false in CI and true only locally.
+		$this->assertSame([], (new LogiusSchema())->errors(xml: $batch->xml, schema: 'BerichtVerwerkService/Request/GLOBEBatchRequest.xsd'));
 		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', $batch->berichtId);
 		$this->assertStringContainsString('<r:AanmaakDatum>2026-10-07T20:00:00Z</r:AanmaakDatum>', $batch->xml);
 		$this->assertStringContainsString('<b:SoortGebruiker>Burger</b:SoortGebruiker>', $batch->xml);
