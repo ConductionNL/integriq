@@ -28,7 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use DateInterval;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -120,7 +119,7 @@ class BodyCaptureController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('Not Found')], Http::STATUS_NOT_FOUND);
 		}
 
-		$until = $this->policy->now()->add(new DateInterval('PT' . $hours . 'H'));
+		$until = $this->policy->now()->modify('+' . $hours . ' hours');
 		$data = $source->getObject();
 		$data['bodyCaptureUntil'] = $until->format('c');
 		$data['bodyCaptureReason'] = $reason;

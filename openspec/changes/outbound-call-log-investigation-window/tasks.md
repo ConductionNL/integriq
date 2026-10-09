@@ -16,9 +16,10 @@ stores its body.
   - GIVEN `hours` above the maximum, or an empty reason WHEN posted THEN 400 and nothing changes
   - GIVEN a principal without the admin permission WHEN posted THEN 403
   - GIVEN an open window WHEN `DELETE /api/sources/{id}/body-capture` THEN `bodyCaptureUntil` is now and an audit entry is written
-- [ ] Implement. Every route carries its Nextcloud auth attribute; the controller checks admin itself (no `#[NoAdminRequired]` with a body that needs admin).
-- [ ] Test: PHPUnit `tests/Unit/Controller/BodyCaptureControllerTest.php` (`testAnAdministratorOpensAWindowWithAReason`, `testMoreHoursThanTheMaximumIsRefused`, `testAReaderCannotOpenAWindow`, `testClosingEarlyIsAudited`)
-- [ ] Wiring: a route test that resolves both routes in `appinfo/routes.php` to existing controller methods (gate route-reachability covers this; run it)
+- [x] Implement. Every route carries its Nextcloud auth attribute; the controller checks admin itself (no `#[NoAdminRequired]` with a body that needs admin).
+  - `lib/Controller/BodyCaptureController.php` (`open`, `close`, both `#[AuthorizedAdminSetting]` plus an `isAdmin` check in the body), routes in `appinfo/routes.php`. The window fields and the call_log fields live in the ADR-037 fragment `lib/Settings/register.d/outbound-call-log-investigation-window.json` (source 1.7.0, call_log 1.2.0; info.xml bumped), not in `integriq_register.json`. The two settings `call_log_body_capture_max_hours` (72) and `call_log_body_retention_days` (7) are read by `lib/Outbound/Call/BodyCapturePolicy.php`; nothing in `SettingsService` needed to change. Opening and closing save the source through OpenRegister's audited (not silent) save, so the audit trail entry names the principal and carries the reason. Closing without an open window answers 409 and changes nothing.
+- [x] Test: PHPUnit `tests/Unit/Controller/BodyCaptureControllerTest.php` (`testAnAdministratorOpensAWindowWithAReason`, `testMoreHoursThanTheMaximumIsRefused`, `testAReaderCannotOpenAWindow`, `testClosingEarlyIsAudited`)
+- [x] Wiring: a route test that resolves both routes in `appinfo/routes.php` to existing controller methods (gate route-reachability covers this; run it). `BodyCaptureControllerTest::testBothRoutesResolveToTheController`.
 
 ### Task 2: Store bodies only inside a window
 - **spec_ref**: `openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001`
@@ -30,9 +31,10 @@ stores its body.
   - GIVEN a settings read that throws WHEN a call returns THEN no body is stored
   - GIVEN the buffered path WHEN the batch is flushed THEN the same rule applied to every buffered record
   - GIVEN any call WHEN the caller reads the returned entity THEN it still carries the full response for processing, as today
-- [ ] Implement
-- [ ] Test: PHPUnit `tests/Unit/Service/CallServiceBodyCaptureTest.php` (`testAFailureOutsideAWindowStoresNoBody`, `testASuccessInsideAWindowStoresBothBodies`, `testACallAfterTheWindowEndsStoresNoBody`, `testABrokenSettingsReadStoresNoBody`, `testBufferedRecordsFollowTheSameRule`). Assert on the array handed to `ObjectService::saveObject()`. Double OpenRegister's `ObjectService` with `environmentAwareDouble`, after reading its real `saveObject()` signature; do not hand-roll a stub.
-- [ ] The first test, `testAFailureOutsideAWindowStoresNoBody`, must be shown failing on `development` before the change. Paste the failing line in the PR body.
+- [x] Implement
+  - `BodyCapturePolicy::apply()` runs in `CallService::buildAndPersistCallLog()` before the buffer, so the buffered path follows the same rule, and in `CallRecorder::record()` (the source is read for its window; a source that cannot be read has no window). `CallRecorder::appendAttempt()` keeps a replayed answer's body only inside a window. The returned entity still carries the full response. `logBody` keeps the bodies for the life of the record (the allowlist is the second change).
+- [x] Test: PHPUnit `tests/Unit/Service/CallServiceBodyCaptureTest.php` (`testAFailureOutsideAWindowStoresNoBody`, `testASuccessInsideAWindowStoresBothBodies`, `testACallAfterTheWindowEndsStoresNoBody`, `testABrokenSettingsReadStoresNoBody`, `testBufferedRecordsFollowTheSameRule`). Assert on the array handed to `ObjectService::saveObject()`. Double OpenRegister's `ObjectService` with `environmentAwareDouble`, after reading its real `saveObject()` signature; do not hand-roll a stub.
+- [x] The first test, `testAFailureOutsideAWindowStoresNoBody`, must be shown failing on `development` before the change. Paste the failing line in the PR body. Red on development's CallService: `Failed asserting that an array does not have the key 'json'.` (9 of 9 failed). `CallServiceTest` had two tests that asserted a stored body outside a window; they now assert its absence, or open a window.
 
 ### Task 3: Keep a failed call replayable
 - **spec_ref**: `openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009`
@@ -41,8 +43,9 @@ stores its body.
   - GIVEN a failed call outside a window WHEN stored THEN `replayRequest` holds the sent request with secrets redacted
   - GIVEN that record WHEN a reader without the replay permission opens the detail THEN `replayRequest` is not in the response
   - GIVEN a replay that succeeds WHEN the attempt is appended THEN `replayRequest` is removed
-- [ ] Implement
-- [ ] Test: PHPUnit `CallReplayServiceTest::testASuccessfulReplayRemovesTheReplayRequest`, `CallLogControllerTest::testTheReplayRequestIsHiddenFromAReader`; the existing replay tests stay green
+- [x] Implement
+  - `BodyCapturePolicy::apply()` keeps the redacted request of a failure as `replayRequest`; outside a window it ages out with the error retention (`bodyExpiresAt`). `CallReplayService::requestOf()` reads it first; the preview shows the stored request only. `CallLogController::show()` omits it unless the reader holds `call-log.replay` and the call was captured. A successful replay removes it.
+- [x] Test: PHPUnit `CallReplayServiceTest::testASuccessfulReplayRemovesTheReplayRequest`, `CallLogControllerTest::testTheReplayRequestIsHiddenFromAReader`; the existing replay tests stay green (they now pass the policy; the credential test asserts on the replay request)
 
 ### Task 4: Age the bodies out
 - **spec_ref**: `openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009`
@@ -50,9 +53,10 @@ stores its body.
 - **acceptance_criteria**:
   - GIVEN a record past `bodyExpiresAt` WHEN the task runs THEN both bodies and `replayRequest` are removed, `bodyCaptured` is false, `bodyExpiredAt` is set, and the record remains
   - GIVEN a record past its error retention WHEN the task runs THEN `replayRequest` is removed even when no window applied
-- [ ] Implement
-- [ ] Test: PHPUnit `tests/Unit/BackgroundJob/LogCleanUpTaskTest.php` (`testExpiredBodiesAreStrippedAndTheRecordKept`, `testReplayRequestEndsWithTheErrorRetention`)
-- [ ] Wiring: assert the task is still registered in `appinfo/info.xml` `<background-jobs>` and runs the new step from `run()`
+- [x] Implement
+  - `LogCleanUpTask::stripExpiredBodies()`, called first in `run()`: bodies and `replayRequest` removed, `bodyCaptured` false, `bodyExpiredAt` now, `bodyExpiresAt` dropped so the record is not picked up again; the record stays until its own `expires`.
+- [x] Test: PHPUnit `tests/Unit/BackgroundJob/LogCleanUpTaskTest.php` (`testExpiredBodiesAreStrippedAndTheRecordKept`, `testReplayRequestEndsWithTheErrorRetention`)
+- [x] Wiring: assert the task is still registered in `appinfo/info.xml` `<background-jobs>` and runs the new step from `run()`
 
 ## Verification
 
