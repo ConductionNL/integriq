@@ -220,7 +220,8 @@ class SpanMapper {
 
 	/**
 	 * The HTTP attributes of a call step: method, status code and the URL
-	 * without its query string. Nothing else of the request or response.
+	 * without its query string, credentials or identifiers. Nothing else of
+	 * the request or response.
 	 *
 	 * @param mixed $input The step input (the redacted call_log request).
 	 * @param mixed $output The step output (the redacted call_log response).
@@ -233,9 +234,7 @@ class SpanMapper {
 		$values = [];
 		if (is_array($input) === true) {
 			$values['http.request.method'] = strtoupper((string)($input['method'] ?? ''));
-			$url = (string)($input['url'] ?? '');
-			$cut = strcspn($url, '?#');
-			$values['url.full'] = substr($url, 0, $cut);
+			$values['url.full'] = $this->safeUrl(url: (string)($input['url'] ?? ''));
 		}
 
 		if (is_array($output) === true && isset($output['statusCode']) === true) {
@@ -245,6 +244,62 @@ class SpanMapper {
 		return $values;
 
 	}//end httpAttributes()
+
+	/**
+	 * A URL fit for an external collector: scheme, host, port and path only,
+	 * with every path segment that looks like an identifier replaced by
+	 * `{id}`. The query string, the fragment and `user:pass@` are dropped, so
+	 * a BSN in `/ingeschrevenpersonen/999993653` or a credential in the
+	 * userinfo never leaves integriq (REQ-OTEL-003).
+	 *
+	 * @param string $url The called URL.
+	 *
+	 * @return string The safe URL, or '' when it cannot be parsed.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-spans-carry-no-message-content-req-otel-003
+	 */
+	private function safeUrl(string $url): string {
+		$url = substr($url, 0, strcspn($url, '?#'));
+		$parts = parse_url($url);
+		if (is_array($parts) === false || isset($parts['host']) === false) {
+			return '';
+		}
+
+		$safe = (string)($parts['scheme'] ?? 'https') . '://' . $parts['host'];
+		if (isset($parts['port']) === true) {
+			$safe .= ':' . (int)$parts['port'];
+		}
+
+		$segments = explode('/', (string)($parts['path'] ?? ''));
+		foreach ($segments as $index => $segment) {
+			if ($this->looksLikeIdentifier(segment: rawurldecode($segment)) === true) {
+				$segments[$index] = '{id}';
+			}
+		}
+
+		return $safe . implode('/', $segments);
+
+	}//end safeUrl()
+
+	/**
+	 * Whether a path segment looks like an identifier rather than a route
+	 * word: it holds a run of four or more digits (a BSN, a KvK or case
+	 * number, a numeric id), or it is a long token (a uuid, a hash, an
+	 * opaque key).
+	 *
+	 * @param string $segment One decoded path segment.
+	 *
+	 * @return bool True when the segment must be masked.
+	 */
+	private function looksLikeIdentifier(string $segment): bool {
+		if ($segment === '') {
+			return false;
+		}
+
+		return preg_match('/\d{4,}/', $segment) === 1
+			|| (strlen($segment) >= 20 && preg_match('/^[A-Za-z0-9_\-.=+~]+$/', $segment) === 1 && preg_match('/\d/', $segment) === 1);
+
+	}//end looksLikeIdentifier()
 
 	/**
 	 * OTLP key/value attributes, empty values left out.

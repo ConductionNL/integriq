@@ -52,13 +52,20 @@ line.
 
 A span MUST NOT carry a step's `input` or `output`. Span attributes MUST be
 limited to the step type and name, the status, the duration, the HTTP method,
-the HTTP status code, the URL without its query string, the entry point and
-the ids of the trace and the entry point object.
+the HTTP status code, the URL without its query string, fragment and
+credentials and with every identifier-like path segment masked, the entry
+point and the ids of the trace and the entry point object.
 
 #### Scenario: a BSN never reaches the collector
 - GIVEN a mapping step whose input contains a BSN
 - WHEN the trace is exported
 - THEN no attribute or event in the exported payload contains the BSN
+- @e2e exclude a payload absence claim; covered by PHPUnit on SpanMapper
+
+#### Scenario: a BSN in the URL path never reaches the collector
+- GIVEN a call step to `https://svc:s3cret@brp.example.org/ingeschrevenpersonen/999993653`
+- WHEN the trace is exported
+- THEN its `url.full` is `https://brp.example.org/ingeschrevenpersonen/{id}` and the payload contains neither the BSN nor the credentials
 - @e2e exclude a payload absence claim; covered by PHPUnit on SpanMapper
 
 ### Requirement: Trace context travels in and out as W3C traceparent (REQ-OTEL-004)

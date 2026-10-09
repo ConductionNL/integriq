@@ -163,6 +163,43 @@ class SpanMapperTest extends TestCase {
 	}//end testABsnNeverReachesTheCollector()
 
 	/**
+	 * A BSN in the path and credentials in the userinfo never reach the
+	 * collector: identifier segments become `{id}`, `user:pass@` is dropped,
+	 * route words, the host and the port stay.
+	 *
+	 * @return void
+	 */
+	public function testABsnInThePathAndUrlCredentialsNeverReachTheCollector(): void {
+		$trace = $this->trace();
+		$trace['steps'] = [
+			[
+				'order' => 1, 'type' => 'call', 'name' => 'BRP', 'status' => 'success', 'durationMs' => 40,
+				'input' => ['method' => 'get', 'url' => 'https://svc:s3cret@brp.example.org:8443/ingeschrevenpersonen/999993653/kinderen?x=1#y'],
+			],
+			[
+				'order' => 2, 'type' => 'call', 'name' => 'ZRC', 'status' => 'success', 'durationMs' => 40,
+				'input' => ['method' => 'get', 'url' => 'https://zrc.example.org/zaken/api/v1/zaken/7f3c2a1e-9b4d-4c6e-8a2f-1d0e5b6c7a89'],
+			],
+			[
+				'order' => 3, 'type' => 'call', 'name' => 'KVK', 'status' => 'success', 'durationMs' => 40,
+				'input' => ['method' => 'get', 'url' => 'https://api.kvk.nl/api/v1/basisprofielen/NL%2012345678'],
+			],
+		];
+
+		$payload = json_encode((new SpanMapper(new TraceParent()))->map(trace: $trace, serviceName: 'integriq'));
+		$spans = $this->spans($trace);
+
+		foreach (['999993653', 's3cret', 'svc:', '7f3c2a1e', '12345678', 'x=1'] as $secret) {
+			$this->assertStringNotContainsString($secret, $payload, $secret);
+		}
+
+		$this->assertSame('https://brp.example.org:8443/ingeschrevenpersonen/{id}/kinderen', $this->attrs($spans[1])['url.full']);
+		$this->assertSame('https://zrc.example.org/zaken/api/v1/zaken/{id}', $this->attrs($spans[2])['url.full']);
+		$this->assertSame('https://api.kvk.nl/api/v1/basisprofielen/{id}', $this->attrs($spans[3])['url.full']);
+
+	}//end testABsnInThePathAndUrlCredentialsNeverReachTheCollector()
+
+	/**
 	 * Steps counted but not kept are the root's `integriq.steps.dropped`
 	 * attribute, not a span; a trace without micro times falls back to the
 	 * whole-second times.
