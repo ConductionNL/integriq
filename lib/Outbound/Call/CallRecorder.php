@@ -187,6 +187,8 @@ class CallRecorder {
 	 *                                     `mappingVersion`, and optionally `request`/`response`.
 	 *
 	 * @return ObjectEntity The updated record.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	public function appendAttempt(string $uuid, array $attempt): ObjectEntity {
 		$record = $this->read(uuid: $uuid);
@@ -311,7 +313,7 @@ class CallRecorder {
 	 *
 	 * @return array<string,mixed> The source, or an empty array.
 	 *
-	 * @spec openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
 	 */
 	private function sourceData(?string $uuid): array {
 		if ($uuid === null) {

@@ -372,8 +372,10 @@ class CallServiceTest extends TestCase {
 		$this->assertSame(500, $log['statusCode']);
 		// Request header value redacted.
 		$this->assertSame('***REDACTED***', $log['request']['headers']['X-Api-Key']);
-		// Echoed secret scrubbed from the persisted response body.
-		$this->assertStringContainsString('***REDACTED***', $log['response']['body']);
+		// Outside an investigation window the response body is not stored at all
+		// (outbound-call-log REQ-OCD-001); the replay request is redacted too.
+		$this->assertArrayNotHasKey('body', $log['response']);
+		$this->assertSame('***REDACTED***', $log['replayRequest']['headers']['X-Api-Key']);
 		$this->assertStringNotContainsString('sekret-value-123', json_encode($log));
 	}//end testBrokeredCallLogRedactsSecretsLikeGuzzlePath()
 
@@ -1167,6 +1169,8 @@ class CallServiceTest extends TestCase {
 			[
 				'name' => 'ted',
 				'isEnabled' => true,
+				// An open investigation window, so the request body is stored (REQ-OCD-008).
+				'bodyCaptureUntil' => '2099-01-01T00:00:00+00:00',
 				'location' => 'https://api.example.invalid',
 				'configuration' => [
 					'listMethod' => 'POST',

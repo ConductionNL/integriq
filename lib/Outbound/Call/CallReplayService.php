@@ -80,6 +80,8 @@ class CallReplayService {
 	 *
 	 * @return array{request:array<string,mixed>,versions:array<string,mixed>} The request that
 	 *         would be sent, and the mapping versions on offer.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	public function preview(string $uuid): array {
 		$record = $this->recorder->read($uuid);
@@ -377,7 +379,7 @@ class CallReplayService {
 	 *
 	 * @return array<string,mixed> The request, or an empty array.
 	 *
-	 * @spec openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	private function requestOf(array $record): array {
 		$replayRequest = $this->bagOf(value: ($record['replayRequest'] ?? null));

@@ -112,7 +112,7 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @return int How many records were stripped.
 	 *
-	 * @spec openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	public function stripExpiredBodies(): int {
 		$now = new DateTime();
