@@ -103,12 +103,13 @@ class CallServiceTest extends TestCase {
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], $register = null, $schema = null, $uuid = null, $_rbac = true) {
 				$this->saved[] = [
 					'object' => $object,
 					'register' => $register,
 					'schema' => $schema,
 					'uuid' => $uuid,
+					'rbac' => $_rbac,
 				];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
@@ -305,6 +306,9 @@ class CallServiceTest extends TestCase {
 		$this->assertCount(1, $logs);
 		$this->assertSame(409, $logs[0]['object']['statusCode']);
 		$this->assertStringContainsString('forbidden alongside credentialRef', $logs[0]['object']['statusMessage']);
+		// call_log is admin-only in the register (REQ-OCD-012): the engine writes
+		// the early error record past RBAC, or a non-admin's call loses its log.
+		$this->assertFalse($logs[0]['rbac'], 'The early error call_log must be written with _rbac: false');
 	}//end testBrokeredConfigErrorPersists409EarlyLog()
 
 	/**

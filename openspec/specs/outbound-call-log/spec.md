@@ -234,3 +234,32 @@ succeeds or when the record's error retention ends.
 - WHEN an administrator with the replay permission replays it
 - THEN the original request is sent again, and after the replay succeeds the record no longer holds `replayRequest`
 - @e2e exclude a replay payload lifecycle; covered by PHPUnit `CallReplayServiceTest::testASuccessfulReplayRemovesTheReplayRequest`
+
+### Requirement: Call records are readable only by admins and through integriq's own endpoints (REQ-OCD-012)
+
+The `call_log` schema MUST declare an `authorization` block that grants every
+verb (create, read, update, delete) to the `admin` group only, so OpenRegister's
+generic object API refuses call records to every other account. Integriq's own
+code MUST read and write call records past that rule (`_rbac: false`) and gate
+access itself: the call-log endpoints with the call-log read and replay
+permissions, the engine because it records calls on behalf of whoever triggered
+them. Decision 137 (Q-integriq-1): a failed call keeps the request it sent, and
+the field rule of REQ-OCD-009 holds only when the generic API cannot read the row.
+
+#### Scenario: a non-admin cannot read call records through the generic API
+- GIVEN a signed-in account that is not in the admin group
+- WHEN it lists `/apps/openregister/api/objects/integriq/call_log`, or opens one record by id
+- THEN the list holds no call record and the single read is refused
+- @e2e exclude an authorization refusal on another app's API; covered by PHPUnit `CallLogLockdownTest::testEveryVerbOnTheCallLogSchemaIsAdminOnly` and the Newman folder "12. Call log is admin-only"
+
+#### Scenario: a call a non-admin triggers is still recorded
+- GIVEN a non-admin whose action makes integriq call a source, or an inbound consumer call
+- WHEN integriq records the call
+- THEN the record is written, because integriq writes call records past the admin-only rule
+- @e2e exclude an engine write path; covered by PHPUnit `CallRecorderRbacTest::testEveryCallLogAccessBypassesRbac` and `EndpointServiceTierPolicyTest::testRecordInboundThrottleWritesPastRbac`
+
+#### Scenario: the call log pages keep working
+- GIVEN a principal with the call-log read permission
+- WHEN they open a call in integriq
+- THEN CallLogController returns it, read through the recorder past the admin-only rule
+- @e2e exclude an authorization path; covered by PHPUnit `CallRecorderRbacTest::testEveryCallLogAccessBypassesRbac`

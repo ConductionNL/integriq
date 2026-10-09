@@ -433,9 +433,11 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$product = ObjectServiceMockBuilder::objectEntity($this, [], 'product-uuid-1');
 
 		$captured = null;
+		$rbac = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema) use (&$captured) {
+			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$captured, &$rbac) {
 				$captured = $object;
+				$rbac = $_rbac;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
 			}
 		);
@@ -447,6 +449,8 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$this->assertSame('endpoint-uuid-1', $captured['endpoint']);
 		$this->assertSame(200, $captured['statusCode']);
 		$this->assertSame(42, $captured['responseTime']);
+		// call_log is admin-only (REQ-OCD-012); an inbound caller is never admin.
+		$this->assertFalse($rbac, 'The inbound call_log must be written with _rbac: false');
 	}//end testRecordInboundCallLogPersistsRowWithProductAndEndpoint()
 
 	/**
@@ -466,5 +470,31 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		// No exception propagated — assertion is that execution reached here.
 		$this->assertTrue(true);
 	}//end testRecordInboundCallLogFailureNeverThrows()
+
+	/**
+	 * REQ-OCD-012 — the inbound 429 call_log is written past RBAC: call_log is
+	 * admin-only in the register and a throttled consumer is never an admin.
+	 *
+	 * @return void
+	 */
+	public function testRecordInboundThrottleWritesPastRbac(): void {
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, [], 'consumer-uuid-1');
+
+		$calls = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$calls) {
+				$calls[] = ['schema' => $schema, 'object' => $object, 'rbac' => $_rbac];
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
+			}
+		);
+
+		$method = new \ReflectionMethod($this->service, 'recordInboundThrottle');
+		$method->invoke($this->service, $consumer, new \OCA\Integriq\Service\RateLimit\RateLimitDecision(allowed: false, reason: 'rate'));
+
+		$this->assertCount(1, $calls);
+		$this->assertSame('call_log', $calls[0]['schema']);
+		$this->assertSame(429, $calls[0]['object']['statusCode']);
+		$this->assertFalse($calls[0]['rbac'], 'The inbound throttle call_log must be written with _rbac: false');
+	}//end testRecordInboundThrottleWritesPastRbac()
 
 }//end class
