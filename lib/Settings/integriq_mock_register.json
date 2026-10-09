@@ -12519,6 +12519,48 @@
         ],
         "isActive": true,
         "note": "Demo row. Gemeentecode 0000 is not a CBS gemeentecode, so this row never matches a real verzoek. Replace it with the activities your gemeente receives."
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-ringing"
+        },
+        "callId": "demo-call-0001",
+        "kind": "ringing",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:00:00+00:00",
+        "durationSeconds": 0
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-answered"
+        },
+        "callId": "demo-call-0001",
+        "kind": "answered",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:00:08+00:00",
+        "durationSeconds": 0
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-ended"
+        },
+        "callId": "demo-call-0001",
+        "kind": "ended",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:04:20+00:00",
+        "durationSeconds": 252
       }
     ]
   }
