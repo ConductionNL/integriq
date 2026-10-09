@@ -107,7 +107,8 @@ class TraceExportQueue {
 
 	/**
 	 * Count a sampled trace skipped because sends are paused, and log one
-	 * warning for the first one in each pause.
+	 * warning, with the number skipped so far, for the first one in each
+	 * pause.
 	 *
 	 * @param OtelExportBreaker $breaker The open breaker.
 	 * @param string $traceId The skipped trace.
@@ -115,14 +116,15 @@ class TraceExportQueue {
 	 * @return void
 	 */
 	private function skipWhilePaused(OtelExportBreaker $breaker, string $traceId): void {
-		if ($breaker->recordSkipped() === false) {
+		$skipped = $breaker->recordSkipped();
+		if ($skipped === null) {
 			return;
 		}
 
 		$this->logger->warning(
 			'TraceExportQueue: OpenTelemetry sends are paused after repeated collector failures; traces finished before '
-			. date('c', $breaker->openUntil()) . ' are not exported and are counted in the otel_skipped_total app setting.',
-			['traceId' => $traceId]
+			. date('c', $breaker->openUntil()) . ' are not exported.',
+			['traceId' => $traceId, 'skippedSoFar' => $skipped]
 		);
 
 	}//end skipWhilePaused()

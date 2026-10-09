@@ -43,7 +43,10 @@ use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IL10N;
+use OCP\IMemcache;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -64,6 +67,20 @@ class OtelExportTest extends TestCase {
 	private array $config = [];
 
 	/**
+	 * The keys written to $this->config, in order.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $writes = [];
+
+	/**
+	 * The skipped-trace counter in the fake distributed cache.
+	 *
+	 * @var int
+	 */
+	private int $skippedInCache = 0;
+
+	/**
 	 * Settings backed by $this->config.
 	 *
 	 * @return OtelSettings
@@ -76,12 +93,27 @@ class OtelExportTest extends TestCase {
 	}//end settings()
 
 	/**
-	 * The export breaker, backed by $this->config.
+	 * The export breaker, backed by $this->config and, unless another
+	 * factory is given, a distributed cache counting in $this->skippedInCache.
+	 *
+	 * @param ICacheFactory|null $cacheFactory The cache factory to use.
 	 *
 	 * @return OtelExportBreaker
 	 */
-	private function breaker(): OtelExportBreaker {
-		return new OtelExportBreaker($this->appConfig());
+	private function breaker(?ICacheFactory $cacheFactory = null): OtelExportBreaker {
+		if ($cacheFactory === null) {
+			$cache = $this->createMock(IMemcache::class);
+			$cache->method('inc')->willReturnCallback(
+				function (string $key): int {
+					$this->assertSame('otel_skipped_total', $key);
+					return ++$this->skippedInCache;
+				}
+			);
+			$cacheFactory = $this->createMock(ICacheFactory::class);
+			$cacheFactory->method('createDistributed')->willReturn($cache);
+		}
+
+		return new OtelExportBreaker($this->appConfig(), $cacheFactory);
 	}//end breaker()
 
 	/**
@@ -93,6 +125,7 @@ class OtelExportTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$get = fn (string $app, string $key, $default) => ($this->config[$key] ?? $default);
 		$set = function (string $app, string $key, $value): bool {
+			$this->writes[] = $key;
 			$this->config[$key] = $value;
 			return true;
 		};
@@ -365,8 +398,10 @@ class OtelExportTest extends TestCase {
 	}//end testACollectorOutageOpensTheBreaker()
 
 	/**
-	 * A sampled trace skipped while sends are paused is counted in
-	 * `otel_skipped_total`, and only the first one in each pause is logged.
+	 * A sampled trace skipped while sends are paused is counted with an
+	 * atomic increment in the distributed cache, never with an app-config
+	 * write per trace; only the first one in each pause is logged, with the
+	 * number skipped so far.
 	 *
 	 * @return void
 	 */
@@ -377,26 +412,53 @@ class OtelExportTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$warnings = [];
 		$logger->method('warning')->willReturnCallback(
-			function (string $message) use (&$warnings): void {
-				$warnings[] = $message;
+			function (string $message, array $context) use (&$warnings): void {
+				$warnings[] = $context['skippedSoFar'];
 			}
 		);
 		$queue = new TraceExportQueue($this->settings(), $jobList, $logger, $this->breaker(), $this->clock(1000));
+		$this->writes = [];
 
+		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
 		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
 		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
 		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'success'), 'not sampled');
 
-		$this->assertSame(2, $this->config['otel_skipped_total'], 'every sampled trace skipped in the pause is counted');
-		$this->assertCount(1, $warnings, 'one warning per pause, not per trace');
-		$this->assertStringContainsString('otel_skipped_total', $warnings[0]);
+		$this->assertSame(3, $this->skippedInCache, 'every sampled trace skipped in the pause is counted in the cache');
+		$this->assertSame(['otel_skipped_warned_until'], $this->writes, 'one app-config write per pause, none per trace');
+		$this->assertSame([1], $warnings, 'one warning per pause, not per trace');
 
 		$this->config['otel_breaker_open_until'] = 1600;
 		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
-		$this->assertSame(3, $this->config['otel_skipped_total']);
-		$this->assertCount(2, $warnings, 'a new pause logs again');
+		$this->assertSame(4, $this->skippedInCache);
+		$this->assertSame([1, 4], $warnings, 'a new pause logs again, with the count so far');
 
 	}//end testTracesSkippedDuringAPauseAreCountedAndLoggedOncePerPause()
+
+	/**
+	 * Without a distributed memory cache, or when it fails, a skipped trace
+	 * still never throws into the traced work, and the pause is still
+	 * logged once.
+	 *
+	 * @return void
+	 */
+	public function testASkippedTraceWithoutADistributedCacheStillLogsOnce(): void {
+		$plain = $this->createMock(ICacheFactory::class);
+		$plain->method('createDistributed')->willReturn($this->createMock(ICache::class));
+		$failing = $this->createMock(ICacheFactory::class);
+		$failing->method('createDistributed')->willThrowException(new RuntimeException('no cache'));
+
+		foreach ([$plain, $failing] as $cacheFactory) {
+			$this->config = ['otel_enabled' => true, 'otel_endpoint' => 'https://otel.example.org', 'otel_breaker_open_until' => 1300];
+			$logger = $this->createMock(LoggerInterface::class);
+			$logger->expects($this->once())->method('warning')->with($this->anything(), $this->callback(static fn (array $context) => $context['skippedSoFar'] === 0));
+			$queue = new TraceExportQueue($this->settings(), $this->createMock(IJobList::class), $logger, $this->breaker($cacheFactory), $this->clock(1000));
+
+			$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
+			$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
+		}
+
+	}//end testASkippedTraceWithoutADistributedCacheStillLogsOnce()
 
 	/**
 	 * Export switched off after queuing: the job sends nothing.

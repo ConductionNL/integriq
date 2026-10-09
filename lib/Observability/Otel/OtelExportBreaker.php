@@ -27,6 +27,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Observability\Otel;
 
 use OCP\IAppConfig;
+use OCP\ICacheFactory;
+use OCP\IMemcache;
+use Throwable;
 
 /**
  * Pauses sends after repeated collector failures.
@@ -60,9 +63,11 @@ class OtelExportBreaker {
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the failure count and the pause end, shared by every cron worker.
+	 * @param ICacheFactory $cacheFactory Gives the distributed cache that counts skipped traces.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
+		private readonly ICacheFactory $cacheFactory,
 	) {
 
 	}//end __construct()
@@ -94,28 +99,55 @@ class OtelExportBreaker {
 	}//end openUntil()
 
 	/**
-	 * Count a trace that was not queued because sends are paused, in the
-	 * `otel_skipped_total` app setting.
+	 * Count a trace that was not queued because sends are paused, with an
+	 * atomic increment of `otel_skipped_total` in the distributed cache, so
+	 * the traced request writes nothing to the database per trace.
 	 *
-	 * @return bool True for the first trace skipped in the current pause,
-	 *              so the caller logs one warning per pause, not per trace.
+	 * @return int|null For the first trace skipped in the current pause, the
+	 *                  number skipped so far (0 when no distributed cache
+	 *                  counts them), so the caller logs one warning per
+	 *                  pause; null for every later one.
 	 *
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
 	 */
-	public function recordSkipped(): bool {
-		$skipped = ($this->appConfig->getValueInt(self::APP_ID, 'otel_skipped_total', 0) + 1);
-		$this->appConfig->setValueInt(self::APP_ID, 'otel_skipped_total', $skipped);
+	public function recordSkipped(): ?int {
+		$skipped = $this->countSkipped();
 
 		$openUntil = $this->openUntil();
 		if ($this->appConfig->getValueInt(self::APP_ID, 'otel_skipped_warned_until', 0) === $openUntil) {
-			return false;
+			return null;
 		}
 
 		$this->appConfig->setValueInt(self::APP_ID, 'otel_skipped_warned_until', $openUntil);
 
-		return true;
+		return $skipped;
 
 	}//end recordSkipped()
+
+	/**
+	 * Increment the skipped-trace counter in the distributed cache.
+	 *
+	 * @return int The count after the increment, 0 when no distributed
+	 *             cache is available or it failed.
+	 */
+	private function countSkipped(): int {
+		try {
+			$cache = $this->cacheFactory->createDistributed(self::APP_ID);
+			$count = false;
+			if ($cache instanceof IMemcache) {
+				$count = $cache->inc('otel_skipped_total');
+			}
+		} catch (Throwable) {
+			$count = false;
+		}
+
+		if (is_int($count) === false) {
+			return 0;
+		}
+
+		return $count;
+
+	}//end countSkipped()
 
 	/**
 	 * Count a failed send; the threshold-th failure in a row pauses sends
