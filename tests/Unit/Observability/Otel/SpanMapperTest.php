@@ -200,8 +200,9 @@ class SpanMapperTest extends TestCase {
 	}//end testABsnInThePathAndUrlCredentialsNeverReachTheCollector()
 
 	/**
-	 * A formatted BSN, an e-mail address and an opaque letter-only token are
-	 * masked too; lowercase route words, however long, stay.
+	 * A formatted BSN, whatever its separators or URL encoding, an e-mail
+	 * address and an opaque letter-only token are masked too; lowercase
+	 * route words under 32 characters stay.
 	 *
 	 * @return void
 	 */
@@ -210,7 +211,14 @@ class SpanMapperTest extends TestCase {
 			'https://brp.example.org/ingeschrevenpersonen/999.993.653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
 			'https://brp.example.org/ingeschrevenpersonen/999-993-653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
 			'https://brp.example.org/ingeschrevenpersonen/999%20993%20653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999_993_653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999,993,653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999+993+653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999%C2%A0993%C2%A0653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999%2F993%2F653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999%252E993%252E653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
 			'https://crm.example.org/klanten/j.devries@gemeente.nl/contacten' => 'https://crm.example.org/klanten/{id}/contacten',
+			'https://crm.example.org/klanten/j.devries%2540gemeente.nl/contacten' => 'https://crm.example.org/klanten/{id}/contacten',
 			'https://hooks.example.org/services/abcdefghijklmnopqrstuvwxyzabcdef' => 'https://hooks.example.org/services/{id}',
 			'https://hooks.example.org/services/QwErTyUiOpAsDfGhJkLz' => 'https://hooks.example.org/services/{id}',
 			'https://zrc.example.org/zaken/api/v1/zaakinformatieobjecten' => 'https://zrc.example.org/zaken/api/v1/zaakinformatieobjecten',

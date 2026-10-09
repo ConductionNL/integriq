@@ -283,13 +283,17 @@ class SpanMapper {
 
 	/**
 	 * Whether a path segment looks like an identifier rather than a route
-	 * word: it holds an `@` (an e-mail address), it holds a run of four or
-	 * more digits once dots, dashes and spaces are taken out (a BSN written
-	 * as `999993653`, `999.993.653` or `999-993-653`, a KvK or case number,
-	 * a numeric id), or it is an opaque token. A token, written in a token
-	 * alphabet, is opaque at 32 characters or more, or at 20 or more when it
-	 * holds a digit or mixes upper and lower case (a uuid, a hash, a key).
-	 * A lowercase route word such as `ingeschrevenpersonen` stays.
+	 * word. The segment is URL-decoded until stable (at most three more
+	 * passes, for double encoding); it is masked when it then holds an `@`
+	 * (an e-mail address), or a run of four or more digits once every
+	 * character other than an ASCII letter or digit is taken out (a BSN
+	 * written as `999993653`, `999.993.653`, `999_993_653`, with a
+	 * non-breaking space or an encoded slash, a KvK or case number, a
+	 * numeric id), or when it is an opaque token. A token, written in a
+	 * token alphabet, is opaque at 32 characters or more, or at 20 or more
+	 * when it holds a digit or mixes upper and lower case (a uuid, a hash, a
+	 * key). A lowercase route word under 32 characters, such as
+	 * `ingeschrevenpersonen`, stays.
 	 *
 	 * @param string $segment One decoded path segment.
 	 *
@@ -300,8 +304,11 @@ class SpanMapper {
 			return false;
 		}
 
-		if (str_contains($segment, '@') === true
-			|| preg_match('/\d{4,}/', (string)preg_replace('/[\s.\-]/', '', $segment)) === 1
+		// Three more passes reach a stable value for any realistic double or
+		// triple encoding; once stable, a further pass changes nothing.
+		$decoded = rawurldecode(rawurldecode(rawurldecode($segment)));
+		if (str_contains($decoded, '@') === true
+			|| preg_match('/\d{4,}/', (string)preg_replace('/[^A-Za-z0-9]/', '', $decoded)) === 1
 		) {
 			return true;
 		}
