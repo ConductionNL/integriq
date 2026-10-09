@@ -62,11 +62,11 @@ stores its body.
 
 The building agent follows `openspec/woo-build-rules.md`:
 
-- [ ] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
-- [ ] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.
-- [ ] `run-hydra-gates.sh --base origin/development`, counting the gates that ran.
-- [ ] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`.
-- [ ] CI runs the gates on the full tree; the coverage guard needs a test for every added statement.
-- [ ] `openspec validate outbound-call-log-investigation-window --type change --strict` passes.
-- [ ] One PR, `--base development`; merge `development` in, never rebase; no `Co-Authored-By` trailer.
-- [ ] Done means merged on `development` with CI green. Row 13.23 is `production` only once a store release carries it.
+- [x] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
+- [x] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.
+- [x] `run-hydra-gates.sh --base origin/development`, counting the gates that ran.
+- [x] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`.
+- [x] CI runs the gates on the full tree; the coverage guard needs a test for every added statement. (Local run with `--require-full-coverage`: 86 of 86 applicable gates ran.)
+- [x] `openspec validate outbound-call-log-investigation-window --type change --strict` passes.
+- [x] One PR, `--base development`; merge `development` in, never rebase; no `Co-Authored-By` trailer.
+- [x] Done means merged on `development` with CI green (the CI agent lands the checkpoint PR). Row 13.23 is `production` only once a store release carries it.
