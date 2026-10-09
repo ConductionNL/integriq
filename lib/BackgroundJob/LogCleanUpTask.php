@@ -22,6 +22,7 @@
 namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -46,10 +47,12 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
 	 * @param OrObjectService $orObjectService OR object service for log operations.
+	 * @param BodyCapturePolicy $bodyCapturePolicy Strips call bodies past their expiry.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly OrObjectService $orObjectService,
+		private readonly BodyCapturePolicy $bodyCapturePolicy,
 	) {
 		parent::__construct(time: $time);
 
@@ -100,6 +103,81 @@ class LogCleanUpTask extends TimedJob {
 	}//end cleanupSchema()
 
 	/**
+	 * Strip the bodies of every call record past its `bodyExpiresAt`, and keep the record.
+	 *
+	 * Removes the request and response bodies and `replayRequest`, sets
+	 * `bodyCaptured` to false and `bodyExpiredAt` to now, and drops
+	 * `bodyExpiresAt` so the record is not picked up again. The record itself
+	 * stays until its own `expires`.
+	 *
+	 * @return int How many records were stripped.
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function stripExpiredBodies(): int {
+		$now = new DateTime();
+		$matches = $this->orObjectService->findAll(
+			config: [
+				'filters' => [
+					'register' => 'integriq',
+					'schema' => 'call_log',
+					'bodyExpiresAt[lt]' => $now->format('Y-m-d H:i:s'),
+				],
+			],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$stripped = 0;
+		foreach (($matches['results'] ?? $matches) as $object) {
+			$record = $object->getObject();
+			$bags = $this->bodyCapturePolicy->strip(
+				request: $this->bag(value: ($record['request'] ?? [])),
+				response: $this->bag(value: ($record['response'] ?? []))
+			);
+			$record['request'] = $bags['request'];
+			$record['response'] = $bags['response'];
+			unset($record['replayRequest'], $record['bodyExpiresAt']);
+			$record['bodyCaptured'] = false;
+			$record['bodyExpiredAt'] = $now->format('c');
+
+			try {
+				$this->orObjectService->saveObject(
+					object: $record,
+					register: 'integriq',
+					schema: 'call_log',
+					uuid: $object->getUuid(),
+					_rbac: false,
+					_multitenancy: false,
+					silent: true
+				);
+				$stripped++;
+			} catch (\Exception $e) {
+				// Continue with the remaining records even if one write fails.
+			}
+		}//end foreach
+
+		return $stripped;
+
+	}//end stripExpiredBodies()
+
+	/**
+	 * A stored request or response narrowed to an array.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<string,mixed> The value, or an empty array.
+	 */
+	private function bag(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [];
+
+	}//end bag()
+
+	/**
 	 * Execute the log cleanup task.
 	 *
 	 * This method removes expired logs from all log schemas to maintain
@@ -115,6 +193,9 @@ class LogCleanUpTask extends TimedJob {
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
 	public function run(mixed $argument): void {
+		// Strip captured bodies past their expiry; the records stay (REQ-OCD-009).
+		$this->stripExpiredBodies();
+
 		// Clear expired call logs.
 		$this->cleanupSchema(schema: 'call_log');
 
