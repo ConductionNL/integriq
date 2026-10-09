@@ -2114,7 +2114,8 @@ OC.L10N.register(
         "Bodies removed at": "Inhoud verwijderd op",
         "When the cleanup job removed the bodies": "Wanneer de opschoontaak de inhoud verwijderde",
         "Replay request": "Herhaalverzoek",
-        "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "Het verzoek dat een mislukte aanroep verstuurde, zonder geheimen, bewaard zodat de aanroep herhaald kan worden. Alleen leesbaar met het herhaalrecht"
+        "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "Het verzoek dat een mislukte aanroep verstuurde, zonder geheimen, bewaard zodat de aanroep herhaald kan worden. Alleen leesbaar met het herhaalrecht",
+        "The source could not be saved. Nothing changed.": "De bron kon niet worden opgeslagen. Er is niets veranderd."
     },
     "nplurals=2; plural=(n != 1);"
 )

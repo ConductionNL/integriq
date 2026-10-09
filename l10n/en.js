@@ -3460,7 +3460,8 @@ OC.L10N.register(
         "Bodies removed at": "Bodies removed at",
         "When the cleanup job removed the bodies": "When the cleanup job removed the bodies",
         "Replay request": "Replay request",
-        "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission"
+        "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission",
+        "The source could not be saved. Nothing changed.": "The source could not be saved. Nothing changed."
     },
     "nplurals=2; plural=(n != 1);"
 )

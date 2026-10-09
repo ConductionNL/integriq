@@ -40,8 +40,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\IUser;
 use OCP\IUserSession;
+use Throwable;
 
 /**
  * Opens and closes a source's investigation window.
@@ -123,7 +123,7 @@ class BodyCaptureController extends Controller {
 		$data = $source->getObject();
 		$data['bodyCaptureUntil'] = $until->format('c');
 		$data['bodyCaptureReason'] = $reason;
-		$data['bodyCaptureBy'] = $admin->getUID();
+		$data['bodyCaptureBy'] = $admin;
 
 		return $this->save(source: $source, data: $data);
 
@@ -160,7 +160,7 @@ class BodyCaptureController extends Controller {
 		}
 
 		$data['bodyCaptureUntil'] = $now->format('c');
-		$data['bodyCaptureBy'] = $admin->getUID();
+		$data['bodyCaptureBy'] = $admin;
 
 		return $this->save(source: $source, data: $data);
 
@@ -172,9 +172,9 @@ class BodyCaptureController extends Controller {
 	 * The route already carries the admin setting; this check keeps the body
 	 * honest when the attribute is ever loosened.
 	 *
-	 * @return IUser|JSONResponse The administrator, or the refusal.
+	 * @return string|JSONResponse The administrator's user id, or the refusal.
 	 */
-	private function requireAdmin(): IUser|JSONResponse {
+	private function requireAdmin(): string|JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
@@ -187,7 +187,7 @@ class BodyCaptureController extends Controller {
 			);
 		}
 
-		return $user;
+		return $user->getUID();
 
 	}//end requireAdmin()
 
@@ -251,14 +251,21 @@ class BodyCaptureController extends Controller {
 	 * @return JSONResponse The window.
 	 */
 	private function save(ObjectEntity $source, array $data): JSONResponse {
-		$saved = $this->objectService->saveObject(
-			object: $data,
-			register: 'integriq',
-			schema: 'source',
-			uuid: $source->getUuid(),
-			_rbac: false,
-			_multitenancy: false
-		);
+		try {
+			$saved = $this->objectService->saveObject(
+				object: $data,
+				register: 'integriq',
+				schema: 'source',
+				uuid: $source->getUuid(),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable) {
+			return new JSONResponse(
+				['error' => $this->l->t('The source could not be saved. Nothing changed.')],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
 
 		return new JSONResponse(
 			[

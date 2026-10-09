@@ -62,6 +62,13 @@ class BodyCaptureControllerTest extends TestCase {
 	private array $source = [];
 
 	/**
+	 * Whether the save throws.
+	 *
+	 * @var bool
+	 */
+	private bool $failSave = false;
+
+	/**
 	 * Build the controller.
 	 *
 	 * @param array<string,mixed> $params The request parameters.
@@ -94,6 +101,10 @@ class BodyCaptureControllerTest extends TestCase {
 		);
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true, $_multitenancy = true, $silent = false) {
+				if ($this->failSave === true) {
+					throw new \RuntimeException('database unavailable');
+				}
+
 				$this->saves[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid, 'silent' => $silent];
 				$this->source = $object;
 				$entity = new ObjectEntity();
@@ -229,6 +240,20 @@ class BodyCaptureControllerTest extends TestCase {
 		$this->assertSame(409, $this->controller([])->close(self::SOURCE)->getStatus());
 		$this->assertSame([], $this->saves);
 	}//end testClosingWithoutAWindowChangesNothing()
+
+	/**
+	 * A save that fails answers 500 and claims nothing.
+	 *
+	 * @return void
+	 */
+	public function testAFailedSaveAnswersAnError(): void {
+		$this->failSave = true;
+
+		$response = $this->controller(['hours' => 24, 'reason' => 'onderzoek'])->open(self::SOURCE);
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertArrayNotHasKey('bodyCaptureUntil', $response->getData());
+	}//end testAFailedSaveAnswersAnError()
 
 	/**
 	 * Both actions carry the admin setting attribute and never NoAdminRequired.
