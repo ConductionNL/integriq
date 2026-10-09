@@ -112,6 +112,8 @@ use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
 use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Observability\IntegriqMetricsProvider;
+use OCA\Integriq\Observability\Otel\OtlpTraceExporter;
+use OCA\Integriq\Observability\Otel\TraceExporterInterface;
 use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
 use OCA\Integriq\Outbound\Call\CallServiceDispatcher;
 use OCA\Integriq\Outbound\Identity\DnsResolverInterface;
@@ -400,6 +402,10 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ExchangeJobRequestedEvent::class, ExchangeJobRequestedListener::class);
 		$context->registerEventListener(ExchangeMappingRequestedEvent::class, ExchangeMappingRequestedListener::class);
 		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);
+		// OpenTelemetry export (observability-opentelemetry-export D2): the
+		// OTLP/HTTP JSON exporter is the one binding; an SDK exporter can
+		// replace it here without touching the span mapper.
+		$context->registerServiceAlias(TraceExporterInterface::class, OtlpTraceExporter::class);
 		// An authority's later retour on an exchange job's record
 		// (connectors-data-exchange-dispatch REQ-013): one listener on the
 		// four adapters' acknowledgement events.

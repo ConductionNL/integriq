@@ -102,6 +102,7 @@
                      ObjectService above. -->
                 <referencedClass name="OCA\OpenRegister\Service\Task\TaskService"/>
                 <referencedClass name="OCA\OpenRegister\Db\Task"/>
+                <referencedClass name="OCA\OpenRegister\Event\TaskTerminalEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialBrokerService"/>
                 <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException"/>
                 <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialUpstreamException"/>

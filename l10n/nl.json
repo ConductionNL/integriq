@@ -2082,7 +2082,21 @@
         "What happened to the call.": "Wat er met het gesprek gebeurde.",
         "When the PBX says it happened, ISO 8601, or empty.": "Wanneer het volgens de telefooncentrale gebeurde, ISO 8601, of leeg.",
         "Approve or reject this request in Integriq. Your decision resumes the suspended run.": "Keur dit verzoek goed of wijs het af in Integriq. Je besluit hervat de gepauzeerde uitvoering.",
-        "Rejected in the shared task inbox": "Afgewezen in de gedeelde takenlijst"
+        "Rejected in the shared task inbox": "Afgewezen in de gedeelde takenlijst",
+        "Send traces to a monitoring service": "Traces naar een monitoringdienst sturen",
+        "Integriq sends each execution trace to an OpenTelemetry collector you choose. Spans carry names, timing and status, never message content.": "Integriq stuurt elke uitvoeringstrace naar een OpenTelemetry-collector die je kiest. Spans bevatten namen, tijden en status, nooit de inhoud van berichten.",
+        "Send traces": "Traces sturen",
+        "Collector address": "Adres van de collector",
+        "The collector runs in our own network": "De collector draait in ons eigen netwerk",
+        "Service name": "Servicenaam",
+        "Share of successful traces to send, in percent": "Deel van de geslaagde traces dat je stuurt, in procenten",
+        "Credential for the collector login": "Inloggegeven voor de collector",
+        "Header the login goes in": "Header waarin de login meegaat",
+        "The sampling ratio must be between 0 and 1.": "Het steekproefdeel moet tussen 0 en 1 liggen.",
+        "Export needs a collector endpoint.": "Voor het versturen is een collectoradres nodig.",
+        "The collector endpoint must be a full http or https address.": "Het collectoradres moet een volledig http- of https-adres zijn.",
+        "The collector endpoint must use https, unless you mark it as an internal collector.": "Het collectoradres moet https gebruiken, tenzij je het markeert als interne collector.",
+        "The collector endpoint may not carry a query or a login; give the login as a credential.": "Het collectoradres mag geen query of login bevatten. Geef de login op als inloggegeven."
     },
     "plurals": {}
 }

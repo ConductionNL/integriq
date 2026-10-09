@@ -19,6 +19,7 @@
 			<BerichtenboxSettings />
 			<ExpressionSourceSettings />
 			<ConnectionAlertSettings />
+			<OtelSettings />
 		</div>
 	</CnAdminSettingsShell>
 </template>
@@ -33,6 +34,7 @@ import DsoActivityMappingSettings from './DsoActivityMappingSettings.vue'
 import DsoPkiSettings from './DsoPkiSettings.vue'
 import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
+import OtelSettings from './OtelSettings.vue'
 import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
 
 /**
@@ -72,6 +74,7 @@ export default {
 		DsoPkiSettings,
 		ExpressionSourceSettings,
 		OpenFormulierenConnectionSettings,
+		OtelSettings,
 		WebhookConnectionsSettings,
 	},
 }

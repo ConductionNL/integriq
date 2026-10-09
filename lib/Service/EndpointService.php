@@ -33,6 +33,7 @@ use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\MessageValidation\EndpointMessageGate;
@@ -429,6 +430,37 @@ class EndpointService {
 	}//end buildSyntheticRequest()
 
 	/**
+	 * Mint the endpoint's execution trace. A valid inbound W3C traceparent
+	 * supplies the trace id and the caller's span id, so the caller's trace
+	 * continues into integriq; an invalid one is ignored and a fresh id is
+	 * minted (REQ-OTEL-004).
+	 *
+	 * @param ObjectEntity $endpoint The endpoint being called.
+	 * @param IRequest $request The incoming request.
+	 *
+	 * @return ExecutionTraceContext The trace context.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-trace-context-travels-in-and-out-as-w3c-traceparent-req-otel-004
+	 */
+	private function mintEndpointTrace(ObjectEntity $endpoint, IRequest $request): ExecutionTraceContext {
+		$inbound = (new TraceParent())->parse(header: $request->getHeader(TraceParent::HEADER));
+		if ($inbound === null) {
+			return new ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: $endpoint->getUuid(), triggeredBy: 'http');
+		}
+
+		$trace = new ExecutionTraceContext(
+			entryPoint: 'endpoint',
+			entryPointId: $endpoint->getUuid(),
+			traceId: $inbound['traceId'],
+			triggeredBy: 'http'
+		);
+		$trace->setParentSpanId(parentSpanId: $inbound['parentSpanId']);
+
+		return $trace;
+
+	}//end mintEndpointTrace()
+
+	/**
 	 * Handles incoming requests to endpoints
 	 *
 	 * This method determines how to handle the request based on the endpoint configuration.
@@ -471,7 +503,7 @@ class EndpointService {
 
 		// Execution-trace REQ-001: mint the traceId before any downstream
 		// work begins — one of the four execution entry points.
-		$trace = new ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: $endpoint->getUuid(), triggeredBy: 'http');
+		$trace = $this->mintEndpointTrace(endpoint: $endpoint, request: $request);
 
 		try {
 			$flowToken = new FlowToken(requestOriginal: $request, path: $path);

@@ -1,0 +1,94 @@
+<?php
+
+/**
+ * Queues finished execution traces for OpenTelemetry export.
+ *
+ * Never sends anything itself (REQ-OTEL-002, design D3): it only adds the
+ * trace id to the job list for {@see \OCA\Integriq\BackgroundJob\OtelExportJob},
+ * so a slow or absent collector cannot change the traced work.
+ *
+ * @category Observability
+ * @package  OCA\Integriq\Observability\Otel
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @link https://www.Integriq.nl
+ *
+ * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Integriq\Observability\Otel;
+
+use OCA\Integriq\BackgroundJob\OtelExportJob;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCP\BackgroundJob\IJobList;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Decides whether a persisted trace is exported, and queues it.
+ *
+ * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+ */
+class TraceExportQueue {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param OtelSettings $settings The export settings.
+	 * @param IJobList $jobList The background job list.
+	 * @param LoggerInterface $logger Logs a trace that could not be queued.
+	 */
+	public function __construct(
+		private readonly OtelSettings $settings,
+		private readonly IJobList $jobList,
+		private readonly LoggerInterface $logger,
+	) {
+
+	}//end __construct()
+
+	/**
+	 * Queue a finished, sampled trace. A running trace (an approval
+	 * suspension) waits for its final persist, and a dry run is never sent.
+	 * A failure to queue is logged and never reaches the traced work.
+	 *
+	 * @param ExecutionTraceContext $trace The persisted context.
+	 * @param string $status The persisted status.
+	 *
+	 * @return bool True when the trace was queued.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function queue(ExecutionTraceContext $trace, string $status): bool {
+		if ($status === 'running' || $trace->isDryRun() === true) {
+			return false;
+		}
+
+		try {
+			if ($this->settings->isEnabled() === false
+				|| $this->settings->isSampled(traceId: $trace->getTraceId(), status: $status, isReplay: $trace->isReplay()) === false
+			) {
+				return false;
+			}
+
+			$this->jobList->add(OtelExportJob::class, ['traceId' => $trace->getTraceId(), 'attempt' => 0]);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'TraceExportQueue: could not queue the trace for OpenTelemetry export: ' . $e->getMessage(),
+				['traceId' => $trace->getTraceId()]
+			);
+
+			return false;
+		}
+
+		return true;
+
+	}//end queue()
+}//end class

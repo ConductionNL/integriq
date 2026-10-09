@@ -3420,7 +3420,21 @@ OC.L10N.register(
         "What happened to the call.": "What happened to the call.",
         "When the PBX says it happened, ISO 8601, or empty.": "When the PBX says it happened, ISO 8601, or empty.",
         "Approve or reject this request in Integriq. Your decision resumes the suspended run.": "Approve or reject this request in Integriq. Your decision resumes the suspended run.",
-        "Rejected in the shared task inbox": "Rejected in the shared task inbox"
+        "Rejected in the shared task inbox": "Rejected in the shared task inbox",
+        "Send traces to a monitoring service": "Send traces to a monitoring service",
+        "Integriq sends each execution trace to an OpenTelemetry collector you choose. Spans carry names, timing and status, never message content.": "Integriq sends each execution trace to an OpenTelemetry collector you choose. Spans carry names, timing and status, never message content.",
+        "Send traces": "Send traces",
+        "Collector address": "Collector address",
+        "The collector runs in our own network": "The collector runs in our own network",
+        "Service name": "Service name",
+        "Share of successful traces to send, in percent": "Share of successful traces to send, in percent",
+        "Credential for the collector login": "Credential for the collector login",
+        "Header the login goes in": "Header the login goes in",
+        "The sampling ratio must be between 0 and 1.": "The sampling ratio must be between 0 and 1.",
+        "Export needs a collector endpoint.": "Export needs a collector endpoint.",
+        "The collector endpoint must be a full http or https address.": "The collector endpoint must be a full http or https address.",
+        "The collector endpoint must use https, unless you mark it as an internal collector.": "The collector endpoint must use https, unless you mark it as an internal collector.",
+        "The collector endpoint may not carry a query or a login; give the login as a credential.": "The collector endpoint may not carry a query or a login; give the login as a credential."
     },
     "nplurals=2; plural=(n != 1);"
 )
