@@ -72,7 +72,7 @@ class OtelExportJob extends QueuedJob {
 	 * @param SpanMapper $mapper Maps the trace to OTLP spans.
 	 * @param TraceExporterInterface $exporter Sends the spans.
 	 * @param OtelSettings $settings The export settings.
-	 * @param IJobList $jobList Queues a retry.
+	 * @param IJobList $jobList Schedules a retry for its run time.
 	 * @param LoggerInterface $logger Logs a dropped trace.
 	 * @param OtelExportBreaker $breaker Pauses sends during a collector outage.
 	 */
@@ -110,8 +110,9 @@ class OtelExportJob extends QueuedJob {
 
 		$now = $this->time->getTime();
 		if ($argument['notBefore'] > $now) {
-			// A delayed retry that is not due yet waits for a later cron run.
-			$this->jobList->add(self::class, $argument);
+			// A retry picked up before it is due (a job row from before retries
+			// were scheduled) waits until then instead of being runnable at once.
+			$this->jobList->scheduleAfter(self::class, $argument['notBefore'], $argument);
 			return;
 		}
 
@@ -189,12 +190,14 @@ class OtelExportJob extends QueuedJob {
 	 */
 	private function retryOrDrop(string $traceId, int $attempt, int $now, string $reason): void {
 		if ($attempt < self::MAX_RETRIES) {
-			$this->jobList->add(
+			$notBefore = ($now + (self::RETRY_DELAY_SECONDS * (2 ** $attempt)));
+			$this->jobList->scheduleAfter(
 				self::class,
+				$notBefore,
 				[
 					'traceId' => $traceId,
 					'attempt' => ($attempt + 1),
-					'notBefore' => ($now + (self::RETRY_DELAY_SECONDS * (2 ** $attempt))),
+					'notBefore' => $notBefore,
 				]
 			);
 			return;

@@ -233,8 +233,9 @@ class OtelExportTest extends TestCase {
 		$exporter->expects($this->exactly(4))->method('export')->willThrowException(new RuntimeException('refused'));
 		$jobList = $this->createMock(IJobList::class);
 		$requeued = [];
-		$jobList->method('add')->willReturnCallback(
-			function (string $job, $argument) use (&$requeued): void {
+		$jobList->expects($this->never())->method('add');
+		$jobList->method('scheduleAfter')->willReturnCallback(
+			function (string $job, int $runAfter, $argument) use (&$requeued): void {
 				$requeued[] = $argument['attempt'];
 			}
 		);
@@ -266,8 +267,9 @@ class OtelExportTest extends TestCase {
 
 	/**
 	 * A failed send is retried later, not at once: five, ten and twenty
-	 * minutes after the failure. A retry that is not due yet is put back
-	 * unchanged without a send.
+	 * minutes after the failure, each scheduled for its run time so the job
+	 * row is not runnable before then. A retry that is not due yet is
+	 * scheduled again for its run time, unchanged and without a send.
 	 *
 	 * @return void
 	 */
@@ -279,9 +281,10 @@ class OtelExportTest extends TestCase {
 		$exporter->expects($this->exactly(3))->method('export')->willThrowException(new RuntimeException('down'));
 		$jobList = $this->createMock(IJobList::class);
 		$requeued = [];
-		$jobList->method('add')->willReturnCallback(
-			function (string $job, $argument) use (&$requeued): void {
-				$requeued[] = $argument;
+		$jobList->expects($this->never())->method('add');
+		$jobList->method('scheduleAfter')->willReturnCallback(
+			function (string $job, int $runAfter, $argument) use (&$requeued): void {
+				$requeued[] = ['job' => $job, 'runAfter' => $runAfter, 'argument' => $argument];
 			}
 		);
 
@@ -290,11 +293,13 @@ class OtelExportTest extends TestCase {
 			$job->run(['traceId' => 't-1', 'attempt' => $attempt]);
 		}
 
-		$this->assertSame([1300, 1600, 2200], array_column($requeued, 'notBefore'));
+		$this->assertSame([1300, 1600, 2200], array_column($requeued, 'runAfter'), 'the job row itself waits until the retry is due');
+		$this->assertSame([1300, 1600, 2200], array_column(array_column($requeued, 'argument'), 'notBefore'));
+		$this->assertSame([OtelExportJob::class], array_unique(array_column($requeued, 'job')));
 
 		$requeued = [];
 		$job->run(['traceId' => 't-1', 'attempt' => 1, 'notBefore' => 1001]);
-		$this->assertSame([['traceId' => 't-1', 'attempt' => 1, 'notBefore' => 1001]], $requeued);
+		$this->assertSame([['job' => OtelExportJob::class, 'runAfter' => 1001, 'argument' => ['traceId' => 't-1', 'attempt' => 1, 'notBefore' => 1001]]], $requeued);
 
 	}//end testARetryWaitsLongerEachTime()
 
@@ -322,8 +327,8 @@ class OtelExportTest extends TestCase {
 		);
 		$jobList = $this->createMock(IJobList::class);
 		$requeued = [];
-		$jobList->method('add')->willReturnCallback(
-			function (string $job, $argument) use (&$requeued): void {
+		$jobList->method('scheduleAfter')->willReturnCallback(
+			function (string $job, int $runAfter, $argument) use (&$requeued): void {
 				$requeued[] = $argument;
 			}
 		);
