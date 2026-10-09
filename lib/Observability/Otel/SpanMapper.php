@@ -283,9 +283,13 @@ class SpanMapper {
 
 	/**
 	 * Whether a path segment looks like an identifier rather than a route
-	 * word: it holds a run of four or more digits (a BSN, a KvK or case
-	 * number, a numeric id), or it is a long token (a uuid, a hash, an
-	 * opaque key).
+	 * word: it holds an `@` (an e-mail address), it holds a run of four or
+	 * more digits once dots, dashes and spaces are taken out (a BSN written
+	 * as `999993653`, `999.993.653` or `999-993-653`, a KvK or case number,
+	 * a numeric id), or it is an opaque token. A token, written in a token
+	 * alphabet, is opaque at 32 characters or more, or at 20 or more when it
+	 * holds a digit or mixes upper and lower case (a uuid, a hash, a key).
+	 * A lowercase route word such as `ingeschrevenpersonen` stays.
 	 *
 	 * @param string $segment One decoded path segment.
 	 *
@@ -296,8 +300,20 @@ class SpanMapper {
 			return false;
 		}
 
-		return preg_match('/\d{4,}/', $segment) === 1
-			|| (strlen($segment) >= 20 && preg_match('/^[A-Za-z0-9_\-.=+~]+$/', $segment) === 1 && preg_match('/\d/', $segment) === 1);
+		if (str_contains($segment, '@') === true
+			|| preg_match('/\d{4,}/', (string)preg_replace('/[\s.\-]/', '', $segment)) === 1
+		) {
+			return true;
+		}
+
+		$length = strlen($segment);
+		if ($length < 20 || preg_match('/^[A-Za-z0-9_\-.=+~]+$/', $segment) !== 1) {
+			return false;
+		}
+
+		return $length >= 32
+			|| preg_match('/\d/', $segment) === 1
+			|| (preg_match('/[a-z]/', $segment) === 1 && preg_match('/[A-Z]/', $segment) === 1);
 
 	}//end looksLikeIdentifier()
 
