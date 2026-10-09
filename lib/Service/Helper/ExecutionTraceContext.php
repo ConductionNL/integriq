@@ -83,6 +83,16 @@ class ExecutionTraceContext {
 	private ?string $parentSpanId = null;
 
 	/**
+	 * The W3C trace id of an accepted inbound traceparent (dashed), when the
+	 * execution continues a caller's trace. Kept apart from `traceId`, which
+	 * is always Integriq's own id and the record's uuid, so a caller can
+	 * never choose which record its execution writes (REQ-OTEL-004).
+	 *
+	 * @var string|null
+	 */
+	private ?string $otelTraceId = null;
+
+	/**
 	 * Set only on a trace created by replay — the original trace's id.
 	 *
 	 * @var string|null
@@ -341,6 +351,44 @@ class ExecutionTraceContext {
 	public function getParentSpanId(): ?string {
 		return $this->parentSpanId;
 	}//end getParentSpanId()
+
+	/**
+	 * Continue a caller's W3C trace: exported spans and outbound
+	 * traceparent headers carry this id, the record keeps its own.
+	 *
+	 * @param string $otelTraceId The inbound trace id (dashed uuid form).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-trace-context-travels-in-and-out-as-w3c-traceparent-req-otel-004
+	 */
+	public function setOtelTraceId(string $otelTraceId): void {
+		$this->otelTraceId = $otelTraceId;
+	}//end setOtelTraceId()
+
+	/**
+	 * The inbound W3C trace id, when the execution continues a caller's
+	 * trace; null when Integriq started the trace.
+	 *
+	 * @return string|null The dashed trace id, or null.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-trace-context-travels-in-and-out-as-w3c-traceparent-req-otel-004
+	 */
+	public function getInboundOtelTraceId(): ?string {
+		return $this->otelTraceId;
+	}//end getInboundOtelTraceId()
+
+	/**
+	 * The W3C trace id this execution travels under: the caller's when one
+	 * was accepted, Integriq's own otherwise.
+	 *
+	 * @return string The dashed trace id.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-trace-context-travels-in-and-out-as-w3c-traceparent-req-otel-004
+	 */
+	public function getOtelTraceId(): string {
+		return ($this->otelTraceId ?? $this->traceId);
+	}//end getOtelTraceId()
 
 	/**
 	 * Get the ordered step buffer.

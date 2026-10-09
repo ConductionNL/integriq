@@ -180,6 +180,11 @@ class ApprovalService {
 			// SAME trace instead of creating a disconnected one.
 			$snapshot['traceId'] = $trace->getTraceId();
 			$snapshot['traceSteps'] = $trace->getSteps();
+			if ($trace->getInboundOtelTraceId() !== null) {
+				// The caller's W3C trace survives the suspension (REQ-OTEL-004).
+				$snapshot['otelTraceId'] = $trace->getInboundOtelTraceId();
+				$snapshot['parentSpanId'] = $trace->getParentSpanId();
+			}
 		}
 
 		$record = $this->objectService->saveObject(
@@ -499,11 +504,20 @@ class ApprovalService {
 			return null;
 		}
 
-		return new ExecutionTraceContext(
+		$trace = new ExecutionTraceContext(
 			entryPoint: 'endpoint',
 			traceId: $snapshot['traceId'],
 			priorSteps: ($snapshot['traceSteps'] ?? [])
 		);
+		if (is_string($snapshot['otelTraceId'] ?? null) === true && $snapshot['otelTraceId'] !== '') {
+			$trace->setOtelTraceId(otelTraceId: $snapshot['otelTraceId']);
+		}
+
+		if (is_string($snapshot['parentSpanId'] ?? null) === true && preg_match('/^[0-9a-f]{16}$/', $snapshot['parentSpanId']) === 1) {
+			$trace->setParentSpanId(parentSpanId: $snapshot['parentSpanId']);
+		}
+
+		return $trace;
 
 	}//end rehydrateTraceContext()
 

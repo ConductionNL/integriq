@@ -71,7 +71,14 @@ class SpanMapper {
 	 */
 	public function map(array $trace, string $serviceName): array {
 		$traceId = (string)($trace['traceId'] ?? '');
-		$traceHex = $this->traceParent->toHex(traceId: $traceId);
+		// A trace that continues a caller's exports under the caller's W3C
+		// trace id; the record's own id still names the spans.
+		$otelTraceId = (string)($trace['otelTraceId'] ?? '');
+		if ($otelTraceId === '') {
+			$otelTraceId = $traceId;
+		}
+
+		$traceHex = $this->traceParent->toHex(traceId: $otelTraceId);
 		$rootSpanId = $this->spanId(traceId: $traceId, salt: 'root');
 		$rootStart = $this->micros(micros: ($trace['startedAtUs'] ?? null), iso: ($trace['startedAt'] ?? null));
 		$rootEnd = $this->micros(micros: ($trace['finishedAtUs'] ?? null), iso: ($trace['finishedAt'] ?? null));

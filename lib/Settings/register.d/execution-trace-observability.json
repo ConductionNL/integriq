@@ -11,7 +11,7 @@
         "slug": "execution_trace",
         "title": "Execution Trace",
         "icon": "Timeline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An ordered per-execution step timeline joining rule -> mapping -> synchronization -> outbound-call activity under one traceId",
         "description": "Persists exactly one execution_trace object per logical execution (endpoint call, job run, event delivery, manual synchronization run). See openspec/specs/execution-trace/spec.md.",
         "required": ["traceId", "entryPoint", "status"],
@@ -32,6 +32,12 @@
             "pattern": "^[0-9a-f]{16}$",
             "description": "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)",
             "title": "Parent span id"
+          },
+          "otelTraceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)",
+            "title": "OpenTelemetry trace id"
           },
           "uuid": {
             "type": "string",

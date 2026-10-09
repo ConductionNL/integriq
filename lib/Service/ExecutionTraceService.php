@@ -138,6 +138,12 @@ class ExecutionTraceService {
 			$payload['parentSpanId'] = $trace->getParentSpanId();
 		}
 
+		if ($trace->getInboundOtelTraceId() !== null) {
+			// The caller's W3C trace id, apart from the record's own uuid
+			// (REQ-OTEL-004).
+			$payload['otelTraceId'] = $trace->getInboundOtelTraceId();
+		}
+
 		if ($resume === true) {
 			$this->logger->debug(
 				'ExecutionTraceService: persisting approval-resume continuation.',

@@ -64,16 +64,25 @@ the ids of the trace and the entry point object.
 ### Requirement: Trace context travels in and out as W3C traceparent (REQ-OTEL-004)
 
 An endpoint request carrying a valid W3C `traceparent` MUST produce a trace
-whose id is the header's trace id and whose root span's parent is the header's
-span id. An invalid header MUST be ignored. Every outbound call made during a
-trace MUST carry a `traceparent` naming the trace id and the span id of the
-call step.
+whose exported W3C trace id is the header's trace id and whose root span's
+parent is the header's span id. The `execution_trace` record MUST keep an id
+of integriq's own and hold the header's trace id apart, in `otelTraceId`, so a
+caller can never choose which record its execution writes. An invalid header
+MUST be ignored. Every outbound call made during a trace MUST carry a
+`traceparent` naming the trace's W3C trace id and the span id of the call
+step.
 
 #### Scenario: a caller's trace continues into integriq
 - GIVEN a consumer sending `traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`
 - WHEN it calls an integriq endpoint
-- THEN the resulting execution trace has trace id `4bf92f35-77b3-4da6-a3ce-929d0e0e4736` and the exported root span has parent `00f067aa0ba902b7`
-- @e2e exclude a header contract; covered by Newman in `tests/postman/`
+- THEN the resulting execution trace has `otelTraceId` `4bf92f35-77b3-4da6-a3ce-929d0e0e4736`, its exported spans carry that trace id, and the exported root span has parent `00f067aa0ba902b7`
+- @e2e exclude a header contract; covered by PHPUnit in `TraceContextPropagationTest`
+
+#### Scenario: a known trace id cannot overwrite a record
+- GIVEN two requests carrying the same valid `traceparent`
+- WHEN both call an integriq endpoint
+- THEN two `execution_trace` records exist, each with its own id, neither id being the header's trace id
+- @e2e exclude a persistence-id claim; covered by PHPUnit in `TraceContextPropagationTest`
 
 #### Scenario: a partner sees integriq's trace
 - GIVEN an endpoint that proxies to a source during a trace
