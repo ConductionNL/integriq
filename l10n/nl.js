@@ -423,6 +423,7 @@ OC.L10N.register(
         "No unset rules yet.": "Nog geen unset-regels.",
         "No validation": "Geen validatie",
         "Not authenticated": "Niet geauthenticeerd",
+        "No ended call with this call id": "Geen beëindigd gesprek met dit gesprek-id",
         "Not configured": "Niet geconfigureerd",
         "Not found": "Niet gevonden",
         "Note: the backend handler for upload is still pending. Configuration is persisted so it activates once the dispatcher case lands.": "Let op: de backend-handler voor uploaden is nog in behandeling. De configuratie wordt opgeslagen zodat deze wordt geactiveerd zodra de dispatcher-case beschikbaar is.",
@@ -2056,7 +2057,22 @@ OC.L10N.register(
         "Result Stage": "Resultaatstadium",
         "The case the letter belongs to, when the sending app named one": "De zaak waar de brief bij hoort, als de verzendende app die heeft opgegeven",
         "The letter's category (besluit, case-update, statutory, service), as the sending app gave it": "De categorie van de brief (besluit, case-update, statutory, service), zoals de verzendende app die heeft opgegeven",
-        "Transport Message Id": "Transportbericht-id"
+        "Transport Message Id": "Transportbericht-id",
+        "Call event": "Gespreksgebeurtenis",
+        "Call id": "Gesprek-id",
+        "Call source": "Gespreksbron",
+        "Caller number": "Nummer van de beller",
+        "Duration (seconds)": "Duur (seconden)",
+        "How long the call lasted, when the contact moment was recorded for a CTI call.": "Hoe lang het gesprek duurde, als het contactmoment voor een CTI-gesprek is vastgelegd.",
+        "How long the call lasted. 0 except on an ended event.": "Hoe lang het gesprek duurde. 0, behalve bij een beëindigd gesprek.",
+        "The CTI source of that call. One callId on two sources is two calls.": "De CTI-bron van dat gesprek. Eén gesprek-id op twee bronnen zijn twee gesprekken.",
+        "The CTI source the event came through.": "De CTI-bron waarlangs de gebeurtenis binnenkwam.",
+        "The PBX's identifier for the call. Every event of one call carries the same callId.": "De id die de telefooncentrale aan het gesprek geeft. Elke gebeurtenis van één gesprek heeft dezelfde id.",
+        "The agent the call was for, or empty.": "De medewerker voor wie het gesprek was, of leeg.",
+        "The call this contact moment was recorded for, when an agent recorded it from a CTI call.": "Het gesprek waarvoor dit contactmoment is vastgelegd, als een medewerker het vanuit een CTI-gesprek vastlegde.",
+        "The caller's number in E.164, or empty when the number was withheld or could not be placed.": "Het nummer van de beller in E.164, of leeg als het nummer is afgeschermd of niet te plaatsen was.",
+        "What happened to the call.": "Wat er met het gesprek gebeurde.",
+        "When the PBX says it happened, ISO 8601, or empty.": "Wanneer het volgens de telefooncentrale gebeurde, ISO 8601, of leeg."
     },
     "nplurals=2; plural=(n != 1);"
 )

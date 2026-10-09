@@ -492,6 +492,7 @@ OC.L10N.register(
         "Card provider credential missing": "Card provider credential missing",
         "Card enrollment failed": "Card enrollment failed",
         "Not authenticated": "Not authenticated",
+        "No ended call with this call id": "No ended call with this call id",
         "Invalid payment amount": "Invalid payment amount",
         "Payment provider credential missing": "Payment provider credential missing",
         "No active payment source is configured": "No active payment source is configured",
@@ -3402,7 +3403,22 @@ OC.L10N.register(
         "Result Stage": "Result Stage",
         "The case the letter belongs to, when the sending app named one": "The case the letter belongs to, when the sending app named one",
         "The letter's category (besluit, case-update, statutory, service), as the sending app gave it": "The letter's category (besluit, case-update, statutory, service), as the sending app gave it",
-        "Transport Message Id": "Transport Message Id"
+        "Transport Message Id": "Transport Message Id",
+        "Call event": "Call event",
+        "Call id": "Call id",
+        "Call source": "Call source",
+        "Caller number": "Caller number",
+        "Duration (seconds)": "Duration (seconds)",
+        "How long the call lasted, when the contact moment was recorded for a CTI call.": "How long the call lasted, when the contact moment was recorded for a CTI call.",
+        "How long the call lasted. 0 except on an ended event.": "How long the call lasted. 0 except on an ended event.",
+        "The CTI source of that call. One callId on two sources is two calls.": "The CTI source of that call. One callId on two sources is two calls.",
+        "The CTI source the event came through.": "The CTI source the event came through.",
+        "The PBX's identifier for the call. Every event of one call carries the same callId.": "The PBX's identifier for the call. Every event of one call carries the same callId.",
+        "The agent the call was for, or empty.": "The agent the call was for, or empty.",
+        "The call this contact moment was recorded for, when an agent recorded it from a CTI call.": "The call this contact moment was recorded for, when an agent recorded it from a CTI call.",
+        "The caller's number in E.164, or empty when the number was withheld or could not be placed.": "The caller's number in E.164, or empty when the number was withheld or could not be placed.",
+        "What happened to the call.": "What happened to the call.",
+        "When the PBX says it happened, ISO 8601, or empty.": "When the PBX says it happened, ISO 8601, or empty."
     },
     "nplurals=2; plural=(n != 1);"
 )

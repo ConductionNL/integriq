@@ -1,0 +1,112 @@
+{
+	"_comment": "ADR-037 register fragment (kcc-cti-adapter Task 3, spec REQ-007, design D5). Declares `call_event`: one row per telephony event integriq accepted from a CTI source, kept 30 days through a declared retention and then swept by OpenRegister's ArchivalRetentionTask. A row holds the caller's phone number, which is personal data, so the authorization block is the lockdown shape of 99-mail-schemas-lockdown.json: four EMPTY rule lists deny everyone except the `admin` group and an object's owner. CallEventLog writes and reads in system context (`_rbac: false`); the CTI webhook has no session and the agent who pushes a contact moment holds `kiss.push`, not admin. `destroy` is deliberately not listed (see 99-payment-intent-lockdown.json). Also adds `callId`, `callSourceId` and `durationSeconds` to `kiss_klantcontact`: the local mirror of a contact moment the agent recorded for a call. The VNG Klantinteracties klantcontact has no duration field, so the duration lives on the mirror and is not sent on the wire. Does NOT edit lib/Settings/integriq_register.json.",
+	"components": {
+		"registers": {
+			"integriq": {
+				"schemas": [
+					"call_event"
+				]
+			}
+		},
+		"schemas": {
+			"call_event": {
+				"slug": "call_event",
+				"title": "Call event",
+				"icon": "PhoneLog",
+				"version": "1.0.0",
+				"summary": "A telephony event from a CTI source, kept 30 days",
+				"description": "One row per call event a CTI source delivered: ringing, answered, ended or transferred. An agent records a contact moment for an ended call by its callId; nothing creates one by itself. Rows are dropped 30 days after they were written. See openspec/changes/kcc-cti-adapter/design.md D5.",
+				"type": "object",
+				"required": [
+					"callId",
+					"kind",
+					"sourceId"
+				],
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": []
+				},
+				"properties": {
+					"callId": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255,
+						"description": "The PBX's identifier for the call. Every event of one call carries the same callId.",
+						"title": "Call id"
+					},
+					"kind": {
+						"type": "string",
+						"enum": [
+							"ringing",
+							"answered",
+							"ended",
+							"transferred"
+						],
+						"description": "What happened to the call.",
+						"title": "Kind"
+					},
+					"callerNumber": {
+						"type": "string",
+						"pattern": "^(\\+[1-9][0-9]{1,14})?$",
+						"description": "The caller's number in E.164, or empty when the number was withheld or could not be placed.",
+						"title": "Caller number"
+					},
+					"sourceId": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255,
+						"description": "The CTI source the event came through.",
+						"title": "Source"
+					},
+					"agentId": {
+						"type": "string",
+						"maxLength": 255,
+						"description": "The agent the call was for, or empty.",
+						"title": "Agent"
+					},
+					"at": {
+						"type": "string",
+						"maxLength": 64,
+						"description": "When the PBX says it happened, ISO 8601, or empty.",
+						"title": "At"
+					},
+					"durationSeconds": {
+						"type": "integer",
+						"minimum": 0,
+						"description": "How long the call lasted. 0 except on an ended event.",
+						"title": "Duration (seconds)"
+					}
+				},
+				"x-openregister-archival": {
+					"retention": {
+						"default": "P30D"
+					}
+				}
+			},
+			"kiss_klantcontact": {
+				"properties": {
+					"callId": {
+						"type": "string",
+						"maxLength": 255,
+						"description": "The call this contact moment was recorded for, when an agent recorded it from a CTI call.",
+						"title": "Call id"
+					},
+					"callSourceId": {
+						"type": "string",
+						"maxLength": 255,
+						"description": "The CTI source of that call. One callId on two sources is two calls.",
+						"title": "Call source"
+					},
+					"durationSeconds": {
+						"type": "integer",
+						"minimum": 0,
+						"description": "How long the call lasted, when the contact moment was recorded for a CTI call.",
+						"title": "Duration (seconds)"
+					}
+				}
+			}
+		}
+	}
+}

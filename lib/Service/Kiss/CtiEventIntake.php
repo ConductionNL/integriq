@@ -64,6 +64,7 @@ class CtiEventIntake {
 	 * @param CallContextService $context Resolves the caller and their open cases.
 	 * @param IEventDispatcher $dispatcher Dispatches the typed event.
 	 * @param LoggerInterface $logger Logger.
+	 * @param CallEventLog $callEvents The 30-day call event log a contact moment is recorded from.
 	 *
 	 * @return void
 	 */
@@ -73,6 +74,7 @@ class CtiEventIntake {
 		private readonly CallContextService $context,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly CallEventLog $callEvents,
 	) {
 	}//end __construct()
 
@@ -217,6 +219,15 @@ class CtiEventIntake {
 			at: (string) ($normalised['at'] ?? ''),
 			durationSeconds: (int) ($normalised['durationSeconds'] ?? 0)
 		);
+
+		// Logged BEFORE the dispatch: a panel that records the contact moment
+		// the instant it sees `ended` must find the call. A failed write costs
+		// that one contact moment, never the panel's live update.
+		try {
+			$this->callEvents->record(event: $event);
+		} catch (Throwable $e) {
+			$this->logger->error('[CtiEventIntake] could not log call event '.$event->cloudEventType().': '.$e->getMessage());
+		}
 
 		try {
 			$this->dispatcher->dispatchTyped($event);

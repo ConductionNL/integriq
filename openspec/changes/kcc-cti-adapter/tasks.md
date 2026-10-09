@@ -1,7 +1,6 @@
 # Tasks: kcc-cti-adapter
 
-> Tasks 1 and 2 are done. Task 3, the contact moment on request and the
-> 30-day retention, is open. Task 4, the source form and the docs, is open.
+> Tasks 1, 2 and 3 are done. Task 4, the source form and the docs, is open.
 >
 > Two things found while building, recorded rather than worked around:
 >
@@ -80,9 +79,32 @@
 
 ### Task 3: Contact moment on request, retention
 - **spec_ref**: `openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007`
-- **files**: `lib/Service/Kiss/CallContextService.php`, `lib/Settings/integriq_register.json` (`callEvent` log with 30-day retention)
-- [ ] Implement
-- [ ] Test
+- **files**: `lib/Service/Kiss/CallEventLog.php`, `lib/Service/Kiss/CtiEventIntake.php`, `lib/Service/KissSyncService.php`, `lib/Controller/KissController.php`, `lib/Exception/CallEventNotFoundException.php`, `lib/Settings/register.d/cti-call-events.json` (`call_event` log with 30-day retention), `tests/Unit/Service/Kiss/ContactMomentForCallTest.php`
+- [x] Implement
+- [x] Test
+- **note**: the files line named `CallContextService` and the base register.
+  The log is its own class, `CallEventLog`, because the context service only
+  reads, and the schema went into an ADR-037 fragment, not the base register.
+- **note on what is stored where**: every accepted event is written to
+  `call_event` BEFORE it is dispatched, so a panel that records the contact
+  moment the instant it sees `ended` finds the call. The schema declares
+  `x-openregister-archival.retention.default = P30D` and no rule, and the
+  authorization block is the lockdown shape (admin and owner only), because a
+  row holds a phone number. The log is written and read in system context.
+- **note on the push**: `POST /api/kiss/klantcontacten` takes `callId` and,
+  optionally, `callSourceId`. Integriq then records the contact moment on
+  `kanaal = telefoon` (whatever channel the panel posted), takes
+  `plaatsgevondenOp` from the call unless the panel sent one, and links the
+  case as before. The VNG Klantinteracties klantcontact has NO duration field,
+  so the duration (and the call) live on the local `kiss_klantcontact` mirror
+  and are not sent on the wire: sending a field the API does not define is the
+  failure KissSyncService already documents. A second push for the same call
+  answers with the first contact moment and creates nothing. A callId with no
+  ended event, or one callId ended on two sources without `callSourceId`, is
+  refused with 404 `unknown_call` before anything reaches KISS.
+- **note**: the sweep itself is OpenRegister's `ArchivalRetentionTask`; the
+  unit test pins the declaration with a fixed clock. That a row is really gone
+  after 30 days is a live check (Still owed).
 
 ### Task 4: Source form, i18n, docs
 - CTI provider picker and field mapping on the source page; Dutch and English strings; docs with screenshots.
