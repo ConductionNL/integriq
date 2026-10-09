@@ -63,8 +63,9 @@ class TraceExportQueue {
 	 * Queue a finished, sampled trace. A running trace (an approval
 	 * suspension) waits for its final persist, and a dry run is never sent.
 	 * While sends are paused after repeated collector failures nothing is
-	 * queued, so an outage cannot pile up jobs. A failure to queue is logged
-	 * and never reaches the traced work.
+	 * queued, so an outage cannot pile up jobs; each sampled trace skipped
+	 * then is counted, and the first one in a pause is logged. A failure to
+	 * queue is logged and never reaches the traced work.
 	 *
 	 * @param ExecutionTraceContext $trace The persisted context.
 	 * @param string $status The persisted status.
@@ -80,9 +81,13 @@ class TraceExportQueue {
 
 		try {
 			if ($this->settings->isEnabled() === false
-				|| $this->breaker?->isOpen(now: ($this->time?->getTime() ?? time())) === true
 				|| $this->settings->isSampled(traceId: $trace->getTraceId(), status: $status, isReplay: $trace->isReplay()) === false
 			) {
+				return false;
+			}
+
+			if ($this->breaker?->isOpen(now: ($this->time?->getTime() ?? time())) === true) {
+				$this->skipWhilePaused(breaker: $this->breaker, traceId: $trace->getTraceId());
 				return false;
 			}
 
@@ -99,4 +104,28 @@ class TraceExportQueue {
 		return true;
 
 	}//end queue()
+
+	/**
+	 * Count a sampled trace skipped because sends are paused, and log one
+	 * warning, with the running total of skipped traces, for the first one
+	 * in each pause.
+	 *
+	 * @param OtelExportBreaker $breaker The open breaker.
+	 * @param string $traceId The skipped trace.
+	 *
+	 * @return void
+	 */
+	private function skipWhilePaused(OtelExportBreaker $breaker, string $traceId): void {
+		$skipped = $breaker->recordSkipped();
+		if ($skipped === null) {
+			return;
+		}
+
+		$this->logger->warning(
+			'TraceExportQueue: OpenTelemetry sends are paused after repeated collector failures; traces finished before '
+			. date('c', $breaker->openUntil()) . ' are not exported.',
+			['traceId' => $traceId, 'skippedTotal' => $skipped]
+		);
+
+	}//end skipWhilePaused()
 }//end class

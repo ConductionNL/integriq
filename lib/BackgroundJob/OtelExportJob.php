@@ -72,7 +72,7 @@ class OtelExportJob extends QueuedJob {
 	 * @param SpanMapper $mapper Maps the trace to OTLP spans.
 	 * @param TraceExporterInterface $exporter Sends the spans.
 	 * @param OtelSettings $settings The export settings.
-	 * @param IJobList $jobList Queues a retry.
+	 * @param IJobList $jobList Schedules a retry for its run time.
 	 * @param LoggerInterface $logger Logs a dropped trace.
 	 * @param OtelExportBreaker $breaker Pauses sends during a collector outage.
 	 */
@@ -110,8 +110,18 @@ class OtelExportJob extends QueuedJob {
 
 		$now = $this->time->getTime();
 		if ($argument['notBefore'] > $now) {
-			// A delayed retry that is not due yet waits for a later cron run.
-			$this->jobList->add(self::class, $argument);
+			// A retry picked up before it is due (a job row from before retries
+			// were scheduled) waits until then instead of being runnable at once.
+			$this->jobList->scheduleAfter(self::class, $argument['notBefore'], $argument);
+			return;
+		}
+
+		$pausedUntil = $this->breaker->openUntil();
+		if ($pausedUntil > $now) {
+			// Sends are paused: wait for the pause to end without using up
+			// an attempt, since nothing was sent.
+			$argument['notBefore'] = $pausedUntil;
+			$this->jobList->scheduleAfter(self::class, $pausedUntil, $argument);
 			return;
 		}
 
@@ -146,20 +156,16 @@ class OtelExportJob extends QueuedJob {
 	}//end argument()
 
 	/**
-	 * Send one trace, unless sends are paused.
+	 * Send one trace.
 	 *
 	 * @param string $traceId The trace to send.
 	 * @param int $now The current unix time.
 	 *
 	 * @return void
 	 *
-	 * @throws RuntimeException When sends are paused or the collector failed.
+	 * @throws RuntimeException When the collector failed.
 	 */
 	private function send(string $traceId, int $now): void {
-		if ($this->breaker->isOpen(now: $now) === true) {
-			throw new RuntimeException('Sends are paused after repeated collector failures.');
-		}
-
 		$trace = $this->traces->findForExport(traceId: $traceId);
 		if ($trace === null) {
 			return;
@@ -189,19 +195,21 @@ class OtelExportJob extends QueuedJob {
 	 */
 	private function retryOrDrop(string $traceId, int $attempt, int $now, string $reason): void {
 		if ($attempt < self::MAX_RETRIES) {
-			$this->jobList->add(
+			$notBefore = ($now + (self::RETRY_DELAY_SECONDS * (2 ** $attempt)));
+			$this->jobList->scheduleAfter(
 				self::class,
+				$notBefore,
 				[
 					'traceId' => $traceId,
 					'attempt' => ($attempt + 1),
-					'notBefore' => ($now + (self::RETRY_DELAY_SECONDS * (2 ** $attempt))),
+					'notBefore' => $notBefore,
 				]
 			);
 			return;
 		}
 
 		$this->logger->warning(
-			'OtelExportJob: dropped a trace after ' . (self::MAX_RETRIES + 1) . ' failed sends: ' . $reason,
+			'OtelExportJob: dropped a trace after ' . ($attempt + 1) . ' failed sends: ' . $reason,
 			['traceId' => $traceId]
 		);
 

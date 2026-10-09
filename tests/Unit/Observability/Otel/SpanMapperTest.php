@@ -200,6 +200,50 @@ class SpanMapperTest extends TestCase {
 	}//end testABsnInThePathAndUrlCredentialsNeverReachTheCollector()
 
 	/**
+	 * A formatted BSN, whatever its separators or URL encoding, an e-mail
+	 * address and an opaque letter-only token are masked too; lowercase
+	 * route words under 32 characters stay.
+	 *
+	 * @return void
+	 */
+	public function testFormattedIdentifiersAndOpaqueTokensAreMaskedRouteWordsStay(): void {
+		$cases = [
+			'https://brp.example.org/ingeschrevenpersonen/999.993.653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999-993-653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999%20993%20653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999_993_653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999,993,653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999+993+653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999%C2%A0993%C2%A0653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999%2F993%2F653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://brp.example.org/ingeschrevenpersonen/999%252E993%252E653' => 'https://brp.example.org/ingeschrevenpersonen/{id}',
+			'https://crm.example.org/klanten/j.devries@gemeente.nl/contacten' => 'https://crm.example.org/klanten/{id}/contacten',
+			'https://crm.example.org/klanten/j.devries%2540gemeente.nl/contacten' => 'https://crm.example.org/klanten/{id}/contacten',
+			'https://hooks.example.org/services/abcdefghijklmnopqrstuvwxyzabcdef' => 'https://hooks.example.org/services/{id}',
+			'https://hooks.example.org/services/QwErTyUiOpAsDfGhJkLz' => 'https://hooks.example.org/services/{id}',
+			'https://zrc.example.org/zaken/api/v1/zaakinformatieobjecten' => 'https://zrc.example.org/zaken/api/v1/zaakinformatieobjecten',
+			'https://brp.example.org/haalcentraal/api/brp/ingeschrevenpersonen/kinderen' => 'https://brp.example.org/haalcentraal/api/brp/ingeschrevenpersonen/kinderen',
+		];
+
+		$trace = $this->trace();
+		$trace['steps'] = [];
+		foreach (array_keys($cases) as $index => $url) {
+			$trace['steps'][] = ['order' => ($index + 1), 'type' => 'call', 'name' => 'svc', 'status' => 'success', 'durationMs' => 1, 'input' => ['method' => 'get', 'url' => $url]];
+		}
+
+		$spans = $this->spans($trace);
+		foreach (array_values($cases) as $index => $expected) {
+			$this->assertSame($expected, $this->attrs($spans[($index + 1)])['url.full']);
+		}
+
+		$payload = json_encode((new SpanMapper(new TraceParent()))->map(trace: $trace, serviceName: 'integriq'));
+		foreach (['993', 'devries', 'gemeente.nl', 'abcdefghijklmnopqrstuvwxyzabcdef', 'QwErTyUiOpAsDfGhJkLz'] as $secret) {
+			$this->assertStringNotContainsString($secret, $payload, $secret);
+		}
+
+	}//end testFormattedIdentifiersAndOpaqueTokensAreMaskedRouteWordsStay()
+
+	/**
 	 * Steps counted but not kept are the root's `integriq.steps.dropped`
 	 * attribute, not a span; a trace without micro times falls back to the
 	 * whole-second times.

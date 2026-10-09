@@ -143,13 +143,14 @@ class SharedApprovalTaskListenerTest extends TestCase {
 	 */
 	public function testAnApprovalInTheSharedInboxResumesTheRun(): void {
 		$this->approvals->method('isAuthorizedApprover')->willReturn(true);
-		$this->actionAuth->expects($this->once())->method('requireAction')
+		$this->actionAuth->expects($this->exactly(2))->method('requireAction')
 			->with($this->anything(), 'approval.approve');
-		$this->decisions->expects($this->once())->method('approve')
+		$this->decisions->expects($this->exactly(2))->method('approve')
 			->with($this->record, $this->callback(static fn (IUser $u) => $u->getUID() === 'alice'), 'looks right')
 			->willReturn(new JSONResponse([]));
 
 		$this->listener->handle(new TaskTerminalEvent($this->task('approved', comment: 'looks right')));
+		$this->listener->handle(new TaskTerminalEvent($this->task(' Approved ', comment: 'looks right')));
 
 	}//end testAnApprovalInTheSharedInboxResumesTheRun()
 
@@ -309,7 +310,8 @@ class SharedApprovalTaskListenerTest extends TestCase {
 	 * Every outcome OpenRegister counts as a rejection rejects the record,
 	 * and so does a rejection OpenRegister rerouted to `dead_letter` for a
 	 * mirror with `onReject: dead_letter`: behind the same authorization, with
-	 * the approver's comment.
+	 * the approver's comment. Case and surrounding spaces do not matter, as
+	 * in OpenRegister's own classification.
 	 *
 	 * @return void
 	 */
@@ -323,7 +325,7 @@ class SharedApprovalTaskListenerTest extends TestCase {
 			}
 		);
 		$comments = [];
-		$this->decisions->expects($this->exactly(5))->method('reject')->willReturnCallback(
+		$this->decisions->expects($this->exactly(7))->method('reject')->willReturnCallback(
 			function (ObjectEntity $record, IUser $user, string $comment) use (&$comments): ObjectEntity {
 				$comments[] = $comment;
 
@@ -331,12 +333,12 @@ class SharedApprovalTaskListenerTest extends TestCase {
 			}
 		);
 
-		foreach (['rejected', 'returned', 'declined', 'denied', 'dead_letter'] as $outcome) {
+		foreach (['rejected', 'returned', 'declined', 'denied', 'dead_letter', 'Rejected', ' Denied '] as $outcome) {
 			$this->listener->handle(new TaskTerminalEvent($this->task($outcome, comment: 'no: ' . $outcome)));
 		}
 
-		$this->assertSame(array_fill(0, 5, 'approval.reject'), $actions);
-		$this->assertSame(['no: rejected', 'no: returned', 'no: declined', 'no: denied', 'no: dead_letter'], $comments);
+		$this->assertSame(array_fill(0, 7, 'approval.reject'), $actions);
+		$this->assertSame(['no: rejected', 'no: returned', 'no: declined', 'no: denied', 'no: dead_letter', 'no: Rejected', 'no:  Denied'], $comments);
 
 	}//end testEveryRejectingOutcomeAndARoutedRejectionReject()
 }//end class
