@@ -5,8 +5,10 @@
  *
  * Sends one queued execution trace to the configured OpenTelemetry
  * collector, off the request or run that produced it (REQ-OTEL-002,
- * design D3). A failed send is queued again, at most three times, and then
- * dropped with one log line.
+ * design D3). A failed send is queued again with a growing delay, at most
+ * three times, and then dropped with one log line. After five failed sends
+ * in a row the job sends nothing for five minutes (a circuit breaker), so
+ * a collector outage cannot tie up cron with timeouts.
  *
  * @category BackgroundJob
  * @package  OCA\Integriq\BackgroundJob
@@ -35,6 +37,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -52,6 +55,13 @@ class OtelExportJob extends QueuedJob {
 	 * @var int
 	 */
 	public const MAX_RETRIES = 3;
+
+	/**
+	 * The delay before the first retry, doubled for each further one.
+	 *
+	 * @var int
+	 */
+	public const RETRY_DELAY_SECONDS = 300;
 
 	/**
 	 * Constructor.
@@ -80,7 +90,7 @@ class OtelExportJob extends QueuedJob {
 	/**
 	 * Send the trace named in the argument.
 	 *
-	 * @param mixed $argument `{traceId, attempt}`.
+	 * @param mixed $argument `{traceId, attempt, notBefore?}`.
 	 *
 	 * @return void
 	 *
@@ -89,9 +99,11 @@ class OtelExportJob extends QueuedJob {
 	public function run(mixed $argument): void {
 		$traceId = '';
 		$attempt = 0;
+		$notBefore = 0;
 		if (is_array($argument) === true) {
 			$traceId = (string)($argument['traceId'] ?? '');
 			$attempt = (int)($argument['attempt'] ?? 0);
+			$notBefore = (int)($argument['notBefore'] ?? 0);
 		}
 
 		// Export switched off since the trace was queued: nothing to send.
@@ -99,16 +111,41 @@ class OtelExportJob extends QueuedJob {
 			return;
 		}
 
+		$now = $this->time->getTime();
+		if ($notBefore > $now) {
+			// A delayed retry that is not due yet waits for a later cron run.
+			$this->jobList->add(self::class, $argument);
+			return;
+		}
+
 		try {
+			if ($this->settings->isBreakerOpen(now: $now) === true) {
+				throw new RuntimeException('Sends are paused after repeated collector failures.');
+			}
+
 			$trace = $this->traces->findForExport(traceId: $traceId);
 			if ($trace === null) {
 				return;
 			}
 
-			$this->exporter->export(payload: $this->mapper->map(trace: $trace, serviceName: $this->settings->serviceName()));
+			try {
+				$this->exporter->export(payload: $this->mapper->map(trace: $trace, serviceName: $this->settings->serviceName()));
+			} catch (Throwable $e) {
+				$this->settings->recordSendFailure(now: $now);
+				throw $e;
+			}
+
+			$this->settings->recordSendSuccess();
 		} catch (Throwable $e) {
 			if ($attempt < self::MAX_RETRIES) {
-				$this->jobList->add(self::class, ['traceId' => $traceId, 'attempt' => ($attempt + 1)]);
+				$this->jobList->add(
+					self::class,
+					[
+						'traceId' => $traceId,
+						'attempt' => ($attempt + 1),
+						'notBefore' => ($now + (self::RETRY_DELAY_SECONDS * (2 ** $attempt))),
+					]
+				);
 				return;
 			}
 

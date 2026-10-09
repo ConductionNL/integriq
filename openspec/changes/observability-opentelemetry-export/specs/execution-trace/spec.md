@@ -39,14 +39,22 @@ number of steps that were counted but not retained.
 Integriq MUST NOT send spans on the request or run that produced the trace. It
 MUST queue the trace and send it from a background job, and a collector that
 is down MUST NOT change the response time or outcome of the traced work. A
-failed batch MUST be retried at most three times and then dropped with one log
-line.
+failed batch MUST be retried at most three times, each retry later than the
+one before, and then dropped with one log line. After five failed sends in a
+row, sends MUST pause for five minutes and no new trace is queued meanwhile,
+so a collector outage cannot tie up cron.
 
 #### Scenario: the collector is down
 - GIVEN export enabled and a collector that refuses connections
 - WHEN a consumer calls an endpoint
 - THEN the endpoint answers as it would with export off, and the trace is queued for the background job
 - @e2e exclude a timing guarantee; covered by PHPUnit asserting no HTTP call during persist()
+
+#### Scenario: a long collector outage pauses sends
+- GIVEN export enabled and a collector that has refused five sends in a row
+- WHEN the next trace is due for export
+- THEN integriq sends nothing for five minutes, queues no new trace, and retries the waiting trace later
+- @e2e exclude a background-job timing claim; covered by PHPUnit in `OtelExportTest`
 
 ### Requirement: Spans carry no message content (REQ-OTEL-003)
 

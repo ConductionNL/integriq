@@ -54,6 +54,20 @@ class OtelSettings {
 	public const DEFAULT_SAMPLING_RATIO = 0.1;
 
 	/**
+	 * Consecutive failed sends after which sends pause.
+	 *
+	 * @var int
+	 */
+	public const BREAKER_THRESHOLD = 5;
+
+	/**
+	 * Seconds sends stay paused once the breaker opened.
+	 *
+	 * @var int
+	 */
+	public const BREAKER_COOLDOWN_SECONDS = 300;
+
+	/**
 	 * The service name spans carry when an administrator set none.
 	 *
 	 * @var string
@@ -154,6 +168,56 @@ class OtelSettings {
 			&& $this->endpoint() !== '';
 
 	}//end isEnabled()
+
+	/**
+	 * Whether sends are paused because the collector failed too often in a
+	 * row, so an outage does not tie up cron with timeouts.
+	 *
+	 * @param int $now The current unix time.
+	 *
+	 * @return bool True while the cooldown runs.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function isBreakerOpen(int $now): bool {
+		return $this->appConfig->getValueInt(self::APP_ID, 'otel_breaker_open_until', 0) > $now;
+
+	}//end isBreakerOpen()
+
+	/**
+	 * Count a failed send; the threshold-th failure in a row pauses sends
+	 * for the cooldown and starts the count again.
+	 *
+	 * @param int $now The current unix time.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function recordSendFailure(int $now): void {
+		$failures = ($this->appConfig->getValueInt(self::APP_ID, 'otel_breaker_failures', 0) + 1);
+		if ($failures >= self::BREAKER_THRESHOLD) {
+			$this->appConfig->setValueInt(self::APP_ID, 'otel_breaker_open_until', ($now + self::BREAKER_COOLDOWN_SECONDS));
+			$failures = 0;
+		}
+
+		$this->appConfig->setValueInt(self::APP_ID, 'otel_breaker_failures', $failures);
+
+	}//end recordSendFailure()
+
+	/**
+	 * A successful send ends the run of failures.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function recordSendSuccess(): void {
+		if ($this->appConfig->getValueInt(self::APP_ID, 'otel_breaker_failures', 0) !== 0) {
+			$this->appConfig->setValueInt(self::APP_ID, 'otel_breaker_failures', 0);
+		}
+
+	}//end recordSendSuccess()
 
 	/**
 	 * The collector base URL, without `/v1/traces`.
