@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
+use OCA\Integriq\Observability\Otel\OtelExportBreaker;
 use OCA\Integriq\Observability\Otel\OtelSettings;
 use OCA\Integriq\Observability\Otel\SpanMapper;
 use OCA\Integriq\Observability\Otel\TraceExporterInterface;
@@ -73,6 +74,7 @@ class OtelExportJob extends QueuedJob {
 	 * @param OtelSettings $settings The export settings.
 	 * @param IJobList $jobList Queues a retry.
 	 * @param LoggerInterface $logger Logs a dropped trace.
+	 * @param OtelExportBreaker $breaker Pauses sends during a collector outage.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -82,6 +84,7 @@ class OtelExportJob extends QueuedJob {
 		private readonly OtelSettings $settings,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
+		private readonly OtelExportBreaker $breaker,
 	) {
 		parent::__construct(time: $time);
 
@@ -97,14 +100,8 @@ class OtelExportJob extends QueuedJob {
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
 	 */
 	public function run(mixed $argument): void {
-		$traceId = '';
-		$attempt = 0;
-		$notBefore = 0;
-		if (is_array($argument) === true) {
-			$traceId = (string)($argument['traceId'] ?? '');
-			$attempt = (int)($argument['attempt'] ?? 0);
-			$notBefore = (int)($argument['notBefore'] ?? 0);
-		}
+		$argument = $this->argument(argument: $argument);
+		$traceId = $argument['traceId'];
 
 		// Export switched off since the trace was queued: nothing to send.
 		if ($traceId === '' || $this->settings->isEnabled() === false) {
@@ -112,48 +109,101 @@ class OtelExportJob extends QueuedJob {
 		}
 
 		$now = $this->time->getTime();
-		if ($notBefore > $now) {
+		if ($argument['notBefore'] > $now) {
 			// A delayed retry that is not due yet waits for a later cron run.
 			$this->jobList->add(self::class, $argument);
 			return;
 		}
 
 		try {
-			if ($this->settings->isBreakerOpen(now: $now) === true) {
-				throw new RuntimeException('Sends are paused after repeated collector failures.');
-			}
-
-			$trace = $this->traces->findForExport(traceId: $traceId);
-			if ($trace === null) {
-				return;
-			}
-
-			try {
-				$this->exporter->export(payload: $this->mapper->map(trace: $trace, serviceName: $this->settings->serviceName()));
-			} catch (Throwable $e) {
-				$this->settings->recordSendFailure(now: $now);
-				throw $e;
-			}
-
-			$this->settings->recordSendSuccess();
+			$this->send(traceId: $traceId, now: $now);
 		} catch (Throwable $e) {
-			if ($attempt < self::MAX_RETRIES) {
-				$this->jobList->add(
-					self::class,
-					[
-						'traceId' => $traceId,
-						'attempt' => ($attempt + 1),
-						'notBefore' => ($now + (self::RETRY_DELAY_SECONDS * (2 ** $attempt))),
-					]
-				);
-				return;
-			}
-
-			$this->logger->warning(
-				'OtelExportJob: dropped a trace after ' . (self::MAX_RETRIES + 1) . ' failed sends: ' . $e->getMessage(),
-				['traceId' => $traceId]
-			);
-		}//end try
+			$this->retryOrDrop(traceId: $traceId, attempt: $argument['attempt'], now: $now, reason: $e->getMessage());
+		}
 
 	}//end run()
+
+	/**
+	 * The job argument, normalised.
+	 *
+	 * @param mixed $argument The raw argument.
+	 *
+	 * @return array{traceId: string, attempt: int, notBefore: int}
+	 */
+	private function argument(mixed $argument): array {
+		if (is_array($argument) === false) {
+			$argument = [];
+		}
+
+		$normalised = [
+			'traceId' => (string)($argument['traceId'] ?? ''),
+			'attempt' => (int)($argument['attempt'] ?? 0),
+			'notBefore' => (int)($argument['notBefore'] ?? 0),
+		];
+
+		return $normalised;
+
+	}//end argument()
+
+	/**
+	 * Send one trace, unless sends are paused.
+	 *
+	 * @param string $traceId The trace to send.
+	 * @param int $now The current unix time.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When sends are paused or the collector failed.
+	 */
+	private function send(string $traceId, int $now): void {
+		if ($this->breaker->isOpen(now: $now) === true) {
+			throw new RuntimeException('Sends are paused after repeated collector failures.');
+		}
+
+		$trace = $this->traces->findForExport(traceId: $traceId);
+		if ($trace === null) {
+			return;
+		}
+
+		try {
+			$this->exporter->export(payload: $this->mapper->map(trace: $trace, serviceName: $this->settings->serviceName()));
+		} catch (Throwable $e) {
+			$this->breaker->recordFailure(now: $now);
+			throw new RuntimeException($e->getMessage(), 0, $e);
+		}
+
+		$this->breaker->recordSuccess();
+
+	}//end send()
+
+	/**
+	 * Queue a later retry, five, ten and twenty minutes out, or drop the
+	 * trace with one log line once the retries are spent.
+	 *
+	 * @param string $traceId The trace.
+	 * @param int $attempt The attempt that just failed.
+	 * @param int $now The current unix time.
+	 * @param string $reason Why the send failed.
+	 *
+	 * @return void
+	 */
+	private function retryOrDrop(string $traceId, int $attempt, int $now, string $reason): void {
+		if ($attempt < self::MAX_RETRIES) {
+			$this->jobList->add(
+				self::class,
+				[
+					'traceId' => $traceId,
+					'attempt' => ($attempt + 1),
+					'notBefore' => ($now + (self::RETRY_DELAY_SECONDS * (2 ** $attempt))),
+				]
+			);
+			return;
+		}
+
+		$this->logger->warning(
+			'OtelExportJob: dropped a trace after ' . (self::MAX_RETRIES + 1) . ' failed sends: ' . $reason,
+			['traceId' => $traceId]
+		);
+
+	}//end retryOrDrop()
 }//end class

@@ -31,7 +31,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use DateTime;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ApprovalDecisionService;
 use OCA\Integriq\Service\ApprovalService;
@@ -127,24 +126,9 @@ class SharedApprovalTaskListener implements IEventListener {
 
 		try {
 			$record = $this->approvalService->find(id: (string)$metadata['approvalRequestId']);
-			// Idempotent: Integriq's own decision closed this mirror, or the
-			// record was already resolved another way.
-			if (($record->getObject()['status'] ?? null) !== 'pending') {
-				return;
+			if ($this->isPendingOn(record: $record, task: $task) === true) {
+				$this->resolve(record: $record, task: $task);
 			}
-
-			// Only the record's own mirror may resolve it: appId and metadata
-			// come from the task body, so any signed-in user can forge them.
-			$taskUuid = (string)($record->getObject()['taskUuid'] ?? '');
-			if ($taskUuid === '' || (string)$task->getUuid() !== $taskUuid) {
-				$this->logger->warning(
-					'SharedApprovalTaskListener: a task that is not the approval request\'s mirror was ignored',
-					['taskUuid' => $task->getUuid(), 'approvalRequestId' => $record->getUuid()]
-				);
-				return;
-			}
-
-			$this->resolve(record: $record, task: $task);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'SharedApprovalTaskListener: the mirrored task could not resolve its approval request: ' . $e->getMessage(),
@@ -175,25 +159,16 @@ class SharedApprovalTaskListener implements IEventListener {
 
 		$byTimer = ($completedBy === '' || str_starts_with($completedBy, self::TIMER_ACTOR_PREFIX) === true);
 		if (in_array($outcome, self::TIMER_OUTCOMES, true) === true && $byTimer === true) {
-			if ($this->hasExpired(record: $record) === true) {
-				$this->approvalService->expireFromSharedTask(approvalRequest: $record);
-			}
-
+			$this->expireWhenDue(record: $record);
 			return;
 		}
 
-		$rejects = in_array($outcome, self::REJECTING_OUTCOMES, true) === true
-			|| ($outcome === 'dead_letter' && $byTimer === false);
-		if ($outcome !== 'approved' && $rejects === false) {
+		$action = $this->decision(outcome: $outcome, byTimer: $byTimer);
+		if ($action === null) {
 			// A cancelled, terminated or otherwise ended mirror decides
 			// nothing: the record stays pending for Integriq's own screen,
 			// and the local sweep expires it once the mirror is closed.
 			return;
-		}
-
-		$action = 'approval.reject';
-		if ($outcome === 'approved') {
-			$action = 'approval.approve';
 		}
 
 		$user = $this->authorizedCompleter(record: $record, completedBy: $completedBy, action: $action);
@@ -203,7 +178,7 @@ class SharedApprovalTaskListener implements IEventListener {
 
 		$this->approvalService->assertActionable(approvalRequest: $record);
 
-		if ($outcome === 'approved') {
+		if ($action === 'approval.approve') {
 			$this->decisionService->approve(approvalRequest: $record, user: $user, comment: $comment);
 			return;
 		}
@@ -217,26 +192,77 @@ class SharedApprovalTaskListener implements IEventListener {
 	}//end resolve()
 
 	/**
-	 * Whether the record's own expiry has passed, so a timer outcome on its
-	 * mirror is the real timeout and not one recorded early.
+	 * Whether the record is still pending and the task is its own mirror.
+	 * A record no longer pending is left alone (idempotent: Integriq's own
+	 * decision closed this mirror, or the record was resolved another way).
+	 * appId and metadata come from the task body, so any signed-in user can
+	 * forge them; only the `taskUuid` Integriq wrote back on the record
+	 * identifies the mirror.
+	 *
+	 * @param ObjectEntity $record The approval_request.
+	 * @param Task $task The terminal task.
+	 *
+	 * @return bool True when the task may resolve the record.
+	 */
+	private function isPendingOn(ObjectEntity $record, Task $task): bool {
+		if (($record->getObject()['status'] ?? null) !== 'pending') {
+			return false;
+		}
+
+		$taskUuid = (string)($record->getObject()['taskUuid'] ?? '');
+		if ($taskUuid !== '' && (string)$task->getUuid() === $taskUuid) {
+			return true;
+		}
+
+		$this->logger->warning(
+			'SharedApprovalTaskListener: a task that is not the approval request\'s mirror was ignored',
+			['taskUuid' => $task->getUuid(), 'approvalRequestId' => $record->getUuid()]
+		);
+
+		return false;
+
+	}//end isPendingOn()
+
+	/**
+	 * Expire the record for a timer outcome, but only once its own expiry
+	 * has passed, so the outcome is the real timeout and not one recorded
+	 * early.
 	 *
 	 * @param ObjectEntity $record The pending approval_request.
 	 *
-	 * @return bool True when `expiresAt` lies in the past.
+	 * @return void
 	 */
-	private function hasExpired(ObjectEntity $record): bool {
-		$expiresAt = (string)($record->getObject()['expiresAt'] ?? '');
-		if ($expiresAt === '') {
-			return false;
+	private function expireWhenDue(ObjectEntity $record): void {
+		$expiresAt = strtotime((string)($record->getObject()['expiresAt'] ?? ''));
+		if ($expiresAt !== false && $expiresAt <= time()) {
+			$this->approvalService->expireFromSharedTask(approvalRequest: $record);
 		}
 
-		try {
-			return new DateTime($expiresAt) <= new DateTime();
-		} catch (Throwable $e) {
-			return false;
+	}//end expireWhenDue()
+
+	/**
+	 * The action-matrix action a user's outcome asks for: approve, reject
+	 * for every outcome OpenRegister counts as a rejection and for a
+	 * rejection it rerouted to `dead_letter`, or null when the outcome
+	 * decides nothing.
+	 *
+	 * @param string $outcome The task's recorded outcome.
+	 * @param bool $byTimer Whether the timer, not a user, recorded it.
+	 *
+	 * @return string|null `approval.approve`, `approval.reject` or null.
+	 */
+	private function decision(string $outcome, bool $byTimer): ?string {
+		if ($outcome === 'approved') {
+			return 'approval.approve';
 		}
 
-	}//end hasExpired()
+		if (in_array($outcome, self::REJECTING_OUTCOMES, true) === true || ($outcome === 'dead_letter' && $byTimer === false)) {
+			return 'approval.reject';
+		}
+
+		return null;
+
+	}//end decision()
 
 	/**
 	 * The completing user, when both authorization layers admit them; null

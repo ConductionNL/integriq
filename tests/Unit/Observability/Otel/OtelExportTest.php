@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Observability\Otel;
 
 use InvalidArgumentException;
 use OCA\Integriq\BackgroundJob\OtelExportJob;
+use OCA\Integriq\Observability\Otel\OtelExportBreaker;
 use OCA\Integriq\Observability\Otel\OtelSettings;
 use OCA\Integriq\Observability\Otel\OtlpTraceExporter;
 use OCA\Integriq\Observability\Otel\SpanMapper;
@@ -68,6 +69,27 @@ class OtelExportTest extends TestCase {
 	 * @return OtelSettings
 	 */
 	private function settings(): OtelSettings {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+
+		return new OtelSettings($this->appConfig(), $l10n);
+	}//end settings()
+
+	/**
+	 * The export breaker, backed by $this->config.
+	 *
+	 * @return OtelExportBreaker
+	 */
+	private function breaker(): OtelExportBreaker {
+		return new OtelExportBreaker($this->appConfig());
+	}//end breaker()
+
+	/**
+	 * An in-memory IAppConfig over $this->config.
+	 *
+	 * @return IAppConfig
+	 */
+	private function appConfig(): IAppConfig {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$get = fn (string $app, string $key, $default) => ($this->config[$key] ?? $default);
 		$set = function (string $app, string $key, $value): bool {
@@ -82,11 +104,8 @@ class OtelExportTest extends TestCase {
 			$appConfig->method($setter)->willReturnCallback($set);
 		}
 
-		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnArgument(0);
-
-		return new OtelSettings($appConfig, $l10n);
-	}//end settings()
+		return $appConfig;
+	}//end appConfig()
 
 	/**
 	 * A failed or replayed trace is always sampled; at ratio 0 a successful
@@ -222,7 +241,7 @@ class OtelExportTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning');
 
-		$job = new OtelExportJob($this->createMock(ITimeFactory::class), $traces, new SpanMapper(new TraceParent()), $exporter, $this->settings(), $jobList, $logger);
+		$job = new OtelExportJob($this->createMock(ITimeFactory::class), $traces, new SpanMapper(new TraceParent()), $exporter, $this->settings(), $jobList, $logger, $this->breaker());
 		foreach ([0, 1, 2, 3] as $attempt) {
 			$job->run(['traceId' => 't-1', 'attempt' => $attempt]);
 		}
@@ -266,7 +285,7 @@ class OtelExportTest extends TestCase {
 			}
 		);
 
-		$job = new OtelExportJob($this->clock(1000), $traces, new SpanMapper(new TraceParent()), $exporter, $this->settings(), $jobList, $this->createMock(LoggerInterface::class));
+		$job = new OtelExportJob($this->clock(1000), $traces, new SpanMapper(new TraceParent()), $exporter, $this->settings(), $jobList, $this->createMock(LoggerInterface::class), $this->breaker());
 		foreach ([0, 1, 2] as $attempt) {
 			$job->run(['traceId' => 't-1', 'attempt' => $attempt]);
 		}
@@ -309,27 +328,28 @@ class OtelExportTest extends TestCase {
 			}
 		);
 		$settings = $this->settings();
+		$breaker = $this->breaker();
 		$mapper = new SpanMapper(new TraceParent());
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$job = new OtelExportJob($this->clock(1000), $traces, $mapper, $exporter, $settings, $jobList, $logger);
+		$job = new OtelExportJob($this->clock(1000), $traces, $mapper, $exporter, $settings, $jobList, $logger, $breaker);
 		foreach (range(1, 5) as $trace) {
 			$job->run(['traceId' => 't-' . $trace, 'attempt' => 0]);
 		}
 
 		$this->assertSame(5, $sends);
-		$this->assertTrue($settings->isBreakerOpen(now: 1000));
+		$this->assertTrue($breaker->isOpen(now: 1000));
 
 		$requeued = [];
 		$job->run(['traceId' => 't-6', 'attempt' => 0]);
 		$this->assertSame(5, $sends, 'no send while the breaker is open');
 		$this->assertSame(1, $requeued[0]['attempt']);
 
-		$queue = new TraceExportQueue($settings, $jobList, $logger, $this->clock(1000));
+		$queue = new TraceExportQueue($settings, $jobList, $logger, $breaker, $this->clock(1000));
 		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'), 'nothing is queued while sends are paused');
 
 		$failing = false;
-		$later = new OtelExportJob($this->clock(1000 + OtelSettings::BREAKER_COOLDOWN_SECONDS), $traces, $mapper, $exporter, $settings, $jobList, $logger);
+		$later = new OtelExportJob($this->clock(1000 + OtelExportBreaker::COOLDOWN_SECONDS), $traces, $mapper, $exporter, $settings, $jobList, $logger, $breaker);
 		$later->run(['traceId' => 't-7', 'attempt' => 0]);
 		$this->assertSame(6, $sends);
 		$this->assertSame(0, $this->config['otel_breaker_failures']);
@@ -346,7 +366,7 @@ class OtelExportTest extends TestCase {
 		$exporter = $this->createMock(TraceExporterInterface::class);
 		$exporter->expects($this->never())->method('export');
 
-		(new OtelExportJob($this->createMock(ITimeFactory::class), $this->createMock(ExecutionTraceService::class), new SpanMapper(new TraceParent()), $exporter, $this->settings(), $this->createMock(IJobList::class), $this->createMock(LoggerInterface::class)))
+		(new OtelExportJob($this->createMock(ITimeFactory::class), $this->createMock(ExecutionTraceService::class), new SpanMapper(new TraceParent()), $exporter, $this->settings(), $this->createMock(IJobList::class), $this->createMock(LoggerInterface::class), $this->breaker()))
 			->run(['traceId' => 't-1', 'attempt' => 0]);
 
 	}//end testTheJobSendsNothingWhenExportIsOff()

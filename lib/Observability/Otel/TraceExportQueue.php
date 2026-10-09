@@ -46,12 +46,14 @@ class TraceExportQueue {
 	 * @param OtelSettings $settings The export settings.
 	 * @param IJobList $jobList The background job list.
 	 * @param LoggerInterface $logger Logs a trace that could not be queued.
+	 * @param OtelExportBreaker|null $breaker Pauses queuing during a collector outage; absent, never paused.
 	 * @param ITimeFactory|null $time The clock the breaker is read against; the system clock when absent.
 	 */
 	public function __construct(
 		private readonly OtelSettings $settings,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
+		private readonly ?OtelExportBreaker $breaker = null,
 		private readonly ?ITimeFactory $time = null,
 	) {
 
@@ -78,7 +80,7 @@ class TraceExportQueue {
 
 		try {
 			if ($this->settings->isEnabled() === false
-				|| $this->settings->isBreakerOpen(now: ($this->time?->getTime() ?? time())) === true
+				|| $this->breaker?->isOpen(now: ($this->time?->getTime() ?? time())) === true
 				|| $this->settings->isSampled(traceId: $trace->getTraceId(), status: $status, isReplay: $trace->isReplay()) === false
 			) {
 				return false;
