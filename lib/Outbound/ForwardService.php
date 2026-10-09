@@ -65,6 +65,8 @@ class ForwardService {
 	 *
 	 * @throws InvalidArgumentException When no recipient is named, which would forward to nobody
 	 *                                  while recording that a forward happened.
+	 *
+	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
 	 */
 	public function forward(
 		string $uuid,
@@ -96,7 +98,9 @@ class ForwardService {
 			]
 		);
 
-		$this->linkForward(forward: $forward, originalUuid: $uuid, actorUid: $actorUid);
+		// Hand back the record as linked: the one start() returned predates the
+		// link, so an answer built from it reported forwardedFrom as empty.
+		$forward = $this->linkForward(forward: $forward, originalUuid: $uuid, actorUid: $actorUid);
 		$this->linkOriginal(uuid: $uuid, original: $original, forwardUuid: (string)$forward->getUuid(), actorUid: $actorUid);
 
 		return $forward;
@@ -110,14 +114,14 @@ class ForwardService {
 	 * @param string $originalUuid The original's uuid.
 	 * @param string $actorUid Who forwarded it.
 	 *
-	 * @return void
+	 * @return ObjectEntity The forward record with the link written.
 	 */
-	private function linkForward(ObjectEntity $forward, string $originalUuid, string $actorUid): void {
+	private function linkForward(ObjectEntity $forward, string $originalUuid, string $actorUid): ObjectEntity {
 		$payload = $forward->getObject();
 		$payload['forwardedFrom'] = $originalUuid;
 		$payload['forwardedBy'] = $actorUid;
 
-		$this->objectService->saveObject(
+		return $this->objectService->saveObject(
 			object: $payload,
 			register: MessageRecorder::REGISTER,
 			schema: MessageRecorder::SCHEMA,

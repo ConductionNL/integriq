@@ -27,6 +27,7 @@ use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Service\SynchronizationRunProgressService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -87,29 +88,41 @@ class SynchronizationsController extends Controller {
 	}//end __construct()
 
 	/**
-	 * Retrieves call logs for a job.
+	 * List the contracts a synchronization wrote.
 	 *
-	 * This method returns all the call logs associated with a source based on its ID.
+	 * A synchronization is an OpenRegister object, so its id is a UUID. The id
+	 * used to be typed `int`, which cast every UUID to a number that no
+	 * contract carries: the list was always empty.
 	 *
-	 * @param integer $id The ID of the source to retrieve logs for.
+	 * @param string $id The synchronization's UUID.
 	 *
-	 * @return JSONResponse A JSON response containing the call logs.
+	 * @return JSONResponse `{results: [...]}`, one row per contract.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function contracts(int $id): JSONResponse {
+	public function contracts(string $id): JSONResponse {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
 					'register' => 'integriq',
 					'schema' => 'synchronization_contract',
-					'synchronizationId' => (string)$id,
+					'synchronizationId' => $id,
 				],
 			]
 		);
 		$contracts = ($matches['results'] ?? $matches);
-		return new JSONResponse($contracts);
+
+		$results = [];
+		foreach ($contracts as $contract) {
+			if ($contract instanceof ObjectEntity === true) {
+				$contract = $contract->getObject();
+			}
+
+			$results[] = $contract;
+		}
+
+		return new JSONResponse(['results' => $results]);
 	}//end contracts()
 
 	/**

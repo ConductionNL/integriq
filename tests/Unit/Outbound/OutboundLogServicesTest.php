@@ -352,6 +352,11 @@ class OutboundLogServicesTest extends TestCase {
 		$forwardUuid = (string)$forward->getUuid();
 		$this->assertNotSame($uuid, $forwardUuid);
 		$this->assertSame($uuid, $this->records[$forwardUuid]['forwardedFrom']);
+		$this->assertSame(
+			$uuid,
+			$forward->getObject()['forwardedFrom'],
+			'the record handed back is the linked one, so the API answer carries the link'
+		);
 		$this->assertSame($forwardUuid, $this->records[$uuid]['forwardedTo'][0]['message']);
 		$this->assertStringStartsWith('Fwd: ', $this->records[$forwardUuid]['subject']);
 		$this->assertStringContainsString('artikel 2:3 Awb', $this->records[$forwardUuid]['body']);

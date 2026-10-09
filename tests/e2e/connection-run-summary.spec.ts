@@ -14,6 +14,7 @@
  */
 
 import { expect, test } from '@playwright/test'
+import { withRequestToken } from './support/requestToken.ts'
 
 const OBJECTS = '/index.php/apps/openregister/api/objects/integriq'
 
@@ -61,6 +62,7 @@ test.describe('connection run summary', () => {
 		const summary = await (
 			await request.get(
 				`/index.php/apps/integriq/api/sources/${sourceId}/run-summary`,
+				{ headers: await withRequestToken(request) },
 			)
 		).json()
 		expect(summary.days).toHaveLength(7)

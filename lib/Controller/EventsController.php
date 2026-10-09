@@ -344,9 +344,11 @@ class EventsController extends Controller {
 
 		$filters = $this->request->getParams();
 
-		// Remove internal fields.
+		// Remove internal fields, and the paging parameters read below: left
+		// in, `limit` and `offset` became property filters that no
+		// subscription matches, so any paged read came back empty.
 		foreach ($filters as $key => $value) {
-			if (str_starts_with($key, '_') === true) {
+			if (str_starts_with($key, '_') === true || in_array($key, ['limit', 'offset'], true) === true) {
 				unset($filters[$key]);
 			}
 		}

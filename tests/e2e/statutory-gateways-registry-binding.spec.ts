@@ -11,6 +11,7 @@
  */
 
 import { expect, test } from '@playwright/test'
+import { anonymousRequest } from './support/anonymous.ts'
 
 const API_BASE = '/index.php/apps/integriq/api/gateways'
 
@@ -41,10 +42,8 @@ test.describe('ZGW registry binding', () => {
 	})
 
 	// @e2e statutory-gateways::an-unreachable-binding-fails-at-test-time
-	test('an anonymous request cannot test a binding at all', async ({
-		playwright,
-	}) => {
-		const anonymous = await playwright.request.newContext()
+	test('an anonymous request cannot test a binding at all', async () => {
+		const anonymous = await anonymousRequest()
 		try {
 			const resp = await anonymous.post(`${API_BASE}/registry-binding/test`, {
 				failOnStatusCode: false,
