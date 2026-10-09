@@ -153,7 +153,9 @@ class SharedApprovalTaskListener implements IEventListener {
 	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-a-decision-taken-on-the-shared-task-resumes-the-run
 	 */
 	private function resolve(ObjectEntity $record, Task $task): void {
-		$outcome = (string)$task->getOutcome();
+		// OpenRegister stores the outcome as sent and classifies it as
+		// strtolower(trim()) (TaskState), so `Rejected` is a rejection there.
+		$outcome = strtolower(trim((string)$task->getOutcome()));
 		$completedBy = (string)$task->getCompletedBy();
 		$comment = trim((string)$task->getComment());
 
