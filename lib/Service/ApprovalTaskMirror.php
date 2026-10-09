@@ -52,7 +52,7 @@ class ApprovalTaskMirror {
 	 * Constructor.
 	 *
 	 * @param ORTaskService|null $taskService OpenRegister's shared task service; absent, nothing is mirrored.
-	 * @param IL10N|null $l10n Translates the mirror's title and description; absent, English.
+	 * @param IL10N|null $l10n Translates the mirror's title and description (hitl-on-shared-tasks 2.4); absent, English.
 	 * @param LoggerInterface $logger Logger for mirror failures.
 	 */
 	public function __construct(
@@ -204,8 +204,9 @@ class ApprovalTaskMirror {
 	private function payload(array $data, string $approvalRequestId): array {
 		$payload = [
 			'state' => 'enabled',
-			'title' => $this->translate(text: 'Approval request'),
-			'description' => $this->translate(text: 'Approve or reject this request in Integriq. Your decision resumes the suspended run.'),
+			'title' => ($this->l10n?->t('Approval request') ?? 'Approval request'),
+			'description' => ($this->l10n?->t('Approve or reject this request in Integriq. Your decision resumes the suspended run.')
+				?? 'Approve or reject this request in Integriq. Your decision resumes the suspended run.'),
 			'performerType' => 'user',
 			'appId' => 'integriq',
 			'metadata' => [
@@ -236,22 +237,4 @@ class ApprovalTaskMirror {
 		return $payload;
 
 	}//end payload()
-
-	/**
-	 * Translate a mirror text when a translator is wired (hitl-on-shared-tasks 2.4).
-	 *
-	 * @param string $text The English source text.
-	 *
-	 * @return string The translated text.
-	 *
-	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-the-mirror-speaks-the-users-language
-	 */
-	private function translate(string $text): string {
-		if ($this->l10n === null) {
-			return $text;
-		}
-
-		return $this->l10n->t($text);
-
-	}//end translate()
 }//end class

@@ -31,7 +31,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IL10N;
 use OCP\IRequest;
 
 /**
@@ -45,13 +44,11 @@ class OtelSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request.
-	 * @param OtelSettings $settings The export settings.
-	 * @param IL10N $l The localization service.
+	 * @param OtelSettings $settings The export settings; its refusals are already translated.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly OtelSettings $settings,
-		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -90,7 +87,7 @@ class OtelSettingsController extends Controller {
 				]
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $this->l->t($e->getMessage())], Http::STATUS_BAD_REQUEST);
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
 		return new JSONResponse($stored);

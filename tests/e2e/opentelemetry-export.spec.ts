@@ -34,22 +34,37 @@ test.describe('opentelemetry export settings', () => {
 		const section = page.getByTestId('admin-otel-section')
 		await expect(section).toBeVisible({ timeout: 20_000 })
 
-		await page.getByTestId('admin-otel-endpoint').locator('input').fill('https://otel.example.org:4318')
+		await page
+			.getByTestId('admin-otel-endpoint')
+			.locator('input')
+			.fill('https://otel.example.org:4318')
 		await page.getByTestId('admin-otel-sampling').locator('input').fill('10')
-		await page.getByTestId('admin-otel-enabled').locator('input').check({ force: true })
+		await page
+			.getByTestId('admin-otel-enabled')
+			.locator('input')
+			.check({ force: true })
 		await page.getByTestId('admin-otel-save').click()
 
-		await expect.poll(async () => {
-			const stored = await request.get(CONFIG_URL, { headers: HEADERS })
-			return stored.json()
-		}, { timeout: 10_000 }).toMatchObject({
-			enabled: true,
-			endpoint: 'https://otel.example.org:4318',
-			samplingRatio: 0.1,
-		})
+		await expect
+			.poll(
+				async () => {
+					const stored = await request.get(CONFIG_URL, {
+						headers: HEADERS,
+					})
+					return stored.json()
+				},
+				{ timeout: 10_000 },
+			)
+			.toMatchObject({
+				enabled: true,
+				endpoint: 'https://otel.example.org:4318',
+				samplingRatio: 0.1,
+			})
 	})
 
-	test('a plain http collector is refused unless marked internal', async ({ request }) => {
+	test('a plain http collector is refused unless marked internal', async ({
+		request,
+	}) => {
 		const refused = await request.put(CONFIG_URL, {
 			failOnStatusCode: false,
 			headers: HEADERS,
@@ -60,7 +75,11 @@ test.describe('opentelemetry export settings', () => {
 		const internal = await request.put(CONFIG_URL, {
 			failOnStatusCode: false,
 			headers: HEADERS,
-			data: { enabled: true, endpoint: 'http://collector:4318', allowLocal: true },
+			data: {
+				enabled: true,
+				endpoint: 'http://collector:4318',
+				allowLocal: true,
+			},
 		})
 		expect(internal.status()).toBe(200)
 	})

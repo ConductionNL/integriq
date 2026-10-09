@@ -13,9 +13,7 @@
   @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
 -->
 <template>
-	<section
-		class="integriq-admin__section"
-		data-testid="admin-otel-section">
+	<section class="integriq-admin__section" data-testid="admin-otel-section">
 		<h3>{{ t('integriq', 'Send traces to a monitoring service') }}</h3>
 		<p class="integriq-admin__hint">
 			{{
@@ -61,7 +59,9 @@
 				min="0"
 				max="100"
 				data-testid="admin-otel-sampling"
-				:label="t('integriq', 'Share of successful traces to send, in percent')" />
+				:label="
+					t('integriq', 'Share of successful traces to send, in percent')
+				" />
 			<NcTextField
 				v-model="form.credentialName"
 				data-testid="admin-otel-credential"
@@ -124,6 +124,7 @@ export default {
 			get() {
 				return String(Math.round(this.form.samplingRatio * 100))
 			},
+
 			/**
 			 * Store a typed percentage as a ratio.
 			 *
@@ -132,7 +133,9 @@ export default {
 			 */
 			set(value) {
 				const percent = Number(value)
-				this.form.samplingRatio = Number.isFinite(percent) ? percent / 100 : 0
+				this.form.samplingRatio = Number.isFinite(percent)
+					? percent / 100
+					: 0
 			},
 		},
 	},
@@ -148,7 +151,9 @@ export default {
 			const { data } = await axios.get(generateUrl(URL))
 			this.form = { ...this.form, ...data }
 		} catch (e) {
-			this.error = e?.response?.data?.error || t('integriq', 'The setting could not be read.')
+			this.error =
+				e?.response?.data?.error
+				|| t('integriq', 'The setting could not be read.')
 		} finally {
 			this.loading = false
 		}
@@ -171,7 +176,9 @@ export default {
 				this.form = { ...this.form, ...data }
 				showSuccess(t('integriq', 'Saved.'))
 			} catch (e) {
-				this.error = e?.response?.data?.error || t('integriq', 'The setting could not be saved.')
+				this.error =
+					e?.response?.data?.error
+					|| t('integriq', 'The setting could not be saved.')
 			} finally {
 				this.busy = false
 			}

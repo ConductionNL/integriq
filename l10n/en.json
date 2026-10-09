@@ -3442,7 +3442,13 @@
         "Export needs a collector endpoint.": "Export needs a collector endpoint.",
         "The collector endpoint must be a full http or https address.": "The collector endpoint must be a full http or https address.",
         "The collector endpoint must use https, unless you mark it as an internal collector.": "The collector endpoint must use https, unless you mark it as an internal collector.",
-        "The collector endpoint may not carry a query or a login; give the login as a credential.": "The collector endpoint may not carry a query or a login; give the login as a credential."
+        "The collector endpoint may not carry a query or a login; give the login as a credential.": "The collector endpoint may not carry a query or a login; give the login as a credential.",
+        "Started at (µs)": "Started at (µs)",
+        "Finished at (µs)": "Finished at (µs)",
+        "Parent span id": "Parent span id",
+        "When the execution started, in microseconds since the epoch, so exported spans order below the second (observability-opentelemetry-export REQ-OTEL-001). Each step carries its own startedAtUs too, and an outbound call step the spanId its traceparent named": "When the execution started, in microseconds since the epoch, so exported spans order below the second (observability-opentelemetry-export REQ-OTEL-001). Each step carries its own startedAtUs too, and an outbound call step the spanId its traceparent named",
+        "When the execution finished, in microseconds since the epoch": "When the execution finished, in microseconds since the epoch",
+        "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)": "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)"
     },
     "plurals": {}
 }

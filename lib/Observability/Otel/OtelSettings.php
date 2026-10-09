@@ -30,6 +30,7 @@ namespace OCA\Integriq\Observability\Otel;
 
 use InvalidArgumentException;
 use OCP\IAppConfig;
+use OCP\IL10N;
 
 /**
  * Reads, validates and stores the export settings.
@@ -70,9 +71,11 @@ class OtelSettings {
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig The app configuration.
+	 * @param IL10N $l Translates the reason a value is refused.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
+		private readonly IL10N $l,
 	) {
 
 	}//end __construct()
@@ -105,7 +108,7 @@ class OtelSettings {
 	 *
 	 * @return array The stored settings, as {@see all()} reads them.
 	 *
-	 * @throws InvalidArgumentException When a value is refused; the message is the reason.
+	 * @throws InvalidArgumentException When a value is refused; the message is the translated reason.
 	 *
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
 	 */
@@ -116,7 +119,7 @@ class OtelSettings {
 		$ratio = (float)($values['samplingRatio'] ?? self::DEFAULT_SAMPLING_RATIO);
 
 		if ($ratio < 0.0 || $ratio > 1.0) {
-			throw new InvalidArgumentException('The sampling ratio must be between 0 and 1.');
+			throw new InvalidArgumentException($this->l->t('The sampling ratio must be between 0 and 1.'));
 		}
 
 		if ($endpoint !== '') {
@@ -124,7 +127,7 @@ class OtelSettings {
 		}
 
 		if ($enabled === true && $endpoint === '') {
-			throw new InvalidArgumentException('Export needs a collector endpoint.');
+			throw new InvalidArgumentException($this->l->t('Export needs a collector endpoint.'));
 		}
 
 		$this->appConfig->setValueBool(self::APP_ID, 'otel_enabled', $enabled);
@@ -270,15 +273,15 @@ class OtelSettings {
 		$scheme = strtolower((string)parse_url($endpoint, PHP_URL_SCHEME));
 		$host = (string)parse_url($endpoint, PHP_URL_HOST);
 		if ($host === '' || in_array($scheme, ['http', 'https'], true) === false) {
-			throw new InvalidArgumentException('The collector endpoint must be a full http or https address.');
+			throw new InvalidArgumentException($this->l->t('The collector endpoint must be a full http or https address.'));
 		}
 
 		if ($scheme === 'http' && $allowLocal === false) {
-			throw new InvalidArgumentException('The collector endpoint must use https, unless you mark it as an internal collector.');
+			throw new InvalidArgumentException($this->l->t('The collector endpoint must use https, unless you mark it as an internal collector.'));
 		}
 
 		if (parse_url($endpoint, PHP_URL_QUERY) !== null || parse_url($endpoint, PHP_URL_USER) !== null) {
-			throw new InvalidArgumentException('The collector endpoint may not carry a query or a login; give the login as a credential.');
+			throw new InvalidArgumentException($this->l->t('The collector endpoint may not carry a query or a login; give the login as a credential.'));
 		}
 
 	}//end assertEndpoint()

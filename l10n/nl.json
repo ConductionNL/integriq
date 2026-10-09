@@ -2096,7 +2096,13 @@
         "Export needs a collector endpoint.": "Voor het versturen is een collectoradres nodig.",
         "The collector endpoint must be a full http or https address.": "Het collectoradres moet een volledig http- of https-adres zijn.",
         "The collector endpoint must use https, unless you mark it as an internal collector.": "Het collectoradres moet https gebruiken, tenzij je het markeert als interne collector.",
-        "The collector endpoint may not carry a query or a login; give the login as a credential.": "Het collectoradres mag geen query of login bevatten. Geef de login op als inloggegeven."
+        "The collector endpoint may not carry a query or a login; give the login as a credential.": "Het collectoradres mag geen query of login bevatten. Geef de login op als inloggegeven.",
+        "Started at (µs)": "Gestart om (µs)",
+        "Finished at (µs)": "Klaar om (µs)",
+        "Parent span id": "Id van de bovenliggende span",
+        "When the execution started, in microseconds since the epoch, so exported spans order below the second (observability-opentelemetry-export REQ-OTEL-001). Each step carries its own startedAtUs too, and an outbound call step the spanId its traceparent named": "Wanneer de uitvoering begon, in microseconden sinds de epoch, zodat geëxporteerde spans ook binnen een seconde op volgorde staan (observability-opentelemetry-export REQ-OTEL-001). Elke stap heeft ook een eigen startedAtUs, en een uitgaande aanroep de spanId uit zijn traceparent",
+        "When the execution finished, in microseconds since the epoch": "Wanneer de uitvoering klaar was, in microseconden sinds de epoch",
+        "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)": "Het span-id van de aanroeper uit een geaccepteerde inkomende W3C-traceparent. Alleen gezet als de uitvoering de trace van de aanroeper voortzet (REQ-OTEL-004)"
     },
     "plurals": {}
 }

@@ -42,6 +42,7 @@ use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -81,7 +82,10 @@ class OtelExportTest extends TestCase {
 			$appConfig->method($setter)->willReturnCallback($set);
 		}
 
-		return new OtelSettings($appConfig);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+
+		return new OtelSettings($appConfig, $l10n);
 	}//end settings()
 
 	/**
