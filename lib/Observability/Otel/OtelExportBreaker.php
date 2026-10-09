@@ -27,6 +27,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Observability\Otel;
 
 use OCP\IAppConfig;
+use OCP\ICacheFactory;
+use OCP\IMemcache;
+use Throwable;
 
 /**
  * Pauses sends after repeated collector failures.
@@ -60,9 +63,11 @@ class OtelExportBreaker {
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the failure count and the pause end, shared by every cron worker.
+	 * @param ICacheFactory $cacheFactory Gives the distributed cache that counts skipped traces.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
+		private readonly ICacheFactory $cacheFactory,
 	) {
 
 	}//end __construct()
@@ -77,9 +82,75 @@ class OtelExportBreaker {
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
 	 */
 	public function isOpen(int $now): bool {
-		return $this->appConfig->getValueInt(self::APP_ID, 'otel_breaker_open_until', 0) > $now;
+		return $this->openUntil() > $now;
 
 	}//end isOpen()
+
+	/**
+	 * When the current or last pause ends.
+	 *
+	 * @return int The unix time sends resume, 0 when sends never paused.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function openUntil(): int {
+		return $this->appConfig->getValueInt(self::APP_ID, 'otel_breaker_open_until', 0);
+
+	}//end openUntil()
+
+	/**
+	 * Count a trace that was not queued because sends are paused, with an
+	 * atomic increment of `otel_skipped_total` in the distributed cache, so
+	 * the traced request writes nothing to the database per trace.
+	 *
+	 * @return int|null For the first trace skipped in the current pause, the
+	 *                  running total of skipped traces since the cache was
+	 *                  last cleared, across all pauses (per node when the
+	 *                  distributed cache falls back to APCu; 0 when no
+	 *                  memory cache counts them), so the caller logs one
+	 *                  warning per pause; null for every later one.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function recordSkipped(): ?int {
+		$skipped = $this->countSkipped();
+
+		$openUntil = $this->openUntil();
+		if ($this->appConfig->getValueInt(self::APP_ID, 'otel_skipped_warned_until', 0) === $openUntil) {
+			return null;
+		}
+
+		$this->appConfig->setValueInt(self::APP_ID, 'otel_skipped_warned_until', $openUntil);
+
+		return $skipped;
+
+	}//end recordSkipped()
+
+	/**
+	 * Increment the skipped-trace counter in the distributed cache.
+	 *
+	 * @return int The running total after the increment (since the cache
+	 *             was last cleared, per node on an APCu fallback), 0 when
+	 *             no memory cache is available or it failed.
+	 */
+	private function countSkipped(): int {
+		try {
+			$cache = $this->cacheFactory->createDistributed(self::APP_ID);
+			$count = false;
+			if ($cache instanceof IMemcache) {
+				$count = $cache->inc('otel_skipped_total');
+			}
+		} catch (Throwable) {
+			$count = false;
+		}
+
+		if (is_int($count) === false) {
+			return 0;
+		}
+
+		return $count;
+
+	}//end countSkipped()
 
 	/**
 	 * Count a failed send; the threshold-th failure in a row pauses sends
