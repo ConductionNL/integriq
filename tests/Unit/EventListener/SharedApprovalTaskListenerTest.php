@@ -117,9 +117,15 @@ class SharedApprovalTaskListenerTest extends TestCase {
 	 *
 	 * @return Task
 	 */
-	private function task(string $outcome, ?string $completedBy = 'alice', string $appId = 'integriq', ?string $comment = null): Task {
+	private function task(
+		string $outcome,
+		?string $completedBy = 'alice',
+		string $appId = 'integriq',
+		?string $comment = null,
+		string $uuid = 'task-1'
+	): Task {
 		$task = new Task();
-		$task->setUuid('task-1');
+		$task->setUuid($uuid);
 		$task->setAppId($appId);
 		$task->setOutcome($outcome);
 		$task->setCompletedBy($completedBy);
@@ -209,7 +215,7 @@ class SharedApprovalTaskListenerTest extends TestCase {
 		$this->approvals->expects($this->never())->method('expireFromSharedTask');
 
 		$this->listener->handle(new TaskTerminalEvent($this->task('approved')));
-		$this->listener->handle(new TaskTerminalEvent($this->task('dead_letter', completedBy: 'timer')));
+		$this->listener->handle(new TaskTerminalEvent($this->task('dead_letter', completedBy: null)));
 
 	}//end testARecordThatIsNoLongerPendingIsLeftAlone()
 
@@ -232,19 +238,105 @@ class SharedApprovalTaskListenerTest extends TestCase {
 	}//end testForeignAndUncommittedTasksAreIgnored()
 
 	/**
-	 * The shared sweep closed the mirror with its declared behaviour: the
-	 * record is resolved as expired. A cancelled mirror decides nothing.
+	 * The shared sweep closed the mirror with its declared behaviour after
+	 * the record's expiry: the record is resolved as expired. `skip` records
+	 * the timer as completer, `error` and `dead_letter` record none. A
+	 * cancelled mirror decides nothing.
 	 *
 	 * @return void
 	 */
 	public function testTheSharedSweepsExpiryResolvesTheRecordAndACancelDecidesNothing(): void {
+		$this->record->setObject(['status' => 'pending', 'taskUuid' => 'task-1', 'expiresAt' => '2026-01-01T00:00:00+00:00']);
 		$this->approvals->expects($this->exactly(3))->method('expireFromSharedTask')->with($this->record);
 		$this->decisions->expects($this->never())->method('approve');
 		$this->decisions->expects($this->never())->method('reject');
 
-		foreach (['skipped', 'failed', 'dead_letter', 'cancelled'] as $outcome) {
-			$this->listener->handle(new TaskTerminalEvent($this->task($outcome, completedBy: 'timer')));
-		}
+		$this->listener->handle(new TaskTerminalEvent($this->task('skipped', completedBy: 'flow-timer:timer-1')));
+		$this->listener->handle(new TaskTerminalEvent($this->task('failed', completedBy: null)));
+		$this->listener->handle(new TaskTerminalEvent($this->task('dead_letter', completedBy: null)));
+		$this->listener->handle(new TaskTerminalEvent($this->task('cancelled', completedBy: null)));
 
 	}//end testTheSharedSweepsExpiryResolvesTheRecordAndACancelDecidesNothing()
+
+	/**
+	 * A task that claims to be the record's mirror but is not (any signed-in
+	 * user can create one with Integriq's appId and metadata) changes
+	 * nothing, whatever its outcome.
+	 *
+	 * @return void
+	 */
+	public function testAForgedTaskChangesNothing(): void {
+		$this->record->setObject(['status' => 'pending', 'taskUuid' => 'task-1', 'expiresAt' => '2026-01-01T00:00:00+00:00']);
+		$this->approvals->method('isAuthorizedApprover')->willReturn(true);
+		$this->approvals->expects($this->never())->method('expireFromSharedTask');
+		$this->decisions->expects($this->never())->method('approve');
+		$this->decisions->expects($this->never())->method('reject');
+
+		foreach (['skipped', 'failed', 'dead_letter', 'approved', 'rejected'] as $outcome) {
+			$this->listener->handle(new TaskTerminalEvent($this->task($outcome, completedBy: null, uuid: 'forged-1')));
+			$this->listener->handle(new TaskTerminalEvent($this->task($outcome, uuid: 'forged-1')));
+		}
+
+		$this->record->setObject(['status' => 'pending', 'expiresAt' => '2026-01-01T00:00:00+00:00']);
+		$this->listener->handle(new TaskTerminalEvent($this->task('skipped', completedBy: null)));
+
+	}//end testAForgedTaskChangesNothing()
+
+	/**
+	 * A user who completes the real mirror with a timer outcome does not
+	 * expire the record, and a timer outcome recorded before the record's
+	 * expiry does not either.
+	 *
+	 * @return void
+	 */
+	public function testATimerOutcomeFromAUserOrBeforeTheExpiryChangesNothing(): void {
+		$this->approvals->method('isAuthorizedApprover')->willReturn(true);
+		$this->approvals->expects($this->never())->method('expireFromSharedTask');
+		$this->decisions->expects($this->never())->method('approve');
+		$this->decisions->expects($this->never())->method('reject');
+
+		$this->record->setObject(['status' => 'pending', 'taskUuid' => 'task-1', 'expiresAt' => '2026-01-01T00:00:00+00:00']);
+		$this->listener->handle(new TaskTerminalEvent($this->task('skipped')));
+		$this->listener->handle(new TaskTerminalEvent($this->task('failed')));
+
+		$this->record->setObject(['status' => 'pending', 'taskUuid' => 'task-1', 'expiresAt' => '2999-01-01T00:00:00+00:00']);
+		$this->listener->handle(new TaskTerminalEvent($this->task('skipped', completedBy: 'flow-timer:timer-1')));
+		$this->listener->handle(new TaskTerminalEvent($this->task('dead_letter', completedBy: null)));
+
+	}//end testATimerOutcomeFromAUserOrBeforeTheExpiryChangesNothing()
+
+	/**
+	 * Every outcome OpenRegister counts as a rejection rejects the record,
+	 * and so does a rejection OpenRegister rerouted to `dead_letter` for a
+	 * mirror with `onReject: dead_letter`: behind the same authorization, with
+	 * the approver's comment.
+	 *
+	 * @return void
+	 */
+	public function testEveryRejectingOutcomeAndARoutedRejectionReject(): void {
+		$this->approvals->method('isAuthorizedApprover')->willReturn(true);
+		$this->approvals->expects($this->never())->method('expireFromSharedTask');
+		$actions = [];
+		$this->actionAuth->method('requireAction')->willReturnCallback(
+			static function (IUser $user, string $action) use (&$actions): void {
+				$actions[] = $action;
+			}
+		);
+		$comments = [];
+		$this->decisions->expects($this->exactly(5))->method('reject')->willReturnCallback(
+			function (ObjectEntity $record, IUser $user, string $comment) use (&$comments): ObjectEntity {
+				$comments[] = $comment;
+
+				return $record;
+			}
+		);
+
+		foreach (['rejected', 'returned', 'declined', 'denied', 'dead_letter'] as $outcome) {
+			$this->listener->handle(new TaskTerminalEvent($this->task($outcome, comment: 'no: ' . $outcome)));
+		}
+
+		$this->assertSame(array_fill(0, 5, 'approval.reject'), $actions);
+		$this->assertSame(['no: rejected', 'no: returned', 'no: declined', 'no: denied', 'no: dead_letter'], $comments);
+
+	}//end testEveryRejectingOutcomeAndARoutedRejectionReject()
 }//end class
