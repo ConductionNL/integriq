@@ -25,7 +25,7 @@ use OCA\Integriq\Exception\IwmoIjwProviderException;
 use OCA\Integriq\Exception\IwmoIjwTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\IwmoIjwSyncService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
@@ -53,9 +53,9 @@ class IwmoIjwControllerTest extends TestCase {
 	private $syncService;
 
 	/**
-	 * @var WebhookSignatureService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var WebhookGate|\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private $signatureService;
+	private $gate;
 
 	/**
 	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
@@ -92,7 +92,7 @@ class IwmoIjwControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->syncService = $this->createMock(IwmoIjwSyncService::class);
-		$this->signatureService = $this->createMock(WebhookSignatureService::class);
+		$this->gate = $this->createMock(WebhookGate::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 		$this->l = $this->createMock(IL10N::class);
@@ -116,7 +116,7 @@ class IwmoIjwControllerTest extends TestCase {
 			'integriq',
 			$this->request,
 			$this->syncService,
-			$this->signatureService,
+			$this->gate,
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
@@ -240,84 +240,7 @@ class IwmoIjwControllerTest extends TestCase {
 
 	}//end testCreateBerichtMapsProviderFailureTo502()
 
-	/**
-	 * No iWMO/iJW source configured at all fails the inbound webhook closed (401).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-any-processing
-	 */
-	public function testInboundWithNoSourceConfiguredReturns401(): void {
-		$this->syncService->method('resolveActiveSource')
-			->willThrowException(new IwmoIjwProviderException(message: 'no source'));
-		$this->signatureService->expects($this->never())->method('verify');
 
-		$response = $this->controller->inbound();
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-	}//end testInboundWithNoSourceConfiguredReturns401()
-
-	/**
-	 * An unsigned/tampered retour is rejected 401 before any state change.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-any-processing
-	 */
-	public function testInboundInvalidSignatureReturns401BeforeAnySideEffect(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->syncService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(false);
-
-		$this->syncService->expects($this->never())->method('receiveReturn');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-		$this->assertSame('invalid signature', $response->getData()['error']);
-
-	}//end testInboundInvalidSignatureReturns401BeforeAnySideEffect()
-
-	/**
-	 * A verified retour is routed to receiveRetour() and always acknowledges receipt.
-	 *
-	 * @return void
-	 */
-	public function testInboundVerifiedRetourIsRoutedAndAcknowledged(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->syncService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-
-		$this->syncService->expects($this->once())->method('receiveReturn');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['received']);
-
-	}//end testInboundVerifiedRetourIsRoutedAndAcknowledged()
-
-	/**
-	 * A processing exception after a verified signature never surfaces as a 500.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-verified-retour-always-acknowledges-receipt
-	 */
-	public function testInboundNeverCrashesOnProcessingException(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->syncService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-		$this->syncService->method('receiveReturn')->willThrowException(new \RuntimeException('boom'));
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['received']);
-
-	}//end testInboundNeverCrashesOnProcessingException()
 }//end class

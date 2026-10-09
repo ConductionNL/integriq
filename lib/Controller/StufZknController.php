@@ -44,7 +44,8 @@ use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\StufZknSyncService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -57,6 +58,7 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Inbound SOAP kennisgeving receiver + authenticated outbound push endpoint for stuf-zkn-bridge.
@@ -64,6 +66,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the gate and its webhook-type constant replace the
+ * signature service; the HTTP, auth and provider types this controller answers with stay.
  */
 class StufZknController extends Controller {
 
@@ -80,7 +85,7 @@ class StufZknController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param StufZknSyncService $syncService Inbound/outbound orchestration logic.
-	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound endpoint.
+	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -90,7 +95,7 @@ class StufZknController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly StufZknSyncService $syncService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,
@@ -110,10 +115,15 @@ class StufZknController extends Controller {
 	 * this endpoint authenticates via webhook signature, not NC session —
 	 * the signature check IS the auth body for this route.
 	 *
-	 * @return DataDisplayResponse|JSONResponse A `Bv03`/`Fo03` StUF reply body (200), or a
-	 *                                          401 JSON error envelope on signature failure.
+	 * The kennisgeving authenticates the `stuf-zkn-webhook` consumer, and the
+	 * upsert and the `stuf_message` run as that consumer's account. A missing
+	 * connection, account or right answers 503 so the sender retries.
+	 *
+	 * @return DataDisplayResponse|JSONResponse A `Bv03`/`Fo03` StUF reply body (200), a
+	 *                                          401 JSON error on signature failure, or 503.
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
+	 * @spec openspec/changes/stuf-zkn-inbound-on-the-consumer-model/specs/stuf-zkn-bridge/spec.md#requirement-the-inbound-endpoint-acts-as-the-stuf-zkn-connections-account-req-020
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -121,37 +131,25 @@ class StufZknController extends Controller {
 	public function inbound(): DataDisplayResponse|JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		try {
-			$source = $this->syncService->resolveActiveSource();
-		} catch (StufZknProviderException) {
-			// No source configured => no secret to verify against => fail closed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$webhookConfig = ($source->getObject()['configuration']['webhookSignature'] ?? []);
-		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
-		$secret = (string)($webhookConfig['secret'] ?? '');
-		$headerName = ($webhookConfig['header'] ?? 'X-OpenConnector-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
-
-		$headerValue = (string)$this->request->getHeader($headerName);
-
-		$verified = $this->signatureService->verify(
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			config: ['scheme' => $scheme, 'secret' => $secret, 'toleranceSeconds' => $tolerance]
-		);
-
-		if ($verified === false) {
-			// Undifferentiated error body: never leak which check failed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		$identity = $this->gate->identify(profile: WebhookProfiles::STUF_ZKN, rawBody: $rawBody, request: $this->request);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		// Signature verification runs over the exact raw bytes; the
 		// kennisgeving is XML (not JSON), so the body is passed to the sync
 		// service verbatim — never a second decode pass. receiveInbound()
 		// never throws: any internal failure is already shaped into a Fo03.
-		$replyXml = $this->syncService->receiveInbound(soapXml: $rawBody);
+		// It runs as the StUF-ZKN connection's account, so the upsert and the
+		// stuf_message are written under that account's rights.
+		try {
+			$replyXml = (string)$this->gate->deliver(
+				identity: $identity,
+				operation: fn (): string => $this->syncService->receiveInbound(soapXml: $rawBody)
+			);
+		} catch (Throwable $exception) {
+			return $this->gate->notStored(profile: WebhookProfiles::STUF_ZKN, reason: $exception->getMessage());
+		}
 
 		return new DataDisplayResponse($replyXml, Http::STATUS_OK, ['Content-Type' => self::XML_CONTENT_TYPE]);
 	}//end inbound()

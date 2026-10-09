@@ -55,7 +55,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ use OCP\IAppConfig;
 /**
  * The D4 status rules.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
  */
 class ConnectionStatusResolver {
 
@@ -113,7 +113,7 @@ class ConnectionStatusResolver {
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
 	 */
 	public function resolve(array $row, bool $appEnabled): array {
 		$declaration = $row['declaration'] ?? [];
@@ -197,7 +197,7 @@ class ConnectionStatusResolver {
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}|null
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-connection-switched-off-reads-disabled
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-connection-switched-off-reads-disabled
 	 */
 	private function ruleSwitchedOff(array $row, array $declaration, string $now): ?array {
 		$app = (string)($row['app'] ?? '');
@@ -371,8 +371,8 @@ class ConnectionStatusResolver {
 	 *
 	 * @return array{status:string,message:string,at:?string,time:int}|null
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-report-after-the-refresh-counts-again
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-report-after-the-refresh-counts-again
 	 */
 	private function readObservation(array $row, string $property, bool $isProbe): ?array {
 		$value = $row[$property] ?? null;
@@ -513,7 +513,7 @@ class ConnectionStatusResolver {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
 	 */
 	public function now(): string {
 		return $this->timeFactory->now()->format(DateTimeInterface::ATOM);

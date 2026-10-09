@@ -267,7 +267,7 @@ D1. Four of them are integriq's. Two are already answered by a change on
 
 | change | rows | size | basis | consumes from |
 |---|---|---|---|---|
-| `records-owned-by-an-external-source` | 5.19 | M | new | dossiq declares the ownership mode and the disappearance policy on the `brpPerson` and `kvkCompany` synchronisations in `register.d/25-brp-kvk.json`, renders the ownership state on the contact and the case party, and drops the delete action on a party it does not own. To be specified in dossiq, on the surface `contacts-domain` opens |
+| `records-owned-by-an-external-source` | 5.19 | M | built in integriq 2026-09-28 (integriq#2272, archived); dossiq half filed as dossiq#3187 | dossiq declares the ownership mode and the disappearance policy on the `brpPerson` and `kvkCompany` synchronisations in `register.d/25-brp-kvk.json`, renders the ownership state on the contact and the case party, and drops the delete action on a party it does not own. To be specified in dossiq, on the surface `contacts-domain` opens |
 | `one-off-and-suppressed-recipients` | 6.23 | M | new | dossiq offers the send screen where a handler adds a one-off recipient or suppresses a standing one with a reason, and passes both on the delivery request its `dossiq-delivers-nothing` change already dispatches. To be specified in dossiq |
 | `outbound-communication-log` | 6.24, 6.27 | M | existing, by substance | unchanged from wave 3: dossiq renders the send history on the case and projects the last-contact answer onto its own searchable field |
 

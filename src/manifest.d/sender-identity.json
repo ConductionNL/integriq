@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 manifest fragment (outbound-sender-identity-and-deliverability). Two pages. The identities page is where an administrator sees which address a team sends under and what that domain's DNS says about it, because an alignment result nobody can see is a check nobody acts on. The opt-out page is the list every sender in the product honours; it is worth a screen of its own because an AVG duty that lives only in a database is a duty nobody can show they met. Quoting level is a column: the whole dossier quoted back to a bezwaarmaker is a disclosure, so what each identity quotes should be visible without opening it.",
+  "$comment": "ADR-037 manifest fragment (outbound-sender-identity-and-deliverability). Two pages. The identities page is where an administrator sees which address a team sends under and what that domain's DNS says about it, because an alignment result nobody can see is a check nobody acts on. The opt-out page is the list every sender in the product honours; it is worth a screen of its own because an AVG duty that lives only in a database is a duty nobody can show they met. The opt-out page reads integriq's own opt-out table, not an OpenRegister schema. Quoting level is a column: the whole dossier quoted back to a bezwaarmaker is a disclosure, so what each identity quotes should be visible without opening it.",
   "pages": [
     {
       "id": "SenderIdentities",
@@ -53,60 +53,11 @@
     {
       "id": "RecipientOptOuts",
       "route": "/outbound/opt-outs",
-      "type": "logs",
+      "type": "custom",
+      "component": "RecipientOptOutsPage",
       "title": "Opt-outs",
-      "config": {
-        "register": "integriq",
-        "schema": "recipient_opt_out",
-        "sortKey": "createdAt",
-        "sortOrder": "desc",
-        "pagination": {
-          "limit": 50
-        },
-        "rowDetail": true,
-        "fixedLayout": true,
-        "columns": [
-          {
-            "key": "createdAt",
-            "label": "Since",
-            "sortable": true,
-            "width": "20%",
-            "formatter": "datetime"
-          },
-          {
-            "key": "address",
-            "label": "Address",
-            "sortable": true,
-            "width": "30%"
-          },
-          {
-            "key": "scope",
-            "label": "Scope",
-            "sortable": true,
-            "width": "16%",
-            "widget": "badge",
-            "widgetProps": {
-              "variant": "default",
-              "colorMap": {
-                "instance": "warning",
-                "case": "info"
-              }
-            }
-          },
-          {
-            "key": "caseRef",
-            "label": "Case",
-            "sortable": true,
-            "width": "18%"
-          },
-          {
-            "key": "source",
-            "label": "Added by",
-            "sortable": true,
-            "width": "16%"
-          }
-        ]
-      }
+      "_note": "Custom page, and no typed archetype fits: this is a list, but index and logs pages only read an OpenRegister register/schema, and these rows are not in OpenRegister. The opt-outs live in integriq's own table (integriq_opt_outs) because the unsubscribe link writes them from a public request OpenRegister refuses (ADR-099 section 9). Read through GET /api/outbound/opt-outs, administrators only, read only. The recipient_opt_out schema is read-only history (opt-outs-in-an-app-table-and-routing-rules-read-as-config, approved by Ruben 2026-10-05). Becomes an index page once the shared index page can read an app endpoint.",
+      "config": {}
     }
   ],
   "menu": [

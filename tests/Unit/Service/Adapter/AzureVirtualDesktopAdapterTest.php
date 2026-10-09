@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the AVD reference adapter (REQ-EWC-001/REQ-EWC-002).
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
  */
 class AzureVirtualDesktopAdapterTest extends TestCase {
 

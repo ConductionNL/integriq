@@ -1,0 +1,21 @@
+{
+	"x-template": {
+		"slug": "example-crm",
+		"vendor": "Example Inc.",
+		"system": "Example CRM",
+		"standard": "OpenAPI 3",
+		"verifiedAgainst": "https://api.apis.guru/v2/specs/example.com/1.0/openapi.json",
+		"tier": "generated",
+		"snapshotDate": "2026-09-29",
+		"category": "CRM"
+	},
+	"source": {
+		"name": "Example CRM",
+		"description": "A generated fixture template for the catalogue tests.",
+		"type": "api",
+		"location": "https://api.example.com/v1",
+		"auth": "oauth",
+		"configuration": {},
+		"isEnabled": false
+	}
+}

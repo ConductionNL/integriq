@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+ * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use RuntimeException;
 /**
  * A refused link, with a reason code.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+ * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
  */
 class ConnectionLinkException extends RuntimeException {
 
@@ -88,7 +88,7 @@ class ConnectionLinkException extends RuntimeException {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 	 */
 	public function getReason(): string {
 		return $this->reason;

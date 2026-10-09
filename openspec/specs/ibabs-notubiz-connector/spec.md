@@ -1,8 +1,10 @@
 # ibabs-notubiz-connector Specification
 
 ## Purpose
-TBD - created by archiving change ibabs-notubiz-connector. Update Purpose after archive.
+Integriq connects to the iBabs and NotuBiz council information systems: it pushes proposals, agenda items and meeting documents out when their status allows, reads decisions back in, tracks initialling, and keeps an audit trail with retries for every sync.
+
 ## Requirements
+
 ### Requirement: iBabs REST API Connection (REQ-RIS-001)
 
 The connector MUST establish authenticated connections to the iBabs REST API using API key authentication. The connection is configured as an Integriq Source entity of type `json` with auth method `apikey`. The source stores the iBabs API URL (typically `https://api.ibabs.eu`), API key, and organisatie-ID. All API calls are routed through CallService which logs each request in the CallLog for audit and debugging.
@@ -271,3 +273,16 @@ The connector MUST be registered as Integriq endpoint types with separate config
 - **WHEN** the health check runs on the NotuBiz source and the API responds but authentication fails
 - **THEN** the health check reports "degraded" with the specific authentication error
 
+### Requirement: Scenario-Level Test Traceability
+
+Every `#### Scenario:` in this capability MUST carry either an `@e2e` reference to a
+browser test, or a reason-bearing `@e2e exclude <reason>` line.
+
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
+#### Scenario: Backend-only scenario carries an exclude reason
+
+- GIVEN a scenario describes iBabs REST / NotuBiz API wire behavior with no Vue UI
+  surface (confirmed: no `src/**/*ibabs*` or `*notubiz*` Vue files exist)
+- WHEN the scenario is reviewed for e2e traceability
+- THEN it MUST carry `@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI`

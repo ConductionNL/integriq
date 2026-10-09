@@ -1,8 +1,10 @@
 # dso-omgevingsloket Specification
 
 ## Purpose
-TBD - created by archiving change dso-omgevingsloket. Update Purpose after archive.
+Integriq receives permit applications, notifications and their attachments from the DSO Omgevingsloket through the STAM koppelvlak, validates them, maps each activity to a case type, creates the case and pushes its status back, authenticated with PKIoverheid certificates.
+
 ## Requirements
+
 ### Requirement: STAM Koppelvlak Endpoint Registration (REQ-DSO-001)
 
 The adapter MUST register a STAM-compliant inbound REST endpoint in Integriq that receives vergunningaanvragen, meldingen, and informatieverzoeken pushed from DSO-LV. The endpoint accepts the DSO-verzoek payload (JSON or XML), **cryptographically verifies the request signature against the configured PKIoverheid certificate chain (or HMAC shared secret in pre-production mode) via `DSOSignatureVerifierService`**, and enqueues it for processing. The endpoint path follows `/api/dso/stam/verzoeken` and returns an HTTP 202 Accepted with verzoekId confirmation. A request whose signature does not verify against the configured trust chain MUST be rejected before any payload parsing occurs.
@@ -301,3 +303,52 @@ The adapter MUST be registered as an Integriq source type with DSO-LV-specific c
 - **WHEN** a DSO source is configured and an n8n workflow references the DSO source
 - **THEN** it can trigger verzoek polling, status pushes, or bijlagen downloads using the source credentials
 
+### Requirement: Scenario-Level Test Traceability (excluding REQ-DSO-050)
+
+Every `#### Scenario:` in this capability MUST carry either an `@e2e` reference to a
+browser test, or a reason-bearing `@e2e exclude <reason>` line — except the REQ-DSO-050
+(PKIoverheid Certificate Authentication) scenarios, which are tracked separately.
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
+#### Scenario: Backend-only scenario carries an exclude reason
+
+- GIVEN a scenario describes STAM koppelvlak HTTP/XML wire behavior with no Vue UI
+  surface (confirmed: no `src/**/*dso*` or `*omgevingsloket*` Vue files exist)
+- WHEN the scenario is reviewed for e2e traceability
+- THEN it MUST carry `@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI`
+
+#### Scenario: REQ-DSO-050 scenarios are exempt from this change
+
+- GIVEN a scenario belongs to REQ-DSO-050 (PKIoverheid Certificate Authentication)
+- WHEN this change's annotation pass runs
+- THEN those scenarios are left unannotated here and are owned by
+  `dso-stam-pkioverheid-signature-verification` instead
+
+### Requirement: Verzoeken are open to the intake account, the handlers and administrators only (REQ-DSO-072)
+
+`dso_verzoek` holds BSNs. Its OpenRegister authorization block MUST grant `create` and `update` to the group `dso-intake`, `read` and `update` to the group `dso-behandelaars`, and nothing to anyone else. `delete` MUST be granted to nobody. Administrators keep every action. The account of the DSO connection MUST be a member of `dso-intake`: choosing it in the DSO connection settings MUST add it and remove the previous account, and a repair step MUST add the current account on upgrade. The group names are fixed.
+
+#### Scenario: An ordinary account gets no verzoeken
+
+- GIVEN an account that is in neither group and is not an administrator
+- WHEN it reads, creates or updates a `dso_verzoek` through the OpenRegister API
+- THEN every request is refused
+- @e2e exclude backend RBAC: covered by the register test and the live proof per role
+
+#### Scenario: A DSO handler reads and updates
+
+- GIVEN an account in `dso-behandelaars`
+- WHEN it reads and updates a verzoek
+- THEN both succeed
+- AND it cannot create one
+- @e2e exclude backend RBAC: covered by the live proof per role
+
+#### Scenario: The chosen intake account joins the intake group
+
+- GIVEN an administrator in the DSO connection section
+- WHEN they choose an account and save
+- THEN the account is a member of `dso-intake`
+- AND the account chosen before is no longer a member
+- AND an account the save refuses is not left in the group
+- @e2e exclude group membership: covered by PHPUnit

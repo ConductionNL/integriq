@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+ * Spec coverage: openspec/specs/registry-subscription-connector/spec.md
  *
  * Every scenario in that spec carries `@e2e exclude`, and for good reason: a
  * volgindicatie refusal, an event handler and a scheduled job against a live

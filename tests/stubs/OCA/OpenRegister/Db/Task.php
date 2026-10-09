@@ -27,6 +27,30 @@ use OCP\AppFramework\Db\Entity;
  * Minimal stub for OCA\OpenRegister\Db\Task.
  */
 class Task extends Entity {
+
+	public const STATE_AVAILABLE = 'available';
+
+	public const STATE_ENABLED = 'enabled';
+
+	public const STATE_ACTIVE = 'active';
+
+	public const STATE_COMPLETED = 'completed';
+
+	public const STATE_TERMINATED = 'terminated';
+
+	public const STATE_DISABLED = 'disabled';
+
+	/**
+	 * Copied from the real entity: the states a task never leaves.
+	 *
+	 * @var array<int, string>
+	 */
+	public const TERMINAL_STATES = [
+		self::STATE_COMPLETED,
+		self::STATE_TERMINATED,
+		self::STATE_DISABLED,
+	];
+
 	/** @var string|null */
 	protected $uuid = null;
 
@@ -53,4 +77,19 @@ class Task extends Entity {
 
 	/** @var array|null */
 	protected $candidateGroups = null;
+
+	protected $completedBy = null;
+
+	protected $resultText = null;
+
+	protected $comment = null;
+
+	/**
+	 * Whether the task is in a terminal state (real: the same list).
+	 *
+	 * @return bool True when the state is terminal.
+	 */
+	public function isInTerminalState(): bool {
+		return in_array($this->state, self::TERMINAL_STATES, true);
+	}//end isInTerminalState()
 }

@@ -15,8 +15,9 @@
  * message, none of which a browser can stage.
  */
 
-import { expect, request as playwrightRequest, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { APP_BASE } from './spec-coverage/_helpers.ts'
+import { anonymousRequest } from './support/anonymous.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
@@ -90,9 +91,9 @@ test.describe('sender identity', () => {
 	test('a recipient stops the updates on one case without an account', async () => {
 		// The link is followed by someone with no session at all: that is the
 		// whole point of binding it to a signed token rather than to an account.
-		const anonymous = await playwrightRequest.newContext({
-			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
-		})
+		// With no account there is no user language either: the page follows
+		// the browser's, so the probe asks as a Dutch browser does.
+		const anonymous = await anonymousRequest({ 'Accept-Language': 'nl' })
 
 		const resp = await anonymous.get(
 			'/index.php/apps/integriq/unsubscribe/not-a-real-token',
@@ -115,32 +116,48 @@ test.describe('sender identity', () => {
 		page,
 		request,
 	}) => {
-		const seed = await request.post(`${OR_BASE}/recipient_opt_out`, {
+		// The opt-outs live in integriq's own table: the unsubscribe link
+		// writes them, and nothing an e2e run can sign adds one. So this reads
+		// the list the page reads and checks the page shows the same.
+		const list = await request.get(`${API_BASE}/outbound/opt-outs`, {
 			failOnStatusCode: false,
-			data: {
-				address: 'e2e-optout@example.org',
-				scope: 'instance',
-				source: 'administrator',
-				createdAt: new Date().toISOString(),
-			},
 		})
-		expect(seed.status(), 'seeding an opt-out must succeed').toBeLessThan(300)
+		expect(list.status(), 'an administrator reads the opt-out list').toBe(200)
+		const body = await list.json()
+		expect(Array.isArray(body.results)).toBe(true)
 
 		await page.goto(`${APP_BASE}/outbound/opt-outs`, {
 			waitUntil: 'domcontentloaded',
 		})
-		await expect(page.getByText('e2e-optout@example.org').first()).toBeVisible({
-			timeout: 20_000,
+		if (body.results.length === 0) {
+			await expect(page.getByTestId('opt-outs-empty')).toBeVisible({
+				timeout: 20_000,
+			})
+		} else {
+			await expect(
+				page.getByText(body.results[0].address).first(),
+			).toBeVisible({
+				timeout: 20_000,
+			})
+		}
+	})
+
+	test('an anonymous caller cannot read the opt-out list', async () => {
+		const anonymous = await anonymousRequest()
+
+		const resp = await anonymous.get(`${API_BASE}/outbound/opt-outs`, {
+			failOnStatusCode: false,
 		})
+
+		expect(resp.status()).toBeGreaterThanOrEqual(401)
+		await anonymous.dispose()
 	})
 
 	test('an anonymous caller cannot read the identities', async () => {
 		// The least privileged principal that should be refused. The identities
 		// carry signing material, so an unauthenticated 2xx here would be a key
 		// disclosure, not merely an information leak.
-		const anonymous = await playwrightRequest.newContext({
-			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
-		})
+		const anonymous = await anonymousRequest()
 
 		const resp = await anonymous.get(`${API_BASE}/outbound/identities`, {
 			failOnStatusCode: false,

@@ -96,6 +96,20 @@ class SynchronizationContractLogServiceTest extends TestCase {
 	}//end testCreateFromArrayAutoFillsSystemFields()
 
 	/**
+	 * Without a caller-supplied `expires`, a contract log expires 30 days out,
+	 * the default the `synchronization_contract_log` schema declares. It was
+	 * 3 days (integriq#2210).
+	 *
+	 * @return void
+	 */
+	public function testCreateFromArrayDefaultsExpiresToThirtyDays(): void {
+		$payload = $this->service->createFromArray(['synchronizationContractId' => 'c-1']);
+
+		$ahead = ((new \DateTime($payload['expires']))->getTimestamp() - time());
+		$this->assertEqualsWithDelta(2592000, $ahead, 120, 'A contract log must expire 30 days out, not ' . round($ahead / 86400, 1) . ' days.');
+	}//end testCreateFromArrayDefaultsExpiresToThirtyDays()
+
+	/**
 	 * createFromArray() preserves a caller-supplied uuid (does not generate a
 	 * new one).
 	 *

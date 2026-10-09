@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Integration\Forms;
 
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsClientInterface;
@@ -91,7 +91,7 @@ class FormsSyncIntegrationTest extends TestCase {
 		$synchronizationLogService = $this->createMock(SynchronizationLogService::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
-		$approvalService = $this->createMock(ApprovalService::class);
+		$approvalService = $this->createMock(SynchronizationApprovalGate::class);
 
 		$this->service = new SynchronizationService(
 			$callService,

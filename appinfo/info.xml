@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.8-unstable.20260919141023</version>
+	<version>0.4.10-unstable.20261009090000</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -113,6 +113,8 @@
 		     one, so the page built to answer "is my sync still going?"
 		     would answer it wrongly. -->
 		<job>OCA\Integriq\BackgroundJob\StaleRunSweepJob</job>
+		<!-- opt-out-before-send: the opt-out decision log is kept seven years. -->
+		<job>OCA\Integriq\BackgroundJob\OptOutLogRetentionJob</job>
 		<job>OCA\Integriq\BackgroundJob\EventRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\LtiKeyRetirementJob</job>
 		<job>OCA\Integriq\BackgroundJob\BankfeedSyncJob</job>
@@ -121,6 +123,10 @@
 		<job>OCA\Integriq\BackgroundJob\KissPullJob</job>
 		<job>OCA\Integriq\BackgroundJob\ApprovalTimeoutSweepJob</job>
 		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\RodRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\VerzuimloketRetryJob</job>
+		<job>OCA\Integriq\BackgroundJob\MailboxPollJob</job>
+		<job>OCA\Integriq\BackgroundJob\OsoRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\StufZknRetryJob</job>
 		<!-- document-generation-vendor-adapter: every five minutes, ask the
 		     vendor again about a render it has not settled. This is what keeps
@@ -136,6 +142,12 @@
 		     version moved, probes at most 25 linked sources, oldest first,
 		     then resolves every connection row without an outbound call. -->
 		<job>OCA\Integriq\BackgroundJob\ConnectionHealthJob</job>
+		<!-- observability-connection-run-summary: every five minutes. Counts
+		     failed calls, failed runs and invalid objects against the
+		     thresholds on sources and synchronizations, opens a
+		     connection_alert above one and clears it once the count falls
+		     back. Sources and synchronizations without thresholds are skipped. -->
+		<job>OCA\Integriq\BackgroundJob\ConnectionThresholdJob</job>
 		<!-- registry-subscription-connector: every fifteen minutes. Asks each
 		     registry binding what changed about the identities it follows and
 		     posts that to OpenRegister. Nothing about the changed record is
@@ -147,6 +159,7 @@
 		     arrived to the document intake inbox. -->
 		<job>OCA\Integriq\BackgroundJob\DigitalPostStatusJob</job>
 		<job>OCA\Integriq\BackgroundJob\DigitalPostInboundJob</job>
+		<job>OCA\Integriq\BackgroundJob\UwlrEduVRetryJob</job>
 	</background-jobs>
 
 	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order
@@ -249,6 +262,10 @@
 			     install has no stored jobs and it is a no-op there. -->
 			<step>OCA\Integriq\Repair\MigrateStoredJobClasses</step>
 			<step>OCA\Integriq\Repair\InitializeActions</step>
+			<!-- D33: broadens exchange.read only on an instance that still has the
+			     untouched ["admin"] default. AFTER InitializeActions, so a fresh install
+			     is seeded first and this step then has nothing to do. Never throws. -->
+			<step>OCA\Integriq\Repair\BroadenExchangeReadDefault</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\FlagSourceSecretsWriteOnly</step>
 			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
@@ -332,6 +349,32 @@
 			     idempotent, so nothing broke, but the second registration's
 			     stated reason was false and the placement above is the
 			     deliberate one (integriq#1983 review 5278999788). -->
+			<!-- identity-broker-browser-login: the disabled portaliq consumer,
+			     so enabling it is one occ command. Never overwrites an entry. -->
+			<step>OCA\Integriq\Repair\SeedIdpBrokerConsumers</step>
+			<!-- dso-intake-through-an-integriq-connection: the dso_pki_* app config
+			     becomes the one dso-stam consumer, with an empty account. Runs after
+			     the register import, so the consumer schema exists. Idempotent. -->
+			<step>OCA\Integriq\Repair\MigrateDsoStamConnection</step>
+			<!-- openformulieren-intake-through-an-integriq-connection: the webhook
+			     trust of the open-formulieren source becomes the one
+			     open-formulieren consumer, with an empty account. Idempotent. -->
+			<step>OCA\Integriq\Repair\MigrateOpenFormulierenConnection</step>
+			<!-- public-webhooks-on-the-consumer-model: the webhook trust of the
+			     peppol, sms, rod, oso, uwlr-eduv, verzuimloket, iwmo-ijw, stuf-zkn
+			     and intake-channel sources becomes one consumer per webhook, with
+			     an empty account. Idempotent; the sources are left as they are. -->
+			<step>OCA\Integriq\Repair\MigrateWebhookConnections</step>
+			<!-- bsn-intake-records-access-rules: the intake and handler groups the
+			     dso_verzoek and openformulieren_submission authorization blocks
+			     name, and each connection's account in its intake group. Runs
+			     after the two connection migrations. Idempotent. -->
+			<step>OCA\Integriq\Repair\ProvisionIntakeGroups</step>
+			<!-- opt-outs-in-an-app-table-and-routing-rules-read-as-config: copies
+			     the recipient_opt_out objects into integriq_opt_outs, which the
+			     migration Version2Date20261005100000 created. Post-migration only:
+			     a first install has nothing to copy. Idempotent. -->
+			<step>OCA\Integriq\Repair\MigrateOptOutsToTable</step>
 		</post-migration>
 		<!-- ocon#1180. A FIRST install runs neither `postSchemaChange` nor the
 		     `post-migration` steps above: `Installer::installAppLastSteps()` passes
@@ -428,6 +471,10 @@
 			     steps. -->
 			<step>OCA\Integriq\Repair\MigrateStoredJobClasses</step>
 			<step>OCA\Integriq\Repair\InitializeActions</step>
+			<!-- D33: broadens exchange.read only on an instance that still has the
+			     untouched ["admin"] default. AFTER InitializeActions, so a fresh install
+			     is seeded first and this step then has nothing to do. Never throws. -->
+			<step>OCA\Integriq\Repair\BroadenExchangeReadDefault</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
 			<!-- connection-registry D5: every enabled app's
@@ -443,6 +490,12 @@
 			     exists. Whether a brand-new instance should ship without those
 			     fields is a product decision, tracked separately, not one this
 			     fix should take by side effect. -->
+			<!-- identity-broker-browser-login: the disabled portaliq consumer,
+			     so enabling it is one occ command. Never overwrites an entry. -->
+			<step>OCA\Integriq\Repair\SeedIdpBrokerConsumers</step>
+			<!-- bsn-intake-records-access-rules: a fresh instance gets the four
+			     intake and handler groups too. -->
+			<step>OCA\Integriq\Repair\ProvisionIntakeGroups</step>
 		</install>
 	</repair-steps>
 
@@ -482,6 +535,10 @@
 		     surfaced, never silently removed, so this is human-invoked and dry-run by
 		     default. -->
 		<command>OCA\Integriq\Command\DedupeContracts</command>
+		<!-- stop-cloudevent-recursion section 5: deletes the CloudEvents generated from
+		     other CloudEvents (source /objects/com.nextcloud.openregister.object.*) and the
+		     event messages whose event is gone. Dry run unless the apply option is given. -->
+		<command>OCA\Integriq\Command\PurgeEventRecursion</command>
 		<!-- flow-native-synchronization task 3.3: renders one job as a generated
 		     trigger schedule flow document, or names the features no flow node can
 		     express. Same contract as the synchronization renderer above: the
@@ -500,6 +557,7 @@
 		     (XML comments must not contain a double hyphen, so the flags are
 		     not written with their leading dashes here.) -->
 		<command>OCA\Integriq\Command\FlowStepsToGraph</command>
+		<command>OCA\Integriq\Command\IdpConsumerCommand</command>
 	</commands>
 
 	<settings>

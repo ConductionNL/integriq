@@ -14,7 +14,7 @@
         "slug": "synchronization_run",
         "title": "Synchronization Run",
         "icon": "Sync",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Live progress of one synchronization run \u2014 written at start, updated on a time throttle, finalised at the end",
         "description": "Small, mutable, constant-size. Created with status `running` before the first page is fetched so a run is observable WHILE it happens rather than only after it finishes, updated no more often than the engine's throttle allows, and finalised with a terminal status. Progress writes are best-effort: a failure to record progress must never fail the run it is describing, but the failures are counted in `progressWriteFailures` so a silently broken recorder cannot pass as a healthy one.",
         "required": [
@@ -34,6 +34,21 @@
             "type": "string",
             "description": "The synchronization this run belongs to",
             "title": "Synchronization"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "The source the synchronization read from when this run started. Written once at the start, so editing the synchronization later does not move past runs to another source.",
+            "title": "Source"
+          },
+          "triggeredBy": {
+            "type": "string",
+            "enum": [
+              "cron",
+              "manual",
+              "rerun"
+            ],
+            "description": "What started the run: the scheduler (cron), an administrator (manual), or Run again on a failed run (rerun).",
+            "title": "Started by"
           },
           "status": {
             "type": "string",

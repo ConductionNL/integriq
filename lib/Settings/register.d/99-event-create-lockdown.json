@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment: event-create-lockdown (integriq#2224). SECURITY FIX. `event` shipped with no `authorization` block, which OpenRegister reads as default-open, so any account could create an `event` object through the object API. A created `nl.conduction.peppol.outbound.requested` event makes PeppolOutboundConsumer start a transmission, and PeppolTransmissionService reads the file its `payloadFileUri` names through the root folder and sends it to an access point. Open create therefore let anyone make integriq send any user's file (a confused deputy). `create` is an EMPTY list, which grants nobody but the `admin` group; the owner bypass does not help a create, because there is no owner yet. No production app creates `event` objects directly (shillinq raises its outbound request as a Nextcloud GenericEvent), so no producer group is named here. integriq's own event writers (EventService: emitCloudEvent, ingestDeliveryRequest, handleNextcloudEvent, handleObjectCreated/Updated/Deleted) save in system context (`_rbac: false`) in the same change, so non-admin object writes, sessionless webhooks and Nextcloud file events keep their CloudEvents. READ THE SHAPE BEFORE CHANGING IT: a non-empty block DENIES every action it does not list (PermissionHandler::hasGroupPermission, `empty($authorization[$action])`), so read, update and delete are listed as `authenticated` to keep them exactly as open to signed-in accounts as they were. Destroying an event is left to administrators. Anonymous callers lose access they had under the default-open branch; nothing in the app reads events anonymously. OpenRegister applies an authorization-only change on the next import without a schema version bump (ImportHandler::schemaContentDiffers compares `authorization`). `destroy` is deliberately NOT listed (integriq fix/schema-authorization-destroy-action): OpenRegister 2.1.33 and older refuse it as an authorization action and reject the WHOLE schema on import (measured on a clean store install 2026-10-01: 10 integriq schemas rejected), while newer OpenRegister refuses an undeclared `destroy` anyway (DestroyRightService fails closed, administrators bypass). Leaving it out therefore denies destroy on both.",
+	"components": {
+		"schemas": {
+			"event": {
+				"authorization": {
+					"create": [],
+					"read": ["authenticated"],
+					"update": ["authenticated"],
+					"delete": ["authenticated"]
+				}
+			}
+		}
+	}
+}

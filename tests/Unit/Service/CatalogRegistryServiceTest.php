@@ -17,13 +17,16 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Repair\MaterializeCatalogItems;
 use OCA\Integriq\Service\CatalogRegistryService;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -64,14 +67,24 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return CatalogRegistryService
 	 */
-	private function makeService(): CatalogRegistryService {
+	private function makeService(?string $templateDir = null): CatalogRegistryService {
 		return new CatalogRegistryService(
 			$this->registry,
 			$this->orObjectService,
 			$this->appConfig,
-			new NullLogger()
+			new NullLogger(),
+			$templateDir
 		);
 	}//end makeService()
+
+	/**
+	 * The fixture template library.
+	 *
+	 * @return string
+	 */
+	private function fixtureLibrary(): string {
+		return __DIR__ . '/../../fixtures/connector-templates';
+	}//end fixtureLibrary()
 
 	/**
 	 * Build a minimal IntegrationProvider double.
@@ -127,6 +140,17 @@ class CatalogRegistryServiceTest extends TestCase {
 		// endoflife-date-source: seeded enabled/credential-free (unlike the
 		// dormant presets above) — @spec openspec/specs/endoflife-date-source/spec.md#requirement-the-preset-is-automatically-visible-on-the-catalog-page
 		$this->assertContains('source-template:endoflife-date', $slugs);
+		// ideal-ouderbijdrage-source: dormant/mock payment source template —
+		// @spec openspec/specs/psp-source-template/spec.md#requirement-a-seeded-mock-mode-ideal-payment-source-template-is-discoverable-in-the-catalog-req-001
+		$this->assertContains('source-template:ideal-ouderbijdrage', $slugs);
+		// slo-kerndoelen-import: dormant SLO curriculum source template:
+		// @spec openspec/specs/slo-curriculum-import/spec.md#requirement-a-dormant-slo-source-template-carries-the-set-profiles-and-the-attribution-req-001
+		$this->assertContains('source-template:slo-curriculum', $slugs);
+
+		// sources-github-publiccode: the GitHub API (dormant, broker credential) and raw files.
+		// @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-github-is-a-source-template-that-holds-only-a-credential-reference-req-ghp-001
+		$this->assertContains('source-template:github-api', $slugs);
+		$this->assertContains('source-template:github-raw', $slugs);
 
 		// No duplicates — slugs are the upsert keys.
 		$this->assertSame(count($slugs), count(array_unique($slugs)));
@@ -173,10 +197,28 @@ class CatalogRegistryServiceTest extends TestCase {
 		$this->assertSame('brp-haalcentraal', $brp['sourceTemplateSlug']);
 		$this->assertSame('source-template', $brp['kind']);
 
+		$this->assertSame('Code hosting', $bySlug['source-template:github-api']['category']);
+		$this->assertSame('Code hosting', $bySlug['source-template:github-raw']['category']);
+
 		$pdok = $bySlug['adapter:pdok'];
 		$this->assertSame('flag-gated', $pdok['mechanism']);
 		$this->assertSame('pdok.feature_flag', $pdok['flagKey']);
 	}//end testSeedEntriesAreMockSeededWithCategoryOverride()
+
+	/**
+	 * The three service desk templates show under Service management.
+	 *
+	 * @return void
+	 */
+	public function testServiceDeskTemplatesAreServiceManagement(): void {
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		foreach (['topdesk', 'servicenow', 'glpi'] as $slug) {
+			$entry = $bySlug['source-template:' . $slug];
+			$this->assertSame('Service management', $entry['category'], $slug);
+			$this->assertSame('mock-seeded', $entry['mechanism'], $slug);
+		}
+	}//end testServiceDeskTemplatesAreServiceManagement()
 
 	/**
 	 * resolveStatus(): a flag-gated entry is dormant while its app-config
@@ -267,4 +309,148 @@ class CatalogRegistryServiceTest extends TestCase {
 
 		$this->assertNull($service->findSeedSourcePayload('definitely-not-a-seed'));
 	}//end testFindSeedSourcePayload()
+
+	/**
+	 * REQ-CCX-001: every template in the library is a Store card, with its
+	 * tier and where it was checked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	public function testEveryTemplateInTheLibraryIsACard(): void {
+		$entries = $this->makeService(templateDir: $this->fixtureLibrary())->collect();
+		$bySlug = array_column($entries, null, 'slug');
+
+		$this->assertArrayHasKey('template:example-zaaksysteem', $bySlug);
+		$curated = $bySlug['template:example-zaaksysteem'];
+		$this->assertSame('source-template', $curated['kind']);
+		$this->assertSame('example-zaaksysteem', $curated['sourceTemplateSlug']);
+		$this->assertSame('curated', $curated['tier']);
+		$this->assertSame('https://docs.oasis-open.org/cmis/CMIS/v1.1/CMIS-v1.1.html', $curated['verifiedAgainst']);
+		$this->assertSame(['CMIS 1.1'], $curated['standards']);
+		$this->assertSame('Document management', $curated['category']);
+
+		$generated = $bySlug['template:example-crm'];
+		$this->assertSame('generated', $generated['tier']);
+		$this->assertSame('2026-09-29', $generated['snapshotDate']);
+	}//end testEveryTemplateInTheLibraryIsACard()
+
+	/**
+	 * REQ-CCX-001: Instantiate reads the template's source payload, without
+	 * the template block.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	public function testInstantiateReadsTheTemplatePayload(): void {
+		$payload = $this->makeService(templateDir: $this->fixtureLibrary())->findSeedSourcePayload(slug: 'example-crm');
+
+		$this->assertNotNull($payload);
+		$this->assertSame('example-crm', $payload['slug']);
+		$this->assertSame('https://api.example.com/v1', $payload['location']);
+		$this->assertSame('oauth', $payload['auth']);
+		$this->assertArrayNotHasKey('x-template', $payload);
+	}//end testInstantiateReadsTheTemplatePayload()
+
+	/**
+	 * REQ-CCX-001: the register import reads register.d only, so no template
+	 * becomes a source on install: no library slug is seeded there.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	public function testNoLibraryTemplateIsSeededAsASource(): void {
+		$library = __DIR__ . '/../../../lib/Settings/connector-templates';
+		$templateSlugs = [];
+		foreach (glob($library . '/*/*.json') ?: [] as $file) {
+			$data = json_decode((string)file_get_contents($file), true);
+			if (isset($data['x-template']['slug']) === true) {
+				$templateSlugs[] = $data['x-template']['slug'];
+			}
+		}
+
+		$this->assertNotSame([], $templateSlugs, 'the library ships templates');
+
+		$seeded = [];
+		foreach (glob(__DIR__ . '/../../../lib/Settings/register.d/*.json') ?: [] as $file) {
+			$data = json_decode((string)file_get_contents($file), true);
+			foreach (($data['components']['objects'] ?? []) as $object) {
+				if (($object['@self']['schema'] ?? '') === 'source') {
+					$seeded[] = (string)($object['@self']['slug'] ?? '');
+				}
+			}
+		}
+
+		$this->assertSame([], array_values(array_intersect($templateSlugs, $seeded)));
+		$this->assertStringNotContainsString('register.d', realpath($library));
+	}//end testNoLibraryTemplateIsSeededAsASource()
+
+	/**
+	 * REQ-CCX-004: environment placeholders are not connectors, and a system
+	 * with an adapter and a seeded source is listed once, as the adapter.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 */
+	public function testTheStoreCountsOnlyRealConnectorsOnce(): void {
+		$slugs = array_column($this->makeService()->collect(), 'slug');
+
+		$this->assertSame([], array_values(array_filter($slugs, static fn (string $slug): bool => str_contains($slug, 'environment-'))));
+		$this->assertContains('adapter:smartdocuments', $slugs);
+		$this->assertContains('adapter:xential', $slugs);
+		$this->assertNotContains('source-template:smartdocuments', $slugs);
+		$this->assertNotContains('source-template:xential', $slugs);
+	}//end testTheStoreCountsOnlyRealConnectorsOnce()
+
+	/**
+	 * REQ-CCX-004: every card carries its tier, so the Store can count per
+	 * tier.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 */
+	public function testEveryCardCarriesItsTier(): void {
+		$this->registry->withProviders([$this->makeProvider('data-infra-s3', 'S3 object storage')]);
+		$entries = array_column($this->makeService(templateDir: $this->fixtureLibrary())->collect(), 'tier', 'slug');
+
+		$this->assertSame('adapter', $entries['adapter:data-infra-s3']);
+		$this->assertSame('adapter', $entries['adapter:pdok']);
+		$this->assertSame('curated', $entries['source-template:brp-haalcentraal']);
+		$this->assertSame('curated', $entries['template:example-zaaksysteem']);
+		$this->assertSame('generated', $entries['template:example-crm']);
+		$this->assertSame([], array_diff(array_unique(array_values($entries)), ['adapter', 'curated', 'generated']));
+	}//end testEveryCardCarriesItsTier()
+
+	/**
+	 * objecten-api-facade Task 6: the Objecten and Objecttypen APIs are one
+	 * adapter card, always available (the routes answer once a token is
+	 * configured), and the card the repair step writes is a valid
+	 * catalog_item.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-leaf-app-declares-the-objecttypes-it-publishes-req-oaf-006
+	 */
+	public function testTheObjectenApiIsOneAdapterCard(): void {
+		$service = $this->makeService();
+		$entries = array_column($service->collect(), null, 'slug');
+
+		$this->assertArrayHasKey('adapter:objecten-api', $entries);
+		$card = $entries['adapter:objecten-api'];
+		$this->assertSame('adapter', $card['kind']);
+		$this->assertSame('adapter', $card['tier']);
+		$this->assertSame('always-available', $card['mechanism']);
+		$this->assertSame(['Objecten API 2', 'Objecttypen API 2'], $card['standards']);
+		$this->assertSame('available', $service->resolveStatus($card));
+		$this->assertSame(1, count(array_filter(array_keys($entries), static fn (string $slug): bool => str_starts_with($slug, 'adapter:') && str_contains($slug, 'objecten'))));
+
+		$repair = new MaterializeCatalogItems($this->createMock(ContainerInterface::class), new NullLogger());
+		$payload = (new \ReflectionMethod($repair, 'payloadFor'))->invoke($repair, $card, 'adapter:objecten-api', 'available');
+		$this->assertSame([], RegisterSchemaValidator::errors('catalog_item', $payload));
+	}//end testTheObjectenApiIsOneAdapterCard()
 }//end class

@@ -186,7 +186,7 @@ export default {
 		 * Apps that have at least one connection without a source.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
 		 */
 		appOptions() {
 			return [
@@ -198,7 +198,7 @@ export default {
 		 * Declared connections without a source, narrowed by the app filter.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
 		 */
 		connectionOptions() {
 			return this.connections.filter(
@@ -210,7 +210,7 @@ export default {
 		 * Whether the choices are complete enough to save.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 		 */
 		canSave() {
 			if (!this.selectedConnection) {
@@ -227,7 +227,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen Whether the dialog is being shown.
 		 * @return {void}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
 		 */
 		open(isOpen) {
 			if (!isOpen) {
@@ -251,7 +251,7 @@ export default {
 		 * property filter there.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 		 */
 		async load() {
 			this.loading = true
@@ -298,7 +298,7 @@ export default {
 		/**
 		 * @param {string|null} app The chosen app.
 		 * @return {void}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
 		 */
 		onAppChanged(app) {
 			this.appFilter = app || null
@@ -316,7 +316,7 @@ export default {
 		 *
 		 * @param {object|null} connection The chosen connection.
 		 * @return {void}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 		 */
 		onConnectionChanged(connection) {
 			this.selectedConnection = connection || null
@@ -326,7 +326,7 @@ export default {
 		/**
 		 * @param {string} mode `template` or `existing`.
 		 * @return {void}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 		 */
 		onModeChanged(mode) {
 			this.mode = mode
@@ -335,7 +335,7 @@ export default {
 		/**
 		 * @param {object|null} source The chosen source.
 		 * @return {void}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 		 */
 		onSourceChanged(source) {
 			this.selectedSource = source || null
@@ -345,7 +345,7 @@ export default {
 		 * Link, probe and show the result. The dialog stays open on the result.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
 		 */
 		async save() {
 			this.saving = true
@@ -379,7 +379,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen New open state.
 		 * @return {void}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 		 */
 		onOpenChanged(isOpen) {
 			if (!isOpen) {
@@ -391,7 +391,7 @@ export default {
 		 * Ask ModalHost to close the dialog.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
 		 */
 		close() {
 			this.$emit('close')

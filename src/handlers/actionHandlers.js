@@ -27,8 +27,10 @@ import {
 	EVENT_OPEN_CONFIGURATION_EXPORT,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_DIRECTORY_RUN,
+	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
@@ -37,6 +39,7 @@ import {
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 import { rowId } from './rowId.js'
+import { runAgain } from './runAgain.js'
 
 /**
  * Test a source's connection by POSTing to /api/sources/test/{id}.
@@ -97,6 +100,20 @@ export function runSynchronizationHandler({ item }) {
 		mode: 'run',
 		item,
 	})
+}
+
+/**
+ * Run a failed synchronization run again: one POST, no dialog.
+ *
+ * Offered only on failed runs (the manifest action's `visibleWhen`). Unlike
+ * "Run now" it opens no modal, because the run asks for no options.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<string|null>} The new run's id.
+ * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-failed-pull-restarts-with-one-click-req-crun-003
+ */
+export function rerunFailedRunHandler({ item }) {
+	return runAgain(item)
 }
 
 /**
@@ -205,11 +222,34 @@ export function openPromotionHandler() {
 }
 
 /**
+ * Open the base-registry lookup (registry-backed-field-source): pick a
+ * registry, search, and read a value with where it came from and how old it
+ * is. Wired to the Sources page's "Look up in a base registry" header action.
+ *
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
+ */
+export function openRegistryLookupHandler() {
+	modalBus.emit(EVENT_OPEN_REGISTRY_LOOKUP, {})
+}
+
+/**
+ * Open the statutory gateway catalogue (statutory-gateways-and-frameworks):
+ * filter by standard, read each claim and where each endpoint sits, and
+ * download the overview. Wired to the Sources page's "Statutory gateways"
+ * header action.
+ *
+ * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008
+ */
+export function openGatewayCatalogueHandler() {
+	modalBus.emit(EVENT_OPEN_GATEWAY_CATALOGUE, {})
+}
+
+/**
  * Open the link-a-source dialog (connection-registry D9), pre-filtered by the
  * App connections page's `?app=` query when it carries one. Wired to that
  * page's "Add integration" header action.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
+ * @spec openspec/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
  */
 export function openLinkSourceHandler() {
 	const app = getRouter()?.currentRoute?.value?.query?.app

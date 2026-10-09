@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 use OCA\Integriq\Repair\MaterializeCatalogItems;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
@@ -145,4 +146,44 @@ class MaterializeCatalogItemsTest extends TestCase {
 
 		$this->makeStep($this->makeRegistryService($entries), $orObjectService)->run($this->makeOutput());
 	}//end testRerunUpsertsExistingObjectBySlug()
+
+	/**
+	 * REQ-CCX-004: a card whose entry the registry no longer lists (an
+	 * environment placeholder, a duplicate) is removed, so an upgraded
+	 * install counts what a fresh one counts. The tier and where a template
+	 * was checked reach the stored card, and the register accepts it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-counts-only-real-connectors-once-each-req-ccx-004
+	 */
+	public function testAStaleCardIsRemovedAndTheTierIsStored(): void {
+		$entries = [
+			[
+				'slug' => 'template:salesforce', 'name' => 'Salesforce', 'kind' => 'source-template', 'mechanism' => 'mock-seeded',
+				'sourceTemplateSlug' => 'salesforce', 'standards' => ['OpenAPI 3'], 'tier' => 'generated',
+				'verifiedAgainst' => 'https://api.apis.guru/v2/specs/salesforce.local/1.0/openapi.json', 'snapshotDate' => '2026-09-29',
+			],
+		];
+		$stale = ObjectServiceMockBuilder::objectEntity($this, ['slug' => 'source-template:environment-local-source'], 'stale-uuid');
+
+		$orObjectService = ObjectServiceMockBuilder::make($this);
+		$orObjectService->method('findAll')->willReturn(['results' => [$stale], 'total' => 1]);
+		$stored = null;
+		$orObjectService->method('saveObject')->willReturnCallback(
+			function ($object) use (&$stored) {
+				$stored = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'new');
+			}
+		);
+		$orObjectService->expects($this->once())->method('deleteObject')
+			->with($this->callback(static fn ($uuid): bool => $uuid === 'stale-uuid'));
+
+		$this->makeStep($this->makeRegistryService($entries), $orObjectService)->run($this->makeOutput());
+
+		$this->assertSame('generated', $stored['tier']);
+		$this->assertSame('2026-09-29', $stored['snapshotDate']);
+		$this->assertSame('https://api.apis.guru/v2/specs/salesforce.local/1.0/openapi.json', $stored['verifiedAgainst']);
+		$this->assertSame([], RegisterSchemaValidator::errors('catalog_item', $stored));
+	}//end testAStaleCardIsRemovedAndTheTierIsStored()
 }//end class

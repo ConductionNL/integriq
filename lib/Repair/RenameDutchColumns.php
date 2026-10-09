@@ -21,16 +21,24 @@
  * For this app that is money: bedrag columns carry invoice, subsidy, payroll
  * and tax amounts.
  *
- * ALL FIFTY OWNERS MOVE TOGETHER. The map below covers every property name in
- * the cluster, and each was checked to be free of a collision with its English
- * target before being added. A register-scoped step cannot rename a column for
- * one owner and not the rest — the others would silently read null.
+ * THE SCHEMA DECIDES THE DIRECTION, PER TABLE. A Dutch name is not always a
+ * mistake: a wire name stays Dutch (`kenmerk` in rod_message, verzuim_message,
+ * oso_message and uwlr_eduv_message is the partner's correlation field). This
+ * step used to apply the map to EVERY table of the register, so it renamed
+ * those four `kenmerk` columns to `reference` while their schemas still
+ * declare `kenmerk`. Every write then dropped the value and every lookup by
+ * kenmerk failed with "column t.kenmerk does not exist" (integriq#2520 live
+ * run-7). Now a table moves towards the name its schema declares:
+ *   - the schema declares the English name only: Dutch column -> English;
+ *   - the schema declares the Dutch name only: English column -> Dutch, which
+ *     restores the columns the old behaviour renamed;
+ *   - both, neither, or a schema that cannot be read: the table is left alone.
  *
  * SAFETY. Non-destructive and idempotent:
- *   - a column is renamed only when the OLD one exists and the NEW one does not;
- *   - where MagicMapper has already added an empty NEW column, the data is
- *     copied across and the old column is LEFT IN PLACE, so this is reversible
- *     and a re-run is a no-op;
+ *   - a column is renamed only when its source exists and its target does not;
+ *   - where MagicMapper has already added an empty target column, the data is
+ *     copied across and the source column is LEFT IN PLACE, so this is
+ *     reversible and a re-run is a no-op;
  *   - two sources targeting one destination in a table are REFUSED, not merged;
  *   - nothing is deleted.
  *
@@ -147,54 +155,167 @@ class RenameDutchColumns implements IRepairStep {
 			return;
 		}
 
-		$renamed = 0;
-		$copied = 0;
-		$refused = 0;
+		$tally = ['renamed' => 0, 'restored' => 0, 'copied' => 0, 'refused' => 0, 'unread' => 0];
 
 		foreach ($tables as $table) {
-			$columns = $this->columnsOf(table: $table);
-			$qTable = $this->quote(identifier: $table);
+			$declared = $this->declaredColumns(table: $table);
+			if ($declared === null) {
+				// Without the schema there is no way to tell a wire name from a
+				// leftover, so the table is left as it is.
+				$tally['unread']++;
+				continue;
+			}
 
-			foreach (self::COLUMN_MAP as $old => $new) {
-				if (in_array($old, $columns, true) === false) {
-					continue;
-				}
-
-				if ($this->hasCollision(columns: $columns, target: $new) === true) {
-					$this->logger->warning(
-						'RenameDutchColumns: two sources target one destination; migrating neither.',
-						['table' => $table, 'source' => $old, 'destination' => $new]
-					);
-					$refused++;
-					continue;
-				}
-
-				if (in_array($new, $columns, true) === false) {
-					$sql = 'ALTER TABLE ' . $qTable . ' RENAME COLUMN '
-						. $this->quote(identifier: $old) . ' TO ' . $this->quote(identifier: $new);
-					if ($this->exec(sql: $sql) === true) {
-						$renamed++;
-					}
-
-					continue;
-				}
-
-				$qNew = $this->quote(identifier: $new);
-				$qOld = $this->quote(identifier: $old);
-				$sql = 'UPDATE ' . $qTable . ' SET ' . $qNew . ' = ' . $qOld
-					. ' WHERE ' . $qNew . ' IS NULL AND ' . $qOld . ' IS NOT NULL';
-				if ($this->exec(sql: $sql) === true) {
-					$copied++;
-				}
-			}//end foreach
-		}//end foreach
+			$this->migrateTable(table: $table, declared: $declared, tally: $tally);
+		}
 
 		$output->info(
-			'RenameDutchColumns: ' . $renamed . ' renamed, ' . $copied . ' back-filled, '
-			. $refused . ' refused, across ' . count($tables) . ' shard table(s).'
+			'RenameDutchColumns: ' . $tally['renamed'] . ' renamed, ' . $tally['restored'] . ' restored to the declared Dutch name, '
+			. $tally['copied'] . ' back-filled, ' . $tally['refused'] . ' refused, ' . $tally['unread'] . ' skipped (schema unreadable), across '
+			. count($tables) . ' shard table(s).'
 		);
 
 	}//end run()
+
+	/**
+	 * Move one table's columns towards the names its schema declares.
+	 *
+	 * @param string                $table    The shard table.
+	 * @param array<int, string>    $declared The column names the table's schema declares.
+	 * @param array<string, int>    $tally    Counters, updated in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rename-dutch-columns-follows-the-schema/specs/register-vocabulary/spec.md#requirement-a-column-follows-the-name-its-schema-declares-req-rv-001
+	 */
+	private function migrateTable(string $table, array $declared, array &$tally): void {
+		$columns = $this->columnsOf(table: $table);
+		$qTable = $this->quote(identifier: $table);
+
+		foreach (self::COLUMN_MAP as $dutch => $english) {
+			$move = $this->direction(declared: $declared, dutch: $dutch, english: $english);
+			if ($move === null || in_array($move['from'], $columns, true) === false) {
+				continue;
+			}
+
+			$from = $move['from'];
+			$to = $move['to'];
+			if ($from === $dutch && $this->hasCollision(columns: $columns, target: $to) === true) {
+				$this->logger->warning(
+					'RenameDutchColumns: two sources target one destination; migrating neither.',
+					['table' => $table, 'source' => $from, 'destination' => $to]
+				);
+				$tally['refused']++;
+				continue;
+			}
+
+			if (in_array($to, $columns, true) === false) {
+				$sql = 'ALTER TABLE ' . $qTable . ' RENAME COLUMN '
+					. $this->quote(identifier: $from) . ' TO ' . $this->quote(identifier: $to);
+				if ($this->exec(sql: $sql) === true) {
+					$tally[$move['kind']]++;
+				}
+
+				continue;
+			}
+
+			$qTo = $this->quote(identifier: $to);
+			$qFrom = $this->quote(identifier: $from);
+			$sql = 'UPDATE ' . $qTable . ' SET ' . $qTo . ' = ' . $qFrom
+				. ' WHERE ' . $qTo . ' IS NULL AND ' . $qFrom . ' IS NOT NULL';
+			if ($this->exec(sql: $sql) === true) {
+				$tally['copied']++;
+			}
+		}//end foreach
+
+	}//end migrateTable()
+
+	/**
+	 * Which way one Dutch/English pair moves in a table, or null to leave it.
+	 *
+	 * @param array<int, string> $declared The column names the table's schema declares.
+	 * @param string             $dutch    The Dutch column name.
+	 * @param string             $english  The English column name.
+	 *
+	 * @return array{from: string, to: string, kind: string}|null
+	 *
+	 * @spec openspec/changes/rename-dutch-columns-follows-the-schema/specs/register-vocabulary/spec.md#requirement-a-column-follows-the-name-its-schema-declares-req-rv-001
+	 */
+	private function direction(array $declared, string $dutch, string $english): ?array {
+		$declaresDutch = in_array($dutch, $declared, true);
+		$declaresEnglish = in_array($english, $declared, true);
+		if ($declaresDutch === $declaresEnglish) {
+			// Both or neither: nothing tells which name is meant.
+			return null;
+		}
+
+		if ($declaresEnglish === true) {
+			return ['from' => $dutch, 'to' => $english, 'kind' => 'renamed'];
+		}
+
+		return ['from' => $english, 'to' => $dutch, 'kind' => 'restored'];
+
+	}//end direction()
+
+	/**
+	 * The column names the schema of a shard table declares, or null when unreadable.
+	 *
+	 * The schema id is the last number of the table name
+	 * (`openregister_table_{register}_{schema}`); the property names are
+	 * snake_cased the way MagicMapper::sanitizeColumnName() names a column.
+	 *
+	 * @param string $table The shard table.
+	 *
+	 * @return array<int, string>|null
+	 *
+	 * @spec openspec/changes/rename-dutch-columns-follows-the-schema/specs/register-vocabulary/spec.md#requirement-a-column-follows-the-name-its-schema-declares-req-rv-001
+	 */
+	private function declaredColumns(string $table): ?array {
+		if (preg_match('/openregister_table_\d+_(\d+)$/', $table, $match) !== 1) {
+			return null;
+		}
+
+		try {
+			$raw = $this->db->executeQuery(
+				'SELECT properties FROM `*PREFIX*openregister_schemas` WHERE id = ?',
+				[$match[1]]
+			)->fetchOne();
+		} catch (Exception $e) {
+			$this->logger->warning(
+				'RenameDutchColumns: could not read the schema of a table; skipping it.',
+				['table' => $table, 'exception' => $e->getMessage()]
+			);
+			return null;
+		}
+
+		$properties = json_decode((string)$raw, true);
+		if (is_array($properties) === false) {
+			return null;
+		}
+
+		$names = [];
+		foreach (array_keys($properties) as $name) {
+			$names[] = self::columnName(property: (string)$name);
+		}
+
+		return $names;
+
+	}//end declaredColumns()
+
+	/**
+	 * The column name MagicMapper gives a property: camelCase to snake_case.
+	 *
+	 * @param string $property The property name.
+	 *
+	 * @return string
+	 */
+	private static function columnName(string $property): string {
+		$name = strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
+		$name = (string)preg_replace('/[^a-z0-9_]/', '_', $name);
+
+		return rtrim((string)preg_replace('/_+/', '_', $name), '_');
+
+	}//end columnName()
 
 	/**
 	 * Whether another mapped source already targets the same destination here.

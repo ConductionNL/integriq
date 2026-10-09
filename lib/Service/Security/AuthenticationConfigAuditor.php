@@ -83,7 +83,7 @@ namespace OCA\Integriq\Service\Security;
 /**
  * Reports, per source, what `authenticationConfig` holds — key names only, never values.
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
  */
 class AuthenticationConfigAuditor {
 
@@ -157,7 +157,7 @@ class AuthenticationConfigAuditor {
 	 *
 	 * @return array<string, mixed> The audit report (key names only — never a value).
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	public function auditAll(int $limit = 1000): array {
 		$uuids = $this->planner->listSourceUuids(limit: $limit);
@@ -221,7 +221,7 @@ class AuthenticationConfigAuditor {
 	 *
 	 * @return array<string, mixed> The per-source record (key names only — never a value).
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	public function auditSource(string $uuid, string $name): array {
 		$rawData = $this->planner->readRawSource(uuid: $uuid);
@@ -273,7 +273,7 @@ class AuthenticationConfigAuditor {
 	 *
 	 * @return array{keys: array<int, string>, shapes: array<string, array{shape: string, fingerprint: string|null}>}
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	private function describeBag(mixed $value): array {
 		if (is_array($value) === false) {
@@ -306,7 +306,7 @@ class AuthenticationConfigAuditor {
 	 *
 	 * @return array{shape: string, fingerprint: string|null} The non-reversible description.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	private function describeValue(mixed $value): array {
 		if ($value === null) {
@@ -350,7 +350,7 @@ class AuthenticationConfigAuditor {
 	 *
 	 * @return string 8 hex characters (the first 4 bytes of the sha256 digest).
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	private function fingerprint(string $value): string {
 		return substr(hash('sha256', $value), 0, 8);
@@ -367,7 +367,7 @@ class AuthenticationConfigAuditor {
 	 *
 	 * @return array<int, string> The configuration paths holding a reference.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	private function findTwigReferences(mixed $configuration, string $path = ''): array {
 		if (is_string($configuration) === true) {

@@ -19,20 +19,28 @@ the dossiq competitor analysis, finding B21.
 
 Integriq MUST ship configuration sets `zgw-zaken`, `zgw-documenten`,
 `zgw-catalogi`, `zgw-besluiten`, `zgw-objecten` and `zgw-notificaties`, each
-a source template with `jwt-zgw` auth and `apiVersion`, synchronizations and
-mappings referenced by slug (ADR-015), with every mapping passing through
-`ZgwResourceTranslatorInterface`. No set MUST name a fleet app.
+a source template with `jwt-zgw` auth (the Objecten API's `token` for
+`zgw-objecten`) and `apiVersion`, synchronizations and
+mappings referenced by slug (ADR-015). Every mapping MUST pass the store's
+own ZGW resource through unchanged, so a bound schema holds the store's own
+shape; no set MUST translate it to another shape or version (design D5). No set MUST name a fleet app.
 
 #### Scenario: The zaken set pulls a 1.6 store
 - GIVEN a mock-mode source with `apiVersion = 1.6` and three fixture zaken
 - WHEN the `zgw-zaken` set is installed and its synchronization runs
-- THEN three objects with `@self.externalId` set to the remote urls exist in the bound schema
+- THEN three objects carrying the remote urls exist in the bound schema, each with a synchronization contract whose origin id is that url
 - @e2e exclude synchronization run; covered by PHPUnit with the mock-mode fixture
+
+#### Scenario: A bound schema holds the store's own shape
+- GIVEN a mock-mode source whose zaken carry the store's own ZGW fields
+- WHEN the `zgw-zaken` set's synchronization runs
+- THEN each object in the bound schema carries every field of its zaak as the store sent it, untranslated, and no set file names a translator
+- @e2e exclude synchronization run; covered by PHPUnit with the mock-mode fixture and the seed test
 
 ### Requirement: A set binds to an operator-chosen register and schema (REQ-ZGWC-002)
 
-Installing a set MUST ask for a target `register` and `schema`, write
-objects with storage strategy `external`, and refuse a second set on a
+Installing a set MUST ask for a target `register` and `schema`, bind the
+set's pulls to write into it and its write-backs to read from it, and refuse a second set on a
 schema already bound, naming the set that holds it.
 
 #### Scenario: An operator binds zaken to the case schema

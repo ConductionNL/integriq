@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
  * Both endpoints are administrator-only: a document generation source is
  * instance configuration, and its template list is a vendor's, not a user's.
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-templates-are-listed-from-the-vendor-not-copied-req-dgv-004
  */
 class DocumentGenerationController extends Controller {
 
@@ -75,7 +75,7 @@ class DocumentGenerationController extends Controller {
 	 *
 	 * @return JSONResponse The vendor's template ids and names.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-operator-sees-the-vendors-templates
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function templates(string $sourceId): JSONResponse {
@@ -115,13 +115,13 @@ class DocumentGenerationController extends Controller {
 	 *
 	 * @return JSONResponse Whether the source is now active.
 	 *
-	 * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#scenario-a-source-without-credentials-cannot-activate
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function activate(string $sourceId): JSONResponse {
 		try {
 			$source = $this->source(sourceId: $sourceId);
-			$object = $source->getObject();
+			$object = $this->withoutEmptyCredentialRef(object: $source->getObject());
 			$configuration = (array)($object['configuration'] ?? []);
 
 			$provider = $this->registry->resolve(sourceConfiguration: $configuration);
@@ -156,6 +156,42 @@ class DocumentGenerationController extends Controller {
 		}//end try
 
 	}//end activate()
+
+	/**
+	 * Drop a credential reference that is not one.
+	 *
+	 * The two vendor sources were seeded with `authentication.credentialRef`
+	 * set to an empty string. The register types that property as an object,
+	 * so writing the source back on activation was refused and the source
+	 * never became active; and the broker counts a present key as a
+	 * reference, so an empty one read as a credential. A reference that is
+	 * not an object is removed before the activation check and the write.
+	 *
+	 * @param array<string, mixed> $object The source object.
+	 *
+	 * @return array<string, mixed> The source without an empty credential reference.
+	 *
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
+	 */
+	private function withoutEmptyCredentialRef(array $object): array {
+		$authentication = ($object['configuration']['authentication'] ?? null);
+		if (is_array($authentication) === false
+			|| array_key_exists('credentialRef', $authentication) === false
+			|| is_array($authentication['credentialRef']) === true
+		) {
+			return $object;
+		}
+
+		unset($authentication['credentialRef']);
+		if ($authentication === []) {
+			unset($object['configuration']['authentication']);
+			return $object;
+		}
+
+		$object['configuration']['authentication'] = $authentication;
+		return $object;
+
+	}//end withoutEmptyCredentialRef()
 
 	/**
 	 * Load one document generation source.

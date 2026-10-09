@@ -44,6 +44,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\Dso\DsoActivityMapper;
+use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoClient;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
@@ -57,6 +59,7 @@ use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
 use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
 use OCA\Integriq\Service\KissSyncService;
@@ -71,7 +74,7 @@ use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
 use OCA\Integriq\Service\StufZknSyncService;
 use OCA\Integriq\Tests\Helpers\NestedWriteOnlyRenderBoundaryObjectService;
-use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCP\BackgroundJob\IJobList;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -172,12 +175,13 @@ class SourceRawReadContractTest extends TestCase {
 			),
 			'Dso' => new DsoIngestService(
 				$fake,
-				$this->getMockBuilder(HandoffService::class)->disableOriginalConstructor()->getMock(),
 				new DsoRequestTranslator(),
 				new LogDsoConnectorProvider(),
 				$this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
 				$logger,
-				$resolver
+				$resolver,
+				$this->createMock(IJobList::class),
+				new DsoActivityMapper(new DsoActivityTable($fake))
 			),
 			'Kiss' => new KissSyncService(
 				$fake,
@@ -185,7 +189,8 @@ class SourceRawReadContractTest extends TestCase {
 				$this->getMockBuilder(KlantinteractiesClient::class)->disableOriginalConstructor()->getMock(),
 				$this->l10n(),
 				$logger,
-				$resolver
+				$resolver,
+				new CallEventLog($fake)
 			),
 			'StufZkn' => new StufZknSyncService(
 				$fake,
@@ -204,7 +209,8 @@ class SourceRawReadContractTest extends TestCase {
 				$this->getMockBuilder(EventService::class)->disableOriginalConstructor()->getMock(),
 				$this->l10n(),
 				$logger,
-				$resolver
+				$resolver,
+				(new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate()
 			),
 			'Fsc' => new FscCallService(
 				$fake,

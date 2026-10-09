@@ -95,6 +95,10 @@ class DeliveryRequestedListener implements IEventListener {
 
 		$event->setResultId(resultId: (string)$result['event']->getUuid());
 		$event->setMatchedSubscriptions(matchedSubscriptions: count($result['messages']));
+		if (($result['refusal'] ?? null) !== null) {
+			$event->setRefusal(reason: (string)$result['refusal']['reason'], code: (string)$result['refusal']['code']);
+		}
+
 		$event->setHandled(handled: true);
 	}//end handle()
 }//end class

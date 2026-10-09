@@ -1,0 +1,175 @@
+{
+  "$comment": "ADR-037 register fragment (mapping-message-schema-validation). Declares `message_schema`: the schema a message must match, stored once and referenced by uuid from an endpoint or a synchronization, so a partner's new version is one edit (design D1). `kind` picks the checker in lib/Service/MessageValidationService.php; a `register-schema` kind carries no document and references a register schema instead. MessageSchemaDocumentListener refuses a save whose document does not parse for its kind. Admin-only on every verb: which schema a partner's message must match is integration trust config. Seeds two examples that describe the same person, one as JSON Schema and one as XSD; no seeded endpoint or synchronization references them, so nothing changes behaviour on upgrade. Does NOT edit lib/Settings/integriq_register.json. It also merges a `validation` object onto `endpoint` (mode, request and response message schema, design 'Where it fits') and a `validation` list onto `call_log`, where record mode writes what it let through.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "message_schema"
+        ]
+      }
+    },
+    "schemas": {
+      "message_schema": {
+        "slug": "message_schema",
+        "title": "Message schema",
+        "icon": "FileCheckOutline",
+        "version": "1.0.0",
+        "summary": "The schema a message must match",
+        "description": "A JSON Schema, an XSD or an OpenAPI description that an endpoint or a synchronization checks its messages against. See openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001.",
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "version"
+        ],
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "How you recognise this schema, for example the partner and the message",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "What the schema is for and where it came from"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "enum": [
+              "json-schema",
+              "xsd",
+              "openapi",
+              "register-schema"
+            ],
+            "default": "json-schema",
+            "description": "Pick json-schema, xsd or openapi to paste a document. Pick register-schema to check against a register schema"
+          },
+          "document": {
+            "type": "string",
+            "title": "Document",
+            "description": "Paste the schema: JSON Schema as JSON, an XSD as XML, OpenAPI as JSON or YAML. A broken document is not saved"
+          },
+          "registerSchema": {
+            "type": "string",
+            "title": "Register schema",
+            "description": "For kind register-schema: the register and schema slug, as register/schema"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "The partner's version of this schema. Change it when the partner publishes a new one"
+          }
+        }
+      },
+      "endpoint": {
+        "properties": {
+          "validation": {
+            "type": "object",
+            "title": "Message validation",
+            "description": "Check the request and the proxied answer against a message schema. Record writes the errors to the call log. Refuse answers 400 or 502",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "title": "Mode",
+                "enum": [
+                  "record",
+                  "refuse"
+                ],
+                "default": "record",
+                "description": "Record lets the message through and logs the errors. Refuse stops it"
+              },
+              "request": {
+                "type": "object",
+                "properties": {
+                  "messageSchema": {
+                    "type": "string",
+                    "title": "Message schema",
+                    "description": "The uuid of the message schema the message must match"
+                  },
+                  "operationId": {
+                    "type": "string",
+                    "title": "Operation",
+                    "description": "For an OpenAPI message schema: the operation to check against. Empty means the request's method and path"
+                  }
+                },
+                "title": "Request schema",
+                "description": "The schema the request body must match"
+              },
+              "response": {
+                "type": "object",
+                "properties": {
+                  "messageSchema": {
+                    "type": "string",
+                    "title": "Message schema",
+                    "description": "The uuid of the message schema the message must match"
+                  },
+                  "operationId": {
+                    "type": "string",
+                    "title": "Operation",
+                    "description": "For an OpenAPI message schema: the operation to check against. Empty means the request's method and path"
+                  }
+                },
+                "title": "Answer schema",
+                "description": "The schema the source's answer must match"
+              }
+            }
+          }
+        }
+      },
+      "call_log": {
+        "properties": {
+          "validation": {
+            "type": "array",
+            "title": "Validation findings",
+            "description": "What did not match a message schema while this call was let through in record mode",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "example-person-json"
+        },
+        "name": "Example person (JSON Schema)",
+        "description": "An example to copy from: a person with a bsn, a family name and an optional date of birth. Nothing references it until you pick it on an endpoint or a synchronization.",
+        "kind": "json-schema",
+        "document": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"title\": \"Example person\",\n  \"type\": \"object\",\n  \"required\": [\n    \"bsn\",\n    \"geslachtsnaam\"\n  ],\n  \"properties\": {\n    \"bsn\": {\n      \"type\": \"string\",\n      \"pattern\": \"^[0-9]{9}$\"\n    },\n    \"geslachtsnaam\": {\n      \"type\": \"string\",\n      \"minLength\": 1\n    },\n    \"geboortedatum\": {\n      \"type\": \"string\",\n      \"format\": \"date\"\n    }\n  }\n}\n",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "example-person-xsd"
+        },
+        "name": "Example person (XSD)",
+        "description": "The same person as the JSON Schema example, as an XSD for XML messages. Nothing references it until you pick it on an endpoint or a synchronization.",
+        "kind": "xsd",
+        "document": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" targetNamespace=\"https://integriq.conduction.nl/example/person\" xmlns=\"https://integriq.conduction.nl/example/person\" elementFormDefault=\"qualified\">\n  <xs:element name=\"persoon\">\n    <xs:complexType>\n      <xs:sequence>\n        <xs:element name=\"bsn\">\n          <xs:simpleType>\n            <xs:restriction base=\"xs:string\">\n              <xs:pattern value=\"[0-9]{9}\"/>\n            </xs:restriction>\n          </xs:simpleType>\n        </xs:element>\n        <xs:element name=\"geslachtsnaam\" type=\"xs:string\"/>\n        <xs:element name=\"geboortedatum\" type=\"xs:date\" minOccurs=\"0\"/>\n      </xs:sequence>\n    </xs:complexType>\n  </xs:element>\n</xs:schema>\n",
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

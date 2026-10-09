@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md
+ * @spec openspec/specs/hitl-on-shared-tasks/spec.md
  */
 
 declare(strict_types=1);
@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -41,7 +42,7 @@ use RuntimeException;
 /**
  * Tests for the shared-task mirror seam.
  *
- * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md
+ * @spec openspec/specs/hitl-on-shared-tasks/spec.md
  */
 class ApprovalServiceSharedTaskTest extends TestCase {
 
@@ -64,6 +65,8 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 	 * @var ApprovalService
 	 */
 	private ApprovalService $service;
+
+	private SynchronizationApprovalGate $gate;
 
 	/**
 	 * Every saveObject call's payload, in order.
@@ -111,6 +114,8 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 			null,
 			$this->taskService,
 		);
+
+		$this->gate = new SynchronizationApprovalGate($this->objectService, $userSession, $this->service);
 
 	}//end setUp()
 
@@ -172,7 +177,7 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 			}
 		);
 
-		$this->service->suspendForSynchronization(
+		$this->gate->suspendForSynchronization(
 			synchronizationId: 'sync-1',
 			approverGroup: 'woo-approvers',
 			onReject: 'error',
@@ -212,7 +217,7 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 			}
 		);
 
-		$this->service->suspendForSynchronization(
+		$this->gate->suspendForSynchronization(
 			synchronizationId: 'sync-1',
 			approverGroup: 'woo-approvers',
 			onReject: 'explode',
@@ -240,7 +245,7 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 			}
 		);
 
-		$record = $this->service->suspendForSynchronization(
+		$record = $this->gate->suspendForSynchronization(
 			synchronizationId: 'sync-1',
 			approverGroup: 'woo-approvers',
 			onReject: 'error',

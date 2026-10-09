@@ -24,31 +24,34 @@ after it is hardening, performance, and cleanup.
 - [x] 2.3 Test: a marked object in a DIFFERENT register is still suppressed.
 
 ## 3. Move processing off the request path
-- [ ] 3.1 New `lib/BackgroundJob/ProcessEventJob.php` (QueuedJob) taking the
+- [x] 3.1 New `lib/BackgroundJob/ProcessEventJob.php` (QueuedJob) taking the
       event object id.
-- [ ] 3.2 `handleObjectCreated` / `handleObjectUpdated` / `handleObjectDeleted`
+- [x] 3.2 `handleObjectCreated` / `handleObjectUpdated` / `handleObjectDeleted`
       persist the CloudEvent and enqueue the job; they no longer call
       `processEvent()` inline.
-- [ ] 3.3 Remove synchronous `deliverMessage()` from the request path — push
+- [x] 3.3 Remove synchronous `deliverMessage()` from the request path — push
       delivery happens in the job, so one unreachable subscriber can never
       stall another app's write.
-- [ ] 3.4 Register the job in `appinfo/info.xml` under `lib/BackgroundJob/`
-      (ADR-069: one job dir, TimedJob/QueuedJob only).
-- [ ] 3.5 Test: an object create enqueues exactly ONE job and creates zero
+- [x] 3.4 The job lives in `lib/BackgroundJob/` (ADR-069). Design corrected at
+      build time: a QueuedJob is added per event through `IJobList::add()`, not
+      listed in `appinfo/info.xml` (a `<job>` entry there would be queued once at
+      install with no argument), the same as `FetchFilesJob`.
+- [x] 3.5 Test: an object create enqueues exactly ONE job and creates zero
       `event_message` rows synchronously.
 
 ## 4. Stop re-querying subscriptions per event
-- [ ] 4.1 `processEvent()` currently runs a `findAll` over `event_subscription`
+- [x] 4.1 `processEvent()` currently runs a `findAll` over `event_subscription`
       for EVERY event. Resolve the active set once per job run and reuse it.
-- [ ] 4.2 Test asserting a single subscription query for a batch of N events.
+- [x] 4.2 Test asserting a single subscription query for a batch of N events.
 
 ## 5. Data remediation
-- [ ] 5.1 Purge command (dry-run by default, consistent with
+- [x] 5.1 Purge command (dry-run by default, consistent with
       `openregister:schemas:dedup`) deleting events whose `source` is
       `/objects/com.nextcloud.openregister.object.{created,updated,deleted}` —
       i.e. events generated from other events. Keep genuine ones.
-- [ ] 5.2 Purge orphaned `event_message` rows whose parent event is gone.
-- [ ] 5.3 Report before/after counts. Baseline on the dev instance:
+- [x] 5.2 Purge orphaned `event_message` rows whose parent event is gone.
+- [x] 5.3 Report before/after counts (`occ integriq:events:purge-recursion`,
+      dry run first; the counts on an instance are its own evidence). Baseline on the dev instance:
       45,715 events of which 45,398 (99.3%) are self-generated.
 
 ## 6. Verification

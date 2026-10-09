@@ -1,0 +1,24 @@
+{
+    "x-template": {
+        "slug": "salesforce-rest",
+        "vendor": "Salesforce",
+        "system": "Salesforce REST API",
+        "standard": "REST API with OAuth 2.0",
+        "verifiedAgainst": "https://developer.salesforce.com/docs/platform/api-rest/guide/intro-rest.html",
+        "tier": "curated",
+        "category": "CRM"
+    },
+    "source": {
+        "name": "Salesforce",
+        "description": "Salesforce's REST API for records and queries. Replace MyDomainName in the base URL with your org's My Domain and pick the API version your org runs. Salesforce authorizes a client through an external client app or a connected app with an OAuth 2.0 flow; hold its credentials in the credential broker and name them by credentialRef; this template carries none.",
+        "type": "api",
+        "location": "https://MyDomainName.my.salesforce.com/services/data/v68.0",
+        "auth": "oauth",
+        "configuration": {
+            "authentication": {
+                "tokenUrl": "https://MyDomainName.my.salesforce.com/services/oauth2/token"
+            }
+        },
+        "isEnabled": false
+    }
+}

@@ -2,7 +2,7 @@
   "slug": "zgw-notificaties",
   "title": "Notificaties API",
   "version": "1.0.0",
-  "description": "One abonnement per installed component, and the callback that turns an inbound notification into a pull of the one resource it names.",
+  "description": "One abonnement per installed component on the store's Notificaties API. An inbound notification pulls the one resource it names. Installed without a register and schema: it carries subscriptions, not records.",
   "component": "Notificaties API",
   "resource": "abonnement",
   "auth": "jwt-zgw",
@@ -14,21 +14,17 @@
     "1.5",
     "1.6"
   ],
-  "translator": "ZgwResourceTranslatorInterface",
-  "synchronizations": [
-    "zgw-notificaties-subscribe"
-  ],
-  "mappings": [
-    "zgw-notification-to-pull"
-  ],
+  "synchronizations": [],
+  "mappings": [],
   "storageStrategy": "external",
   "writesBack": false,
   "target": {
     "register": "",
     "schema": "",
-    "chosenBy": "operator"
+    "chosenBy": "none"
   },
   "source": {
+    "slug": "zgw-set-notificaties",
     "name": "Notificaties API",
     "type": "api",
     "location": "",

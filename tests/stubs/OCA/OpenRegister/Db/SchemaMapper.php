@@ -20,9 +20,16 @@ class SchemaMapper {
 	 * Mirrors the real signature, which is `string|int $id` — schemas are
 	 * routinely looked up by SLUG (`find('extendview')`, `find('source')`).
 	 * The stub said `int` and so TypeError'd on every slug lookup, which is a
-	 * stub that quietly disagrees with the class it stands in for.
+	 * stub that quietly disagrees with the class it stands in for. The
+	 * `$_extend` / `$_rbac` / `$_multitenancy` parameters mirror the real
+	 * signature for the same reason.
 	 */
-	public function find(string|int $id): ?object {
+	public function find(
+		string|int $id,
+		?array $_extend = [],
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+	): ?object {
 		return null;
 	}
 

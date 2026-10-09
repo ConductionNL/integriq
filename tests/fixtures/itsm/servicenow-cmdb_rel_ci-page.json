@@ -1,0 +1,58 @@
+{
+    "result": [
+        {
+            "sys_id": {
+                "display_value": "000000000000000000000000000000c9",
+                "value": "000000000000000000000000000000c9"
+            },
+            "parent": {
+                "display_value": "Zaaksysteem",
+                "value": "00000000000000000000000000000065"
+            },
+            "child": {
+                "display_value": "Burgerzaken",
+                "value": "00000000000000000000000000000066"
+            },
+            "type": {
+                "display_value": "Sends data to::Receives data from",
+                "value": "0000000000000000000000000000000b"
+            }
+        },
+        {
+            "sys_id": {
+                "display_value": "000000000000000000000000000000ca",
+                "value": "000000000000000000000000000000ca"
+            },
+            "parent": {
+                "display_value": "Zaaksysteem",
+                "value": "00000000000000000000000000000065"
+            },
+            "child": {
+                "display_value": "Belastingen",
+                "value": "00000000000000000000000000000067"
+            },
+            "type": {
+                "display_value": "Exchanges data with::Exchanges data with",
+                "value": "0000000000000000000000000000000d"
+            }
+        },
+        {
+            "sys_id": {
+                "display_value": "000000000000000000000000000000cb",
+                "value": "000000000000000000000000000000cb"
+            },
+            "parent": {
+                "display_value": "Parkeren",
+                "value": "00000000000000000000000000000068"
+            },
+            "child": {
+                "display_value": "",
+                "value": "0000000000000000000000000000270f"
+            },
+            "type": {
+                "display_value": "Depends on::Used by",
+                "value": "0000000000000000000000000000000c"
+            }
+        }
+    ]
+}

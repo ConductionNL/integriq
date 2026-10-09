@@ -189,4 +189,18 @@ class PostexProvider implements DigitalPostProviderInterface {
 		// better than an empty poll that looks like a working inbox.
 		return [];
 	}//end pollInbound()
+
+	/**
+	 * Nothing is held back until a status is stored.
+	 *
+	 * @param string $providerReference The reference (unused).
+	 * @param array<string,mixed> $config The source configuration (unused).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#scenario-a-result-is-not-lost-when-saving-fails
+	 */
+	public function statusRecorded(string $providerReference, array $config): void {
+		unset($providerReference, $config);
+	}//end statusRecorded()
 }//end class

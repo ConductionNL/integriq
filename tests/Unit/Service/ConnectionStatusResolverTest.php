@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
+ * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
  */
 
 declare(strict_types=1);
@@ -347,7 +347,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-provider-name-selects-simulated
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-provider-name-selects-simulated
 	 */
 	public function testProviderNameSelectsSimulated(): void {
 		$row = [
@@ -370,7 +370,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-json-path-reads-inside-a-settings-blob
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-json-path-reads-inside-a-settings-blob
 	 */
 	public function testJsonPathReadsInsideASettingsBlob(): void {
 		$row = [
@@ -507,7 +507,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-reported-only-row-ignores-filled-settings
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-reported-only-row-ignores-filled-settings
 	 */
 	public function testReportedOnlyRowIgnoresFilledSettings(): void {
 		$row = [
@@ -548,7 +548,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-simulated-report-stands-against-a-newer-probe
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-simulated-report-stands-against-a-newer-probe
 	 */
 	public function testSimulatedReportStandsAgainstANewerProbe(): void {
 		$row = [
@@ -570,7 +570,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-app-reports-a-connection-that-works-in-part
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-app-reports-a-connection-that-works-in-part
 	 */
 	public function testLimitedReportIsShown(): void {
 		$row = [
@@ -636,7 +636,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
 	 */
 	public function testRefreshRetiresAnOlderReport(): void {
 		$outcome = $this->makeResolver(config: ['zaakafhandelapp.zrc_url' => 'https://zrc.example.nl'])
@@ -652,7 +652,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
 	 */
 	public function testRefreshRetiresAnOlderReportDownToRuleSix(): void {
 		$outcome = $this->makeResolver()->resolve($this->refreshedRow(), true);
@@ -667,7 +667,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-report-after-the-refresh-counts-again
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-report-after-the-refresh-counts-again
 	 */
 	public function testReportAfterTheRefreshCountsAgain(): void {
 		$row = $this->refreshedRow(
@@ -788,7 +788,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-switch-stored-as-false-is-not-filled
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-switch-stored-as-false-is-not-filled
 	 */
 	public function testSwitchStoredAsFalseIsNotFilled(): void {
 		$row = ['app' => 'stackiq', 'declaration' => ['key' => 'federation', 'requiredConfig' => ['federation_enabled']]];
@@ -817,7 +817,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-required-value-inside-a-json-setting
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-required-value-inside-a-json-setting
 	 */
 	public function testRequiredValueInsideAJsonSetting(): void {
 		$row = [
@@ -855,7 +855,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-dotted-key-is-read-as-one-key
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-dotted-key-is-read-as-one-key
 	 */
 	public function testDottedKeyIsReadAsOneKey(): void {
 		$row = ['app' => 'dossiq', 'declaration' => ['key' => 'brp', 'requiredConfig' => ['integration.brp.mode']]];
@@ -1007,7 +1007,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-empty-json-list-is-not-filled
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-empty-json-list-is-not-filled
 	 */
 	public function testEmptyJsonListIsNotFilled(): void {
 		$row = ['app' => 'launchpad', 'declaration' => ['key' => 'live-tiles', 'requiredConfig' => ['live_tile_allowed_hosts']]];
@@ -1051,7 +1051,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-a-connection-switched-off-reads-disabled
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-connection-switched-off-reads-disabled
 	 */
 	public function testConnectionSwitchedOffReadsDisabled(): void {
 		$outcome = $this->makeResolver(config: ['keepiq.breach_check_enabled' => false])->resolve($this->hibpRow(), true);
@@ -1109,7 +1109,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-off-values-leave-a-working-default-alone
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-off-values-leave-a-working-default-alone
 	 */
 	public function testOffValuesLeaveAWorkingDefaultAlone(): void {
 		$outcome = $this->makeResolver()->resolve($this->geoRow(), true);
@@ -1123,7 +1123,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-off-value-switches-the-connection-off
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-off-value-switches-the-connection-off
 	 */
 	public function testAnOffValueSwitchesTheConnectionOff(): void {
 		$outcome = $this->makeResolver(config: ['portaliq.traffic.geo.provider' => 'None'])->resolve($this->geoRow(), true);
@@ -1263,7 +1263,7 @@ class ConnectionStatusResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-an-app-reports-a-switch-it-keeps-elsewhere
+	 * @spec openspec/specs/connection-registry/spec.md#scenario-an-app-reports-a-switch-it-keeps-elsewhere
 	 */
 	public function testReportedDisabledIsShown(): void {
 		$row = [

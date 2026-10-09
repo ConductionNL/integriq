@@ -400,14 +400,36 @@ class StufZknSyncService {
 	 * Best-effort resolve an active source without throwing — used by the inbound leg, which must
 	 * always be acknowledgeable even before any source is configured.
 	 *
+	 * An engine read (`_rbac: false`): the inbound leg runs as the StUF-ZKN
+	 * connection's account, which cannot read the admin-only `source`. It only
+	 * needs the organisation codes and the target register and schema, so it
+	 * reads the configuration and never writes it.
+	 *
 	 * @return ObjectEntity|null The resolved source, or null when none is active.
+	 *
+	 * @spec openspec/changes/stuf-zkn-inbound-on-the-consumer-model/specs/stuf-zkn-bridge/spec.md#requirement-the-inbound-endpoint-acts-as-the-stuf-zkn-connections-account-req-020
 	 */
 	private function tryResolveActiveSource(): ?ObjectEntity {
-		try {
-			return $this->resolveActiveSource();
-		} catch (StufZknProviderException) {
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_SOURCE,
+					'type' => self::SOURCE_TYPE,
+					'isEnabled' => true,
+				],
+				'limit' => 1,
+			],
+			_rbac: false,
+			_multitenancy: false
+		);
+		$results = ($matches['results'] ?? $matches);
+
+		if (empty($results) === true || $results[0] instanceof ObjectEntity === false) {
 			return null;
 		}
+
+		return $results[0];
 
 	}//end tryResolveActiveSource()
 

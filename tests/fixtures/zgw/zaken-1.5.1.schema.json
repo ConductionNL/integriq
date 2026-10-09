@@ -1,0 +1,5161 @@
+{
+ "$comment": "Request schemas from https://raw.githubusercontent.com/VNG-Realisatie/zaken-api/1.5.1/src/openapi.yaml (OpenAPI components converted to JSON Schema: readOnly properties dropped from the request schemas, nullable as a null type). Generated for tests; do not edit by hand.",
+ "$defs": {
+  "AardRelatieEnum": {
+   "enum": [
+    "vervolg",
+    "onderwerp",
+    "bijdrage"
+   ],
+   "type": "string"
+  },
+  "AardRelatieWeergaveEnum": {
+   "enum": [
+    "Hoort bij, omgekeerd: kent",
+    "Legt vast, omgekeerd: kan vastgelegd zijn als"
+   ],
+   "type": "string"
+  },
+  "ArchiefnominatieEnum": {
+   "enum": [
+    "blijvend_bewaren",
+    "vernietigen"
+   ],
+   "type": "string"
+  },
+  "ArchiefstatusEnum": {
+   "enum": [
+    "nog_te_archiveren",
+    "gearchiveerd",
+    "gearchiveerd_procestermijn_onbekend",
+    "overgedragen"
+   ],
+   "type": "string"
+  },
+  "AuditTrail": {
+   "type": "object",
+   "properties": {
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "description": "Unieke identificatie van de audit regel.",
+     "title": "uuid"
+    },
+    "bron": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/BronEnum"
+      }
+     ],
+     "description": "De naam van het component waar de wijziging in is gedaan.\n\nUitleg bij mogelijke waarden:\n\n* `ac` - Autorisaties API\n* `nrc` - Notificaties API\n* `zrc` - Zaken API\n* `ztc` - Catalogi API\n* `drc` - Documenten API\n* `brc` - Besluiten API\n* `cmc` - Contactmomenten API\n* `kc` - Klanten API\n* `vrc` - Verzoeken API",
+     "title": "bron"
+    },
+    "applicatieId": {
+     "type": "string",
+     "description": "Unieke identificatie van de applicatie, binnen de organisatie.",
+     "title": "applicatie id",
+     "maxLength": 100
+    },
+    "applicatieWeergave": {
+     "type": "string",
+     "description": "Vriendelijke naam van de applicatie.",
+     "title": "applicatie weergave",
+     "maxLength": 200
+    },
+    "gebruikersId": {
+     "type": "string",
+     "description": "Unieke identificatie van de gebruiker die binnen de organisatie herleid kan worden naar een persoon.",
+     "title": "gebruikers id",
+     "maxLength": 255
+    },
+    "gebruikersWeergave": {
+     "type": "string",
+     "description": "Vriendelijke naam van de gebruiker.",
+     "title": "gebruikers weergave",
+     "maxLength": 255
+    },
+    "actie": {
+     "type": "string",
+     "description": "De uitgevoerde handeling.\n\nDe bekende waardes voor dit veld zijn hieronder aangegeven,                         maar andere waardes zijn ook toegestaan\n\nUitleg bij mogelijke waarden:\n\n* `create` - Object aangemaakt\n* `list` - Lijst van objecten opgehaald\n* `retrieve` - Object opgehaald\n* `destroy` - Object verwijderd\n* `update` - Object bijgewerkt\n* `partial_update` - Object deels bijgewerkt",
+     "title": "actie",
+     "maxLength": 50
+    },
+    "actieWeergave": {
+     "type": "string",
+     "description": "Vriendelijke naam van de actie.",
+     "title": "actie weergave",
+     "maxLength": 200
+    },
+    "resultaat": {
+     "type": "integer",
+     "maximum": 599,
+     "minimum": 100,
+     "description": "HTTP status code van de API response van de uitgevoerde handeling.",
+     "title": "resultaat"
+    },
+    "hoofdObject": {
+     "type": "string",
+     "format": "uri",
+     "description": "De URL naar het hoofdobject van een component.",
+     "title": "hoofd object",
+     "maxLength": 1000
+    },
+    "resource": {
+     "type": "string",
+     "description": "Het type resource waarop de actie gebeurde.",
+     "title": "resource",
+     "maxLength": 50
+    },
+    "resourceUrl": {
+     "type": "string",
+     "format": "uri",
+     "description": "De URL naar het object.",
+     "title": "resource url",
+     "maxLength": 1000
+    },
+    "toelichting": {
+     "type": "string",
+     "description": "Toelichting waarom de handeling is uitgevoerd.",
+     "title": "toelichting"
+    },
+    "resourceWeergave": {
+     "type": "string",
+     "description": "Vriendelijke identificatie van het object.",
+     "title": "resource weergave",
+     "maxLength": 200
+    },
+    "aanmaakdatum": {
+     "type": "string",
+     "format": "date-time",
+     "readOnly": true,
+     "description": "De datum waarop de handeling is gedaan.",
+     "title": "aanmaakdatum"
+    },
+    "wijzigingen": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/Wijzigingen"
+      }
+     ],
+     "title": "wijzigingen"
+    }
+   },
+   "required": [
+    "aanmaakdatum",
+    "actie",
+    "bron",
+    "hoofdObject",
+    "resource",
+    "resourceUrl",
+    "resourceWeergave",
+    "resultaat",
+    "wijzigingen"
+   ]
+  },
+  "BetalingsindicatieEnum": {
+   "enum": [
+    "nvt",
+    "nog_niet",
+    "gedeeltelijk",
+    "geheel"
+   ],
+   "type": "string"
+  },
+  "BlankEnum": {
+   "enum": [
+    ""
+   ]
+  },
+  "BronEnum": {
+   "enum": [
+    "ac",
+    "nrc",
+    "zrc",
+    "ztc",
+    "drc",
+    "brc",
+    "cmc",
+    "kc",
+    "vrc"
+   ],
+   "type": "string"
+  },
+  "ContactPersoonRol": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "description": "De gegevens van de persoon die anderen desgevraagd in contact brengt met medewerkers van de BETROKKENE, een NIET-NATUURLIJK PERSOON of VESTIGING zijnde, of met BETROKKENE zelf, een NATUURLIJK PERSOON zijnde , vanuit het belang van BETROKKENE in haar ROL bij een ZAAK.",
+   "properties": {
+    "emailadres": {
+     "type": "string",
+     "format": "email",
+     "title": "Email",
+     "description": "Elektronich postadres waaronder de contactpersoon in de regel bereikbaar is.",
+     "maxLength": 254
+    },
+    "functie": {
+     "type": "string",
+     "description": "De aanduiding van de taken, rechten en plichten die de contactpersoon heeft binnen de organisatie van BETROKKENE. ",
+     "title": "functie",
+     "maxLength": 50
+    },
+    "telefoonnummer": {
+     "type": "string",
+     "description": "Telefoonnummer waaronder de contactpersoon in de regel bereikbaar is.",
+     "title": "telefoonnummer",
+     "maxLength": 20
+    },
+    "naam": {
+     "type": "string",
+     "description": "De opgemaakte naam van de contactpersoon namens de BETROKKENE.",
+     "title": "naam",
+     "maxLength": 200
+    }
+   },
+   "required": [
+    "naam"
+   ]
+  },
+  "FieldValidationError": {
+   "type": "object",
+   "description": "Formaat van validatiefouten.",
+   "properties": {
+    "name": {
+     "type": "string",
+     "description": "Naam van het veld met ongeldige gegevens",
+     "title": "name"
+    },
+    "code": {
+     "type": "string",
+     "description": "Systeemcode die het type fout aangeeft",
+     "title": "code"
+    },
+    "reason": {
+     "type": "string",
+     "description": "Uitleg wat er precies fout is met de gegevens",
+     "title": "reason"
+    }
+   },
+   "required": [
+    "code",
+    "name",
+    "reason"
+   ]
+  },
+  "Fout": {
+   "type": "object",
+   "description": "Formaat van HTTP 4xx en 5xx fouten.",
+   "properties": {
+    "type": {
+     "type": "string",
+     "description": "URI referentie naar het type fout, bedoeld voor developers",
+     "title": "type"
+    },
+    "code": {
+     "type": "string",
+     "description": "Systeemcode die het type fout aangeeft",
+     "title": "code"
+    },
+    "title": {
+     "type": "string",
+     "description": "Generieke titel voor het type fout",
+     "title": "title"
+    },
+    "status": {
+     "type": "integer",
+     "description": "De HTTP status code",
+     "title": "status"
+    },
+    "detail": {
+     "type": "string",
+     "description": "Extra informatie bij de fout, indien beschikbaar",
+     "title": "detail"
+    },
+    "instance": {
+     "type": "string",
+     "description": "URI met referentie naar dit specifiek voorkomen van de fout. Deze kan gebruikt worden in combinatie met server logs, bijvoorbeeld.",
+     "title": "instance"
+    }
+   },
+   "required": [
+    "code",
+    "detail",
+    "instance",
+    "status",
+    "title"
+   ]
+  },
+  "GeoJSONGeometry": {
+   "title": "GeoJSONGeometry",
+   "type": "object",
+   "oneOf": [
+    {
+     "$ref": "#/$defs/Point"
+    },
+    {
+     "$ref": "#/$defs/MultiPoint"
+    },
+    {
+     "$ref": "#/$defs/LineString"
+    },
+    {
+     "$ref": "#/$defs/MultiLineString"
+    },
+    {
+     "$ref": "#/$defs/Polygon"
+    },
+    {
+     "$ref": "#/$defs/MultiPolygon"
+    },
+    {
+     "$ref": "#/$defs/GeometryCollection"
+    }
+   ]
+  },
+  "GeoWithin": {
+   "type": "object",
+   "properties": {
+    "within": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/GeoJSONGeometry"
+      }
+     ],
+     "title": "within"
+    }
+   }
+  },
+  "Geometry": {
+   "title": "Geometry",
+   "description": "GeoJSON geometry",
+   "type": "object",
+   "required": [
+    "type"
+   ],
+   "properties": {
+    "type": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/GeometryTypeEnum"
+      }
+     ],
+     "description": "The geometry type"
+    }
+   }
+  },
+  "GeometryCollection": {
+   "title": "Geometry collection",
+   "description": "GeoJSON multi-polygon geometry",
+   "type": "object",
+   "allOf": [
+    {
+     "$ref": "#/$defs/Geometry"
+    },
+    {
+     "type": "object",
+     "required": [
+      "geometries"
+     ],
+     "properties": {
+      "geometries": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/Geometry"
+       }
+      }
+     }
+    }
+   ]
+  },
+  "GeometryTypeEnum": {
+   "type": "string",
+   "enum": [
+    "Point",
+    "MultiPoint",
+    "LineString",
+    "MultiLineString",
+    "Polygon",
+    "MultiPolygon",
+    "Feature",
+    "FeatureCollection",
+    "GeometryCollection"
+   ]
+  },
+  "GeslachtsaanduidingEnum": {
+   "enum": [
+    "m",
+    "v",
+    "o"
+   ],
+   "type": "string"
+  },
+  "IndicatieMachtigingEnum": {
+   "enum": [
+    "gemachtigde",
+    "machtiginggever"
+   ],
+   "type": "string"
+  },
+  "InnRechtsvormEnum": {
+   "enum": [
+    "besloten_vennootschap",
+    "cooperatie_europees_economische_samenwerking",
+    "europese_cooperatieve_venootschap",
+    "europese_naamloze_vennootschap",
+    "kerkelijke_organisatie",
+    "naamloze_vennootschap",
+    "onderlinge_waarborg_maatschappij",
+    "overig_privaatrechtelijke_rechtspersoon",
+    "stichting",
+    "vereniging",
+    "vereniging_van_eigenaars",
+    "publiekrechtelijke_rechtspersoon",
+    "vennootschap_onder_firma",
+    "maatschap",
+    "rederij",
+    "commanditaire_vennootschap",
+    "kapitaalvennootschap_binnen_eer",
+    "overige_buitenlandse_rechtspersoon_vennootschap",
+    "kapitaalvennootschap_buiten_eer"
+   ],
+   "type": "string"
+  },
+  "KlantContact": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke aanduiding van een KLANTCONTACT",
+     "title": "identificatie",
+     "maxLength": 14
+    },
+    "datumtijd": {
+     "type": "string",
+     "format": "date-time",
+     "description": "De datum en het tijdstip waarop het KLANTCONTACT begint",
+     "title": "datumtijd"
+    },
+    "kanaal": {
+     "type": "string",
+     "description": "Het communicatiekanaal waarlangs het KLANTCONTACT gevoerd wordt",
+     "title": "kanaal",
+     "maxLength": 20
+    },
+    "onderwerp": {
+     "type": "string",
+     "description": "Het onderwerp waarover contact is geweest met de klant.",
+     "title": "onderwerp",
+     "maxLength": 200
+    },
+    "toelichting": {
+     "type": "string",
+     "description": "Een toelichting die inhoudelijk het contact met de klant beschrijft.",
+     "title": "toelichting",
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "datumtijd",
+    "url",
+    "uuid",
+    "zaak"
+   ]
+  },
+  "LineString": {
+   "title": "Line-string",
+   "description": "GeoJSON line-string geometry",
+   "type": "object",
+   "allOf": [
+    {
+     "$ref": "#/$defs/Geometry"
+    },
+    {
+     "type": "object",
+     "required": [
+      "coordinates"
+     ],
+     "properties": {
+      "coordinates": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/Point2D"
+       },
+       "minItems": 2
+      }
+     }
+    }
+   ]
+  },
+  "MaximaleVertrouwelijkheidaanduidingEnum": {
+   "enum": [
+    "openbaar",
+    "beperkt_openbaar",
+    "intern",
+    "zaakvertrouwelijk",
+    "vertrouwelijk",
+    "confidentieel",
+    "geheim",
+    "zeer_geheim"
+   ],
+   "type": "string"
+  },
+  "MultiLineString": {
+   "title": "Multi-line string",
+   "description": "GeoJSON multi-line-string geometry",
+   "type": "object",
+   "allOf": [
+    {
+     "$ref": "#/$defs/Geometry"
+    },
+    {
+     "type": "object",
+     "required": [
+      "coordinates"
+     ],
+     "properties": {
+      "coordinates": {
+       "type": "array",
+       "items": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/Point2D"
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  "MultiPoint": {
+   "title": "MultiPoint",
+   "description": "GeoJSON multi-point geometry",
+   "type": "object",
+   "allOf": [
+    {
+     "$ref": "#/$defs/Geometry"
+    },
+    {
+     "type": "object",
+     "required": [
+      "coordinates"
+     ],
+     "properties": {
+      "coordinates": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/Point2D"
+       }
+      }
+     }
+    }
+   ]
+  },
+  "MultiPolygon": {
+   "title": "Multi-polygon",
+   "description": "GeoJSON multi-polygon geometry",
+   "type": "object",
+   "allOf": [
+    {
+     "$ref": "#/$defs/Geometry"
+    },
+    {
+     "type": "object",
+     "required": [
+      "coordinates"
+     ],
+     "properties": {
+      "coordinates": {
+       "type": "array",
+       "items": {
+        "type": "array",
+        "items": {
+         "type": "array",
+         "items": {
+          "$ref": "#/$defs/Point2D"
+         }
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  "NullEnum": {
+   "enum": [
+    null
+   ]
+  },
+  "ObjectAdres": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "wplWoonplaatsNaam": {
+     "type": "string",
+     "title": "wpl woonplaats naam",
+     "maxLength": 80
+    },
+    "gorOpenbareRuimteNaam": {
+     "type": "string",
+     "description": "Een door het bevoegde gemeentelijke orgaan aan een OPENBARE RUIMTE toegekende benaming",
+     "title": "gor openbare ruimte naam",
+     "maxLength": 80
+    },
+    "huisnummer": {
+     "type": "integer",
+     "maximum": 99999,
+     "minimum": 0,
+     "title": "huisnummer"
+    },
+    "huisletter": {
+     "type": "string",
+     "title": "huisletter",
+     "maxLength": 1
+    },
+    "huisnummertoevoeging": {
+     "type": "string",
+     "title": "huisnummertoevoeging",
+     "maxLength": 4
+    },
+    "postcode": {
+     "type": "string",
+     "title": "postcode",
+     "maxLength": 7
+    }
+   },
+   "required": [
+    "gorOpenbareRuimteNaam",
+    "huisnummer",
+    "identificatie",
+    "wplWoonplaatsNaam"
+   ]
+  },
+  "ObjectBuurt": {
+   "type": "object",
+   "properties": {
+    "buurtCode": {
+     "type": "string",
+     "description": "De code behorende bij de naam van de buurt",
+     "title": "buurt code",
+     "maxLength": 2
+    },
+    "buurtNaam": {
+     "type": "string",
+     "description": "De naam van de buurt, zoals die door het CBS wordt gebruikt.",
+     "title": "buurt naam",
+     "maxLength": 40
+    },
+    "gemGemeenteCode": {
+     "type": "string",
+     "description": "Een numerieke aanduiding waarmee een Nederlandse gemeente uniek wordt aangeduid",
+     "title": "gem gemeente code",
+     "maxLength": 4
+    },
+    "wykWijkCode": {
+     "type": "string",
+     "description": "De code behorende bij de naam van de wijk",
+     "title": "wyk wijk code",
+     "maxLength": 2
+    }
+   },
+   "required": [
+    "buurtCode",
+    "buurtNaam",
+    "gemGemeenteCode",
+    "wykWijkCode"
+   ]
+  },
+  "ObjectGemeente": {
+   "type": "object",
+   "properties": {
+    "gemeenteNaam": {
+     "type": "string",
+     "description": "De officiële door de gemeente vastgestelde gemeentenaam.",
+     "title": "gemeente naam",
+     "maxLength": 80
+    },
+    "gemeenteCode": {
+     "type": "string",
+     "description": "Een numerieke aanduiding waarmee een Nederlandse gemeente uniek wordt aangeduid",
+     "title": "gemeente code",
+     "maxLength": 4
+    }
+   },
+   "required": [
+    "gemeenteCode",
+    "gemeenteNaam"
+   ]
+  },
+  "ObjectGemeentelijkeOpenbareRuimte": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "openbareRuimteNaam": {
+     "type": "string",
+     "description": "Een door het bevoegde gemeentelijke orgaan aan een OPENBARE RUIMTE toegekende benaming",
+     "title": "openbare ruimte naam",
+     "maxLength": 80
+    }
+   },
+   "required": [
+    "identificatie",
+    "openbareRuimteNaam"
+   ]
+  },
+  "ObjectHuishouden": {
+   "type": "object",
+   "properties": {
+    "nummer": {
+     "type": "string",
+     "description": "Uniek identificerend administratienummer van een huishouden zoals toegekend door de gemeente waarin het huishouden woonachtig is.",
+     "title": "nummer",
+     "maxLength": 12
+    },
+    "isGehuisvestIn": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/ObjectTerreinGebouwdObject"
+        }
+       ],
+       "title": "isGehuisvestIn"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "nummer"
+   ]
+  },
+  "ObjectInrichtingselement": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectInrichtingselementTypeEnum"
+      }
+     ],
+     "description": "Specificatie van de aard van het inrichtingselement.\n\nUitleg bij mogelijke waarden:\n\n* `bak` - Bak\n* `bord` - Bord\n* `installatie` - Installatie\n* `kast` - Kast\n* `mast` - Mast\n* `paal` - Paal\n* `sensor` - Sensor\n* `straatmeubilair` - Straatmeubilair\n* `waterinrichtingselement` - Waterinrichtingselement\n* `weginrichtingselement` - Weginrichtingselement",
+     "title": "type"
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "naam": {
+     "type": "string",
+     "description": "De benaming van het OBJECT",
+     "title": "naam",
+     "maxLength": 500
+    }
+   },
+   "required": [
+    "identificatie",
+    "type"
+   ]
+  },
+  "ObjectInrichtingselementTypeEnum": {
+   "enum": [
+    "bak",
+    "bord",
+    "installatie",
+    "kast",
+    "mast",
+    "paal",
+    "sensor",
+    "straatmeubilair",
+    "waterinrichtingselement",
+    "weginrichtingselement"
+   ],
+   "type": "string"
+  },
+  "ObjectKadastraleOnroerendeZaak": {
+   "type": "object",
+   "properties": {
+    "kadastraleIdentificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "kadastrale identificatie",
+     "maxLength": 100
+    },
+    "kadastraleAanduiding": {
+     "type": "string",
+     "description": "De typering van de kadastrale aanduiding van een onroerende zaak conform Kadaster",
+     "title": "kadastrale aanduiding",
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "kadastraleAanduiding",
+    "kadastraleIdentificatie"
+   ]
+  },
+  "ObjectKunstwerkdeel": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectKunstwerkdeelTypeEnum"
+      }
+     ],
+     "description": "Specificatie van het soort Kunstwerk waartoe het kunstwerkdeel behoort.\n\nUitleg bij mogelijke waarden:\n\n* `keermuur` - Keermuur\n* `overkluizing` - Overkluizing\n* `duiker` - Duiker\n* `faunavoorziening` - Faunavoorziening\n* `vispassage` - Vispassage\n* `bodemval` - Bodemval\n* `coupure` - Coupure\n* `ponton` - Ponton\n* `voorde` - Voorde\n* `hoogspanningsmast` - Hoogspanningsmast\n* `gemaal` - Gemaal\n* `perron` - Perron\n* `sluis` - Sluis\n* `strekdam` - Strekdam\n* `steiger` - Steiger\n* `stuw` - Stuw",
+     "title": "type"
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "naam": {
+     "type": "string",
+     "title": "naam",
+     "maxLength": 80
+    }
+   },
+   "required": [
+    "identificatie",
+    "naam",
+    "type"
+   ]
+  },
+  "ObjectKunstwerkdeelTypeEnum": {
+   "enum": [
+    "keermuur",
+    "overkluizing",
+    "duiker",
+    "faunavoorziening",
+    "vispassage",
+    "bodemval",
+    "coupure",
+    "ponton",
+    "voorde",
+    "hoogspanningsmast",
+    "gemaal",
+    "perron",
+    "sluis",
+    "strekdam",
+    "steiger",
+    "stuw"
+   ],
+   "type": "string"
+  },
+  "ObjectMaatschappelijkeActiviteit": {
+   "type": "object",
+   "properties": {
+    "kvkNummer": {
+     "type": "string",
+     "description": "Landelijk uniek identificerend administratienummer van een MAATSCHAPPELIJKE ACTIVITEIT zoals toegewezen door de Kamer van Koophandel (KvK).",
+     "title": "kvk nummer",
+     "maxLength": 8
+    },
+    "handelsnaam": {
+     "type": "string",
+     "description": "De naam waaronder de onderneming handelt.",
+     "title": "handelsnaam",
+     "maxLength": 200
+    }
+   },
+   "required": [
+    "handelsnaam",
+    "kvkNummer"
+   ]
+  },
+  "ObjectOpenbareRuimte": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "wplWoonplaatsNaam": {
+     "type": "string",
+     "title": "wpl woonplaats naam",
+     "maxLength": 80
+    },
+    "gorOpenbareRuimteNaam": {
+     "type": "string",
+     "description": "Een door het bevoegde gemeentelijke orgaan aan een OPENBARE RUIMTE toegekende benaming",
+     "title": "gor openbare ruimte naam",
+     "maxLength": 80
+    }
+   },
+   "required": [
+    "gorOpenbareRuimteNaam",
+    "identificatie",
+    "wplWoonplaatsNaam"
+   ]
+  },
+  "ObjectOverige": {
+   "type": "object",
+   "properties": {
+    "overigeData": {
+     "type": "object",
+     "additionalProperties": {},
+     "title": "overige data"
+    }
+   },
+   "required": [
+    "overigeData"
+   ]
+  },
+  "ObjectPand": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    }
+   },
+   "required": [
+    "identificatie"
+   ]
+  },
+  "ObjectSpoorbaandeel": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectSpoorbaandeelTypeEnum"
+      }
+     ],
+     "description": "Specificatie van het soort Spoorbaan\n\nUitleg bij mogelijke waarden:\n\n* `breedspoor` - breedspoor\n* `normaalspoor` - normaalspoor\n* `smalspoor` - smalspoor\n* `spoorbaan` - spoorbaan",
+     "title": "type"
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "naam": {
+     "type": "string",
+     "description": "De benaming van het OBJECT",
+     "title": "naam",
+     "maxLength": 500
+    }
+   },
+   "required": [
+    "identificatie",
+    "type"
+   ]
+  },
+  "ObjectSpoorbaandeelTypeEnum": {
+   "enum": [
+    "breedspoor",
+    "normaalspoor",
+    "smalspoor",
+    "spoorbaan"
+   ],
+   "type": "string"
+  },
+  "ObjectTerreinGebouwdObject": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "adresAanduidingGrp": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/TerreinGebouwdObjectAdres"
+        }
+       ],
+       "title": "adresAanduidingGrp"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "identificatie"
+   ]
+  },
+  "ObjectTerreindeel": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "type": "string",
+     "title": "type",
+     "maxLength": 40
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "naam": {
+     "type": "string",
+     "description": "De benaming van het OBJECT",
+     "title": "naam",
+     "maxLength": 500
+    }
+   },
+   "required": [
+    "identificatie",
+    "type"
+   ]
+  },
+  "ObjectTypeEnum": {
+   "enum": [
+    "adres",
+    "besluit",
+    "buurt",
+    "enkelvoudig_document",
+    "gemeente",
+    "gemeentelijke_openbare_ruimte",
+    "huishouden",
+    "inrichtingselement",
+    "kadastrale_onroerende_zaak",
+    "kunstwerkdeel",
+    "maatschappelijke_activiteit",
+    "medewerker",
+    "natuurlijk_persoon",
+    "niet_natuurlijk_persoon",
+    "openbare_ruimte",
+    "organisatorische_eenheid",
+    "pand",
+    "spoorbaandeel",
+    "status",
+    "terreindeel",
+    "terrein_gebouwd_object",
+    "vestiging",
+    "waterdeel",
+    "wegdeel",
+    "wijk",
+    "woonplaats",
+    "woz_deelobject",
+    "woz_object",
+    "woz_waarde",
+    "zakelijk_recht",
+    "overige"
+   ],
+   "type": "string"
+  },
+  "ObjectTypeOverigeDefinitie": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "title": "Objecttype-URL",
+     "description": "URL-referentie naar de objecttype resource in een API. Deze resource moet de [JSON-schema](https://json-schema.org/)-definitie van het objecttype bevatten.",
+     "maxLength": 1000
+    },
+    "schema": {
+     "type": "string",
+     "title": "schema-pad",
+     "description": "Een geldige [jq](http://stedolan.github.io/jq/) expressie. Dit wordt gecombineerd met de resource uit het `url`-attribuut om het schema van het objecttype uit te lezen. Bijvoorbeeld: `.jsonSchema`.",
+     "maxLength": 100
+    },
+    "objectData": {
+     "type": "string",
+     "title": "objectgegevens-pad",
+     "description": "Een geldige [jq](http://stedolan.github.io/jq/) expressie. Dit wordt gecombineerd met de JSON data uit de OBJECT url om de objectgegevens uit te lezen en de vorm van de gegevens tegen het schema te valideren. Bijvoorbeeld: `.record.data`.",
+     "maxLength": 100
+    }
+   },
+   "required": [
+    "objectData",
+    "schema",
+    "url"
+   ]
+  },
+  "ObjectWaterdeel": {
+   "type": "object",
+   "properties": {
+    "typeWaterdeel": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/TypeWaterdeelEnum"
+      }
+     ],
+     "description": "Specificatie van het soort water\n\nUitleg bij mogelijke waarden:\n\n* `zee` - Zee\n* `waterloop` - Waterloop\n* `watervlakte` - Watervlakte\n* `greppel_droge_sloot` - Greppel, droge sloot",
+     "title": "type waterdeel"
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "naam": {
+     "type": "string",
+     "description": "De benaming van het OBJECT",
+     "title": "naam",
+     "maxLength": 500
+    }
+   },
+   "required": [
+    "identificatie",
+    "typeWaterdeel"
+   ]
+  },
+  "ObjectWegdeel": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "type": "string",
+     "title": "type",
+     "maxLength": 100
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "naam": {
+     "type": "string",
+     "description": "De benaming van het OBJECT",
+     "title": "naam",
+     "maxLength": 500
+    }
+   },
+   "required": [
+    "identificatie",
+    "type"
+   ]
+  },
+  "ObjectWijk": {
+   "type": "object",
+   "properties": {
+    "wijkCode": {
+     "type": "string",
+     "description": "De code behorende bij de naam van de wijk.",
+     "title": "wijk code",
+     "maxLength": 2
+    },
+    "wijkNaam": {
+     "type": "string",
+     "description": "De naam van de wijk, zoals die door het CBS wordt gebruikt.",
+     "title": "wijk naam",
+     "maxLength": 40
+    },
+    "gemGemeenteCode": {
+     "type": "string",
+     "description": "Een numerieke aanduiding waarmee een Nederlandse gemeente uniek wordt aangeduid",
+     "title": "gem gemeente code",
+     "maxLength": 4
+    }
+   },
+   "required": [
+    "gemGemeenteCode",
+    "wijkCode",
+    "wijkNaam"
+   ]
+  },
+  "ObjectWoonplaats": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "woonplaatsNaam": {
+     "type": "string",
+     "description": "De door het bevoegde gemeentelijke orgaan aan een WOONPLAATS toegekende benaming.",
+     "title": "woonplaats naam",
+     "maxLength": 80
+    }
+   },
+   "required": [
+    "identificatie",
+    "woonplaatsNaam"
+   ]
+  },
+  "ObjectWozDeelobject": {
+   "type": "object",
+   "properties": {
+    "nummerWozDeelObject": {
+     "type": "string",
+     "description": "Uniek identificatienummer voor het deelobject binnen een WOZ-object.",
+     "title": "nummer woz deel object",
+     "maxLength": 6
+    },
+    "isOnderdeelVan": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWozObject"
+      }
+     ],
+     "title": "isOnderdeelVan"
+    }
+   },
+   "required": [
+    "nummerWozDeelObject"
+   ]
+  },
+  "ObjectWozObject": {
+   "type": "object",
+   "properties": {
+    "wozObjectNummer": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "woz object nummer",
+     "maxLength": 100
+    },
+    "aanduidingWozObject": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/WozObjectAdres"
+        }
+       ],
+       "title": "aanduidingWozObject"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "wozObjectNummer"
+   ]
+  },
+  "ObjectWozWaarde": {
+   "type": "object",
+   "properties": {
+    "waardepeildatum": {
+     "type": "string",
+     "description": "De datum waarnaar de waarde van het WOZ-object wordt bepaald.",
+     "title": "waardepeildatum",
+     "maxLength": 9
+    },
+    "isVoor": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWozObject"
+      }
+     ],
+     "title": "isVoor"
+    }
+   },
+   "required": [
+    "waardepeildatum"
+   ]
+  },
+  "ObjectZakelijkRecht": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "avgAard": {
+     "type": "string",
+     "description": "aanduiding voor de aard van het recht",
+     "title": "avg aard",
+     "maxLength": 1000
+    },
+    "heeftBetrekkingOp": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectKadastraleOnroerendeZaak"
+      }
+     ],
+     "title": "heeftBetrekkingOp"
+    },
+    "heeftAlsGerechtigde": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ZakelijkRechtHeeftAlsGerechtigde"
+      }
+     ],
+     "title": "heeftAlsGerechtigde"
+    }
+   },
+   "required": [
+    "avgAard",
+    "identificatie"
+   ]
+  },
+  "Opschorting": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "description": "Gegevens omtrent het tijdelijk opschorten van de behandeling van de ZAAK",
+   "properties": {
+    "indicatie": {
+     "type": "boolean",
+     "description": "Aanduiding of de behandeling van de ZAAK tijdelijk is opgeschort.",
+     "title": "indicatie opschorting"
+    },
+    "reden": {
+     "type": "string",
+     "description": "Omschrijving van de reden voor het opschorten van de behandeling van de zaak.",
+     "title": "reden opschorting",
+     "maxLength": 200
+    }
+   },
+   "required": [
+    "indicatie",
+    "reden"
+   ]
+  },
+  "OrderingEnum": {
+   "enum": [
+    "startdatum",
+    "-startdatum",
+    "einddatum",
+    "-einddatum",
+    "publicatiedatum",
+    "-publicatiedatum",
+    "archiefactiedatum",
+    "-archiefactiedatum",
+    "registratiedatum",
+    "-registratiedatum",
+    "identificatie",
+    "-identificatie"
+   ],
+   "type": "string"
+  },
+  "PaginatedKlantContactList": {
+   "type": "object",
+   "properties": {
+    "count": {
+     "type": "integer"
+    },
+    "next": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "previous": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "results": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/KlantContact"
+     }
+    }
+   }
+  },
+  "PaginatedResultaatList": {
+   "type": "object",
+   "properties": {
+    "count": {
+     "type": "integer"
+    },
+    "next": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "previous": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "results": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/Resultaat"
+     }
+    }
+   }
+  },
+  "PaginatedRolList": {
+   "type": "object",
+   "properties": {
+    "count": {
+     "type": "integer"
+    },
+    "next": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "previous": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "results": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/Rol"
+     }
+    }
+   }
+  },
+  "PaginatedStatusList": {
+   "type": "object",
+   "properties": {
+    "count": {
+     "type": "integer"
+    },
+    "next": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "previous": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "results": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/Status"
+     }
+    }
+   }
+  },
+  "PaginatedZaakList": {
+   "type": "object",
+   "properties": {
+    "count": {
+     "type": "integer"
+    },
+    "next": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "previous": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "results": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/Zaak"
+     }
+    }
+   }
+  },
+  "PaginatedZaakObjectList": {
+   "type": "object",
+   "properties": {
+    "count": {
+     "type": "integer"
+    },
+    "next": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "previous": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri"
+    },
+    "results": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/ZaakObject"
+     }
+    }
+   }
+  },
+  "PatchedResultaat": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "resultaattype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het RESULTAATTYPE (in de Catalogi API).",
+     "title": "resultaattype",
+     "maxLength": 1000
+    },
+    "toelichting": {
+     "type": "string",
+     "description": "Een toelichting op wat het resultaat van de zaak inhoudt.",
+     "title": "toelichting",
+     "maxLength": 1000
+    }
+   }
+  },
+  "PatchedZaak": {
+   "type": "object",
+   "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van de ZAAK binnen de organisatie die verantwoordelijk is voor de behandeling van de ZAAK.",
+     "title": "identificatie",
+     "maxLength": 40
+    },
+    "bronorganisatie": {
+     "type": "string",
+     "description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die de zaak heeft gecreeerd. Dit moet een geldig RSIN zijn van 9 nummers en voldoen aan https://nl.wikipedia.org/wiki/Burgerservicenummer#11-proef",
+     "title": "bronorganisatie",
+     "maxLength": 9
+    },
+    "omschrijving": {
+     "type": "string",
+     "description": "Een korte omschrijving van de zaak.",
+     "title": "omschrijving",
+     "maxLength": 80
+    },
+    "toelichting": {
+     "type": "string",
+     "description": "Een toelichting op de zaak.",
+     "title": "toelichting",
+     "maxLength": 1000
+    },
+    "zaaktype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het ZAAKTYPE (in de Catalogi API) in de CATALOGUS waar deze voorkomt",
+     "title": "zaaktype",
+     "maxLength": 1000
+    },
+    "registratiedatum": {
+     "type": "string",
+     "format": "date",
+     "description": "De datum waarop de zaakbehandelende organisatie de ZAAK heeft geregistreerd. Indien deze niet opgegeven wordt, wordt de datum van vandaag gebruikt.",
+     "title": "registratiedatum"
+    },
+    "verantwoordelijkeOrganisatie": {
+     "type": "string",
+     "description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die eindverantwoordelijk is voor de behandeling van de zaak. Dit moet een geldig RSIN zijn van 9 nummers en voldoen aan https://nl.wikipedia.org/wiki/Burgerservicenummer#11-proef",
+     "title": "verantwoordelijke organisatie",
+     "maxLength": 9
+    },
+    "startdatum": {
+     "type": "string",
+     "format": "date",
+     "description": "De datum waarop met de uitvoering van de zaak is gestart",
+     "title": "startdatum"
+    },
+    "einddatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "readOnly": true,
+     "description": "De datum waarop de uitvoering van de zaak afgerond is.",
+     "title": "einddatum"
+    },
+    "einddatumGepland": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "De datum waarop volgens de planning verwacht wordt dat de zaak afgerond wordt.",
+     "title": "einddatum gepland"
+    },
+    "uiterlijkeEinddatumAfdoening": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "De laatste datum waarop volgens wet- en regelgeving de zaak afgerond dient te zijn.",
+     "title": "uiterlijke einddatum afdoening"
+    },
+    "publicatiedatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "Datum waarop (het starten van) de zaak gepubliceerd is of wordt.",
+     "title": "publicatiedatum"
+    },
+    "communicatiekanaal": {
+     "type": "string",
+     "format": "uri",
+     "description": "Het medium waarlangs de aanleiding om een zaak te starten is ontvangen. URL naar een communicatiekanaal in de VNG-Referentielijst van communicatiekanalen.",
+     "title": "communicatiekanaal",
+     "maxLength": 1000
+    },
+    "productenOfDiensten": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": "URL naar product/dienst",
+      "maxLength": 1000
+     },
+     "description": "De producten en/of diensten die door de zaak worden voortgebracht. Dit zijn URLs naar de resources zoals die door de producten- en dienstencatalogus-API wordt ontsloten. De producten/diensten moeten bij het zaaktype vermeld zijn.",
+     "title": "producten of diensten"
+    },
+    "vertrouwelijkheidaanduiding": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/MaximaleVertrouwelijkheidaanduidingEnum"
+      }
+     ],
+     "title": "Vertrouwlijkheidaanduiding",
+     "description": "Aanduiding van de mate waarin het zaakdossier van de ZAAK voor de openbaarheid bestemd is. Optioneel - indien geen waarde gekozen wordt, dan wordt de waarde van het ZAAKTYPE overgenomen. Dit betekent dat de API _altijd_ een waarde teruggeeft."
+    },
+    "betalingsindicatie": {
+     "description": "Indicatie of de, met behandeling van de zaak gemoeide, kosten betaald zijn door de desbetreffende betrokkene.\n\nUitleg bij mogelijke waarden:\n\n* `nvt` - Er is geen sprake van te betalen, met de zaak gemoeide, kosten.\n* `nog_niet` - De met de zaak gemoeide kosten zijn (nog) niet betaald.\n* `gedeeltelijk` - De met de zaak gemoeide kosten zijn gedeeltelijk betaald.\n* `geheel` - De met de zaak gemoeide kosten zijn geheel betaald.",
+     "title": "betalingsindicatie",
+     "oneOf": [
+      {
+       "$ref": "#/$defs/BetalingsindicatieEnum"
+      },
+      {
+       "$ref": "#/$defs/BlankEnum"
+      }
+     ]
+    },
+    "betalingsindicatieWeergave": {
+     "type": "string",
+     "readOnly": true,
+     "description": "Uitleg bij `betalingsindicatie`.",
+     "title": "betalingsindicatieWeergave"
+    },
+    "laatsteBetaaldatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "De datum waarop de meest recente betaling is verwerkt van kosten die gemoeid zijn met behandeling van de zaak.",
+     "title": "laatste betaaldatum"
+    },
+    "zaakgeometrie": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/GeoJSONGeometry"
+        }
+       ],
+       "description": "Punt, lijn of (multi-)vlak geometrie-informatie, in GeoJSON.",
+       "title": "zaakgeometrie"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "verlenging": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/Verlenging"
+        }
+       ],
+       "description": "Gegevens omtrent het verlengen van de doorlooptijd van de behandeling van de ZAAK",
+       "title": "verlenging"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "opschorting": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/Opschorting"
+        }
+       ],
+       "description": "Gegevens omtrent het tijdelijk opschorten van de behandeling van de ZAAK",
+       "title": "opschorting"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "selectielijstklasse": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de categorie in de gehanteerde 'Selectielijst Archiefbescheiden' die, gezien het zaaktype en het resultaattype van de zaak, bepalend is voor het archiefregime van de zaak.",
+     "title": "selectielijstklasse",
+     "maxLength": 1000
+    },
+    "hoofdzaak": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri",
+     "title": "Is deelzaak van",
+     "description": "URL-referentie naar de ZAAK, waarom verzocht is door de initiator daarvan, die behandeld wordt in twee of meer separate ZAAKen waarvan de onderhavige ZAAK er één is.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "deelzaken": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": ""
+     },
+     "readOnly": true,
+     "description": "URL-referenties naar deel ZAAKen.",
+     "title": "is deelzaak van",
+     "uniqueItems": true
+    },
+    "relevanteAndereZaken": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/RelevanteZaak"
+     },
+     "description": "Een lijst van relevante andere zaken.",
+     "title": "zaak"
+    },
+    "eigenschappen": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": ""
+     },
+     "readOnly": true,
+     "title": "zaak",
+     "uniqueItems": true
+    },
+    "rollen": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": ""
+     },
+     "readOnly": true,
+     "title": "zaak",
+     "uniqueItems": true
+    },
+    "status": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri",
+     "readOnly": true,
+     "description": "Indien geen status bekend is, dan is de waarde 'null'",
+     "title": "status"
+    },
+    "zaakinformatieobjecten": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": ""
+     },
+     "readOnly": true,
+     "title": "zaak",
+     "uniqueItems": true
+    },
+    "zaakobjecten": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": ""
+     },
+     "readOnly": true,
+     "title": "zaak",
+     "uniqueItems": true
+    },
+    "kenmerken": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/ZaakKenmerk"
+     },
+     "description": "Lijst van kenmerken. Merk op dat refereren naar gerelateerde objecten beter kan via `ZaakObject`.",
+     "title": "zaak"
+    },
+    "archiefnominatie": {
+     "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden.\n\nUitleg bij mogelijke waarden:\n\n* `blijvend_bewaren` - Het zaakdossier moet bewaard blijven en op de Archiefactiedatum overgedragen worden naar een archiefbewaarplaats.\n* `vernietigen` - Het zaakdossier moet op of na de Archiefactiedatum vernietigd worden.",
+     "title": "archiefnominatie",
+     "oneOf": [
+      {
+       "$ref": "#/$defs/ArchiefnominatieEnum"
+      },
+      {
+       "$ref": "#/$defs/BlankEnum"
+      },
+      {
+       "$ref": "#/$defs/NullEnum"
+      }
+     ]
+    },
+    "archiefstatus": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ArchiefstatusEnum"
+      }
+     ],
+     "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden.\n\nUitleg bij mogelijke waarden:\n\n* `nog_te_archiveren` - De zaak cq. het zaakdossier is nog niet als geheel gearchiveerd.\n* `gearchiveerd` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt.\n* `gearchiveerd_procestermijn_onbekend` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt maar de vernietigingsdatum kan nog niet bepaald worden.\n* `overgedragen` - De zaak cq. het zaakdossier is overgebracht naar een archiefbewaarplaats.",
+     "title": "archiefstatus"
+    },
+    "archiefactiedatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "De datum waarop het gearchiveerde zaakdossier vernietigd moet worden dan wel overgebracht moet worden naar een archiefbewaarplaats. Wordt automatisch berekend bij het aanmaken of wijzigen van een RESULTAAT aan deze ZAAK indien nog leeg.",
+     "title": "archiefactiedatum"
+    },
+    "resultaat": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri",
+     "readOnly": true,
+     "description": "URL-referentie naar het RESULTAAT. Indien geen resultaat bekend is, dan is de waarde 'null'",
+     "title": "resultaat"
+    },
+    "opdrachtgevendeOrganisatie": {
+     "type": "string",
+     "description": "De krachtens publiekrecht ingestelde rechtspersoon dan wel ander niet-natuurlijk persoon waarbinnen het (bestuurs)orgaan zetelt dat opdracht heeft gegeven om taken uit te voeren waaraan de zaak invulling geeft.",
+     "title": "opdrachtgevende organisatie",
+     "maxLength": 9
+    },
+    "processobjectaard": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "title": "Procesobjectaard",
+     "description": "Omschrijving van het object, subject of gebeurtenis waarop, vanuit archiveringsoptiek, de zaak betrekking heeft.",
+     "maxLength": 200
+    },
+    "startdatumBewaartermijn": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "De datum die de start markeert van de termijn waarop het zaakdossier vernietigd moet worden.",
+     "title": "startdatum bewaartermijn"
+    },
+    "processobject": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/Processobject"
+        }
+       ],
+       "description": "Specificatie van de attribuutsoort van het object, subject of gebeurtenis  waarop, vanuit archiveringsoptiek, de zaak betrekking heeft en dat bepalend is voor de start van de archiefactietermijn.",
+       "title": "processobject"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   }
+  },
+  "PatchedZaakEigenschap": {
+   "type": "object",
+   "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url"
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "title": "zaak"
+    },
+    "eigenschap": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de EIGENSCHAP (in de Catalogi API).",
+     "title": "eigenschap",
+     "maxLength": 1000
+    },
+    "naam": {
+     "type": "string",
+     "readOnly": true,
+     "description": "De naam van de EIGENSCHAP (overgenomen uit de Catalogi API).",
+     "title": " naam"
+    },
+    "waarde": {
+     "type": "string",
+     "title": "waarde"
+    }
+   }
+  },
+  "PatchedZaakInformatieObject": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "informatieobject": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het INFORMATIEOBJECT (in de Documenten API), waar ook de relatieinformatie opgevraagd kan worden.",
+     "title": "informatieobject",
+     "maxLength": 1000
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "aardRelatieWeergave": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/AardRelatieWeergaveEnum"
+      }
+     ],
+     "readOnly": true,
+     "title": "aardRelatieWeergave"
+    },
+    "titel": {
+     "type": "string",
+     "description": "De naam waaronder het INFORMATIEOBJECT binnen het OBJECT bekend is.",
+     "title": "titel",
+     "maxLength": 200
+    },
+    "beschrijving": {
+     "type": "string",
+     "description": "Een op het object gerichte beschrijving van de inhoud vanhet INFORMATIEOBJECT.",
+     "title": "beschrijving"
+    },
+    "registratiedatum": {
+     "type": "string",
+     "format": "date-time",
+     "readOnly": true,
+     "description": "De datum waarop de behandelende organisatie het INFORMATIEOBJECT heeft geregistreerd bij het OBJECT. Geldige waardes zijn datumtijden gelegen op of voor de huidige datum en tijd.",
+     "title": "registratiedatum"
+    },
+    "vernietigingsdatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "De datum waarop het informatieobject uit het zaakdossier verwijderd moet worden.",
+     "title": "vernietigingsdatum"
+    },
+    "status": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri",
+     "description": "De bij de desbetreffende ZAAK behorende STATUS waarvoor het ZAAK-INFORMATIEOBJECT relevant is (geweest) met het oog op het bereiken van die STATUS en/of de communicatie daarover.",
+     "title": "status",
+     "minLength": 1,
+     "maxLength": 1000
+    }
+   }
+  },
+  "PatchedZaakObject": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "object": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de resource die het OBJECT beschrijft.",
+     "title": "object",
+     "maxLength": 1000
+    },
+    "zaakobjecttype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het ZAAKOBJECTTYPE (in de Catalogi API).",
+     "title": "zaakobjecttype",
+     "maxLength": 1000
+    },
+    "objectType": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectTypeEnum"
+      }
+     ],
+     "description": "Beschrijft het type OBJECT gerelateerd aan de ZAAK. Als er geen passend type is, dan moet het type worden opgegeven onder `objectTypeOverige`.\n\nUitleg bij mogelijke waarden:\n\n* `adres` - Adres\n* `besluit` - Besluit\n* `buurt` - Buurt\n* `enkelvoudig_document` - Enkelvoudig document\n* `gemeente` - Gemeente\n* `gemeentelijke_openbare_ruimte` - Gemeentelijke openbare ruimte\n* `huishouden` - Huishouden\n* `inrichtingselement` - Inrichtingselement\n* `kadastrale_onroerende_zaak` - Kadastrale onroerende zaak\n* `kunstwerkdeel` - Kunstwerkdeel\n* `maatschappelijke_activiteit` - Maatschappelijke activiteit\n* `medewerker` - Medewerker\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `openbare_ruimte` - Openbare ruimte\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `pand` - Pand\n* `spoorbaandeel` - Spoorbaandeel\n* `status` - Status\n* `terreindeel` - Terreindeel\n* `terrein_gebouwd_object` - Terrein gebouwd object\n* `vestiging` - Vestiging\n* `waterdeel` - Waterdeel\n* `wegdeel` - Wegdeel\n* `wijk` - Wijk\n* `woonplaats` - Woonplaats\n* `woz_deelobject` - Woz deel object\n* `woz_object` - Woz object\n* `woz_waarde` - Woz waarde\n* `zakelijk_recht` - Zakelijk recht\n* `overige` - Overige",
+     "title": "object type"
+    },
+    "objectTypeOverige": {
+     "type": "string",
+     "description": "Beschrijft het type OBJECT als `objectType` de waarde \"overige\" heeft.",
+     "title": "object type overige",
+     "pattern": "[a-z\\_]+",
+     "maxLength": 100
+    },
+    "objectTypeOverigeDefinitie": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/ObjectTypeOverigeDefinitie"
+        }
+       ],
+       "title": "definitie object type overige",
+       "description": "Verwijzing naar het schema van het type OBJECT als `objectType` de waarde \"overige\" heeft.\n\n* De URL referentie moet naar een JSON endpoint   wijzen waarin het objecttype gedefinieerd is, inclusief het   [JSON-schema](https://json-schema.org/).\n* Gebruik het `schema` attribuut om te verwijzen naar het schema binnen   de objecttype resource (deze gebruikt het   [jq](http://stedolan.github.io/jq/) formaat.\n* Gebruik het `objectData` attribuut om te verwijzen naar de gegevens   binnen het OBJECT. Deze gebruikt ook het   [jq](http://stedolan.github.io/jq/) formaat.\n\nIndien je hier gebruikt van maakt, dan moet je een OBJECT url opgeven en is het gebruik van objectIdentificatie niet mogelijk. De opgegeven OBJECT url wordt gevalideerd tegen het schema van het opgegeven objecttype."
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "relatieomschrijving": {
+     "type": "string",
+     "description": "Omschrijving van de betrekking tussen de ZAAK en het OBJECT.",
+     "title": "relatieomschrijving",
+     "maxLength": 80
+    }
+   }
+  },
+  "Point": {
+   "title": "Point",
+   "description": "GeoJSON point geometry",
+   "type": "object",
+   "allOf": [
+    {
+     "$ref": "#/$defs/Geometry"
+    },
+    {
+     "type": "object",
+     "required": [
+      "coordinates"
+     ],
+     "properties": {
+      "coordinates": {
+       "$ref": "#/$defs/Point2D"
+      }
+     }
+    }
+   ]
+  },
+  "Point2D": {
+   "title": "Point2D",
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "maxItems": 2,
+   "minItems": 2
+  },
+  "Polygon": {
+   "title": "Polygon",
+   "description": "GeoJSON polygon geometry",
+   "type": "object",
+   "allOf": [
+    {
+     "$ref": "#/$defs/Geometry"
+    },
+    {
+     "type": "object",
+     "required": [
+      "coordinates"
+     ],
+     "properties": {
+      "coordinates": {
+       "type": "array",
+       "items": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/Point2D"
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  "Processobject": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "description": "Specificatie van de attribuutsoort van het object, subject of gebeurtenis  waarop, vanuit archiveringsoptiek, de zaak betrekking heeft en dat bepalend is voor de start van de archiefactietermijn.",
+   "properties": {
+    "datumkenmerk": {
+     "type": "string",
+     "description": "De naam van de attribuutsoort van het procesobject dat bepalend is voor het einde van de procestermijn.",
+     "title": "datumkenmerk",
+     "maxLength": 250
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke aanduiding van het procesobject.",
+     "title": "identificatie",
+     "maxLength": 250
+    },
+    "objecttype": {
+     "type": "string",
+     "description": "Het soort object dat het procesobject representeert.",
+     "title": "objecttype",
+     "maxLength": 250
+    },
+    "registratie": {
+     "type": "string",
+     "description": "De naam van de registratie waarvan het procesobject deel uit maakt.",
+     "title": "registratie",
+     "maxLength": 250
+    }
+   },
+   "required": [
+    "datumkenmerk",
+    "identificatie",
+    "objecttype",
+    "registratie"
+   ]
+  },
+  "RelevanteZaak": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "title": "URL-referentie naar de ZAAK.",
+     "maxLength": 1000
+    },
+    "aardRelatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/AardRelatieEnum"
+      }
+     ],
+     "description": "Benamingen van de aard van de relaties van andere zaken tot (onderhanden) zaken.\n\nUitleg bij mogelijke waarden:\n\n* `vervolg` - De andere zaak gaf aanleiding tot het starten van de onderhanden zaak.\n* `onderwerp` - De andere zaak is relevant voor cq. is onderwerp van de onderhanden zaak.\n* `bijdrage` - Aan het bereiken van de uitkomst van de andere zaak levert de onderhanden zaak een bijdrage.",
+     "title": "aard relatie"
+    }
+   },
+   "required": [
+    "aardRelatie",
+    "url"
+   ]
+  },
+  "Resultaat": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "resultaattype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het RESULTAATTYPE (in de Catalogi API).",
+     "title": "resultaattype",
+     "maxLength": 1000
+    },
+    "toelichting": {
+     "type": "string",
+     "description": "Een toelichting op wat het resultaat van de zaak inhoudt.",
+     "title": "toelichting",
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "resultaattype",
+    "url",
+    "uuid",
+    "zaak"
+   ]
+  },
+  "Rol": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "betrokkene": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar een betrokkene gerelateerd aan de ZAAK.",
+     "title": "betrokkene",
+     "maxLength": 1000
+    },
+    "betrokkeneType": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/Rol_betrokkeneTypeEnum"
+      }
+     ],
+     "description": "Type van de `betrokkene`.\n\nUitleg bij mogelijke waarden:\n\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `vestiging` - Vestiging\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `medewerker` - Medewerker",
+     "title": "betrokkene type"
+    },
+    "afwijkendeNaamBetrokkene": {
+     "type": "string",
+     "description": "De naam van de betrokkene waaronder deze in relatie tot de zaak aangesproken wil worden.",
+     "title": "afwijkende naam betrokkene",
+     "maxLength": 625
+    },
+    "roltype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar een roltype binnen het ZAAKTYPE van de ZAAK.",
+     "title": "roltype",
+     "maxLength": 1000
+    },
+    "omschrijving": {
+     "type": "string",
+     "readOnly": true,
+     "description": "Omschrijving van de aard van de ROL, afgeleid uit het ROLTYPE.",
+     "title": "omschrijving"
+    },
+    "omschrijvingGeneriek": {
+     "type": "string",
+     "readOnly": true,
+     "description": "Algemeen gehanteerde benaming van de aard van de ROL, afgeleid uit het ROLTYPE.\n\nUitleg bij mogelijke waarden:\n\n* `adviseur` - (Adviseur) Kennis in dienst stellen van de behandeling van (een deel van) een zaak.\n* `behandelaar` - (Behandelaar) De vakinhoudelijke behandeling doen van (een deel van) een zaak.\n* `belanghebbende` - (Belanghebbende) Vanuit eigen en objectief belang rechtstreeks betrokken zijn bij de behandeling en/of de uitkomst van een zaak.\n* `beslisser` - (Beslisser) Nemen van besluiten die voor de uitkomst van een zaak noodzakelijk zijn.\n* `initiator` - (Initiator) Aanleiding geven tot de start van een zaak ..\n* `klantcontacter` - (Klantcontacter) Het eerste aanspreekpunt zijn voor vragen van burgers en bedrijven ..\n* `zaakcoordinator` - (Zaakcoördinator) Er voor zorg dragen dat de behandeling van de zaak in samenhang uitgevoerd wordt conform de daarover gemaakte afspraken.\n* `mede_initiator` - Mede-initiator",
+     "title": "omschrijving generiek"
+    },
+    "roltoelichting": {
+     "type": "string",
+     "title": "roltoelichting",
+     "maxLength": 1000
+    },
+    "registratiedatum": {
+     "type": "string",
+     "format": "date-time",
+     "readOnly": true,
+     "description": "De datum waarop dit object is geregistreerd.",
+     "title": "registratiedatum"
+    },
+    "indicatieMachtiging": {
+     "description": "Indicatie machtiging\n\nUitleg bij mogelijke waarden:\n\n* `gemachtigde` - De betrokkene in de rol bij de zaak is door een andere betrokkene bij dezelfde zaak gemachtigd om namens hem of haar te handelen\n* `machtiginggever` - De betrokkene in de rol bij de zaak heeft een andere betrokkene bij dezelfde zaak gemachtigd om namens hem of haar te handelen",
+     "title": "indicatie machtiging",
+     "oneOf": [
+      {
+       "$ref": "#/$defs/IndicatieMachtigingEnum"
+      },
+      {
+       "$ref": "#/$defs/BlankEnum"
+      }
+     ]
+    },
+    "contactpersoonRol": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/ContactPersoonRol"
+        }
+       ],
+       "description": "De gegevens van de persoon die anderen desgevraagd in contact brengt met medewerkers van de BETROKKENE, een NIET-NATUURLIJK PERSOON of VESTIGING zijnde, of met BETROKKENE zelf, een NATUURLIJK PERSOON zijnde , vanuit het belang van BETROKKENE in haar ROL bij een ZAAK.",
+       "title": "contactpersoonRol"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "statussen": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": "",
+      "minLength": 1,
+      "maxLength": 1000
+     },
+     "readOnly": true,
+     "description": "De BETROKKENE die in zijn/haar ROL in een ZAAK heeft geregistreerd dat STATUSsen in die ZAAK bereikt zijn.",
+     "title": "statussen",
+     "uniqueItems": true
+    }
+   },
+   "required": [
+    "betrokkeneType",
+    "omschrijving",
+    "omschrijvingGeneriek",
+    "registratiedatum",
+    "roltoelichting",
+    "roltype",
+    "statussen",
+    "url",
+    "uuid",
+    "zaak"
+   ]
+  },
+  "RolMedewerker": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "Een korte unieke aanduiding van de MEDEWERKER.",
+     "title": "identificatie",
+     "maxLength": 24
+    },
+    "achternaam": {
+     "type": "string",
+     "description": "De achternaam zoals de MEDEWERKER die in het dagelijkse verkeer gebruikt.",
+     "title": "achternaam",
+     "maxLength": 200
+    },
+    "voorletters": {
+     "type": "string",
+     "description": "De verzameling letters die gevormd wordt door de eerste letter van alle in volgorde voorkomende voornamen.",
+     "title": "voorletters",
+     "maxLength": 20
+    },
+    "voorvoegselAchternaam": {
+     "type": "string",
+     "description": "Dat deel van de geslachtsnaam dat voorkomt in Tabel 36 (GBA), voorvoegseltabel, en door een spatie van de geslachtsnaam is",
+     "title": "voorvoegsel achternaam",
+     "maxLength": 10
+    }
+   }
+  },
+  "RolNatuurlijkPersoon": {
+   "type": "object",
+   "properties": {
+    "inpBsn": {
+     "type": "string",
+     "description": "Het burgerservicenummer, bedoeld in artikel 1.1 van de Wet algemene bepalingen burgerservicenummer.",
+     "title": "inp bsn",
+     "maxLength": 9
+    },
+    "anpIdentificatie": {
+     "type": "string",
+     "description": "Het door de gemeente uitgegeven unieke nummer voor een ANDER NATUURLIJK PERSOON",
+     "title": "anp identificatie",
+     "maxLength": 17
+    },
+    "inpA_nummer": {
+     "type": "string",
+     "description": "Het administratienummer van de persoon, bedoeld in de Wet BRP",
+     "title": "inp a nummer",
+     "pattern": "^[1-9][0-9]{9}$",
+     "maxLength": 10
+    },
+    "geslachtsnaam": {
+     "type": "string",
+     "description": "De stam van de geslachtsnaam.",
+     "title": "geslachtsnaam",
+     "maxLength": 200
+    },
+    "voorvoegselGeslachtsnaam": {
+     "type": "string",
+     "title": "voorvoegsel geslachtsnaam",
+     "maxLength": 80
+    },
+    "voorletters": {
+     "type": "string",
+     "description": "De verzameling letters die gevormd wordt door de eerste letter van alle in volgorde voorkomende voornamen.",
+     "title": "voorletters",
+     "maxLength": 20
+    },
+    "voornamen": {
+     "type": "string",
+     "description": "Voornamen bij de naam die de persoon wenst te voeren.",
+     "title": "voornamen",
+     "maxLength": 200
+    },
+    "geslachtsaanduiding": {
+     "description": "Een aanduiding die aangeeft of de persoon een man of een vrouw is, of dat het geslacht nog onbekend is.\n\nUitleg bij mogelijke waarden:\n\n* `m` - Man\n* `v` - Vrouw\n* `o` - Onbekend",
+     "title": "geslachtsaanduiding",
+     "oneOf": [
+      {
+       "$ref": "#/$defs/GeslachtsaanduidingEnum"
+      },
+      {
+       "$ref": "#/$defs/BlankEnum"
+      }
+     ]
+    },
+    "geboortedatum": {
+     "type": "string",
+     "title": "geboortedatum",
+     "maxLength": 18
+    },
+    "verblijfsadres": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/VerblijfsAdres"
+        }
+       ],
+       "title": "verblijfsadres"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "subVerblijfBuitenland": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/SubVerblijfBuitenland"
+        }
+       ],
+       "title": "subVerblijfBuitenland"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   }
+  },
+  "RolNietNatuurlijkPersoon": {
+   "type": "object",
+   "properties": {
+    "innNnpId": {
+     "type": "string",
+     "description": "Het door een kamer toegekend uniek nummer voor de INGESCHREVEN NIET-NATUURLIJK PERSOON",
+     "title": "inn nnp id",
+     "maxLength": 9
+    },
+    "annIdentificatie": {
+     "type": "string",
+     "description": "Het door de gemeente uitgegeven unieke nummer voor een ANDER NIET-NATUURLIJK PERSOON",
+     "title": "ann identificatie",
+     "maxLength": 17
+    },
+    "statutaireNaam": {
+     "type": "string",
+     "description": "Naam van de niet-natuurlijke persoon zoals deze is vastgelegd in de statuten (rechtspersoon) of in de vennootschapsovereenkomst is overeengekomen (Vennootschap onder firma of Commanditaire vennootschap).",
+     "title": "statutaire naam",
+     "maxLength": 500
+    },
+    "innRechtsvorm": {
+     "description": "De juridische vorm van de NIET-NATUURLIJK PERSOON.",
+     "title": "inn rechtsvorm",
+     "oneOf": [
+      {
+       "$ref": "#/$defs/InnRechtsvormEnum"
+      },
+      {
+       "$ref": "#/$defs/BlankEnum"
+      }
+     ]
+    },
+    "bezoekadres": {
+     "type": "string",
+     "description": "De gegevens over het adres van de NIET-NATUURLIJK PERSOON",
+     "title": "bezoekadres",
+     "maxLength": 1000
+    },
+    "subVerblijfBuitenland": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/SubVerblijfBuitenland"
+        }
+       ],
+       "title": "subVerblijfBuitenland"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   }
+  },
+  "RolOrganisatorischeEenheid": {
+   "type": "object",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "Een korte identificatie van de organisatorische eenheid.",
+     "title": "identificatie",
+     "maxLength": 24
+    },
+    "naam": {
+     "type": "string",
+     "description": "De feitelijke naam van de organisatorische eenheid.",
+     "title": "naam",
+     "maxLength": 50
+    },
+    "isGehuisvestIn": {
+     "type": "string",
+     "title": "is gehuisvest in",
+     "maxLength": 24
+    }
+   }
+  },
+  "RolVestiging": {
+   "type": "object",
+   "properties": {
+    "vestigingsNummer": {
+     "type": "string",
+     "description": "Een korte unieke aanduiding van de Vestiging.",
+     "title": "vestigings nummer",
+     "maxLength": 24
+    },
+    "handelsnaam": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "maxLength": 625
+     },
+     "description": "De naam van de vestiging waaronder gehandeld wordt.",
+     "title": "handelsnaam"
+    },
+    "verblijfsadres": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/VerblijfsAdres"
+        }
+       ],
+       "title": "verblijfsadres"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "subVerblijfBuitenland": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/SubVerblijfBuitenland"
+        }
+       ],
+       "title": "subVerblijfBuitenland"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "kvkNummer": {
+     "type": "string",
+     "description": "Een uniek nummer gekoppeld aan de onderneming.",
+     "title": "kvk nummer",
+     "maxLength": 8
+    }
+   }
+  },
+  "Rol_betrokkeneTypeEnum": {
+   "enum": [
+    "natuurlijk_persoon",
+    "niet_natuurlijk_persoon",
+    "vestiging",
+    "organisatorische_eenheid",
+    "medewerker"
+   ],
+   "type": "string"
+  },
+  "Rol_omschrijvingGeneriekEnum": {
+   "enum": [
+    "adviseur",
+    "behandelaar",
+    "belanghebbende",
+    "beslisser",
+    "initiator",
+    "klantcontacter",
+    "zaakcoordinator",
+    "mede_initiator"
+   ],
+   "type": "string"
+  },
+  "Status": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "statustype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het STATUSTYPE (in de Catalogi API).",
+     "title": "statustype",
+     "maxLength": 1000
+    },
+    "datumStatusGezet": {
+     "type": "string",
+     "format": "date-time",
+     "description": "De datum waarop de ZAAK de status heeft verkregen.",
+     "title": "datum status gezet"
+    },
+    "statustoelichting": {
+     "type": "string",
+     "description": "Een, voor de initiator van de zaak relevante, toelichting op de status van een zaak.",
+     "title": "statustoelichting",
+     "maxLength": 1000
+    },
+    "indicatieLaatstGezetteStatus": {
+     "type": "boolean",
+     "readOnly": true,
+     "description": "Het gegeven is afleidbaar uit de historie van de attribuutsoort Datum status gezet van van alle statussen bij de desbetreffende zaak.",
+     "title": "indicatieLaatstGezetteStatus"
+    },
+    "gezetdoor": {
+     "type": "string",
+     "format": "uri",
+     "title": "Gezet door",
+     "description": "De BETROKKENE die in zijn/haar ROL in een ZAAK heeft geregistreerd dat STATUSsen in die ZAAK bereikt zijn.",
+     "maxLength": 200
+    },
+    "zaakinformatieobjecten": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": "",
+      "minLength": 1,
+      "maxLength": 1000
+     },
+     "readOnly": true,
+     "title": "status",
+     "uniqueItems": true
+    }
+   },
+   "required": [
+    "datumStatusGezet",
+    "indicatieLaatstGezetteStatus",
+    "statustype",
+    "url",
+    "uuid",
+    "zaak",
+    "zaakinformatieobjecten"
+   ]
+  },
+  "SubVerblijfBuitenland": {
+   "type": "object",
+   "properties": {
+    "lndLandcode": {
+     "type": "string",
+     "description": "De code, behorende bij de landnaam, zoals opgenomen in de Land/Gebied-tabel van de BRP.",
+     "title": "lnd landcode",
+     "maxLength": 4
+    },
+    "lndLandnaam": {
+     "type": "string",
+     "description": "De naam van het land, zoals opgenomen in de Land/Gebied-tabel van de BRP.",
+     "title": "lnd landnaam",
+     "maxLength": 40
+    },
+    "subAdresBuitenland_1": {
+     "type": "string",
+     "title": "sub adres buitenland 1",
+     "maxLength": 35
+    },
+    "subAdresBuitenland_2": {
+     "type": "string",
+     "title": "sub adres buitenland 2",
+     "maxLength": 35
+    },
+    "subAdresBuitenland_3": {
+     "type": "string",
+     "title": "sub adres buitenland 3",
+     "maxLength": 35
+    }
+   },
+   "required": [
+    "lndLandcode",
+    "lndLandnaam"
+   ]
+  },
+  "TerreinGebouwdObjectAdres": {
+   "type": "object",
+   "properties": {
+    "numIdentificatie": {
+     "type": "string",
+     "title": "num identificatie",
+     "maxLength": 100
+    },
+    "oaoIdentificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "wplWoonplaatsNaam": {
+     "type": "string",
+     "title": "wpl woonplaats naam",
+     "maxLength": 80
+    },
+    "gorOpenbareRuimteNaam": {
+     "type": "string",
+     "description": "Een door het bevoegde gemeentelijke orgaan aan een OPENBARE RUIMTE toegekende benaming",
+     "title": "gor openbare ruimte naam",
+     "maxLength": 80
+    },
+    "aoaPostcode": {
+     "type": "string",
+     "title": "postcode",
+     "maxLength": 7
+    },
+    "aoaHuisnummer": {
+     "type": "integer",
+     "maximum": 99999,
+     "minimum": 0,
+     "title": "huisnummer"
+    },
+    "aoaHuisletter": {
+     "type": "string",
+     "title": "huisletter",
+     "maxLength": 1
+    },
+    "aoaHuisnummertoevoeging": {
+     "type": "string",
+     "title": "huisnummertoevoeging",
+     "maxLength": 4
+    },
+    "ogoLocatieAanduiding": {
+     "type": "string",
+     "title": "locatie aanduiding",
+     "maxLength": 100
+    }
+   },
+   "required": [
+    "aoaHuisnummer",
+    "gorOpenbareRuimteNaam",
+    "oaoIdentificatie",
+    "wplWoonplaatsNaam"
+   ]
+  },
+  "TypeWaterdeelEnum": {
+   "enum": [
+    "zee",
+    "waterloop",
+    "watervlakte",
+    "greppel_droge_sloot"
+   ],
+   "type": "string"
+  },
+  "ValidatieFout": {
+   "type": "object",
+   "description": "Formaat van HTTP 4xx en 5xx fouten.",
+   "properties": {
+    "type": {
+     "type": "string",
+     "description": "URI referentie naar het type fout, bedoeld voor developers",
+     "title": "type"
+    },
+    "code": {
+     "type": "string",
+     "description": "Systeemcode die het type fout aangeeft",
+     "title": "code"
+    },
+    "title": {
+     "type": "string",
+     "description": "Generieke titel voor het type fout",
+     "title": "title"
+    },
+    "status": {
+     "type": "integer",
+     "description": "De HTTP status code",
+     "title": "status"
+    },
+    "detail": {
+     "type": "string",
+     "description": "Extra informatie bij de fout, indien beschikbaar",
+     "title": "detail"
+    },
+    "instance": {
+     "type": "string",
+     "description": "URI met referentie naar dit specifiek voorkomen van de fout. Deze kan gebruikt worden in combinatie met server logs, bijvoorbeeld.",
+     "title": "instance"
+    },
+    "invalidParams": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/FieldValidationError"
+     },
+     "title": "invalidParams"
+    }
+   },
+   "required": [
+    "code",
+    "detail",
+    "instance",
+    "invalidParams",
+    "status",
+    "title"
+   ]
+  },
+  "VerblijfsAdres": {
+   "type": "object",
+   "properties": {
+    "aoaIdentificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "wplWoonplaatsNaam": {
+     "type": "string",
+     "title": "wpl woonplaats naam",
+     "maxLength": 80
+    },
+    "gorOpenbareRuimteNaam": {
+     "type": "string",
+     "description": "Een door het bevoegde gemeentelijke orgaan aan een OPENBARE RUIMTE toegekende benaming",
+     "title": "gor openbare ruimte naam",
+     "maxLength": 80
+    },
+    "aoaPostcode": {
+     "type": "string",
+     "title": "postcode",
+     "maxLength": 7
+    },
+    "aoaHuisnummer": {
+     "type": "integer",
+     "maximum": 99999,
+     "minimum": 0,
+     "title": "huisnummer"
+    },
+    "aoaHuisletter": {
+     "type": "string",
+     "title": "huisletter",
+     "maxLength": 1
+    },
+    "aoaHuisnummertoevoeging": {
+     "type": "string",
+     "title": "huisnummertoevoeging",
+     "maxLength": 4
+    },
+    "inpLocatiebeschrijving": {
+     "type": "string",
+     "title": "locatie omschrijving",
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "aoaHuisnummer",
+    "aoaIdentificatie",
+    "gorOpenbareRuimteNaam",
+    "wplWoonplaatsNaam"
+   ]
+  },
+  "Verlenging": {
+   "type": [
+    "object",
+    "null"
+   ],
+   "description": "Gegevens omtrent het verlengen van de doorlooptijd van de behandeling van de ZAAK",
+   "properties": {
+    "reden": {
+     "type": "string",
+     "description": "Omschrijving van de reden voor het verlengen van de behandeling van de zaak.",
+     "title": "reden verlenging",
+     "maxLength": 200
+    },
+    "duur": {
+     "type": "string",
+     "description": "Het aantal werkbare dagen waarmee de doorlooptijd van de behandeling van de ZAAK is verlengd (of verkort) ten opzichte van de eerder gecommuniceerde doorlooptijd.",
+     "title": "duur verlenging",
+     "format": "duration"
+    }
+   },
+   "required": [
+    "duur",
+    "reden"
+   ]
+  },
+  "Wijzigingen": {
+   "type": "object",
+   "properties": {
+    "oud": {
+     "type": "object",
+     "additionalProperties": {},
+     "description": "Volledige JSON body van het object zoals dat bestond voordat de actie heeft plaatsgevonden.",
+     "title": "oud"
+    },
+    "nieuw": {
+     "type": "object",
+     "additionalProperties": {},
+     "description": "Volledige JSON body van het object na de actie.",
+     "title": "nieuw"
+    }
+   }
+  },
+  "WozObjectAdres": {
+   "type": "object",
+   "properties": {
+    "aoaIdentificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van het OBJECT",
+     "title": "identificatie",
+     "maxLength": 100
+    },
+    "wplWoonplaatsNaam": {
+     "type": "string",
+     "title": "wpl woonplaats naam",
+     "maxLength": 80
+    },
+    "gorOpenbareRuimteNaam": {
+     "type": "string",
+     "description": "Een door het bevoegde gemeentelijke orgaan aan een OPENBARE RUIMTE toegekende benaming",
+     "title": "gor openbare ruimte naam",
+     "maxLength": 80
+    },
+    "aoaPostcode": {
+     "type": "string",
+     "title": "postcode",
+     "maxLength": 7
+    },
+    "aoaHuisnummer": {
+     "type": "integer",
+     "maximum": 99999,
+     "minimum": 0,
+     "title": "huisnummer"
+    },
+    "aoaHuisletter": {
+     "type": "string",
+     "title": "huisletter",
+     "maxLength": 1
+    },
+    "aoaHuisnummertoevoeging": {
+     "type": "string",
+     "title": "huisnummertoevoeging",
+     "maxLength": 4
+    },
+    "locatieOmschrijving": {
+     "type": "string",
+     "title": "locatie omschrijving",
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "aoaHuisnummer",
+    "aoaIdentificatie",
+    "gorOpenbareRuimteNaam",
+    "wplWoonplaatsNaam"
+   ]
+  },
+  "Zaak": {
+   "type": "object",
+   "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
+   "properties": {
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van de ZAAK binnen de organisatie die verantwoordelijk is voor de behandeling van de ZAAK.",
+     "title": "identificatie",
+     "maxLength": 40
+    },
+    "bronorganisatie": {
+     "type": "string",
+     "description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die de zaak heeft gecreeerd. Dit moet een geldig RSIN zijn van 9 nummers en voldoen aan https://nl.wikipedia.org/wiki/Burgerservicenummer#11-proef",
+     "title": "bronorganisatie",
+     "maxLength": 9
+    },
+    "omschrijving": {
+     "type": "string",
+     "description": "Een korte omschrijving van de zaak.",
+     "title": "omschrijving",
+     "maxLength": 80
+    },
+    "toelichting": {
+     "type": "string",
+     "description": "Een toelichting op de zaak.",
+     "title": "toelichting",
+     "maxLength": 1000
+    },
+    "zaaktype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het ZAAKTYPE (in de Catalogi API) in de CATALOGUS waar deze voorkomt",
+     "title": "zaaktype",
+     "maxLength": 1000
+    },
+    "registratiedatum": {
+     "type": "string",
+     "format": "date",
+     "description": "De datum waarop de zaakbehandelende organisatie de ZAAK heeft geregistreerd. Indien deze niet opgegeven wordt, wordt de datum van vandaag gebruikt.",
+     "title": "registratiedatum"
+    },
+    "verantwoordelijkeOrganisatie": {
+     "type": "string",
+     "description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die eindverantwoordelijk is voor de behandeling van de zaak. Dit moet een geldig RSIN zijn van 9 nummers en voldoen aan https://nl.wikipedia.org/wiki/Burgerservicenummer#11-proef",
+     "title": "verantwoordelijke organisatie",
+     "maxLength": 9
+    },
+    "startdatum": {
+     "type": "string",
+     "format": "date",
+     "description": "De datum waarop met de uitvoering van de zaak is gestart",
+     "title": "startdatum"
+    },
+    "einddatumGepland": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "De datum waarop volgens de planning verwacht wordt dat de zaak afgerond wordt.",
+     "title": "einddatum gepland"
+    },
+    "uiterlijkeEinddatumAfdoening": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "De laatste datum waarop volgens wet- en regelgeving de zaak afgerond dient te zijn.",
+     "title": "uiterlijke einddatum afdoening"
+    },
+    "publicatiedatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "Datum waarop (het starten van) de zaak gepubliceerd is of wordt.",
+     "title": "publicatiedatum"
+    },
+    "communicatiekanaal": {
+     "type": "string",
+     "format": "uri",
+     "description": "Het medium waarlangs de aanleiding om een zaak te starten is ontvangen. URL naar een communicatiekanaal in de VNG-Referentielijst van communicatiekanalen.",
+     "title": "communicatiekanaal",
+     "maxLength": 1000
+    },
+    "productenOfDiensten": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": "URL naar product/dienst",
+      "maxLength": 1000
+     },
+     "description": "De producten en/of diensten die door de zaak worden voortgebracht. Dit zijn URLs naar de resources zoals die door de producten- en dienstencatalogus-API wordt ontsloten. De producten/diensten moeten bij het zaaktype vermeld zijn.",
+     "title": "producten of diensten"
+    },
+    "vertrouwelijkheidaanduiding": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/MaximaleVertrouwelijkheidaanduidingEnum"
+      }
+     ],
+     "title": "Vertrouwlijkheidaanduiding",
+     "description": "Aanduiding van de mate waarin het zaakdossier van de ZAAK voor de openbaarheid bestemd is. Optioneel - indien geen waarde gekozen wordt, dan wordt de waarde van het ZAAKTYPE overgenomen. Dit betekent dat de API _altijd_ een waarde teruggeeft."
+    },
+    "betalingsindicatie": {
+     "description": "Indicatie of de, met behandeling van de zaak gemoeide, kosten betaald zijn door de desbetreffende betrokkene.\n\nUitleg bij mogelijke waarden:\n\n* `nvt` - Er is geen sprake van te betalen, met de zaak gemoeide, kosten.\n* `nog_niet` - De met de zaak gemoeide kosten zijn (nog) niet betaald.\n* `gedeeltelijk` - De met de zaak gemoeide kosten zijn gedeeltelijk betaald.\n* `geheel` - De met de zaak gemoeide kosten zijn geheel betaald.",
+     "title": "betalingsindicatie",
+     "oneOf": [
+      {
+       "$ref": "#/$defs/BetalingsindicatieEnum"
+      },
+      {
+       "$ref": "#/$defs/BlankEnum"
+      }
+     ]
+    },
+    "laatsteBetaaldatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "De datum waarop de meest recente betaling is verwerkt van kosten die gemoeid zijn met behandeling van de zaak.",
+     "title": "laatste betaaldatum"
+    },
+    "zaakgeometrie": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/GeoJSONGeometry"
+        }
+       ],
+       "description": "Punt, lijn of (multi-)vlak geometrie-informatie, in GeoJSON.",
+       "title": "zaakgeometrie"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "verlenging": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/Verlenging"
+        }
+       ],
+       "description": "Gegevens omtrent het verlengen van de doorlooptijd van de behandeling van de ZAAK",
+       "title": "verlenging"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "opschorting": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/Opschorting"
+        }
+       ],
+       "description": "Gegevens omtrent het tijdelijk opschorten van de behandeling van de ZAAK",
+       "title": "opschorting"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "selectielijstklasse": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de categorie in de gehanteerde 'Selectielijst Archiefbescheiden' die, gezien het zaaktype en het resultaattype van de zaak, bepalend is voor het archiefregime van de zaak.",
+     "title": "selectielijstklasse",
+     "maxLength": 1000
+    },
+    "hoofdzaak": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri",
+     "title": "Is deelzaak van",
+     "description": "URL-referentie naar de ZAAK, waarom verzocht is door de initiator daarvan, die behandeld wordt in twee of meer separate ZAAKen waarvan de onderhavige ZAAK er één is.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "relevanteAndereZaken": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/RelevanteZaak"
+     },
+     "description": "Een lijst van relevante andere zaken.",
+     "title": "zaak"
+    },
+    "kenmerken": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/ZaakKenmerk"
+     },
+     "description": "Lijst van kenmerken. Merk op dat refereren naar gerelateerde objecten beter kan via `ZaakObject`.",
+     "title": "zaak"
+    },
+    "archiefnominatie": {
+     "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden.\n\nUitleg bij mogelijke waarden:\n\n* `blijvend_bewaren` - Het zaakdossier moet bewaard blijven en op de Archiefactiedatum overgedragen worden naar een archiefbewaarplaats.\n* `vernietigen` - Het zaakdossier moet op of na de Archiefactiedatum vernietigd worden.",
+     "title": "archiefnominatie",
+     "oneOf": [
+      {
+       "$ref": "#/$defs/ArchiefnominatieEnum"
+      },
+      {
+       "$ref": "#/$defs/BlankEnum"
+      },
+      {
+       "$ref": "#/$defs/NullEnum"
+      }
+     ]
+    },
+    "archiefstatus": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ArchiefstatusEnum"
+      }
+     ],
+     "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden.\n\nUitleg bij mogelijke waarden:\n\n* `nog_te_archiveren` - De zaak cq. het zaakdossier is nog niet als geheel gearchiveerd.\n* `gearchiveerd` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt.\n* `gearchiveerd_procestermijn_onbekend` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt maar de vernietigingsdatum kan nog niet bepaald worden.\n* `overgedragen` - De zaak cq. het zaakdossier is overgebracht naar een archiefbewaarplaats.",
+     "title": "archiefstatus"
+    },
+    "archiefactiedatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "De datum waarop het gearchiveerde zaakdossier vernietigd moet worden dan wel overgebracht moet worden naar een archiefbewaarplaats. Wordt automatisch berekend bij het aanmaken of wijzigen van een RESULTAAT aan deze ZAAK indien nog leeg.",
+     "title": "archiefactiedatum"
+    },
+    "opdrachtgevendeOrganisatie": {
+     "type": "string",
+     "description": "De krachtens publiekrecht ingestelde rechtspersoon dan wel ander niet-natuurlijk persoon waarbinnen het (bestuurs)orgaan zetelt dat opdracht heeft gegeven om taken uit te voeren waaraan de zaak invulling geeft.",
+     "title": "opdrachtgevende organisatie",
+     "maxLength": 9
+    },
+    "processobjectaard": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "title": "Procesobjectaard",
+     "description": "Omschrijving van het object, subject of gebeurtenis waarop, vanuit archiveringsoptiek, de zaak betrekking heeft.",
+     "maxLength": 200
+    },
+    "startdatumBewaartermijn": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date",
+     "description": "De datum die de start markeert van de termijn waarop het zaakdossier vernietigd moet worden.",
+     "title": "startdatum bewaartermijn"
+    },
+    "processobject": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/Processobject"
+        }
+       ],
+       "description": "Specificatie van de attribuutsoort van het object, subject of gebeurtenis  waarop, vanuit archiveringsoptiek, de zaak betrekking heeft en dat bepalend is voor de start van de archiefactietermijn.",
+       "title": "processobject"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "bronorganisatie",
+    "startdatum",
+    "verantwoordelijkeOrganisatie",
+    "zaaktype"
+   ]
+  },
+  "ZaakBesluit": {
+   "type": "object",
+   "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url"
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "besluit": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het BESLUIT (in de Besluiten API), waar ook de relatieinformatie opgevraagd kan worden.",
+     "title": "besluit",
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "besluit",
+    "url",
+    "uuid"
+   ]
+  },
+  "ZaakContactMoment": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "contactmoment": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het CONTACTMOMENT (in de Klantinteractie API)",
+     "title": "contactmoment",
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "contactmoment",
+    "url",
+    "uuid",
+    "zaak"
+   ]
+  },
+  "ZaakEigenschap": {
+   "type": "object",
+   "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url"
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "title": "zaak"
+    },
+    "eigenschap": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de EIGENSCHAP (in de Catalogi API).",
+     "title": "eigenschap",
+     "maxLength": 1000
+    },
+    "naam": {
+     "type": "string",
+     "readOnly": true,
+     "description": "De naam van de EIGENSCHAP (overgenomen uit de Catalogi API).",
+     "title": " naam"
+    },
+    "waarde": {
+     "type": "string",
+     "title": "waarde"
+    }
+   },
+   "required": [
+    "eigenschap",
+    "naam",
+    "url",
+    "uuid",
+    "waarde",
+    "zaak"
+   ]
+  },
+  "ZaakInformatieObject": {
+   "type": "object",
+   "properties": {
+    "informatieobject": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het INFORMATIEOBJECT (in de Documenten API), waar ook de relatieinformatie opgevraagd kan worden.",
+     "title": "informatieobject",
+     "maxLength": 1000
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "titel": {
+     "type": "string",
+     "description": "De naam waaronder het INFORMATIEOBJECT binnen het OBJECT bekend is.",
+     "title": "titel",
+     "maxLength": 200
+    },
+    "beschrijving": {
+     "type": "string",
+     "description": "Een op het object gerichte beschrijving van de inhoud vanhet INFORMATIEOBJECT.",
+     "title": "beschrijving"
+    },
+    "vernietigingsdatum": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "De datum waarop het informatieobject uit het zaakdossier verwijderd moet worden.",
+     "title": "vernietigingsdatum"
+    },
+    "status": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "uri",
+     "description": "De bij de desbetreffende ZAAK behorende STATUS waarvoor het ZAAK-INFORMATIEOBJECT relevant is (geweest) met het oog op het bereiken van die STATUS en/of de communicatie daarover.",
+     "title": "status",
+     "minLength": 1,
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "informatieobject",
+    "zaak"
+   ]
+  },
+  "ZaakKenmerk": {
+   "type": "object",
+   "properties": {
+    "kenmerk": {
+     "type": "string",
+     "description": "Identificeert uniek de zaak in een andere administratie.",
+     "title": "kenmerk",
+     "maxLength": 40
+    },
+    "bron": {
+     "type": "string",
+     "description": "De aanduiding van de administratie waar het kenmerk op slaat.",
+     "title": "bron",
+     "maxLength": 40
+    }
+   },
+   "required": [
+    "bron",
+    "kenmerk"
+   ]
+  },
+  "ZaakObject": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "object": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de resource die het OBJECT beschrijft.",
+     "title": "object",
+     "maxLength": 1000
+    },
+    "zaakobjecttype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het ZAAKOBJECTTYPE (in de Catalogi API).",
+     "title": "zaakobjecttype",
+     "maxLength": 1000
+    },
+    "objectType": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectTypeEnum"
+      }
+     ],
+     "description": "Beschrijft het type OBJECT gerelateerd aan de ZAAK. Als er geen passend type is, dan moet het type worden opgegeven onder `objectTypeOverige`.\n\nUitleg bij mogelijke waarden:\n\n* `adres` - Adres\n* `besluit` - Besluit\n* `buurt` - Buurt\n* `enkelvoudig_document` - Enkelvoudig document\n* `gemeente` - Gemeente\n* `gemeentelijke_openbare_ruimte` - Gemeentelijke openbare ruimte\n* `huishouden` - Huishouden\n* `inrichtingselement` - Inrichtingselement\n* `kadastrale_onroerende_zaak` - Kadastrale onroerende zaak\n* `kunstwerkdeel` - Kunstwerkdeel\n* `maatschappelijke_activiteit` - Maatschappelijke activiteit\n* `medewerker` - Medewerker\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `openbare_ruimte` - Openbare ruimte\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `pand` - Pand\n* `spoorbaandeel` - Spoorbaandeel\n* `status` - Status\n* `terreindeel` - Terreindeel\n* `terrein_gebouwd_object` - Terrein gebouwd object\n* `vestiging` - Vestiging\n* `waterdeel` - Waterdeel\n* `wegdeel` - Wegdeel\n* `wijk` - Wijk\n* `woonplaats` - Woonplaats\n* `woz_deelobject` - Woz deel object\n* `woz_object` - Woz object\n* `woz_waarde` - Woz waarde\n* `zakelijk_recht` - Zakelijk recht\n* `overige` - Overige",
+     "title": "object type"
+    },
+    "objectTypeOverige": {
+     "type": "string",
+     "description": "Beschrijft het type OBJECT als `objectType` de waarde \"overige\" heeft.",
+     "title": "object type overige",
+     "pattern": "[a-z\\_]+",
+     "maxLength": 100
+    },
+    "objectTypeOverigeDefinitie": {
+     "anyOf": [
+      {
+       "allOf": [
+        {
+         "$ref": "#/$defs/ObjectTypeOverigeDefinitie"
+        }
+       ],
+       "title": "definitie object type overige",
+       "description": "Verwijzing naar het schema van het type OBJECT als `objectType` de waarde \"overige\" heeft.\n\n* De URL referentie moet naar een JSON endpoint   wijzen waarin het objecttype gedefinieerd is, inclusief het   [JSON-schema](https://json-schema.org/).\n* Gebruik het `schema` attribuut om te verwijzen naar het schema binnen   de objecttype resource (deze gebruikt het   [jq](http://stedolan.github.io/jq/) formaat.\n* Gebruik het `objectData` attribuut om te verwijzen naar de gegevens   binnen het OBJECT. Deze gebruikt ook het   [jq](http://stedolan.github.io/jq/) formaat.\n\nIndien je hier gebruikt van maakt, dan moet je een OBJECT url opgeven en is het gebruik van objectIdentificatie niet mogelijk. De opgegeven OBJECT url wordt gevalideerd tegen het schema van het opgegeven objecttype."
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "relatieomschrijving": {
+     "type": "string",
+     "description": "Omschrijving van de betrekking tussen de ZAAK en het OBJECT.",
+     "title": "relatieomschrijving",
+     "maxLength": 80
+    }
+   },
+   "required": [
+    "objectType",
+    "url",
+    "uuid",
+    "zaak"
+   ]
+  },
+  "ZaakVerzoek": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string",
+     "format": "uri",
+     "readOnly": true,
+     "title": "url",
+     "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "uuid": {
+     "type": "string",
+     "format": "uuid",
+     "readOnly": true,
+     "description": "Unieke resource identifier (UUID4)",
+     "title": "uuid"
+    },
+    "zaak": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar de ZAAK.",
+     "title": "zaak",
+     "minLength": 1,
+     "maxLength": 1000
+    },
+    "verzoek": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het VERZOEK (in de Klantinteractie API)",
+     "title": "verzoek",
+     "maxLength": 1000
+    }
+   },
+   "required": [
+    "url",
+    "uuid",
+    "verzoek",
+    "zaak"
+   ]
+  },
+  "ZaakZoek": {
+   "type": "object",
+   "properties": {
+    "zaakgeometrie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/GeoWithin"
+      }
+     ],
+     "title": "GeoWithin"
+    },
+    "uuid__in": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uuid",
+      "title": ""
+     },
+     "description": "Array of unieke resource identifiers (UUID4)",
+     "title": "uuid__in"
+    },
+    "identificatie": {
+     "type": "string",
+     "description": "De unieke identificatie van de ZAAK binnen de organisatie die verantwoordelijk is voor de behandeling van de ZAAK.",
+     "title": "identificatie"
+    },
+    "expand": {
+     "type": "string",
+     "description": "Examples: \n`expand=zaaktype, status, status.statustype, hoofdzaak.status.statustype, hoofdzaak.deelzaken.status.statustype`\nHaal details van gelinkte resources direct op. Als je meerdere resources tegelijk wilt ophalen kun je deze scheiden met een komma. Voor het ophalen van resources die een laag dieper genest zijn wordt de punt-notatie gebruikt.",
+     "title": "expand"
+    },
+    "bronorganisatie": {
+     "type": "string",
+     "description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die de zaak heeft gecreeerd. Dit moet een geldig RSIN zijn van 9 nummers en voldoen aan https://nl.wikipedia.org/wiki/Burgerservicenummer#11-proef",
+     "title": "bronorganisatie"
+    },
+    "bronorganisatie__in": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "title": ""
+     },
+     "description": "Array van bronorganisaties.",
+     "title": "bronorganisatie__in"
+    },
+    "zaaktype": {
+     "type": "string",
+     "format": "uri",
+     "description": "URL-referentie naar het ZAAKTYPE (in de Catalogi API) in de CATALOGUS waar deze voorkomt",
+     "title": "zaaktype"
+    },
+    "zaaktype__in": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "format": "uri",
+      "title": ""
+     },
+     "description": "Array van zaaktypen.",
+     "title": "zaaktype__in"
+    },
+    "archiefnominatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ArchiefnominatieEnum"
+      }
+     ],
+     "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden. Uitleg bij mogelijke waarden: * blijvend_bewaren - Het zaakdossier moet bewaard blijven en op de Archiefactiedatum overgedragen worden naar een archiefbewaarplaats. * vernietigen - Het zaakdossier moet op of na de Archiefactiedatum vernietigd worden.",
+     "title": "archiefnominatie"
+    },
+    "archiefnominatie__in": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "title": ""
+     },
+     "description": "Multiple values may be separated by commas.",
+     "title": "archiefnominatie__in"
+    },
+    "einddatum": {
+     "type": "string",
+     "description": "De datum waarop de uitvoering van de zaak afgerond is.",
+     "title": "einddatum"
+    },
+    "einddatum__gt": {
+     "type": "string",
+     "title": "einddatum__gt"
+    },
+    "einddatum__lt": {
+     "type": "string",
+     "title": "einddatum__lt"
+    },
+    "einddatum__isnull": {
+     "type": "boolean",
+     "title": "einddatum__isnull"
+    },
+    "einddatumGepland": {
+     "type": "string",
+     "description": "De datum waarop volgens de planning verwacht wordt dat de zaak afgerond wordt.",
+     "title": "einddatumGepland"
+    },
+    "einddatumGepland__gt": {
+     "type": "string",
+     "title": "einddatumGepland__gt"
+    },
+    "einddatumGepland__lt": {
+     "type": "string",
+     "title": "einddatumGepland__lt"
+    },
+    "uiterlijkeEinddatumAfdoening": {
+     "type": "string",
+     "description": "De laatste datum waarop volgens wet- en regelgeving de zaak afgerond dient te zijn.",
+     "title": "uiterlijkeEinddatumAfdoening"
+    },
+    "uiterlijkeEinddatumAfdoening__gt": {
+     "type": "string",
+     "title": "uiterlijkeEinddatumAfdoening__gt"
+    },
+    "uiterlijkeEinddatumAfdoening__lt": {
+     "type": "string",
+     "title": "uiterlijkeEinddatumAfdoening__lt"
+    },
+    "archiefactiedatum": {
+     "type": "string",
+     "description": "De datum waarop het gearchiveerde zaakdossier vernietigd moet worden dan wel overgebracht moet worden naar een archiefbewaarplaats. Wordt automatisch berekend bij het aanmaken of wijzigen van een RESULTAAT aan deze ZAAK indien nog leeg.",
+     "title": "archiefactiedatum"
+    },
+    "archiefactiedatum__lt": {
+     "type": "string",
+     "title": "Archiefactiedatum lt"
+    },
+    "archiefactiedatum__gt": {
+     "type": "string",
+     "title": "Archiefactiedatum gt"
+    },
+    "archiefactiedatum__isnull": {
+     "type": "boolean",
+     "title": "Archiefactiedatum is leeg",
+     "description": "De archiefactiedatum is leeg"
+    },
+    "archiefstatus": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ArchiefstatusEnum"
+      }
+     ],
+     "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden. Uitleg bij mogelijke waarden: * nog_te_archiveren - De zaak cq. het zaakdossier is nog niet als geheel gearchiveerd. * gearchiveerd - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt. * gearchiveerd_procestermijn_onbekend - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt maar de vernietigingsdatum kan nog niet bepaald worden. * overgedragen - De zaak cq. het zaakdossier is overgebracht naar een archiefbewaarplaats.",
+     "title": "archiefstatus"
+    },
+    "archiefstatus__in": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "title": ""
+     },
+     "description": "Multiple values may be separated by commas.",
+     "title": "archiefstatus__in"
+    },
+    "startdatum": {
+     "type": "string",
+     "description": "De datum waarop met de uitvoering van de zaak is gestart",
+     "title": "startdatum"
+    },
+    "startdatum__gt": {
+     "type": "string",
+     "description": "De datum waarop met de uitvoering van de zaak is gestart",
+     "title": "startdatum__gt"
+    },
+    "startdatum__gte": {
+     "type": "string",
+     "description": "De datum waarop met de uitvoering van de zaak is gestart",
+     "title": "startdatum__gte"
+    },
+    "startdatum__lt": {
+     "type": "string",
+     "description": "De datum waarop met de uitvoering van de zaak is gestart",
+     "title": "startdatum__lt"
+    },
+    "startdatum__lte": {
+     "type": "string",
+     "description": "De datum waarop met de uitvoering van de zaak is gestart",
+     "title": "startdatum__lte"
+    },
+    "rol__betrokkeneType": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/Rol_betrokkeneTypeEnum"
+      }
+     ],
+     "description": "Type van de betrokkene. Uitleg bij mogelijke waarden: * natuurlijk_persoon - Natuurlijk persoon * niet_natuurlijk_persoon - Niet-natuurlijk persoon * vestiging - Vestiging * organisatorische_eenheid - Organisatorische eenheid * medewerker - Medewerker",
+     "title": "rol__betrokkeneType"
+    },
+    "rol__betrokkene": {
+     "type": "string",
+     "description": "URL-referentie naar een betrokkene gerelateerd aan de ZAAK.",
+     "title": "rol__betrokkene"
+    },
+    "rol__omschrijvingGeneriek": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/Rol_omschrijvingGeneriekEnum"
+      }
+     ],
+     "description": "Algemeen gehanteerde benaming van de aard van de ROL, afgeleid uit het ROLTYPE. Uitleg bij mogelijke waarden:\n\n`adviseur` - Adviseur\n\n`behandelaar` - Behandelaar\n\n`belanghebbende` - Belanghebbende\n\n`beslisser` - Beslisser\n\n`initiator` - Initiator\n\n`klantcontacter` - Klantcontacter\n\n`zaakcoordinator` - Zaakcoördinator\n \n`mede_initiator` - Mede-initiator\n",
+     "title": "rol__omschrijvingGeneriek"
+    },
+    "maximaleVertrouwelijkheidaanduiding": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/MaximaleVertrouwelijkheidaanduidingEnum"
+      }
+     ],
+     "description": "Zaken met een vertrouwelijkheidaanduiding die beperkter is dan de aangegeven aanduiding worden uit de resultaten gefiltered. Uitleg bij mogelijke waarden: * `openbaar` - Openbaar * `beperkt_openbaar` - Beperkt openbaar * `intern` - Intern * `zaakvertrouwelijk` - Zaakvertrouwelijk * `vertrouwelijk` - Vertrouwelijk * `confidentieel` - Confidentieel * `geheim` - Geheim * `zeer_geheim` - Zeer geheim",
+     "title": "maximaleVertrouwelijkheidaanduiding"
+    },
+    "rol__betrokkeneIdentificatie__natuurlijkPersoon__anpIdentificatie": {
+     "type": "string",
+     "description": "Het door de gemeente uitgegeven unieke nummer voor een ANDER NATUURLIJK PERSOON",
+     "title": "rol__betrokkeneIdentificatie__natuurlijkPersoon__anpIdentificatie",
+     "maxLength": 17
+    },
+    "rol__betrokkeneIdentificatie__natuurlijkPersoon__inpBsn": {
+     "type": "string",
+     "description": "Het burgerservicenummer, bedoeld in artikel 1.1 van de Wet algemene bepalingen burgerservicenummer.",
+     "title": "rol__betrokkeneIdentificatie__natuurlijkPersoon__inpBsn",
+     "maxLength": 9
+    },
+    "rol__betrokkeneIdentificatie__natuurlijkPersoon__inpA_nummer": {
+     "type": "string",
+     "description": "Het administratienummer van de persoon, bedoeld in de Wet BRP",
+     "title": "rol__betrokkeneIdentificatie__natuurlijkPersoon__inpA_nummer",
+     "maxLength": 10
+    },
+    "rol__betrokkeneIdentificatie__nietNatuurlijkPersoon__innNnpId": {
+     "type": "string",
+     "description": "Het door een kamer toegekend uniek nummer voor de INGESCHREVEN NIET-NATUURLIJK PERSOON",
+     "title": "rol__betrokkeneIdentificatie__nietNatuurlijkPersoon__innNnpId"
+    },
+    "rol__betrokkeneIdentificatie__nietNatuurlijkPersoon__annIdentificatie": {
+     "type": "string",
+     "description": "Het door de gemeente uitgegeven unieke nummer voor een ANDER NIET-NATUURLIJK PERSOON",
+     "title": "rol__betrokkeneIdentificatie__nietNatuurlijkPersoon__annIdentificatie",
+     "maxLength": 17
+    },
+    "rol__betrokkeneIdentificatie__vestiging__vestigingsNummer": {
+     "type": "string",
+     "description": "Een korte unieke aanduiding van de Vestiging.",
+     "title": "rol__betrokkeneIdentificatie__vestiging__vestigingsNummer",
+     "maxLength": 24
+    },
+    "rol__betrokkeneIdentificatie__medewerker__identificatie": {
+     "type": "string",
+     "description": "Een korte unieke aanduiding van de MEDEWERKER.",
+     "title": "rol__betrokkeneIdentificatie__medewerker__identificatie",
+     "maxLength": 24
+    },
+    "rol__betrokkeneIdentificatie__organisatorischeEenheid__identificatie": {
+     "type": "string",
+     "description": "Een korte identificatie van de organisatorische eenheid.",
+     "title": "rol__betrokkeneIdentificatie__organisatorischeEenheid__identificatie"
+    },
+    "registratiedatum": {
+     "type": "string",
+     "description": "De datum waarop de zaakbehandelende organisatie de ZAAK heeft geregistreerd. Indien deze niet opgegeven wordt, wordt de datum van vandaag gebruikt.",
+     "title": "registratiedatum"
+    },
+    "registratiedatum__gt": {
+     "type": "string",
+     "title": "registratiedatum__gt"
+    },
+    "registratiedatum__lt": {
+     "type": "string",
+     "title": "registratiedatum__lt"
+    },
+    "ordering": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/OrderingEnum"
+      }
+     ],
+     "description": "Het veld waarop de resultaten geordend worden. Het minnetje betekent omgekeerde volgorde.",
+     "title": "ordering"
+    }
+   }
+  },
+  "ZakelijkRechtHeeftAlsGerechtigde": {
+   "type": "object",
+   "properties": {
+    "natuurlijkPersoon": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolNatuurlijkPersoon"
+      }
+     ],
+     "title": "natuurlijkPersoon"
+    },
+    "nietNatuurlijkPersoon": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolNietNatuurlijkPersoon"
+      }
+     ],
+     "title": "nietNatuurlijkPersoon"
+    }
+   }
+  },
+  "adres_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectAdres"
+    }
+   ]
+  },
+  "adres_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectAdres"
+    }
+   ]
+  },
+  "besluit_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    }
+   ]
+  },
+  "besluit_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    }
+   ]
+  },
+  "betrokkene_identificatie_RolMedewerker": {
+   "type": "object",
+   "properties": {
+    "betrokkeneIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolMedewerker"
+      }
+     ],
+     "title": "betrokkeneIdentificatie"
+    }
+   }
+  },
+  "betrokkene_identificatie_RolNatuurlijkPersoon": {
+   "type": "object",
+   "properties": {
+    "betrokkeneIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolNatuurlijkPersoon"
+      }
+     ],
+     "title": "betrokkeneIdentificatie"
+    }
+   }
+  },
+  "betrokkene_identificatie_RolNietNatuurlijkPersoon": {
+   "type": "object",
+   "properties": {
+    "betrokkeneIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolNietNatuurlijkPersoon"
+      }
+     ],
+     "title": "betrokkeneIdentificatie"
+    }
+   }
+  },
+  "betrokkene_identificatie_RolOrganisatorischeEenheid": {
+   "type": "object",
+   "properties": {
+    "betrokkeneIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolOrganisatorischeEenheid"
+      }
+     ],
+     "title": "betrokkeneIdentificatie"
+    }
+   }
+  },
+  "betrokkene_identificatie_RolVestiging": {
+   "type": "object",
+   "properties": {
+    "betrokkeneIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolVestiging"
+      }
+     ],
+     "title": "betrokkeneIdentificatie"
+    }
+   }
+  },
+  "buurt_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectBuurt"
+    }
+   ]
+  },
+  "buurt_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectBuurt"
+    }
+   ]
+  },
+  "enkelvoudig_document_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    }
+   ]
+  },
+  "enkelvoudig_document_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    }
+   ]
+  },
+  "gemeente_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectGemeente"
+    }
+   ]
+  },
+  "gemeente_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectGemeente"
+    }
+   ]
+  },
+  "gemeentelijke_openbare_ruimte_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectGemeentelijkeOpenbareRuimte"
+    }
+   ]
+  },
+  "gemeentelijke_openbare_ruimte_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectGemeentelijkeOpenbareRuimte"
+    }
+   ]
+  },
+  "huishouden_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectHuishouden"
+    }
+   ]
+  },
+  "huishouden_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectHuishouden"
+    }
+   ]
+  },
+  "inrichtingselement_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectInrichtingselement"
+    }
+   ]
+  },
+  "inrichtingselement_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectInrichtingselement"
+    }
+   ]
+  },
+  "kadastrale_onroerende_zaak_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectKadastraleOnroerendeZaak"
+    }
+   ]
+  },
+  "kadastrale_onroerende_zaak_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectKadastraleOnroerendeZaak"
+    }
+   ]
+  },
+  "kunstwerkdeel_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectKunstwerkdeel"
+    }
+   ]
+  },
+  "kunstwerkdeel_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectKunstwerkdeel"
+    }
+   ]
+  },
+  "maatschappelijke_activiteit_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectMaatschappelijkeActiviteit"
+    }
+   ]
+  },
+  "maatschappelijke_activiteit_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectMaatschappelijkeActiviteit"
+    }
+   ]
+  },
+  "medewerker_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolMedewerker"
+    }
+   ]
+  },
+  "medewerker_Rol": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/Rol"
+    },
+    {
+     "$ref": "#/$defs/betrokkene_identificatie_RolMedewerker"
+    }
+   ]
+  },
+  "medewerker_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolMedewerker"
+    }
+   ]
+  },
+  "natuurlijk_persoon_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolNatuurlijkPersoon"
+    }
+   ]
+  },
+  "natuurlijk_persoon_Rol": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/Rol"
+    },
+    {
+     "$ref": "#/$defs/betrokkene_identificatie_RolNatuurlijkPersoon"
+    }
+   ]
+  },
+  "natuurlijk_persoon_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolNatuurlijkPersoon"
+    }
+   ]
+  },
+  "niet_natuurlijk_persoon_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolNietNatuurlijkPersoon"
+    }
+   ]
+  },
+  "niet_natuurlijk_persoon_Rol": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/Rol"
+    },
+    {
+     "$ref": "#/$defs/betrokkene_identificatie_RolNietNatuurlijkPersoon"
+    }
+   ]
+  },
+  "niet_natuurlijk_persoon_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolNietNatuurlijkPersoon"
+    }
+   ]
+  },
+  "object_identificatie_ObjectAdres": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectAdres"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectBuurt": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectBuurt"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectGemeente": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectGemeente"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectGemeentelijkeOpenbareRuimte": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectGemeentelijkeOpenbareRuimte"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectHuishouden": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectHuishouden"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectInrichtingselement": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectInrichtingselement"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectKadastraleOnroerendeZaak": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectKadastraleOnroerendeZaak"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectKunstwerkdeel": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectKunstwerkdeel"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectMaatschappelijkeActiviteit": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectMaatschappelijkeActiviteit"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectOpenbareRuimte": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectOpenbareRuimte"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectOverige": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectOverige"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectPand": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectPand"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectSpoorbaandeel": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectSpoorbaandeel"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectTerreinGebouwdObject": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectTerreinGebouwdObject"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectTerreindeel": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectTerreindeel"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectWaterdeel": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWaterdeel"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectWegdeel": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWegdeel"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectWijk": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWijk"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectWoonplaats": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWoonplaats"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectWozDeelobject": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWozDeelobject"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectWozObject": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWozObject"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectWozWaarde": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectWozWaarde"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_ObjectZakelijkRecht": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/ObjectZakelijkRecht"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_RolMedewerker": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolMedewerker"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_RolNatuurlijkPersoon": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolNatuurlijkPersoon"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_RolNietNatuurlijkPersoon": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolNietNatuurlijkPersoon"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_RolOrganisatorischeEenheid": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolOrganisatorischeEenheid"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "object_identificatie_RolVestiging": {
+   "type": "object",
+   "properties": {
+    "objectIdentificatie": {
+     "allOf": [
+      {
+       "$ref": "#/$defs/RolVestiging"
+      }
+     ],
+     "title": "objectIdentificatie"
+    }
+   }
+  },
+  "openbare_ruimte_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectOpenbareRuimte"
+    }
+   ]
+  },
+  "openbare_ruimte_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectOpenbareRuimte"
+    }
+   ]
+  },
+  "organisatorische_eenheid_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolOrganisatorischeEenheid"
+    }
+   ]
+  },
+  "organisatorische_eenheid_Rol": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/Rol"
+    },
+    {
+     "$ref": "#/$defs/betrokkene_identificatie_RolOrganisatorischeEenheid"
+    }
+   ]
+  },
+  "organisatorische_eenheid_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolOrganisatorischeEenheid"
+    }
+   ]
+  },
+  "overige_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectOverige"
+    }
+   ]
+  },
+  "overige_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectOverige"
+    }
+   ]
+  },
+  "pand_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectPand"
+    }
+   ]
+  },
+  "pand_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectPand"
+    }
+   ]
+  },
+  "spoorbaandeel_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectSpoorbaandeel"
+    }
+   ]
+  },
+  "spoorbaandeel_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectSpoorbaandeel"
+    }
+   ]
+  },
+  "status_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    }
+   ]
+  },
+  "status_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    }
+   ]
+  },
+  "terrein_gebouwd_object_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectTerreinGebouwdObject"
+    }
+   ]
+  },
+  "terrein_gebouwd_object_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectTerreinGebouwdObject"
+    }
+   ]
+  },
+  "terreindeel_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectTerreindeel"
+    }
+   ]
+  },
+  "terreindeel_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectTerreindeel"
+    }
+   ]
+  },
+  "vestiging_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolVestiging"
+    }
+   ]
+  },
+  "vestiging_Rol": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/Rol"
+    },
+    {
+     "$ref": "#/$defs/betrokkene_identificatie_RolVestiging"
+    }
+   ]
+  },
+  "vestiging_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_RolVestiging"
+    }
+   ]
+  },
+  "waterdeel_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWaterdeel"
+    }
+   ]
+  },
+  "waterdeel_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWaterdeel"
+    }
+   ]
+  },
+  "wegdeel_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWegdeel"
+    }
+   ]
+  },
+  "wegdeel_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWegdeel"
+    }
+   ]
+  },
+  "wijk_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWijk"
+    }
+   ]
+  },
+  "wijk_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWijk"
+    }
+   ]
+  },
+  "woonplaats_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWoonplaats"
+    }
+   ]
+  },
+  "woonplaats_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWoonplaats"
+    }
+   ]
+  },
+  "woz_deelobject_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWozDeelobject"
+    }
+   ]
+  },
+  "woz_deelobject_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWozDeelobject"
+    }
+   ]
+  },
+  "woz_object_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWozObject"
+    }
+   ]
+  },
+  "woz_object_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWozObject"
+    }
+   ]
+  },
+  "woz_waarde_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWozWaarde"
+    }
+   ]
+  },
+  "woz_waarde_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectWozWaarde"
+    }
+   ]
+  },
+  "zakelijk_recht_PatchedZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/PatchedZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectZakelijkRecht"
+    }
+   ]
+  },
+  "zakelijk_recht_ZaakObject": {
+   "allOf": [
+    {
+     "$ref": "#/$defs/ZaakObject"
+    },
+    {
+     "$ref": "#/$defs/object_identificatie_ObjectZakelijkRecht"
+    }
+   ]
+  }
+ }
+}

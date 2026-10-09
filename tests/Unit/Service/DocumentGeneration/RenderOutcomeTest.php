@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md
+ * @spec openspec/specs/document-generation-vendor-adapter/spec.md
  */
 
 declare(strict_types=1);

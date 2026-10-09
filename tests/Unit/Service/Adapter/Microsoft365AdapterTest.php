@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the Microsoft 365 reference adapter (REQ-SPC-001).
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
  */
 class Microsoft365AdapterTest extends TestCase {
 

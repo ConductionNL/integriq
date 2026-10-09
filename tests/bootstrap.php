@@ -226,8 +226,27 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Event\\TaskTerminalEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\ObjectServiceMapperAdapter') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectServiceMapperAdapter.php';
+		}
+
+		// OpenRegister's MCP attribute surface, copied from openregister
+		// development 8e001f4ec1 (hermiq-ai-tooling): the attribute, the opt-in
+		// interface, and the REAL scanner and validator, so the catalogue test
+		// reads IntegriqAgentTools the way OpenRegister does.
+		foreach (['Mcp/Attribute/McpTool', 'Mcp/IMcpScannableServices', 'Service/Mcp/McpAnnotationValidator', 'Mcp/AttributeToolScanner'] as $mcpStub) {
+			$mcpClass = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $mcpStub);
+			if (class_exists($mcpClass) === false && interface_exists($mcpClass) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/' . $mcpStub . '.php';
+			}
 		}
 
 		// A stub file that nothing requires is a stub that does not exist.
@@ -237,6 +256,41 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// naming nothing about a missing stub.
 		if (class_exists('OCA\\OpenRegister\\Service\\SystemOperationContext') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/SystemOperationContext.php';
+		}
+
+		// gate 23: integriq's inbound credential checks run in OpenRegister's
+		// AuthorizationService. These are the REAL files, copied byte for byte
+		// from openregister development 75088d6237 (#4361 landed), so the
+		// tests verify real signed tokens against OpenRegister's own code and
+		// not against a double. ConsumerMapper is the one stand-in: a required
+		// constructor argument integriq never lets the service read. Order
+		// matters: interfaces and value classes before the service.
+		foreach (
+			[
+				'Exception/AuthenticationException',
+				'Db/ConsumerMapper',
+				'Service/Consumer/ConsumerSource',
+				'Service/Consumer/ResolvedConsumer',
+				'Service/Consumer/RsaJwsVerifier',
+				'Service/Consumer/JwtValidator',
+				'Service/Consumer/EndpointAllowList',
+				'Service/AuthorizationService',
+			] as $authStub
+		) {
+			$authClass = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $authStub);
+			if (class_exists($authClass) === false && interface_exists($authClass) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/' . $authStub . '.php';
+			}
+		}
+
+		// The abstract base is a copy of OpenRegister's: it implements the
+		// interface and throws its NotImplementedException, so both load first.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationProvider.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Exception\\NotImplementedException') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Exception/NotImplementedException.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\Integration\\AbstractIntegrationProvider') === false) {
@@ -368,6 +422,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Exception/ValidationException.php';
 		}
 
+		// ReferentialIntegrityException and its DeletionAnalysis, copied from
+		// openregister development 98a3469c0f: what a permanent delete throws
+		// when another object restricts it (synchronisation-source-destruction-purge).
+		if (class_exists('OCA\\OpenRegister\\Dto\\DeletionAnalysis') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Dto/DeletionAnalysis.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Exception\\ReferentialIntegrityException') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Exception/ReferentialIntegrityException.php';
+		}
+
 		// OCA\OpenRegister\Event\Object{Created,Updated,Deleted}Event stubs —
 		// peer app not in vendor. Used by outbound-webhooks-activation's
 		// CloudEventListenerTest to construct real event instances (PHPUnit
@@ -389,6 +454,31 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
 		if (class_exists('OCA\\OpenRegister\\Event\\ObjectDeletedEvent') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletedEvent.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectDeletingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletingEvent.php';
+		}
+
+		if (interface_exists('OCA\\OpenRegister\\Service\\Notification\\RecipientResolverInterface') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/RecipientResolverInterface.php';
+		}
+
+		// OpenRegister's scheduled-notification grammar, copied verbatim from
+		// openregister development (a5832f2498) so the register's scheduled
+		// rules are parsed and matched by the code that runs them live.
+		foreach (['ScheduledFilterGrammar', 'ScheduledFilterParser', 'ScheduledFilterEvaluator', 'ForcedChannelPolicy', 'NotificationAnnotationValidator'] as $notificationClass) {
+			if (class_exists('OCA\\OpenRegister\\Service\\Notification\\'.$notificationClass) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/'.$notificationClass.'.php';
+			}
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectCreatingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectCreatingEvent.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectUpdatingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectUpdatingEvent.php';
 		}
 
 		// nextcloud-event-hub: the four OCP\Calendar\Events\* stubs that used to

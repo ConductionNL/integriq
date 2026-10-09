@@ -28,7 +28,8 @@ use Jose\Component\Signature\Algorithm\RS256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\Integriq\Exception\LtiValidationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Service\Lti\LtiJwksResolverService;
 use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCA\Integriq\Service\Lti\LtiLaunchService;
@@ -68,13 +69,13 @@ class LtiLaunchServiceTest extends TestCase {
 	/**
 	 * Build a real AuthorizationService instance (reused, not mocked, for iat/exp/nbf).
 	 *
-	 * @return AuthorizationService
+	 * @return OpenRegisterCredentialBridge
 	 */
-	private function makeAuthorizationService(): AuthorizationService {
+	private function makeAuthorizationService(): OpenRegisterCredentialBridge {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn(new ArrayCache());
 
-		return new AuthorizationService(
+		return OpenRegisterCredentials::bridge(
 			$this->createMock(IUserManager::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
@@ -187,7 +188,7 @@ class LtiLaunchServiceTest extends TestCase {
 		);
 
 		$keyServiceObjectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-		$keyService = new LtiKeyService($keyServiceObjectService, new NullLogger());
+		$keyService = new LtiKeyService($keyServiceObjectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 
 		return new LtiLaunchService(
 			$resolver,
@@ -649,7 +650,7 @@ class LtiLaunchServiceTest extends TestCase {
 				return $entity;
 			}
 		);
-		$keyService = new LtiKeyService($objectService, new NullLogger());
+		$keyService = new LtiKeyService($objectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$activeKey = $keyService->generateKey('lti_tool', $toolUuid);
 
 		$cacheFactory = $this->createMock(ICacheFactory::class);
@@ -703,7 +704,7 @@ class LtiLaunchServiceTest extends TestCase {
 				return $entity;
 			}
 		);
-		$keyService = new LtiKeyService($objectService, new NullLogger());
+		$keyService = new LtiKeyService($objectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$activeKey = $keyService->generateKey('lti_platform', $platformUuid);
 
 		$resolver = $this->createMock(LtiRegistrationResolverService::class);

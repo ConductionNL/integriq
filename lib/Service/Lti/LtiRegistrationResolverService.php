@@ -193,6 +193,45 @@ class LtiRegistrationResolverService {
 	}//end findDeployment()
 
 	/**
+	 * Every `lti_deployment` of a tool registration.
+	 *
+	 * A conformant LTI Advantage token request names the tool (the client
+	 * assertion's `iss`/`sub`), not a deployment; the token then covers the
+	 * tool's own deployments.
+	 *
+	 * @param string $toolUuid The `lti_tool` registration uuid.
+	 *
+	 * @return array<int, ObjectEntity> The tool's deployments (possibly none).
+	 *
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
+	 */
+	public function findDeploymentsForTool(string $toolUuid): array {
+		if ($toolUuid === '') {
+			return [];
+		}
+
+		$matches = $this->orObjectService->findAll(
+			config: [
+				'filters' => [
+					'register' => 'integriq',
+					'schema' => 'lti_deployment',
+					'ltiToolId' => $toolUuid,
+				],
+			],
+			_rbac: false,
+			_multitenancy: false
+		);
+		$results = ($matches['results'] ?? $matches);
+
+		return array_values(
+			array_filter(
+				$results,
+				static fn ($row): bool => $row instanceof ObjectEntity && ($row->getObject()['ltiToolId'] ?? null) === $toolUuid
+			)
+		);
+	}//end findDeploymentsForTool()
+
+	/**
 	 * Find an `lti_deployment` by its own UUID.
 	 *
 	 * @param string $deploymentUuid The deployment's UUID.
@@ -257,6 +296,38 @@ class LtiRegistrationResolverService {
 		// usable to launch/sign through either.
 		return $this->requireApproved(registration: $registration, registrationType: $registrationType);
 	}//end findRegistrationByUuid()
+
+	/**
+	 * Read a registration's trust-gate `status` without the approval gate.
+	 *
+	 * {@see findRegistrationByUuid()} answers null for a registration that is
+	 * missing and for one that is not approved alike, which is right for a
+	 * protocol caller. A platform launch refusal has to name the status
+	 * (REQ-LTIL-001), so it asks here. Returns the status only, never the
+	 * registration, so nothing ungated leaves this method.
+	 *
+	 * @param string $registrationType `lti_platform` or `lti_tool`.
+	 * @param string $registrationUuid The registration's UUID.
+	 *
+	 * @return string|null The status (`pending` when unset), or null when the registration does not exist.
+	 *
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001
+	 */
+	public function findRegistrationStatus(string $registrationType, string $registrationUuid): ?string {
+		try {
+			$registration = $this->orObjectService->find(
+				id: $registrationUuid,
+				register: 'integriq',
+				schema: $registrationType,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $exception) {
+			return null;
+		}
+
+		return (string)($registration->getObject()['status'] ?? 'pending');
+	}//end findRegistrationStatus()
 
 	/**
 	 * Assert an `lti_deployment` references exactly one of

@@ -1,8 +1,10 @@
 # digid-eherkenning-auth-adapter Specification
 
 ## Purpose
-TBD - created by archiving change portal-idp-broker. Update Purpose after archive.
+Integriq is the one app that talks to DigiD, eHerkenning and eIDAS. A consuming app sends the browser to integriq to start a login, gets it back with a one-time code, and trades that code for a short-lived signed subject envelope. The app never sees the assertion or a BSN.
+
 ## Requirements
+
 ### Requirement: Broker boundary — integriq owns the government IdP conversation
 
 Integriq SHALL host the SAML Service Provider and/or OIDC Relying Party
@@ -167,10 +169,14 @@ redeemed in another tenant's context.
 ### Requirement: Dormant seam — adapters ship config-flag-gated and inert
 
 The broker SHALL follow the dormant-seam pattern proven by procest
-(`EHerkenningSamlAdapterInterface` + `LogEHerkenningSamlAdapter`): per-provider
-adapter interfaces with a default Log implementation that logs the call and
-throws "broker not configured" — never silently authenticating. Activation
-SHALL require all of: (1) a broker entry configured in *Beheer >
+(`EHerkenningSamlAdapterInterface` + `LogEHerkenningSamlAdapter`): a per-provider
+adapter interface with a default Log implementation that logs the call and
+throws "broker not configured" — never silently authenticating. In integriq
+that seam is `GovernmentIdpAdapterInterface` and `LogGovernmentIdpAdapter`,
+and every provider binds to the Log implementation until a broker is
+configured.
+
+Activation SHALL require all of: (1) a broker entry configured in *Beheer >
 Authenticatie*, (2) SP private key + certificate loaded via the encrypted
 store (ADR-016), (3) the feature flag flipped from `0` to `1`, and (4) the DI
 binding swapped to the live adapter. Consumers SHALL keep their existing
@@ -178,7 +184,9 @@ edges (portaliq's debug-gated dev-login) until the flip; the broker path
 SHALL contain no fail-open resolver shapes (no catch-Throwable-return-null
 around auth services).
 
-@e2e exclude Spec-first: the adapters themselves are future work; this requirement pins the procest-precedent pattern they must follow.
+The Log adapter SHALL NOT log the callback payload. It is the one place in the
+stack where a raw assertion exists, and a log line is the easiest place to
+leak one from.
 
 #### Scenario: Feature flag off means the broker refuses
 
@@ -192,6 +200,12 @@ around auth services).
 - GIVEN portaliq with debug-gated dev-login enabled and no live broker
 - WHEN a developer uses the dev-login edge
 - THEN portal sessions are minted exactly as today, unaffected by the dormant broker seam
+
+#### Scenario: The refusal names no assertion contents
+
+- GIVEN a callback carrying a raw assertion
+- WHEN the dormant adapter refuses it
+- THEN the logged context carries the provider, the call and the tenant, and no part of the payload
 
 ### Requirement: Configuration placement follows ADR-017 (Rules 1, 3, 7)
 
@@ -240,3 +254,118 @@ integriq SHOULD propagate a revocation signal to consumers.
 - WHEN the user logs out of the portal
 - THEN the consumer session is ended (and its jti revocable record marked revoked) even though no broker-side logout occurs
 
+### Requirement: A login starts at integriq with a signed, single-use state (REQ-IDP-001)
+
+Integriq MUST offer a browser start address per provider that takes the organisation, the consumer, the requested trust, a return address and a relay state. It MUST refuse an unknown or disabled consumer, a return address not registered for that consumer, a disabled broker and an unconfigured adapter, showing its own error page and redirecting nowhere. Otherwise it MUST store a signed state valid once for at most five minutes and MUST send the browser to the identity provider through the adapter.
+
+#### Scenario: a resident starts a DigiD login from the portal
+- GIVEN portaliq registered with the return address `https://portal.example.nl/portal/api/session/broker/callback`
+- WHEN the browser arrives at `/api/idp/digid/start` for organisation `gemeente-x`, trust `substantial`, with that address and a relay state
+- THEN a state is stored and the browser is sent to the identity provider
+- @e2e exclude cross-app browser redirect; covered by Newman with the scripted adapter
+
+#### Scenario: a return address that is not registered
+- GIVEN portaliq registered with one return address
+- WHEN the start is called with another address
+- THEN integriq's error page shows and the browser is not redirected
+- @e2e exclude cross-app browser redirect; covered by Newman
+
+### Requirement: The callback returns the browser with a one-time code (REQ-IDP-002)
+
+The callback MUST read the assertion through the adapter, MUST consume the state it answers, MUST run the assertion and replay guards, and MUST mint the envelope with the state's consumer as audience and the state's organisation. It MUST then issue a one-time code and redirect to the state's return address with the code and the relay state. Every failure MUST redirect to that return address with one generic error and the relay state, and MUST log the real reason. An assertion that answers no stored state MUST be refused.
+
+#### Scenario: the resident comes back signed in
+- GIVEN a stored state for portaliq and a DigiD assertion answering it
+- WHEN the callback runs
+- THEN the browser is redirected to portaliq's return address with a code and the relay state, and redeeming the code at the exchange yields one envelope whose audience is `portaliq` and whose subject is a pseudonym
+- @e2e exclude cross-app browser redirect; covered by a Newman round trip with the scripted adapter
+
+#### Scenario: an identity provider starts a login on its own
+- GIVEN an assertion that answers no stored state
+- WHEN it reaches the callback
+- THEN it is refused and no code is issued
+- @e2e exclude backend guard; covered by PHPUnit
+
+### Requirement: A consuming app is registered with its return addresses (REQ-IDP-003)
+
+Each consuming app MUST be registered with a secret held by broker reference, a list of allowed return addresses and an enabled flag. A consumer registered in the older form, with only a secret, MUST still be able to redeem a code and MUST NOT be able to start a login. Integriq MUST ship a disabled `portaliq` entry and an `occ` command to set a consumer's addresses and secret reference.
+
+#### Scenario: an administrator enables portaliq
+- GIVEN the seeded disabled `portaliq` consumer
+- WHEN the administrator runs the consumer command with the portal's return address and a secret reference
+- THEN portaliq can start a login and redeem codes
+- @e2e exclude occ command; covered by PHPUnit
+
+### Requirement: An eHerkenning envelope carries the branch the login was restricted to (REQ-IDP-004)
+
+When an eHerkenning assertion restricts the login to a branch, the envelope MUST carry that branch number as the claim `branch`. An envelope from any other provider, or from an assertion without a branch, MUST NOT carry the claim.
+
+#### Scenario: an employee signs in for one branch
+- GIVEN an eHerkenning assertion for KvK 12345678 restricted to branch 000012345678
+- WHEN integriq mints the envelope
+- THEN the envelope carries `sub` 12345678, `subType` kvk and `branch` 000012345678
+- @e2e exclude backend envelope; covered by PHPUnit
+
+### Requirement: Single-use artefacts refuse rather than degrade
+
+The one-time code and the envelope `jti` SHALL be guarded by a cache that is
+both shared between requests and atomic. Integriq SHALL treat the absence of
+such a cache as a reason to refuse, never as a reason to skip the check: with
+no shared cache no code SHALL be issued, no code SHALL be redeemed, and no
+envelope SHALL be accepted.
+
+Nextcloud's `ICacheFactory::createDistributed()` answers with an `ArrayCache`
+on an instance that has no memcache configured, and an ArrayCache lives for one
+request. A single-use guard on top of one accepts every replay that arrives in
+a different request, which is every replay that matters. The guard would be
+present, green and guarding nothing, and that is indistinguishable from a guard
+that works.
+
+Redemption SHALL be atomic. `IMemcache::cad()` removes the entry in the same
+operation that reads it, so two requests racing on one code cannot both receive
+the envelope. A read followed by a separate delete SHALL NOT be used.
+
+#### Scenario: No shared cache means no code is issued
+
+- **GIVEN** an instance whose configured cache is not a shared atomic one
+- **WHEN** a code issue is attempted
+- **THEN** it SHALL be refused with a reason naming the missing cache
+- **AND** no code SHALL be returned
+
+#### Scenario: A code redeems exactly once
+
+- **GIVEN** a code holding an envelope
+- **WHEN** it is redeemed twice
+- **THEN** the first redemption SHALL return the envelope
+- **AND** the second SHALL be refused as unknown, expired or already redeemed
+
+#### Scenario: A jti is burnt on first verification
+
+- **GIVEN** an envelope that has been verified once
+- **WHEN** the same envelope is verified again
+- **THEN** it SHALL be refused
+
+### Requirement: An unverifiable assurance level is configured, never guessed
+
+The trust table SHALL carry only assurance-level spellings that are published
+and unambiguous. Any other spelling a tenant's identity provider sends SHALL
+reach the table through tenant configuration
+(`idp_broker_trust_aliases`), and SHALL NOT be guessed in code.
+
+A guessed `AuthnContextClassRef` does not fail loudly. It either falls through
+to "unknown", which is refused and looks like a configuration problem, or it
+matches the wrong row and maps a high assurance level onto a low trust claim,
+which looks like nothing at all.
+
+#### Scenario: A configured alias maps an unknown spelling
+
+- **GIVEN** a tenant alias mapping its identity provider's level spelling onto `hoog`
+- **WHEN** an assertion carries that spelling
+- **THEN** the envelope's `trust` claim SHALL be `high`
+
+#### Scenario: An unaliased unknown spelling is refused
+
+- **GIVEN** no alias for a level spelling the table does not carry
+- **WHEN** an assertion carries it
+- **THEN** no envelope SHALL be issued
+- **AND** the reason SHALL name the provider and the level, and nothing else off the assertion

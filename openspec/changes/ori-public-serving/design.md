@@ -122,6 +122,23 @@ and a `Mapping` recipe can emit fixed literal values regardless of input
 reproduces `buildFilters()` exactly for the **list** path. This is the
 mechanism the risk register calls "not a gap" — it works today, unmodified.
 
+**Built differently (30 Sep 2026).** Task 2 added `fixedFilters` to the
+endpoint for the single-object path, so there now IS a static filter surface.
+The list path reads the same `fixedFilters` (REQ-EP-012) instead of an
+`inputMapping` per resource: one declaration gates the list and the objects
+in it, and a caller's own value for the field loses. The seeded endpoints
+carry no `inputMapping`. An endpoint with `fixedFilters` never takes the fast
+path for simple public endpoints, which skipped the id-fetch guard.
+
+### D3a: the target is named by slug
+
+`targetId` was cast to two integers, and ids differ per instance, so no
+endpoint over decidiq's register could ship as seed data. `targetId` may now
+name the register and schema by slug (`decidiq/meeting`, REQ-EP-011); the
+schema is looked up among the register's own schemas, because `person` and
+other slugs exist in more than one register. `EndpointTargetResolver` does the
+lookup; ids are used as they are.
+
 ### D4 — Field projection as a `mapping`-type after-rule
 
 `OriSerializer::applyRules()` is a target-key → ordered-source-list table
@@ -237,6 +254,31 @@ closed before cutover, not deferred as a "known limitation."
 change self-contained inside integriq) and records Option B as a
 recommendation to raise with decidesk's `ori-adoption` owners.
 
+### Gap 1 outcome (30 Sep 2026)
+
+The two-rule fallback, with no new PHP. Each resource has two `after` rules
+of type `mapping` (seeded in `lib/Settings/register.d/ori-public-serving.json`):
+
+1. `ori-item-<resource>` (order 10, action GET): runs the item mapping over
+   the answer; on a list, `processMapping()` runs it over each of `results`,
+   on a single object over the object itself. Single-source fields are dot
+   paths with an `unsetIfValue==<path>` cast, so a missing field is left out
+   and an array stays an array; fallback chains (`name` from `title` else
+   `name`) are Twig `default` chains with `unsetIfValue==`.
+2. `ori-envelope-<resource>` (order 20, `mapResults: false`, condition
+   `{"!": [{"missing": ["body.results"]}]}`): on a list only, replaces the
+   paging envelope with `@context`, `@type`, `count` and `items`.
+
+`OriPublicEndpointsTest` runs both rules over a list, an empty list and one
+object with the real MappingService and JsonLogic (TC-7's shape).
+
+Known differences from `OriController`, for the parity run (Task 4) to
+measure: `count` is the register's total, where decidiq counts the page it
+returns (equal up to 100 objects); an empty string field is left out where
+decidiq keeps it; the publications list does not repeat decidiq's PHP
+publish-window filter (it relies on the schema's RBAC, Risk 3); a 404 body is
+integriq's `{error, message}`, not `{message, code}`.
+
 ## API Design
 
 ### `GET /api/ori/v1/{resource}`
@@ -267,8 +309,8 @@ discriminator/lifecycle/publish-window gate (Gap 2), matching
 anonymous caller cannot distinguish "unknown" from "hidden").
 
 ### `OPTIONS /api/ori/v1/{resource}` and `/api/ori/v1/{resource}/{id}`
-CORS preflight — integriq's existing `preflightedCors` (REQ-EP-001)
-covers this without per-resource configuration.
+CORS preflight — `preflightedCors` answers the endpoint's own `cors`
+policy (REQ-EP-014): decidiq's values, set per endpoint.
 
 ## Database Changes
 
@@ -297,9 +339,14 @@ code, not new tables/columns.
   wrong-discriminator, or (pending Risk 3 verification) not-yet-published
   object by UUID. This change treats Gap 2 as a blocking item for the parity
   test plan, not an accepted limitation.
-- **CORS** — reuses integriq's existing preflight/CORS machinery;
-  decidesk's current `applyCorsHeaders()` reads `overwrite.cli.url`, which
-  integriq's own CORS config should mirror (task in `tasks.md`).
+- **CORS** — decided 30 Sep (DECISIONS row 39): a per-endpoint `cors`
+  setting (endpoint 1.4.0, REQ-EP-014), and the ORI endpoints carry
+  decidiq's values: origin `self` (scheme, host and port of
+  `overwrite.cli.url`; decidiq answers the raw value, but an Origin never
+  carries a path), `GET, OPTIONS`, `Authorization, Content-Type,
+  X-Requested-With`. Seeds are created once, so an instance that already
+  imported the ORI endpoints gets the policy only on a fresh import or by
+  setting it on each endpoint.
 - **Rate limiting** — decidesk's `AnonRateLimit(limit: 120, period: 60)` maps
   onto integriq's consumer-management rate-limit config for these
   Endpoints (sized in `tasks.md`).

@@ -51,11 +51,15 @@ interface GovernmentIdpAdapterInterface {
 	/**
 	 * Start an authentication.
 	 *
-	 * @param array<string,mixed> $context `{organisation, consumer, trust, relayState}`.
+	 * @param array<string,mixed> $context `{organisation, consumer, trust, relayState}`. The relay state here
+	 *                                     is integriq's own state id; the consumer's relay state never reaches
+	 *                                     the identity provider.
 	 *
 	 * @return array{requestId: string, redirectUrl: string} Where to send the browser, and what to expect back.
 	 *
 	 * @throws \OCA\Integriq\Exception\IdpAssertionException When the broker is not configured.
+	 *
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function beginAuthentication(array $context): array;
 
@@ -64,13 +68,22 @@ interface GovernmentIdpAdapterInterface {
 	 *
 	 * The returned shape is what {@see AssertionGuard} reads:
 	 * `{id, inResponseTo, audience, notBefore, notOnOrAfter, subject,
-	 * subType, assuranceLevel, organisation}`.
+	 * subType, assuranceLevel, organisation}`, and for eHerkenning an optional
+	 * `branch`: the twelve-digit vestigingsnummer the login was restricted to.
+	 *
+	 * `subType` is `bsn` for a DigiD BSN (pseudonymised at the callback and
+	 * never passed on), `bsn-pseudonym` for a polymorphic pseudonym the broker
+	 * already decrypted, `kvk` or `rsin` for eHerkenning, and
+	 * `eidas-person-identifier` for eIDAS. `inResponseTo` is the `requestId`
+	 * {@see beginAuthentication()} answered.
 	 *
 	 * @param array<string,mixed> $callback What arrived on the callback endpoint.
 	 *
 	 * @return array<string,mixed> The normalised assertion.
 	 *
 	 * @throws \OCA\Integriq\Exception\IdpAssertionException When the broker is not configured or the callback is unreadable.
+	 *
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
 	 */
 	public function readAssertion(array $callback): array;
 

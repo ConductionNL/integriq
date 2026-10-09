@@ -73,7 +73,7 @@ use Throwable;
 /**
  * Runs the inline-secret migration, then persists the Phase D gate to appconfig.
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
  */
 class RecordInlineSecretMigrationStatus implements IRepairStep {
 
@@ -149,7 +149,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
 	 */
 	public function run(IOutput $output): void {
 		if (class_exists('\\' . self::OR_OBJECT_SERVICE) === false) {
@@ -228,7 +228,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	protected function runMigration(OrObjectService $objectService, InlineSecretMigrationPlanner $planner, IOutput $output): void {
 		try {

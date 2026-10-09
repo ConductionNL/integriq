@@ -24,8 +24,10 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SynchronizationRunProgressService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -68,6 +70,7 @@ class SynchronizationsController extends Controller {
 	 * @param LoggerInterface $logger The logger.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param SynchronizationRunProgressService|null $runProgress The run progress service, for the id of the run just started.
 	 */
 	public function __construct(
 		$appName,
@@ -78,35 +81,48 @@ class SynchronizationsController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
+		private readonly ?SynchronizationRunProgressService $runProgress = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 	}//end __construct()
 
 	/**
-	 * Retrieves call logs for a job.
+	 * List the contracts a synchronization wrote.
 	 *
-	 * This method returns all the call logs associated with a source based on its ID.
+	 * A synchronization is an OpenRegister object, so its id is a UUID. The id
+	 * used to be typed `int`, which cast every UUID to a number that no
+	 * contract carries: the list was always empty.
 	 *
-	 * @param integer $id The ID of the source to retrieve logs for.
+	 * @param string $id The synchronization's UUID.
 	 *
-	 * @return JSONResponse A JSON response containing the call logs.
+	 * @return JSONResponse `{results: [...]}`, one row per contract.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function contracts(int $id): JSONResponse {
+	public function contracts(string $id): JSONResponse {
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
 					'register' => 'integriq',
 					'schema' => 'synchronization_contract',
-					'synchronizationId' => (string)$id,
+					'synchronizationId' => $id,
 				],
 			]
 		);
 		$contracts = ($matches['results'] ?? $matches);
-		return new JSONResponse($contracts);
+
+		$results = [];
+		foreach ($contracts as $contract) {
+			if ($contract instanceof ObjectEntity === true) {
+				$contract = $contract->getObject();
+			}
+
+			$results[] = $contract;
+		}
+
+		return new JSONResponse(['results' => $results]);
 	}//end contracts()
 
 	/**
@@ -362,6 +378,13 @@ class SynchronizationsController extends Controller {
 		// bypass the guard.
 		$forceDeletion = filter_var(($parameters['forceDeletion'] ?? false), FILTER_VALIDATE_BOOLEAN);
 
+		// Only Run again may name the trigger. Anything else is left to the
+		// engine, which reads it from the trace: a browser cannot claim `cron`.
+		$triggeredBy = null;
+		if (($parameters['triggeredBy'] ?? null) === SynchronizationRunProgressService::TRIGGER_RERUN) {
+			$triggeredBy = SynchronizationRunProgressService::TRIGGER_RERUN;
+		}
+
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: $id,
@@ -382,8 +405,16 @@ class SynchronizationsController extends Controller {
 				force: $force,
 				source: $source,
 				data: $data,
-				forceDeletion: $forceDeletion
+				forceDeletion: $forceDeletion,
+				triggeredBy: $triggeredBy
 			);
+
+			// Run again links the run it started (connection-run-monitoring
+			// REQ-CRUN-003), so the answer names the run record's id.
+			$runId = $this->runProgress?->lastRunId();
+			if ($runId !== null && is_array($logAndContractArray) === true) {
+				$logAndContractArray['runId'] = $runId;
+			}
 
 			// Return the result as a JSON response.
 			return new JSONResponse(data: $logAndContractArray, statusCode: 200);
@@ -397,10 +428,15 @@ class SynchronizationsController extends Controller {
 
 			// If synchronization fails, return an error response.
 			return new JSONResponse(
-				data: [
-					'error' => $this->l->t('Synchronization error'),
-					'message' => $e->getMessage(),
-				],
+				data: array_filter(
+					[
+						'error' => $this->l->t('Synchronization error'),
+						'message' => $e->getMessage(),
+						// A run that failed again still has a run record; name it.
+						'runId' => $this->runProgress?->lastRunId(),
+					],
+					static fn ($value): bool => $value !== null
+				),
 				statusCode: 400,
 				headers: $headers
 			);

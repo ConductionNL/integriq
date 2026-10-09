@@ -36,7 +36,7 @@ use RuntimeException;
  * REQ-RSC-001: a refusal is reported in the source's own words, never as a
  * silent nothing.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
 class SubscriptionProviderTest extends TestCase {
 	/**

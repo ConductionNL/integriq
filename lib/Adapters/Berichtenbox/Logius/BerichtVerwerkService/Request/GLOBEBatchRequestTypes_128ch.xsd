@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://schemas.rdw.nl/GEB/BerichtenProsessor/Bericht/Types/2009/01" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://schemas.rdw.nl/GEB/BerichtenProsessor/Bericht/Types/2009/01" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:simpleType name="guid">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="Bericht">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="BerichtInformatie">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="BatchID" type="guid"/>
+							<xs:element name="BerichtID" type="guid">
+								<xs:annotation>
+									<xs:documentation>ID van het bericht. ID is een guid. En moet uniek zijn voor elk afzonderlijk bericht. Deze moet gegenereerd worden door de toeleverancier.</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="BerichtType">
+								<xs:annotation>
+									<xs:documentation>Het type waartoe het bericht hoort. Deze is verplicht.</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+										<xs:maxLength value="8"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="PublicatieDatum" type="xs:dateTime" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>De datumtijd waarop het bericht gepubliceerd mag worden in de berichtenbox. De datumtijd mag maximaal 13 dagen na de aanleverdatum van de batch liggen. Vul geen datumtijd in voor het direct publiceren aan de burger. Bij een lege node of het niet aanwezig zijn van de node, wordt er vanuit gegaan dat het bericht direct gepubliceerd moet worden.</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="EindDatumHandelingsTermijn" type="xs:dateTime" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>
+									De uiterste datumtijd alvorens de handeling welke het bericht de burger vraagt uit
+									te voeren voltrokken dient te zijn. Bijv. een uiterste betaaldatum of de datum waarvoor
+									een reactie verwacht wordt. Deze datum wordt gebruikt voor notificaties waarvoor een
+									handelingstermijn van toepassing is.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="Onderwerp">
+								<xs:annotation>
+									<xs:documentation>Onderwerp van het bericht.</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+										<xs:maxLength value="50"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="BerichtTekst" minOccurs="0">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="4000"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="Referentie" minOccurs="0">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="25"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="GebruikerID">
+								<xs:annotation>
+									<xs:documentation>BSN van de ontvanger (burger).</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="SoortGebruiker">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="Burger"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Bijlagen" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Bijlage" maxOccurs="2">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Inhoud">
+											<xs:annotation>
+												<xs:documentation>De inhoud van de bijlage. base64 geencodeerd. Let op: als er een bestand node is aangemaakt, dan moet ook de inhoud erbij worden gedefinieerd. Is er geen bestand bij het bericht. Dan ook geen bestanden node aanmaken.</xs:documentation>
+											</xs:annotation>
+											<xs:simpleType>
+												<xs:restriction base="xs:base64Binary">
+													<xs:minLength value="1"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="BijlageType">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:enumeration value="Pdf"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="Omschrijving">
+											<xs:annotation>
+												<xs:documentation>De omschrijving van de bijlage.</xs:documentation>
+											</xs:annotation>
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:minLength value="1"/>
+													<xs:maxLength value="128"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="Volgorde" type="xs:int">
+											<xs:annotation>
+												<xs:documentation>De gewenste volgorde van de bijlagen. Bij 1 bijlage hoeft hier alleen 1 te staan. Bij 2 bijlagen wordt in de 1e bijlagenode 1 en in de 2e bijlagenode 2.</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

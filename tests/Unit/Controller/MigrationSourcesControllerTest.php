@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\MigrationSourcesController;
 use OCA\Integriq\Migration\ColumnMappingValidator;
+use OCA\Integriq\Migration\MigrationMappingPresetRegistry;
 use OCA\Integriq\Migration\MigrationPreviewReader;
 use OCA\Integriq\Migration\MigrationSourceAdapterInterface;
 use OCA\Integriq\Migration\MigrationSourceRegistry;
@@ -37,7 +38,7 @@ use PHPUnit\Framework\TestCase;
  * The read-only surface, and the mapping refusal a screen calls before it
  * saves.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+ * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
  */
 class MigrationSourcesControllerTest extends TestCase {
 	/**
@@ -85,7 +86,8 @@ class MigrationSourcesControllerTest extends TestCase {
 			new MigrationPreviewReader($registry),
 			new ColumnMappingValidator(),
 			$session,
-			$actionAuth
+			$actionAuth,
+			new MigrationMappingPresetRegistry()
 		);
 	}//end controller()
 
@@ -100,7 +102,7 @@ class MigrationSourcesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
 	 */
 	public function testACallerWithoutTheActionCannotPreviewASource(): void {
 		$this->expectException(OCSForbiddenException::class);
@@ -112,7 +114,7 @@ class MigrationSourcesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
 	 */
 	public function testAnAnonymousCallerCannotPreviewASource(): void {
 		$response = $this->controller(signedIn: false)->preview('redmine');

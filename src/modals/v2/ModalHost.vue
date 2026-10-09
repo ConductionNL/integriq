@@ -60,6 +60,12 @@
 			:open="configurationExport.open"
 			@close="closeConfigurationExport" />
 		<PromotePreviewModal :open="promotion.open" @close="closePromotion" />
+		<RegistryLookupDialog
+			:open="registryLookup.open"
+			@close="closeRegistryLookup" />
+		<GatewayCatalogueDialog
+			:open="gatewayCatalogue.open"
+			@close="closeGatewayCatalogue" />
 		<LinkSourceDialog
 			:open="linkSource.open"
 			:app="linkSource.app"
@@ -71,8 +77,10 @@
 <script>
 import CatalogItemDetailDialog from '../../dialogs/CatalogItemDetailDialog.vue'
 import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.vue'
+import GatewayCatalogueDialog from '../../dialogs/GatewayCatalogueDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '../../dialogs/LinkSourceDialog.vue'
+import RegistryLookupDialog from '../../dialogs/RegistryLookupDialog.vue'
 import DirectoryRunModal from '../Directory/DirectoryRunModal.vue'
 import PromotePreviewModal from '../PromotePreviewModal.vue'
 import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.vue'
@@ -86,8 +94,10 @@ import {
 	EVENT_OPEN_CONFIGURATION_EXPORT,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_DIRECTORY_RUN,
+	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
@@ -110,6 +120,8 @@ export default {
 		ExportConfigurationDialog,
 		PromotePreviewModal,
 		LinkSourceDialog,
+		RegistryLookupDialog,
+		GatewayCatalogueDialog,
 	},
 
 	data() {
@@ -124,6 +136,8 @@ export default {
 			configurationImport: { open: false },
 			configurationExport: { open: false },
 			promotion: { open: false },
+			registryLookup: { open: false },
+			gatewayCatalogue: { open: false },
 			linkSource: { open: false, app: '' },
 		}
 	},
@@ -139,7 +153,7 @@ export default {
 		'$route.query': {
 			/**
 			 * @param {object} query The current route query.
-			 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
+			 * @spec openspec/specs/connection-registry/spec.md#scenario-the-link-query-opens-the-dialog-pre-filtered
 			 */
 			handler(query) {
 				if (
@@ -171,6 +185,8 @@ export default {
 		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
+		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 	},
 
@@ -186,6 +202,8 @@ export default {
 		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
+		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 	},
 
@@ -328,15 +346,35 @@ export default {
 			this.promotion = { open: false }
 		},
 
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
+		openRegistryLookup() {
+			this.registryLookup = { open: true }
+		},
+
+		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
+		closeRegistryLookup() {
+			this.registryLookup = { open: false }
+		},
+
+		/** @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008 */
+		openGatewayCatalogue() {
+			this.gatewayCatalogue = { open: true }
+		},
+
+		/** @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008 */
+		closeGatewayCatalogue() {
+			this.gatewayCatalogue = { open: false }
+		},
+
 		/**
 		 * @param {object} payload `{ app }`, the app id to pre-filter by.
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-add-integration-opens-the-dialog
 		 */
 		openLinkSource(payload) {
 			this.linkSource = { open: true, app: payload?.app ?? '' }
 		},
 
-		/** @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007 */
+		/** @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007 */
 		closeLinkSource() {
 			this.linkSource = { open: false, app: '' }
 		},
@@ -346,7 +384,7 @@ export default {
 		 * source and probe. The index page re-fetches on any query change, and
 		 * a `_`-prefixed key is never read as a filter.
 		 *
-		 * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
+		 * @spec openspec/specs/connection-registry/spec.md#scenario-linking-a-source-probes-it-straight-away
 		 */
 		onSourceLinked() {
 			if (this.$route?.name !== 'AppConnections') {

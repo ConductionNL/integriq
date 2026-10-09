@@ -33,6 +33,7 @@ use OCA\Integriq\Flow\SourcePaginateNode;
 use OCA\Integriq\Flow\SynchronizationRunNode;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\ResponseDecoder;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Service\SynchronizationService;
@@ -103,7 +104,8 @@ class FlowNodeListenerTest extends TestCase {
 			flowOwner: $flowOwner,
 			l10n: $l10n,
 			urlGenerator: $urlGenerator,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			decoder: new ResponseDecoder()
 		);
 
 		$this->listener = new FlowNodeListener(

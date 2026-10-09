@@ -23,6 +23,7 @@ namespace OCA\Integriq\Controller;
 use InvalidArgumentException;
 use OCA\Integriq\Migration\ColumnMapping;
 use OCA\Integriq\Migration\ColumnMappingValidator;
+use OCA\Integriq\Migration\MigrationMappingPresetRegistry;
 use OCA\Integriq\Migration\MigrationPreviewReader;
 use OCA\Integriq\Migration\MigrationSourceRegistry;
 use OCA\Integriq\Migration\UnknownMigrationSourceException;
@@ -39,7 +40,7 @@ use OCP\IUserSession;
  * Reads only. Nothing here writes to an incumbent system, and nothing here
  * writes to a target: that is the import engine's half.
  *
- * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
+ * @spec openspec/specs/migration-sources/spec.md#requirement-a-read-only-pass-reports-what-a-migration-would-bring-req-msa-004
  */
 class MigrationSourcesController extends Controller {
 	/**
@@ -62,6 +63,10 @@ class MigrationSourcesController extends Controller {
 	 * @param ColumnMappingValidator $validator The column mapping validator.
 	 * @param IUserSession $userSession Who is asking.
 	 * @param ActionAuthService $actionAuth Whether they may.
+	 * @param MigrationMappingPresetRegistry $presetRegistry The seeded
+	 *                                                       named-incumbent
+	 *                                                       column-mapping
+	 *                                                       presets.
 	 */
 	public function __construct(
 		string $appName,
@@ -71,6 +76,7 @@ class MigrationSourcesController extends Controller {
 		private readonly ColumnMappingValidator $validator,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
+		private readonly MigrationMappingPresetRegistry $presetRegistry,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -83,13 +89,36 @@ class MigrationSourcesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-describe-says-what-an-adapter-can-yield
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-describe-says-what-an-adapter-can-yield
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
 		return new JSONResponse(['results' => $this->registry->describeAll()]);
 	}//end index()
+
+	/**
+	 * Every seeded named-incumbent column-mapping preset (ParnasSys,
+	 * ESIS, Magister, Somtoday), for an operator to pick as a
+	 * starting `ColumnMapping` instead of hand-authoring one.
+	 *
+	 * @return JSONResponse The preset inventory.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/migration-mapping-presets/spec.md#requirement-an-operator-can-list-presets-over-the-existing-migration-sources-http-surface-req-002
+	 *
+	 * @no-admin-idor-exempt Pure computation over static seed data. It reads
+	 *   no per-caller storage and names no object: the four presets are
+	 *   the same for every caller. There is no object here to scope to a
+	 *   caller.
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function presets(): JSONResponse {
+		return new JSONResponse(['results' => $this->presetRegistry->describeAll()]);
+	}//end presets()
 
 	/**
 	 * The read-only pass: counts, a sample and whether the read was complete.
@@ -103,7 +132,7 @@ class MigrationSourcesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-an-administrator-sees-the-size-before-committing
 	 *
 	 * @no-admin-idor-exempt The authorization decision is made IN the method:
 	 *     `requireAction(ACTION_PREVIEW)` runs before any read, and an unset action
@@ -162,7 +191,7 @@ class MigrationSourcesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/migration-source-adapters/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+	 * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
 	 *
 	 * @no-admin-idor-exempt Pure computation over the caller's own arguments. It reads no
 	 *   storage and names no object: the mapping, the schema fields and the required fields

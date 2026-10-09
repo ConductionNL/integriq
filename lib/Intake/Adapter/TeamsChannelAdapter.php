@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md
+ * @spec openspec/specs/intake-channels/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
 /**
  * Receives Microsoft Teams activities and answers in the same conversation.
  *
- * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+ * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
  */
 class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 
@@ -104,7 +104,7 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 *
 	 * @return string The channel id.
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function getChannelId(): string {
 		return self::CHANNEL_ID;
@@ -116,7 +116,7 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 *
 	 * @return ChannelCapabilities The capabilities.
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function describe(): ChannelCapabilities {
 		return new ChannelCapabilities(
@@ -138,7 +138,7 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 *
 	 * @throws IntakeChannelException When the activity names no message id, no author or no conversation.
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function receive(array $payload): InboundMessage {
 		$externalId = trim((string)($payload['id'] ?? ''));
@@ -212,7 +212,7 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 *
 	 * @return ReplyResult What happened.
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	public function reply(InboundMessage $message, string $text): ReplyResult {
 		$conversationId = $this->conversationOf(message: $message);
@@ -481,7 +481,7 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 *
 	 * @return boolean Whether the destination is trusted.
 	 *
-	 * @spec openspec/changes/teams-messages-open-cases/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	private function isTrustedServiceUrl(string $serviceUrl, array $configuration): bool {
 		$parts = parse_url($serviceUrl);

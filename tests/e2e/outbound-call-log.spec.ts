@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md
+ * Spec coverage: openspec/specs/outbound-call-log/spec.md
  *
  * What an administrator does with the call log: find the failure without a
  * container log, look at what a replay would send, replay it, fire one by

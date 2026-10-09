@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ class FakeCategoryAdapter extends AbstractCategoryAdapterProvider {
  * Tests for the shared category-adapter base class's capability-vocabulary
  * + health-check + credential-broker contract, using {@see FakeCategoryAdapter}.
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
  */
 class AbstractCategoryAdapterProviderTest extends TestCase {
 

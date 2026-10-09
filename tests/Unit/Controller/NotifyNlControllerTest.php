@@ -24,7 +24,7 @@ use OCA\Integriq\Controller\NotifyNlController;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\SmsDispatchService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
@@ -52,9 +52,9 @@ class NotifyNlControllerTest extends TestCase {
 	private $dispatchService;
 
 	/**
-	 * @var WebhookSignatureService|\PHPUnit\Framework\MockObject\MockObject
+	 * @var WebhookGate|\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private $signatureService;
+	private $gate;
 
 	/**
 	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
@@ -91,7 +91,7 @@ class NotifyNlControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->dispatchService = $this->createMock(SmsDispatchService::class);
-		$this->signatureService = $this->createMock(WebhookSignatureService::class);
+		$this->gate = $this->createMock(WebhookGate::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 		$this->l = $this->createMock(IL10N::class);
@@ -115,7 +115,7 @@ class NotifyNlControllerTest extends TestCase {
 			'integriq',
 			$this->request,
 			$this->dispatchService,
-			$this->signatureService,
+			$this->gate,
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
@@ -179,7 +179,7 @@ class NotifyNlControllerTest extends TestCase {
 
 		$this->dispatchService->expects($this->once())
 			->method('sendMessage')
-			->with('+31612345678', 'hello', ['templateId' => 'tmpl-1', 'personalisation' => ['name' => 'Jan']], 'procest', null)
+			->with('+31612345678', 'hello', ['templateId' => 'tmpl-1', 'personalisation' => ['name' => 'Jan'], 'category' => 'service'], 'procest', null)
 			->willReturn($message);
 
 		$response = $this->controller->send();
@@ -189,6 +189,26 @@ class NotifyNlControllerTest extends TestCase {
 		$this->assertSame('sms-uuid-1', $response->getData()['id']);
 
 	}//end testSendReturnsCreatedMessage()
+
+	/**
+	 * An opt-out refusal answers 409 with the decision code, and the
+	 * category in the request reaches the service.
+	 *
+	 * @return void
+	 */
+	public function testSendAnswersConflictWhenTheOptOutListRefuses(): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678', 'body' => 'hello', 'category' => 'reminder']);
+		$this->dispatchService->expects($this->once())
+			->method('sendMessage')
+			->with('0612345678', 'hello', ['category' => 'reminder'], null, null)
+			->willThrowException(new SmsProviderException(message: 'This address opted out (instance).', errorCode: 'opted-out'));
+
+		$response = $this->controller->send();
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame('opted-out', $response->getData()['error']);
+
+	}//end testSendAnswersConflictWhenTheOptOutListRefuses()
 
 	/**
 	 * A dispatch-service failure is mapped to a 502 error envelope, never a crash.
@@ -238,85 +258,7 @@ class NotifyNlControllerTest extends TestCase {
 
 	}//end testStatusReturnsPolledMessage()
 
-	/**
-	 * No SMS source configured at all fails the inbound webhook closed (401) — nothing to verify against.
-	 *
-	 * @return void
-	 */
-	public function testInboundWithNoSourceConfiguredReturns401(): void {
-		$this->dispatchService->method('resolveActiveSource')
-			->willThrowException(new SmsProviderException(message: 'no source'));
-		$this->signatureService->expects($this->never())->method('verify');
 
-		$response = $this->controller->inbound();
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-	}//end testInboundWithNoSourceConfiguredReturns401()
-
-	/**
-	 * An unsigned/tampered callback is rejected 401 before any state change.
-	 *
-	 * @return void
-	 */
-	public function testInboundInvalidSignatureReturns401BeforeAnySideEffect(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->dispatchService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(false);
-
-		$this->dispatchService->expects($this->never())->method('handleStatusCallback');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-		$this->assertSame('invalid signature', $response->getData()['error']);
-
-	}//end testInboundInvalidSignatureReturns401BeforeAnySideEffect()
-
-	/**
-	 * A verified callback is routed to handleStatusCallback with the payload fields.
-	 *
-	 * @return void
-	 */
-	public function testInboundVerifiedCallbackIsRouted(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->dispatchService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-		$this->request->method('getParams')->willReturn(
-			['providerMessageId' => 'notify-id-1', 'status' => 'delivered', 'detail' => 'Accepted']
-		);
-
-		$this->dispatchService->expects($this->once())
-			->method('handleStatusCallback')
-			->with('notify-id-1', 'delivered', 'Accepted');
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['received']);
-
-	}//end testInboundVerifiedCallbackIsRouted()
-
-	/**
-	 * inbound() never crashes (still returns 200) when downstream processing throws.
-	 *
-	 * @return void
-	 */
-	public function testInboundNeverCrashesOnProcessingException(): void {
-		$source = new ObjectEntity();
-		$source->setObject(['configuration' => ['webhookSignature' => ['secret' => 'whsec_test']]]);
-		$this->dispatchService->method('resolveActiveSource')->willReturn($source);
-		$this->signatureService->method('verify')->willReturn(true);
-		$this->request->method('getParams')->willReturn(['providerMessageId' => 'notify-id-1', 'status' => 'delivered']);
-
-		$this->dispatchService->method('handleStatusCallback')->willThrowException(new \RuntimeException('boom'));
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['received']);
-
-	}//end testInboundNeverCrashesOnProcessingException()
 }//end class

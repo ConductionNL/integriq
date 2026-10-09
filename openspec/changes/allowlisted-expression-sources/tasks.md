@@ -46,6 +46,11 @@ cluster 4. Waits on nothing.
       stored, never returned and never logged. Not even "is it set": telling a
       reader which allowlisted variables happen to be populated is a map of what
       is worth asking for.
+- [x] The screen (29 Sep): `src/views/admin/ExpressionSourceSettings.vue` on
+      integriq's admin settings page lists each name with who added it and
+      when, adds a name by its exact spelling, shows a refusal as the backend
+      words it, and removes a name. No value and no "is it set". Test:
+      `tests/vitest/expressionSourceSettings.spec.js` (5).
 - [x] Test. The least privileged principal that should be refused is probed:
       an ordinary signed-in user adding `DATABASE_PASSWORD` gets 403 and the
       list is unchanged. A test also asserts BOTH guards are present on all
@@ -64,6 +69,7 @@ cluster 4. Waits on nothing.
       recorder is the caller; wiring it wants that change's owner, and asserting
       "the buffer holds no value" wants the recorder rather than a double.
 - [ ] Test, with the wiring above.
+  - STATE 29 Sep: nothing in integriq resolves an `env:` reference while a trace records (see the rule-pipeline measurement under task 6), so there is no value in reach of the recorder yet. The first caller is openregister's evaluator (openregister#4169); the redaction call lands with it.
 
 ### Task 5: Declared write capability
 - **spec_ref**: `openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md#requirement-writing-back-is-declared-and-absent-unless-declared-req-evs-005`
@@ -77,7 +83,8 @@ cluster 4. Waits on nothing.
 
 ### Task 6: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, this change's row in `competitor-parity-2026-09`
-- [ ] Tell the openregister lane that the prefix registry exists, so `field-rules-by-state`, `lifecycle-declarative-conditions` and the JSON-AST evaluator ask it rather than reading the environment themselves
-- [ ] Say in the same message that C-access-and-privacy-40 sits in cluster 4, which is openregister's, and that this change takes only the source half
-- [ ] Point `rule-pipeline` and `flow-token-helper` at the registry so integriq has one reach outward and not three
+- [x] (openregister#4169, 29 Sep) Tell the openregister lane that the prefix registry exists, so `field-rules-by-state`, `lifecycle-declarative-conditions` and the JSON-AST evaluator ask it rather than reading the environment themselves
+- [x] (openregister#4169) Say in the same message that C-access-and-privacy-40 sits in cluster 4, which is openregister's, and that this change takes only the source half
+- [x] Point `rule-pipeline` and `flow-token-helper` at the registry so integriq has one reach outward and not three
+  - MEASURED 29 Sep: neither reads the environment today (`grep -rn 'getenv(\|$_ENV' lib` finds only the two storage-migration bypass flags in `Application.php`), so the registry is already integriq's only reach. Letting a rule configuration or a flow token name `env:` is a new feature, not a repoint, and is not specified here.
 - [ ] Test (`tests/e2e/expression-value-sources.spec.ts`, `openspec validate allowlisted-expression-sources --type change --strict`)

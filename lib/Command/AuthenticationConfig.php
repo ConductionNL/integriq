@@ -90,7 +90,7 @@ use Throwable;
 /**
  * Audits (default) and, behind an explicit flag, removes the vestigial authenticationConfig.
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
  */
 class AuthenticationConfig extends Command {
 
@@ -188,7 +188,7 @@ class AuthenticationConfig extends Command {
 	 *
 	 * @return integer 0 on success; non-zero on a validation failure or a refused run.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$io = new SymfonyStyle($input, $output);
@@ -232,7 +232,7 @@ class AuthenticationConfig extends Command {
 	 *
 	 * @return integer Command::SUCCESS, or Command::FAILURE when the audit could not run.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	private function runAudit(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
 		try {
@@ -260,7 +260,7 @@ class AuthenticationConfig extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	private function renderAudit(SymfonyStyle $io, array $report): void {
 		$rows = [];
@@ -334,7 +334,7 @@ class AuthenticationConfig extends Command {
 	 *
 	 * @return integer Command::SUCCESS, or Command::FAILURE when a source failed.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
 	 */
 	private function runRemove(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
 		try {
@@ -388,7 +388,7 @@ class AuthenticationConfig extends Command {
 	 *
 	 * @return integer Command::SUCCESS, or Command::FAILURE when refused.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
 	 */
 	private function runDropSchemaProperty(SymfonyStyle $io, int $limit): int {
 		try {

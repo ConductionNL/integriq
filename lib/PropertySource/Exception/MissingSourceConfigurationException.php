@@ -23,7 +23,7 @@ namespace OCA\Integriq\PropertySource\Exception;
 /**
  * A configuration error, raised before any HTTP call is attempted.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-bag-brp-and-kvk-bind-to-sources-that-already-exist-req-rfs-006
  */
 class MissingSourceConfigurationException extends PropertySourceException {
 	/**

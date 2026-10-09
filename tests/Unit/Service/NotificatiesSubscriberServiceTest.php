@@ -23,6 +23,8 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\Integriq\Service\SourceDestructionService;
+use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\IURLGenerator;
@@ -419,6 +421,166 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 		);
 
 	}//end testHandleInboundNotificationEmitsCloudEvent()
+
+	/**
+	 * An inbound notification reaches the ZGW pull listener after its CloudEvent, unchanged.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 */
+	public function testHandleInboundNotificationHandsItToTheZgwPull(): void {
+		$order    = [];
+		$listener = $this->createMock(\OCA\Integriq\Service\Zgw\ZgwNotificationPullListener::class);
+		$listener->expects($this->once())->method('handle')->willReturnCallback(
+			function (array $notification) use (&$order) {
+				$order[] = 'pull';
+				$this->assertSame('https://zaken.example/api/v1/zaken/uuid-1', $notification['hoofdObject']);
+				$this->assertArrayNotHasKey('abonnementId', $notification);
+				return $notification['hoofdObject'];
+			}
+		);
+		$this->eventService->method('emitCloudEvent')->willReturnCallback(
+			function () use (&$order) {
+				$order[] = 'cloudevent';
+				return [];
+			}
+		);
+		$logger  = $this->createMock(LoggerInterface::class);
+		$service = new NotificatiesSubscriberService(
+			$this->objectService,
+			$this->callService,
+			$this->eventService,
+			new WebhookSignatureService($logger),
+			$this->urlGenerator,
+			$logger,
+			$listener
+		);
+
+		$service->handleInboundNotification(
+			'abon-1',
+			[
+				'kanaal' => 'zaken',
+				'hoofdObject' => 'https://zaken.example/api/v1/zaken/uuid-1',
+				'resource' => 'status',
+				'resourceUrl' => 'https://zaken.example/api/v1/statussen/uuid-2',
+				'actie' => 'create',
+				'aanmaakdatum' => '2026-10-02T09:12:44Z',
+				'kenmerken' => [],
+			]
+		);
+
+		$this->assertSame(['cloudevent', 'pull'], $order);
+	}//end testHandleInboundNotificationHandsItToTheZgwPull()
+
+	/**
+	 * The service on an abonnement of the DMS source, with the real destruction service behind it.
+	 *
+	 * @param SynchronizationService $engine The engine the destruction service hands the notice to.
+	 *
+	 * @return NotificatiesSubscriberService
+	 */
+	private function serviceWithDestruction(SynchronizationService $engine): NotificatiesSubscriberService {
+		$abonnement = ObjectServiceMockBuilder::objectEntity($this, ['sourceId' => 'source-uuid-dms', 'consumerId' => 'consumer-1'], 'abon-1');
+		$sync = ObjectServiceMockBuilder::objectEntity($this, ['sourceId' => 'source-uuid-dms', 'targetType' => 'register/schema'], 'sync-1');
+
+		$objects = $this->getMockBuilder(\OCA\OpenRegister\Service\ObjectService::class)->disableOriginalConstructor()->getMock();
+		$objects->method('find')->willReturnCallback(fn (...$args) => ((string)$args[0] === 'abon-1') ? $abonnement : null);
+		$objects->method('findAll')->willReturn(['results' => [$sync]]);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$this->eventService->method('emitCloudEvent')->willReturn([]);
+
+		return new NotificatiesSubscriberService(
+			$objects,
+			$this->callService,
+			$this->eventService,
+			new WebhookSignatureService($logger),
+			$this->urlGenerator,
+			$logger,
+			null,
+			new SourceDestructionService($objects, $engine, $logger)
+		);
+	}//end serviceWithDestruction()
+
+	/**
+	 * A ZGW notification with actie destroy hands the document to the destruction path of the abonnement's source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	public function testADestroyNotificationReachesTheDestructionPath(): void {
+		$url    = 'https://drc.example.nl/api/v1/enkelvoudiginformatieobjecten/doc-2';
+		$engine = $this->createMock(SynchronizationService::class);
+		$engine->expects($this->once())->method('applySourceDestruction')->willReturnCallback(
+			function ($synchronization, array $originIds, ?string $reference) use ($url): array {
+				$this->assertSame('sync-1', $synchronization->getUuid(), 'The synchronization of the abonnement\'s source.');
+				$this->assertSame([$url, 'doc-2'], $originIds, 'The resource URL, then its last path segment.');
+				$this->assertSame($url, $reference);
+				return ['outcome' => 'purged', 'synchronizationId' => 'sync-1', 'originId' => 'doc-2', 'targetId' => 'pub-2'];
+			}
+		);
+
+		$this->serviceWithDestruction($engine)->handleInboundNotification(
+			'abon-1',
+			[
+				'kanaal' => 'documenten',
+				'hoofdObject' => $url,
+				'resource' => 'enkelvoudiginformatieobject',
+				'resourceUrl' => $url,
+				'actie' => 'destroy',
+				'aanmaakdatum' => '2026-10-04T09:12:44Z',
+				'kenmerken' => [],
+			]
+		);
+	}//end testADestroyNotificationReachesTheDestructionPath()
+
+	/**
+	 * Any other actie never reaches the destruction path.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	public function testAnUpdateNotificationDoesNotReachTheDestructionPath(): void {
+		$engine = $this->createMock(SynchronizationService::class);
+		$engine->expects($this->never())->method('applySourceDestruction');
+
+		$this->serviceWithDestruction($engine)->handleInboundNotification(
+			'abon-1',
+			[
+				'kanaal' => 'documenten',
+				'resource' => 'enkelvoudiginformatieobject',
+				'resourceUrl' => 'https://drc.example.nl/api/v1/enkelvoudiginformatieobjecten/doc-2',
+				'actie' => 'update',
+			]
+		);
+	}//end testAnUpdateNotificationDoesNotReachTheDestructionPath()
+
+	/**
+	 * A failing destruction path never fails the notification: it was received.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	public function testAFailingDestructionDoesNotFailTheNotification(): void {
+		$engine = $this->createMock(SynchronizationService::class);
+		$engine->method('applySourceDestruction')->willThrowException(new \RuntimeException('OpenRegister is down'));
+
+		$messages = $this->serviceWithDestruction($engine)->handleInboundNotification(
+			'abon-1',
+			[
+				'kanaal' => 'documenten',
+				'resource' => 'enkelvoudiginformatieobject',
+				'resourceUrl' => 'https://drc.example.nl/api/v1/enkelvoudiginformatieobjecten/doc-2',
+				'actie' => 'destroy',
+			]
+		);
+
+		$this->assertSame([], $messages);
+	}//end testAFailingDestructionDoesNotFailTheNotification()
 
 	/**
 	 * TC-8/REQ-003: a malformed notification body (missing kanaal) is

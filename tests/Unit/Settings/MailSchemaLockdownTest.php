@@ -33,19 +33,22 @@ class MailSchemaLockdownTest extends TestCase {
 	 * Every schema the review found open, including `sender_identity`, which is
 	 * closed by its own fragment because it also held a secret.
 	 *
+	 * `intake_message` and `verdict` left this list on 2026-10-05: they grant
+	 * their intake and handler groups now (intake-message-and-verdict-access-rules,
+	 * guarded by IntakeRecordAuthorizationTest).
+	 * `digitalPostMessage` and `outbound_message` left it on 2026-10-07: they
+	 * grant the digital post account's group now
+	 * (digital-post-service-account-and-log-redaction, same guard).
+	 *
 	 * @var array<int,string>
 	 */
 	private const LOCKED_SCHEMAS = [
-		'digitalPostMessage',
-		'intake_message',
 		'intake_routing_rule',
 		'mail_message',
 		'mapping_version',
-		'outbound_message',
 		'recipient_key',
 		'recipient_opt_out',
 		'sender_identity',
-		'verdict',
 	];
 
 	/**
@@ -94,7 +97,7 @@ class MailSchemaLockdownTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testEverySchemaDeclaresAnAuthorizationBlock(): void {
 		foreach (self::LOCKED_SCHEMAS as $name) {
@@ -118,7 +121,7 @@ class MailSchemaLockdownTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testNoSchemaUsesAnEmptyBlockWhichWouldCloseNothing(): void {
 		foreach (self::LOCKED_SCHEMAS as $name) {
@@ -139,7 +142,7 @@ class MailSchemaLockdownTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testEveryActionIsDeclaredAndGrantedToNobody(): void {
 		foreach (self::LOCKED_SCHEMAS as $name) {
@@ -166,7 +169,7 @@ class MailSchemaLockdownTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testTheLockdownLivesInAFragmentNotTheBaseRegister(): void {
 		$root = dirname(__DIR__, 3);
@@ -190,7 +193,7 @@ class MailSchemaLockdownTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lock-down-mail-schema-reads/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-message-is-not-readable-by-everyone-who-can-log-in-req-mail-010
 	 */
 	public function testEachLockdownFragmentExplainsItself(): void {
 		$root = dirname(__DIR__, 3);

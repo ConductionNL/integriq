@@ -28,7 +28,7 @@ use OCP\IAppConfig;
  * OpenRegister, which is the whole point of superseding the store-and-copy
  * design.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
 class SubscriptionRoster {
 	/**
@@ -56,7 +56,7 @@ class SubscriptionRoster {
 	 *
 	 * @return array<string,string> Identity value to subscription reference.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function identities(string $registryId): array {
 		$raw = $this->appConfig->getValueString(self::APP_ID, (self::KEY_PREFIX . $registryId), '{}');
@@ -78,7 +78,7 @@ class SubscriptionRoster {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function add(string $registryId, string $identity, string $reference = ''): void {
 		$roster = $this->identities(registryId: $registryId);
@@ -94,7 +94,7 @@ class SubscriptionRoster {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function remove(string $registryId, string $identity): void {
 		$roster = $this->identities(registryId: $registryId);

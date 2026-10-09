@@ -74,6 +74,13 @@ class DeliveryRequestedEvent extends Event {
 	private int $matchedSubscriptions = 0;
 
 	/**
+	 * The opt-out refusal, when the delivery named a person who may not be sent it.
+	 *
+	 * @var array<string,mixed>|null
+	 */
+	private ?array $refusal = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $sourceApp The requesting app id (e.g. `dossiq`).
@@ -298,4 +305,29 @@ class DeliveryRequestedEvent extends Event {
 	public function getMatchedSubscriptions(): int {
 		return $this->matchedSubscriptions;
 	}//end getMatchedSubscriptions()
+
+	/**
+	 * Record that the opt-out list refused the delivery (opt-out-before-send).
+	 *
+	 * @param string $reason Why.
+	 * @param string $code The decision code, for example `opted-out`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	public function setRefusal(string $reason, string $code): void {
+		$this->refusal = ['code' => $code, 'reason' => $reason];
+	}//end setRefusal()
+
+	/**
+	 * The opt-out refusal, when there was one.
+	 *
+	 * @return array<string,mixed>|null The refusal.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	public function getRefusal(): ?array {
+		return $this->refusal;
+	}//end getRefusal()
 }//end class

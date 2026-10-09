@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md
+ * @spec openspec/specs/events-cloudevents/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
 /**
  * The transport that refuses instead of pretending.
  *
- * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
+ * @spec openspec/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
  */
 class LogBrokerTransport implements BrokerTransportInterface {
 
@@ -63,7 +63,7 @@ class LogBrokerTransport implements BrokerTransportInterface {
 	 *
 	 * @return string The broker id.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
 	 */
 	public function getId(): string {
 		return self::BROKER_ID;
@@ -75,7 +75,7 @@ class LogBrokerTransport implements BrokerTransportInterface {
 	 *
 	 * @return array<string,mixed> The description.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
 	 */
 	public function describe(): array {
 		return [
@@ -95,7 +95,7 @@ class LogBrokerTransport implements BrokerTransportInterface {
 	 *
 	 * @return BrokerResult Always a refusal.
 	 *
-	 * @spec openspec/changes/event-broker-transport/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-an-unconfigured-broker-refuses-rather-than-reporting-success-req-016
 	 */
 	public function publish(BrokerPublication $publication, array $configuration): BrokerResult {
 		$this->logger->warning(

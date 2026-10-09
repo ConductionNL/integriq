@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:StUF="http://www.egem.nl/StUF/StUF0301">
+  <soap:Body>
+    <StUF:Bv03Bericht>
+      <StUF:stuurgegevens>
+        <StUF:berichtcode>Bv03</StUF:berichtcode>
+        <StUF:zender>
+          <StUF:organisatie>0363</StUF:organisatie>
+          <StUF:applicatie>ZSH</StUF:applicatie>
+        </StUF:zender>
+        <StUF:ontvanger>
+          <StUF:organisatie>0363</StUF:organisatie>
+          <StUF:applicatie>integriq</StUF:applicatie>
+        </StUF:ontvanger>
+        <StUF:referentienummer>ZSH-77311</StUF:referentienummer>
+        <StUF:tijdstipBericht>20261005093013</StUF:tijdstipBericht>
+        <StUF:crossRefnummer>ZDS-REQUEST</StUF:crossRefnummer>
+      </StUF:stuurgegevens>
+    </StUF:Bv03Bericht>
+  </soap:Body>
+</soap:Envelope>

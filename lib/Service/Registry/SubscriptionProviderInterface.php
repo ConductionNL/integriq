@@ -23,7 +23,7 @@ namespace OCA\Integriq\Service\Registry;
 /**
  * Subscribe, unsubscribe, and ask what changed since last time.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
 interface SubscriptionProviderInterface {
 	/**

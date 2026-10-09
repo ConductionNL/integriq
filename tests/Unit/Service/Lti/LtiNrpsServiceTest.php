@@ -30,7 +30,8 @@ use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\AuthenticationService;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Lti\LtiAgsService;
@@ -83,13 +84,13 @@ class LtiNrpsServiceTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * @return AuthorizationService
+	 * @return OpenRegisterCredentialBridge
 	 */
-	private function makeAuthorizationService(): AuthorizationService {
+	private function makeAuthorizationService(): OpenRegisterCredentialBridge {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn(new ArrayCache());
 
-		return new AuthorizationService(
+		return OpenRegisterCredentials::bridge(
 			$this->createMock(IUserManager::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(ObjectService::class),
@@ -155,7 +156,7 @@ class LtiNrpsServiceTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturnCallback(fn () => new ArrayCache());
 
-		$keyService = new LtiKeyService($this->createMock(ObjectService::class), new NullLogger());
+		$keyService = new LtiKeyService($this->createMock(ObjectService::class), new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$launchService = new LtiLaunchService($resolver, $this->makeAuthorizationService(), $jwksResolver, $keyService, $cacheFactory, new NullLogger());
 
 		$agsService = new LtiAgsService(

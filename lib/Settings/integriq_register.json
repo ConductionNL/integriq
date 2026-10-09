@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.1"
+    "version": "1.1.5"
   },
   "x-openregister": {
     "type": "application",
@@ -25,6 +25,7 @@
           "call_log",
           "cardfeed_account",
           "cardfeed_batch",
+          "column_mapping",
           "consumer",
           "dso_message",
           "dso_verzoek",
@@ -56,6 +57,7 @@
           "recipient_key",
           "recipient_opt_out",
           "ris_sync_record",
+          "rod_message",
           "rule",
           "sender_identity",
           "sms_message",
@@ -68,7 +70,10 @@
           "verdict",
           "synchronization_log",
           "zgw_version_translation_log",
-          "digitalPostMessage"
+          "digitalPostMessage",
+          "verzuim_message",
+          "oso_message",
+          "uwlr_eduv_message"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -146,7 +151,8 @@
               "psd2",
               "sms",
               "soap",
-              "dso"
+              "dso",
+              "case-system"
             ],
             "title": "Type"
           },
@@ -413,6 +419,62 @@
         "appendOnly": false,
         "immutable": false
       },
+      "column_mapping": {
+        "slug": "column_mapping",
+        "title": "Column mapping",
+        "icon": "TableArrowRight",
+        "version": "1.0.0",
+        "summary": "How the columns of a delivered file map onto the fields of a schema",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "description": "Write a column mapping once and pick it again for every delivery with the same columns. Each save raises the version by one. A migration test run reads a file through it and writes nothing.",
+        "required": [
+          "name",
+          "columns",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name you pick the mapping by",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record the mapping produces, such as case",
+            "title": "Record kind"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The schema the columns map onto",
+            "title": "Target schema"
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Each column of the file and the field it fills",
+            "title": "Columns"
+          },
+          "identifierColumn": {
+            "type": "string",
+            "description": "The column that holds each record's number in the old system. Leave it empty when the file has none.",
+            "title": "Identifier column"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Goes up by one each time the mapping is saved",
+            "title": "Version"
+          }
+        }
+      },
       "consumer": {
         "slug": "consumer",
         "title": "Consumer",
@@ -482,7 +544,7 @@
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that created the consumer (null for system-created)",
+            "description": "The Nextcloud account this consumer acts as. AuthorizationService::authorizeApiKey() makes it the active user, and the DSO STAM intake writes every verzoek as it (dso-stam consumers). Empty: an apiKey consumer authenticates as itself; a dso-stam consumer refuses pushes with 503.",
             "title": "User ID"
           },
           "rateLimit": {
@@ -801,10 +863,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -815,7 +875,7 @@
         },
         "title": "EventMessage",
         "icon": "EmailFast",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A delivery record for an Event-to-Subscription match",
         "description": "An EventMessage is created when an Event matches an EventSubscription. It tracks delivery state per (Event × Subscription × Consumer) tuple. See local ADR-013.",
         "required": [],
@@ -927,6 +987,11 @@
                   "type": "string",
                   "description": "Transport/exception message, or null on an HTTP-level outcome",
                   "title": "Error Message"
+                },
+                "signed": {
+                  "type": "boolean",
+                  "description": "Whether this attempt carried an X-OpenConnector-Signature header",
+                  "title": "Signed"
                 }
               }
             },
@@ -975,7 +1040,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -1034,7 +1099,7 @@
           },
           "protocolSettings": {
             "type": "object",
-            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted).",
+            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface. A new push subscription is created with one unless `unsigned` is set; later it changes only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted); `unsigned` (object `{reason, setBy, setAt}`: deliver without a signature; refused without a reason).",
             "title": "Protocol Settings"
           },
           "style": {
@@ -1182,6 +1247,17 @@
             "description": "Nextcloud user id that owns the subscription",
             "title": "User ID"
           },
+          "signingPosture": {
+            "type": "string",
+            "enum": ["signed", "unsigned"],
+            "description": "Whether a push delivery carries a signature. Written on save from protocolSettings, which is hidden on every read.",
+            "title": "Signature"
+          },
+          "unsignedReason": {
+            "type": "string",
+            "description": "Why this subscription delivers unsigned, as the person who turned signing off wrote it.",
+            "title": "Reason for unsigned delivery"
+          },
           "created": {
             "type": "string",
             "format": "date-time",
@@ -1224,10 +1300,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -1520,7 +1594,7 @@
         "slug": "rule",
         "title": "Rule",
         "icon": "Filter",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
         "required": [
@@ -1573,7 +1647,8 @@
           },
           "type": {
             "type": "string",
-            "description": "Rule kind (authorization, transformation, validation, audit)",
+            "description": "What the rule does when it runs. Integriq runs no scripts, so JavaScript is not a choice.",
+            "enum": ["error", "mapping", "synchronization", "authentication", "download", "upload", "locking", "fetch_file", "write_file", "fileparts_create", "filepart_upload", "save_object", "extend_input", "extend_external_input", "webhook_signature", "approval", "flow", "audit_trail", "override", "custom", "composite_fanout", "referentienummer", "avg_bsn_policy", "selfurl_hal"],
             "title": "Type"
           },
           "configuration": {
@@ -1621,7 +1696,7 @@
         "slug": "synchronization",
         "title": "Synchronization",
         "icon": "Sync",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",
         "required": [
@@ -1823,6 +1898,23 @@
             "type": "object",
             "description": "Optional per-Synchronization override of the dispatching Source's `retryPolicy` (all keys optional; same shape: maxAttempts, backoffStrategy, baseDelayMs, maxDelayMs, jitter, retryableStatusCodes, retryOnTimeout). Copied by SynchronizationService into `$config['retryPolicy']` before calling CallService::call, so it overrides the Source's own retryPolicy per-key ONLY for calls made in this synchronization's context; a direct (non-synchronization) call against the same Source is unaffected.",
             "title": "Retry Policy Override"
+          },
+          "writeBack": {
+            "type": "object",
+            "description": "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent.",
+            "title": "Write-back",
+            "properties": {
+              "onSuccess": {
+                "type": "object",
+                "description": "Fields to set when the target accepted the object",
+                "title": "On success"
+              },
+              "onFailure": {
+                "type": "object",
+                "description": "Fields to set when the target refused the object or could not be reached",
+                "title": "On failure"
+              }
+            }
           }
         },
         "x-openregister-mcp": {
@@ -2001,10 +2093,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2275,10 +2365,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2429,9 +2517,22 @@
         "slug": "verdict",
         "title": "Verdict",
         "icon": "Gavel",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
-        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/specs/outbound-call-log/spec.md.",
+        "authorization": {
+          "create": [
+            "verdicts-intake"
+          ],
+          "read": [
+            "verdicts-behandelaars"
+          ],
+          "update": [
+            "verdicts-intake",
+            "verdicts-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "objectRef",
           "state",
@@ -2494,10 +2595,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3288,10 +3387,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3431,10 +3528,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3628,10 +3723,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3802,10 +3895,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3824,7 +3915,7 @@
         "icon": "SourceBranch",
         "version": "1.0.0",
         "summary": "A snapshot of a mapping as it stood when a call ran under it",
-        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/specs/outbound-call-log/spec.md.",
         "required": [
           "mapping",
           "version"
@@ -3860,7 +3951,7 @@
         "icon": "EmailOutline",
         "version": "1.0.0",
         "summary": "One mail message integriq received, from a mailbox poll or an imported .eml/.msg file",
-        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md.",
+        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/specs/mail-intake/spec.md.",
         "required": [
           "sourceId",
           "messageId",
@@ -3984,7 +4075,19 @@
         "slug": "digitalPostMessage",
         "title": "Digital Post Message",
         "icon": "EmailOutline",
-        "version": "1.0.0",
+        "version": "1.2.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "Audit and lifecycle record for one letter sent through a configured digital post source",
         "description": "A Digital Post Message tracks one letter a fleet app asked integriq to send, from queued through the provider's acceptance to whatever became of it. A failed send keeps the message and its attachments, so the letter can be retried rather than rewritten. See openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002.",
         "required": [
@@ -4062,6 +4165,41 @@
             "type": "string",
             "description": "Caller-generated id, echoed on every status change",
             "title": "Correlation ID"
+          },
+          "category": {
+            "type": "string",
+            "description": "The letter's category (besluit, case-update, statutory, service), as the sending app gave it",
+            "title": "Category"
+          },
+          "caseRef": {
+            "type": "string",
+            "description": "The case the letter belongs to, when the sending app named one",
+            "title": "Case Reference"
+          },
+          "batchId": {
+            "type": "string",
+            "description": "Berichtenbox: the BatchID GUID of the GLOBE-R-BV-Request batch that carried the letter",
+            "title": "Batch Id"
+          },
+          "transportMessageId": {
+            "type": "string",
+            "description": "Berichtenbox: the ebMS message id the adapter sent the batch under",
+            "title": "Transport Message Id"
+          },
+          "berichtType": {
+            "type": "string",
+            "description": "Berichtenbox: the BerichtType code the letter was sent under",
+            "title": "Bericht Type"
+          },
+          "resultCode": {
+            "type": "string",
+            "description": "Berichtenbox: the VerwerkingsCode Logius answered, for example Verwerkt or NietActiefOfGeabonneerd",
+            "title": "Result Code"
+          },
+          "resultStage": {
+            "type": "string",
+            "description": "Berichtenbox: the Stadium Logius answered with the code",
+            "title": "Result Stage"
           },
           "providerReference": {
             "type": "string",
@@ -4350,10 +4488,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -4371,9 +4507,22 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.0.0",
-        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
-        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "version": "1.6.0",
+        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping; the case system makes the case",
+        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped | failed, isolated per verzoek. Integriq declares no case handoff: the case system (dossiq) reads the mapped verzoek and makes one case on the case type in mappedCaseTypes. handed_off survives only on records from the retired manual handoff. See openspec/changes/retire-dso-case-handoff.",
+        "authorization": {
+          "create": [
+            "dso-intake"
+          ],
+          "read": [
+            "dso-behandelaars"
+          ],
+          "update": [
+            "dso-intake",
+            "dso-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "verzoekId",
           "status"
@@ -4457,38 +4606,237 @@
             "format": "date-time",
             "description": "ISO 8601 timestamp this verzoek was received on the STAM koppelvlak",
             "title": "Received At"
-          }
-        },
-        "x-openregister-handoff": [
-          {
-            "id": "verzoek-to-case",
-            "targetSemanticType": "https://openregister.app/ns#Case",
-            "trigger": "manual",
-            "mapping": {
-              "title": {
-                "from": "mappedTitle"
-              },
-              "summary": {
-                "from": "mappedSummary"
-              },
-              "channel": {
-                "from": "mappedChannel"
-              },
-              "source": {
-                "provenance": true
-              },
-              "priority": {
-                "from": "mappedPriority"
-              }
-            },
-            "whenUnavailable": "queue",
-            "onSuccess": {
-              "set": {
-                "status": "handed_off"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.",
+            "title": "Attachments",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "url",
+                "status"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The file name from the verzoek",
+                  "title": "Name"
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Where DSO-LV serves the file",
+                  "title": "URL"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "stored",
+                    "failed",
+                    "too-large"
+                  ],
+                  "description": "Pending until the download job has run. Then stored, failed or too-large.",
+                  "title": "Status"
+                },
+                "fileId": {
+                  "type": "integer",
+                  "description": "The Nextcloud file id, once stored",
+                  "title": "File ID"
+                },
+                "attempts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "How many downloads were tried",
+                  "title": "Attempts"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "The last error, once failed or too-large",
+                  "title": "Error"
+                }
               }
             }
+          },
+          "attachmentMissing": {
+            "type": "boolean",
+            "description": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
+            "title": "Attachment missing"
+          },
+          "receivedVia": {
+            "type": "object",
+            "description": "Which DSO connection delivered this verzoek, and the account it was stored as. Set at intake.",
+            "title": "Received via",
+            "additionalProperties": false,
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "description": "The uuid of the dso-stam consumer",
+                "title": "Consumer"
+              },
+              "account": {
+                "type": "string",
+                "description": "The Nextcloud account the intake acted as",
+                "title": "Account"
+              }
+            }
+          },
+          "mappedActivities": {
+            "type": "array",
+            "description": "The activiteiten of this verzoek, each with the case types the DSO activity mapping table gives it. Set at intake.",
+            "title": "Mapped activities",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "mapped"
+              ],
+              "properties": {
+                "imowId": {
+                  "type": "string",
+                  "description": "The imow-id of the activiteit (STAM Imow-id)",
+                  "title": "Imow-id"
+                },
+                "activityId": {
+                  "type": "string",
+                  "description": "The Activiteit-id of the activiteit (functionele structuurreferentie)",
+                  "title": "Activity id"
+                },
+                "activityName": {
+                  "type": "string",
+                  "description": "The Activiteitnaam",
+                  "title": "Activity name"
+                },
+                "volgnr": {
+                  "type": "string",
+                  "description": "The Volgnr of the activiteit in the verzoek",
+                  "title": "Sequence number"
+                },
+                "underlying": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "The onderliggende activiteit, when the verzoek names one",
+                  "title": "Underlying activity",
+                  "properties": {
+                    "imowId": {
+                      "type": "string",
+                      "description": "The imow-id of the onderliggende activiteit",
+                      "title": "Imow-id"
+                    },
+                    "activityId": {
+                      "type": "string",
+                      "description": "The Activiteit-id of the onderliggende activiteit",
+                      "title": "Activity id"
+                    },
+                    "activityName": {
+                      "type": "string",
+                      "description": "The Activiteitnaam of the onderliggende activiteit",
+                      "title": "Activity name"
+                    }
+                  }
+                },
+                "mapped": {
+                  "type": "boolean",
+                  "description": "True when an active mapping row matched this activiteit",
+                  "title": "Mapped"
+                },
+                "matchedOn": {
+                  "type": "string",
+                  "enum": [
+                    "underlying.imowId",
+                    "underlying.activityId",
+                    "imowId",
+                    "activityId"
+                  ],
+                  "description": "The identifier the mapping row matched on, set only when mapped",
+                  "title": "Matched on"
+                },
+                "mappingRow": {
+                  "type": "string",
+                  "description": "The uuid of the dso_activity_mapping row that matched, set only when mapped",
+                  "title": "Mapping row"
+                },
+                "caseTypes": {
+                  "type": "array",
+                  "description": "The case types the matched row gives, each with its department, set only when mapped",
+                  "title": "Case types",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reference"
+                    ],
+                    "properties": {
+                      "reference": {
+                        "type": "string",
+                        "description": "A ZGW zaaktype URL or a catalogue identificatie",
+                        "title": "Reference"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "The case type's name",
+                        "title": "Title"
+                      },
+                      "department": {
+                        "type": "string",
+                        "description": "The department that handles this case type",
+                        "title": "Department"
+                      }
+                    }
+                  }
+                },
+                "samenloopStrategy": {
+                  "type": "string",
+                  "enum": [
+                    "deelzaken",
+                    "gecombineerd"
+                  ],
+                  "description": "The samenloop strategy of the matched row, set only when mapped",
+                  "title": "Samenloop strategy"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "The activiteitcode, written by intake before change dso-activity-mapping-table",
+                  "title": "Code"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "The omschrijving, written by intake before change dso-activity-mapping-table",
+                  "title": "Description"
+                },
+                "caseType": {
+                  "type": "string",
+                  "description": "The zaaktype identificatie, written by intake before change dso-activity-mapping-table",
+                  "title": "Case type"
+                }
+              }
+            }
+          },
+          "mappedCaseTypes": {
+            "type": "array",
+            "description": "The case type references the mapped activiteiten give, each once, in order",
+            "title": "Mapped case types",
+            "items": {
+              "type": "string"
+            }
+          },
+          "samenloopStrategy": {
+            "type": "string",
+            "enum": [
+              "deelzaken",
+              "gecombineerd"
+            ],
+            "description": "Gecombineerd when every pair of mapped activiteiten combines, by a samenloop rule or by both rows, otherwise deelzaken. Absent when nothing is mapped.",
+            "title": "Samenloop strategy"
+          },
+          "activityUnmapped": {
+            "type": "boolean",
+            "description": "True when an activiteit has no mapping. Pick the zaaktype by hand.",
+            "title": "Activity unmapped"
           }
-        ],
+        },
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -4691,7 +5039,19 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "One message the product sent to a person, per recipient and per step",
         "description": "An Outbound Message records what was sent, to whom, on which channel, and the point at which it failed. The record is per recipient because the failure is: three people on one ontvangstbevestiging can have three outcomes. The body is redacted before it is stored and readable only behind its own action (outbound.read-body), distinct from seeing that a message was sent. A forward is its own linked record, never an edit to the original, because Awb 2:3 asks for provability. See openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md.",
         "required": [
@@ -5082,9 +5442,22 @@
         "slug": "openformulieren_submission",
         "title": "Open Formulieren Submission",
         "icon": "FileDocumentOutline",
-        "version": "1.1.0",
+        "version": "1.3.0",
         "summary": "Lifecycle + audit record for one Open Formulieren submission, from receipt through mapping to a ns#Case handoff",
         "description": "One record per inbound, signature-verified Open Formulieren submission (open-formulieren-intake). Status tracks received -> mapped -> handed_off | failed, isolated per submission. Declares the submission-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/open-formulieren/submissions/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time. See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md.",
+        "authorization": {
+          "create": [
+            "openformulieren-intake"
+          ],
+          "read": [
+            "openformulieren-behandelaars"
+          ],
+          "update": [
+            "openformulieren-intake",
+            "openformulieren-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "formSlug",
           "status"
@@ -5207,6 +5580,24 @@
             "type": "string",
             "description": "The handoff engine's correlation id, set after a successful handoff",
             "title": "Correlation ID"
+          },
+          "receivedVia": {
+            "type": "object",
+            "description": "Which Open Formulieren connection delivered this submission, and the account it was stored as. Set at intake.",
+            "title": "Received via",
+            "additionalProperties": false,
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "description": "The uuid of the open-formulieren consumer",
+                "title": "Consumer"
+              },
+              "account": {
+                "type": "string",
+                "description": "The Nextcloud account the intake acted as",
+                "title": "Account"
+              }
+            }
           },
           "targetCase": {
             "type": "object",
@@ -5382,9 +5773,22 @@
         "slug": "intake_message",
         "title": "Intake Message",
         "icon": "InboxArrowDown",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "One message an intake channel delivered, in the normalised shape every consumer reads",
         "description": "An Intake Message is one message delivered by a channel adapter, normalised so no consuming app contains channel-specific code. A routing rule decides which case type it opens; a message matching no rule is held with its reason rather than dropped or opened as a default case. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
+        "authorization": {
+          "create": [
+            "intakekanalen-intake"
+          ],
+          "read": [
+            "intakekanalen-behandelaars"
+          ],
+          "update": [
+            "intakekanalen-intake",
+            "intakekanalen-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "channelId",
           "status"
@@ -5742,6 +6146,94 @@
         "appendOnly": false,
         "immutable": false
       },
+      "rod_message": {
+        "x-wire-standard": "DUO ROD (Register Onderwijsdeelnemers) via Edukoppeling — berichtsoort, kenmerk and signaalcode are the standard's own field names. MUST NOT be internationalised.",
+        "slug": "rod_message",
+        "title": "ROD Message",
+        "icon": "SchoolOutline",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound DUO ROD bericht send or one inbound acknowledgement/retour, produced by the integriq-adapter-rod connector",
+        "description": "A ROD Message tracks either one outbound berichtsoort dispatch (inschrijving, uitschrijving, verblijfsgegevens or schooladvies, translated and sent to DUO) or one inbound acknowledgement/retour (accepted or rejected, with the DUO signaalcode) received back: never merged into a single mutable row. See openspec/specs/rod-adapter/spec.md.",
+        "required": [
+          "direction",
+          "berichtsoort",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "inbound"
+            ],
+            "description": "Whether this record is an outbound bericht send or an inbound acknowledgement/retour",
+            "title": "Direction"
+          },
+          "berichtsoort": {
+            "type": "string",
+            "enum": [
+              "inschrijving",
+              "uitschrijving",
+              "verblijfsgegevens",
+              "schooladvies"
+            ],
+            "description": "The ROD berichtsoort this record carries",
+            "title": "Message Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "pending",
+              "acknowledged",
+              "rejected"
+            ],
+            "description": "Outbound: sent, failed or pending. Inbound: acknowledged or rejected, derived from the DUO signaalcode",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The provider-returned reference for this OUTBOUND message; null on inbound records",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg",
+            "title": "Kenmerk"
+          },
+          "signaalcode": {
+            "type": "string",
+            "description": "The DUO signaalcode on an INBOUND acknowledgement/retour (0 means accepted); null on outbound records",
+            "title": "Signaalcode"
+          },
+          "signaalOmschrijving": {
+            "type": "string",
+            "description": "The DUO signal description, when supplied; null on outbound records or when DUO supplies none",
+            "title": "Signal Description"
+          },
+          "bsnHash": {
+            "type": "string",
+            "description": "SHA-256 hash of the pupil BSN sent on the wire for an outbound send; the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)",
+            "title": "BSN Hash"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail (outbound) or unresolved-kenmerk detail (inbound); null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
       "stuf_message": {
         "x-wire-standard": "StUF-ZKN 3.10 — berichttype and verwerkingssoort are literal StUF elements. MUST NOT be internationalised.",
         "slug": "stuf_message",
@@ -5972,6 +6464,247 @@
             "format": "date-time",
             "description": "OR-managed update timestamp",
             "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "verzuim_message": {
+        "x-wire-standard": "DUO Verzuimloket (VSV-M2M) via Edukoppeling — meldingType, kenmerk and signaalcode are the standard's own field names. MUST NOT be internationalised.",
+        "slug": "verzuim_message",
+        "title": "Verzuimloket Message",
+        "icon": "SchoolOutline",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound DUO Verzuimloket melding send or one inbound acknowledgement/retour, produced by the integriq-adapter-verzuimloket connector",
+        "description": "A Verzuimloket Message tracks either one outbound meldingType dispatch (eerste-melding, herhaalmelding or langdurig-relatief-verzuim, translated and sent to DUO) or one inbound acknowledgement/retour (accepted or rejected, with the DUO signaalcode) received back: never merged into a single mutable row. See openspec/specs/verzuimloket-adapter/spec.md.",
+        "required": [
+          "direction",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "inbound"
+            ],
+            "description": "Whether this record is an outbound melding send or an inbound acknowledgement/retour",
+            "title": "Direction"
+          },
+          "meldingType": {
+            "type": "string",
+            "enum": [
+              "eerste-melding",
+              "herhaalmelding",
+              "langdurig-relatief-verzuim"
+            ],
+            "description": "The Verzuimloket melding kind this record carries; absent on an inbound retour whose kenmerk matches no outbound message",
+            "title": "Melding Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "pending",
+              "acknowledged",
+              "rejected"
+            ],
+            "description": "Outbound: sent, failed or pending. Inbound: acknowledged or rejected, derived from the DUO signaalcode",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The provider-returned reference for this OUTBOUND message; null on inbound records",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The correlation id: caller-supplied on an outbound send, echoed back by DUO on the retour leg",
+            "title": "Kenmerk"
+          },
+          "signaalcode": {
+            "type": "string",
+            "description": "The DUO signaalcode on an INBOUND acknowledgement/retour (0 means accepted); null on outbound records",
+            "title": "Signaalcode"
+          },
+          "signaalOmschrijving": {
+            "type": "string",
+            "description": "The DUO signal description, when supplied; null on outbound records or when DUO supplies none",
+            "title": "Signal Description"
+          },
+          "bsnHash": {
+            "type": "string",
+            "description": "SHA-256 hash of the pupil BSN sent on the wire for an outbound send; the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)",
+            "title": "BSN Hash"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail (outbound) or unresolved-kenmerk detail (inbound); null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "oso_message": {
+        "x-wire-standard": "OSO (Overstapservice Onderwijs, Kennisnet) — kenmerk and signaalcode are the standard's own field names. MUST NOT be internationalised.",
+        "slug": "oso_message",
+        "title": "OSO Message",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound OSO overstapdossier export, one inbound overstapdossier import, or one export acknowledgement/retour, produced by the integriq-adapter-oso connector",
+        "description": "An OSO Message tracks one outbound export dispatch, one inbound import receipt, or one export acknowledgement/retour: never merged into a single mutable row. Import records feed OsoDossierReceivedEvent for learniq's oso-inbound-contract listener; integriq never writes learniq's OsoImportDossier directly. See openspec/specs/oso-adapter/spec.md.",
+        "required": [
+          "direction",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "export",
+              "import"
+            ],
+            "description": "Whether this record is an outbound export (or its retour) or an inbound import",
+            "title": "Direction"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "pending",
+              "received",
+              "acknowledged",
+              "rejected"
+            ],
+            "description": "Export: sent, failed or pending, later acknowledged or rejected via retour. Import: received",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The provider-returned reference for an OUTBOUND export; null on import records",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The correlation id for an export or its retour; null on a fresh import record",
+            "title": "Kenmerk"
+          },
+          "sourceSchoolBrin": {
+            "type": "string",
+            "description": "The sending school's BRIN on an INBOUND import; null on export records",
+            "title": "Source School BRIN"
+          },
+          "learnerEckId": {
+            "type": "string",
+            "description": "The pupil's pseudonymous ECK iD, on either direction",
+            "title": "Learner ECK iD"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail; null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "uwlr_eduv_message": {
+        "x-wire-standard": "UWLR / Edu-V / Basispoort / Entree content SSO (Kennisnet) — target/subtype are the connector's own discriminators, not the standards' wire field names (see design.md Open Questions: the real per-target wire shapes are not yet documented in the corpus).",
+        "slug": "uwlr_eduv_message",
+        "title": "UWLR/Edu-V Message",
+        "icon": "CloudSyncOutline",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound UWLR, Edu-V, Basispoort or Entree-content export/sync send, or one inbound acknowledgement, produced by the integriq-adapter-uwlr-eduv connector",
+        "description": "A UWLR/Edu-V Message tracks one outbound send (uwlr pupil/group/teacher export, edu-v onderwijsdeelnemers/onderwijsgroepen/onderwijsmedewerkers export, basispoort or entree-content sync) or one inbound acknowledgement/retour, tagged by target and (where applicable) subtype. See openspec/specs/uwlr-eduv-adapter/spec.md.",
+        "required": [
+          "target",
+          "direction",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "enum": [
+              "uwlr",
+              "edu-v",
+              "basispoort",
+              "entree-content"
+            ],
+            "description": "Which of the four connection families this record belongs to",
+            "title": "Target"
+          },
+          "subtype": {
+            "type": "string",
+            "description": "uwlr: pupil|group|teacher. edu-v: onderwijsdeelnemers|onderwijsgroepen|onderwijsmedewerkers. null for basispoort/entree-content.",
+            "title": "Subtype"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "export",
+              "sync"
+            ],
+            "description": "uwlr/edu-v are export (one-way push); basispoort/entree-content are sync",
+            "title": "Direction"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "pending",
+              "acknowledged",
+              "rejected"
+            ],
+            "description": "Outbound send/sync outcome, or the acknowledgement outcome for a retour record",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The transport-assigned reference (e.g. MOCK-UWLREDUV-<n> for the log provider); null on a retour-only record",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The caller-supplied correlation id, echoed back by the acknowledgement leg",
+            "title": "Kenmerk"
+          },
+          "eckId": {
+            "type": "string",
+            "description": "The pseudonymous pupil ECK iD this record concerns, when applicable",
+            "title": "ECK iD"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail; null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp this send/sync/acknowledgement was recorded",
+            "title": "Synced At"
           }
         },
         "x-openregister-seed": [],
@@ -6218,7 +6951,7 @@
         "slug": "lti_tool",
         "title": "LTI Tool",
         "icon": "ApplicationOutline",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "summary": "An external LTI 1.3 Tool this instance may launch — this instance acts as Platform",
         "description": "An lti_tool row describes an external Tool (e.g. a content tool) that this instance launches via a signed id_token. This instance acts as Platform for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [
@@ -6256,6 +6989,15 @@
             "type": "string",
             "description": "The tool's launch endpoint the signed id_token is POSTed to",
             "title": "Launch URL"
+          },
+          "redirectUris": {
+            "type": "array",
+            "description": "The redirect URIs the tool may ask the platform to post a launch to (LTI 1.3 redirect_uri). An empty list allows only the launchUrl.",
+            "title": "Redirect URIs",
+            "items": {
+              "type": "string"
+            },
+            "default": []
           },
           "jwksUri": {
             "type": "string",

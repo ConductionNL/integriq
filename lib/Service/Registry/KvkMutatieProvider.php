@@ -24,7 +24,7 @@ namespace OCA\Integriq\Service\Registry;
  * The KvK mutatieservice reports what changed about a registered company. The
  * shape is the same as the BRP binding's: subscribe, unsubscribe, poll.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
 class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	/**
@@ -42,7 +42,7 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return string Registry id.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function registryId(): string {
 		return self::REGISTRY_ID;
@@ -53,7 +53,7 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return string Source slug.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	protected function sourceSlug(): string {
 		return self::SOURCE_SLUG;
@@ -66,7 +66,7 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return SubscriptionResult Active, or failed with the source's error text.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function subscribe(string $identity): SubscriptionResult {
 		$outcome = $this->callSource(
@@ -89,7 +89,7 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function unsubscribe(string $identity): void {
 		$this->callSource(endpoint: '/abonnementen/' . rawurlencode($identity), method: 'DELETE');
@@ -102,7 +102,7 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return iterable<SubscriptionChange> The changes.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function pollChanges(array $identities = []): iterable {
 		if ($identities === []) {

@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment: payment-intent-lockdown (openspec/changes/messaging-payments-review design D5, integriq#2145). `payment_intent` shipped with no `authorization` block, which OpenRegister reads as default-open for reads: every authenticated account could list every payment, with its amount, description, redirect and checkout URLs and free-form metadata. The shape is the one 99-mail-schemas-lockdown.json documents: a NON-EMPTY block whose four rule lists are EMPTY denies to everyone except the `admin` group and the owner of an object (an empty `{}` block closes nothing). The review page is administrator facing, so this closes nothing anyone needs. The app's own paths keep working because PaymentIntentService reads and writes payments, and resolves their payment source, in system context (`_rbac: false`, and `_multitenancy: false` on the webhook): the provider webhook runs with no session, and a `payments.create` holder need not be an admin. The ADR-023 action check in PaymentsController and the webhook signature are what gate those paths. `destroy` is deliberately NOT listed (integriq fix/schema-authorization-destroy-action): OpenRegister 2.1.33 and older refuse it as an authorization action and reject the WHOLE schema on import (measured on a clean store install 2026-10-01: 10 integriq schemas rejected), while newer OpenRegister refuses an undeclared `destroy` anyway (DestroyRightService fails closed, administrators bypass). Leaving it out therefore denies destroy on both.",
+	"components": {
+		"schemas": {
+			"payment_intent": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": []
+				}
+			}
+		}
+	}
+}

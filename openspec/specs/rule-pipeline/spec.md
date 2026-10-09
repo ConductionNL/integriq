@@ -20,6 +20,7 @@ integriq-local concept with no OpenRegister equivalent.
 
 **OpenSpec changes**
 - [`vng-klantinteracties-adapter`](../../changes/archive/2026-07-12-vng-klantinteracties-adapter/) _(archived 2026-07-12)_ — added a composite transactional fan-out Rule type (REQ-RULE-006, used for VNG's composite `maak-klantcontact`) and a `referentienummer` generation Rule (REQ-RULE-007). Both are dialect-agnostic gateway mechanics (ADR-031 external-integration exception).
+
 ## Requirements
 
 ### REQ-RULE-UI-001: Rule Management UI
@@ -244,9 +245,9 @@ it as a `DataDownloadResponse`.
   per-file write failures are swallowed with no log and no error surfaced to the
   caller. The rule reports success even when some/all files failed to write.
   Documented as observed behaviour; recommended for follow-up hardening.
-- **Stub (flagged):** `processJavaScriptRule` (rule type `javascript`) is a
-  no-op — it returns the data unchanged with a `@todo` for the unimplemented JS
-  engine. The rule type is dispatchable but inert.
+- `processJavaScriptRule` (rule type `javascript`) throws: integriq runs no
+  scripts, and a rule of that type is refused at save and at run time (see
+  REQ-GTP-003). It used to return the data unchanged.
 - `processSyncRule` honours `synchronization.preDelay` / `postDelay` via
   blocking `sleep()` calls inside the request thread.
 
@@ -506,6 +507,7 @@ already knows how to no-op safely.
   set (likely yes, or a forwarded dry-run flag mirroring the
   `synchronization` partial exception above); until then a dry-run replay of
   an endpoint carrying a `flow` rule WOULD trigger a real flow run.
+
 ### Requirement: `flow` rule action type triggers a flow run (REQ-RULE-009)
 
 The system MUST provide a `flow` rule type in
@@ -575,8 +577,27 @@ rule types already establish.
   `approval` rule type, per REQ-RULE-008, gates the endpoint response
   itself).
 
+### Requirement: A custom rule runs a registered plug-in (REQ-GTP-002)
+
+A rule of type `custom` MUST run the plug-in registered under the id in its `configuration.plugin`. A sibling app MUST be able to register a plug-in without changing integriq. An id no plug-in answers to MUST be refused with a message naming the id.
+
+#### Scenario: a sibling app adds its own step to an endpoint
+- GIVEN a sibling app that registered the rule plug-in `bsn-mask`
+- WHEN a request passes an endpoint with a custom rule naming `bsn-mask`
+- THEN the plug-in's output is what the next rule and the consumer receive
+- @e2e exclude extension contract for sibling apps; covered by PHPUnit
+
+### Requirement: A JavaScript rule is refused (REQ-GTP-003)
+
+Integriq MUST NOT offer a JavaScript rule in the rule editor, MUST refuse to store a rule of type `javascript`, and MUST fail a `javascript` rule that still exists when it runs, with a message that integriq runs no scripts.
+
+#### Scenario: an administrator looks for a script rule
+- GIVEN the rule editor
+- WHEN an administrator opens the rule type list
+- THEN JavaScript is not in it
+- @e2e exclude editor option list; covered by vitest on ruleDraft ACTION_TYPES
+
 ## Non-Functional Requirements
 
 - **Performance:** the composite Rule MUST bound its writes to the resources named in the request (no unbounded cascade).
 - **Internationalization:** rule error messages MUST be localisable (Dutch + English, hydra ADR-007) — REQ-RULE-006/007 error messages are not yet localised; flagged as a follow-up in the archived change's tasks.md.
-

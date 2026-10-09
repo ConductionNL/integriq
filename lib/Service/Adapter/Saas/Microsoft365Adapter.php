@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\IL10N;
  * The `$select` restricting the mail read to metadata fields is deliberate —
  * this adapter never reads message bodies.
  *
- * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
  */
 class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 
@@ -73,7 +73,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function getId(): string {
 		return 'microsoft-365';
@@ -84,7 +84,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function getLabel(): string {
 		return $this->l10n->t('Microsoft 365');
@@ -95,7 +95,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function getIcon(): string {
 		return 'Microsoft';
@@ -106,7 +106,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function getRequiredApp(): ?string {
 		return null;
@@ -117,7 +117,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,string>
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function getCapabilities(): array {
 		return ['calendar-read', 'mail-metadata-read'];
@@ -128,7 +128,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,array<string,mixed>> Normalised event summaries.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function listCalendarEvents(): array {
 		$response = $this->brokeredRequest(method: 'GET', path: '/v1.0/me/events');
@@ -161,7 +161,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,array<string,mixed>> Normalised mail-metadata rows.
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function listMailMetadata(): array {
 		$path = '/v1.0/me/messages?$select=' . self::MAIL_METADATA_SELECT;
@@ -205,7 +205,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId are mandated by
 	 *   IntegrationProvider but this adapter is instance-scoped, not object-scoped.

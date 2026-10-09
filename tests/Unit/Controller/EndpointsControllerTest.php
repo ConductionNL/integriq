@@ -19,11 +19,15 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\EndpointsController;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointCacheService;
+use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
+use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -77,11 +81,12 @@ class EndpointsControllerTest extends TestCase {
 			'integriq',
 			$request,
 			$this->createMock(EndpointService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->createMock(ObjectService::class),
 			$this->createMock(EndpointCacheService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IL10N::class)
+			$this->createMock(IL10N::class),
+			new EndpointCorsPolicy($this->createMock(IConfig::class))
 		);
 
 	}//end buildController()
@@ -176,5 +181,203 @@ class EndpointsControllerTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 
 	}//end testPreflightedCorsReturnsAnEmptyOkResponse()
+
+	/**
+	 * DECISIONS row 39: the ORI endpoints' CORS values, as the seed declares them.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ORI_CORS = [
+		'allowedOrigin' => 'self',
+		'allowedMethods' => ['GET', 'OPTIONS'],
+		'allowedHeaders' => ['Authorization', 'Content-Type', 'X-Requested-With'],
+	];
+
+	/**
+	 * Build the controller around one endpoint the cache finds, with the real CORS
+	 * policy.
+	 *
+	 * @param array<string, mixed>  $endpointData The endpoint the path resolves to.
+	 * @param array<string, string> $server       The $_SERVER-alike map the request exposes.
+	 * @param string                $method       The request method.
+	 * @param JSONResponse|null     $served       What EndpointService answers, if called.
+	 *
+	 * @return EndpointsController
+	 */
+	private function controllerFor(array $endpointData, array $server, string $method, ?JSONResponse $served=null): EndpointsController {
+		$request = $this->createMock(IRequest::class);
+		$request->server = $server;
+		$request->method('getMethod')->willReturn($method);
+		$request->method('getHeader')->willReturnCallback(
+			fn (string $name) => ($name === 'Access-Control-Request-Method' ? 'GET' : '')
+		);
+
+		$endpoint = new ObjectEntity();
+		$endpoint->setObject($endpointData);
+		$cache = $this->createMock(EndpointCacheService::class);
+		$cache->method('findByPathRegex')->willReturnCallback(
+			function (string $path, string $method) use ($endpoint) {
+				$this->assertSame('GET', $method, 'A preflight looks up the endpoint for the method it asks about.');
+				return $path === 'ori-parity/v1/motions' ? $endpoint : null;
+			}
+		);
+
+		$endpointService = $this->createMock(EndpointService::class);
+		$endpointService->method('handleRequest')->willReturn($served ?? new JSONResponse(['items' => []]));
+
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValueString')->willReturnCallback(
+			fn (string $key, string $default='') => ($key === 'overwrite.cli.url' ? 'https://raad.example.nl/index.php' : $default)
+		);
+
+		// AuthorizationService::corsAfterController() reads Response::getHeaders(),
+		// which needs a live \OC server; this double does what it does for a
+		// credential-free answer: echo the caller's origin.
+		$authorization = $this->createMock(OpenRegisterCredentialBridge::class);
+		$authorization->method('corsAfterController')->willReturnCallback(
+			function (IRequest $request, Response $response) use ($server) {
+				if (isset($server['HTTP_ORIGIN']) === true) {
+					$response->addHeader('Access-Control-Allow-Origin', $server['HTTP_ORIGIN']);
+				}
+
+				return $response;
+			}
+		);
+
+		return new EndpointsController(
+			'integriq',
+			$request,
+			$endpointService,
+			$authorization,
+			$this->createMock(ObjectService::class),
+			$cache,
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IL10N::class),
+			new EndpointCorsPolicy($config)
+		);
+
+	}//end controllerFor()
+
+	/**
+	 * TC-13, REQ-EP-014: the preflight of an endpoint that declares its own
+	 * CORS policy answers that policy, not the echo of the caller's origin.
+	 *
+	 * Red before: every preflight echoed the caller's origin and allowed
+	 * PUT, POST, GET, DELETE and PATCH.
+	 *
+	 * @return void
+	 */
+	public function testAPreflightAnswersTheEndpointsOwnCorsPolicy(): void {
+		$endpoint = ['method' => 'GET', 'cors' => self::ORI_CORS];
+		$headers = $this->rawHeaders(
+			$this->controllerFor($endpoint, ['HTTP_ORIGIN' => 'https://evil.example'], 'OPTIONS')
+				->preflightedCors('ori-parity/v1/motions')
+		);
+
+		$this->assertSame('https://raad.example.nl', $headers['Access-Control-Allow-Origin']);
+		$this->assertSame('GET, OPTIONS', $headers['Access-Control-Allow-Methods']);
+		$this->assertSame('Authorization, Content-Type, X-Requested-With', $headers['Access-Control-Allow-Headers']);
+		$this->assertSame('false', $headers['Access-Control-Allow-Credentials']);
+
+	}//end testAPreflightAnswersTheEndpointsOwnCorsPolicy()
+
+	/**
+	 * An endpoint without a CORS policy keeps integriq's preflight unchanged.
+	 *
+	 * @return void
+	 */
+	public function testAPreflightForAnEndpointWithoutAPolicyIsUnchanged(): void {
+		$headers = $this->rawHeaders(
+			$this->controllerFor(['method' => 'GET'], ['HTTP_ORIGIN' => 'https://partner.example.org'], 'OPTIONS')
+				->preflightedCors('ori-parity/v1/motions')
+		);
+
+		$this->assertSame('https://partner.example.org', $headers['Access-Control-Allow-Origin']);
+		$this->assertSame('PUT, POST, GET, DELETE, PATCH', $headers['Access-Control-Allow-Methods']);
+
+		$unknown = $this->rawHeaders(
+			$this->controllerFor(['cors' => self::ORI_CORS], ['HTTP_ORIGIN' => 'https://partner.example.org'], 'OPTIONS')
+				->preflightedCors('no/such/path')
+		);
+		$this->assertSame('https://partner.example.org', $unknown['Access-Control-Allow-Origin'], 'No endpoint matched: the default.');
+
+	}//end testAPreflightForAnEndpointWithoutAPolicyIsUnchanged()
+
+	/**
+	 * REQ-EP-014: the answer itself carries the endpoint's policy too, after
+	 * corsAfterController() echoed the caller's origin.
+	 *
+	 * @return void
+	 */
+	public function testAServedAnswerCarriesTheEndpointsOwnCorsPolicy(): void {
+		$endpoint = ['method' => 'GET', 'targetType' => 'register/schema', 'cors' => self::ORI_CORS];
+		$response = $this->controllerFor($endpoint, ['HTTP_ORIGIN' => 'https://evil.example'], 'GET')
+			->handlePath('ori-parity/v1/motions');
+		$headers = $this->rawHeaders($response);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('https://raad.example.nl', $headers['Access-Control-Allow-Origin']);
+		$this->assertSame('GET, OPTIONS', $headers['Access-Control-Allow-Methods']);
+
+		$plain = $this->rawHeaders(
+			$this->controllerFor(['method' => 'GET', 'targetType' => 'register/schema'], ['HTTP_ORIGIN' => 'https://partner.example.org'], 'GET')
+				->handlePath('ori-parity/v1/motions')
+		);
+		$this->assertSame('https://partner.example.org', $plain['Access-Control-Allow-Origin'], 'Control: without a policy the origin is echoed.');
+
+	}//end testAServedAnswerCarriesTheEndpointsOwnCorsPolicy()
+
+	/**
+	 * Whether the fast path would serve this endpoint on a GET.
+	 *
+	 * @param array $endpointData The endpoint.
+	 *
+	 * @return boolean True when the fast path serves it.
+	 */
+	private function takesTheFastPath(array $endpointData): bool {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getMethod')->willReturn('GET');
+		$controller = new EndpointsController(
+			'integriq',
+			$request,
+			$this->createMock(EndpointService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
+			$this->createMock(ObjectService::class),
+			$this->createMock(EndpointCacheService::class),
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IL10N::class),
+			new EndpointCorsPolicy($this->createMock(IConfig::class))
+		);
+		$endpoint = new \OCA\OpenRegister\Db\ObjectEntity();
+		$endpoint->setObject($endpointData);
+
+		$method = new \ReflectionMethod(EndpointsController::class, 'isSimpleEndpoint');
+		$method->setAccessible(true);
+
+		return $method->invoke($controller, $endpoint);
+
+	}//end takesTheFastPath()
+
+	/**
+	 * REQ-EP-012: a public endpoint with fixed filters never takes the fast
+	 * path, which answers a single object without the id-fetch guard.
+	 *
+	 * Red before: an isPublic endpoint whose only extra was fixedFilters went
+	 * the fast path, so /motions/{id} answered an amendment again.
+	 *
+	 * @return void
+	 */
+	public function testAnEndpointWithFixedFiltersNeverTakesTheFastPath(): void {
+		$endpoint = ['isPublic' => true, 'targetType' => 'register/schema', 'targetId' => '1/2'];
+		$this->assertTrue($this->takesTheFastPath($endpoint), 'Control: without fixed filters the fast path serves it.');
+
+		$endpoint['fixedFilters'] = ['decisionType' => 'motion'];
+		$this->assertFalse($this->takesTheFastPath($endpoint));
+
+		unset($endpoint['fixedFilters']);
+		$endpoint['anonymousRateLimit'] = ['requestsPerWindow' => 120, 'windowSeconds' => 60];
+		$this->assertFalse($this->takesTheFastPath($endpoint), 'The fast path would skip the anonymous rate limit too (REQ-EP-013).');
+
+	}//end testAnEndpointWithFixedFiltersNeverTakesTheFastPath()
 
 }//end class

@@ -130,9 +130,14 @@ Three bindings ship today:
 
 * `log` writes the letter to the log and delivers nothing. Use it to try a flow
   without posting anything to a citizen.
-* `berichtenbox` posts to the recipient's Berichtenbox through Logius. It needs
-  an OIN and a certificate reference, and refuses to activate without both,
-  naming the one that is missing.
+* `berichtenbox` posts to the recipient's MijnOverheid Berichtenbox. Letters go
+  over Digikoppeling ebMS through an ebMS adapter you run, and the subscription
+  is checked over WUS before every letter. A citizen who does not take letters
+  from you is refused as `not_subscribed` before anything is sent. It needs your
+  OIN, a PKIoverheid certificate (uploaded under Administration settings,
+  Integriq, stored encrypted) and the CPA values Logius gives you, and refuses to
+  activate without them, naming each one. Logius reports whether a letter was
+  placed, never whether it was read.
 * `postex` posts through Postex, over the shared gateway transport.
 
 Each binding describes the settings it needs through its own config schema, so

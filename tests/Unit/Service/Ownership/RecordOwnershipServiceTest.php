@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
 /**
  * REQ-SOR-001 and REQ-SOR-006: one read, and it never guesses.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
  */
 class RecordOwnershipServiceTest extends TestCase {
 	/**

@@ -69,7 +69,7 @@ use Throwable;
 /**
  * Clears `authenticationConfig` from source objects — only under an explicit opt-in.
  *
- * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
+ * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
  */
 class AuthenticationConfigRemover {
 
@@ -139,7 +139,7 @@ class AuthenticationConfigRemover {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
 	 */
 	public function removeAll(int $limit = 1000, bool $optIn = false): array {
 		if ($optIn !== true) {
@@ -187,7 +187,7 @@ class AuthenticationConfigRemover {
 	 *
 	 * @return array<string, mixed> The per-source outcome.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
 	 */
 	private function removeOne(array $record): array {
 		$uuid = (string)($record['uuid'] ?? '');
@@ -275,7 +275,7 @@ class AuthenticationConfigRemover {
 	 *
 	 * @return ObjectEntity|null The raw entity, or null when unreadable.
 	 *
-	 * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-raw-secret-read
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-raw-secret-read
 	 */
 	private function readRawEntity(string $uuid): ?ObjectEntity {
 		$entity = $this->objectService->find(

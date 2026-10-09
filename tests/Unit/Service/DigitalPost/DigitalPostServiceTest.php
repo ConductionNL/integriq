@@ -24,6 +24,7 @@ use OCA\Integriq\BackgroundJob\DigitalPostInboundJob;
 use OCA\Integriq\Event\DigitalPostDeliveredEvent;
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
@@ -31,7 +32,10 @@ use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcher;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IDBConnection;
+use OCP\IUser;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
@@ -58,6 +62,20 @@ class DigitalPostServiceTest extends TestCase {
 	private array $dispatched = [];
 
 	/**
+	 * Whether the doubled object service refuses every write.
+	 *
+	 * @var bool
+	 */
+	private bool $failSaves = false;
+
+	/**
+	 * The opt-out services, once built.
+	 *
+	 * @var OptOutFixture|null
+	 */
+	private ?OptOutFixture $optOuts = null;
+
+	/**
 	 * Reset the recorders.
 	 *
 	 * @return void
@@ -66,6 +84,8 @@ class DigitalPostServiceTest extends TestCase {
 		parent::setUp();
 		$this->saved = [];
 		$this->dispatched = [];
+		$this->failSaves = false;
+		$this->optOuts = null;
 	}//end setUp()
 
 	/**
@@ -97,8 +117,9 @@ class DigitalPostServiceTest extends TestCase {
 	private function service(DigitalPostProviderInterface $provider, ?array $sourceConfig): DigitalPostService {
 		$store = $this->getMockBuilder(ConnectionStore::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findSourceBySlug'])
+			->onlyMethods(['findSourceBySlug', 'readSourceRaw'])
 			->getMock();
+		$store->method('readSourceRaw')->willReturnArgument(0);
 
 		if ($sourceConfig === null) {
 			$store->method('findSourceBySlug')->willReturn(null);
@@ -111,6 +132,10 @@ class DigitalPostServiceTest extends TestCase {
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) {
+				if ($this->failSaves === true) {
+					throw new \RuntimeException('OpenRegister refused the write');
+				}
+
 				$this->saved[] = $object;
 				$entity = $this->createMock(ObjectEntity::class);
 				$entity->method('getUuid')->willReturn(($uuid ?? 'msg-1'));
@@ -131,16 +156,125 @@ class DigitalPostServiceTest extends TestCase {
 			$store,
 			$objectService,
 			$dispatcher,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->optOuts()->gate(),
+			$this->account()
 		);
 	}//end service()
+
+	/**
+	 * A digital post account that is always usable and runs the operation as given.
+	 *
+	 * The account itself is covered by DigitalPostServiceAccountTest.
+	 *
+	 * @return DigitalPostAccount
+	 */
+	private function account(): DigitalPostAccount {
+		$account = $this->getMockBuilder(DigitalPostAccount::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['resolve', 'runAs'])
+			->getMock();
+		$account->method('resolve')->willReturn($this->createMock(IUser::class));
+		$account->method('runAs')->willReturnCallback(static fn (IUser $user, callable $operation): mixed => $operation());
+
+		return $account;
+	}//end account()
+
+	/**
+	 * The opt-out services over in-memory tables, one per test.
+	 *
+	 * @return OptOutFixture The fixture.
+	 */
+	private function optOuts(): OptOutFixture {
+		if ($this->optOuts === null) {
+			$this->optOuts = new OptOutFixture($this, $this->createMock(IDBConnection::class));
+		}
+
+		return $this->optOuts;
+	}//end optOuts()
+
+	/**
+	 * A case update to an opted-out recipient on that case is refused before
+	 * the provider is called; the event carries the refusal code.
+	 *
+	 * @return void
+	 */
+	public function testADigitalPostCaseUpdateToAnOptedOutRecipientIsRefused(): void {
+		$provider = $this->provider('berichtenbox');
+		$provider->expects($this->never())->method('send');
+		$service = $this->service($provider, ['providerId' => 'berichtenbox']);
+		$key = $this->optOuts()->recipientKey()->hashBsn('999993653');
+		$this->optOuts()->registry()->record(['address' => $key, 'state' => 'opted-out', 'scope' => 'case', 'ref' => 'Z-2026-001']);
+		$event = $this->request(category: 'case-update', caseRef: 'Z-2026-001');
+
+		$service->handleSendRequest($event);
+
+		$this->assertTrue($event->isHandled());
+		$this->assertSame('opted-out', $event->getRefusal()['code']);
+		$this->assertSame([], $this->saved, 'no letter is stored or sent');
+
+	}//end testADigitalPostCaseUpdateToAnOptedOutRecipientIsRefused()
+
+	/**
+	 * A besluit to an opted-out recipient goes out without a link, and the
+	 * log holds an override entry.
+	 *
+	 * @return void
+	 */
+	public function testADigitalPostBesluitGoesOutDespiteAnOptOut(): void {
+		$service = $this->service($this->provider('berichtenbox'), ['providerId' => 'berichtenbox']);
+		$this->optOuts()->registry()->record(['address' => '999993653', 'channel' => 'digital-post', 'state' => 'opted-out', 'scope' => 'instance']);
+		$event = $this->request(category: 'besluit', caseRef: 'Z-2026-001');
+
+		$service->handleSendRequest($event);
+
+		$this->assertNull($event->getRefusal());
+		$this->assertSame('msg-1', $event->getMessageId());
+		$this->assertSame('Beste heer De Vries,', $this->saved[0]['body'], 'no unsubscribe line on a besluit');
+		$this->assertCount(1, $this->optOuts()->log->ofKind('override'));
+		$row = array_values($this->optOuts()->table->rows)[0];
+		$this->assertStringStartsWith('bsn:', $row->getAddress());
+
+	}//end testADigitalPostBesluitGoesOutDespiteAnOptOut()
+
+	/**
+	 * A case update to someone with no opt-out carries the link in the body;
+	 * an event built without a category (dossiq today) reads as service.
+	 *
+	 * @return void
+	 */
+	public function testADigitalPostWithoutACategoryCarriesTheLink(): void {
+		$service = $this->service($this->provider('berichtenbox'), ['providerId' => 'berichtenbox']);
+		$event = $this->request();
+		$this->assertSame('service', $event->getCategory());
+
+		$service->handleSendRequest($event);
+
+		$this->assertStringContainsString('Geen berichten meer ontvangen: https://gem.nl/index.php/apps/integriq/unsubscribe/v3.', $this->saved[0]['body']);
+		$this->assertStringNotContainsString('999993653', substr($this->saved[0]['body'], strlen('Beste heer De Vries,')));
+
+	}//end testADigitalPostWithoutACategoryCarriesTheLink()
 
 	/**
 	 * A send request from another app.
 	 *
 	 * @return DigitalPostSendRequestedEvent The event.
 	 */
-	private function request(): DigitalPostSendRequestedEvent {
+	private function request(?string $category = null, string $caseRef = ''): DigitalPostSendRequestedEvent {
+		if ($category === null) {
+			// The shape dossiq dispatches today: no category, no case.
+			return new DigitalPostSendRequestedEvent(
+				'dossiq',
+				'berichtenbox-source',
+				'999993653',
+				'Uw aanvraag',
+				'Beste heer De Vries,',
+				[['name' => 'besluit.pdf', 'url' => 'https://example.test/besluit.pdf']],
+				'behandelaar1',
+				'corr-1'
+			);
+		}
+
 		return new DigitalPostSendRequestedEvent(
 			'dossiq',
 			'berichtenbox-source',
@@ -149,7 +283,9 @@ class DigitalPostServiceTest extends TestCase {
 			'Beste heer De Vries,',
 			[['name' => 'besluit.pdf', 'url' => 'https://example.test/besluit.pdf']],
 			'behandelaar1',
-			'corr-1'
+			'corr-1',
+			$category,
+			$caseRef
 		);
 	}//end request()
 
@@ -282,6 +418,56 @@ class DigitalPostServiceTest extends TestCase {
 		$this->assertSame(DigitalPostResult::STATUS_DELIVERED, $this->dispatched[0]->getStatus());
 		$this->assertSame(DigitalPostResult::STATUS_SENT, $this->dispatched[0]->getPreviousStatus());
 	}//end testAStatusPollAnnouncesOnlyRealChanges()
+
+	/**
+	 * A provider's own refusal code reaches the sending app, so it can tell
+	 * "not subscribed" from "opted out".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-opt-out-and-category-rules-run-first-and-do-not-change-req-dpa-014
+	 */
+	public function testAProviderRefusalCodeReachesTheSendingApp(): void {
+		$service = $this->service(
+			$this->provider('berichtenbox', DigitalPostResult::refused('Not subscribed. Nothing was sent.', 'not_subscribed')),
+			['providerId' => 'berichtenbox']
+		);
+		$event = $this->request('besluit');
+
+		$service->handleSendRequest($event);
+
+		$this->assertSame('not_subscribed', $event->getRefusal()['code']);
+		$this->assertSame('besluit', $this->saved[0]['category']);
+	}//end testAProviderRefusalCodeReachesTheSendingApp()
+
+	/**
+	 * A status is acknowledged to the provider only after it is stored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#scenario-a-result-is-not-lost-when-saving-fails
+	 */
+	public function testAStatusIsAcknowledgedOnlyOnceStored(): void {
+		$acknowledged = [];
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$provider->method('status')->willReturn(DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, 'ref-1'));
+		$provider->method('statusRecorded')->willReturnCallback(
+			function (string $reference) use (&$acknowledged): void {
+				$acknowledged[] = $reference;
+			}
+		);
+		$message = ['uuid' => 'msg-1', 'providerId' => 'berichtenbox', 'providerReference' => 'ref-1', 'status' => 'sent', 'sourceId' => 'berichtenbox-source'];
+
+		$this->failSaves = true;
+		$this->assertSame(0, $this->service($provider, ['providerId' => 'berichtenbox'])->pollStatuses([$message]));
+		$this->assertSame([], $acknowledged, 'A status that was not stored stays with the provider for the next run.');
+		$this->assertSame([], $this->dispatched);
+
+		$this->failSaves = false;
+		$this->assertSame(1, $this->service($provider, ['providerId' => 'berichtenbox'])->pollStatuses([$message]));
+		$this->assertSame(['ref-1'], $acknowledged);
+	}//end testAStatusIsAcknowledgedOnlyOnceStored()
 
 	/**
 	 * Health answers what a source page shows: last send, last error, queue

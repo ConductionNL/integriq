@@ -28,12 +28,15 @@ use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\SignatureStripper;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
+use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -400,16 +403,7 @@ class SenderIdentityTest extends TestCase {
 	 * @return MessageComposer The composer.
 	 */
 	private function composer(): MessageComposer {
-		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturn('');
-
-		return new MessageComposer(
-			new UnsubscribeTokenService(
-				$appConfig,
-				$this->createMock(ISecureRandom::class),
-				new OptOutRegistry($this->objectService, $appConfig),
-			)
-		);
+		return (new OptOutFixture($this, $this->createMock(IDBConnection::class)))->composer();
 
 	}//end composer()
 

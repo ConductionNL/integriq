@@ -1,0 +1,34 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Slack Web API",
+        "version": "1.7.0",
+        "x-apisguru-categories": [
+            "collaboration",
+            "messaging"
+        ],
+        "x-providerName": "slack.com"
+    },
+    "externalDocs": {
+        "description": "Learn more about the Slack Web API",
+        "url": "https://api.slack.com/web"
+    },
+    "servers": [
+        {
+            "url": "https://slack.com/api"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "slackAuth": {
+                "flows": {
+                    "authorizationCode": {
+                        "authorizationUrl": "https://slack.com/oauth/authorize",
+                        "tokenUrl": "https://slack.com/api/oauth.access"
+                    }
+                },
+                "type": "oauth2"
+            }
+        }
+    }
+}

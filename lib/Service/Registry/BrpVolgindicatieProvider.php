@@ -25,7 +25,7 @@ namespace OCA\Integriq\Service\Registry;
  * source without that contract refuses, and the refusal is reported in the
  * source's own words.
  *
- * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
 class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	/**
@@ -43,7 +43,7 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return string Registry id.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function registryId(): string {
 		return self::REGISTRY_ID;
@@ -54,7 +54,7 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return string Source slug.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	protected function sourceSlug(): string {
 		return self::SOURCE_SLUG;
@@ -67,7 +67,7 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return SubscriptionResult Active, or failed with the source's error text.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function subscribe(string $identity): SubscriptionResult {
 		$outcome = $this->callSource(
@@ -89,7 +89,7 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function unsubscribe(string $identity): void {
 		$this->callSource(
@@ -105,7 +105,7 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 *
 	 * @return iterable<SubscriptionChange> The changes.
 	 *
-	 * @spec openspec/changes/registry-subscription-connector/specs/registry-subscription-connector/spec.md
+	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function pollChanges(array $identities = []): iterable {
 		if ($identities === []) {

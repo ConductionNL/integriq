@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "integriq demo data",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "description": "Demo data covering every schema this app supplies, offered as the first step of the app's setup walkthrough. Generated from the schemas themselves, so every object satisfies the schema that will validate it."
   },
   "x-openregister": {
@@ -92,7 +92,8 @@
               "psd2",
               "sms",
               "soap",
-              "dso"
+              "dso",
+              "case-system"
             ],
             "title": "Type"
           },
@@ -359,6 +360,62 @@
         "appendOnly": false,
         "immutable": false
       },
+      "column_mapping": {
+        "slug": "column_mapping",
+        "title": "Column mapping",
+        "icon": "TableArrowRight",
+        "version": "1.0.0",
+        "summary": "How the columns of a delivered file map onto the fields of a schema",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "description": "Write a column mapping once and pick it again for every delivery with the same columns. Each save raises the version by one. A migration test run reads a file through it and writes nothing.",
+        "required": [
+          "name",
+          "columns",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name you pick the mapping by",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record the mapping produces, such as case",
+            "title": "Record kind"
+          },
+          "targetSchema": {
+            "type": "string",
+            "description": "The schema the columns map onto",
+            "title": "Target schema"
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Each column of the file and the field it fills",
+            "title": "Columns"
+          },
+          "identifierColumn": {
+            "type": "string",
+            "description": "The column that holds each record's number in the old system. Leave it empty when the file has none.",
+            "title": "Identifier column"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Goes up by one each time the mapping is saved",
+            "title": "Version"
+          }
+        }
+      },
       "consumer": {
         "slug": "consumer",
         "title": "Consumer",
@@ -428,7 +485,7 @@
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that created the consumer (null for system-created)",
+            "description": "The Nextcloud account this consumer acts as. AuthorizationService::authorizeApiKey() makes it the active user, and the DSO STAM intake writes every verzoek as it (dso-stam consumers). Empty: an apiKey consumer authenticates as itself; a dso-stam consumer refuses pushes with 503.",
             "title": "User ID"
           },
           "rateLimit": {
@@ -753,10 +810,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -767,7 +822,7 @@
         },
         "title": "EventMessage",
         "icon": "EmailFast",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A delivery record for an Event-to-Subscription match",
         "description": "An EventMessage is created when an Event matches an EventSubscription. It tracks delivery state per (Event × Subscription × Consumer) tuple. See local ADR-013.",
         "required": [],
@@ -879,6 +934,11 @@
                   "type": "string",
                   "description": "Transport/exception message, or null on an HTTP-level outcome",
                   "title": "Error Message"
+                },
+                "signed": {
+                  "type": "boolean",
+                  "description": "Whether this attempt carried an X-OpenConnector-Signature header",
+                  "title": "Signed"
                 }
               }
             },
@@ -927,7 +987,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -986,7 +1046,7 @@
           },
           "protocolSettings": {
             "type": "object",
-            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted).",
+            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed. When present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface. A new push subscription is created with one unless `unsigned` is set; later it changes only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted); `unsigned` (object `{reason, setBy, setAt}`: deliver without a signature; refused without a reason).",
             "title": "Protocol Settings"
           },
           "style": {
@@ -1142,6 +1202,17 @@
             "description": "Nextcloud user id that owns the subscription",
             "title": "User ID"
           },
+          "signingPosture": {
+            "type": "string",
+            "enum": ["signed", "unsigned"],
+            "description": "Whether a push delivery carries a signature. Written on save from protocolSettings, which is hidden on every read.",
+            "title": "Signature"
+          },
+          "unsignedReason": {
+            "type": "string",
+            "description": "Why this subscription delivers unsigned, as the person who turned signing off wrote it.",
+            "title": "Reason for unsigned delivery"
+          },
           "created": {
             "type": "string",
             "format": "date-time",
@@ -1184,10 +1255,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -1591,7 +1660,7 @@
         "slug": "synchronization",
         "title": "Synchronization",
         "icon": "Sync",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",
         "required": [
@@ -1796,6 +1865,23 @@
             "type": "object",
             "description": "Optional per-Synchronization override of the dispatching Source's `retryPolicy` (all keys optional; same shape: maxAttempts, backoffStrategy, baseDelayMs, maxDelayMs, jitter, retryableStatusCodes, retryOnTimeout). Copied by SynchronizationService into `$config['retryPolicy']` before calling CallService::call, so it overrides the Source's own retryPolicy per-key ONLY for calls made in this synchronization's context; a direct (non-synchronization) call against the same Source is unaffected.",
             "title": "Retry Policy Override"
+          },
+          "writeBack": {
+            "type": "object",
+            "description": "On a push from a register/schema source: fields to set on the source object after each attempt, written silently so the push does not run again. A value may hold {{ response.* }}, {{ status }}, {{ targetId }} or {{ error.message }}. onFailure is written once the source's retry budget is spent.",
+            "title": "Write-back",
+            "properties": {
+              "onSuccess": {
+                "type": "object",
+                "description": "Fields to set when the target accepted the object",
+                "title": "On success"
+              },
+              "onFailure": {
+                "type": "object",
+                "description": "Fields to set when the target refused the object or could not be reached",
+                "title": "On failure"
+              }
+            }
           }
         },
         "x-openregister-mcp": {
@@ -1985,10 +2071,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2264,10 +2348,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -2422,9 +2504,22 @@
         "slug": "verdict",
         "title": "Verdict",
         "icon": "Gavel",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A judgement an external checker returned about an object, recorded beside it and acting on nothing",
-        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Verdict is what an outside checker said about a named object: pass, fail or pending, with its source and its reason. Integriq stores it and makes it readable by the owning app; it never acts on it and never changes the object it judges. What a verdict means is the owning app's decision. See openspec/specs/outbound-call-log/spec.md.",
+        "authorization": {
+          "create": [
+            "verdicts-intake"
+          ],
+          "read": [
+            "verdicts-behandelaars"
+          ],
+          "update": [
+            "verdicts-intake",
+            "verdicts-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "objectRef",
           "state",
@@ -2487,10 +2582,8 @@
                 "field": "userId"
               },
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3284,10 +3377,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3427,10 +3518,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3624,10 +3713,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3798,10 +3885,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -3820,7 +3905,7 @@
         "icon": "SourceBranch",
         "version": "1.0.0",
         "summary": "A snapshot of a mapping as it stood when a call ran under it",
-        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/changes/outbound-call-delivery-and-replay/specs/outbound-call-log/spec.md.",
+        "description": "A Mapping Version is what a recorded call ran under, kept so a replay can offer the original version beside the current one and state which it used. Without the snapshot, a replay a month later silently runs the mapping as it is now, which is a different call that happens to look similar. See openspec/specs/outbound-call-log/spec.md.",
         "required": [
           "mapping",
           "version"
@@ -3856,7 +3941,7 @@
         "icon": "EmailOutline",
         "version": "1.0.0",
         "summary": "One mail message integriq received, from a mailbox poll or an imported .eml/.msg file",
-        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md.",
+        "description": "A Message is one received mail message in integriq's canonical shape, whatever door it came through. Integriq detects the case reference the message names and offers the message to the owning app through MessageReceivedEvent; the outcome the listener answers with is recorded here. A message nobody claims is `unassigned` and its attachments are offered to filinq's document intake inbox. See openspec/specs/mail-intake/spec.md.",
         "required": [
           "sourceId",
           "messageId",
@@ -3980,7 +4065,19 @@
         "slug": "digitalPostMessage",
         "title": "Digital Post Message",
         "icon": "EmailOutline",
-        "version": "1.0.0",
+        "version": "1.2.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "Audit and lifecycle record for one letter sent through a configured digital post source",
         "description": "A Digital Post Message tracks one letter a fleet app asked integriq to send, from queued through the provider's acceptance to whatever became of it. A failed send keeps the message and its attachments, so the letter can be retried rather than rewritten. See openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002.",
         "required": [
@@ -4058,6 +4155,41 @@
             "type": "string",
             "description": "Caller-generated id, echoed on every status change",
             "title": "Correlation ID"
+          },
+          "category": {
+            "type": "string",
+            "description": "The letter's category (besluit, case-update, statutory, service), as the sending app gave it",
+            "title": "Category"
+          },
+          "caseRef": {
+            "type": "string",
+            "description": "The case the letter belongs to, when the sending app named one",
+            "title": "Case Reference"
+          },
+          "batchId": {
+            "type": "string",
+            "description": "Berichtenbox: the BatchID GUID of the GLOBE-R-BV-Request batch that carried the letter",
+            "title": "Batch Id"
+          },
+          "transportMessageId": {
+            "type": "string",
+            "description": "Berichtenbox: the ebMS message id the adapter sent the batch under",
+            "title": "Transport Message Id"
+          },
+          "berichtType": {
+            "type": "string",
+            "description": "Berichtenbox: the BerichtType code the letter was sent under",
+            "title": "Bericht Type"
+          },
+          "resultCode": {
+            "type": "string",
+            "description": "Berichtenbox: the VerwerkingsCode Logius answered, for example Verwerkt or NietActiefOfGeabonneerd",
+            "title": "Result Code"
+          },
+          "resultStage": {
+            "type": "string",
+            "description": "Berichtenbox: the Stadium Logius answered with the code",
+            "title": "Result Stage"
           },
           "providerReference": {
             "type": "string",
@@ -4340,10 +4472,8 @@
             ],
             "recipients": [
               {
-                "kind": "groups",
-                "groups": [
-                  "openconnector-ops"
-                ]
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
               }
             ],
             "subject": {
@@ -4361,9 +4491,22 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.0.0",
-        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
-        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "version": "1.6.0",
+        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping; the case system makes the case",
+        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped | failed, isolated per verzoek. Integriq declares no case handoff: the case system (dossiq) reads the mapped verzoek and makes one case on the case type in mappedCaseTypes. handed_off survives only on records from the retired manual handoff. See openspec/changes/retire-dso-case-handoff.",
+        "authorization": {
+          "create": [
+            "dso-intake"
+          ],
+          "read": [
+            "dso-behandelaars"
+          ],
+          "update": [
+            "dso-intake",
+            "dso-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "verzoekId",
           "status"
@@ -4447,38 +4590,237 @@
             "format": "date-time",
             "description": "ISO 8601 timestamp this verzoek was received on the STAM koppelvlak",
             "title": "Received At"
-          }
-        },
-        "x-openregister-handoff": [
-          {
-            "id": "verzoek-to-case",
-            "targetSemanticType": "https://openregister.app/ns#Case",
-            "trigger": "manual",
-            "mapping": {
-              "title": {
-                "from": "mappedTitle"
-              },
-              "summary": {
-                "from": "mappedSummary"
-              },
-              "channel": {
-                "from": "mappedChannel"
-              },
-              "source": {
-                "provenance": true
-              },
-              "priority": {
-                "from": "mappedPriority"
-              }
-            },
-            "whenUnavailable": "queue",
-            "onSuccess": {
-              "set": {
-                "status": "handed_off"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "The bijlagen of this verzoek, one entry each. A background job downloads them and attaches them here as files.",
+            "title": "Attachments",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "url",
+                "status"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The file name from the verzoek",
+                  "title": "Name"
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Where DSO-LV serves the file",
+                  "title": "URL"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "stored",
+                    "failed",
+                    "too-large"
+                  ],
+                  "description": "Pending until the download job has run. Then stored, failed or too-large.",
+                  "title": "Status"
+                },
+                "fileId": {
+                  "type": "integer",
+                  "description": "The Nextcloud file id, once stored",
+                  "title": "File ID"
+                },
+                "attempts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "How many downloads were tried",
+                  "title": "Attempts"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "The last error, once failed or too-large",
+                  "title": "Error"
+                }
               }
             }
+          },
+          "attachmentMissing": {
+            "type": "boolean",
+            "description": "True when a bijlage is failed or too-large. Handle that bijlage by hand.",
+            "title": "Attachment missing"
+          },
+          "receivedVia": {
+            "type": "object",
+            "description": "Which DSO connection delivered this verzoek, and the account it was stored as. Set at intake.",
+            "title": "Received via",
+            "additionalProperties": false,
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "description": "The uuid of the dso-stam consumer",
+                "title": "Consumer"
+              },
+              "account": {
+                "type": "string",
+                "description": "The Nextcloud account the intake acted as",
+                "title": "Account"
+              }
+            }
+          },
+          "mappedActivities": {
+            "type": "array",
+            "description": "The activiteiten of this verzoek, each with the case types the DSO activity mapping table gives it. Set at intake.",
+            "title": "Mapped activities",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "mapped"
+              ],
+              "properties": {
+                "imowId": {
+                  "type": "string",
+                  "description": "The imow-id of the activiteit (STAM Imow-id)",
+                  "title": "Imow-id"
+                },
+                "activityId": {
+                  "type": "string",
+                  "description": "The Activiteit-id of the activiteit (functionele structuurreferentie)",
+                  "title": "Activity id"
+                },
+                "activityName": {
+                  "type": "string",
+                  "description": "The Activiteitnaam",
+                  "title": "Activity name"
+                },
+                "volgnr": {
+                  "type": "string",
+                  "description": "The Volgnr of the activiteit in the verzoek",
+                  "title": "Sequence number"
+                },
+                "underlying": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "The onderliggende activiteit, when the verzoek names one",
+                  "title": "Underlying activity",
+                  "properties": {
+                    "imowId": {
+                      "type": "string",
+                      "description": "The imow-id of the onderliggende activiteit",
+                      "title": "Imow-id"
+                    },
+                    "activityId": {
+                      "type": "string",
+                      "description": "The Activiteit-id of the onderliggende activiteit",
+                      "title": "Activity id"
+                    },
+                    "activityName": {
+                      "type": "string",
+                      "description": "The Activiteitnaam of the onderliggende activiteit",
+                      "title": "Activity name"
+                    }
+                  }
+                },
+                "mapped": {
+                  "type": "boolean",
+                  "description": "True when an active mapping row matched this activiteit",
+                  "title": "Mapped"
+                },
+                "matchedOn": {
+                  "type": "string",
+                  "enum": [
+                    "underlying.imowId",
+                    "underlying.activityId",
+                    "imowId",
+                    "activityId"
+                  ],
+                  "description": "The identifier the mapping row matched on, set only when mapped",
+                  "title": "Matched on"
+                },
+                "mappingRow": {
+                  "type": "string",
+                  "description": "The uuid of the dso_activity_mapping row that matched, set only when mapped",
+                  "title": "Mapping row"
+                },
+                "caseTypes": {
+                  "type": "array",
+                  "description": "The case types the matched row gives, each with its department, set only when mapped",
+                  "title": "Case types",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reference"
+                    ],
+                    "properties": {
+                      "reference": {
+                        "type": "string",
+                        "description": "A ZGW zaaktype URL or a catalogue identificatie",
+                        "title": "Reference"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "The case type's name",
+                        "title": "Title"
+                      },
+                      "department": {
+                        "type": "string",
+                        "description": "The department that handles this case type",
+                        "title": "Department"
+                      }
+                    }
+                  }
+                },
+                "samenloopStrategy": {
+                  "type": "string",
+                  "enum": [
+                    "deelzaken",
+                    "gecombineerd"
+                  ],
+                  "description": "The samenloop strategy of the matched row, set only when mapped",
+                  "title": "Samenloop strategy"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "The activiteitcode, written by intake before change dso-activity-mapping-table",
+                  "title": "Code"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "The omschrijving, written by intake before change dso-activity-mapping-table",
+                  "title": "Description"
+                },
+                "caseType": {
+                  "type": "string",
+                  "description": "The zaaktype identificatie, written by intake before change dso-activity-mapping-table",
+                  "title": "Case type"
+                }
+              }
+            }
+          },
+          "mappedCaseTypes": {
+            "type": "array",
+            "description": "The case type references the mapped activiteiten give, each once, in order",
+            "title": "Mapped case types",
+            "items": {
+              "type": "string"
+            }
+          },
+          "samenloopStrategy": {
+            "type": "string",
+            "enum": [
+              "deelzaken",
+              "gecombineerd"
+            ],
+            "description": "Gecombineerd when every pair of mapped activiteiten combines, by a samenloop rule or by both rows, otherwise deelzaken. Absent when nothing is mapped.",
+            "title": "Samenloop strategy"
+          },
+          "activityUnmapped": {
+            "type": "boolean",
+            "description": "True when an activiteit has no mapping. Pick the zaaktype by hand.",
+            "title": "Activity unmapped"
           }
-        ],
+        },
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -4698,7 +5040,19 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "One message the product sent to a person, per recipient and per step",
         "description": "An Outbound Message records what was sent, to whom, on which channel, and the point at which it failed. The record is per recipient because the failure is: three people on one ontvangstbevestiging can have three outcomes. The body is redacted before it is stored and readable only behind its own action (outbound.read-body), distinct from seeing that a message was sent. A forward is its own linked record, never an edit to the original, because Awb 2:3 asks for provability. See openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md.",
         "required": [
@@ -5089,9 +5443,22 @@
         "slug": "openformulieren_submission",
         "title": "Open Formulieren Submission",
         "icon": "FileDocumentOutline",
-        "version": "1.1.0",
+        "version": "1.3.0",
         "summary": "Lifecycle + audit record for one Open Formulieren submission, from receipt through mapping to a ns#Case handoff",
         "description": "One record per inbound, signature-verified Open Formulieren submission (open-formulieren-intake). Status tracks received -> mapped -> handed_off | failed, isolated per submission. Declares the submission-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/open-formulieren/submissions/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time. See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md.",
+        "authorization": {
+          "create": [
+            "openformulieren-intake"
+          ],
+          "read": [
+            "openformulieren-behandelaars"
+          ],
+          "update": [
+            "openformulieren-intake",
+            "openformulieren-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "formSlug",
           "status"
@@ -5214,6 +5581,24 @@
             "type": "string",
             "description": "The handoff engine's correlation id, set after a successful handoff",
             "title": "Correlation ID"
+          },
+          "receivedVia": {
+            "type": "object",
+            "description": "Which Open Formulieren connection delivered this submission, and the account it was stored as. Set at intake.",
+            "title": "Received via",
+            "additionalProperties": false,
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "description": "The uuid of the open-formulieren consumer",
+                "title": "Consumer"
+              },
+              "account": {
+                "type": "string",
+                "description": "The Nextcloud account the intake acted as",
+                "title": "Account"
+              }
+            }
           },
           "targetCase": {
             "type": "object",
@@ -5389,9 +5774,22 @@
         "slug": "intake_message",
         "title": "Intake Message",
         "icon": "InboxArrowDown",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "One message an intake channel delivered, in the normalised shape every consumer reads",
         "description": "An Intake Message is one message delivered by a channel adapter, normalised so no consuming app contains channel-specific code. A routing rule decides which case type it opens; a message matching no rule is held with its reason rather than dropped or opened as a default case. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
+        "authorization": {
+          "create": [
+            "intakekanalen-intake"
+          ],
+          "read": [
+            "intakekanalen-behandelaars"
+          ],
+          "update": [
+            "intakekanalen-intake",
+            "intakekanalen-behandelaars"
+          ],
+          "delete": []
+        },
         "required": [
           "channelId",
           "status"
@@ -6225,7 +6623,7 @@
         "slug": "lti_tool",
         "title": "LTI Tool",
         "icon": "ApplicationOutline",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "summary": "An external LTI 1.3 Tool this instance may launch — this instance acts as Platform",
         "description": "An lti_tool row describes an external Tool (e.g. a content tool) that this instance launches via a signed id_token. This instance acts as Platform for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [
@@ -6263,6 +6661,15 @@
             "type": "string",
             "description": "The tool's launch endpoint the signed id_token is POSTed to",
             "title": "Launch URL"
+          },
+          "redirectUris": {
+            "type": "array",
+            "description": "The redirect URIs the tool may ask the platform to post a launch to (LTI 1.3 redirect_uri). An empty list allows only the launchUrl.",
+            "title": "Redirect URIs",
+            "items": {
+              "type": "string"
+            },
+            "default": []
           },
           "jwksUri": {
             "type": "string",
@@ -6797,7 +7204,28 @@
         "ruleId": "00000000-0000-4000-8000-000000000000",
         "timing": "before",
         "resumeOrder": 1,
-        "snapshot": {},
+        "snapshot": {
+          "changeSet": {
+            "created": [
+              {"originId": "zt-parkeervergunning", "fields": {"omschrijving": "Parkeervergunning", "doel": "Een parkeervergunning verlenen"}},
+              {"originId": "zt-standplaatsvergunning", "fields": {"omschrijving": "Standplaatsvergunning", "doel": "Een standplaats toewijzen"}}
+            ],
+            "changed": [
+              {"originId": "zt-evenementenvergunning", "targetId": "00000000-0000-4000-8000-000000000001", "fields": [
+                {"field": "statustypen", "before": ["Ontvangen", "Afgehandeld"], "after": ["Ontvangen", "Besloten", "Afgehandeld"]}
+              ]}
+            ],
+            "removed": [
+              {"originId": "zt-kapvergunning-oud", "targetId": "00000000-0000-4000-8000-000000000002"}
+            ],
+            "unchanged": 14,
+            "counts": {"created": 2, "changed": 1, "removed": 1, "unchanged": 14},
+            "truncated": false,
+            "limit": 500,
+            "fingerprint": "4f2c9a0d8b1e7f3a6c5d2e9b0a1f8c7d6e5b4a3f2e1d0c9b8a7f6e5d4c3b2a19"
+          }
+        },
+        "fingerprint": "4f2c9a0d8b1e7f3a6c5d2e9b0a1f8c7d6e5b4a3f2e1d0c9b8a7f6e5d4c3b2a19",
         "synchronizationId": "00000000-0000-4000-8000-000000000000",
         "requesterUserId": "Voorbeeld Requesteruserid 1",
         "approverUserId": "Voorbeeld Approveruserid 1",
@@ -9354,6 +9782,48 @@
       {
         "@self": {
           "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-go1"
+        },
+        "deploymentId": "demo-go1-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b01",
+        "name": "Go1 (demo deployment)",
+        "description": "Demo deployment of the Go1 tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-go1-placement\" to let the Go1 synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a01",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-linkedin-learning"
+        },
+        "deploymentId": "demo-linkedin-learning-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b02",
+        "name": "LinkedIn Learning (demo deployment)",
+        "description": "Demo deployment of the LinkedIn Learning tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-linkedin-learning-placement\" to let the LinkedIn Learning synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a02",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_deployment",
+          "slug": "lti-deployment-course-marketplace-udemy-business"
+        },
+        "deploymentId": "demo-udemy-business-deployment",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1b03",
+        "name": "Udemy Business (demo deployment)",
+        "description": "Demo deployment of the Udemy Business tool. Put its uuid in \"openconnectorDeploymentId\" of the mapping \"course-marketplace-udemy-business-placement\" to let the Udemy Business synchronizations run.",
+        "ltiToolId": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a03",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
           "schema": "lti_identity_link",
           "slug": "lti-identity-link-lti-identity-link-1-1"
         },
@@ -9569,6 +10039,57 @@
         "status": "suspended",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-go1"
+        },
+        "clientId": "demo-go1",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a01",
+        "name": "Go1 (demo tool)",
+        "description": "Demo registration of the Go1 LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values Go1 gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.go1.example/login",
+        "launchUrl": "https://lti.go1.example/launch",
+        "jwksUri": "https://lti.go1.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-linkedin-learning"
+        },
+        "clientId": "demo-linkedin-learning",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a02",
+        "name": "LinkedIn Learning (demo tool)",
+        "description": "Demo registration of the LinkedIn Learning LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values LinkedIn Learning gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.linkedin-learning.example/login",
+        "launchUrl": "https://lti.linkedin-learning.example/launch",
+        "jwksUri": "https://lti.linkedin-learning.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "lti_tool",
+          "slug": "lti-tool-course-marketplace-udemy-business"
+        },
+        "clientId": "demo-udemy-business",
+        "uuid": "7c1e5a10-6f0d-4c3e-9a51-0b6d2f9e1a03",
+        "name": "Udemy Business (demo tool)",
+        "description": "Demo registration of the Udemy Business LTI tool for the course marketplace set. The URLs are placeholders: replace them with the values Udemy Business gives your school, then approve the tool.",
+        "oidcLoginUrl": "https://lti.udemy-business.example/login",
+        "launchUrl": "https://lti.udemy-business.example/launch",
+        "jwksUri": "https://lti.udemy-business.example/.well-known/jwks.json",
+        "status": "pending",
+        "created": "2026-10-03T09:00:00+00:00",
+        "updated": "2026-10-03T09:00:00+00:00"
       },
       {
         "@self": {
@@ -10544,7 +11065,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 1",
         "conditions": {},
-        "type": "Voorbeeld Type 1",
+        "type": "error",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -10568,7 +11089,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 2",
         "conditions": {},
-        "type": "Voorbeeld Type 2",
+        "type": "mapping",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -10592,7 +11113,7 @@
         "version": "1.0.0",
         "timing": "Voorbeeld Timing 3",
         "conditions": {},
-        "type": "Voorbeeld Type 3",
+        "type": "custom",
         "configuration": {},
         "order": 100,
         "configurations": [
@@ -11064,7 +11585,10 @@
         "sourceHash": "Voorbeeld Sourcehash 3",
         "sourceHashMapping": "Voorbeeld Sourcehashmapping 3",
         "sourceTargetMapping": "Voorbeeld Sourcetargetmapping 3",
-        "sourceConfig": {},
+        "sourceConfig": {
+          "disappearancePolicy": "purge",
+          "onSourceDestroyed": "purge"
+        },
         "sourceLastChanged": "2026-03-03T09:00:00+00:00",
         "sourceLastChecked": "2026-03-03T09:00:00+00:00",
         "sourceLastSynced": "2026-03-03T09:00:00+00:00",
@@ -11453,6 +11977,590 @@
         "translatedAt": "2026-03-03T09:00:00+00:00",
         "created": "2026-03-03T09:00:00+00:00",
         "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-1-1"
+        },
+        "direction": "outbound",
+        "berichtsoort": "inschrijving",
+        "status": "sent",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "signaalcode": "Voorbeeld Signaalcode 1",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 1",
+        "bsnHash": "Voorbeeld Bsnhash 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-2-2"
+        },
+        "direction": "inbound",
+        "berichtsoort": "uitschrijving",
+        "status": "failed",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "signaalcode": "Voorbeeld Signaalcode 2",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 2",
+        "bsnHash": "Voorbeeld Bsnhash 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-3-3"
+        },
+        "direction": "outbound",
+        "berichtsoort": "verblijfsgegevens",
+        "status": "pending",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "signaalcode": "Voorbeeld Signaalcode 3",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 3",
+        "bsnHash": "Voorbeeld Bsnhash 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rod_message",
+          "slug": "rod-message-rod-message-4-4"
+        },
+        "direction": "inbound",
+        "berichtsoort": "schooladvies",
+        "status": "acknowledged",
+        "ref": "Voorbeeld Ref 4",
+        "kenmerk": "Voorbeeld Kenmerk 4",
+        "signaalcode": "Voorbeeld Signaalcode 4",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 4",
+        "bsnHash": "Voorbeeld Bsnhash 4",
+        "error": "Voorbeeld Error 4",
+        "syncedAt": "2026-03-04T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "verzuim_message",
+          "slug": "verzuim-message-verzuim-message-1-1"
+        },
+        "direction": "outbound",
+        "meldingType": "eerste-melding",
+        "status": "sent",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "signaalcode": "Voorbeeld Signaalcode 1",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 1",
+        "bsnHash": "Voorbeeld Bsnhash 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "verzuim_message",
+          "slug": "verzuim-message-verzuim-message-2-2"
+        },
+        "direction": "inbound",
+        "meldingType": "herhaalmelding",
+        "status": "failed",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "signaalcode": "Voorbeeld Signaalcode 2",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 2",
+        "bsnHash": "Voorbeeld Bsnhash 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "verzuim_message",
+          "slug": "verzuim-message-verzuim-message-3-3"
+        },
+        "direction": "outbound",
+        "meldingType": "langdurig-relatief-verzuim",
+        "status": "pending",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "signaalcode": "Voorbeeld Signaalcode 3",
+        "signaalOmschrijving": "Voorbeeld Signaalomschrijving 3",
+        "bsnHash": "Voorbeeld Bsnhash 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-1-1"
+        },
+        "direction": "export",
+        "status": "sent",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 1",
+        "learnerEckId": "Voorbeeld Learnereckid 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-2-2"
+        },
+        "direction": "import",
+        "status": "failed",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 2",
+        "learnerEckId": "Voorbeeld Learnereckid 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "oso_message",
+          "slug": "oso-message-oso-message-3-3"
+        },
+        "direction": "export",
+        "status": "pending",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "sourceSchoolBrin": "Voorbeeld Sourceschoolbrin 3",
+        "learnerEckId": "Voorbeeld Learnereckid 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-1-1"
+        },
+        "target": "uwlr",
+        "direction": "export",
+        "status": "sent",
+        "subtype": "Voorbeeld Subtype 1",
+        "ref": "Voorbeeld Ref 1",
+        "kenmerk": "Voorbeeld Kenmerk 1",
+        "eckId": "Voorbeeld Eckid 1",
+        "error": "Voorbeeld Error 1",
+        "syncedAt": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-2-2"
+        },
+        "target": "edu-v",
+        "direction": "sync",
+        "status": "failed",
+        "subtype": "Voorbeeld Subtype 2",
+        "ref": "Voorbeeld Ref 2",
+        "kenmerk": "Voorbeeld Kenmerk 2",
+        "eckId": "Voorbeeld Eckid 2",
+        "error": "Voorbeeld Error 2",
+        "syncedAt": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-3-3"
+        },
+        "target": "basispoort",
+        "direction": "export",
+        "status": "pending",
+        "subtype": "Voorbeeld Subtype 3",
+        "ref": "Voorbeeld Ref 3",
+        "kenmerk": "Voorbeeld Kenmerk 3",
+        "eckId": "Voorbeeld Eckid 3",
+        "error": "Voorbeeld Error 3",
+        "syncedAt": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "uwlr_eduv_message",
+          "slug": "uwlr-eduv-message-uwlr-eduv-message-4-4"
+        },
+        "target": "entree-content",
+        "direction": "sync",
+        "status": "acknowledged",
+        "subtype": "Voorbeeld Subtype 4",
+        "ref": "Voorbeeld Ref 4",
+        "kenmerk": "Voorbeeld Kenmerk 4",
+        "eckId": "Voorbeeld Eckid 4",
+        "error": "Voorbeeld Error 4",
+        "syncedAt": "2026-03-04T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-zaken-uit-het-oude-systeem"
+        },
+        "name": "Zaken uit het oude systeem",
+        "kind": "case",
+        "targetSchema": "case",
+        "columns": {
+          "zaaknummer": "reference",
+          "naam": "requesterName",
+          "plaats": "city"
+        },
+        "identifierColumn": "zaaknummer",
+        "version": 2
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-meldingen-openbare-ruimte"
+        },
+        "name": "Meldingen openbare ruimte",
+        "kind": "melding",
+        "targetSchema": "melding",
+        "columns": {
+          "meldingnummer": "reference",
+          "omschrijving": "description",
+          "straat": "street",
+          "datum": "reportedOn"
+        },
+        "identifierColumn": "meldingnummer",
+        "version": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "column_mapping",
+          "slug": "column-mapping-contactpersonen-zonder-sleutel"
+        },
+        "name": "Contactpersonen zonder sleutel",
+        "kind": "contact",
+        "targetSchema": "contact",
+        "columns": {
+          "naam": "name",
+          "email": "email",
+          "telefoon": "phone"
+        },
+        "identifierColumn": "",
+        "version": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-kvk-failed-calls"
+        },
+        "subjectType": "source",
+        "subject": "b7d1e2f3-4a5b-4c6d-8e9f-0a1b2c3d4e5f",
+        "subjectName": "KVK Handelsregister",
+        "rule": "failedCalls",
+        "count": 14,
+        "threshold": 10,
+        "windowMinutes": 60,
+        "state": "open",
+        "openedAt": "2026-09-29T07:15:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-brp-failed-runs"
+        },
+        "subjectType": "synchronization",
+        "subject": "c8e2f3a4-5b6c-4d7e-9f0a-1b2c3d4e5f6a",
+        "subjectName": "BRP personen ophalen",
+        "rule": "failedRuns",
+        "count": 3,
+        "threshold": 2,
+        "windowMinutes": 240,
+        "state": "cleared",
+        "openedAt": "2026-09-28T03:05:00+02:00",
+        "clearedAt": "2026-09-28T09:40:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "connection_alert",
+          "slug": "connection-alert-bag-invalid-objects"
+        },
+        "subjectType": "synchronization",
+        "subject": "c8e2f3a4-5b6c-4d7e-9f0a-1b2c3d4e5f6a",
+        "subjectName": "BAG adressen ophalen",
+        "rule": "invalidObjects",
+        "count": 120,
+        "threshold": 100,
+        "windowMinutes": 1440,
+        "state": "open",
+        "openedAt": "2026-09-29T02:30:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-melding-openbare-ruimte"
+        },
+        "publishedUuid": "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01",
+        "name": "melding openbare ruimte",
+        "register": "meldingen",
+        "schema": "melding",
+        "versions": ["1"]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-boom"
+        },
+        "publishedUuid": "8a2d4c61-1e3f-4a5b-8c7d-9e0f1a2b3c02",
+        "name": "boom",
+        "register": "openbare-ruimte",
+        "schema": "boom",
+        "versions": []
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecttype",
+          "slug": "objecttype-parkeervergunning"
+        },
+        "publishedUuid": "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03",
+        "name": "parkeervergunning",
+        "register": "vergunningen",
+        "schema": "parkeervergunning",
+        "versions": ["1", "2"]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-meldingen-app"
+        },
+        "name": "Meldingen app",
+        "credential": "objecten-token-meldingen-app",
+        "principal": "svc-meldingen",
+        "permissions": {
+          "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01": "read_write"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-bomenbeheer"
+        },
+        "name": "Bomenbeheer",
+        "credential": "objecten-token-bomenbeheer",
+        "principal": "svc-bomen",
+        "permissions": {
+          "8a2d4c61-1e3f-4a5b-8c7d-9e0f1a2b3c02": "read_write",
+          "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01": "read"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "objecten_token",
+          "slug": "objecten-token-dashboard"
+        },
+        "name": "Dashboard gemeente",
+        "credential": "objecten-token-dashboard",
+        "principal": "svc-dashboard",
+        "permissions": {
+          "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03": "read"
+        }
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-staged-replay"},
+        "tool": "integriq.replayDeadLetters",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "admin",
+        "outcome": "staged",
+        "store": "sync",
+        "targetIds": ["5d1e2f30-0000-4000-8000-00000000d001", "5d1e2f30-0000-4000-8000-00000000d002"],
+        "binding": "9f2c4c0b7c1e5d8a3b6f0e2d4c6a8b0d1e3f5a7c9b1d3f5e7a9c1b3d5f7e9a1c",
+        "at": "2026-09-30T02:40:00+02:00"
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-denied-run"},
+        "tool": "integriq.runSynchronization",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "griffie",
+        "outcome": "denied",
+        "reason": "synchronization.run",
+        "targetIds": ["7b3c4d50-0000-4000-8000-00000000s001"],
+        "at": "2026-09-30T02:41:00+02:00"
+      },
+      {
+        "@self": {"register": "integriq", "schema": "agent_action", "slug": "agent-action-list"},
+        "tool": "integriq.listDeadLetters",
+        "agent": "a1f0c2d3-0000-4000-8000-00000000a001",
+        "grantingUser": "admin",
+        "outcome": "executed",
+        "targetIds": [],
+        "at": "2026-09-30T02:39:00+02:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-zaak-json"
+        },
+        "name": "Voorbeeld zaak (JSON Schema)",
+        "description": "Voorbeeld: een zaak met identificatie, zaaktype en startdatum.",
+        "kind": "json-schema",
+        "document": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"identificatie\",\n    \"zaaktype\"\n  ],\n  \"properties\": {\n    \"identificatie\": {\n      \"type\": \"string\"\n    },\n    \"zaaktype\": {\n      \"type\": \"string\",\n      \"format\": \"uri\"\n    },\n    \"startdatum\": {\n      \"type\": \"string\",\n      \"format\": \"date\"\n    }\n  }\n}\n",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-adres-xsd"
+        },
+        "name": "Voorbeeld adres (XSD)",
+        "description": "Voorbeeld: een adres met postcode en huisnummer, als XSD.",
+        "kind": "xsd",
+        "document": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" targetNamespace=\"https://integriq.conduction.nl/example/adres\" elementFormDefault=\"qualified\">\n  <xs:element name=\"adres\">\n    <xs:complexType>\n      <xs:sequence>\n        <xs:element name=\"postcode\" type=\"xs:string\"/>\n        <xs:element name=\"huisnummer\" type=\"xs:positiveInteger\"/>\n      </xs:sequence>\n    </xs:complexType>\n  </xs:element>\n</xs:schema>\n",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "message_schema",
+          "slug": "message-schema-voorbeeld-zaken-openapi"
+        },
+        "name": "Voorbeeld zaken-API (OpenAPI)",
+        "description": "Voorbeeld: de operatie createZaak met een verplichte startdatum.",
+        "kind": "openapi",
+        "document": "{\n  \"openapi\": \"3.0.3\",\n  \"info\": {\n    \"title\": \"Voorbeeld zaken\",\n    \"version\": \"1.0.0\"\n  },\n  \"paths\": {\n    \"/zaken\": {\n      \"post\": {\n        \"operationId\": \"createZaak\",\n        \"requestBody\": {\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"required\": [\n                  \"startdatum\"\n                ],\n                \"properties\": {\n                  \"startdatum\": {\n                    \"type\": \"string\",\n                    \"format\": \"date\"\n                  },\n                  \"toelichting\": {\n                    \"type\": \"string\",\n                    \"nullable\": true\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"201\": {\n            \"description\": \"Aangemaakt\"\n          }\n        }\n      }\n    }\n  }\n}\n",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "dso_activity_mapping",
+          "slug": "dso-activity-mapping-demo-bouwen"
+        },
+        "imowId": "nl.imow-gm0000.activiteit.DemoBouwen",
+        "activityId": "Demo-0000-Bouwen",
+        "activityName": "Demo: bouwen van een bouwwerk",
+        "caseTypes": [
+          {
+            "reference": "DEMO-ZAAKTYPE-BOUWEN",
+            "title": "Demo: omgevingsvergunning bouwen",
+            "department": "Demo: team bouwen"
+          }
+        ],
+        "samenloopStrategy": "deelzaken",
+        "isActive": true,
+        "note": "Demo row. Gemeentecode 0000 is not a CBS gemeentecode, so this row never matches a real verzoek. Replace it with the activities your gemeente receives."
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "dso_activity_mapping",
+          "slug": "dso-activity-mapping-demo-milieu"
+        },
+        "imowId": "nl.imow-gm0000.activiteit.DemoMilieu",
+        "activityId": "Demo-0000-Milieu",
+        "activityName": "Demo: milieubelastende activiteit",
+        "caseTypes": [
+          {
+            "reference": "DEMO-ZAAKTYPE-MILIEU",
+            "title": "Demo: omgevingsvergunning milieu",
+            "department": "Demo: team milieu"
+          },
+          {
+            "reference": "DEMO-ZAAKTYPE-BOUWEN",
+            "title": "Demo: omgevingsvergunning bouwen",
+            "department": "Demo: team bouwen"
+          }
+        ],
+        "samenloopStrategy": "deelzaken",
+        "isActive": true,
+        "note": "Demo row. Gemeentecode 0000 is not a CBS gemeentecode, so this row never matches a real verzoek. Replace it with the activities your gemeente receives."
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "dso_activity_mapping",
+          "slug": "dso-activity-mapping-demo-kappen"
+        },
+        "imowId": "nl.imow-gm0000.activiteit.DemoKappen",
+        "activityId": "Demo-0000-Kappen",
+        "activityName": "Demo: kappen van een boom",
+        "caseTypes": [
+          {
+            "reference": "DEMO-ZAAKTYPE-KAPPEN",
+            "title": "Demo: omgevingsvergunning kappen",
+            "department": "Demo: team groen"
+          }
+        ],
+        "samenloopStrategy": "deelzaken",
+        "samenloopRules": [
+          {
+            "withImowId": "nl.imow-gm0000.activiteit.DemoBouwen",
+            "strategy": "gecombineerd"
+          }
+        ],
+        "isActive": true,
+        "note": "Demo row. Gemeentecode 0000 is not a CBS gemeentecode, so this row never matches a real verzoek. Replace it with the activities your gemeente receives."
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-ringing"
+        },
+        "callId": "demo-call-0001",
+        "kind": "ringing",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:00:00+00:00",
+        "durationSeconds": 0
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-answered"
+        },
+        "callId": "demo-call-0001",
+        "kind": "answered",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:00:08+00:00",
+        "durationSeconds": 0
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-ended"
+        },
+        "callId": "demo-call-0001",
+        "kind": "ended",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:04:20+00:00",
+        "durationSeconds": 252
       }
     ]
   }

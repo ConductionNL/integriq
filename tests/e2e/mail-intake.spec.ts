@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * Spec coverage: openspec/specs/mail-intake/spec.md
  *
  * The scenario driven here is the import of a saved Outlook message. The
  * fixture at tests/e2e/fixtures/outlook-message.msg is a real compound file
@@ -15,10 +15,11 @@
 
 import type { APIRequestContext } from '@playwright/test'
 
-import { expect, request as playwrightRequest, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { APP_BASE } from './spec-coverage/_helpers.ts'
+import { anonymousRequest } from './support/anonymous.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
@@ -134,9 +135,7 @@ test.describe('mail intake', () => {
 		// The least privileged principal that should be refused: nobody signed
 		// in. A 2xx here would mean any visitor can write objects other apps act
 		// on, so the assertion is on the refusal, not on the body.
-		const anonymous = await playwrightRequest.newContext({
-			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
-		})
+		const anonymous = await anonymousRequest()
 
 		const resp = await anonymous.post(`${API_BASE}/mail-intake/import`, {
 			failOnStatusCode: false,

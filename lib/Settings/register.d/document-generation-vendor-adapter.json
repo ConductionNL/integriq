@@ -13,7 +13,7 @@
         "icon": "FileDocumentOutline",
         "version": "1.0.0",
         "summary": "One render asked of a vendor document generation service",
-        "description": "One row per render integriq takes on filinq's behalf. See openspec/changes/document-generation-vendor-adapter/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002.",
+        "description": "One row per render integriq takes on filinq's behalf. See openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002.",
         "required": ["sourceId", "providerId", "templateId", "dataHash", "status"],
         "type": "object",
         "properties": {
@@ -103,10 +103,7 @@
         "configuration": {
           "providerId": "smartdocuments",
           "baseUrl": "https://api.smartdocuments.example/v1",
-          "mockMode": true,
-          "authentication": {
-            "credentialRef": ""
-          }
+          "mockMode": true
         }
       },
       {
@@ -124,10 +121,7 @@
         "configuration": {
           "providerId": "xential",
           "baseUrl": "https://api.xential.example",
-          "mockMode": true,
-          "authentication": {
-            "credentialRef": ""
-          }
+          "mockMode": true
         }
       }
     ]

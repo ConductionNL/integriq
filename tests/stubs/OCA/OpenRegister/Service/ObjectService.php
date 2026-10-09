@@ -124,6 +124,18 @@ class ObjectService {
 	}
 
 	/**
+	 * Delete objects by uuid (signature as OpenRegister development 4abd834344).
+	 *
+	 * @param array $uuids Object uuids.
+	 * @param bool $_rbac Apply RBAC filters when true.
+	 * @param bool $_multitenancy Apply multitenancy filters when true.
+	 * @return array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>}
+	 */
+	public function deleteObjects(array $uuids = [], bool $_rbac = true, bool $_multitenancy = true): array {
+		return ['deleted_uuids' => [], 'skipped_uuids' => []];
+	}
+
+	/**
 	 * Find all objects matching the given config/filters.
 	 *
 	 * @param array $config
@@ -250,12 +262,29 @@ class ObjectService {
 	 * real OCA\OpenRegister\Service\ObjectService, and no __call() either. This
 	 * stub deliberately does not invent one.
 	 *
+	 * The trailing parameters follow openregister development 98a3469c0f; a
+	 * permanent delete (`permanent: true`) removes the object and its files.
+	 *
 	 * @param string|null $uuid
 	 * @param string|int|null $register
 	 * @param string|int|null $schema
+	 * @param bool $_rbac
+	 * @param bool $_multitenancy
+	 * @param bool $_retentionSweep
+	 * @param mixed $currentUser
+	 * @param bool $permanent
 	 * @return bool
 	 */
-	public function deleteObject(?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
+	public function deleteObject(
+		?string $uuid = null,
+		string|int|null $register = null,
+		string|int|null $schema = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		bool $_retentionSweep = false,
+		mixed $currentUser = null,
+		bool $permanent = false,
+	): bool {
 		return true;
 	}
 
@@ -299,5 +328,36 @@ class ObjectService {
 	 */
 	public function unlockObject(string|int $identifier): bool {
 		return true;
+	}
+
+	/**
+	 * The user session runAs() swaps. OpenRegister's real class takes it in
+	 * its constructor (`private readonly IUserSession $userSession`); a test
+	 * sets it by reflection under the same name, so the same test runs
+	 * against this stub and against the real class.
+	 *
+	 * @var \OCP\IUserSession|null
+	 */
+	private $userSession = null;
+
+	/**
+	 * Run a callable as a named user. Copied from openregister development
+	 * dd67a6a044 (`ObjectService::runAs()`), so a caller is tested against the
+	 * real scoping: setVolatileActiveUser(), restored in a finally.
+	 *
+	 * @param \OCP\IUser $user      The user to act as.
+	 * @param callable    $operation The operation.
+	 *
+	 * @return mixed Whatever the callable returns.
+	 */
+	public function runAs(\OCP\IUser $user, callable $operation) {
+		$previousUser = $this->userSession->getUser();
+		$this->userSession->setVolatileActiveUser($user);
+
+		try {
+			return $operation();
+		} finally {
+			$this->userSession->setVolatileActiveUser($previousUser);
+		}
 	}
 }

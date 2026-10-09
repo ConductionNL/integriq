@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+ * @spec openspec/specs/mail-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) -- the imap extension is a function API.
  *
- * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
+ * @spec openspec/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
  */
 class ImapMailboxTransport implements MailboxTransportInterface {
 
@@ -81,7 +81,7 @@ class ImapMailboxTransport implements MailboxTransportInterface {
 	 * @throws MailboxTransportException When the extension is absent, the mailbox is
 	 *                                   misconfigured, or the server refuses.
 	 *
-	 * @spec openspec/changes/mail-intake-creates-cases/specs/mail-intake/spec.md
+	 * @spec openspec/specs/mail-intake/spec.md
 	 */
 	public function fetch(array $configuration, ?string $cursor): array {
 		if ($this->isUsable() === false) {

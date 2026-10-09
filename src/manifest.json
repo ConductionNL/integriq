@@ -16,17 +16,10 @@
           "display": "cards",
           "optionsSource": "datasets",
           "configKey": "demo_dataset",
+          "loadAction": "load-demo-data",
           "title": "Load example data?",
           "required": false,
-          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install."
-        },
-        {
-          "id": "load-demo-data",
-          "type": "run-action",
-          "action": "load-demo-data",
-          "title": "Load the example data",
-          "required": false,
-          "body": "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards."
+          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install."
         },
         {
           "id": "done",
@@ -278,6 +271,14 @@
           "order": 20
         },
         {
+          "id": "Migrations",
+          "label": "Migrations",
+          "icon": "DatabaseImportOutline",
+          "route": "Migrations",
+          "order": 25,
+          "permission": "admin"
+        },
+        {
           "id": "NotificatiesAbonnementen",
           "label": "Subscriptions",
           "icon": "BellRingOutline",
@@ -394,7 +395,7 @@
       "label": "Reports",
       "icon": "ChartBoxOutline",
       "route": "Reports",
-      "section": "footer",
+      "section": "settings",
       "order": 95
     },
     {
@@ -952,6 +953,18 @@
             "label": "Promote configuration",
             "icon": "RocketLaunchOutline",
             "handler": "openPromotionHandler"
+          },
+          {
+            "id": "registry-lookup",
+            "label": "Look up in a base registry",
+            "icon": "DatabaseSearchOutline",
+            "handler": "openRegistryLookupHandler"
+          },
+          {
+            "id": "gateway-catalogue",
+            "label": "Statutory gateways",
+            "icon": "ScaleBalance",
+            "handler": "openGatewayCatalogueHandler"
           }
         ],
         "showViewAction": false,
@@ -1313,6 +1326,18 @@
             "title": "Circuit breaker",
             "placement": "before-body",
             "colSpan": 12
+          },
+          {
+            "id": "src-document-generation",
+            "component": "DocumentGenerationSourcePanel",
+            "placement": "after-data",
+            "colSpan": 12
+          },
+          {
+            "id": "src-run-summary",
+            "component": "SourceRunSummaryWidget",
+            "placement": "after-data",
+            "colSpan": 12
           }
         ],
         "sidebar": {
@@ -1339,7 +1364,84 @@
       "route": "/sources/logs",
       "type": "logs",
       "title": "Source logs",
+      "actionsComponent": "CallLogActions",
+      "slots": {
+        "row-actions": "CallLogRowActions"
+      },
       "config": {
+        "filterControls": [
+          {
+            "key": "statusCode",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              {
+                "label": "Success",
+                "filter": {
+                  "statusCode": {
+                    "gte": 200,
+                    "lt": 400
+                  }
+                }
+              },
+              {
+                "label": "Client error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 400,
+                    "lt": 500
+                  }
+                }
+              },
+              {
+                "label": "Server error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 500
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "source",
+            "label": "Source",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "source",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "direction",
+            "label": "Direction",
+            "type": "select",
+            "options": [
+              {
+                "label": "Inbound",
+                "filter": {
+                  "direction": "inbound"
+                }
+              },
+              {
+                "label": "Outbound",
+                "filter": {
+                  "direction": "outbound"
+                }
+              }
+            ]
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
@@ -1591,6 +1693,82 @@
       "type": "logs",
       "title": "Endpoint logs",
       "config": {
+        "filter": {
+          "direction": "inbound"
+        },
+        "filterControls": [
+          {
+            "key": "statusCode",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              {
+                "label": "Success",
+                "filter": {
+                  "statusCode": {
+                    "gte": 200,
+                    "lt": 400
+                  }
+                }
+              },
+              {
+                "label": "Client error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 400,
+                    "lt": 500
+                  }
+                }
+              },
+              {
+                "label": "Server error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 500
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "endpoint",
+            "label": "Endpoint",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "endpoint",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "direction",
+            "label": "Direction",
+            "type": "select",
+            "options": [
+              {
+                "label": "Inbound",
+                "filter": {
+                  "direction": "inbound"
+                }
+              },
+              {
+                "label": "Outbound",
+                "filter": {
+                  "direction": "outbound"
+                }
+              }
+            ]
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
@@ -2002,6 +2180,7 @@
           "protocol",
           "style",
           "status",
+          "signingPosture",
           "updated"
         ],
         "includeFields": [
@@ -2085,7 +2264,8 @@
               "OCA\\Integriq\\Action\\SynchronizationAction",
               "OCA\\Integriq\\Action\\FlowAction",
               "OCA\\Integriq\\Action\\EventAction",
-              "OCA\\Integriq\\Action\\PingAction"
+              "OCA\\Integriq\\Action\\PingAction",
+              "OCA\\Integriq\\Action\\ExchangeJobAction"
             ]
           },
           "arguments": {
@@ -2158,6 +2338,58 @@
       "type": "logs",
       "title": "Job logs",
       "config": {
+        "filterControls": [
+          {
+            "key": "level",
+            "label": "Level",
+            "type": "select",
+            "options": [
+              {
+                "label": "Success",
+                "filter": {
+                  "level": "SUCCESS"
+                }
+              },
+              {
+                "label": "Info",
+                "filter": {
+                  "level": "INFO"
+                }
+              },
+              {
+                "label": "Warning",
+                "filter": {
+                  "level": "WARNING"
+                }
+              },
+              {
+                "label": "Error",
+                "filter": {
+                  "level": "ERROR"
+                }
+              }
+            ]
+          },
+          {
+            "key": "jobId",
+            "label": "Job",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "job",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "job_log",
         "sortKey": "created",
@@ -2464,6 +2696,46 @@
       "type": "logs",
       "title": "Synchronization logs",
       "config": {
+        "filterControls": [
+          {
+            "key": "synchronizationId",
+            "label": "Synchronization",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "synchronization",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "test",
+            "label": "Test run",
+            "type": "select",
+            "options": [
+              {
+                "label": "Test runs",
+                "filter": {
+                  "test": true
+                }
+              },
+              {
+                "label": "Real runs",
+                "filter": {
+                  "test": false
+                }
+              }
+            ]
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "synchronization_log",
         "sortKey": "created",
@@ -2716,6 +2988,68 @@
       "type": "logs",
       "title": "Cloud event logs",
       "config": {
+        "filterControls": [
+          {
+            "key": "statusCode",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              {
+                "label": "Success",
+                "filter": {
+                  "statusCode": {
+                    "gte": 200,
+                    "lt": 400
+                  }
+                }
+              },
+              {
+                "label": "Client error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 400,
+                    "lt": 500
+                  }
+                }
+              },
+              {
+                "label": "Server error",
+                "filter": {
+                  "statusCode": {
+                    "gte": 500
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "direction",
+            "label": "Direction",
+            "type": "select",
+            "options": [
+              {
+                "label": "Inbound",
+                "filter": {
+                  "direction": "inbound"
+                }
+              },
+              {
+                "label": "Outbound",
+                "filter": {
+                  "direction": "outbound"
+                }
+              }
+            ]
+          },
+          {
+            "key": "created",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "call_log",
         "sortKey": "created",
@@ -3171,6 +3505,78 @@
       "title": "Traces",
       "_note": "execution-trace-observability REQ-007: follows the SourceLogs/EndpointLogs/CloudEventLogs `type: logs` precedent — a generic list over execution_trace with server-derived entryPoint/status filters and pagination. Row navigation opens TraceDetail (a custom page — the step timeline and Replay action are not expressible as a generic logs row).",
       "config": {
+        "filterControls": [
+          {
+            "key": "status",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              {
+                "label": "Running",
+                "filter": {
+                  "status": "running"
+                }
+              },
+              {
+                "label": "Success",
+                "filter": {
+                  "status": "success"
+                }
+              },
+              {
+                "label": "Failed",
+                "filter": {
+                  "status": "failed"
+                }
+              },
+              {
+                "label": "Short-circuited",
+                "filter": {
+                  "status": "short_circuited"
+                }
+              }
+            ]
+          },
+          {
+            "key": "entryPoint",
+            "label": "Entry point",
+            "type": "select",
+            "options": [
+              {
+                "label": "Endpoint",
+                "filter": {
+                  "entryPoint": "endpoint"
+                }
+              },
+              {
+                "label": "Job",
+                "filter": {
+                  "entryPoint": "job"
+                }
+              },
+              {
+                "label": "Event",
+                "filter": {
+                  "entryPoint": "event"
+                }
+              },
+              {
+                "label": "Synchronization",
+                "filter": {
+                  "entryPoint": "sync"
+                }
+              }
+            ]
+          },
+          {
+            "key": "startedAt",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "execution_trace",
         "sortKey": "startedAt",
@@ -3976,6 +4382,7 @@
           "name",
           "category",
           "kind",
+          "tier",
           "status"
         ],
         "showAdd": false,
@@ -4005,6 +4412,20 @@
             "label": "Configuration templates",
             "filter": {
               "kind": "configuration-template"
+            },
+            "icon": "FileCogOutline"
+          },
+          {
+            "label": "Checked templates",
+            "filter": {
+              "tier": "curated"
+            },
+            "icon": "CheckDecagramOutline"
+          },
+          {
+            "label": "Generated templates",
+            "filter": {
+              "tier": "generated"
             },
             "icon": "FileCogOutline"
           }
@@ -4105,6 +4526,34 @@
       }
     },
     {
+      "id": "Migrations",
+      "route": "/migrations",
+      "type": "index",
+      "title": "Migrations",
+      "config": {
+        "register": "integriq",
+        "schema": "column_mapping",
+        "columns": [
+          "name",
+          "kind",
+          "targetSchema",
+          "version"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "documentationUrl": "https://integriq.conduction.nl"
+      },
+      "_note": "The saved column mappings a delivered file is read through (migration-source-adapters task 2). Create and Edit open ColumnMappingEditorModal, which runs POST /api/migration-sources/column-mapping/validate before every save and raises the version by one. below-header renders MigrationTestRunPanel: pick a migration source (GET /api/migration-sources) and run the read-only preview, which writes nothing.",
+      "slots": {
+        "form-dialog": "ColumnMappingEditorModal",
+        "below-header": "MigrationTestRunPanel"
+      }
+    },
+    {
       "id": "DeadLetters",
       "route": "/dead-letters",
       "type": "custom",
@@ -4150,6 +4599,12 @@
                 "failed": "error"
               }
             }
+          },
+          {
+            "key": "triggeredBy",
+            "label": "Started by",
+            "sortable": true,
+            "width": "9%"
           },
           {
             "key": "processed",
@@ -4200,7 +4655,20 @@
           "showMetadata": true
         },
         "showViewAction": true,
-        "showEditAction": false
+        "showEditAction": false,
+        "actions": [
+          {
+            "id": "run-again",
+            "label": "Run again",
+            "icon": "PlayOutline",
+            "handler": "rerunFailedRunHandler",
+            "visibleWhen": {
+              "field": "status",
+              "op": "eq",
+              "value": "failed"
+            }
+          }
+        ]
       }
     }
   ],

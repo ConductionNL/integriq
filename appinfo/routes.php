@@ -37,16 +37,12 @@ return [
 		// unchanged — `verzoeken` there is the DSO/STAM wire path, not code.
 		['name' => 'dSO#receiveRequest', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
-		// dso-connector-adapter: authenticated NC-session read/handoff/outbound
-		// surface completing the STAM koppelvlak above (which previously
-		// logged and dropped every verzoek — no persistence, no handoff, no
-		// outbound leg existed before this change). The handoff trigger
-		// deliberately requires a real authenticated actor (OpenRegister
-		// HandoffService v1 has no system-user privilege lane; see
-		// design.md §1, same constraint documented for open-formulieren-intake).
+		// dso-connector-adapter: authenticated NC-session read/outbound
+		// surface completing the STAM koppelvlak above. There is no case
+		// handoff: the case system (dossiq) makes the one case from the
+		// mapped dso_verzoek (retire-dso-case-handoff).
 		['name' => 'dSO#listVerzoeken', 'url' => '/api/dso/verzoeken', 'verb' => 'GET'],
 		['name' => 'dSO#status', 'url' => '/api/dso/verzoeken/{id}', 'verb' => 'GET'],
-		['name' => 'dSO#handoff', 'url' => '/api/dso/verzoeken/{id}/handoff', 'verb' => 'POST'],
 		['name' => 'dSO#postOutbound', 'url' => '/api/dso/verzoeken/{id}/status', 'verb' => 'POST'],
 
 		// Peppol Access Point connector (openspec/changes/peppol-access-point-connector).
@@ -68,7 +64,7 @@ return [
 		['name' => 'directorySync#run', 'url' => '/api/directory/connections/{id}/run', 'verb' => 'POST'],
 		['name' => 'directorySync#runs', 'url' => '/api/directory/runs', 'verb' => 'GET'],
 
-		// Mail intake (openspec/changes/mail-intake-creates-cases). Importing a
+		// Mail intake (openspec/changes/archive/2026-09-28-mail-intake-creates-cases). Importing a
 		// saved message and polling a mailbox both write `message` objects that
 		// other apps act on, so both sit behind the ADR-023 action matrix
 		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
@@ -118,9 +114,17 @@ return [
 		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
 		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
+		// opt-out-before-send: GET only shows the page, POST writes (also the
+		// RFC 8058 one-click), and an SMS carries a short id resolved here.
+		['name' => 'senderIdentity#unsubscribeConfirm', 'url' => '/unsubscribe/{token}', 'verb' => 'POST', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
+		['name' => 'senderIdentity#shortLink', 'url' => '/u/{shortToken}', 'verb' => 'GET', 'requirements' => ['shortToken' => '[A-Za-z0-9]{10}']],
+		// The opt-out list, read from integriq's own table. Administrators only.
+		['name' => 'senderIdentity#optOuts', 'url' => '/api/outbound/opt-outs', 'verb' => 'GET'],
+		// The opt-out decision log. Administrators only.
+		['name' => 'senderIdentity#optOutLog', 'url' => '/api/outbound/opt-out-log', 'verb' => 'GET'],
 
 		// The outbound call log, its replay and the verdicts
-		// (openspec/changes/outbound-call-delivery-and-replay). Reading a call
+		// (openspec/changes/archive/2026-09-28-outbound-call-delivery-and-replay). Reading a call
 		// means reading the request and the response it carried, so it sits
 		// behind its own action (`call-log.read`) rather than the listing's.
 		// Replaying and hand-firing share one action (`call-log.replay`),
@@ -192,6 +196,55 @@ return [
 		['name' => 'iwmoIjw#createMessage', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
 
+		// DUO ROD (Register Onderwijsdeelnemers) adapter
+		// (openspec/changes/integriq-adapter-rod). Push is an authenticated
+		// NC-session call (learniq's own `bron-rod` DataExchangeJob) — mirrors
+		// iwmoIjw#createMessage. The inbound acknowledgement/retour receiver is
+		// gated by webhook signature (HMAC), not an NC session; see
+		// RodController::retour().
+		['name' => 'rod#berichten', 'url' => '/api/rod/berichten', 'verb' => 'POST'],
+		['name' => 'rod#retour', 'url' => '/api/rod/retour', 'verb' => 'POST'],
+		// DUO Verzuimloket (VSV-M2M) adapter (openspec/changes/
+		// integriq-adapter-verzuimloket). Push is an authenticated NC-session
+		// call (learniq's own `leerplicht` DataExchangeJob) — mirrors
+		// iwmoIjw#createMessage. The inbound acknowledgement/retour receiver is
+		// gated by webhook signature (HMAC), not an NC session; see
+		// VerzuimloketController::retour().
+		['name' => 'verzuimloket#berichten', 'url' => '/api/verzuimloket/berichten', 'verb' => 'POST'],
+		['name' => 'verzuimloket#retour', 'url' => '/api/verzuimloket/retour', 'verb' => 'POST'],
+		// OSO (Overstapservice Onderwijs, Kennisnet) adapter (openspec/changes/
+		// integriq-adapter-oso). Export is an authenticated NC-session call
+		// (learniq's own `oso` DataExchangeJob, already parent-review-gated on
+		// learniq's side) — mirrors iwmoIjw#createMessage. The inbound import
+		// receiver (Kennisnet delivering an overstapdossier) and the export
+		// acknowledgement/retour receiver are both gated by webhook signature
+		// (HMAC), not an NC session; see OsoController.
+		['name' => 'oso#export', 'url' => '/api/oso/export', 'verb' => 'POST'],
+		['name' => 'oso#import', 'url' => '/api/oso/import', 'verb' => 'POST'],
+		['name' => 'oso#retour', 'url' => '/api/oso/retour', 'verb' => 'POST'],
+		// UWLR / Edu-V / Basispoort / Entree-content adapter (openspec/changes/
+		// integriq-adapter-uwlr-eduv). Each of the four sends is an
+		// authenticated NC-session call (learniq's own `uwlr`/`edu-v`/
+		// `basispoort`/`entree-content` DataExchangeJobs) — mirrors
+		// iwmoIjw#createMessage. The shared acknowledgement/retour receiver is
+		// gated by webhook signature (HMAC), not an NC session; see
+		// UwlrEduVController::retour().
+		['name' => 'uwlrEduV#uwlr', 'url' => '/api/uwlr-eduv/uwlr', 'verb' => 'POST'],
+		['name' => 'uwlrEduV#eduV', 'url' => '/api/uwlr-eduv/edu-v', 'verb' => 'POST'],
+		['name' => 'uwlrEduV#basispoort', 'url' => '/api/uwlr-eduv/basispoort', 'verb' => 'POST'],
+		['name' => 'uwlrEduV#entreeContent', 'url' => '/api/uwlr-eduv/entree-content', 'verb' => 'POST'],
+		['name' => 'uwlrEduV#retour', 'url' => '/api/uwlr-eduv/retour', 'verb' => 'POST'],
+		// Exchange jobs another app owns (learniq-exchange-jobs-native): the
+		// read model an app queries for its own jobs, and the two correction
+		// actions on a rejection. Each method checks its ADR-023 action
+		// (exchange.read / exchange.resubmit / exchange.waive).
+		['name' => 'exchange#jobs', 'url' => '/api/exchange/jobs', 'verb' => 'GET'],
+		['name' => 'exchange#job', 'url' => '/api/exchange/jobs/{id}', 'verb' => 'GET'],
+		['name' => 'exchange#rejections', 'url' => '/api/exchange/rejections', 'verb' => 'GET'],
+		['name' => 'exchange#targets', 'url' => '/api/exchange/targets', 'verb' => 'GET'],
+		['name' => 'exchange#resubmit', 'url' => '/api/exchange/rejections/{id}/resubmit', 'verb' => 'POST'],
+		['name' => 'exchange#waive', 'url' => '/api/exchange/rejections/{id}/waive', 'verb' => 'POST'],
+
 		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
 		// stuf-zkn-bridge) — the legacy Dutch municipal SOAP/XML message
 		// standard, letting a municipality adopt procest without ripping out
@@ -249,6 +302,10 @@ return [
 		['name' => 'lti#agsLineItem', 'url' => '/api/lti/{deployment}/ags/lineitems/{lineItemId}', 'verb' => 'GET', 'requirements' => ['lineItemId' => '.+']],
 		['name' => 'lti#nrpsMembership', 'url' => '/api/lti/{deployment}/nrps/membership', 'verb' => 'GET'],
 		['name' => 'lti#jwks', 'url' => '/.well-known/lti/{registrationType}/{registrationUuid}/jwks.json', 'verb' => 'GET'],
+		// Platform authorization endpoint (connectors-lti-platform-launch REQ-LTIL-002): the tool
+		// redirects the learner's browser here after the login initiation, by GET or form POST.
+		['name' => 'ltiPlatform#authorize', 'url' => '/api/lti/platform/authorize', 'verb' => 'GET'],
+		['name' => 'ltiPlatform#authorize', 'url' => '/api/lti/platform/authorize', 'verb' => 'POST', 'postfix' => 'Post'],
 		// AGS outbound, Tool role (REQ-LTI-008) — admin-gated, CSRF-protected.
 		// Every route above is the PLATFORM role (inbound). Without this one the
 		// Tool-role half of REQ-LTI-008 had no caller at all: LtiAgsService::
@@ -264,6 +321,9 @@ return [
 		// injection (see LtiController::approve()/suspend() precedent + design.md).
 		['name' => 'lti#approve', 'url' => '/api/lti/{registrationType}/{registrationUuid}/approve', 'verb' => 'POST'],
 		['name' => 'lti#suspend', 'url' => '/api/lti/{registrationType}/{registrationUuid}/suspend', 'verb' => 'POST'],
+		// Platform details for a tool's administrator (connectors-lti-platform-launch
+		// REQ-LTIL-004): admin-only, on its own controller.
+		['name' => 'ltiPlatformDetails#show', 'url' => '/api/lti/tools/{id}/platform-details', 'verb' => 'GET'],
 
 		// EUDI wallet credential issuance — OpenID4VCI pre-authorized code flow
 		// (openspec/changes/eudi-wallet-credential-issuance). Dedicated controller
@@ -303,7 +363,7 @@ return [
 		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
 		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
 
-		// Vendor document generation (openspec/changes/document-generation-vendor-adapter).
+		// Vendor document generation (openspec/changes/archive/2026-09-28-document-generation-vendor-adapter).
 		// The operator's half only: read the vendor's own template list for a
 		// source, and activate a source that can actually render. Filinq asks
 		// for a render through the typed DocumentRenderRequestedEvent, not
@@ -331,10 +391,18 @@ return [
 		// Every refusal is one undifferentiated 401
 		// (openspec/specs/digid-eherkenning-auth-adapter/spec.md).
 		['name' => 'idpBroker#exchange', 'url' => '/api/idp/envelope/exchange', 'verb' => 'POST'],
+		// The browser half of the same login. The start checks the consumer and
+		// its registered return address before anything leaves integriq; the
+		// callback sends the browser back only to the address kept in the
+		// signed state (openspec/changes/archive/2026-09-29-identity-broker-browser-login).
+		['name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
+		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
+		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST', 'requirements' => ['provider' => 'digid|eherkenning|eidas'], 'postfix' => 'post'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
+		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
@@ -366,6 +434,7 @@ return [
 		['name' => 'synchronizations#run', 'url' => '/api/synchronizations/{id}/run', 'verb' => 'POST'],
 		['name' => 'synchronizations#test', 'url' => '/api/synchronizations/{id}/test', 'verb' => 'POST'],
 		['name' => 'synchronizations#resetCursor', 'url' => '/api/synchronizations/{id}/reset-cursor', 'verb' => 'POST'],
+		['name' => 'sourceDestroyed#destroyed', 'url' => '/api/synchronizations/{id}/destroyed', 'verb' => 'POST'],
 		['name' => 'synchronizations#logs', 'url' => '/api/synchronizations/logs', 'verb' => 'GET'],
 		['name' => 'synchronizations#statistics', 'url' => '/api/synchronizations/statistics', 'verb' => 'GET'],
 		['name' => 'synchronizations#contracts', 'url' => '/api/synchronizations/contracts/{id}', 'verb' => 'GET'],
@@ -409,6 +478,7 @@ return [
 		['name' => 'events#messages', 'url' => '/api/events/{id}/messages', 'verb' => 'GET'],
 
 		// Subscription management
+		['name' => 'eventBrokers#index', 'url' => '/api/events/brokers', 'verb' => 'GET'],
 		['name' => 'events#subscriptions', 'url' => '/api/events/subscriptions', 'verb' => 'GET'],
 		['name' => 'events#subscriptionMessages', 'url' => '/api/events/subscriptions/{subscriptionId}/messages', 'verb' => 'GET'],
 		['name' => 'events#subscribe', 'url' => '/api/events/subscriptions', 'verb' => 'POST'],
@@ -536,6 +606,10 @@ return [
 		['name' => 'migrationSources#index', 'url' => '/api/migration-sources', 'verb' => 'GET'],
 		['name' => 'migrationSources#preview', 'url' => '/api/migration-sources/preview', 'verb' => 'POST'],
 		['name' => 'migrationSources#validateMapping', 'url' => '/api/migration-sources/column-mapping/validate', 'verb' => 'POST'],
+		// integriq-adapter-rostering-imports: named-incumbent (ParnasSys, ESIS,
+		// Magister, Somtoday) column-mapping presets for the same read-only
+		// engine, so an operator picks a preset instead of authoring one.
+		['name' => 'migrationSources#presets', 'url' => '/api/migration-sources/column-mapping/presets', 'verb' => 'GET'],
 
 		// statutory-gateways-and-frameworks: which laws this instance reaches,
 		// how far it claims to meet each one, where every endpoint sits, and
@@ -622,6 +696,27 @@ return [
 		// DSO STAM PKIoverheid signing configuration (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoPkiSettings#getConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'GET'],
 		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
+		// Open Formulieren connection (openformulieren-intake-through-an-integriq-connection), admin-only via #[AuthorizedAdminSetting].
+		['name' => 'openFormulierenSettings#getConfig', 'url' => '/api/admin/open-formulieren-connection', 'verb' => 'GET'],
+		['name' => 'openFormulierenSettings#setConfig', 'url' => '/api/admin/open-formulieren-connection', 'verb' => 'PUT'],
+		// public-webhooks-on-the-consumer-model: one consumer and account per signed public webhook.
+		['name' => 'webhookConnectionsSettings#getConfig', 'url' => '/api/admin/webhook-connections', 'verb' => 'GET'],
+		['name' => 'webhookConnectionsSettings#setConfig', 'url' => '/api/admin/webhook-connections/{authorizationType}', 'verb' => 'PUT'],
+		['name' => 'digitalPostAccountSettings#getConfig', 'url' => '/api/admin/digital-post-account', 'verb' => 'GET'],
+		['name' => 'digitalPostAccountSettings#setConfig', 'url' => '/api/admin/digital-post-account', 'verb' => 'PUT'],
+		// berichtenbox-client: one MijnOverheid Berichtenbox source per organisation, certificate stored encrypted. Admin-only via #[AuthorizedAdminSetting].
+		['name' => 'berichtenboxSettings#getConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'GET'],
+		['name' => 'berichtenboxSettings#setConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'PUT'],
+		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
+		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
+		// OpenTelemetry trace export settings (observability-opentelemetry-export REQ-OTEL-005).
+		['name' => 'otelSettings#getConfig', 'url' => '/api/admin/otel', 'verb' => 'GET'],
+		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],
+		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
+		['name' => 'dsoActivityMapping#unmapped', 'url' => '/api/admin/dso-activities/unmapped', 'verb' => 'GET'],
+		// Packaged ZGW consumer sets (zgw-connectors-for-dossiq): list, and install against a register/schema.
+		['name' => 'zgwSets#index',   'url' => '/api/zgw-sets', 'verb' => 'GET'],
+		['name' => 'zgwSets#install', 'url' => '/api/zgw-sets/{slug}/install', 'verb' => 'POST', 'requirements' => ['slug' => 'zgw-[a-z]+']],
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
 		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The engine generic is

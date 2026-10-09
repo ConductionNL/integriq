@@ -132,7 +132,7 @@ class SynchronizationItemIsolationTest extends TestCase {
 					$this->createMock(LoggerInterface::class),
 					$this->synchronizationLogService,
 					$appConfig,
-					$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
+					$this->createMock(\OCA\Integriq\Service\SynchronizationApprovalGate::class),
 				]
 			)
 			->onlyMethods(['getAllObjectsFromSource'])
@@ -192,4 +192,68 @@ class SynchronizationItemIsolationTest extends TestCase {
 		$this->assertSame(3, $result['result']['objects']['found']);
 	}//end testOneBadItemDoesNotAbortTheSyncPass()
 
+	/**
+	 * Conditions in the shape the synchronization schema and editor store, a
+	 * list of JsonLogic groups, filter a pull like a bare JsonLogic object does.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-synchronization-orchestration-and-direction-routing-req-001
+	 */
+	public function testListShapedConditionsSkipAPulledObjectThatDoesNotMatch(): void {
+		$service = $this->buildServiceReturningObjects(
+			[
+				['process' => false, 'id' => 'obj-1'],
+				['process' => false, 'id' => 'obj-2'],
+			]
+		);
+
+		$result = $service->synchronize(
+			synchronization: [
+				'uuid' => 'sync-1',
+				'id' => 'sync-1',
+				'name' => 'list-shaped-conditions',
+				'sourceId' => 'source-1',
+				'conditions' => [['==' => [['var' => 'process'], true]]],
+			]
+		);
+
+		$this->assertSame(2, $result['result']['objects']['found']);
+		$this->assertSame(2, $result['result']['objects']['skipped']);
+		$this->assertSame(0, $result['result']['objects']['invalid']);
+	}//end testListShapedConditionsSkipAPulledObjectThatDoesNotMatch()
+
+	/**
+	 * A push from a register/schema source does not run for an object its
+	 * list-shaped conditions reject: a staged document is not delivered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-synchronization-orchestration-and-direction-routing-req-001
+	 */
+	public function testListShapedConditionsStopAPushForAnObjectThatDoesNotMatch(): void {
+		$service = $this->buildServiceReturningObjects([]);
+
+		$group  = ['==' => [['var' => 'processingStatus'], 'ready_for_writeback']];
+		$shapes = ['list' => [$group], 'object' => $group];
+		foreach ($shapes as $shape => $conditions) {
+			$object   = ['id' => 'doc-1', 'processingStatus' => 'staged'];
+			$contract = $service->synchronize(
+				synchronization: [
+					'uuid' => 'push-1',
+					'id' => 'push-1',
+					'name' => 'list-shaped-push',
+					'sourceType' => 'register/schema',
+					'sourceId' => 'filinq/externalDocument',
+					'targetType' => 'api',
+					'targetId' => 'documenten',
+					'conditions' => $conditions,
+				],
+				force: true,
+				object: $object
+			);
+
+			$this->assertNull($contract, $shape);
+		}
+	}//end testListShapedConditionsStopAPushForAnObjectThatDoesNotMatch()
 }//end class

@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
+ * @spec openspec/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\EventDispatcher\Event;
  *
  * The shape is fixed by the hydra umbrella design D6.
  *
- * @spec openspec/changes/connection-registry/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
+ * @spec openspec/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
  */
 final class ConnectionRefreshRequestedEvent extends Event {
 	/**

@@ -1,8 +1,10 @@
 # webhook-signing Specification
 
 ## Purpose
-TBD - created by archiving change openconnector-webhook-signing. Update Purpose after archive.
+A receiver can verify every outbound webhook integriq sends. A push subscription is signed from the moment it is created, the page states the recipe a receiver computes, an unsigned subscription carries the reason somebody gave, and inbound signatures are verified by the same rule.
+
 ## Requirements
+
 ### Requirement: Outbound deliveries are HMAC-signed when the subscription has a signing secret (REQ-WHS-001)
 
 Outbound push deliveries MUST be HMAC-signed when the subscription carries a
@@ -153,3 +155,110 @@ fields. All new UI strings SHALL ship with `nl` and `en` translations
 - **THEN** `webhook_signature` SHALL be selectable and expose scheme, header,
   secret, and tolerance fields
 
+### Requirement: A push subscription is signed unless somebody says otherwise (REQ-SOW-001)
+
+Creating an `event_subscription` with `style: push` MUST generate a
+signing secret and store it as `protocolSettings.signingSecret`, unless
+the request sets `protocolSettings.unsigned`. The create response MUST
+return the full secret exactly once, and every later read MUST redact it
+under REQ-WHS-002's convention. `protocolSettings.unsigned` MUST carry a
+`reason`, the user who set it (`setBy`) and the time (`setAt`); a save that sets `unsigned`
+without a reason MUST be refused. Subscriptions that already exist MUST
+NOT gain a secret.
+
+#### Scenario: a new subscription is signed without anybody asking
+- GIVEN an operator creating a push subscription with a sink and no signing configuration
+- WHEN the subscription is saved
+- THEN the response carries a full `whsec_...` value once and the stored subscription has a `signingSecret`
+- AND the next delivery to that sink carries `X-OpenConnector-Signature`
+- e2e: `tests/e2e/signed-outbound-webhooks.spec.ts`
+
+#### Scenario: unsigned is refused without a reason
+- GIVEN an operator creating a push subscription with `protocolSettings.unsigned: {}`
+- WHEN the subscription is saved
+- THEN the save is refused and the message names the missing reason
+- @e2e exclude validation path; covered by PHPUnit `SubscriptionSigningDefaultListenerTest`
+
+#### Scenario: unsigned with a reason is accepted and recorded
+- GIVEN an operator creating a push subscription with `unsigned: {"reason": "receiver cannot verify HMAC yet"}`
+- WHEN the subscription is saved
+- THEN the subscription stores the reason, the user and the time, and deliveries carry no signature header
+- e2e: `tests/e2e/signed-outbound-webhooks.spec.ts`
+
+#### Scenario: an existing subscription is left alone
+- GIVEN a subscription created before this change with no `signingSecret`
+- WHEN the app is upgraded
+- THEN the subscription still has no secret and its deliveries are unchanged
+- @e2e exclude upgrade behaviour; covered by PHPUnit `SubscriptionSigningDefaultListenerTest::testAnExistingSubscriptionDoesNotGainASecretOnUpdate`
+
+### Requirement: The subscription page states what a receiver must compute (REQ-SOW-002)
+
+The subscription surface MUST state the verification recipe: the header
+name, the `t=<unix-ts>,v1=<hex>` value shape, that `v1` is
+`HMAC-SHA256(secret, "<t>." + rawBody)` over the body exactly as received,
+that a receiver should apply its own timestamp tolerance, and that two
+`v1` pairs appear during a rotation grace window. The recipe MUST be shown
+whether or not the secret is currently revealed, and MUST ship with Dutch
+and English strings.
+
+#### Scenario: an integrator reads the recipe without the secret
+- GIVEN a signed subscription whose secret was revealed and dismissed
+- WHEN an operator opens the subscription page
+- THEN the verification recipe is shown with the header name, the signed string and the algorithm
+- AND the secret itself is redacted
+- @e2e exclude modal content; covered by `tests/vitest/subscriptionSigningRecipe.spec.js`
+
+### Requirement: An unsigned subscription and an unsigned attempt are marked (REQ-SOW-003)
+
+The subscription list and detail MUST mark a subscription that delivers
+unsigned. Every delivery attempt recorded in the log MUST record whether
+it was signed, for immediate attempts, retries and operator replays alike.
+
+#### Scenario: the list distinguishes signed from unsigned
+- GIVEN one signed and one unsigned push subscription
+- WHEN an operator opens the subscription list
+- THEN the unsigned one is marked and the signed one is not
+- e2e: `tests/e2e/signed-outbound-webhooks.spec.ts`
+
+#### Scenario: the delivery log answers the receiver's question
+- GIVEN an unsigned subscription with three delivery attempts
+- WHEN an operator reads its delivery log
+- THEN each attempt records that it was sent unsigned
+- @e2e exclude delivery logging; covered by PHPUnit `EventServiceTest::testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo`
+
+### Requirement: Inbound verification reads the Microsoft Teams scheme (REQ-WHS-005)
+
+The `webhook_signature` configuration SHALL accept a fourth scheme, `teams`.
+Under it the rule MUST read the configured header (Teams sends
+`Authorization`), MUST accept the value in the form `HMAC <base64>`, and MUST
+compare it in constant time against the base64-encoded HMAC-SHA256 of the RAW
+request body under the base64-DECODED shared secret, which is how Teams signs
+an outgoing webhook.
+
+The scheme carries no timestamp. `toleranceSeconds` SHALL be ignored with a
+logged warning, the way `github` already ignores it, rather than refused.
+
+A failure SHALL be handled exactly as every other scheme's failure is: HTTP
+401, an undifferentiated body, and no downstream rule executed. An
+unverifiable payload on a route that opens cases SHALL NOT be accepted, and
+there SHALL be no configuration that lets it be.
+
+#### Scenario: A correctly signed Teams post passes
+
+- **GIVEN** an endpoint with a `webhook_signature` rule (`scheme: teams`) and the secret Teams was configured with
+- **WHEN** Teams posts a message signed `HMAC <base64>` over the raw body
+- **THEN** the rule SHALL pass and the intake pipeline SHALL run
+
+#### Scenario: The secret is used base64-decoded
+
+- **GIVEN** the same endpoint, and a sender that signed under the literal secret string instead of its decoded bytes
+- **WHEN** the request arrives
+- **THEN** the response SHALL be HTTP 401
+- **AND** no message SHALL have been created
+
+#### Scenario: Tolerance is ignored rather than refused
+
+- **GIVEN** a `teams` rule configured with a `toleranceSeconds` value
+- **WHEN** a correctly signed request arrives
+- **THEN** it SHALL pass
+- **AND** the ignored setting SHALL be logged as a warning

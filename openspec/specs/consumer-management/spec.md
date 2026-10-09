@@ -14,12 +14,30 @@ including its authorization type and allowed domains. Webhooks share the same
 underlying schema (`consumer`) and surface but are presented separately for
 clarity. This spec covers the observable browser UI behaviour and the backend
 authentication enforcement (covered by PHPUnit/Newman). It is a retrofit spec.
+
 ## Requirements
 
 ### REQ-CON-UI-001: Consumer Management UI
 
-Integriq MUST provide a Consumers section in its SPA where administrators can
-browse, create, edit, and delete consumer configurations.
+Integriq MUST provide a Consumers section in its SPA where administrators can browse,
+create, edit, and delete consumer configurations.
+
+The create/edit form SHALL expose every authorable consumer property — name, description,
+allowed domains, allowed IPs, authorization type, authorization configuration, rate limit and
+quota — in a declared order. Display order, labels and help text for the schema-reading
+surfaces (the consumer detail page's data widget and detail grid) SHALL come from the
+`consumer` schema, not from the page's manifest entry.
+
+The two allowlist properties SHALL be authored as multi-value lists that persist as JSON
+arrays of strings. The form MUST NOT persist an empty array for either one: an empty array is
+a configured allowlist that admits nobody (`REQ-CON-SCOPE-001`), so emitting one where the
+operator expressed no restriction would reject every inbound request. An allowlist left empty,
+or emptied of its last entry, SHALL persist as absent — the unrestricted state.
+
+Authorization type SHALL be presented as a select over the types the app offers, and a stored
+value outside that set SHALL be displayed rather than blanked, so saving an unrelated field
+cannot silently rewrite it. The type list SHALL NOT be declared as a schema `enum`, which is
+enforced on save and would make existing rows unsaveable.
 
 #### Scenario: consumers list page mounts and shows content
 
@@ -32,6 +50,53 @@ browse, create, edit, and delete consumer configurations.
 - GIVEN the Consumers index page is loaded
 - WHEN the user clicks the "Add Item" button
 - THEN a modal or dialog opens containing the consumer creation form
+
+#### Scenario: every authorable property is on the form
+
+- WHEN the user opens "+ Add" on the Consumers index
+- THEN the form renders name, description, allowed domains, allowed IPs, authorization type,
+  authorization configuration, rate limit and quota — in that order, taken from the schema's
+  `order`, not alphabetically
+- @e2e exclude asserted on the schema order — covered by tests/vitest/consumerDraft.spec.js
+
+#### Scenario: a consumer created without an allowlist is unrestricted
+
+- GIVEN the create form, with both allowlist inputs left empty
+- WHEN the operator saves
+- THEN the persisted consumer has NO `domains` and NO `ips` value — not an empty array
+- AND inbound calls from any source SHALL NOT be rejected on source-scope grounds
+- @e2e exclude the assertion is on the persisted shape and on inbound enforcement — covered by vitest over the payload builder, and by PHPUnit for `isAllowed()`
+
+#### Scenario: removing the last allowlist entry stops restricting rather than denying all
+
+- GIVEN a consumer with one allowed domain
+- WHEN the operator removes that entry and saves
+- THEN the persisted `domains` is absent, so the consumer becomes unrestricted
+- AND it does NOT become an empty allowlist that rejects every request
+- @e2e exclude asserted on the persisted shape — covered by vitest
+
+#### Scenario: allowlist entries persist as an array, not a joined string
+
+- GIVEN the create form
+- WHEN the operator enters two domains as separate entries and saves
+- THEN `domains` persists as a two-element array of strings, which is the shape
+  `ConsumerScopeService::isAllowed()` reads
+- @e2e exclude asserted on the persisted shape — covered by vitest
+
+#### Scenario: a legacy comma-joined allowlist is repaired on save
+
+- GIVEN a consumer whose `domains` was written by the pre-cutover editor as the single string
+  `"example.com, example.org"` — a value that matched nothing at run time
+- WHEN the operator opens that consumer and saves it
+- THEN `domains` persists as `["example.com", "example.org"]`
+- @e2e exclude asserted on the persisted shape — covered by vitest
+
+#### Scenario: the type select preserves an off-list value
+
+- WHEN a consumer holds an authorization type the picker does not offer
+- THEN the select displays that stored value instead of reading as unset, and saving the
+  consumer does not silently replace it
+- @e2e exclude asserted on the draft seeding — covered by vitest
 
 ### REQ-WBHK-UI-001: Webhook Management UI
 
@@ -334,18 +399,37 @@ MUST distinguish inbound consumer throttling from outbound source backoff via a
 
 ### Requirement: Rate-limit and quota configuration UI (REQ-CON-RL-005)
 
-The Consumer editor in the *Consumers* section MUST let an operator configure a
-consumer's `rateLimit` (requests per window + window seconds) and `quota`
-(limit + period) alongside the authentication configuration it already renders.
-Leaving the inputs empty MUST persist an unlimited (absent) configuration.
+The Consumer editor in the *Consumers* section MUST let an operator configure a consumer's
+`rateLimit` (requests per window + window seconds) and `quota` (limit + period) alongside the
+authentication configuration it already renders. Leaving the inputs empty MUST persist an
+unlimited (absent) configuration.
+
+Each block's two halves SHALL be authored as typed fields — two positive integers for
+`rateLimit`, a positive integer and a period for `quota` — not as a raw JSON object. A block
+with only one half supplied MUST persist as unlimited rather than as a partial block, since
+neither half alone defines a limiter. Clearing a previously configured block MUST persist an
+explicit null, which is what removes it on update.
 
 #### Scenario: an operator sets a rate limit on a consumer
 
 - **GIVEN** the Consumer editor for an existing consumer
 - **WHEN** the operator enters a requests-per-window and window-seconds value and saves
-- **THEN** the consumer's `rateLimit` SHALL be persisted and enforced on
-  subsequent inbound calls
+- **THEN** the consumer's `rateLimit` SHALL be persisted and enforced on subsequent inbound calls
 - @e2e exclude consumer editor rate-limit UI — Playwright regression added in the implementation phase alongside the existing Consumers journey
+
+#### Scenario: a half-filled rate limit persists as unlimited
+
+- GIVEN the Consumer editor with a requests-per-window value but no window-seconds value
+- WHEN the operator saves
+- THEN `rateLimit` SHALL persist as null, and no request SHALL be throttled on rate-limit grounds
+- @e2e exclude asserted on the persisted shape — covered by vitest
+
+#### Scenario: clearing a configured limiter removes it
+
+- GIVEN a consumer with a configured `rateLimit`
+- WHEN the operator empties both inputs and saves
+- THEN `rateLimit` SHALL persist as null and the consumer SHALL become unlimited again
+- @e2e exclude asserted on the persisted shape — covered by vitest
 
 ### Requirement: apiKey consumer authentication MUST remain callable outside the endpoint-runtime dispatch path (REQ-CON-002)
 
@@ -426,3 +510,130 @@ and is specified by `api-product-gateway` `REQ-APG-005`.
 - WHEN that consumer calls the unrelated endpoint
 - THEN the consumer's own `rateLimit {requestsPerWindow: 1000, windowSeconds: 60}` is enforced unchanged
 
+### Requirement: The consumer credential is write-only in the editor (REQ-CON-UI-002)
+
+The Consumer editor MUST open the credential field empty on edit and MUST NOT treat that empty
+field as an instruction to clear the stored credential.
+
+`authorizationConfiguration` is declared `writeOnly: true`, so OpenRegister strips it from every
+API response — admin included — and the editor has no value to pre-fill. An untouched credential
+MUST therefore be omitted from the update payload, so OpenRegister's save-side preserve rule
+carries the stored value forward. Clearing MUST require a deliberate act that sends an explicit
+null.
+
+The credential field SHALL be shown only for an authorization type that carries a credential.
+Selecting a type that carries none MUST persist a null credential, so a decommissioned key is
+retired rather than left unreachable at rest.
+
+@e2e exclude the round-trip assertion is on the payload shape and on OpenRegister's preserve rule — covered by vitest and by OpenRegister's own suite
+
+#### Scenario: editing an unrelated field keeps the stored credential
+
+- GIVEN a consumer with a stored `authorizationConfiguration.apiKey`
+- WHEN the operator edits only its description and saves
+- THEN the payload OMITS `authorizationConfiguration`
+- AND the stored key still authenticates inbound calls afterwards
+
+#### Scenario: the credential field opens empty on edit
+
+- GIVEN a consumer with a stored credential
+- WHEN the operator opens it for editing
+- THEN the credential editor is empty, and its help text states that this is the write-only
+  boundary rather than a missing value
+
+#### Scenario: clearing the credential is explicit
+
+- GIVEN a consumer with a stored credential
+- WHEN the operator uses the clear control and saves
+- THEN the payload carries `authorizationConfiguration: null` and the stored credential is removed
+
+#### Scenario: switching to a credential-less type retires the credential
+
+- GIVEN a consumer with `authorizationType: apiKey` and a stored key
+- WHEN the operator changes the type to `none` and saves
+- THEN the credential editor is no longer shown
+- AND the payload carries `authorizationConfiguration: null`, so the key is not left stored and
+  unreachable
+
+#### Scenario: invalid credential JSON blocks the save
+
+- GIVEN the credential editor containing text that is not a JSON object
+- WHEN the operator attempts to save
+- THEN the save is refused with an inline parse error, rather than persisting a value the engine
+  cannot read
+
+### Requirement: A signed webhook acts as its consumer's account (REQ-CM-020)
+
+Every signed public webhook in `WebhookProfiles` MUST authenticate a delivery against its own consumer (`authorizationType` per webhook), read with an engine read. It MUST verify the signature header named in the consumer's `authorizationConfiguration` over the exact raw body. It MUST run every OpenRegister write as the account in the consumer's `userId`, inside `runAs()`, and restore the previous user afterwards. A bad signature MUST answer 401. A missing connection, a missing, unknown or disabled account, or an account without the profile's rights on its schema MUST answer 503 with `<channel>_<code>`, write nothing and alert the administrators. A write that OpenRegister refuses MUST answer 503 too. An upgrade MUST move a webhook's legacy source secret into its consumer, without an account. Ruben approved this model on 2026-10-04.
+
+#### Scenario: A signed delivery without a session is stored as the consumer's account
+
+- GIVEN a webhook consumer whose account may write the webhook's schema
+- WHEN a correctly signed delivery arrives without a Nextcloud session
+- THEN it is stored
+- AND every write runs as that account
+- @e2e exclude server-to-server webhook: covered by PHPUnit and the live proof
+
+#### Scenario: A connection without a usable account refuses with 503
+
+- GIVEN a webhook consumer without an account
+- WHEN a correctly signed delivery arrives
+- THEN the answer is 503 `<channel>_account_unavailable`
+- AND nothing is written
+- AND the administrators get one notification that names the webhook
+- @e2e exclude server-to-server webhook: covered by PHPUnit and the live proof
+
+#### Scenario: A wrong signature is refused with 401
+
+- GIVEN a webhook consumer
+- WHEN a delivery arrives signed with another secret
+- THEN the answer is 401 and nothing is written
+- @e2e exclude server-to-server webhook: covered by PHPUnit and the live proof
+
+#### Scenario: A refused write is answered 503
+
+- GIVEN a webhook consumer whose account OpenRegister refuses to let write
+- WHEN a correctly signed delivery arrives
+- THEN the answer is 503 `<channel>_delivery_not_stored`, never 200
+- @e2e exclude server-to-server webhook: covered by PHPUnit
+
+#### Scenario: An upgrade moves the source trust into the consumer
+
+- GIVEN an enabled source of a webhook's legacy type with a webhook secret
+- WHEN the app is upgraded
+- THEN one consumer of that webhook exists with that secret, scheme and header, and no account
+- AND a second upgrade creates nothing
+- @e2e exclude repair step: covered by PHPUnit and the live upgrade
+
+#### Scenario: One consumer per webhook
+
+- GIVEN a `peppol-webhook` consumer
+- WHEN an administrator saves a second `peppol-webhook` consumer
+- THEN the save is refused with an error saying only one Peppol connection is allowed
+- @e2e exclude backend save guard: covered by PHPUnit
+
+### Requirement: An administrator chooses each webhook's account (REQ-CM-021)
+
+The integriq admin settings MUST list every webhook in `WebhookProfiles`, with whether it is configured, whether a secret is set and its account's state, and MUST never return a secret. An administrator MUST be able to save a webhook's scheme, secret, header and account. A blank secret MUST keep the stored one. An account that does not exist, is disabled or lacks the webhook's rights on its schema MUST be refused with a field error. An administrator account MUST save with a warning.
+
+#### Scenario: The settings list every webhook without its secret
+
+- GIVEN webhook consumers with secrets
+- WHEN an administrator opens the webhook connections section
+- THEN every webhook is listed with its account state
+- AND no secret appears in the response
+- @e2e exclude admin settings payload: covered by PHPUnit and the live settings GET
+
+#### Scenario: An administrator chooses a webhook's account
+
+- GIVEN a webhook consumer without an account
+- WHEN an administrator chooses an account that may write the webhook's schema and saves
+- THEN the consumer names that account and keeps its secret
+- @e2e exclude admin settings payload: covered by PHPUnit and the live settings PUT
+
+#### Scenario: An account that cannot write is refused
+
+- GIVEN a webhook whose schema the account may not create in
+- WHEN an administrator chooses that account
+- THEN the save is refused with a field error naming the missing right
+- @e2e exclude admin settings payload: covered by PHPUnit and the live settings PUT

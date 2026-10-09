@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
+use OCA\Integriq\Exception\CallEventNotFoundException;
 use OCA\Integriq\Exception\KissProviderException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\KissSyncService;
@@ -84,9 +85,10 @@ class KissController extends Controller {
 	 * When no active KISS source is configured this reports a clean 503
 	 * `not_configured` envelope rather than a 500 crash.
 	 *
-	 * @return JSONResponse `{id, localUuid}` on success, or a 400/503/502 error envelope.
+	 * @return JSONResponse `{id, localUuid}` on success, or a 400/404/503/502 error envelope.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -101,6 +103,11 @@ class KissController extends Controller {
 		$params = $this->request->getParams();
 		$onderwerp = (string)($params['onderwerp'] ?? '');
 		$channel = (string)($params['channel'] ?? '');
+		if ($channel === '' && (string)($params['callId'] ?? '') !== '') {
+			// A contact moment for a call is on the phone channel.
+			$channel = 'telefoon';
+		}
+
 		if ($onderwerp === '' || $channel === '') {
 			return new JSONResponse(
 				[
@@ -116,6 +123,14 @@ class KissController extends Controller {
 		try {
 			$result = $this->syncService->pushCustomerContact(input: $input);
 			return new JSONResponse($result);
+		} catch (CallEventNotFoundException $exception) {
+			return new JSONResponse(
+				[
+					'error' => 'unknown_call',
+					'message' => $this->l->t('No ended call with this call id'),
+				],
+				Http::STATUS_NOT_FOUND
+			);
 		} catch (KissProviderException $exception) {
 			$this->logger->warning('[KissController] push failed: ' . $exception->getMessage());
 
@@ -148,7 +163,7 @@ class KissController extends Controller {
 			'channel' => $channel,
 		];
 
-		$stringFields = ['tekst', 'occurredOn', 'language', 'caseReference', 'caseObjectType', 'sourceApp'];
+		$stringFields = ['tekst', 'occurredOn', 'language', 'caseReference', 'caseObjectType', 'sourceApp', 'callId', 'callSourceId'];
 		foreach ($stringFields as $stringField) {
 			if (isset($params[$stringField]) === true) {
 				$input[$stringField] = (string)$params[$stringField];

@@ -1,7 +1,37 @@
 # Changelog
 
 ## [Unreleased]
+### Security
+- A JWT consumer whose HMAC secret is shorter than the algorithm's hash output
+  (32 bytes for HS256, 48 for HS384, 64 for HS512; RFC 7518 §3.2) is refused
+  again. The web-token verifier this app used before the OpenRegister
+  delegation refused those secrets; OpenRegister's `hash_hmac()` did not, so
+  for that class of consumer any caller could mint a token. The bridge refuses
+  such an issuer before OpenRegister sees the token, and OpenRegister refuses
+  it too from the release that carries the same check.
+
+### Changed
+- Integriq's inbound authentication (endpoints, SCIM, Notificaties callbacks,
+  EUDI, LTI) is delegated to OpenRegister and needs OpenRegister 2.1.35 or
+  newer (the release with the public credential checks, OR#4361). On an older
+  OpenRegister every credentialed inbound call is refused with 401; a new
+  setup check in the administration overview says so before the first caller
+  does. Install or update OpenRegister first.
+
 ### Added
+- An install guide for the ZGW consumer sets (`docs/features/zgw-sets.md`), and
+  the installer's refusals in Dutch and English. A schema bound to a ZGW store
+  holds the store's own shape: the sets no longer name a translator.
+- Governed agent actions. A Hermiq agent can now run a synchronization, test a
+  synchronization or a source, list dead letters, and replay or discard them.
+  It can never create, edit or delete configuration. Run, replay and discard
+  each take two calls: the agent stages a batch, a person approves it in Hermiq,
+  and Integriq runs it only on Hermiq's signed verdict for that exact batch.
+  One approval runs one batch once. `listDeadLetters` returns no payloads, and
+  replay and discard take ids only. Two new rows in the action authorization
+  matrix, `sync-dead-letter.replay` and `sync-dead-letter.discard`, are seeded
+  for `admin` only. Every agent call writes one `agent_action` record.
+  See docs/features/ai-agent-tools.md. (hermiq-ai-tooling)
 - `eolProduct` and `eolCycle` are now `eol_product` and `eol_cycle`. They were
   the only two camelCase slugs among the fifty-five this app declares, which
   made their object URLs the only ones an operator could not guess from the

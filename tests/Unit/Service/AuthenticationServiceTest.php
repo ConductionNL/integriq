@@ -11,7 +11,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+ * @spec openspec/specs/stuf-adapter/spec.md#requirement-ws-security-usernametoken-authentication-req-stuf-012
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ namespace OCA\Integriq\Tests\Unit\Service {
 	 * UsernameToken 1.0 profile, then assert the method's own digest matches
 	 * that hand-computed value. This proves the formula, not just its presence.
 	 *
-	 * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+	 * @spec openspec/specs/stuf-adapter/spec.md#requirement-ws-security-usernametoken-authentication-req-stuf-012
 	 */
 	class AuthenticationServiceTest extends TestCase {
 

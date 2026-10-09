@@ -171,6 +171,67 @@
 								"
 								@update:modelValue="onCursorComparatorChange" />
 						</template>
+
+						<NcSelect
+							inputId="cn-sync-editor-ownership-mode"
+							:inputLabel="t('integriq', 'Who owns these records')"
+							:modelValue="selectedOwnershipMode"
+							:options="ownershipModeOptions"
+							:clearable="false"
+							:disabled="saving"
+							data-testid="sync-editor-ownership-mode"
+							@update:modelValue="
+								(option) =>
+									updateSourceConfigField(
+										'ownershipMode',
+										option?.id || 'local',
+									)
+							" />
+						<NcSelect
+							inputId="cn-sync-editor-disappearance-policy"
+							:inputLabel="
+								t(
+									'integriq',
+									'When the source stops sending a record',
+								)
+							"
+							:modelValue="selectedDisappearancePolicy"
+							:options="disappearancePolicyOptions"
+							:clearable="false"
+							:disabled="saving"
+							data-testid="sync-editor-disappearance-policy"
+							@update:modelValue="
+								(option) =>
+									updateSourceConfigField(
+										'disappearancePolicy',
+										option?.id || 'delete',
+									)
+							" />
+						<NcSelect
+							inputId="cn-sync-editor-source-destroyed"
+							:inputLabel="
+								t(
+									'integriq',
+									'When the source says it destroyed a record',
+								)
+							"
+							:modelValue="selectedSourceDestroyed"
+							:options="sourceDestroyedOptions"
+							:clearable="false"
+							:disabled="saving"
+							data-testid="sync-editor-source-destroyed"
+							@update:modelValue="onSourceDestroyedChange" />
+						<NcNoteCard
+							v-if="purgeSelected"
+							type="warning"
+							data-testid="sync-editor-purge-warning">
+							{{
+								t(
+									'integriq',
+									'A purge deletes the record and its files permanently. Purged files cannot be restored.',
+								)
+							}}
+						</NcNoteCard>
 					</div>
 				</section>
 
@@ -208,6 +269,16 @@
 							"
 							@update:config="
 								(value) => updateDraft('targetConfig', value)
+							" />
+
+						<!-- REQ-CSD-001: only a register/schema source has an object
+						     to write the push's outcome back onto. -->
+						<SyncWriteBackFields
+							v-if="draft.sourceType === 'register/schema'"
+							:value="draft.writeBack"
+							:disabled="saving"
+							@update:value="
+								(value) => updateDraft('writeBack', value)
 							" />
 
 						<!-- Dry-run result. The row action discards this payload for a
@@ -430,7 +501,15 @@ import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from '../../views/Synchronization/SyncConfigWidget.vue'
 import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue'
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
+import SyncWriteBackFields from '../../views/Synchronization/SyncWriteBackFields.vue'
 import { NEXTCLOUD_FORM_KIND } from '../../views/Synchronization/formsBridge.js'
+import {
+	disappearancePolicyError,
+	disappearancePolicyOptions,
+	ownershipModeOptions,
+	purges,
+	sourceDestroyedOptions,
+} from '../../views/Synchronization/ownershipOptions.js'
 import {
 	CURSOR_COMPARATOR_OPTIONS,
 	emptyDraft,
@@ -464,6 +543,7 @@ export default {
 		SyncConfigWidget,
 		SyncMappingPicker,
 		SyncReferenceList,
+		SyncWriteBackFields,
 		ArrowRightIcon,
 		ContentSaveOutlineIcon,
 		DatabaseArrowLeftOutlineIcon,
@@ -673,6 +753,97 @@ export default {
 			)
 		},
 
+		/**
+		 * The ownership mode options (REQ-SOR-001).
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+		 */
+		ownershipModeOptions() {
+			return ownershipModeOptions()
+		},
+
+		/**
+		 * The declared ownership mode, `local` when none is declared.
+		 *
+		 * @return {{id: string, label: string}}
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+		 */
+		selectedOwnershipMode() {
+			const options = this.ownershipModeOptions
+			const current = this.draft?.sourceConfig?.ownershipMode
+			return options.find((opt) => opt.id === current) || options[0]
+		},
+
+		/**
+		 * The disappearance policy options (REQ-SOR-002).
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+		 */
+		disappearancePolicyOptions() {
+			return disappearancePolicyOptions()
+		},
+
+		/**
+		 * The declared disappearance policy. A value the engine does not know
+		 * is shown as itself rather than as the default, so an administrator
+		 * sees the typo instead of a policy that is not in force.
+		 *
+		 * @return {{id: string, label: string}}
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+		 */
+		selectedDisappearancePolicy() {
+			const options = this.disappearancePolicyOptions
+			const current = this.draft?.sourceConfig?.disappearancePolicy
+			if (current === undefined || current === null || current === '') {
+				return options[0]
+			}
+			return (
+				options.find((opt) => opt.id === current) || {
+					id: current,
+					label: String(current),
+				}
+			)
+		},
+
+		/**
+		 * What a destruction notice does (REQ-SDP-002).
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+		 */
+		sourceDestroyedOptions() {
+			return sourceDestroyedOptions()
+		},
+
+		/**
+		 * The declared destruction notice choice, the policy when none is declared.
+		 *
+		 * @return {{id: string, label: string}}
+		 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+		 */
+		selectedSourceDestroyed() {
+			const options = this.sourceDestroyedOptions
+			const current = this.draft?.sourceConfig?.onSourceDestroyed || ''
+			return (
+				options.find((opt) => opt.id === current) || {
+					id: current,
+					label: String(current),
+				}
+			)
+		},
+
+		/**
+		 * Whether this synchronization purges, so the form can say a purge is final.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-synchronization-can-purge-a-vanished-record-and-its-files-req-sdp-001
+		 */
+		purgeSelected() {
+			return purges(this.draft?.sourceConfig)
+		},
+
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		rootConditionGroup() {
 			return normaliseConditions(this.draft?.conditions)
@@ -735,6 +906,9 @@ export default {
 				}
 				base.conditions = normaliseConditions(this.item.conditions)
 			}
+			// writeBack is not in emptyDraft: the detail page shares that and
+			// does not edit it. Null means the record declares none.
+			base.writeBack = this.item?.writeBack ?? null
 			this.draft = base
 			this.originalSignature = JSON.stringify(base)
 		},
@@ -765,6 +939,22 @@ export default {
 				...(this.draft.sourceConfig || {}),
 				[key]: value,
 			})
+		},
+
+		/**
+		 * Write the destruction notice choice; the default leaves the key out.
+		 *
+		 * @param {?object} option the picked option
+		 *
+		 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+		 */
+		onSourceDestroyedChange(option) {
+			const rest = { ...(this.draft.sourceConfig || {}) }
+			delete rest.onSourceDestroyed
+			if (option?.id) {
+				rest.onSourceDestroyed = option.id
+			}
+			this.updateDraft('sourceConfig', rest)
 		},
 
 		/**
@@ -858,6 +1048,33 @@ export default {
 		},
 
 		/**
+		 * The object to save: the draft merged over `item` so fields this
+		 * dialog does not edit survive, `conditions` in the schema's wire shape.
+		 * A write-back is sent when declared; one the user emptied is sent as
+		 * `{}` so the stored one does not survive the merge (REQ-CSD-001); a
+		 * record that never had one gets no `writeBack` key at all.
+		 *
+		 * @return {object} the payload for `confirm`
+		 *
+		 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-push-writes-its-outcome-back-onto-the-object-that-started-it-req-csd-001
+		 */
+		savePayload() {
+			const { writeBack, ...draft } = this.draft
+			const payload = {
+				...(this.item || {}),
+				...draft,
+				conditions: serializeConditions(this.draft.conditions),
+			}
+			delete payload.writeBack
+			if (writeBack) {
+				payload.writeBack = writeBack
+			} else if (this.item?.writeBack) {
+				payload.writeBack = {}
+			}
+			return payload
+		},
+
+		/**
 		 * Persist the draft through CnIndexPage's `confirm` binding rather than
 		 * saving here directly — that is what runs the index's list refresh and
 		 * keeps the write in the store the list reads from.
@@ -876,11 +1093,16 @@ export default {
 			this.saving = true
 			this.saveError = ''
 			try {
-				await this.confirm({
-					...(this.item || {}),
-					...this.draft,
-					conditions: serializeConditions(this.draft.conditions),
-				})
+				// REQ-SOR-002: an unknown policy is refused at save, not
+				// discovered at the first run that deletes nothing.
+				const policyError = await disappearancePolicyError(
+					this.draft.sourceConfig,
+				)
+				if (policyError) {
+					this.saveError = policyError
+					return
+				}
+				await this.confirm(this.savePayload())
 				showSuccess(
 					this.isCreate
 						? this.t('integriq', 'Synchronization created')

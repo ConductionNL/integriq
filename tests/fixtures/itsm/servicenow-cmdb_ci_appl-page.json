@@ -1,0 +1,134 @@
+{
+    "result": [
+        {
+            "sys_id": {
+                "display_value": "00000000000000000000000000000065",
+                "value": "00000000000000000000000000000065"
+            },
+            "name": {
+                "display_value": "Zaaksysteem",
+                "value": "Zaaksysteem"
+            },
+            "vendor": {
+                "display_value": "Dimpact",
+                "value": "00000000000000000000000000000001"
+            },
+            "version": {
+                "display_value": "2.4.1",
+                "value": "2.4.1"
+            },
+            "install_status": {
+                "display_value": "Installed",
+                "value": "1"
+            },
+            "short_description": {
+                "display_value": "Zaakgericht werken",
+                "value": "Zaakgericht werken"
+            }
+        },
+        {
+            "sys_id": {
+                "display_value": "00000000000000000000000000000066",
+                "value": "00000000000000000000000000000066"
+            },
+            "name": {
+                "display_value": "Burgerzaken",
+                "value": "Burgerzaken"
+            },
+            "vendor": {
+                "display_value": "Centric",
+                "value": "00000000000000000000000000000002"
+            },
+            "version": {
+                "display_value": "11.2",
+                "value": "11.2"
+            },
+            "install_status": {
+                "display_value": "Installed",
+                "value": "1"
+            },
+            "short_description": {
+                "display_value": "Basisregistratie personen",
+                "value": "Basisregistratie personen"
+            }
+        },
+        {
+            "sys_id": {
+                "display_value": "00000000000000000000000000000067",
+                "value": "00000000000000000000000000000067"
+            },
+            "name": {
+                "display_value": "Belastingen",
+                "value": "Belastingen"
+            },
+            "vendor": {
+                "display_value": "PinkRoccade",
+                "value": "00000000000000000000000000000003"
+            },
+            "version": {
+                "display_value": "7.0",
+                "value": "7.0"
+            },
+            "install_status": {
+                "display_value": "Retired",
+                "value": "7"
+            },
+            "short_description": {
+                "display_value": "Gemeentelijke belastingen",
+                "value": "Gemeentelijke belastingen"
+            }
+        },
+        {
+            "sys_id": {
+                "display_value": "00000000000000000000000000000068",
+                "value": "00000000000000000000000000000068"
+            },
+            "name": {
+                "display_value": "Parkeren",
+                "value": "Parkeren"
+            },
+            "vendor": {
+                "display_value": "",
+                "value": ""
+            },
+            "version": {
+                "display_value": "",
+                "value": ""
+            },
+            "install_status": {
+                "display_value": "Pending install",
+                "value": "4"
+            },
+            "short_description": {
+                "display_value": "",
+                "value": ""
+            }
+        },
+        {
+            "sys_id": {
+                "display_value": "00000000000000000000000000000069",
+                "value": "00000000000000000000000000000069"
+            },
+            "name": {
+                "display_value": "Subsidies",
+                "value": "Subsidies"
+            },
+            "vendor": {
+                "display_value": "Dimpact",
+                "value": "00000000000000000000000000000001"
+            },
+            "version": {
+                "display_value": "1.0",
+                "value": "1.0"
+            },
+            "install_status": {
+                "display_value": "On order",
+                "value": "2"
+            },
+            "short_description": {
+                "display_value": "Subsidieaanvragen",
+                "value": "Subsidieaanvragen"
+            }
+        }
+    ]
+}

@@ -1298,6 +1298,167 @@
       ]
     },
     {
+      "name": "16: Government sign-in refusals (identity-broker-browser-login)",
+      "description": "The refusal paths of the broker's browser login, which need no identity provider. The accepted round trip needs a live or scripted provider and runs in PHPUnit (tests/Unit/Auth/Idp/IdpBrowserLoginTest.php).",
+      "item": [
+        {
+          "name": "GET /api/idp/digid/start with an unregistered return address shows the error page",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{ocBase}}/idp/digid/start?organisation=gemeente-x&consumer=portaliq&trust=substantial&returnUrl=https://evil.example/steal&relayState=r1",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "idp",
+                "digid",
+                "start"
+              ],
+              "query": [
+                {
+                  "key": "organisation",
+                  "value": "gemeente-x"
+                },
+                {
+                  "key": "consumer",
+                  "value": "portaliq"
+                },
+                {
+                  "key": "trust",
+                  "value": "substantial"
+                },
+                {
+                  "key": "returnUrl",
+                  "value": "https://evil.example/steal"
+                },
+                {
+                  "key": "relayState",
+                  "value": "r1"
+                }
+              ]
+            },
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 error page', () => pm.response.to.have.status(400));",
+                  "pm.test('the browser is not redirected', () => pm.expect(pm.response.headers.has('Location')).to.be.false);",
+                  "pm.test('the page names no reason', () => pm.expect(pm.response.text()).to.not.include('evil.example'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/idp/digid/callback answering no started login shows the error page",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{ocBase}}/idp/digid/callback?inResponseTo=_never-sent",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "idp",
+                "digid",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "inResponseTo",
+                  "value": "_never-sent"
+                }
+              ]
+            },
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 error page', () => pm.response.to.have.status(400));",
+                  "pm.test('the browser is not redirected', () => pm.expect(pm.response.headers.has('Location')).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/idp/envelope/exchange with an unknown code is one 401",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{ocBase}}/idp/envelope/exchange",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "idp",
+                "envelope",
+                "exchange"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer wrong"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"not-a-code\", \"consumer\": \"portaliq\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('one undifferentiated error', () => pm.expect(pm.response.json()).to.eql({error: 'unauthorized'}));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "99 — Teardown (via OR)",
       "description": "Deletes the fixtures created in folder 01.",
       "item": [

@@ -31,7 +31,8 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\SmsDispatchService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -56,13 +57,21 @@ use Throwable;
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 class NotifyNlController extends Controller {
+
+	/**
+	 * The decision codes that refuse a send before any provider call (opt-out-before-send).
+	 *
+	 * @var array<int,string>
+	 */
+	public const REFUSAL_CODES = ['opted-out', 'no-consent', 'invalid-address', 'authority-unavailable'];
+
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param SmsDispatchService $dispatchService Send / status-poll / callback logic.
-	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.
+	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (send/status endpoints).
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -72,7 +81,7 @@ class NotifyNlController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly SmsDispatchService $dispatchService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,
@@ -86,9 +95,11 @@ class NotifyNlController extends Controller {
 	 * Send one SMS message. The production binding for sibling apps' (e.g.
 	 * procest's) own local send adapter — mirrors PeppolController::participants().
 	 *
-	 * Expected JSON body: `{to, body, templateId, personalisation, sourceApp, objectUri}`.
+	 * Expected JSON body: `{to, body, templateId, personalisation, sourceApp, objectUri, category, caseRef}`.
+	 * `category` (default `service`) decides whether an opt-out stops the message.
 	 *
-	 * @return JSONResponse The created `sms_message` record, or a 400/502 error envelope.
+	 * @return JSONResponse The created `sms_message` record, a 400/502 error envelope, or 409 with
+	 *                      `error` set to the decision code when the opt-out list refused the send.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
 	 */
@@ -112,14 +123,7 @@ class NotifyNlController extends Controller {
 			);
 		}
 
-		$options = [];
-		if (isset($params['templateId']) === true) {
-			$options['templateId'] = $params['templateId'];
-		}
-
-		if (isset($params['personalisation']) === true && is_array($params['personalisation']) === true) {
-			$options['personalisation'] = $params['personalisation'];
-		}
+		$options = $this->sendOptions(params: $params);
 
 		$sourceApp = null;
 		if (isset($params['sourceApp']) === true) {
@@ -142,6 +146,14 @@ class NotifyNlController extends Controller {
 
 			return new JSONResponse($message->getObject() + ['id' => $message->getUuid()]);
 		} catch (SmsProviderException $exception) {
+			if (in_array($exception->getErrorCode(), self::REFUSAL_CODES, true) === true) {
+				// The opt-out list refused the send: no provider call happened.
+				return new JSONResponse(
+					['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
+					Http::STATUS_CONFLICT
+				);
+			}
+
 			$this->logger->warning('[NotifyNlController] send failed: ' . $exception->getMessage());
 			return new JSONResponse(
 				['error' => 'sms_send_failed', 'message' => $exception->getMessage()],
@@ -150,6 +162,38 @@ class NotifyNlController extends Controller {
 		}//end try
 
 	}//end send()
+
+	/**
+	 * The send options a request carries.
+	 *
+	 * @param array<string,mixed> $params The request parameters.
+	 *
+	 * @return array<string,mixed> `templateId`, `personalisation`, `category` (default `service`), `caseRef`.
+	 */
+	private function sendOptions(array $params): array {
+		$options = [];
+		if (isset($params['templateId']) === true) {
+			$options['templateId'] = $params['templateId'];
+		}
+
+		if (isset($params['personalisation']) === true && is_array($params['personalisation']) === true) {
+			$options['personalisation'] = $params['personalisation'];
+		}
+
+		// Opt-out-before-send: the category decides whether an opt-out stops
+		// the message. Default `service`.
+		$options['category'] = 'service';
+		if (is_string($params['category'] ?? null) === true && trim($params['category']) !== '') {
+			$options['category'] = trim($params['category']);
+		}
+
+		if (is_string($params['caseRef'] ?? null) === true) {
+			$options['caseRef'] = $params['caseRef'];
+		}
+
+		return $options;
+
+	}//end sendOptions()
 
 	/**
 	 * Poll the provider for a message's current delivery status.
@@ -198,9 +242,14 @@ class NotifyNlController extends Controller {
 	 * rejected 401 BEFORE any state change or event emission — mirrors
 	 * PeppolController::inbound().
 	 *
-	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
+	 * @return JSONResponse `{received: true}` on success, 401 on signature failure, 503 when not stored.
+	 *
+	 * The callback authenticates the `notifynl-webhook` consumer, and every
+	 * write runs as that consumer's account. A missing connection, account or
+	 * right, and a write OpenRegister refuses, answer 503 so NotifyNL retries.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/notifynl-inbound-on-the-consumer-model/specs/notifynl-sms-channel/spec.md#requirement-the-status-callback-acts-as-the-notifynl-connections-account-req-020
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -208,30 +257,9 @@ class NotifyNlController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		try {
-			$source = $this->dispatchService->resolveActiveSource();
-		} catch (SmsProviderException) {
-			// No source configured => no secret to verify against => fail closed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$webhookConfig = ($source->getObject()['configuration']['webhookSignature'] ?? []);
-		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
-		$secret = (string)($webhookConfig['secret'] ?? '');
-		$headerName = ($webhookConfig['header'] ?? 'X-OpenConnector-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
-
-		$headerValue = (string)$this->request->getHeader($headerName);
-
-		$verified = $this->signatureService->verify(
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			config: ['scheme' => $scheme, 'secret' => $secret, 'toleranceSeconds' => $tolerance]
-		);
-
-		if ($verified === false) {
-			// Undifferentiated error body: never leak which check failed.
-			return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+		$identity = $this->gate->identify(profile: WebhookProfiles::NOTIFYNL, rawBody: $rawBody, request: $this->request);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		// Payload access goes through the framework's normalised params (NC decodes
@@ -240,29 +268,31 @@ class NotifyNlController extends Controller {
 		$body = $this->request->getParams();
 
 		try {
-			if (isset($body['providerMessageId']) === true) {
-				$detail = null;
-				if (isset($body['detail']) === true) {
-					$detail = (string)$body['detail'];
-				}
+			$this->gate->deliver(
+				identity: $identity,
+				operation: function () use ($body): void {
+					if (isset($body['providerMessageId']) === true) {
+						$detail = null;
+						if (isset($body['detail']) === true) {
+							$detail = (string)$body['detail'];
+						}
 
-				$this->dispatchService->handleStatusCallback(
-					providerMessageId: (string)$body['providerMessageId'],
-					status: (string)($body['status'] ?? ''),
-					detail: $detail
-				);
-			} else {
-				$this->logger->warning(
-					'[NotifyNlController] inbound webhook payload missing providerMessageId',
-					['keys' => array_keys($body)]
-				);
-			}
-		} catch (Throwable $exception) {
-			// Never 500 on a verified callback: log and acknowledge receipt.
-			$this->logger->error(
-				'[NotifyNlController] inbound webhook processing failed: ' . $exception->getMessage(),
-				['exception' => $exception]
+						$this->dispatchService->handleStatusCallback(
+							providerMessageId: (string)$body['providerMessageId'],
+							status: (string)($body['status'] ?? ''),
+							detail: $detail
+						);
+					} else {
+						$this->logger->warning(
+							'[NotifyNlController] inbound webhook payload missing providerMessageId',
+							['keys' => array_keys($body)]
+						);
+					}
+				}
 			);
+		} catch (Throwable $exception) {
+			// The account's write was refused: answer 503 so NotifyNL delivers again.
+			return $this->gate->notStored(profile: WebhookProfiles::NOTIFYNL, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

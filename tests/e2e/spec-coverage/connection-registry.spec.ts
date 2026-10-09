@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/connection-registry/specs/connection-registry/spec.md
+ * Spec coverage: openspec/specs/connection-registry/spec.md
  * The browser half of REQ-CONN-006 (the App connections overview) and
  * REQ-CONN-007 (Add integration and the link a source dialog).
  *
@@ -36,11 +36,13 @@ test.describe('App connections overview (connection-registry)', () => {
 			'Last checked',
 			'Settings',
 		]) {
+			// By the header's own text, not its accessible name: each header
+			// now also carries a "Filter <column>" button, so the name reads
+			// "App Filter App".
 			await expect(
 				page
-					.getByRole('columnheader', {
-						name: new RegExp(`^\\s*${column}\\s*$`, 'i'),
-					})
+					.getByRole('columnheader')
+					.filter({ has: page.getByText(column, { exact: true }) })
 					.first(),
 				`column "${column}" must render`,
 			).toBeVisible({ timeout: 15_000 })

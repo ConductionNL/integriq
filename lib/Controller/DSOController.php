@@ -5,13 +5,10 @@
  *
  * Controller for the DSO / Omgevingsloket STAM koppelvlak: the signed
  * inbound endpoint (receives vergunningaanvragen, meldingen, and
- * informatieverzoeken from DSO-LV), plus the authenticated read/handoff/
- * outbound surface added by dso-connector-adapter — a status-read and list
- * endpoint, the handoff-trigger endpoint that executes the declared
- * `verzoek-to-case` handoff under the calling user's own session/RBAC (see
- * design.md §1 for why this is a separate, authenticated step rather than
- * automatic at webhook-receipt time), and the outbound status/besluit-post
- * endpoint.
+ * informatieverzoeken from DSO-LV), plus the authenticated read/outbound
+ * surface added by dso-connector-adapter: a status-read and list endpoint and
+ * the outbound status/besluit-post endpoint. Integriq makes no case: the case
+ * system reads the mapped `dso_verzoek` (retire-dso-case-handoff).
  *
  * @category Controller
  * @package  OCA\Integriq\Controller
@@ -30,14 +27,17 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
+use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Exception\DsoProviderException;
+use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DSOParserService;
-use OCA\Integriq\Service\DSOSignatureVerifierService;
-use OCA\OpenRegister\Exception\HandoffException;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\Integriq\Service\Dso\DsoConnection;
+use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -53,18 +53,17 @@ use Throwable;
 
 /**
  * Controller for the DSO STAM koppelvlak inbound endpoint plus the
- * authenticated dso-connector-adapter read/handoff/outbound surface.
+ * authenticated dso-connector-adapter read/outbound surface.
  *
  * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- the handoff-trigger error mapping
- * legitimately switches on DsoTranslationException/HandoffException/NotAuthorizedException/
- * Throwable in addition to the controller's normal HTTP/auth collaborators (mirrors
- * OpenFormulierenController's error-mapping breadth).
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- the error mapping switches on
+ * DsoTranslationException/DsoProviderException/Throwable in addition to the controller's
+ * normal HTTP/auth collaborators.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) -- this controller now spans the inbound
- * webhook (parser/signatureVerifier) and the authenticated read/handoff/outbound surface
+ * webhook (parser/signatureVerifier) and the authenticated read/outbound surface
  * (ingestService/actionAuth/userSession/l) added by dso-connector-adapter; splitting it would
  * fragment one cohesive DSO feature into two controllers for no behavioural benefit.
  */
@@ -76,21 +75,24 @@ class DSOController extends Controller {
 	 * @param IRequest $request Request object.
 	 * @param DSOParserService $parser The DSO payload parser service.
 	 * @param LoggerInterface $logger Logger for error handling.
-	 * @param DSOSignatureVerifierService $signatureVerifier PKIoverheid / HMAC webhook signature verifier.
-	 * @param DsoIngestService $ingestService dso_verzoek persistence, mapping, handoff, outbound.
+	 * @param DsoConnection $connection The dso-stam consumer: signature, account, rights, runAs().
+	 * @param DsoConnectionAlerts $alerts Admin notifications when a push is refused with 503.
+	 * @param DsoIngestService $ingestService dso_verzoek persistence, mapping, outbound.
 	 * @param ActionAuthService $actionAuth The action authorization service.
-	 * @param IUserSession $userSession The user session (status/list/handoff/outbound
+	 * @param IUserSession $userSession The user session (status/list/outbound
 	 *                                  endpoints).
 	 * @param IL10N $l The localization service.
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly DSOParserService $parser,
 		private readonly LoggerInterface $logger,
-		private readonly DSOSignatureVerifierService $signatureVerifier,
+		private readonly DsoConnection $connection,
+		private readonly DsoConnectionAlerts $alerts,
 		private readonly DsoIngestService $ingestService,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
@@ -122,7 +124,8 @@ class DSOController extends Controller {
 	 * Generous ceiling: a tight one drops statutory submissions on the sender's
 	 * side.
 	 *
-	 * @return JSONResponse HTTP 202 on success, 400 on validation error, 401 on signature error.
+	 * @return JSONResponse HTTP 202 once stored, 400 on validation error, 401 on signature error,
+	 *                      503 when the verzoek could not be stored.
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-4
 	 */
@@ -133,20 +136,13 @@ class DSOController extends Controller {
 		$rawBody = $this->getRawContent();
 		$body = $this->request->getParams();
 
-		// Validate webhook signature over the exact raw body bytes.
-		$signatureHeader = $this->request->getHeader('X-DSO-Signature');
-		if ($this->signatureVerifier->verify(signatureHeader: $signatureHeader, rawBody: $rawBody) === false) {
-			$this->logger->warning(
-				'DSO STAM: Webhook signature validation failed',
-				['hasSignatureHeader' => ($signatureHeader !== '' && $signatureHeader !== null)]
-			);
-			return new JSONResponse(
-				data: [
-					'error' => 'invalid_signature',
-					'message' => 'Webhook signature validation failed',
-				],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+		// DSO-LV is an integriq consumer (authorizationType dso-stam). The
+		// signature over the exact raw body authenticates it, and its account
+		// is who every write runs as. A connection, account or right that is
+		// missing answers 503 before anything is written, so DSO-LV retries.
+		$identity = $this->identify(rawBody: $rawBody);
+		if ($identity instanceof JSONResponse) {
+			return $identity;
 		}
 
 		// Validate the payload schema.
@@ -162,15 +158,7 @@ class DSOController extends Controller {
 			);
 		}
 
-		// Parse the verzoek.
-		$request = $this->parser->parseRequest(payload: $body);
-
-		// Tag with environment if provided by DSO-LV.
-		$environment = $this->request->getHeader('X-DSO-Environment');
-		if ($environment !== '' && $environment !== null) {
-			$request['environment'] = $environment;
-		}
-
+		$request = $this->parseVerzoek(body: $body);
 		$requestId = ($request['verzoekId'] ?? uniqid(prefix: 'dso-', more_entropy: true));
 
 		$this->logger->info(
@@ -182,20 +170,24 @@ class DSOController extends Controller {
 		);
 
 		// Persist as a dso_verzoek OR record (received -> mapped|failed) and
-		// run the normalising translator — see dso-connector-adapter. This
-		// is a fire-and-forget side effect from the webhook's point of view:
-		// a persistence/translation failure is logged, never surfaced as a
-		// non-202 response, matching the STAM koppelvlak's documented
-		// asynchronous-processing contract (mirrors
-		// IwmoIjwSyncService::receiveReturn()'s "never throws out to the
-		// controller" isolation).
+		// run the normalising translator, see dso-connector-adapter. A 202 is
+		// only true once the verzoek is stored. When nothing was stored (an
+		// OpenRegister refusal, any other failure, or an object without a
+		// uuid) the endpoint answers 503 instead, so the sender delivers again:
+		// the Digikoppeling Koppelvlakstandaard ebMS2 (5.11.2, HTTP response
+		// codes) treats a 503 as recoverable and keeps its reliable-messaging
+		// retries going, while a 4xx counts as a final error.
 		try {
-			$this->ingestService->ingest(parsedRequest: $request);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'DSO STAM: verzoek persistence/mapping failed',
-				['verzoekId' => $requestId, 'exception' => $exception->getMessage()]
+			$stored = $this->connection->runAs(
+				$identity->account,
+				fn (): mixed => $this->ingestService->ingest(parsedRequest: $request, identity: $identity)
 			);
+		} catch (Throwable $exception) {
+			return $this->notStored(requestId: $requestId, reason: $exception->getMessage());
+		}
+
+		if ($this->isStored(stored: $stored) === false) {
+			return $this->notStored(requestId: $requestId, reason: 'ingest returned an object without a uuid');
 		}
 
 		return new JSONResponse(
@@ -208,6 +200,132 @@ class DSOController extends Controller {
 		);
 
 	}//end receiveRequest()
+
+	/**
+	 * Parse the verzoek and tag it with the DSO-LV environment, when given.
+	 *
+	 * @param array<string, mixed> $body The request parameters.
+	 *
+	 * @return array<string, mixed> The parsed verzoek.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
+	 */
+	private function parseVerzoek(array $body): array {
+		$request = $this->parser->parseRequest(payload: $body);
+
+		$environment = $this->request->getHeader('X-DSO-Environment');
+		if ($environment !== '' && $environment !== null) {
+			$request['environment'] = $environment;
+		}
+
+		return $request;
+
+	}//end parseVerzoek()
+
+	/**
+	 * Whether ingest returned a stored object: an entity with a uuid.
+	 *
+	 * @param mixed $stored What ingest returned.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-stam-koppelvlak-endpoint-registration-req-dso-001
+	 */
+	private function isStored(mixed $stored): bool {
+		return $stored instanceof ObjectEntity && $stored->getUuid() !== null && $stored->getUuid() !== '';
+
+	}//end isStored()
+
+	/**
+	 * Authenticate the push as the dso-stam consumer, or answer 401 or 503.
+	 *
+	 * @param string $rawBody The exact raw request body.
+	 *
+	 * @return DsoIdentity|JSONResponse The identity the writes run as, or the refusal.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function identify(string $rawBody): DsoIdentity|JSONResponse {
+		$signatureHeader = $this->request->getHeader('X-DSO-Signature');
+		try {
+			return $this->connection->authenticate(rawBody: $rawBody, signatureHeader: $signatureHeader);
+		} catch (DsoSignatureException) {
+			$this->logger->warning(
+				'DSO STAM: Webhook signature validation failed',
+				['hasSignatureHeader' => ($signatureHeader !== '' && $signatureHeader !== null)]
+			);
+			return new JSONResponse(
+				data: [
+					'error' => 'invalid_signature',
+					'message' => 'Webhook signature validation failed',
+				],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		} catch (DsoConnectionUnavailableException $exception) {
+			return $this->connectionUnavailable(exception: $exception);
+		}
+
+	}//end identify()
+
+	/**
+	 * Log a verzoek that was not stored and answer 503, so the sender retries.
+	 *
+	 * The body carries no `status: ontvangen`: nothing was received into the
+	 * register, and the caller must not read this answer as an acknowledgement.
+	 *
+	 * @param string $requestId The verzoekId from the payload.
+	 * @param string $reason Why nothing was stored.
+	 *
+	 * @return JSONResponse HTTP 503 with a `verzoek_not_stored` envelope.
+	 *
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-stam-koppelvlak-endpoint-registration-req-dso-001
+	 */
+	private function notStored(string $requestId, string $reason): JSONResponse {
+		$this->logger->error(
+			'DSO STAM: verzoek not stored, answering 503 so the sender retries',
+			['verzoekId' => $requestId, 'exception' => $reason]
+		);
+		$this->alerts->notify(reason: DsoConnectionAlerts::REASON_NOT_STORED);
+
+		return new JSONResponse(
+			data: [
+				'verzoekId' => $requestId,
+				'error' => 'verzoek_not_stored',
+				'message' => 'Verzoek kon niet worden opgeslagen, probeer het later opnieuw',
+			],
+			statusCode: Http::STATUS_SERVICE_UNAVAILABLE
+		);
+
+	}//end notStored()
+
+	/**
+	 * Log a push the DSO connection cannot store and answer 503.
+	 *
+	 * Nothing was written. The administrators get one notification per
+	 * reason per hour, and DSO-LV delivers the verzoek again.
+	 *
+	 * @param DsoConnectionUnavailableException $exception Why the connection is not usable.
+	 *
+	 * @return JSONResponse HTTP 503 with the error code of the reason.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
+	 */
+	private function connectionUnavailable(DsoConnectionUnavailableException $exception): JSONResponse {
+		$this->logger->error(
+			'DSO STAM: push refused, the DSO connection is not usable; answering 503 so the sender retries',
+			['reason' => $exception->getReason(), 'detail' => $exception->getMessage()]
+		);
+		$this->alerts->notify(reason: $exception->getReason());
+
+		return new JSONResponse(
+			data: [
+				'error' => $exception->getErrorCode(),
+				'message' => 'Verzoek kon niet worden opgeslagen, probeer het later opnieuw',
+			],
+			statusCode: Http::STATUS_SERVICE_UNAVAILABLE
+		);
+
+	}//end connectionUnavailable()
 
 	/**
 	 * List `dso_verzoek` records, optionally filtered by `?status=`.
@@ -273,70 +391,6 @@ class DSOController extends Controller {
 
 		return new JSONResponse($result);
 	}//end status()
-
-	/**
-	 * Trigger the declared `verzoek-to-case` handoff for a `mapped`
-	 * verzoek, as the authenticated caller — never a system-account
-	 * shortcut (design.md §1).
-	 *
-	 * @param string $id The `dso_verzoek` uuid.
-	 *
-	 * @return JSONResponse The engine's execute() result, or a 400/401/403/404/409 error envelope.
-	 *
-	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-005
-	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	public function handoff(string $id = ''): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'dso.handoff');
-
-		if ($id === '') {
-			return new JSONResponse(
-				['error' => 'missing_id', 'message' => $this->l->t('The verzoek id is required')],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		try {
-			$result = $this->ingestService->handoff(uuid: $id);
-			return new JSONResponse($result);
-		} catch (DsoTranslationException $exception) {
-			return new JSONResponse(
-				['error' => 'verzoek_not_ready', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_REQUEST
-			);
-		} catch (HandoffException $exception) {
-			$status = Http::STATUS_CONFLICT;
-			if ($exception->getErrorCode() === HandoffException::NOT_DECLARED) {
-				$status = Http::STATUS_NOT_FOUND;
-			}
-
-			return new JSONResponse(
-				['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
-				$status
-			);
-		} catch (NotAuthorizedException $exception) {
-			return new JSONResponse(
-				['error' => 'handoff_not_authorized', 'message' => $exception->getMessage()],
-				Http::STATUS_FORBIDDEN
-			);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'[DSOController] handoff failed unexpectedly: ' . $exception->getMessage(),
-				['exception' => $exception]
-			);
-			return new JSONResponse(
-				['error' => 'handoff_failed', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_GATEWAY
-			);
-		}//end try
-
-	}//end handoff()
 
 	/**
 	 * Build and dispatch one outbound `status` (voortgangsinformatie) or

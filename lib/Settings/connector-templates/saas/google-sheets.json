@@ -1,0 +1,22 @@
+{
+    "x-template": {
+        "slug": "google-sheets",
+        "vendor": "googleapis.com",
+        "system": "Google Sheets",
+        "standard": "OpenAPI 3.0.0",
+        "verifiedAgainst": "https://api.apis.guru/v2/specs/googleapis.com/sheets/v4/openapi.json",
+        "tier": "generated",
+        "snapshotDate": "2026-09-29",
+        "category": "Spreadsheets",
+        "directoryKey": "googleapis.com:sheets"
+    },
+    "source": {
+        "name": "Google Sheets",
+        "description": "Google Sheets, generated from the APIs.guru directory snapshot of 2026-09-29. A starting point: check the base URL and the scopes before use. Authentication: OAuth 2.0 (implicit). Hold the credential in the credential broker and name it by credentialRef; this template carries none. Documentation: https://developers.google.com/sheets/",
+        "type": "api",
+        "location": "https://sheets.googleapis.com",
+        "auth": "oauth",
+        "configuration": [],
+        "isEnabled": false
+    }
+}

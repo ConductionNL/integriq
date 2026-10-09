@@ -60,6 +60,62 @@ Phase 1 validates ids, calls `requireAction()`, stages a proposal (tool, target 
 2. **Source smoke-test** — "The supplier says they fixed their API — check." → `testSource` (confirm) → result summarised from status/timing, no config touched.
 3. **Poison cleanup** — "These 3 dead letters are malformed spam, drop them." → `discardDeadLetters` staged → approved → terminal discard state, audited.
 
+### Decision 7: Integriq trusts only Hermiq's signed verdict (DECISIONS row 31, 30 Sep 2026)
+
+Ruben chose a typed verification contract over reading Hermiq's `approval`
+objects or keeping an approval of integriq's own. Phase 2 posts
+`{approvalId, toolId, binding, actingAgent, nonce}` to Hermiq's
+`POST /index.php/apps/hermiq/api/approvals/verify` and accepts only an answer
+whose `verdict` is signed with Hermiq's Ed25519 key (published as the app value
+`hermiq` / `approval_verdict_public_key`), echoes all five request fields,
+was issued within 120 seconds, says `approved: true`, and names a `decidedBy`
+that is not the acting agent. Anything else, including Hermiq being absent,
+is a refusal and nothing runs. The signature is over the verdict's canonical
+JSON (keys sorted, unescaped slashes and unicode).
+
+- `binding` = sha256 of `integriq:<proposalId>:<toolId>:<sorted ids>`. Phase 1
+  returns it with the full id list, so Hermiq stores it on the approval the
+  person sees and only compares it; it never recomputes integriq's hash.
+- `ApprovalVerdictVerifier` holds the checks; `HermiqVerdictClient` is the
+  transport (`HttpHermiqVerdictClient`). The tests use a Hermiq fake that
+  answers this contract and signs with a real key.
+- The Hermiq side (the endpoint, the key, storing the binding, and passing
+  the acting agent's id as the `agentId` argument of integriq's tools, as
+  Hermiq already does for its memory tools) is drafted for Ruben in
+  `for-ruben/hermiq-approval-verification-contract.md`; nothing is written to
+  the hermiq repo from here. Until it lands, every phase 2 is refused.
+
+### Decision 8: One `agent_action` record per call
+
+Every call writes one object in integriq's register (schema `agent_action`,
+admin-only, fragment `lib/Settings/register.d/hermiq-ai-tooling.json`):
+tool, agent, granting user, outcome (`denied`, `staged`, `refused`,
+`executed`, `failed`), reason, target ids and, where a gate applies, the
+batch, the approval and the approver. The staged batch is itself such a
+record; phase 2 closes it (`executed`) BEFORE running it, so one approval runs
+one batch once, and a refused phase 2 writes its own `refused` record naming
+the batch, which stays `staged`. A UI replay writes none, so a trail entry
+means an agent was involved. The audited replay and discard paths still write
+their own `replayedBy` / `discardedBy`: the granting user.
+
+### Decision 9: The open questions, answered for this build
+
+- Batch cap: 100 ids per call (`IntegriqAgentTools::BATCH_CAP`), also the most
+  rows `listDeadLetters` answers. A staged batch waits 24 hours for approval.
+- `error` is included, cut to 200 characters (the Dead letters page preview
+  uses the same length). For event dead letters there is no error field but
+  `lastResponse`, which is payload, so `error` is null there.
+- The two test tools stay single-phase, as the proposal says.
+- Reach: OpenRegister's `#[McpTool]` has no reach field, so each description
+  ends with `Reach: <reach>.` and `IntegriqAgentTools::REACH` holds the map;
+  the attribute change is drafted for Ruben in
+  `for-ruben/openregister-mcptool-declares-reach.md`.
+- `listDeadLetters` checks no matrix action: it reads under the user's own
+  register rights (RBAC on), like the derived reads.
+- An agent is named by the `agentId` argument. A call without one is recorded
+  as `unidentified`, and its phase 2 can never pass, because the verdict must
+  echo the acting agent.
+
 ## Risks / Trade-offs
 
 Carried in proposal.md. Trade-off accepted: truncated `error` strings may echo upstream fragments (triage is impossible without them); flagged to the security reviewer.

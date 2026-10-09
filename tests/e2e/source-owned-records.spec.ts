@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md
+ * Spec coverage: openspec/specs/source-owned-records/spec.md
  *
  * The scenarios the spec sends here are the ones a running instance can
  * answer: the refusal of a policy the engine does not know, the two policies
@@ -19,6 +19,8 @@
 import type { APIRequestContext } from '@playwright/test'
 
 import { expect, test } from '@playwright/test'
+import { anonymousRequest } from './support/anonymous.ts'
+import { withRequestToken } from './support/requestToken.ts'
 
 const API_BASE = '/index.php/apps/integriq/api'
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
@@ -64,7 +66,9 @@ async function replaceRecords(
 	sourceId: string,
 	records: Array<Record<string, unknown>>,
 ): Promise<void> {
-	const resp = await request.put(`${OR_BASE}/source/${sourceId}`, {
+	// PATCH, because only the canned records change: a PUT replaces the whole
+	// source and is refused without its required `name`.
+	const resp = await request.patch(`${OR_BASE}/source/${sourceId}`, {
 		failOnStatusCode: false,
 		data: { configuration: { mock: true, mockResponse: { results: records } } },
 	})
@@ -121,15 +125,18 @@ test.describe('records owned by an external source', () => {
 		const body = await resp.json()
 		expect(body.valid).toBe(false)
 		expect(body.key).toBe('disappearancePolicy')
-		expect(body.accepted).toEqual(['delete', 'markEnded', 'keepAndFlag'])
+		expect(body.accepted).toEqual([
+			'delete',
+			'markEnded',
+			'keepAndFlag',
+			'purge',
+		])
 		expect(String(body.error)).toContain('not treated as the default')
 	})
 
 	// @e2e source-owned-records::a-handler-cannot-quietly-remove-a-brp-person
-	test('an anonymous request can delete nothing at all', async ({
-		playwright,
-	}) => {
-		const anonymous = await playwright.request.newContext()
+	test('an anonymous request can delete nothing at all', async () => {
+		const anonymous = await anonymousRequest()
 		try {
 			const resp = await anonymous.delete(
 				`${API_BASE}/ownership/pw-e2e-does-not-exist?schema=contact`,
@@ -189,7 +196,7 @@ test.describe('records owned by an external source', () => {
 
 		const contracts = await request.get(
 			`${API_BASE}/synchronizations/contracts/${syncId}`,
-			{ failOnStatusCode: false },
+			{ failOnStatusCode: false, headers: await withRequestToken(request) },
 		)
 		expect(contracts.status()).toBe(200)
 		const rows = (await contracts.json()).results ?? []
@@ -239,7 +246,7 @@ test.describe('records owned by an external source', () => {
 
 		const contracts = await request.get(
 			`${API_BASE}/synchronizations/contracts/${syncId}`,
-			{ failOnStatusCode: false },
+			{ failOnStatusCode: false, headers: await withRequestToken(request) },
 		)
 		const rows = (await contracts.json()).results ?? []
 		const contract = rows.find(
@@ -286,7 +293,7 @@ test.describe('records owned by an external source', () => {
 
 		const contracts = await request.get(
 			`${API_BASE}/synchronizations/contracts/${syncId}`,
-			{ failOnStatusCode: false },
+			{ failOnStatusCode: false, headers: await withRequestToken(request) },
 		)
 		const rows = (await contracts.json()).results ?? []
 		const contract = rows.find(

@@ -85,6 +85,21 @@ class IntakeRoutingServiceTest extends TestCase {
 	private array $rules = [];
 
 	/**
+	 * Whether the calling account may read the rules through RBAC. The live
+	 * `intake_routing_rule` schema is deny-all, so on an instance it may not.
+	 *
+	 * @var bool
+	 */
+	private bool $rulesReadableByCaller = true;
+
+	/**
+	 * The `_rbac` argument of every findAll() call, in order.
+	 *
+	 * @var array<int,bool>
+	 */
+	private array $rulesReadWithRbac = [];
+
+	/**
 	 * The service under test.
 	 *
 	 * @var IntakeRoutingService
@@ -103,8 +118,16 @@ class IntakeRoutingServiceTest extends TestCase {
 		$this->rules = [];
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
+		$this->rulesReadableByCaller = true;
 		$this->objectService->method('findAll')->willReturnCallback(
-			function (): array {
+			function (array $config = [], bool $_rbac = true, bool $_multitenancy = true): array {
+				$this->rulesReadWithRbac[] = $_rbac;
+				// OpenRegister answers a read of a deny-all schema with an
+				// empty set, not an error, unless RBAC is switched off.
+				if ($this->rulesReadableByCaller === false && $_rbac === true) {
+					return ['results' => [], 'total' => 0];
+				}
+
 				$rows = [];
 				foreach ($this->rules as $index => $rule) {
 					$rows[] = ObjectServiceMockBuilder::objectEntity($this, $rule, 'rule-' . $index);
@@ -200,6 +223,40 @@ class IntakeRoutingServiceTest extends TestCase {
 		$this->assertSame('', (string)($object['targetRef'] ?? ''));
 
 	}//end testAnUnroutableMessageIsHeldNotLost()
+
+	/**
+	 * The rules are admin configuration and read as the engine.
+	 *
+	 * `intake_routing_rule` is deny-all, and the intake account the message
+	 * arrives on is no administrator, so a read through RBAC sees no rule and
+	 * every message is held. The read switches RBAC off; nothing is written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/intake-channels/spec.md
+	 */
+	public function testAnEnabledRuleRoutesWhenTheCallerCannotReadRules(): void {
+		$this->rulesReadableByCaller = false;
+		$this->rules = [
+			[
+				'name' => 'Berichten',
+				'channelId' => 'messaging',
+				'targetSchema' => 'algemene_vraag',
+				'fieldMapping' => ['vraag' => 'text'],
+				'isEnabled' => true,
+			],
+		];
+		$this->listenWith(static function (IntakeMessageRoutedEvent $event): void {
+			$event->setCreatedRef('algemene_vraag/1');
+		});
+
+		$object = $this->service->route($this->chat())->getObject();
+
+		$this->assertSame(IntakeRoutingService::STATUS_ROUTED, $object['status']);
+		$this->assertSame('algemene_vraag/1', $object['targetRef']);
+		$this->assertSame([false], $this->rulesReadWithRbac, 'the rules are read once, with RBAC off');
+
+	}//end testAnEnabledRuleRoutesWhenTheCallerCannotReadRules()
 
 	/**
 	 * A rule that matched but that nobody answered holds the message too: a
@@ -419,7 +476,7 @@ class IntakeRoutingServiceTest extends TestCase {
 			}
 		);
 
-		$service = new IntakeReplyService($objectService, $this->registry());
+		$service = new IntakeReplyService($objectService, $this->registry(), (new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate());
 		$result = $service->reply('intake-uuid', 'Dank voor uw melding.');
 
 		$this->assertSame(ReplyResult::STATUS_UNSUPPORTED, $result->getStatus());
@@ -440,7 +497,7 @@ class IntakeRoutingServiceTest extends TestCase {
 			new \OCP\AppFramework\Db\DoesNotExistException('no such object')
 		);
 
-		$service = new IntakeReplyService($objectService, $this->registry());
+		$service = new IntakeReplyService($objectService, $this->registry(), (new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate());
 
 		$this->expectException(IntakeChannelException::class);
 		$service->reply('missing', 'Hallo');

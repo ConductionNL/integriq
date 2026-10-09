@@ -23,7 +23,7 @@ namespace OCA\Integriq\PropertySource;
 /**
  * Provenance is a field on the value, never a note or a log line.
  *
- * @spec openspec/changes/registry-backed-field-source/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-resolved-value-carries-its-provenance-req-rfs-003
  */
 final class ResolvedValue {
 	/**

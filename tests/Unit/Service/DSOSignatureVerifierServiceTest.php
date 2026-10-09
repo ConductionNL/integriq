@@ -19,7 +19,6 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Service\WebhookSignatureService;
-use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -39,11 +38,6 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 	 * @var array<string, string>
 	 */
 	private array $config = [];
-
-	/**
-	 * @var IAppConfig|\PHPUnit\Framework\MockObject\MockObject
-	 */
-	private $appConfig;
 
 	/**
 	 * @var DSOSignatureVerifierService
@@ -133,17 +127,11 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 		parent::setUp();
 
 		$this->config = [];
-		$this->appConfig = $this->createMock(IAppConfig::class);
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function (string $app, string $key, string $default = '') {
-				return ($this->config[$key] ?? $default);
-			});
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$webhookSigner = new WebhookSignatureService($logger);
 
 		$this->service = new DSOSignatureVerifierService(
-			appConfig: $this->appConfig,
 			webhookSignatureService: $webhookSigner,
 			logger: $logger,
 		);
@@ -156,9 +144,9 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMissingSignatureHeaderRejected(): void {
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_HMAC;
-		$this->assertFalse($this->service->verify(null, '{"foo":"bar"}'));
-		$this->assertFalse($this->service->verify('', '{"foo":"bar"}'));
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_HMAC;
+		$this->assertFalse($this->service->verify(null, '{"foo":"bar"}', $this->config));
+		$this->assertFalse($this->service->verify('', '{"foo":"bar"}', $this->config));
 
 	}//end testMissingSignatureHeaderRejected()
 
@@ -171,12 +159,12 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 		$secret = 'test-shared-secret';
 		$body = '{"verzoekId":"abc-123"}';
 
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_HMAC;
-		$this->config[DSOSignatureVerifierService::CONFIG_HMAC_SECRET] = $secret;
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_HMAC;
+		$this->config['hmacSecret'] = $secret;
 
 		$header = 'sha256=' . hash_hmac('sha256', $body, $secret);
 
-		$this->assertTrue($this->service->verify($header, $body));
+		$this->assertTrue($this->service->verify($header, $body, $this->config));
 
 	}//end testValidHmacSignatureAccepted()
 
@@ -186,12 +174,12 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testForgedHmacSignatureRejected(): void {
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_HMAC;
-		$this->config[DSOSignatureVerifierService::CONFIG_HMAC_SECRET] = 'test-shared-secret';
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_HMAC;
+		$this->config['hmacSecret'] = 'test-shared-secret';
 
 		$header = 'sha256=' . hash_hmac('sha256', 'tampered', 'wrong-secret');
 
-		$this->assertFalse($this->service->verify($header, '{"verzoekId":"abc-123"}'));
+		$this->assertFalse($this->service->verify($header, '{"verzoekId":"abc-123"}', $this->config));
 
 	}//end testForgedHmacSignatureRejected()
 
@@ -201,9 +189,9 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testHmacModeWithoutConfiguredSecretRejected(): void {
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_HMAC;
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_HMAC;
 
-		$this->assertFalse($this->service->verify('sha256=deadbeef', '{}'));
+		$this->assertFalse($this->service->verify('sha256=deadbeef', '{}', $this->config));
 
 	}//end testHmacModeWithoutConfiguredSecretRejected()
 
@@ -219,11 +207,11 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 		$privateKey = openssl_pkey_get_private(self::$signingKeyPem);
 		openssl_sign($body, $signature, $privateKey, OPENSSL_ALGO_SHA256);
 
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_RSA;
-		$this->config[DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE] = self::$signingCertPem;
-		$this->config[DSOSignatureVerifierService::CONFIG_ROOT_CA] = self::$rootCaPem;
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_PKIOVERHEID;
+		$this->config['signingCertificate'] = self::$signingCertPem;
+		$this->config['rootCa'] = self::$rootCaPem;
 
-		$this->assertTrue($this->service->verify(base64_encode($signature), $body));
+		$this->assertTrue($this->service->verify(base64_encode($signature), $body, $this->config));
 
 	}//end testValidRsaChainSignatureAccepted()
 
@@ -237,11 +225,11 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 		$privateKey = openssl_pkey_get_private(self::$signingKeyPem);
 		openssl_sign('{"verzoekId":"original"}', $signature, $privateKey, OPENSSL_ALGO_SHA256);
 
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_RSA;
-		$this->config[DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE] = self::$signingCertPem;
-		$this->config[DSOSignatureVerifierService::CONFIG_ROOT_CA] = self::$rootCaPem;
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_PKIOVERHEID;
+		$this->config['signingCertificate'] = self::$signingCertPem;
+		$this->config['rootCa'] = self::$rootCaPem;
 
-		$this->assertFalse($this->service->verify(base64_encode($signature), '{"verzoekId":"tampered"}'));
+		$this->assertFalse($this->service->verify(base64_encode($signature), '{"verzoekId":"tampered"}', $this->config));
 
 	}//end testTamperedBodyRsaSignatureRejected()
 
@@ -257,11 +245,11 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 		$privateKey = openssl_pkey_get_private(self::$untrustedKeyPem);
 		openssl_sign($body, $signature, $privateKey, OPENSSL_ALGO_SHA256);
 
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_RSA;
-		$this->config[DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE] = self::$untrustedCertPem;
-		$this->config[DSOSignatureVerifierService::CONFIG_ROOT_CA] = self::$rootCaPem;
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_PKIOVERHEID;
+		$this->config['signingCertificate'] = self::$untrustedCertPem;
+		$this->config['rootCa'] = self::$rootCaPem;
 
-		$this->assertFalse($this->service->verify(base64_encode($signature), $body));
+		$this->assertFalse($this->service->verify(base64_encode($signature), $body, $this->config));
 
 	}//end testUntrustedCertificateChainRejected()
 
@@ -271,9 +259,9 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testRsaModeWithoutConfiguredCertificateRejected(): void {
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_RSA;
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_PKIOVERHEID;
 
-		$this->assertFalse($this->service->verify(base64_encode('anything'), '{}'));
+		$this->assertFalse($this->service->verify(base64_encode('anything'), '{}', $this->config));
 
 	}//end testRsaModeWithoutConfiguredCertificateRejected()
 
@@ -283,13 +271,55 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testMalformedRsaSignatureRejected(): void {
-		$this->config[DSOSignatureVerifierService::CONFIG_MODE] = DSOSignatureVerifierService::MODE_RSA;
-		$this->config[DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE] = self::$signingCertPem;
-		$this->config[DSOSignatureVerifierService::CONFIG_ROOT_CA] = self::$rootCaPem;
+		$this->config['mode'] = DSOSignatureVerifierService::MODE_PKIOVERHEID;
+		$this->config['signingCertificate'] = self::$signingCertPem;
+		$this->config['rootCa'] = self::$rootCaPem;
 
-		$this->assertFalse($this->service->verify('%%%not-base64%%%', '{}'));
+		$this->assertFalse($this->service->verify('%%%not-base64%%%', '{}', $this->config));
 
 	}//end testMalformedRsaSignatureRejected()
+
+	/**
+	 * The app config used `rsa` for the PKIoverheid mode. A consumer migrated
+	 * from it keeps verifying.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 */
+	public function testLegacyRsaModeNameStillVerifiesTheChain(): void {
+		$body = '{"verzoekId":"legacy-rsa"}';
+
+		$privateKey = openssl_pkey_get_private(self::$signingKeyPem);
+		openssl_sign($body, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+
+		$trust = [
+			'mode' => 'rsa',
+			'signingCertificate' => self::$signingCertPem,
+			'rootCa' => self::$rootCaPem,
+		];
+
+		$this->assertTrue($this->service->verify(base64_encode($signature), $body, $trust));
+
+	}//end testLegacyRsaModeNameStillVerifiesTheChain()
+
+	/**
+	 * Two consumers with different secrets verify independently: the trust
+	 * comes from the argument, not from shared app config.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 */
+	public function testTrustComesFromTheArgument(): void {
+		$body = '{"verzoekId":"two-trusts"}';
+		$header = 'sha256=' . hash_hmac('sha256', $body, 'secret-a');
+
+		$this->assertTrue($this->service->verify($header, $body, ['mode' => 'hmac', 'hmacSecret' => 'secret-a']));
+		$this->assertFalse($this->service->verify($header, $body, ['mode' => 'hmac', 'hmacSecret' => 'secret-b']));
+		$this->assertFalse($this->service->verify($header, $body, []));
+
+	}//end testTrustComesFromTheArgument()
 
 	/**
 	 * `isCertificateCurrentlyValid` accepts a freshly-issued certificate.

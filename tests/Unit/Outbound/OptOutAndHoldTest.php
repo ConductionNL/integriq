@@ -30,10 +30,13 @@ use OCA\Integriq\Outbound\Identity\NoReplyHandler;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Tests\Helpers\InMemoryOptOutMapper;
+use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -45,6 +48,13 @@ use RuntimeException;
  * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
  */
 class OptOutAndHoldTest extends TestCase {
+
+	/**
+	 * The opt-out services, kept for one test so the short link table is shared.
+	 *
+	 * @var OptOutFixture|null
+	 */
+	private ?OptOutFixture $fixture = null;
 
 	/**
 	 * The OR object service double.
@@ -80,6 +90,20 @@ class OptOutAndHoldTest extends TestCase {
 	 * @var array<string,string>
 	 */
 	private array $config = [];
+
+	/**
+	 * The opt-out table the registry writes, after registry() made it.
+	 *
+	 * @var InMemoryOptOutMapper|null
+	 */
+	private ?InMemoryOptOutMapper $optOutTable = null;
+
+	/**
+	 * The unix time the clock double answers.
+	 *
+	 * @var int
+	 */
+	private int $now = 1790000000;
 
 	/**
 	 * Set up doubles that behave like storage and configuration.
@@ -186,17 +210,19 @@ class OptOutAndHoldTest extends TestCase {
 	}//end testACaseOptOutStopsOnlyThatCase()
 
 	/**
-	 * An instance may name its own protected categories.
+	 * An instance may name an alias of a floor category, and cannot take
+	 * besluit off the floor (opt-out-before-send REQ-OOA-004 replaced the
+	 * config list that could do both).
 	 *
 	 * @return void
 	 */
 	public function testAnInstanceCanDeclareItsOwnProtectedCategories(): void {
-		$this->config[OptOutRegistry::CONFIG_PROTECTED] = json_encode(['aanslag']);
+		$this->config[OptOutRegistry::CONFIG_PROTECTED] = json_encode(['aanslag' => 'statutory']);
 		$registry = $this->registry();
 		$registry->add('jan@example.org', OptOutRegistry::SCOPE_INSTANCE);
 
 		$this->assertTrue($registry->decide('jan@example.org', 'aanslag')['overridden']);
-		$this->assertFalse($registry->decide('jan@example.org', 'besluit')['send']);
+		$this->assertTrue($registry->decide('jan@example.org', 'besluit')['send']);
 
 	}//end testAnInstanceCanDeclareItsOwnProtectedCategories()
 
@@ -431,7 +457,9 @@ class OptOutAndHoldTest extends TestCase {
 	 * @return OptOutRegistry The registry.
 	 */
 	private function registry(): OptOutRegistry {
-		return new OptOutRegistry($this->objectService, $this->appConfig);
+		$this->optOutTable = new InMemoryOptOutMapper($this->createMock(IDBConnection::class));
+
+		return $this->fixture()->registry();
 
 	}//end registry()
 
@@ -443,12 +471,42 @@ class OptOutAndHoldTest extends TestCase {
 	 * @return UnsubscribeTokenService The service.
 	 */
 	private function tokens(OptOutRegistry $registry): UnsubscribeTokenService {
-		$random = $this->createMock(ISecureRandom::class);
-		$random->method('generate')->willReturn('test-secret-0123456789');
-
-		return new UnsubscribeTokenService($this->appConfig, $random, $registry);
+		return $this->fixture()->tokens();
 
 	}//end tokens()
+
+	/**
+	 * The opt-out services over this test's table, config and clock.
+	 *
+	 * @return OptOutFixture The fixture.
+	 */
+	private function fixture(): OptOutFixture {
+		if ($this->fixture !== null && $this->fixture->table === $this->optOutTable) {
+			return $this->fixture;
+		}
+
+		return $this->fixture = new OptOutFixture(
+			$this,
+			$this->createMock(IDBConnection::class),
+			$this->optOutTable,
+			fn (): array => $this->config,
+			fn (): int => $this->now
+		);
+
+	}//end fixture()
+
+	/**
+	 * A clock that answers $this->now, read at each call.
+	 *
+	 * @return ITimeFactory The clock.
+	 */
+	private function clock(): ITimeFactory {
+		$time = $this->createMock(ITimeFactory::class);
+		$time->method('getTime')->willReturnCallback(fn (): int => $this->now);
+
+		return $time;
+
+	}//end clock()
 
 	/**
 	 * A hold queue on a clock the test moves.

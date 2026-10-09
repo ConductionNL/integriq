@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * REQ-SOR-002 and REQ-SOR-003.
  *
- * @spec openspec/changes/records-owned-by-an-external-source/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+ * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
  */
 class DisappearancePolicyTest extends TestCase {
 	/**
@@ -248,5 +248,44 @@ class DisappearancePolicyTest extends TestCase {
 		$this->assertNull($outcome['contract']['sourceAbsentSince']);
 		$this->assertFalse($outcome['contract']['absentAtSource']);
 	}//end testAReturningRecordAlsoLosesItsEndDate()
+
+	/**
+	 * Declared retirement values are written under both non-deleting policies
+	 * and never under delete.
+	 *
+	 * @return void
+	 */
+	public function testDeclaredRetirementValuesAreWrittenUnderBothKeepingPolicies(): void {
+		$applier = new DisappearanceApplier();
+		$values = $applier->valuesFrom(['disappearanceValues' => ['lifecycle' => 'archived']]);
+
+		foreach ([DisappearancePolicy::MARK_ENDED, DisappearancePolicy::KEEP_AND_FLAG] as $policy) {
+			$after = $applier->applyToObject($policy, ['name' => 'AVG basis', 'lifecycle' => 'published'], '2026-10-02T08:00:00+00:00', $values);
+			$this->assertSame('archived', $after['lifecycle'], $policy);
+			$this->assertSame('AVG basis', $after['name'], $policy . ' keeps the other values');
+		}
+
+		$untouched = $applier->applyToObject(DisappearancePolicy::DELETE, ['lifecycle' => 'published'], '2026-10-02T08:00:00+00:00', $values);
+		$this->assertSame('published', $untouched['lifecycle']);
+	}//end testDeclaredRetirementValuesAreWrittenUnderBothKeepingPolicies()
+
+	/**
+	 * No declaration means no values; a malformed one is refused, not ignored.
+	 *
+	 * @return void
+	 */
+	public function testMalformedRetirementValuesAreRefused(): void {
+		$applier = new DisappearanceApplier();
+		$this->assertSame([], $applier->valuesFrom([]));
+
+		foreach ([['archived'], 'archived', ['lifecycle' => ['archived']]] as $declared) {
+			try {
+				$applier->valuesFrom(['disappearanceValues' => $declared]);
+				$this->fail('accepted ' . json_encode($declared));
+			} catch (InvalidArgumentException $e) {
+				$this->assertStringContainsString('disappearanceValues', $e->getMessage());
+			}
+		}
+	}//end testMalformedRetirementValuesAreRefused()
 
 }//end class

@@ -1,0 +1,24 @@
+{
+    "x-template": {
+        "slug": "alfresco-cmis",
+        "vendor": "Hyland (Alfresco)",
+        "system": "Alfresco Content Services",
+        "standard": "CMIS 1.1 browser binding",
+        "verifiedAgainst": "https://docs.alfresco.com/content-services/7.1/develop/reference/cmis-ref/",
+        "tier": "curated",
+        "category": "Document management"
+    },
+    "source": {
+        "name": "Alfresco Content Services (CMIS 1.1)",
+        "description": "Alfresco's public CMIS 1.1 API over the browser binding, which answers JSON over HTTPS. Replace the host in the base URL with your Alfresco server. Hold the account in the credential broker and name it by credentialRef; this template carries none.",
+        "type": "api",
+        "location": "https://alfresco.example.nl/alfresco/api/-default-/public/cmis/versions/1.1/browser",
+        "auth": "basic",
+        "configuration": {
+            "headers": {
+                "Accept": "application/json"
+            }
+        },
+        "isEnabled": false
+    }
+}

@@ -119,6 +119,7 @@ class EndpointCacheService {
 					$endpointData = [];
 				}
 
+				$endpointData = $this->withRouting(endpointData: $endpointData);
 				$pattern = ($endpointData['endpointRegex'] ?? null);
 				$endpointMethod = ($endpointData['method'] ?? null);
 
@@ -172,6 +173,8 @@ class EndpointCacheService {
 		// Return the matched ObjectEntity endpoint.
 		$matchedEndpoint = reset($matches);
 		if ($matchedEndpoint instanceof ObjectEntity) {
+			// In memory only: the request sees the derived segments; the row is not written.
+			$matchedEndpoint->setObject($this->withRouting(endpointData: (array)$matchedEndpoint->getObject()));
 			return $matchedEndpoint;
 		}
 
@@ -184,7 +187,7 @@ class EndpointCacheService {
 			$payload = $matchedEndpoint;
 			unset($payload['@self']);
 			// SetObject via positional call to avoid named-arg / __call bug.
-			$entity->setObject($payload);
+			$entity->setObject($this->withRouting(endpointData: $payload));
 			return $entity;
 		}
 
@@ -321,6 +324,56 @@ class EndpointCacheService {
 		}
 
 	}//end clearCache()
+
+	/**
+	 * The routing fields an endpoint path implies: `endpointRegex` and `endpointArray`.
+	 *
+	 * What the EndpointMapper wrote on every insert and update before the
+	 * OpenRegister cutover (7df241bc9). EndpointRoutingListener stores them on
+	 * save; findByPathRegex() derives them for a row saved without them.
+	 *
+	 * @param string $endpoint The endpoint path, e.g. `personen/{{id}}`.
+	 *
+	 * @return array{endpointRegex: string, endpointArray: list<string>}
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	public function routingFor(string $endpoint): array {
+		return [
+			'endpointRegex' => $this->createEndpointRegex(endpoint: $endpoint),
+			'endpointArray' => explode('/', $endpoint),
+		];
+	}//end routingFor()
+
+	/**
+	 * An endpoint's data with the routing fields filled when they are empty.
+	 *
+	 * A stored regex is used as it is; only an empty one is derived, so an
+	 * administrator's own pattern keeps working.
+	 *
+	 * @param array $endpointData The endpoint object.
+	 *
+	 * @return array The endpoint object with `endpointRegex` and `endpointArray`.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function withRouting(array $endpointData): array {
+		$endpoint = (string)($endpointData['endpoint'] ?? '');
+		if ($endpoint === '') {
+			return $endpointData;
+		}
+
+		$routing = $this->routingFor(endpoint: $endpoint);
+		if (empty($endpointData['endpointRegex']) === true) {
+			$endpointData['endpointRegex'] = $routing['endpointRegex'];
+		}
+
+		if (empty($endpointData['endpointArray']) === true) {
+			$endpointData['endpointArray'] = $routing['endpointArray'];
+		}
+
+		return $endpointData;
+	}//end withRouting()
 
 	/**
 	 * Create endpoint regex pattern from endpoint path.

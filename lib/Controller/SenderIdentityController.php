@@ -28,6 +28,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Outbound\Identity\DomainAlignmentChecker;
 use OCA\Integriq\Outbound\Identity\HoldQueue;
+use OCA\Integriq\Outbound\Identity\OptOutCategories;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
@@ -42,6 +43,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use RuntimeException;
 
@@ -81,6 +83,7 @@ class SenderIdentityController extends Controller {
 	 * @param OptOutRegistry $optOuts Holds the opt-outs an unsubscribe adds to.
 	 * @param HoldQueue $holdQueue Holds and withdraws a message inside its window.
 	 * @param IL10N $l Translations.
+	 * @param IURLGenerator $urls Builds the confirmation form's target.
 	 */
 	public function __construct(
 		$appName,
@@ -93,6 +96,7 @@ class SenderIdentityController extends Controller {
 		private readonly OptOutRegistry $optOuts,
 		private readonly HoldQueue $holdQueue,
 		private readonly IL10N $l,
+		private readonly IURLGenerator $urls,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -204,59 +208,299 @@ class SenderIdentityController extends Controller {
 	}//end withdraw()
 
 	/**
-	 * Stop the updates on one case, from the link in the message.
+	 * Show what the link in a message stops, and ask to confirm.
 	 *
-	 * No login, no account: the person following this link usually has
-	 * neither, and asking them to make one is asking them to keep receiving
-	 * the mail instead.
+	 * GET changes nothing (RFC 8058): mail scanners fetch links before a
+	 * person does, so a GET that wrote would unsubscribe people who never
+	 * clicked. No login, no account: the person following this link usually
+	 * has neither.
 	 *
 	 * @param string $token The signed token from the link.
 	 *
-	 * @return TemplateResponse The confirmation page.
+	 * @return TemplateResponse The confirmation page: 200 to confirm, 410 when the
+	 *         link expired, 400 when it does not verify.
 	 *
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 60, period: 60)]
 	public function unsubscribe(string $token): TemplateResponse {
-		$claim = $this->tokens->verify($token);
-		if ($claim === null || $claim['address'] === '') {
-			return new TemplateResponse(
-				$this->appName,
-				'unsubscribe',
-				[
-					'stopped' => false,
-					'message' => $this->l->t('This link is not valid. Nothing was changed.'),
-					'l10n' => $this->l,
-				],
-				TemplateResponse::RENDER_AS_GUEST
+		$claim = $this->tokens->inspect($token);
+		$refusal = $this->refusalFor(claim: $claim);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->confirmPage(token: $token, claim: $claim);
+
+	}//end unsubscribe()
+
+	/**
+	 * Resolve a short SMS link to its token and show the same confirmation.
+	 *
+	 * @param string $shortToken The ten-character id from the SMS. It is the capability: random,
+	 *                           and it resolves only to a token whose signature is checked next.
+	 *
+	 * @return TemplateResponse The confirmation page, or 400 when the id is unknown or expired.
+	 *
+	 * @PublicPage
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
+	public function shortLink(string $shortToken): TemplateResponse {
+		$token = $this->tokens->resolveShort($shortToken);
+		if ($token === null) {
+			return $this->unsubscribePage(
+				state: 'invalid',
+				message: $this->l->t('This link is not valid. Nothing was changed.'),
+				status: Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		$this->optOuts->add(
-			$claim['address'],
-			OptOutRegistry::SCOPE_CASE,
-			$claim['caseRef'],
-			'unsubscribe-link'
+		return $this->unsubscribe(token: $token);
+
+	}//end shortLink()
+
+	/**
+	 * Write the opt-out the link stands for. The page's button and a mail
+	 * provider's one-click POST (`List-Unsubscribe=One-Click`) both land here.
+	 *
+	 * The opt-out goes into integriq's own table after the signature is
+	 * verified; OpenRegister is not touched (ADR-099 section 9 keeps
+	 * runAsSystem() off request paths). Answers 200 with no redirect, as RFC
+	 * 8058 asks. `choice=all` stops everything that is not statutory.
+	 *
+	 * @param string $token The signed token from the link.
+	 * @param string $choice `this` (what the link names) or `all`.
+	 *
+	 * @return TemplateResponse 200 when stopped, 410 when the link expired, 400 when it does not verify.
+	 *
+	 * @PublicPage
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
+	public function unsubscribeConfirm(string $token, string $choice = 'this'): TemplateResponse {
+		$claim = $this->tokens->inspect($token);
+		$refusal = $this->refusalFor(claim: $claim);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$source = 'unsubscribe-link';
+		if ($claim['format'] === 'v1') {
+			$source = 'unsubscribe-link-v1';
+		}
+
+		if ((string)$this->request->getParam('List-Unsubscribe', '') === 'One-Click') {
+			$source = 'one-click';
+		}
+
+		if ($choice === 'all') {
+			$this->optOuts->record(
+				[
+					'address' => $claim['address'],
+					'state' => 'opted-out',
+					'scope' => OptOutRegistry::SCOPE_INSTANCE,
+					'purpose' => OptOutCategories::PURPOSE_ALL,
+					'source' => $source,
+					'sourceApp' => 'integriq',
+				]
+			);
+
+			return $this->unsubscribePage(
+				state: 'stopped',
+				message: $this->l->t('Done. You will no longer receive messages from us, except statutory notices such as a besluit.'),
+				status: Http::STATUS_OK
+			);
+		}
+
+		if ($claim['format'] !== UnsubscribeTokenService::PREFIX_V3) {
+			$this->optOuts->add($claim['address'], OptOutRegistry::SCOPE_CASE, $claim['caseRef'], $source);
+		}
+
+		if ($claim['format'] === UnsubscribeTokenService::PREFIX_V3) {
+			$this->optOuts->record(
+				[
+					'address' => $claim['address'],
+					'state' => 'opted-out',
+					'scope' => $claim['scope'],
+					'channel' => $claim['channel'],
+					'ref' => $claim['ref'],
+					'purpose' => $claim['purpose'],
+					'source' => $source,
+					'sourceApp' => 'integriq',
+				]
+			);
+		}
+
+		return $this->unsubscribePage(
+			state: 'stopped',
+			message: $this->describe(claim: $claim) . ' ' . $this->l->t('Statutory notices, such as a besluit, are still sent.'),
+			status: Http::STATUS_OK
 		);
 
-		return new TemplateResponse(
+	}//end unsubscribeConfirm()
+
+	/**
+	 * The decision log: suppressions, overrides, changes and allowed counts.
+	 *
+	 * Administrators only: no NoAdminRequired, so Nextcloud refuses everyone
+	 * else before this runs.
+	 *
+	 * @param int    $limit         At most this many rows (1 to 500).
+	 * @param int    $offset        Skip this many.
+	 * @param string $correlationId Only this correlation id, when given.
+	 *
+	 * @return JSONResponse `{results}`.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-suppressions-and-overrides-are-logged-req-ooa-007
+	 */
+	#[NoCSRFRequired]
+	public function optOutLog(int $limit = 50, int $offset = 0, string $correlationId = ''): JSONResponse {
+		return new JSONResponse($this->optOuts->logPage(limit: $limit, offset: $offset, correlationId: $correlationId));
+
+	}//end optOutLog()
+
+	/**
+	 * The page for a link that is expired or does not verify, or null.
+	 *
+	 * @param array<string,string> $claim What the token says.
+	 *
+	 * @return TemplateResponse|null The page, or null when the link is usable.
+	 */
+	private function refusalFor(array $claim): ?TemplateResponse {
+		if ($claim['status'] === UnsubscribeTokenService::STATUS_EXPIRED) {
+			return $this->unsubscribePage(
+				state: 'expired',
+				message: $this->l->t('This link has expired. Nothing was changed. Use the link in a more recent message.'),
+				status: Http::STATUS_GONE
+			);
+		}
+
+		if ($claim['status'] !== UnsubscribeTokenService::STATUS_VALID || $claim['address'] === '') {
+			return $this->unsubscribePage(
+				state: 'invalid',
+				message: $this->l->t('This link is not valid. Nothing was changed.'),
+				status: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return null;
+
+	}//end refusalFor()
+
+	/**
+	 * What a link stops, in the reader's language.
+	 *
+	 * @param array<string,string> $claim What the token says.
+	 *
+	 * @return string The sentence.
+	 */
+	private function describe(array $claim): string {
+		if ($claim['purpose'] === OptOutCategories::PURPOSE_MARKETING) {
+			if ($claim['scope'] === OptOutRegistry::SCOPE_CHANNEL) {
+				return $this->l->t(
+					'You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.',
+					[$claim['channel']]
+				);
+			}
+
+			return $this->l->t('You will no longer receive newsletters and campaigns from us. Other messages, such as appointment reminders, still arrive.');
+		}
+
+		return match ($claim['scope']) {
+			OptOutRegistry::SCOPE_CHANNEL => $this->l->t('You will no longer receive these messages by %s.', [$claim['channel']]),
+			OptOutRegistry::SCOPE_LIST => $this->l->t('You will no longer receive messages from this list.'),
+			OptOutRegistry::SCOPE_INSTANCE => $this->l->t('You will no longer receive messages from us.'),
+			default => $this->l->t('You will no longer receive updates about this case.'),
+		};
+
+	}//end describe()
+
+	/**
+	 * The confirmation page: what stops, a button, and nothing written yet.
+	 *
+	 * @param string $token The token.
+	 * @param array<string,string> $claim What the token says.
+	 *
+	 * @return TemplateResponse The page.
+	 */
+	private function confirmPage(string $token, array $claim): TemplateResponse {
+		$response = $this->unsubscribePage(
+			state: 'confirm',
+			message: $this->describe(claim: $claim) . ' ' . $this->l->t('Statutory notices, such as a besluit, are still sent. Nothing has changed yet.'),
+			status: Http::STATUS_OK
+		);
+		$params = $response->getParams();
+		$params['action'] = $this->urls->linkToRoute('integriq.senderIdentity.unsubscribeConfirm', ['token' => $token]);
+		// Offer to stop everything unless this link already does.
+		$params['offerAll'] = ($claim['scope'] !== OptOutRegistry::SCOPE_INSTANCE || $claim['purpose'] !== OptOutCategories::PURPOSE_ALL);
+		$response->setParams($params);
+
+		return $response;
+
+	}//end confirmPage()
+
+	/**
+	 * The opt-outs on this instance, newest first, from integriq's table.
+	 *
+	 * Administrators only: no NoAdminRequired, so Nextcloud refuses everyone
+	 * else before this runs.
+	 *
+	 * @param int $limit  At most this many rows (1 to 500).
+	 * @param int $offset Skip this many.
+	 *
+	 * @return JSONResponse `{results, total}`.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function optOuts(int $limit = 50, int $offset = 0): JSONResponse {
+		return new JSONResponse($this->optOuts->page(limit: $limit, offset: $offset));
+
+	}//end optOuts()
+
+	/**
+	 * The guest page after following a link.
+	 *
+	 * @param string $state   `confirm`, `stopped`, `expired` or `invalid`.
+	 * @param string $message What happened, in the reader's language.
+	 * @param int    $status  The HTTP status.
+	 *
+	 * @return TemplateResponse The page.
+	 */
+	private function unsubscribePage(string $state, string $message, int $status): TemplateResponse {
+		$response = new TemplateResponse(
 			$this->appName,
 			'unsubscribe',
 			[
-				'stopped' => true,
-				'message' => $this->l->t(
-					'You will no longer receive updates about this case. Statutory notices, such as a besluit, are still sent.'
-				),
+				'state' => $state,
+				'stopped' => ($state === 'stopped'),
+				'message' => $message,
 				'l10n' => $this->l,
 			],
 			TemplateResponse::RENDER_AS_GUEST
 		);
+		$response->setStatus($status);
 
-	}//end unsubscribe()
+		return $response;
+
+	}//end unsubscribePage()
 
 }//end class

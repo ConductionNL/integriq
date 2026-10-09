@@ -32,7 +32,8 @@ packaged, slug-referenced set per component, the way
   (Objecten and Objecttypen), `zgw-notificaties` (an abonnement per
   component feeding the existing pipe).
 - Each set: a source template, synchronizations into a target register and
-  schema the operator picks, mappings both ways, version translation on.
+  schema the operator picks, mappings both ways that pass the store's own ZGW
+  shape through (no translation; design D5).
 - A pull on notification, so an external change shows within a minute.
 - A write-back synchronization for the resources the case app may edit.
 

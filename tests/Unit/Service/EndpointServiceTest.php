@@ -18,7 +18,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\FlowRunnerService;
@@ -115,7 +115,7 @@ class EndpointServiceTest extends TestCase {
 		$config = $this->createMock(IConfig::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$storageService = $this->createMock(StorageService::class);
-		$authService = $this->createMock(AuthorizationService::class);
+		$authService = $this->createMock(OpenRegisterCredentialBridge::class);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$container = $this->container;
 		$syncService = $this->createMock(SynchronizationService::class);
@@ -464,6 +464,30 @@ class EndpointServiceTest extends TestCase {
 	}//end testProcessFlowRuleThrowsWithoutConfiguredFlow()
 
 	/**
+	 * A `javascript` rule that still exists fails when it runs, saying integriq
+	 * runs no scripts. It used to return its input unchanged, a rule that
+	 * silently did nothing (gateway-endpoint-transform-and-plugins REQ-GTP-003).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-javascript-rule-is-refused-req-gtp-003
+	 */
+	public function testAJavaScriptRuleIsRefusedWhenItRuns(): void {
+		$rule = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['name' => 'Oud script', 'type' => 'javascript', 'configuration' => ['javascript' => 'return data;']],
+			'rule-js'
+		);
+
+		$method = new \ReflectionMethod(EndpointService::class, 'processJavaScriptRule');
+		$method->setAccessible(true);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Integriq runs no scripts');
+		$method->invoke($this->service, $rule, ['body' => ['a' => 1]]);
+	}//end testAJavaScriptRuleIsRefusedWhenItRuns()
+
+	/**
 	 * renderSelfUrlAndHal stamps an absolute `url` self-link built from the endpoint's own path.
 	 *
 	 * @return void
@@ -508,7 +532,7 @@ class EndpointServiceTest extends TestCase {
 			$this->orObjectService,
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->container,
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
@@ -615,7 +639,7 @@ class EndpointServiceTest extends TestCase {
 					$this->orObjectService,
 					$this->createMock(IConfig::class),
 					$this->createMock(StorageService::class),
-					$this->createMock(AuthorizationService::class),
+					$this->createMock(OpenRegisterCredentialBridge::class),
 					$this->container,
 					$this->createMock(SynchronizationService::class),
 					$this->createMock(RuleService::class),
@@ -692,7 +716,7 @@ class EndpointServiceTest extends TestCase {
 			$this->orObjectService,
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$container,
 			$syncService,
 			$ruleService,
@@ -1008,4 +1032,74 @@ class EndpointServiceTest extends TestCase {
 		// processRules() swallowed into a generic 500 + an `error` step.
 		$this->assertSame('success', $steps[0]['status']);
 	}//end testProcessRulesDryRunForwardsIsTestToSynchronizationRule()
+	/**
+	 * A single-object GET through an endpoint's handler, with its mapper answering one object.
+	 *
+	 * @param array<string, mixed> $endpointData The endpoint configuration.
+	 * @param array<string, mixed> $object       The object the mapper finds.
+	 * @param string               $path         The requested path.
+	 *
+	 * @return \OCP\AppFramework\Http\JSONResponse The response.
+	 */
+	private function singleObjectGet(array $endpointData, array $object, string $path): \OCP\AppFramework\Http\JSONResponse {
+		$mapper = $this->createMock(\OCA\OpenRegister\Service\ObjectServiceMapperAdapter::class);
+		$mapper->method('find')->willReturn(ObjectServiceMockBuilder::objectEntity($this, $object, 'obj-1'));
+		$this->objectService->method('getMapper')->willReturn($mapper);
+
+		// A double, because a real FlowToken serialises the response through
+		// Response::getHeaders(), which needs a booted Nextcloud.
+		$flowToken = $this->createMock(\OCA\Integriq\Service\Helper\FlowToken::class);
+		$flowToken->method('getRequestAmended')->willReturn(['method' => 'GET', 'parameters' => [], 'headers' => []]);
+
+		$handle = new \ReflectionMethod(EndpointService::class, 'handleSchemaRequest');
+
+		return $handle->invokeArgs(
+			$this->service,
+			[ObjectServiceMockBuilder::objectEntity($this, $endpointData, 'endpoint-1'), &$flowToken, $path]
+		);
+	}//end singleObjectGet()
+
+	/**
+	 * REQ-EP-010: an object of the wrong type answers 404 on a single-object GET.
+	 *
+	 * Red before the guard: the id branch fetched by id with no filter, so
+	 * /motions/{id} answered an amendment to anyone who knew its uuid.
+	 *
+	 * @return void
+	 */
+	public function testASingleObjectFailingTheEndpointsFixedFiltersAnswersNotFound(): void {
+		$response = $this->singleObjectGet(
+			endpointData: [
+				'targetId' => '1/2',
+				'endpointArray' => ['motions', '{{id}}'],
+				'fixedFilters' => ['decisionType' => 'motion', 'lifecycle' => 'published'],
+			],
+			object: ['decisionType' => 'amendment', 'lifecycle' => 'published'],
+			path: 'motions/obj-1'
+		);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame('not found', $response->getData()['error']);
+		$this->assertStringNotContainsString('amendment', (string)json_encode($response->getData()), 'The 404 must not disclose what the object is.');
+	}//end testASingleObjectFailingTheEndpointsFixedFiltersAnswersNotFound()
+
+	/**
+	 * REQ-EP-010: a draft answers 404 on a published-only endpoint, the same 404 as a missing object.
+	 *
+	 * @return void
+	 */
+	public function testADraftAnswersTheSameNotFoundAsAMissingObject(): void {
+		$response = $this->singleObjectGet(
+			endpointData: [
+				'targetId' => '1/2',
+				'endpointArray' => ['meetings', '{{id}}'],
+				'fixedFilters' => ['lifecycle' => 'published'],
+			],
+			object: ['lifecycle' => 'draft'],
+			path: 'meetings/obj-1'
+		);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(['error' => 'not found', 'message' => 'the object with id obj-1 does not exist'], $response->getData());
+	}//end testADraftAnswersTheSameNotFoundAsAMissingObject()
 }//end class
