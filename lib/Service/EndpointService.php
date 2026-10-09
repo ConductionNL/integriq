@@ -448,12 +448,10 @@ class EndpointService {
 			return new ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: $endpoint->getUuid(), triggeredBy: 'http');
 		}
 
-		$trace = new ExecutionTraceContext(
-			entryPoint: 'endpoint',
-			entryPointId: $endpoint->getUuid(),
-			traceId: $inbound['traceId'],
-			triggeredBy: 'http'
-		);
+		// The caller's trace id is never the record's id: on this public
+		// route that would let a caller overwrite another execution's trace.
+		$trace = new ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: $endpoint->getUuid(), triggeredBy: 'http');
+		$trace->setOtelTraceId(otelTraceId: $inbound['traceId']);
 		$trace->setParentSpanId(parentSpanId: $inbound['parentSpanId']);
 
 		return $trace;

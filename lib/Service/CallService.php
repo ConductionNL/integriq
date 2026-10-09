@@ -3198,7 +3198,7 @@ class CallService {
 
 		$traceParent = new TraceParent();
 		$spanId = $traceParent->newSpanId();
-		$headers[TraceParent::HEADER] = $traceParent->format(traceId: $trace->getTraceId(), spanId: $spanId);
+		$headers[TraceParent::HEADER] = $traceParent->format(traceId: $trace->getOtelTraceId(), spanId: $spanId);
 		$prepared['config']['headers'] = $headers;
 		$prepared['spanId'] = $spanId;
 

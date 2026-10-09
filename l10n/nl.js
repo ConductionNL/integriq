@@ -2094,7 +2094,9 @@ OC.L10N.register(
         "Parent span id": "Id van de bovenliggende span",
         "When the execution started, in microseconds since the epoch, so exported spans order below the second (observability-opentelemetry-export REQ-OTEL-001). Each step carries its own startedAtUs too, and an outbound call step the spanId its traceparent named": "Wanneer de uitvoering begon, in microseconden sinds de epoch, zodat geëxporteerde spans ook binnen een seconde op volgorde staan (observability-opentelemetry-export REQ-OTEL-001). Elke stap heeft ook een eigen startedAtUs, en een uitgaande aanroep de spanId uit zijn traceparent",
         "When the execution finished, in microseconds since the epoch": "Wanneer de uitvoering klaar was, in microseconden sinds de epoch",
-        "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)": "Het span-id van de aanroeper uit een geaccepteerde inkomende W3C-traceparent. Alleen gezet als de uitvoering de trace van de aanroeper voortzet (REQ-OTEL-004)"
+        "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)": "Het span-id van de aanroeper uit een geaccepteerde inkomende W3C-traceparent. Alleen gezet als de uitvoering de trace van de aanroeper voortzet (REQ-OTEL-004)",
+        "OpenTelemetry trace id": "OpenTelemetry-trace-id",
+        "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)": "Het W3C-trace-id van de aanroeper uit een geaccepteerde inkomende traceparent. Alleen gezet als de uitvoering de trace van de aanroeper voortzet. Geëxporteerde spans en uitgaande traceparent-headers dragen dit id, nooit het eigen id van het record (REQ-OTEL-004)"
     },
     "nplurals=2; plural=(n != 1);"
 )

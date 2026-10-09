@@ -28,6 +28,7 @@ namespace OCA\Integriq\Observability\Otel;
 
 use OCA\Integriq\BackgroundJob\OtelExportJob;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -45,11 +46,15 @@ class TraceExportQueue {
 	 * @param OtelSettings $settings The export settings.
 	 * @param IJobList $jobList The background job list.
 	 * @param LoggerInterface $logger Logs a trace that could not be queued.
+	 * @param OtelExportBreaker|null $breaker Pauses queuing during a collector outage; absent, never paused.
+	 * @param ITimeFactory|null $time The clock the breaker is read against; the system clock when absent.
 	 */
 	public function __construct(
 		private readonly OtelSettings $settings,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
+		private readonly ?OtelExportBreaker $breaker = null,
+		private readonly ?ITimeFactory $time = null,
 	) {
 
 	}//end __construct()
@@ -57,7 +62,9 @@ class TraceExportQueue {
 	/**
 	 * Queue a finished, sampled trace. A running trace (an approval
 	 * suspension) waits for its final persist, and a dry run is never sent.
-	 * A failure to queue is logged and never reaches the traced work.
+	 * While sends are paused after repeated collector failures nothing is
+	 * queued, so an outage cannot pile up jobs. A failure to queue is logged
+	 * and never reaches the traced work.
 	 *
 	 * @param ExecutionTraceContext $trace The persisted context.
 	 * @param string $status The persisted status.
@@ -73,6 +80,7 @@ class TraceExportQueue {
 
 		try {
 			if ($this->settings->isEnabled() === false
+				|| $this->breaker?->isOpen(now: ($this->time?->getTime() ?? time())) === true
 				|| $this->settings->isSampled(traceId: $trace->getTraceId(), status: $status, isReplay: $trace->isReplay()) === false
 			) {
 				return false;

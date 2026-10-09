@@ -39,8 +39,10 @@ number of steps that were counted but not retained.
 Integriq MUST NOT send spans on the request or run that produced the trace. It
 MUST queue the trace and send it from a background job, and a collector that
 is down MUST NOT change the response time or outcome of the traced work. A
-failed batch MUST be retried at most three times and then dropped with one log
-line.
+failed batch MUST be retried at most three times, each retry later than the
+one before, and then dropped with one log line. After five failed sends in a
+row, sends MUST pause for five minutes and no new trace is queued meanwhile,
+so a collector outage cannot tie up cron.
 
 #### Scenario: the collector is down
 - GIVEN export enabled and a collector that refuses connections
@@ -48,12 +50,19 @@ line.
 - THEN the endpoint answers as it would with export off, and the trace is queued for the background job
 - @e2e exclude a timing guarantee; covered by PHPUnit asserting no HTTP call during persist()
 
+#### Scenario: a long collector outage pauses sends
+- GIVEN export enabled and a collector that has refused five sends in a row
+- WHEN the next trace is due for export
+- THEN integriq sends nothing for five minutes, queues no new trace, and retries the waiting trace later
+- @e2e exclude a background-job timing claim; covered by PHPUnit in `OtelExportTest`
+
 ### Requirement: Spans carry no message content (REQ-OTEL-003)
 
 A span MUST NOT carry a step's `input` or `output`. Span attributes MUST be
 limited to the step type and name, the status, the duration, the HTTP method,
-the HTTP status code, the URL without its query string, the entry point and
-the ids of the trace and the entry point object.
+the HTTP status code, the URL without its query string, fragment and
+credentials and with every identifier-like path segment masked, the entry
+point and the ids of the trace and the entry point object.
 
 #### Scenario: a BSN never reaches the collector
 - GIVEN a mapping step whose input contains a BSN
@@ -61,19 +70,34 @@ the ids of the trace and the entry point object.
 - THEN no attribute or event in the exported payload contains the BSN
 - @e2e exclude a payload absence claim; covered by PHPUnit on SpanMapper
 
+#### Scenario: a BSN in the URL path never reaches the collector
+- GIVEN a call step to `https://svc:s3cret@brp.example.org/ingeschrevenpersonen/999993653`
+- WHEN the trace is exported
+- THEN its `url.full` is `https://brp.example.org/ingeschrevenpersonen/{id}` and the payload contains neither the BSN nor the credentials
+- @e2e exclude a payload absence claim; covered by PHPUnit on SpanMapper
+
 ### Requirement: Trace context travels in and out as W3C traceparent (REQ-OTEL-004)
 
 An endpoint request carrying a valid W3C `traceparent` MUST produce a trace
-whose id is the header's trace id and whose root span's parent is the header's
-span id. An invalid header MUST be ignored. Every outbound call made during a
-trace MUST carry a `traceparent` naming the trace id and the span id of the
-call step.
+whose exported W3C trace id is the header's trace id and whose root span's
+parent is the header's span id. The `execution_trace` record MUST keep an id
+of integriq's own and hold the header's trace id apart, in `otelTraceId`, so a
+caller can never choose which record its execution writes. An invalid header
+MUST be ignored. Every outbound call made during a trace MUST carry a
+`traceparent` naming the trace's W3C trace id and the span id of the call
+step.
 
 #### Scenario: a caller's trace continues into integriq
 - GIVEN a consumer sending `traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`
 - WHEN it calls an integriq endpoint
-- THEN the resulting execution trace has trace id `4bf92f35-77b3-4da6-a3ce-929d0e0e4736` and the exported root span has parent `00f067aa0ba902b7`
-- @e2e exclude a header contract; covered by Newman in `tests/postman/`
+- THEN the resulting execution trace has `otelTraceId` `4bf92f35-77b3-4da6-a3ce-929d0e0e4736`, its exported spans carry that trace id, and the exported root span has parent `00f067aa0ba902b7`
+- @e2e exclude a header contract; covered by PHPUnit in `TraceContextPropagationTest`
+
+#### Scenario: a known trace id cannot overwrite a record
+- GIVEN two requests carrying the same valid `traceparent`
+- WHEN both call an integriq endpoint
+- THEN two `execution_trace` records exist, each with its own id, neither id being the header's trace id
+- @e2e exclude a persistence-id claim; covered by PHPUnit in `TraceContextPropagationTest`
 
 #### Scenario: a partner sees integriq's trace
 - GIVEN an endpoint that proxies to a source during a trace

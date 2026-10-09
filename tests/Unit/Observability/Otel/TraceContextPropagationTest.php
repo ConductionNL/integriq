@@ -30,10 +30,14 @@ use OCA\Integriq\Observability\Otel\SpanMapper;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 /**
@@ -76,15 +80,18 @@ class TraceContextPropagationTest extends TestCase {
 	}//end endpointTrace()
 
 	/**
-	 * A caller's trace continues: the trace id comes from the header and the
-	 * root span's parent is the header's span id.
+	 * A caller's trace continues: the W3C trace id comes from the header and
+	 * the root span's parent is the header's span id, but the record keeps
+	 * an id of Integriq's own.
 	 *
 	 * @return void
 	 */
 	public function testACallersTraceContinuesIntoIntegriq(): void {
 		$trace = $this->endpointTrace('00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01');
 
-		$this->assertSame('4bf92f35-77b3-4da6-a3ce-929d0e0e4736', $trace->getTraceId());
+		$this->assertSame('4bf92f35-77b3-4da6-a3ce-929d0e0e4736', $trace->getOtelTraceId());
+		$this->assertNotSame('4bf92f35-77b3-4da6-a3ce-929d0e0e4736', $trace->getTraceId());
+		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', $trace->getTraceId());
 		$this->assertSame('00f067aa0ba902b7', $trace->getParentSpanId());
 		$this->assertSame('endpoint', $trace->getEntryPoint());
 		$this->assertSame('http', $trace->getTriggeredBy());
@@ -102,6 +109,8 @@ class TraceContextPropagationTest extends TestCase {
 		$this->assertNotSame('4bf92f35-77b3-4da6-a3ce-929d0e0e4736', $trace->getTraceId());
 		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', $trace->getTraceId());
 		$this->assertNull($trace->getParentSpanId());
+		$this->assertNull($trace->getInboundOtelTraceId());
+		$this->assertSame($trace->getTraceId(), $trace->getOtelTraceId());
 
 	}//end testAnInvalidHeaderMintsAFreshTrace()
 
@@ -133,4 +142,109 @@ class TraceContextPropagationTest extends TestCase {
 		$this->assertSame($own, $this->callPrivate(CallService::class, 'withTraceParent', ['prepared' => $own, 'trace' => $trace]));
 
 	}//end testAPartnerSeesIntegriqsTrace()
+
+	/**
+	 * Two requests carrying the same traceparent are two executions: two
+	 * records with two different uuids, neither of them the caller's trace
+	 * id, each keeping the caller's id apart. A caller who knows a trace id
+	 * can therefore not overwrite that execution's record.
+	 *
+	 * @return void
+	 */
+	public function testTheSameTraceparentTwiceWritesTwoRecords(): void {
+		$header = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+		$saves = [];
+		$objects = $this->createMock(ORObjectService::class);
+		$objects->method('saveObject')->willReturnCallback(
+			static function (array $object, mixed $register = null, mixed $schema = null, ?string $uuid = null) use (&$saves): ObjectEntity {
+				$saves[] = ['uuid' => $uuid, 'object' => $object];
+
+				return new ObjectEntity();
+			}
+		);
+		$service = new ExecutionTraceService($objects, $this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class));
+
+		$service->persist(trace: $this->endpointTrace($header), status: 'success');
+		$service->persist(trace: $this->endpointTrace($header), status: 'success');
+
+		$this->assertCount(2, $saves);
+		$this->assertNotSame($saves[0]['uuid'], $saves[1]['uuid']);
+		foreach ($saves as $save) {
+			$this->assertNotSame('4bf92f35-77b3-4da6-a3ce-929d0e0e4736', $save['uuid']);
+			$this->assertSame($save['uuid'], $save['object']['traceId']);
+			$this->assertSame('4bf92f35-77b3-4da6-a3ce-929d0e0e4736', $save['object']['otelTraceId']);
+		}
+
+	}//end testTheSameTraceparentTwiceWritesTwoRecords()
+
+	/**
+	 * A continued trace travels on under the caller's W3C id: an outbound
+	 * call's traceparent and the exported spans carry it, while the spans
+	 * still name the record by its own id. Integriq's own id never reaches
+	 * the partner, so the partner learns no record id.
+	 *
+	 * @return void
+	 */
+	public function testAContinuedTraceTravelsUnderTheCallersId(): void {
+		$trace = $this->endpointTrace('00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01');
+		$own = str_replace('-', '', $trace->getTraceId());
+
+		$withHeader = $this->callPrivate(
+			CallService::class,
+			'withTraceParent',
+			['prepared' => ['config' => ['headers' => []]], 'trace' => $trace]
+		);
+		$this->assertStringStartsWith('00-4bf92f3577b34da6a3ce929d0e0e4736-', $withHeader['config']['headers']['traceparent']);
+		$this->assertStringNotContainsString($own, $withHeader['config']['headers']['traceparent']);
+
+		$payload = (new SpanMapper(new TraceParent()))->map(
+			trace: [
+				'traceId' => $trace->getTraceId(),
+				'otelTraceId' => $trace->getOtelTraceId(),
+				'entryPoint' => 'endpoint',
+				'status' => 'success',
+				'startedAt' => '2026-10-09T10:00:00+00:00',
+				'finishedAt' => '2026-10-09T10:00:01+00:00',
+				'steps' => [],
+			],
+			serviceName: 'integriq'
+		);
+		$root = $payload['resourceSpans'][0]['scopeSpans'][0]['spans'][0];
+		$this->assertSame('4bf92f3577b34da6a3ce929d0e0e4736', $root['traceId']);
+
+	}//end testAContinuedTraceTravelsUnderTheCallersId()
+
+	/**
+	 * An approval suspension keeps the caller's W3C trace: the resumed
+	 * context has the record's own id, the caller's trace id and span, and
+	 * a snapshot without them (Integriq started the trace) rehydrates
+	 * without them.
+	 *
+	 * @return void
+	 */
+	public function testAnApprovalResumeKeepsTheCallersTrace(): void {
+		$resumed = $this->callPrivate(
+			\OCA\Integriq\Service\ApprovalService::class,
+			'rehydrateTraceContext',
+			['snapshot' => [
+				'traceId' => 'b7ad6b71-6928-4c7e-9f5e-2d1c0a3e4f50',
+				'otelTraceId' => '4bf92f35-77b3-4da6-a3ce-929d0e0e4736',
+				'parentSpanId' => '00f067aa0ba902b7',
+			],
+			]
+		);
+
+		$this->assertSame('b7ad6b71-6928-4c7e-9f5e-2d1c0a3e4f50', $resumed->getTraceId());
+		$this->assertSame('4bf92f35-77b3-4da6-a3ce-929d0e0e4736', $resumed->getOtelTraceId());
+		$this->assertSame('00f067aa0ba902b7', $resumed->getParentSpanId());
+
+		$own = $this->callPrivate(
+			\OCA\Integriq\Service\ApprovalService::class,
+			'rehydrateTraceContext',
+			['snapshot' => ['traceId' => 'b7ad6b71-6928-4c7e-9f5e-2d1c0a3e4f50', 'parentSpanId' => 'not-hex']]
+		);
+		$this->assertNull($own->getInboundOtelTraceId());
+		$this->assertNull($own->getParentSpanId());
+
+	}//end testAnApprovalResumeKeepsTheCallersTrace()
 }//end class

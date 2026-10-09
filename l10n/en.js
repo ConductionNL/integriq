@@ -3440,7 +3440,9 @@ OC.L10N.register(
         "Parent span id": "Parent span id",
         "When the execution started, in microseconds since the epoch, so exported spans order below the second (observability-opentelemetry-export REQ-OTEL-001). Each step carries its own startedAtUs too, and an outbound call step the spanId its traceparent named": "When the execution started, in microseconds since the epoch, so exported spans order below the second (observability-opentelemetry-export REQ-OTEL-001). Each step carries its own startedAtUs too, and an outbound call step the spanId its traceparent named",
         "When the execution finished, in microseconds since the epoch": "When the execution finished, in microseconds since the epoch",
-        "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)": "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)"
+        "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)": "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)",
+        "OpenTelemetry trace id": "OpenTelemetry trace id",
+        "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)": "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)"
     },
     "nplurals=2; plural=(n != 1);"
 )

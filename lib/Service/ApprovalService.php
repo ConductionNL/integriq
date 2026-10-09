@@ -180,6 +180,11 @@ class ApprovalService {
 			// SAME trace instead of creating a disconnected one.
 			$snapshot['traceId'] = $trace->getTraceId();
 			$snapshot['traceSteps'] = $trace->getSteps();
+			if ($trace->getInboundOtelTraceId() !== null) {
+				// The caller's W3C trace survives the suspension (REQ-OTEL-004).
+				$snapshot['otelTraceId'] = $trace->getInboundOtelTraceId();
+				$snapshot['parentSpanId'] = $trace->getParentSpanId();
+			}
 		}
 
 		$record = $this->objectService->saveObject(
@@ -499,11 +504,20 @@ class ApprovalService {
 			return null;
 		}
 
-		return new ExecutionTraceContext(
+		$trace = new ExecutionTraceContext(
 			entryPoint: 'endpoint',
 			traceId: $snapshot['traceId'],
 			priorSteps: ($snapshot['traceSteps'] ?? [])
 		);
+		if (is_string($snapshot['otelTraceId'] ?? null) === true && $snapshot['otelTraceId'] !== '') {
+			$trace->setOtelTraceId(otelTraceId: $snapshot['otelTraceId']);
+		}
+
+		if (is_string($snapshot['parentSpanId'] ?? null) === true && preg_match('/^[0-9a-f]{16}$/', $snapshot['parentSpanId']) === 1) {
+			$trace->setParentSpanId(parentSpanId: $snapshot['parentSpanId']);
+		}
+
+		return $trace;
 
 	}//end rehydrateTraceContext()
 
@@ -748,8 +762,10 @@ class ApprovalService {
 
 	/**
 	 * Whether OpenRegister's timer sweep owns this row's expiry: the row is
-	 * mirrored and its `onTimeout` travelled with the mirror. Pre-seam rows
-	 * and rows whose behaviour stayed app-local remain the local sweep's.
+	 * mirrored, its `onTimeout` travelled with the mirror, and the mirror is
+	 * still open. Pre-seam rows, rows whose behaviour stayed app-local and
+	 * rows whose mirror ended without a decision (cancelled, terminated)
+	 * remain the local sweep's, so none of them stays pending forever.
 	 *
 	 * @param array $data The approval_request object data.
 	 *
@@ -758,8 +774,11 @@ class ApprovalService {
 	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-the-shared-sweep-owns-the-mirrors-expiry
 	 */
 	private function sharedSweepOwns(array $data): bool {
-		return (string)($data['taskUuid'] ?? '') !== ''
-			&& $this->taskMirror->isShared(behaviour: (string)($data['onTimeout'] ?? '')) === true;
+		$taskUuid = (string)($data['taskUuid'] ?? '');
+
+		return $taskUuid !== ''
+			&& $this->taskMirror->isShared(behaviour: (string)($data['onTimeout'] ?? '')) === true
+			&& $this->taskMirror->isOpen(taskUuid: $taskUuid) === true;
 
 	}//end sharedSweepOwns()
 

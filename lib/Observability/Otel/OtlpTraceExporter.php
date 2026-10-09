@@ -40,11 +40,12 @@ use Throwable;
 class OtlpTraceExporter implements TraceExporterInterface {
 
 	/**
-	 * Seconds a collector gets before the batch counts as failed.
+	 * Seconds a collector gets before the batch counts as failed. Short, so
+	 * a collector outage costs cron little per trace.
 	 *
 	 * @var int
 	 */
-	private const TIMEOUT_SECONDS = 10;
+	private const TIMEOUT_SECONDS = 3;
 
 	/**
 	 * Constructor.
