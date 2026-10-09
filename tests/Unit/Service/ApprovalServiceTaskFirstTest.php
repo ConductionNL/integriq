@@ -251,8 +251,11 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 
 	/**
 	 * The app-local sweep leaves a mirrored row whose expiry the shared
-	 * sweep owns, and still expires an unmirrored row and a mirrored row
-	 * whose behaviour stayed app-local.
+	 * sweep owns while the mirror is open, and still expires an unmirrored
+	 * row, a mirrored row whose behaviour stayed app-local, and a mirrored
+	 * row whose mirror was cancelled, terminated or is gone: OpenRegister's
+	 * timer never fires on those, so they would otherwise stay pending.
+	 * A mirror that cannot be read is left for the next sweep.
 	 *
 	 * @return void
 	 */
@@ -260,9 +263,13 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 		$past = (new \DateTime('-1 hour'))->format('c');
 		$rows = [];
 		foreach ([
-			'mirrored' => ['taskUuid' => 'task-1', 'onTimeout' => 'error'],
+			'mirrored' => ['taskUuid' => 'task-open', 'onTimeout' => 'error'],
 			'unmirrored' => ['onTimeout' => 'error'],
 			'local-behaviour' => ['taskUuid' => 'task-2', 'onTimeout' => 'explode'],
+			'mirror-cancelled' => ['taskUuid' => 'task-cancelled', 'onTimeout' => 'error'],
+			'mirror-terminated' => ['taskUuid' => 'task-terminated', 'onTimeout' => 'skip'],
+			'mirror-gone' => ['taskUuid' => 'task-gone', 'onTimeout' => 'error'],
+			'mirror-unreadable' => ['taskUuid' => 'task-unreadable', 'onTimeout' => 'error'],
 		] as $uuid => $extra) {
 			$row = new ObjectEntity();
 			$row->setUuid($uuid);
@@ -271,11 +278,35 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 		}
 
 		$this->objectService->method('findAll')->willReturn(['results' => $rows]);
+		$this->taskService->method('get')->willReturnCallback(
+			function (string $uuid): Task {
+				$states = [
+					'task-open' => Task::STATE_ACTIVE,
+					'task-cancelled' => Task::STATE_TERMINATED,
+					'task-terminated' => Task::STATE_TERMINATED,
+				];
+				if ($uuid === 'task-gone') {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('gone');
+				}
+
+				if ($uuid === 'task-unreadable') {
+					throw new RuntimeException('database away');
+				}
+
+				$task = $this->task($uuid);
+				$task->setState($states[$uuid]);
+
+				return $task;
+			}
+		);
 
 		$result = $this->service->sweepExpired();
 
-		$this->assertSame(2, $result['swept']);
-		$this->assertSame(['unmirrored', 'local-behaviour'], array_column($this->saved, 'tag'));
+		$this->assertSame(5, $result['swept']);
+		$this->assertSame(
+			['unmirrored', 'local-behaviour', 'mirror-cancelled', 'mirror-terminated', 'mirror-gone'],
+			array_column($this->saved, 'tag')
+		);
 
 	}//end testTheLocalSweepLeavesMirroredRowsToTheSharedSweep()
 

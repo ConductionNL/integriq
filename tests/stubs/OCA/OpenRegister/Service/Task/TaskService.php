@@ -13,7 +13,8 @@
  * `import(array $data, ?string $actor): Task` (the trusted creation path)
  * and `applyTimerOutcome(string $uuid, string $outcome, string $source,
  * string $reason): Task` (the outcome path a decision or sweep closes a
- * task through) and `offer(string $uuid, array $pool, ?string $actor): Task`. A stub written from integriq's call sites instead of the
+ * task through), `offer(string $uuid, array $pool, ?string $actor): Task`
+ * and `get(string $uuid): Task` (throws DoesNotExistException). A stub written from integriq's call sites instead of the
  * real signatures would encode the caller's own bug and could not fail.
  *
  * @category Test
@@ -73,4 +74,15 @@ class TaskService {
 	public function offer(string $uuid, array $pool, ?string $actor): Task {
 		return new Task();
 	}//end offer()
+
+	/**
+	 * Fetch a task by uuid (real: throws DoesNotExistException when absent).
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return Task An empty task entity.
+	 */
+	public function get(string $uuid): Task {
+		return new Task();
+	}//end get()
 }

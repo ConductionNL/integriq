@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -76,6 +77,40 @@ class ApprovalTaskMirror {
 		return in_array($behaviour, self::SHARED_BEHAVIOURS, true);
 
 	}//end isShared()
+
+	/**
+	 * Whether the mirror is still open, so OpenRegister's timer can still
+	 * close it. A mirror that ended another way (cancelled by the requester
+	 * or an admin, terminated with its run, completed with an outcome that
+	 * decides nothing) never reaches the timer, and neither does a missing
+	 * one. A lookup that fails for another reason counts as open, so the
+	 * next sweep tries again instead of racing the timer.
+	 *
+	 * @param string $taskUuid The mirror's uuid.
+	 *
+	 * @return bool True while the mirror is open.
+	 *
+	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-the-shared-sweep-owns-the-mirrors-expiry
+	 */
+	public function isOpen(string $taskUuid): bool {
+		if ($this->taskService === null || $taskUuid === '') {
+			return false;
+		}
+
+		try {
+			return $this->taskService->get(uuid: $taskUuid)->isInTerminalState() === false;
+		} catch (DoesNotExistException $e) {
+			return false;
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'ApprovalTaskMirror: could not read the mirror; the local sweep leaves the record for now: ' . $e->getMessage(),
+				['taskUuid' => $taskUuid]
+			);
+
+			return true;
+		}
+
+	}//end isOpen()
 
 	/**
 	 * Create the mirror for a pending approval_request on the trusted path
