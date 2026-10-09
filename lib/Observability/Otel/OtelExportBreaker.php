@@ -77,9 +77,45 @@ class OtelExportBreaker {
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
 	 */
 	public function isOpen(int $now): bool {
-		return $this->appConfig->getValueInt(self::APP_ID, 'otel_breaker_open_until', 0) > $now;
+		return $this->openUntil() > $now;
 
 	}//end isOpen()
+
+	/**
+	 * When the current or last pause ends.
+	 *
+	 * @return int The unix time sends resume, 0 when sends never paused.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function openUntil(): int {
+		return $this->appConfig->getValueInt(self::APP_ID, 'otel_breaker_open_until', 0);
+
+	}//end openUntil()
+
+	/**
+	 * Count a trace that was not queued because sends are paused, in the
+	 * `otel_skipped_total` app setting.
+	 *
+	 * @return bool True for the first trace skipped in the current pause,
+	 *              so the caller logs one warning per pause, not per trace.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function recordSkipped(): bool {
+		$skipped = ($this->appConfig->getValueInt(self::APP_ID, 'otel_skipped_total', 0) + 1);
+		$this->appConfig->setValueInt(self::APP_ID, 'otel_skipped_total', $skipped);
+
+		$openUntil = $this->openUntil();
+		if ($this->appConfig->getValueInt(self::APP_ID, 'otel_skipped_warned_until', 0) === $openUntil) {
+			return false;
+		}
+
+		$this->appConfig->setValueInt(self::APP_ID, 'otel_skipped_warned_until', $openUntil);
+
+		return true;
+
+	}//end recordSkipped()
 
 	/**
 	 * Count a failed send; the threshold-th failure in a row pauses sends

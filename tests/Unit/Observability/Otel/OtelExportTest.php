@@ -240,7 +240,7 @@ class OtelExportTest extends TestCase {
 			}
 		);
 		$logger = $this->createMock(LoggerInterface::class);
-		$logger->expects($this->once())->method('warning');
+		$logger->expects($this->once())->method('warning')->with($this->stringContains('after 4 failed sends'));
 
 		$job = new OtelExportJob($this->createMock(ITimeFactory::class), $traces, new SpanMapper(new TraceParent()), $exporter, $this->settings(), $jobList, $logger, $this->breaker());
 		foreach ([0, 1, 2, 3] as $attempt) {
@@ -305,8 +305,9 @@ class OtelExportTest extends TestCase {
 
 	/**
 	 * Five failed sends in a row pause sends for five minutes: the next
-	 * trace is not sent but retried later, and nothing new is queued. After
-	 * the cooldown sends resume, and a success ends the run of failures.
+	 * trace is not sent but waits for the pause to end without using up an
+	 * attempt, and nothing new is queued. After the cooldown sends resume,
+	 * and a success ends the run of failures.
 	 *
 	 * @return void
 	 */
@@ -329,7 +330,7 @@ class OtelExportTest extends TestCase {
 		$requeued = [];
 		$jobList->method('scheduleAfter')->willReturnCallback(
 			function (string $job, int $runAfter, $argument) use (&$requeued): void {
-				$requeued[] = $argument;
+				$requeued[] = ['runAfter' => $runAfter] + $argument;
 			}
 		);
 		$settings = $this->settings();
@@ -348,10 +349,12 @@ class OtelExportTest extends TestCase {
 		$requeued = [];
 		$job->run(['traceId' => 't-6', 'attempt' => 0]);
 		$this->assertSame(5, $sends, 'no send while the breaker is open');
-		$this->assertSame(1, $requeued[0]['attempt']);
+		$pauseEnd = (1000 + OtelExportBreaker::COOLDOWN_SECONDS);
+		$this->assertSame([['runAfter' => $pauseEnd, 'traceId' => 't-6', 'attempt' => 0, 'notBefore' => $pauseEnd]], $requeued, 'a paused send waits for the pause to end and keeps its attempt');
 
-		$queue = new TraceExportQueue($settings, $jobList, $logger, $breaker, $this->clock(1000));
-		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'), 'nothing is queued while sends are paused');
+		$requeued = [];
+		$job->run(['traceId' => 't-6', 'attempt' => 2]);
+		$this->assertSame(2, $requeued[0]['attempt'], 'a paused retry keeps its attempt too');
 
 		$failing = false;
 		$later = new OtelExportJob($this->clock(1000 + OtelExportBreaker::COOLDOWN_SECONDS), $traces, $mapper, $exporter, $settings, $jobList, $logger, $breaker);
@@ -360,6 +363,40 @@ class OtelExportTest extends TestCase {
 		$this->assertSame(0, $this->config['otel_breaker_failures']);
 
 	}//end testACollectorOutageOpensTheBreaker()
+
+	/**
+	 * A sampled trace skipped while sends are paused is counted in
+	 * `otel_skipped_total`, and only the first one in each pause is logged.
+	 *
+	 * @return void
+	 */
+	public function testTracesSkippedDuringAPauseAreCountedAndLoggedOncePerPause(): void {
+		$this->config = ['otel_enabled' => true, 'otel_endpoint' => 'https://otel.example.org', 'otel_sampling_ratio' => 0.0, 'otel_breaker_open_until' => 1300];
+		$jobList = $this->createMock(IJobList::class);
+		$jobList->expects($this->never())->method('add');
+		$logger = $this->createMock(LoggerInterface::class);
+		$warnings = [];
+		$logger->method('warning')->willReturnCallback(
+			function (string $message) use (&$warnings): void {
+				$warnings[] = $message;
+			}
+		);
+		$queue = new TraceExportQueue($this->settings(), $jobList, $logger, $this->breaker(), $this->clock(1000));
+
+		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
+		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
+		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'success'), 'not sampled');
+
+		$this->assertSame(2, $this->config['otel_skipped_total'], 'every sampled trace skipped in the pause is counted');
+		$this->assertCount(1, $warnings, 'one warning per pause, not per trace');
+		$this->assertStringContainsString('otel_skipped_total', $warnings[0]);
+
+		$this->config['otel_breaker_open_until'] = 1600;
+		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
+		$this->assertSame(3, $this->config['otel_skipped_total']);
+		$this->assertCount(2, $warnings, 'a new pause logs again');
+
+	}//end testTracesSkippedDuringAPauseAreCountedAndLoggedOncePerPause()
 
 	/**
 	 * Export switched off after queuing: the job sends nothing.

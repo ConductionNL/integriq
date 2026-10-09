@@ -116,6 +116,15 @@ class OtelExportJob extends QueuedJob {
 			return;
 		}
 
+		$pausedUntil = $this->breaker->openUntil();
+		if ($pausedUntil > $now) {
+			// Sends are paused: wait for the pause to end without using up
+			// an attempt, since nothing was sent.
+			$argument['notBefore'] = $pausedUntil;
+			$this->jobList->scheduleAfter(self::class, $pausedUntil, $argument);
+			return;
+		}
+
 		try {
 			$this->send(traceId: $traceId, now: $now);
 		} catch (Throwable $e) {
@@ -147,20 +156,16 @@ class OtelExportJob extends QueuedJob {
 	}//end argument()
 
 	/**
-	 * Send one trace, unless sends are paused.
+	 * Send one trace.
 	 *
 	 * @param string $traceId The trace to send.
 	 * @param int $now The current unix time.
 	 *
 	 * @return void
 	 *
-	 * @throws RuntimeException When sends are paused or the collector failed.
+	 * @throws RuntimeException When the collector failed.
 	 */
 	private function send(string $traceId, int $now): void {
-		if ($this->breaker->isOpen(now: $now) === true) {
-			throw new RuntimeException('Sends are paused after repeated collector failures.');
-		}
-
 		$trace = $this->traces->findForExport(traceId: $traceId);
 		if ($trace === null) {
 			return;
@@ -204,7 +209,7 @@ class OtelExportJob extends QueuedJob {
 		}
 
 		$this->logger->warning(
-			'OtelExportJob: dropped a trace after ' . (self::MAX_RETRIES + 1) . ' failed sends: ' . $reason,
+			'OtelExportJob: dropped a trace after ' . ($attempt + 1) . ' failed sends: ' . $reason,
 			['traceId' => $traceId]
 		);
 
