@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\ApprovalsController;
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ApprovalDecisionService;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EngineSignalService;
@@ -122,19 +123,29 @@ class ApprovalsControllerTest extends TestCase {
 
 		$this->engineSignal = $this->createMock(EngineSignalService::class);
 
-		$this->controller = new ApprovalsController(
-			'integriq',
+		// The decision paths live in ApprovalDecisionService (hitl-on-shared-tasks
+		// 2.2); the controller is tested through the REAL service so every resume
+		// assertion below still runs the code a request reaches.
+		$decisionService = new ApprovalDecisionService(
 			$this->request,
 			$this->approvalService,
 			$this->endpointService,
 			$this->synchronizationService,
 			$this->flowRunnerService,
 			$this->orObjectService,
-			$this->actionAuth,
-			$this->userSession,
 			$l,
 			$this->createMock(LoggerInterface::class),
 			$this->engineSignal,
+		);
+
+		$this->controller = new ApprovalsController(
+			'integriq',
+			$this->request,
+			$this->approvalService,
+			$decisionService,
+			$this->actionAuth,
+			$this->userSession,
+			$l,
 		);
 
 	}//end setUp()

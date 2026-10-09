@@ -2072,7 +2072,9 @@ OC.L10N.register(
         "The call this contact moment was recorded for, when an agent recorded it from a CTI call.": "Het gesprek waarvoor dit contactmoment is vastgelegd, als een medewerker het vanuit een CTI-gesprek vastlegde.",
         "The caller's number in E.164, or empty when the number was withheld or could not be placed.": "Het nummer van de beller in E.164, of leeg als het nummer is afgeschermd of niet te plaatsen was.",
         "What happened to the call.": "Wat er met het gesprek gebeurde.",
-        "When the PBX says it happened, ISO 8601, or empty.": "Wanneer het volgens de telefooncentrale gebeurde, ISO 8601, of leeg."
+        "When the PBX says it happened, ISO 8601, or empty.": "Wanneer het volgens de telefooncentrale gebeurde, ISO 8601, of leeg.",
+        "Approve or reject this request in Integriq. Your decision resumes the suspended run.": "Keur dit verzoek goed of wijs het af in Integriq. Je besluit hervat de gepauzeerde uitvoering.",
+        "Rejected in the shared task inbox": "Afgewezen in de gedeelde takenlijst"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -89,6 +89,7 @@ use OCA\Integriq\EventListener\ObjectCreatedEventListener;
 use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
 use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\EventListener\RosterImportRequestedListener;
+use OCA\Integriq\EventListener\SharedApprovalTaskListener;
 use OCA\Integriq\EventListener\ObjectDeletedEventListener;
 use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
 use OCA\Integriq\EventListener\DsoStamConsumerListener;
@@ -185,6 +186,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -390,6 +392,11 @@ class Application extends App implements IBootstrap {
 		// mapping, with two typed commands (ADR-041). The SWV hand-off client
 		// is bound to its dormant mock, the only binding that exists, so the
 		// dispatcher that routes `swv` jobs can be built at all.
+		// A decision on a mirrored approval task in the shared OpenRegister
+		// inbox, or the shared sweep's expiry of it, resolves the approval
+		// request (hitl-on-shared-tasks 2.1, 2.2). Only committed dispatches
+		// act: the listener may resume a run.
+		$context->registerEventListener(TaskTerminalEvent::class, SharedApprovalTaskListener::class);
 		$context->registerEventListener(ExchangeJobRequestedEvent::class, ExchangeJobRequestedListener::class);
 		$context->registerEventListener(ExchangeMappingRequestedEvent::class, ExchangeMappingRequestedListener::class);
 		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);

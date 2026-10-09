@@ -3418,7 +3418,9 @@ OC.L10N.register(
         "The call this contact moment was recorded for, when an agent recorded it from a CTI call.": "The call this contact moment was recorded for, when an agent recorded it from a CTI call.",
         "The caller's number in E.164, or empty when the number was withheld or could not be placed.": "The caller's number in E.164, or empty when the number was withheld or could not be placed.",
         "What happened to the call.": "What happened to the call.",
-        "When the PBX says it happened, ISO 8601, or empty.": "When the PBX says it happened, ISO 8601, or empty."
+        "When the PBX says it happened, ISO 8601, or empty.": "When the PBX says it happened, ISO 8601, or empty.",
+        "Approve or reject this request in Integriq. Your decision resumes the suspended run.": "Approve or reject this request in Integriq. Your decision resumes the suspended run.",
+        "Rejected in the shared task inbox": "Rejected in the shared task inbox"
     },
     "nplurals=2; plural=(n != 1);"
 )
