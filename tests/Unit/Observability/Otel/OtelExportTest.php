@@ -401,7 +401,7 @@ class OtelExportTest extends TestCase {
 	 * A sampled trace skipped while sends are paused is counted with an
 	 * atomic increment in the distributed cache, never with an app-config
 	 * write per trace; only the first one in each pause is logged, with the
-	 * number skipped so far.
+	 * running total of skipped traces.
 	 *
 	 * @return void
 	 */
@@ -413,7 +413,7 @@ class OtelExportTest extends TestCase {
 		$warnings = [];
 		$logger->method('warning')->willReturnCallback(
 			function (string $message, array $context) use (&$warnings): void {
-				$warnings[] = $context['skippedSoFar'];
+				$warnings[] = $context['skippedTotal'];
 			}
 		);
 		$queue = new TraceExportQueue($this->settings(), $jobList, $logger, $this->breaker(), $this->clock(1000));
@@ -451,7 +451,7 @@ class OtelExportTest extends TestCase {
 		foreach ([$plain, $failing] as $cacheFactory) {
 			$this->config = ['otel_enabled' => true, 'otel_endpoint' => 'https://otel.example.org', 'otel_breaker_open_until' => 1300];
 			$logger = $this->createMock(LoggerInterface::class);
-			$logger->expects($this->once())->method('warning')->with($this->anything(), $this->callback(static fn (array $context) => $context['skippedSoFar'] === 0));
+			$logger->expects($this->once())->method('warning')->with($this->anything(), $this->callback(static fn (array $context) => $context['skippedTotal'] === 0));
 			$queue = new TraceExportQueue($this->settings(), $this->createMock(IJobList::class), $logger, $this->breaker($cacheFactory), $this->clock(1000));
 
 			$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));

@@ -104,9 +104,11 @@ class OtelExportBreaker {
 	 * the traced request writes nothing to the database per trace.
 	 *
 	 * @return int|null For the first trace skipped in the current pause, the
-	 *                  number skipped so far (0 when no distributed cache
-	 *                  counts them), so the caller logs one warning per
-	 *                  pause; null for every later one.
+	 *                  running total of skipped traces since the cache was
+	 *                  last cleared, across all pauses (per node when the
+	 *                  distributed cache falls back to APCu; 0 when no
+	 *                  memory cache counts them), so the caller logs one
+	 *                  warning per pause; null for every later one.
 	 *
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
 	 */
@@ -127,8 +129,9 @@ class OtelExportBreaker {
 	/**
 	 * Increment the skipped-trace counter in the distributed cache.
 	 *
-	 * @return int The count after the increment, 0 when no distributed
-	 *             cache is available or it failed.
+	 * @return int The running total after the increment (since the cache
+	 *             was last cleared, per node on an APCu fallback), 0 when
+	 *             no memory cache is available or it failed.
 	 */
 	private function countSkipped(): int {
 		try {
