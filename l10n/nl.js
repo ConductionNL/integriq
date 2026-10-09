@@ -2096,7 +2096,25 @@ OC.L10N.register(
         "When the execution finished, in microseconds since the epoch": "Wanneer de uitvoering klaar was, in microseconden sinds de epoch",
         "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)": "Het span-id van de aanroeper uit een geaccepteerde inkomende W3C-traceparent. Alleen gezet als de uitvoering de trace van de aanroeper voortzet (REQ-OTEL-004)",
         "OpenTelemetry trace id": "OpenTelemetry-trace-id",
-        "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)": "Het W3C-trace-id van de aanroeper uit een geaccepteerde inkomende traceparent. Alleen gezet als de uitvoering de trace van de aanroeper voortzet. Geëxporteerde spans en uitgaande traceparent-headers dragen dit id, nooit het eigen id van het record (REQ-OTEL-004)"
+        "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)": "Het W3C-trace-id van de aanroeper uit een geaccepteerde inkomende traceparent. Alleen gezet als de uitvoering de trace van de aanroeper voortzet. Geëxporteerde spans en uitgaande traceparent-headers dragen dit id, nooit het eigen id van het record (REQ-OTEL-004)",
+        "Choose a number of hours from 1 to %1$s.": "Kies een aantal uren van 1 tot en met %1$s.",
+        "Give a reason of at most %1$s characters.": "Geef een reden van hoogstens %1$s tekens.",
+        "This source has no open investigation window.": "Deze bron heeft geen open onderzoeksvenster.",
+        "Only an administrator can open or close an investigation window.": "Alleen een beheerder kan een onderzoeksvenster openen of sluiten.",
+        "Investigation window until": "Onderzoeksvenster tot",
+        "Calls to this source store their request and response bodies until this moment. After it, they do not": "Aanroepen naar deze bron bewaren hun verzoek- en antwoordinhoud tot dit moment. Daarna niet meer",
+        "Investigation reason": "Reden van het onderzoek",
+        "Why an administrator opened the investigation window": "Waarom een beheerder het onderzoeksvenster opende",
+        "Investigation opened by": "Onderzoek geopend door",
+        "The administrator who last opened or closed the investigation window": "De beheerder die het onderzoeksvenster het laatst opende of sloot",
+        "Bodies stored": "Inhoud bewaard",
+        "Whether this record holds the request and response bodies": "Of dit record de inhoud van het verzoek en het antwoord bevat",
+        "Bodies expire at": "Inhoud verloopt op",
+        "When the cleanup job removes the bodies and the replay request. The record stays": "Wanneer de opschoontaak de inhoud en het herhaalverzoek verwijdert. Het record blijft",
+        "Bodies removed at": "Inhoud verwijderd op",
+        "When the cleanup job removed the bodies": "Wanneer de opschoontaak de inhoud verwijderde",
+        "Replay request": "Herhaalverzoek",
+        "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "Het verzoek dat een mislukte aanroep verstuurde, zonder geheimen, bewaard zodat de aanroep herhaald kan worden. Alleen leesbaar met het herhaalrecht"
     },
     "nplurals=2; plural=(n != 1);"
 )
