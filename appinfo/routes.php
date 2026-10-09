@@ -709,6 +709,9 @@ return [
 		['name' => 'berichtenboxSettings#setConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
+		// OpenTelemetry trace export settings (observability-opentelemetry-export REQ-OTEL-005).
+		['name' => 'otelSettings#getConfig', 'url' => '/api/admin/otel', 'verb' => 'GET'],
+		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],
 		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoActivityMapping#unmapped', 'url' => '/api/admin/dso-activities/unmapped', 'verb' => 'GET'],
 		// Packaged ZGW consumer sets (zgw-connectors-for-dossiq): list, and install against a register/schema.

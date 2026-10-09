@@ -54,6 +54,7 @@ use InvalidArgumentException;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Flow\FlowConfigGuard;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
+use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
@@ -3027,6 +3028,7 @@ class CallService {
 				output: $data['response'],
 				startedAtMicrotime: $timeStart,
 				finishedAtMicrotime: $timeEnd,
+				spanId: ($prepared['spanId'] ?? null),
 			);
 		}
 
@@ -3134,6 +3136,7 @@ class CallService {
 			return $prepared['shortCircuit'];
 		}
 
+		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
 		$dispatchConfig = $prepared['config'];
 
 		// Phase 10: Dispatch the HTTP request, with the bounded retry loop
@@ -3163,6 +3166,45 @@ class CallService {
 		);
 
 	}//end call()
+
+	/**
+	 * Give an outbound call made during a trace a W3C traceparent naming the
+	 * trace and the span id of the call step it becomes, so the partner's
+	 * spans join integriq's trace (REQ-OTEL-004). A traceparent the caller
+	 * configured explicitly is left alone. Without a trace nothing changes.
+	 *
+	 * @param array $prepared The prepared call, as prepareCall() returns it.
+	 * @param ExecutionTraceContext|null $trace The active trace, when any.
+	 *
+	 * @return array The prepared call, with the header and its `spanId`.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-trace-context-travels-in-and-out-as-w3c-traceparent-req-otel-004
+	 */
+	private function withTraceParent(array $prepared, ?ExecutionTraceContext $trace): array {
+		if ($trace === null) {
+			return $prepared;
+		}
+
+		$headers = ($prepared['config']['headers'] ?? []);
+		if (is_array($headers) === false) {
+			return $prepared;
+		}
+
+		foreach (array_keys($headers) as $name) {
+			if (strtolower((string)$name) === TraceParent::HEADER) {
+				return $prepared;
+			}
+		}
+
+		$traceParent = new TraceParent();
+		$spanId = $traceParent->newSpanId();
+		$headers[TraceParent::HEADER] = $traceParent->format(traceId: $trace->getTraceId(), spanId: $spanId);
+		$prepared['config']['headers'] = $headers;
+		$prepared['spanId'] = $spanId;
+
+		return $prepared;
+
+	}//end withTraceParent()
 
 	/**
 	 * Asynchronous sibling of {@see call()}: dispatches one outbound request and
@@ -3311,6 +3353,7 @@ class CallService {
 			return new FulfilledPromise($prepared['shortCircuit']);
 		}
 
+		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
 		$dispatchConfig = $prepared['config'];
 		$sourceData = $prepared['sourceData'];
 		$timeStart = microtime(true);

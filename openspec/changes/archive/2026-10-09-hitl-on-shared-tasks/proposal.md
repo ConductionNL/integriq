@@ -36,7 +36,7 @@ PR that introduces the seam would be a half-delete.
 - A mirror failure never fails the approval flow: created, closed or
   skipped, the approval_request behaviour is unchanged.
 
-## Follow-ups (tracked, not in this PR)
+## Follow-ups (built later in the same change, 9 Oct 2026)
 
 1. Listen to OpenRegister's `TaskTransitionedEvent` for mirrored tasks and
    resolve the approval_request from the task side, then retire

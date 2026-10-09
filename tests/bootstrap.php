@@ -226,6 +226,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Event\\TaskTerminalEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}

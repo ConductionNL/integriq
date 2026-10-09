@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\Integriq\Observability\Otel\TraceExportQueue;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -39,6 +40,13 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Trace assembly, persistence, retrieval, and replay orchestration.
+ *
+ * Coupling is 13, one over the threshold: replay() names the four services
+ * it re-runs (resolved lazily from the container), and persist() hands the
+ * trace to the OpenTelemetry export queue. Splitting replay out is the
+ * remedy when this class next grows.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
  * @spec openspec/specs/execution-trace/spec.md
  */
@@ -70,11 +78,14 @@ class ExecutionTraceService {
 	 *                                               construction time, to avoid a circular service graph
 	 *                                               (those four services constructor-inject THIS service).
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param TraceExportQueue|null $exportQueue Queues a finished, sampled trace for OpenTelemetry export
+	 *                                           (REQ-OTEL-002); absent, nothing is exported.
 	 */
 	public function __construct(
 		private readonly ORObjectService $orObjectService,
 		private readonly ContainerInterface $containerInterface,
 		private readonly LoggerInterface $logger,
+		private readonly ?TraceExportQueue $exportQueue = null,
 	) {
 	}//end __construct()
 
@@ -118,7 +129,14 @@ class ExecutionTraceService {
 			'isReplay' => $trace->isReplay(),
 			'dryRun' => $trace->isDryRun(),
 			'triggeredBy' => $trace->getTriggeredBy(),
+			'startedAtUs' => $trace->getStartedAtUs(),
+			'finishedAtUs' => (int)round(microtime(true) * 1000000),
 		];
+		if ($trace->getParentSpanId() !== null) {
+			// Only written when a caller's traceparent was accepted: the
+			// schema types it as a 16-hex string, not null (REQ-OTEL-004).
+			$payload['parentSpanId'] = $trace->getParentSpanId();
+		}
 
 		if ($resume === true) {
 			$this->logger->debug(
@@ -127,7 +145,7 @@ class ExecutionTraceService {
 			);
 		}
 
-		return $this->orObjectService->saveObject(
+		$saved = $this->orObjectService->saveObject(
 			object: $payload,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
@@ -136,7 +154,41 @@ class ExecutionTraceService {
 			_multitenancy: false
 		);
 
+		$this->exportQueue?->queue(trace: $trace, status: $status);
+
+		return $saved;
+
 	}//end persist()
+
+	/**
+	 * Read a persisted trace for the export job, as plain data.
+	 *
+	 * The job runs from cron without a session and the id is one this
+	 * service queued itself, never caller input, so OpenRegister's access
+	 * layer is bypassed the same way {@see persist()} writes.
+	 *
+	 * @param string $traceId The trace uuid.
+	 *
+	 * @return array|null The trace data, or null when it no longer exists.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function findForExport(string $traceId): ?array {
+		try {
+			$trace = $this->orObjectService->find(
+				id: $traceId,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $exception) {
+			return null;
+		}
+
+		return $trace->getObject();
+
+	}//end findForExport()
 
 	/**
 	 * Find one execution_trace by id.

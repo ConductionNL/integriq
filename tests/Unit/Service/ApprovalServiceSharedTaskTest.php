@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md
+ * @spec openspec/specs/hitl-on-shared-tasks/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use RuntimeException;
 /**
  * Tests for the shared-task mirror seam.
  *
- * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md
+ * @spec openspec/specs/hitl-on-shared-tasks/spec.md
  */
 class ApprovalServiceSharedTaskTest extends TestCase {
 

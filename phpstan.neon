@@ -158,6 +158,7 @@ parameters:
                 - lib/Controller/SourcesController.php
                 - lib/Controller/SynchronizationsController.php
                 - lib/Service/EndpointService.php
+                - lib/Service/ApprovalDecisionService.php
         # The same OpenRegister-is-runtime-only effect, one layer further on.
         # IntakeRoutingService::firstMatchingRule() fills $rules from
         # ObjectEntity::getObject(), which resolves to an error type, so usort

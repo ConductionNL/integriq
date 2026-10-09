@@ -53,4 +53,10 @@ class Task extends Entity {
 
 	/** @var array|null */
 	protected $candidateGroups = null;
+
+	protected $completedBy = null;
+
+	protected $resultText = null;
+
+	protected $comment = null;
 }

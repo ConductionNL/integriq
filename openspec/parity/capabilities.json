@@ -5004,8 +5004,8 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/changes/hitl-on-shared-tasks/tasks.md section 1 fully checked ([x] 1.1-1.4); lib/Service/ApprovalService.php:922 calls OpenRegister's ORTaskService::import() from every suspend path, writing the returned uuid back onto the approval_request as taskUuid (:927); completeApproval()/reject() close the mirrored task (tasks.md 1.2).",
-				"change": "hitl-on-shared-tasks"
+				"evidence": "openspec/changes/archive/2026-10-09-hitl-on-shared-tasks/tasks.md section 1 fully checked ([x] 1.1-1.4); lib/Service/ApprovalService.php:922 calls OpenRegister's ORTaskService::import() from every suspend path, writing the returned uuid back onto the approval_request as taskUuid (:927); completeApproval()/reject() close the mirrored task (tasks.md 1.2).",
+				"change": "2026-10-09-hitl-on-shared-tasks"
 			},
 			"reachedOn": "no dedicated integriq page; the mirrored task surfaces in OpenRegister's own shared task inbox, not in /approvals",
 			"note": "A mirror failure never blocks the approval (logged, not thrown), so this degrades to no task-list entry rather than a broken approval. Follow-ups 2.1-2.4 (task-first resolution, driving decisions from the shared inbox, translation) are explicitly not done yet (tasks.md section 2, all unchecked).",
