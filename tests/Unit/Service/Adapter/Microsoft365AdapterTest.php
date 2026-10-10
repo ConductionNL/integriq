@@ -74,7 +74,7 @@ class Microsoft365AdapterTest extends TestCase {
 	public function testCapabilitiesAreReadOnly(): void {
 		$capabilities = $this->adapter->getCapabilities();
 
-		$this->assertSame(['calendar-read', 'mail-metadata-read'], $capabilities);
+		$this->assertSame(['calendar-read', 'mail-metadata-read', 'search-federation', 'document-fetch'], $capabilities);
 		$this->assertNotContains('mail-send', $capabilities);
 		$this->assertNotContains('mail-write', $capabilities);
 	}//end testCapabilitiesAreReadOnly()
