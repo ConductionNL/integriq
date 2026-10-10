@@ -51,6 +51,18 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	private const MAIL_METADATA_SELECT = 'id,subject,from,receivedDateTime,hasAttachments';
 
 	/**
+	 * The app config key naming the Graph search region an application grant needs.
+	 */
+	public const SEARCH_REGION_KEY = 'microsoft365_search_region';
+
+	/**
+	 * The pure half of the document search.
+	 *
+	 * @var GraphDriveSearch
+	 */
+	private readonly GraphDriveSearch $driveSearch;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param \OCA\OpenRegister\Service\Credential\CredentialBrokerService $credentialBroker OR's credential broker.
@@ -65,6 +77,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 		private readonly IL10N $l10n,
 	) {
 		parent::__construct(credentialBroker: $credentialBroker, appConfig: $appConfig, logger: $logger);
+		$this->driveSearch = new GraphDriveSearch();
 
 	}//end __construct()
 
@@ -120,7 +133,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function getCapabilities(): array {
-		return ['calendar-read', 'mail-metadata-read'];
+		return ['calendar-read', 'mail-metadata-read', 'search-federation', 'document-fetch'];
 	}//end getCapabilities()
 
 	/**
@@ -217,4 +230,78 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 
 		return $this->listCalendarEvents();
 	}//end list()
+	/**
+	 * Whether a Microsoft 365 credential is configured for this source.
+	 *
+	 * @return bool True when one is.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
+	 */
+	public function isConnected(): bool {
+		return $this->getCredentialId() !== null;
+	}//end isConnected()
+
+	/**
+	 * Search drive items, mail and chat for terms in a period, as one person.
+	 *
+	 * Drive items are searched with the source's application grant through
+	 * Graph `/search/query`. Mail and chat need the person's own delegated
+	 * grant (sources-per-user-oauth), which integriq does not hold yet, so they
+	 * answer the notice `delegated-grant-missing` instead of an empty list.
+	 * A refusal by Microsoft 365 answers `not-permitted`.
+	 *
+	 * @param string            $terms       The search terms.
+	 * @param string|null       $from        Start of the period, Y-m-d.
+	 * @param string|null       $to          End of the period, Y-m-d.
+	 * @param array<int,string> $entityTypes The types to search; empty for all three.
+	 * @param int               $limit       At most this many hits.
+	 * @param string            $userId      The person searching.
+	 *
+	 * @return array{hits: array<int, array<string, mixed>>, moreCount: int, notices: array<int, string>} REQ-DCC-004 hits.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $userId selects the delegated grant once sources-per-user-oauth lands.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
+	 */
+	public function search(string $terms, ?string $from, ?string $to, array $entityTypes, int $limit, string $userId): array {
+		$plan = $this->driveSearch->plan(terms: $terms, entityTypes: $entityTypes);
+		if ($plan['searchDrive'] === false) {
+			return ['hits' => [], 'moreCount' => 0, 'notices' => $plan['notices']];
+		}
+
+		$region = $this->appConfig->getValueString('integriq', self::SEARCH_REGION_KEY, 'EUR');
+		$response = $this->brokeredRequest(
+			method: 'POST',
+			path: '/v1.0/search/query',
+			headers: ['Content-Type' => 'application/json'],
+			body: $this->driveSearch->requestBody(terms: $terms, from: $from, to: $to, limit: $limit, region: $region),
+		);
+
+		return $this->driveSearch->answer(response: $response, sourceSlug: $this->getId(), limit: $limit, notices: $plan['notices']);
+	}//end search()
+
+	/**
+	 * Fetch the content behind a search hit's handle. integriq keeps no copy.
+	 *
+	 * @param string $handle The hit's `remoteId`: `driveItem:{driveId}:{itemId}`.
+	 * @param string $userId The person fetching.
+	 *
+	 * @return array{fileName: string, mimeType: string, content: string}|null Null for an unknown handle,
+	 *         a mail or chat hit (no delegated grant yet), or a refusal.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $userId selects the delegated grant once sources-per-user-oauth lands.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
+	 */
+	public function fetch(string $handle, string $userId): ?array {
+		$item = $this->driveSearch->itemPath(handle: $handle);
+		if ($item === null) {
+			return null;
+		}
+
+		return $this->driveSearch->file(
+			meta: $this->brokeredRequest(method: 'GET', path: $item . '?$select=name,file'),
+			content: $this->brokeredRequest(method: 'GET', path: $item . '/content'),
+		);
+	}//end fetch()
 }//end class
