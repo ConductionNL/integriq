@@ -3442,7 +3442,26 @@ OC.L10N.register(
         "When the execution finished, in microseconds since the epoch": "When the execution finished, in microseconds since the epoch",
         "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)": "The caller's span id from an accepted inbound W3C traceparent; set only when the execution continues a caller's trace (REQ-OTEL-004)",
         "OpenTelemetry trace id": "OpenTelemetry trace id",
-        "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)": "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)"
+        "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)": "The caller's W3C trace id from an accepted inbound traceparent; set only when the execution continues a caller's trace. Exported spans and outbound traceparent headers carry it, never the record's own id (REQ-OTEL-004)",
+        "Choose a number of hours from 1 to %1$s.": "Choose a number of hours from 1 to %1$s.",
+        "Give a reason of at most %1$s characters.": "Give a reason of at most %1$s characters.",
+        "This source has no open investigation window.": "This source has no open investigation window.",
+        "Only an administrator can open or close an investigation window.": "Only an administrator can open or close an investigation window.",
+        "Investigation window until": "Investigation window until",
+        "Calls to this source store their request and response bodies until this moment. After it, they do not": "Calls to this source store their request and response bodies until this moment. After it, they do not",
+        "Investigation reason": "Investigation reason",
+        "Why an administrator opened the investigation window": "Why an administrator opened the investigation window",
+        "Investigation opened by": "Investigation opened by",
+        "The administrator who last opened or closed the investigation window": "The administrator who last opened or closed the investigation window",
+        "Bodies stored": "Bodies stored",
+        "Whether this record holds the request and response bodies": "Whether this record holds the request and response bodies",
+        "Bodies expire at": "Bodies expire at",
+        "When the cleanup job removes the bodies and the replay request. The record stays": "When the cleanup job removes the bodies and the replay request. The record stays",
+        "Bodies removed at": "Bodies removed at",
+        "When the cleanup job removed the bodies": "When the cleanup job removed the bodies",
+        "Replay request": "Replay request",
+        "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission",
+        "The source could not be saved. Nothing changed.": "The source could not be saved. Nothing changed."
     },
     "nplurals=2; plural=(n != 1);"
 )

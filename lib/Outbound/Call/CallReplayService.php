@@ -80,10 +80,16 @@ class CallReplayService {
 	 *
 	 * @return array{request:array<string,mixed>,versions:array<string,mixed>} The request that
 	 *         would be sent, and the mapping versions on offer.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	public function preview(string $uuid): array {
 		$record = $this->recorder->read($uuid);
-		$request = $this->requestOf(record: $record);
+
+		// The preview shows what the call log shows. The replay request a
+		// failure keeps is for the replay itself, behind the replay
+		// permission, never for a reader (REQ-OCD-009).
+		$request = $this->bagOf(value: ($record['request'] ?? null));
 
 		return [
 			'request' => $request,
@@ -362,22 +368,43 @@ class CallReplayService {
 	}//end deadLetterIfExhausted()
 
 	/**
-	 * The recorded request, narrowed to an array.
+	 * The request a replay sends, narrowed to an array.
 	 *
-	 * A record is whatever was stored, so the request may be anything. Three
-	 * call sites in this class needed the same narrowing, and the coding
-	 * standard allows neither `?:` nor a ternary to express it inline.
+	 * A failed call keeps the request it sent as `replayRequest`, because the
+	 * stored `request` carries no body outside an investigation window
+	 * (REQ-OCD-009). The stored `request` is the fallback for records written
+	 * before that.
 	 *
 	 * @param array<string,mixed> $record The stored call record.
 	 *
 	 * @return array<string,mixed> The request, or an empty array.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	private function requestOf(array $record): array {
-		$request = ($record['request'] ?? null);
-		if (is_array($request) === true) {
-			return $request;
+		$replayRequest = $this->bagOf(value: ($record['replayRequest'] ?? null));
+		if ($replayRequest !== []) {
+			return $replayRequest;
+		}
+
+		return $this->bagOf(value: ($record['request'] ?? null));
+	}//end requestOf()
+
+	/**
+	 * A stored bag narrowed to an array.
+	 *
+	 * A record is whatever was stored, so the value may be anything, and the
+	 * coding standard allows neither `?:` nor a ternary to narrow it inline.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array<string,mixed> The value, or an empty array.
+	 */
+	private function bagOf(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
 		}
 
 		return [];
-	}//end requestOf()
+	}//end bagOf()
 }//end class

@@ -53,6 +53,7 @@ use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Flow\FlowConfigGuard;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -175,6 +176,13 @@ class CallService {
 	private CookieJar $cookieJar;
 
 	/**
+	 * Decides whether a call's bodies are stored (Woo row 13.23, decision D5).
+	 *
+	 * @var BodyCapturePolicy
+	 */
+	private BodyCapturePolicy $bodyCapturePolicy;
+
+	/**
 	 * Retention (ms) applied to error CallLogs.
 	 *
 	 * @var integer
@@ -199,6 +207,7 @@ class CallService {
 	 * @param BrokeredCallService $brokeredCallService Brokered (credentialRef) dispatch through the OpenRegister credential broker.
 	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
 	 * @param CaseSystemOperations|null $caseSystemOperations Answers case-system sources in-process (case-system-operations-for-decidiq).
+	 * @param BodyCapturePolicy|null $bodyCapturePolicy Decides whether call bodies are stored (outbound-call-log-investigation-window).
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
 	 */
@@ -211,7 +220,9 @@ class CallService {
 		private readonly BrokeredCallService $brokeredCallService,
 		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
 		private readonly ?CaseSystemOperations $caseSystemOperations = null,
+		?BodyCapturePolicy $bodyCapturePolicy = null,
 	) {
+		$this->bodyCapturePolicy = ($bodyCapturePolicy ?? new BodyCapturePolicy(appConfig: $appConfig));
 		$this->client = new Client([]);
 		// NO AUTOESCAPE: this environment renders headers/query/body values for
 		// an HTTP call, never HTML. Left at Twig's default (HTML) for a long
@@ -1763,14 +1774,6 @@ class CallService {
 		$data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
 
 		$statusCode = $data['response']['statusCode'];
-		$responseData = $data['response'];
-
-		// Only persist response body for 4xx/5xx errors.
-		if ($statusCode < 400 || $statusCode >= 600) {
-			if ($logBody !== true) {
-				unset($responseData['body']);
-			}
-		}
 
 		if ($statusCode < 400) {
 			$expiresChosen = $successExpires;
@@ -1786,9 +1789,20 @@ class CallService {
 			'statusCode' => $statusCode,
 			'statusMessage' => $data['response']['statusMessage'],
 			'request' => $data['request'],
-			'response' => $responseData,
+			'response' => $data['response'],
 			'created' => (new DateTime())->format('c'),
 		];
+
+		// Bodies are stored only inside the source's investigation window, or
+		// for a caller that passed logBody; a failure keeps its request for a
+		// replay (outbound-call-log REQ-OCD-001, REQ-OCD-009). Applied before
+		// the buffer, so the buffered path follows the same rule.
+		$callLogData = $this->bodyCapturePolicy->apply(
+			record: $callLogData,
+			sourceData: $sourceData,
+			logBody: $logBody,
+			errorExpires: $errorExpires
+		);
 
 		// A call kept for ever (retention 0) has no expiry. `expires` is a
 		// date-time string on call_log, and the register refuses a null in a
