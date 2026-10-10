@@ -5,7 +5,7 @@ depends_on: []
 
 # Proposal: open-formulieren-submits-into-its-case
 
-integriq's half of decision 179 (Ruben, 10 October 2026): "We dont intake to an intake, we intake into a case, or ticket or something else." Cross-app change: `hydra/openspec/changes/form-submits-into-its-destination-object`, architecture in hydra ADR-117. Needs `openregister/form-destination-validator`. Built on the recommended answer to question Q5 (Open Formulieren and DSO in scope; mail, chat and post out of scope) until Ruben answers.
+integriq's half of decision 179 (Ruben, 10 October 2026): "We dont intake to an intake, we intake into a case, or ticket or something else." Cross-app change: `hydra/openspec/changes/form-submits-into-its-destination-object`, architecture in hydra ADR-117. Needs `openregister/form-destination-validator`. Ruben answered question Q5 (decision 181): forms only, so Open Formulieren and DSO are in scope and mail, chat and post keep their intake inbox.
 
 ## Why
 
