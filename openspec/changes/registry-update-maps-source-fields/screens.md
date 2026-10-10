@@ -1,0 +1,1 @@
+- No screen: background connector between a registry source and OpenRegister's inbound update endpoint; nothing a user opens.

@@ -26,7 +26,7 @@ namespace OCA\Integriq\Service\Registry;
  *
  * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
-class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
+class KvkMutatieProvider extends AbstractSourceSubscriptionProvider implements MapsSourceFieldsInterface {
 	/**
 	 * Registry id this binding answers to.
 	 */
@@ -36,6 +36,23 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 	 * Slug of the seeded mutatieservice source.
 	 */
 	public const SOURCE_SLUG = 'kvk-mutatieservice';
+
+	/**
+	 * Source field to property, per target schema slug (decision 178).
+	 *
+	 * @var array<string,array<string,string>>
+	 */
+	public const FIELD_MAPS = [
+		// Dossiq's company. The mutatieservice and Zoeken both name the trade
+		// name and the address two ways; either lands on the one property.
+		'kvkCompany' => [
+			'handelsnaam' => 'tradeName',
+			'naam' => 'tradeName',
+			'rechtsvorm' => 'legalForm',
+			'adres' => 'address',
+			'bezoekadres' => 'address',
+		],
+	];
 
 	/**
 	 * The registry id.
@@ -137,4 +154,17 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider {
 
 		return $changes;
 	}//end pollChanges()
+
+	/**
+	 * Which source field becomes which property of the target schema.
+	 *
+	 * @param string $targetSchema The target schema's slug.
+	 *
+	 * @return array<string,string>|null The map, or null when this binding has none for that schema.
+	 *
+	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 */
+	public function fieldMapFor(string $targetSchema): ?array {
+		return (self::FIELD_MAPS[$targetSchema] ?? null);
+	}//end fieldMapFor()
 }//end class

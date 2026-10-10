@@ -27,7 +27,7 @@ namespace OCA\Integriq\Service\Registry;
  *
  * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
-class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
+class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider implements MapsSourceFieldsInterface {
 	/**
 	 * Registry id this binding answers to.
 	 */
@@ -37,6 +37,22 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 	 * Slug of the seeded Haal Centraal source.
 	 */
 	public const SOURCE_SLUG = 'brp-haalcentraal';
+
+	/**
+	 * Source field to property, per target schema slug (decision 178).
+	 *
+	 * @var array<string,array<string,string>>
+	 */
+	public const FIELD_MAPS = [
+		// Dossiq's person. The inner blocks already use Haal Centraal naming,
+		// so only the top-level key moves.
+		'brpPerson' => [
+			'naam' => 'name',
+			'geboorte' => 'birth',
+			'verblijfplaats' => 'residence',
+			'geheimhoudingPersoonsgegevens' => 'indicatieGeheim',
+		],
+	];
 
 	/**
 	 * The registry id.
@@ -143,4 +159,17 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider {
 
 		return $changes;
 	}//end pollChanges()
+
+	/**
+	 * Which source field becomes which property of the target schema.
+	 *
+	 * @param string $targetSchema The target schema's slug.
+	 *
+	 * @return array<string,string>|null The map, or null when this binding has none for that schema.
+	 *
+	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 */
+	public function fieldMapFor(string $targetSchema): ?array {
+		return (self::FIELD_MAPS[$targetSchema] ?? null);
+	}//end fieldMapFor()
 }//end class

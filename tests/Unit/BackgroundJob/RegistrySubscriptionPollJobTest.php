@@ -21,6 +21,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 
 use OCA\Integriq\BackgroundJob\RegistrySubscriptionPollJob;
+use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
+use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
 use OCA\Integriq\Service\Registry\RegistryUpdateClient;
 use OCA\Integriq\Service\Registry\SubscriptionChange;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
@@ -163,4 +167,172 @@ class RegistrySubscriptionPollJobTest extends TestCase {
 		$this->assertSame(['registry-subscription.update.deferred'], array_column($logged, 0));
 		$this->assertStringContainsString('next scheduled run', $logged[0][1]['reason']);
 	}//end testAnotherFailureIsLeftForTheNextRun()
+
+	/**
+	 * A roster backed by an in-memory app config, with targets recorded.
+	 *
+	 * @param array<string,array<int,string>> $targets Identity to target schema slugs, for `brp`.
+	 *
+	 * @return SubscriptionRoster The roster.
+	 */
+	private function rosterWithTargets(array $targets): SubscriptionRoster {
+		$config = [];
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			static function (string $app, string $key, string $default = '') use (&$config): string {
+				return ($config[$key] ?? $default);
+			}
+		);
+		$appConfig->method('setValueString')->willReturnCallback(
+			static function (string $app, string $key, string $value) use (&$config): bool {
+				$config[$key] = $value;
+				return true;
+			}
+		);
+
+		$roster = new SubscriptionRoster($appConfig);
+		foreach ($targets as $identity => $slugs) {
+			$roster->add('brp', (string)$identity, 'vi');
+			foreach ($slugs as $slug) {
+				$roster->addTarget('brp', (string)$identity, $slug);
+			}
+		}
+
+		return $roster;
+	}//end rosterWithTargets()
+
+	/**
+	 * The BRP binding, built without touching its source.
+	 *
+	 * @return BrpVolgindicatieProvider The binding.
+	 */
+	private function brp(): BrpVolgindicatieProvider {
+		return new BrpVolgindicatieProvider(
+			$this->createMock(ConnectionStore::class),
+			$this->createMock(CallService::class),
+			$this->createMock(LoggerInterface::class)
+		);
+	}//end brp()
+
+	/**
+	 * Collect every payload the job posts.
+	 *
+	 * @param array<int,array<string,mixed>> $posted Receives the payloads.
+	 *
+	 * @return RegistryUpdateClient The double.
+	 */
+	private function recordingClient(array &$posted): RegistryUpdateClient {
+		$updateClient = $this->updateClient();
+		$updateClient->method('postUpdate')->willReturnCallback(
+			static function (string $registryId, array $payload) use (&$posted): int {
+				$posted[] = $payload;
+				return 200;
+			}
+		);
+
+		return $updateClient;
+	}//end recordingClient()
+
+	/**
+	 * A dossiq person moves house: the post carries `residence` and `name`,
+	 * never the BRP's own field names (REQ-RSC-004).
+	 *
+	 * @return void
+	 */
+	public function testAChangeIsPostedInTheTargetSchemasNames(): void {
+		$posted = [];
+		$job = new RegistrySubscriptionPollJob(
+			$this->createMock(ITimeFactory::class),
+			new SubscriptionRegistry([]),
+			$this->rosterWithTargets(['999993653' => ['brpPerson']]),
+			$this->recordingClient($posted),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$count = $job->postChanges(
+			'brp',
+			[new SubscriptionChange('999993653', ['verblijfplaats' => ['straat' => 'Nieuwstraat'], 'naam' => ['geslachtsnaam' => 'Jansen']], 'vi-42')],
+			$this->brp()
+		);
+
+		$this->assertSame(1, $count);
+		$this->assertSame(
+			[['identity' => '999993653', 'properties' => ['residence' => ['straat' => 'Nieuwstraat'], 'name' => ['geslachtsnaam' => 'Jansen']], 'eventReference' => 'vi-42']],
+			$posted
+		);
+	}//end testAChangeIsPostedInTheTargetSchemasNames()
+
+	/**
+	 * Two schemas follow one BSN: one post per schema, each in its own names;
+	 * a schema without a map gets the source's names.
+	 *
+	 * @return void
+	 */
+	public function testOnePostPerTargetSchema(): void {
+		$posted = [];
+		$job = new RegistrySubscriptionPollJob(
+			$this->createMock(ITimeFactory::class),
+			new SubscriptionRegistry([]),
+			$this->rosterWithTargets(['999993653' => ['brpPerson', 'resident']]),
+			$this->recordingClient($posted),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$count = $job->postChanges(
+			'brp',
+			[new SubscriptionChange('999993653', ['verblijfplaats' => ['straat' => 'Nieuwstraat']], 'vi-42')],
+			$this->brp()
+		);
+
+		$this->assertSame(2, $count);
+		$this->assertSame(['residence' => ['straat' => 'Nieuwstraat']], $posted[0]['properties']);
+		$this->assertSame(['verblijfplaats' => ['straat' => 'Nieuwstraat']], $posted[1]['properties']);
+	}//end testOnePostPerTargetSchema()
+
+	/**
+	 * A mapped change that keeps nothing posts nothing.
+	 *
+	 * @return void
+	 */
+	public function testAMappedChangeThatKeepsNothingPostsNothing(): void {
+		$updateClient = $this->updateClient();
+		$updateClient->expects($this->never())->method('postUpdate');
+
+		$job = new RegistrySubscriptionPollJob(
+			$this->createMock(ITimeFactory::class),
+			new SubscriptionRegistry([]),
+			$this->rosterWithTargets(['999993653' => ['brpPerson']]),
+			$updateClient,
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$count = $job->postChanges('brp', [new SubscriptionChange('999993653', ['aNummer' => '1234567890'], 'vi-44')], $this->brp());
+
+		$this->assertSame(0, $count);
+	}//end testAMappedChangeThatKeepsNothingPostsNothing()
+
+	/**
+	 * A provider that does not map (the log binding) posts unchanged, even
+	 * when targets are recorded.
+	 *
+	 * @return void
+	 */
+	public function testABindingWithoutMapsPostsUnchanged(): void {
+		$posted = [];
+		$job = new RegistrySubscriptionPollJob(
+			$this->createMock(ITimeFactory::class),
+			new SubscriptionRegistry([]),
+			$this->rosterWithTargets(['999993653' => ['brpPerson']]),
+			$this->recordingClient($posted),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$job->postChanges(
+			'brp',
+			[new SubscriptionChange('999993653', ['verblijfplaats' => []], 'log-1')],
+			new LogSubscriptionProvider($this->createMock(LoggerInterface::class))
+		);
+
+		$this->assertSame([['identity' => '999993653', 'properties' => ['verblijfplaats' => []], 'eventReference' => 'log-1']], $posted);
+	}//end testABindingWithoutMapsPostsUnchanged()
 }//end class
