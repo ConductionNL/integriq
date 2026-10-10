@@ -46,6 +46,8 @@ use Throwable;
  * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The pickup joins adapters, contracts, files and mappings by design.
+ * @SuppressWarnings(PHPMD.StaticAccess) SafeXmlParser is the app's hardened XML entry point; there is nothing to inject.
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `isTest` follows the synchronization engine's own dry-run flag.
  */
 class FilePickupService {
 
@@ -183,13 +185,9 @@ class FilePickupService {
 			$local = $adapter->fetch(source: $source, path: $file['path']);
 			$report['fetched']++;
 
-			if (($config['target'] ?? 'files') === 'mapping') {
-				$created = $this->writeObjects(synchronization: $synchronization, file: $file, localPath: $local);
-				$objects['found'] += $created;
-				$objects['created'] += $created;
-			} else {
-				$this->writeToFiles(config: $config, name: $file['name'], localPath: $local);
-			}
+			$created = $this->writeLocally(synchronization: $synchronization, file: $file, localPath: $local);
+			$objects['found'] += $created;
+			$objects['created'] += $created;
 
 			$report['stored']++;
 		} catch (Throwable $exception) {
@@ -198,8 +196,8 @@ class FilePickupService {
 			$this->logger->warning('integriq file pickup: ' . $file['path'] . ' not picked up: ' . $exception->getMessage());
 			return;
 		} finally {
-			if ($local !== null) {
-				@unlink($local);
+			if ($local !== null && file_exists($local) === true) {
+				unlink($local);
 			}
 		}//end try
 
@@ -219,6 +217,26 @@ class FilePickupService {
 		}
 
 	}//end pickOne()
+
+	/**
+	 * Write a fetched file to its target.
+	 *
+	 * @param array<string,mixed> $synchronization The synchronization.
+	 * @param array<string,mixed> $file            The remote file.
+	 * @param string              $localPath       The fetched file.
+	 *
+	 * @return int The number of objects saved (0 for target `files`).
+	 */
+	private function writeLocally(array $synchronization, array $file, string $localPath): int {
+		$config = (array)($synchronization['sourceConfig'] ?? []);
+		if (($config['target'] ?? 'files') === 'mapping') {
+			return $this->writeObjects(synchronization: $synchronization, file: $file, localPath: $localPath);
+		}
+
+		$this->writeToFiles(config: $config, name: (string)$file['name'], localPath: $localPath);
+		return 0;
+
+	}//end writeLocally()
 
 	/**
 	 * Move, delete or keep the remote file once it is safe locally.
@@ -314,7 +332,10 @@ class FilePickupService {
 		$extension = pathinfo($name, PATHINFO_EXTENSION);
 		$base = pathinfo($name, PATHINFO_FILENAME);
 		for ($counter = 2; $folder->nodeExists($candidate) === true; $counter++) {
-			$candidate = $base . ' (' . $counter . ')' . ($extension === '' ? '' : '.' . $extension);
+			$candidate = $base . ' (' . $counter . ')';
+			if ($extension !== '') {
+				$candidate .= '.' . $extension;
+			}
 		}
 
 		return $candidate;
@@ -375,20 +396,7 @@ class FilePickupService {
 	public static function parseRecords(string $name, string $content): array {
 		$extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
 		if ($extension === 'csv') {
-			$lines = array_values(array_filter(preg_split('/\r\n|\n|\r/', $content), static fn (string $line): bool => trim($line) !== ''));
-			if ($lines === []) {
-				return [];
-			}
-
-			$delimiter = (substr_count($lines[0], ';') > substr_count($lines[0], ',') ? ';' : ',');
-			$headers = str_getcsv(array_shift($lines), $delimiter, '"', '\\');
-			$records = [];
-			foreach ($lines as $line) {
-				$values = str_getcsv($line, $delimiter, '"', '\\');
-				$records[] = array_combine($headers, array_pad(array_slice($values, 0, count($headers)), count($headers), null));
-			}
-
-			return $records;
+			return self::parseCsv(content: $content);
 		}
 
 		if ($extension === 'json') {
@@ -397,7 +405,11 @@ class FilePickupService {
 				throw new InvalidArgumentException(message: 'The JSON file does not parse.');
 			}
 
-			return (array_is_list($decoded) === true ? $decoded : [$decoded]);
+			if (array_is_list($decoded) === false) {
+				return [$decoded];
+			}
+
+			return $decoded;
 		}
 
 		if ($extension === 'xml') {
@@ -412,6 +424,35 @@ class FilePickupService {
 		throw new InvalidArgumentException(message: 'A mapped pickup reads CSV, JSON or XML, not "' . $extension . '".');
 
 	}//end parseRecords()
+
+	/**
+	 * Records from a CSV file, the first line naming the fields; `;` or `,` separated.
+	 *
+	 * @param string $content The content.
+	 *
+	 * @return array<int,array<string,mixed>> The records.
+	 */
+	private static function parseCsv(string $content): array {
+		$lines = array_values(array_filter(preg_split('/\r\n|\n|\r/', $content), static fn (string $line): bool => trim($line) !== ''));
+		if ($lines === []) {
+			return [];
+		}
+
+		$delimiter = ',';
+		if (substr_count($lines[0], ';') > substr_count($lines[0], ',')) {
+			$delimiter = ';';
+		}
+
+		$headers = str_getcsv(array_shift($lines), $delimiter, '"', '\\');
+		$records = [];
+		foreach ($lines as $line) {
+			$values = str_getcsv($line, $delimiter, '"', '\\');
+			$records[] = array_combine($headers, array_pad(array_slice($values, 0, count($headers)), count($headers), null));
+		}
+
+		return $records;
+
+	}//end parseCsv()
 
 	/**
 	 * The adapter for a protocol.

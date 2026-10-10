@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Adapter\DataInfra\FileTransfer;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use RuntimeException;
 
 /**
@@ -32,6 +34,8 @@ use RuntimeException;
  * REQ-SFTP-001 asks for. Plain FTP is out of scope.
  *
  * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromFormat is the PHP parser for the MLSD time stamp.
  */
 class FtpsClient implements RemoteFileClient {
 
@@ -158,11 +162,16 @@ class FtpsClient implements RemoteFileClient {
 				continue;
 			}
 
-			$mtime = \DateTimeImmutable::createFromFormat('YmdHis', substr(($facts['modify'] ?? ''), 0, 14), new \DateTimeZone('UTC'));
+			$modified = DateTimeImmutable::createFromFormat('YmdHis', substr(($facts['modify'] ?? ''), 0, 14), new DateTimeZone('UTC'));
+			$mtime = 0;
+			if ($modified !== false) {
+				$mtime = $modified->getTimestamp();
+			}
+
 			$files[] = [
 				'name' => substr($line, ($split + 1)),
 				'size' => (int)($facts['size'] ?? 0),
-				'mtime' => ($mtime === false ? 0 : $mtime->getTimestamp()),
+				'mtime' => $mtime,
 			];
 		}//end foreach
 

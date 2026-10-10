@@ -27,11 +27,13 @@ use RuntimeException;
 /**
  * An SFTP connection: host key read before login, password or key login.
  *
- * phpseclib 3 (MIT) is required by integriq because Nextcloud 32 to 34 bundle
+ * The phpseclib 3 library (MIT) is required by integriq because Nextcloud 32 to 34 bundle
  * phpseclib 2 (`phpseclib\`) and only Nextcloud 35 bundles 3.0.55; the
  * `phpseclib3\` namespace does not clash with the older one (design D1).
  *
  * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) PublicKeyLoader is phpseclib's only key parser; there is nothing to inject.
  */
 class SftpClient implements RemoteFileClient {
 
@@ -118,7 +120,7 @@ class SftpClient implements RemoteFileClient {
 	public function login(string $username, string $secret, string $authMode): void {
 		$credential = $secret;
 		if ($authMode === 'ssh-key') {
-			$credential = PublicKeyLoader::load($secret);
+			$credential = PublicKeyLoader::loadPrivateKey($secret);
 		}
 
 		if ($this->connection()->login($username, $credential) !== true) {

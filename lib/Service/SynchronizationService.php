@@ -4039,7 +4039,12 @@ class SynchronizationService {
 		$this->synchronizationLogService->persist(log: $runLog);
 
 		if ($ownsTrace === true) {
-			$this->persistOwnedTrace(trace: $trace, status: ($result['pickup']['failed'] === [] ? 'success' : 'error'));
+			$status = 'error';
+			if ($result['pickup']['failed'] === []) {
+				$status = 'success';
+			}
+
+			$this->persistOwnedTrace(trace: $trace, status: $status);
 		}
 
 		return $result;

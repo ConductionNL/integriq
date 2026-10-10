@@ -52,6 +52,7 @@ use Throwable;
  * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The adapter joins the broker, egress guard, path guard and protocol seam on purpose.
+ * @SuppressWarnings(PHPMD.StaticAccess) RemotePath is a pure path calculation; there is nothing to inject.
  */
 abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvider {
 
@@ -177,9 +178,15 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 		try {
 			$this->openChecked(client: $client, source: $source, verifyPin: false);
 			$result['fingerprint'] = $client->serverFingerprint();
-			$result['matches'] = ($this->requiresPin() === false || ($pinned !== '' && hash_equals($pinned, $result['fingerprint']) === true));
+			$result['matches'] = ($this->requiresPin() === false
+				|| ($pinned !== '' && hash_equals($pinned, $result['fingerprint']) === true));
+			if ($result['matches'] === false && $pinned === '') {
+				$result['message'] = 'Confirm the server\'s fingerprint to pin it.';
+				return $result;
+			}
+
 			if ($result['matches'] === false) {
-				$result['message'] = ($pinned === '' ? 'Confirm the server\'s fingerprint to pin it.' : (new HostKeyMismatchException(pinned: $pinned, presented: $result['fingerprint']))->getMessage());
+				$result['message'] = (new HostKeyMismatchException(pinned: $pinned, presented: $result['fingerprint']))->getMessage();
 				return $result;
 			}
 
@@ -248,7 +255,10 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 				operation: static fn (RemoteFileClient $client) => $client->download(remotePath: $remote, localPath: $local)
 			);
 		} catch (Throwable $exception) {
-			@unlink($local);
+			if (file_exists($local) === true) {
+				unlink($local);
+			}
+
 			throw $exception;
 		}
 
@@ -351,8 +361,11 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 */
 	protected function rootPath(array $source): string {
 		$root = (string)($source['rootPath'] ?? '');
+		if ($root === '') {
+			return '/';
+		}
 
-		return ($root === '' ? '/' : $root);
+		return $root;
 
 	}//end rootPath()
 

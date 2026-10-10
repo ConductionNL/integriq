@@ -44,17 +44,13 @@ final class RemotePath {
 	 * @throws InvalidArgumentException When the path leaves the root or is malformed.
 	 */
 	public static function resolve(string $rootPath, string $path): string {
-		$root = self::normalise(path: ($rootPath === '' ? '/' : $rootPath));
-
-		foreach ([$rootPath, $path] as $candidate) {
-			if (str_contains($candidate, "\0") === true || str_contains($candidate, '\\') === true) {
-				throw new InvalidArgumentException(message: 'The path contains a character that is not allowed.');
-			}
-
-			if (in_array('..', explode('/', $candidate), true) === true) {
-				throw new InvalidArgumentException(message: 'The path may not contain "..".');
-			}
+		$root = '/';
+		if ($rootPath !== '') {
+			$root = self::normalise(path: $rootPath);
 		}
+
+		self::assertClean(path: $rootPath);
+		self::assertClean(path: $path);
 
 		if (str_starts_with($path, '/') === false) {
 			$path = rtrim($root, '/') . '/' . $path;
@@ -67,6 +63,25 @@ final class RemotePath {
 
 		return $resolved;
 	}//end resolve()
+
+	/**
+	 * Refuse a NUL byte, a backslash or a `..` segment.
+	 *
+	 * @param string $path The path.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the path holds one of them.
+	 */
+	private static function assertClean(string $path): void {
+		if (str_contains($path, "\0") === true || str_contains($path, '\\') === true) {
+			throw new InvalidArgumentException(message: 'The path contains a character that is not allowed.');
+		}
+
+		if (in_array('..', explode('/', $path), true) === true) {
+			throw new InvalidArgumentException(message: 'The path may not contain "..".');
+		}
+	}//end assertClean()
 
 	/**
 	 * Collapse duplicate slashes and `.` segments.
