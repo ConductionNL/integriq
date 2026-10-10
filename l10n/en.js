@@ -3461,7 +3461,26 @@ OC.L10N.register(
         "When the cleanup job removed the bodies": "When the cleanup job removed the bodies",
         "Replay request": "Replay request",
         "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission",
-        "The source could not be saved. Nothing changed.": "The source could not be saved. Nothing changed."
+        "The source could not be saved. Nothing changed.": "The source could not be saved. Nothing changed.",
+        "SFTP server with a pinned host key": "SFTP server with a pinned host key",
+        "FTPS server with explicit TLS": "FTPS server with explicit TLS",
+        "The server no longer presents this fingerprint. Test the connection again.": "The server no longer presents this fingerprint. Test the connection again.",
+        "This source is not an SFTP or FTPS server.": "This source is not an SFTP or FTPS server.",
+        "The server presents this host key fingerprint. Check it with the partner, then confirm it to pin it.": "The server presents this host key fingerprint. Check it with the partner, then confirm it to pin it.",
+        "The server presents a different host key than the one pinned. The connection was refused.": "The server presents a different host key than the one pinned. The connection was refused.",
+        "Connected. The server is who the source says it is.": "Connected. The server is who the source says it is.",
+        "The server was reached, but the connection failed: {message}": "The server was reached, but the connection failed: {message}",
+        "Fingerprint the server presents": "Fingerprint the server presents",
+        "Pinned fingerprint": "Pinned fingerprint",
+        "An FTPS server is checked through its certificate, so there is no fingerprint to pin.": "An FTPS server is checked through its certificate, so there is no fingerprint to pin.",
+        "Confirm and pin": "Confirm and pin",
+        "The test could not be run.": "The test could not be run.",
+        "Host key pinned.": "Host key pinned.",
+        "The fingerprint could not be pinned.": "The fingerprint could not be pinned.",
+        "Host key fingerprint": "Host key fingerprint",
+        "Root path": "Root path",
+        "The SHA-256 fingerprint of the SFTP server's host key, as OpenSSH prints it (SHA256:...). Set it by confirming the fingerprint the first connection test shows. A server that presents another key is refused.": "The SHA-256 fingerprint of the SFTP server's host key, as OpenSSH prints it (SHA256:...). Set it by confirming the fingerprint the first connection test shows. A server that presents another key is refused.",
+        "The folder on the file server every path stays inside. Paths with .. are refused.": "The folder on the file server every path stays inside. Paths with .. are refused."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -401,6 +401,8 @@ return [
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
+		['name' => 'file_server_sources#test', 'url' => '/api/sources/{id}/host-key/test', 'verb' => 'POST'],
+		['name' => 'file_server_sources#pin', 'url' => '/api/sources/{id}/host-key', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the

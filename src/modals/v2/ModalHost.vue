@@ -27,7 +27,11 @@
 			:mapping="testMapping.mapping"
 			@close="closeTestMapping" />
 		<TestSourceModal
-			:open="testSource.open"
+			:open="testSource.open && !testSourceIsFileServer"
+			:source="testSource.source"
+			@close="closeTestSource" />
+		<FileServerTestModal
+			:open="testSource.open && testSourceIsFileServer"
 			:source="testSource.source"
 			@close="closeTestSource" />
 		<AddEndpointRuleModal
@@ -85,6 +89,7 @@ import DirectoryRunModal from '../Directory/DirectoryRunModal.vue'
 import PromotePreviewModal from '../PromotePreviewModal.vue'
 import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.vue'
 import AddEndpointRuleModal from './AddEndpointRuleModal.vue'
+import FileServerTestModal from './FileServerTestModal.vue'
 import RunActionModal from './RunActionModal.vue'
 import TestMappingModal from './TestMappingModal.vue'
 import TestSourceModal from './TestSourceModal.vue'
@@ -104,6 +109,7 @@ import {
 	EVENT_OPEN_TEST_SOURCE,
 	modalBus,
 } from '../../handlers/modalBus.js'
+import { isFileServerSource } from './fileServerTestState.js'
 
 export default {
 	name: 'ModalHost',
@@ -111,6 +117,7 @@ export default {
 	components: {
 		TestMappingModal,
 		TestSourceModal,
+		FileServerTestModal,
 		AddEndpointRuleModal,
 		RunActionModal,
 		DirectoryRunModal,
@@ -140,6 +147,18 @@ export default {
 			gatewayCatalogue: { open: false },
 			linkSource: { open: false, app: '' },
 		}
+	},
+
+	computed: {
+		/**
+		 * An SFTP or FTPS source gets the host key test instead of the HTTP request test.
+		 *
+		 * @return {boolean} whether the source under test is a file server
+		 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+		 */
+		testSourceIsFileServer() {
+			return isFileServerSource(this.testSource.source)
+		},
 	},
 
 	watch: {
