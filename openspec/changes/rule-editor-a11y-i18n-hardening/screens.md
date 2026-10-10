@@ -1,3 +1,3 @@
 # Screens
 
-- No board found yet (decision 150)
+- No screen: accessibility and translation fix to an existing modal, layout unchanged
