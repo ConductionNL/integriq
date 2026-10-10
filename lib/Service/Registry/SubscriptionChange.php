@@ -89,4 +89,28 @@ final class SubscriptionChange {
 			'eventReference' => $this->eventReference,
 		];
 	}//end toArray()
+
+	/**
+	 * The same change in a target schema's own property names. A field the map
+	 * does not list is left out: the target schema does not own it, and
+	 * OpenRegister would refuse the whole update for it.
+	 *
+	 * @param array<string,string> $map Source field to schema property.
+	 *
+	 * @return self The mapped change; empty when no field is kept.
+	 *
+	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 */
+	public function mappedTo(array $map): self {
+		$mapped = [];
+		foreach ($this->properties as $field => $value) {
+			if (isset($map[$field]) === false) {
+				continue;
+			}
+
+			$mapped[$map[$field]] = $value;
+		}
+
+		return new self(identity: $this->identity, properties: $mapped, eventReference: $this->eventReference);
+	}//end mappedTo()
 }//end class
