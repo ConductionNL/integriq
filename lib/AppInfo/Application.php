@@ -120,7 +120,9 @@ use OCA\Integriq\Outbound\Identity\DnsResolverInterface;
 use OCA\Integriq\Outbound\Identity\SystemDnsResolver;
 use OCA\Integriq\Repair\InitializeActions;
 use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
+use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
@@ -1698,6 +1700,8 @@ class Application extends App implements IBootstrap {
 	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
 	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
 	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
+	 *   - SftpAdapter, FtpsAdapter: a partner's file server as a data-infra source
+	 *     (sources-sftp-adapter).
 	 *
 	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
 	 * integriq is loaded but openregister isn't enabled yet) so boot
@@ -1723,6 +1727,8 @@ class Application extends App implements IBootstrap {
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));
+			$registry->addProvider($container->get(SftpAdapter::class));
+			$registry->addProvider($container->get(FtpsAdapter::class));
 		} catch (\Throwable $e) {
 			// Don't crash boot — log and continue. The provider just won't appear
 			// in object sidebars on this instance until the registry resolves.

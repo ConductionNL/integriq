@@ -125,6 +125,16 @@
           "MOCK-PAY-3": "authorized"
         }
       }
+    },
+    {
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-sftp-partner" },
+      "name": "Example SFTP partner",
+      "description": "Dormant example of a partner's SFTP server. Add a credential reference and confirm the host key fingerprint before enabling.",
+      "type": "sftp",
+      "location": "sftp.example.nl",
+      "rootPath": "/outgoing",
+      "isEnabled": false,
+      "version": "1.0.0"
     }
   ],
   "consumer": [
@@ -331,6 +341,16 @@
       "sourceType": "register/schema",
       "targetId": "<placeholder>",
       "targetType": "api",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "synchronization", "slug": "example-sftp-pickup" },
+      "name": "Example SFTP pickup",
+      "description": "Disabled example pickup: fetches new CSV files from example-sftp-partner into Nextcloud and archives them to /outgoing/processed. Set sourceId, filesOwner and filesFolder before enabling.",
+      "sourceId": "<placeholder>",
+      "sourceType": "sftp",
+      "sourceConfig": { "path": ".", "pattern": "*.csv", "after": "move", "archivePath": "/outgoing/processed", "target": "files", "filesFolder": "Partner/besluiten", "filesOwner": "<placeholder>", "stableSeconds": 60 },
+      "status": "disabled",
       "version": "1.0.0"
     }
   ],

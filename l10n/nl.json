@@ -2123,7 +2123,26 @@
         "When the cleanup job removed the bodies": "Wanneer de opschoontaak de inhoud verwijderde",
         "Replay request": "Herhaalverzoek",
         "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "Het verzoek dat een mislukte aanroep verstuurde, zonder geheimen, bewaard zodat de aanroep herhaald kan worden. Alleen leesbaar met het herhaalrecht",
-        "The source could not be saved. Nothing changed.": "De bron kon niet worden opgeslagen. Er is niets veranderd."
+        "The source could not be saved. Nothing changed.": "De bron kon niet worden opgeslagen. Er is niets veranderd.",
+        "SFTP server with a pinned host key": "SFTP-server met een vastgezette hostsleutel",
+        "FTPS server with explicit TLS": "FTPS-server met expliciete TLS",
+        "The server no longer presents this fingerprint. Test the connection again.": "De server toont deze vingerafdruk niet meer. Test de verbinding opnieuw.",
+        "This source is not an SFTP or FTPS server.": "Deze bron is geen SFTP- of FTPS-server.",
+        "The server presents this host key fingerprint. Check it with the partner, then confirm it to pin it.": "De server toont deze vingerafdruk van de hostsleutel. Controleer hem bij de partner en bevestig hem om hem vast te zetten.",
+        "The server presents a different host key than the one pinned. The connection was refused.": "De server toont een andere hostsleutel dan de vastgezette. De verbinding is geweigerd.",
+        "Connected. The server is who the source says it is.": "Verbonden. De server is wie de bron zegt dat hij is.",
+        "The server was reached, but the connection failed: {message}": "De server is bereikt, maar de verbinding is mislukt: {message}",
+        "Fingerprint the server presents": "Vingerafdruk die de server toont",
+        "Pinned fingerprint": "Vastgezette vingerafdruk",
+        "An FTPS server is checked through its certificate, so there is no fingerprint to pin.": "Een FTPS-server wordt gecontroleerd via zijn certificaat, dus er is geen vingerafdruk om vast te zetten.",
+        "Confirm and pin": "Bevestigen en vastzetten",
+        "The test could not be run.": "De test kon niet worden uitgevoerd.",
+        "Host key pinned.": "Hostsleutel vastgezet.",
+        "The fingerprint could not be pinned.": "De vingerafdruk kon niet worden vastgezet.",
+        "Host key fingerprint": "Vingerafdruk hostsleutel",
+        "Root path": "Hoofdmap",
+        "The SHA-256 fingerprint of the SFTP server's host key, as OpenSSH prints it (SHA256:...). Set it by confirming the fingerprint the first connection test shows. A server that presents another key is refused.": "De SHA-256-vingerafdruk van de hostsleutel van de SFTP-server, zoals OpenSSH hem toont (SHA256:...). Stel hem in door de vingerafdruk te bevestigen die de eerste verbindingstest toont. Een server die een andere sleutel toont, wordt geweigerd.",
+        "The folder on the file server every path stays inside. Paths with .. are refused.": "De map op de bestandsserver waarbinnen elk pad blijft. Paden met .. worden geweigerd."
     },
     "plurals": {}
 }

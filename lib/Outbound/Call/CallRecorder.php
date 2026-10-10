@@ -43,7 +43,12 @@ use Throwable;
 /**
  * Writes and updates outbound call records.
  *
+ * `call_log` is admin-only in the register, so every read and write here runs
+ * with `_rbac: false`: the callers gate access (CallLogController with the
+ * call-log permissions), and the engine records calls for whoever triggered them.
+ *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-call-records-are-readable-only-by-admins-and-through-integriqs-own-endpoints-req-ocd-012
  */
 class CallRecorder {
 
@@ -172,6 +177,8 @@ class CallRecorder {
 			object: $record,
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 	}//end record()
@@ -262,6 +269,8 @@ class CallRecorder {
 			id: $uuid,
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		if (($entity instanceof ObjectEntity) === false) {
@@ -386,6 +395,8 @@ class CallRecorder {
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $uuid,
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 	}//end write()
