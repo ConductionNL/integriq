@@ -103,12 +103,13 @@ class CallServiceTest extends TestCase {
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], $register = null, $schema = null, $uuid = null, $_rbac = true) {
 				$this->saved[] = [
 					'object' => $object,
 					'register' => $register,
 					'schema' => $schema,
 					'uuid' => $uuid,
+					'rbac' => $_rbac,
 				];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
@@ -305,6 +306,9 @@ class CallServiceTest extends TestCase {
 		$this->assertCount(1, $logs);
 		$this->assertSame(409, $logs[0]['object']['statusCode']);
 		$this->assertStringContainsString('forbidden alongside credentialRef', $logs[0]['object']['statusMessage']);
+		// call_log is admin-only in the register (REQ-OCD-012): the engine writes
+		// the early error record past RBAC, or a non-admin's call loses its log.
+		$this->assertFalse($logs[0]['rbac'], 'The early error call_log must be written with _rbac: false');
 	}//end testBrokeredConfigErrorPersists409EarlyLog()
 
 	/**
@@ -372,8 +376,10 @@ class CallServiceTest extends TestCase {
 		$this->assertSame(500, $log['statusCode']);
 		// Request header value redacted.
 		$this->assertSame('***REDACTED***', $log['request']['headers']['X-Api-Key']);
-		// Echoed secret scrubbed from the persisted response body.
-		$this->assertStringContainsString('***REDACTED***', $log['response']['body']);
+		// Outside an investigation window the response body is not stored at all
+		// (outbound-call-log REQ-OCD-001); the replay request is redacted too.
+		$this->assertArrayNotHasKey('body', $log['response']);
+		$this->assertSame('***REDACTED***', $log['replayRequest']['headers']['X-Api-Key']);
 		$this->assertStringNotContainsString('sekret-value-123', json_encode($log));
 	}//end testBrokeredCallLogRedactsSecretsLikeGuzzlePath()
 
@@ -1167,6 +1173,8 @@ class CallServiceTest extends TestCase {
 			[
 				'name' => 'ted',
 				'isEnabled' => true,
+				// An open investigation window, so the request body is stored (REQ-OCD-008).
+				'bodyCaptureUntil' => '2099-01-01T00:00:00+00:00',
 				'location' => 'https://api.example.invalid',
 				'configuration' => [
 					'listMethod' => 'POST',

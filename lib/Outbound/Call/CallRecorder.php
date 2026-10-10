@@ -38,11 +38,17 @@ use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use Throwable;
 
 /**
  * Writes and updates outbound call records.
  *
+ * `call_log` is admin-only in the register, so every read and write here runs
+ * with `_rbac: false`: the callers gate access (CallLogController with the
+ * call-log permissions), and the engine records calls for whoever triggered them.
+ *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-call-records-are-readable-only-by-admins-and-through-integriqs-own-endpoints-req-ocd-012
  */
 class CallRecorder {
 
@@ -93,10 +99,12 @@ class CallRecorder {
 	 *
 	 * @param ORObjectService $objectService Persists the records.
 	 * @param BodyRedactor $redactor Redacts before the write, never after.
+	 * @param BodyCapturePolicy $bodyCapturePolicy Keeps bodies only inside a source's investigation window.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly BodyRedactor $redactor,
+		private readonly BodyCapturePolicy $bodyCapturePolicy,
 	) {
 
 	}//end __construct()
@@ -156,10 +164,21 @@ class CallRecorder {
 			$record['source'] = $source;
 		}
 
+		// Bodies only inside the source's investigation window; a failure keeps
+		// its request for a replay (REQ-OCD-001, REQ-OCD-009).
+		$record = $this->bodyCapturePolicy->apply(
+			record: $record,
+			sourceData: $this->sourceData(uuid: $source),
+			logBody: false,
+			errorExpires: null
+		);
+
 		return $this->objectService->saveObject(
 			object: $record,
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 	}//end record()
@@ -175,6 +194,8 @@ class CallRecorder {
 	 *                                     `mappingVersion`, and optionally `request`/`response`.
 	 *
 	 * @return ObjectEntity The updated record.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	public function appendAttempt(string $uuid, array $attempt): ObjectEntity {
 		$record = $this->read(uuid: $uuid);
@@ -196,7 +217,18 @@ class CallRecorder {
 		];
 
 		if (isset($attempt['response']) === true) {
-			$record['response'] = $this->redactor->redactContext($this->asArray(value: $attempt['response']));
+			$response = $this->redactor->redactContext($this->asArray(value: $attempt['response']));
+			$sourceData = $this->sourceData(uuid: $this->sourceRef(call: $record));
+			if ($this->bodyCapturePolicy->isOpen(sourceData: $sourceData, now: $this->bodyCapturePolicy->now()) === false) {
+				unset($response['body']);
+			}
+
+			$record['response'] = $response;
+		}
+
+		// A replay that succeeded no longer needs the request it replayed (REQ-OCD-009).
+		if ($outcome === 'succeeded') {
+			unset($record['replayRequest']);
 		}
 
 		$record['statusCode'] = $statusCode;
@@ -237,6 +269,8 @@ class CallRecorder {
 			id: $uuid,
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		if (($entity instanceof ObjectEntity) === false) {
@@ -278,6 +312,42 @@ class CallRecorder {
 		return null;
 
 	}//end sourceRef()
+
+	/**
+	 * The source a call went to, for its investigation window.
+	 *
+	 * A source that cannot be read has no window, so no body is kept.
+	 *
+	 * @param string|null $uuid The source uuid, or null when the call has none.
+	 *
+	 * @return array<string,mixed> The source, or an empty array.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	private function sourceData(?string $uuid): array {
+		if ($uuid === null) {
+			return [];
+		}
+
+		try {
+			$source = $this->objectService->find(
+				id: $uuid,
+				register: MessageRecorder::REGISTER,
+				schema: 'source',
+				_rbac: false,
+				_multitenancy: false,
+			);
+		} catch (Throwable) {
+			return [];
+		}
+
+		if (($source instanceof ObjectEntity) === false) {
+			return [];
+		}
+
+		return $source->getObject();
+
+	}//end sourceData()
 
 	/**
 	 * Whether a status code counts as a success.
@@ -325,6 +395,8 @@ class CallRecorder {
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $uuid,
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 	}//end write()

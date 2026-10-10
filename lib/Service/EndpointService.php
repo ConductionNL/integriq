@@ -1504,7 +1504,10 @@ class EndpointService {
 					'created' => (new DateTime())->format('c'),
 				],
 				register: 'integriq',
-				schema: 'call_log'
+				schema: 'call_log',
+				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
+				_rbac: false,
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -1539,7 +1542,10 @@ class EndpointService {
 					'created' => (new DateTime())->format('c'),
 				],
 				register: 'integriq',
-				schema: 'call_log'
+				schema: 'call_log',
+				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
+				_rbac: false,
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(

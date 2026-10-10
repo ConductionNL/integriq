@@ -3645,7 +3645,7 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Outbound/Call/MappingVersionService.php:46 snapshots a mapping before it is used, injected into lib/Outbound/Call/CallReplayService.php:70; call_log schema carries mapping/mappingVersion/attempts[].mappingVersion fields (lib/Settings/integriq_register.json:2107, 2121), rendered generically on the call_log-backed logs pages.",
-				"change": "outbound-call-log-investigation-window"
+				"change": "2026-10-09-outbound-call-log-investigation-window"
 			},
 			"reachedOn": "/sources/logs, /endpoints/logs (manifest-pages.txt logs pages on the call_log schema) show which mapping version a call ran under; replay offers the snapshot vs current version",
 			"provider": "integriq",

@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Outbound;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\CallDispatchException;
 use OCA\Integriq\Outbound\BodyRedactor;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
 use OCA\Integriq\Outbound\Call\CallRecorder;
 use OCA\Integriq\Outbound\Call\CallReplayService;
@@ -34,6 +35,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClient;
+use OCP\IAppConfig;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -183,7 +185,9 @@ class CallReplayServiceTest extends TestCase {
 			}
 		);
 
-		$this->recorder = new CallRecorder($this->objectService, new BodyRedactor());
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueInt')->willReturnArgument(2);
+		$this->recorder = new CallRecorder($this->objectService, new BodyRedactor(), new BodyCapturePolicy($appConfig));
 
 	}//end setUp()
 
@@ -249,14 +253,15 @@ class CallReplayServiceTest extends TestCase {
 					'headers' => ['Authorization' => 'Bearer abcdef1234567890'],
 					'body' => 'apikey: sk-live-0123456789',
 				],
-				'statusCode' => 200,
+				'statusCode' => 500,
 			]
 		);
 
 		$record = $this->records[(string)$entity->getUuid()];
 
 		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['request']['headers']['Authorization']);
-		$this->assertStringNotContainsString('sk-live-0123456789', $record['request']['body']);
+		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['replayRequest']['headers']['Authorization']);
+		$this->assertStringNotContainsString('sk-live-0123456789', json_encode($record));
 
 	}//end testACredentialIsRedactedBeforeTheWrite()
 
@@ -281,6 +286,91 @@ class CallReplayServiceTest extends TestCase {
 		$this->assertCount(1, $dispatcher->sent);
 
 	}//end testAReplayAppendsAndNeverOverwrites()
+
+	/**
+	 * A call outside an investigation window keeps no body, and a failure keeps its request for a replay.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testARecordOutsideAWindowKeepsOnlyTheReplayRequest(): void {
+		$record = $this->records[$this->failedCall()];
+
+		$this->assertArrayNotHasKey('body', $record['request']);
+		$this->assertArrayNotHasKey('body', $record['response']);
+		$this->assertFalse($record['bodyCaptured']);
+		$this->assertSame('<Lk01/>', $record['replayRequest']['body']);
+		$this->assertArrayHasKey('bodyExpiresAt', $record);
+
+	}//end testARecordOutsideAWindowKeepsOnlyTheReplayRequest()
+
+	/**
+	 * A call to a source with an open window keeps both bodies.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testARecordInsideAWindowKeepsBothBodies(): void {
+		$source = '4b1c1c1e-1111-4111-8111-111111111111';
+		$this->records[$source] = ['name' => 'stuf-partner', 'bodyCaptureUntil' => '2099-01-01T00:00:00+00:00'];
+
+		$uuid = $this->failedCall([], ['target' => $source]);
+		$record = $this->records[$uuid];
+
+		$this->assertTrue($record['bodyCaptured']);
+		$this->assertSame('<Lk01/>', $record['request']['body']);
+		$this->assertSame('<Fo01/>', $record['response']['body']);
+
+	}//end testARecordInsideAWindowKeepsBothBodies()
+
+	/**
+	 * A replay sends the request the failure kept, and a replay that succeeds removes it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testASuccessfulReplayRemovesTheReplayRequest(): void {
+		$uuid = $this->failedCall();
+		$dispatcher = new RecordingDispatcher(200);
+
+		$this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertSame('<Lk01/>', $dispatcher->sent[0]['request']['body']);
+		$this->assertArrayNotHasKey('replayRequest', $this->records[$uuid]);
+
+	}//end testASuccessfulReplayRemovesTheReplayRequest()
+
+	/**
+	 * A replay that fails again keeps the request for the next try.
+	 *
+	 * @return void
+	 */
+	public function testAFailedReplayKeepsTheReplayRequest(): void {
+		$uuid = $this->failedCall(['maxAttempts' => 5]);
+
+		$this->service(new RecordingDispatcher(503))->replay($uuid, 'beheerder');
+
+		$this->assertSame('<Lk01/>', $this->records[$uuid]['replayRequest']['body']);
+
+	}//end testAFailedReplayKeepsTheReplayRequest()
+
+	/**
+	 * The preview shows the stored request, never the replay request.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewDoesNotShowTheReplayRequest(): void {
+		$uuid = $this->failedCall();
+
+		$preview = $this->service(new RecordingDispatcher(200))->preview($uuid);
+
+		$this->assertSame('POST', $preview['request']['method']);
+		$this->assertArrayNotHasKey('body', $preview['request']);
+
+	}//end testThePreviewDoesNotShowTheReplayRequest()
 
 	/**
 	 * A dry run shows the request and writes nothing at all.
