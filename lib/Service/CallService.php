@@ -774,10 +774,14 @@ class CallService {
 			$object['expires'] = $formatted;
 		}
 
+		// The call_log schema is admin-only (REQ-OCD-012): the engine records the call
+		// for whoever triggered it, so the write runs past RBAC.
 		return $this->objectService->saveObject(
 			object: $object,
 			register: 'integriq',
-			schema: 'call_log'
+			schema: 'call_log',
+			_rbac: false,
+			_multitenancy: false
 		);
 
 	}//end saveEarlyErrorLog()
