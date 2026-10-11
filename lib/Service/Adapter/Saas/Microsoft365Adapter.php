@@ -41,7 +41,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
  */
-class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
+class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements DocumentSearchSource {
 
 	/**
 	 * Graph `$select` fields for the mail-metadata-only read.
@@ -255,7 +255,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 * @param string|null       $to          End of the period, Y-m-d.
 	 * @param array<int,string> $entityTypes The types to search; empty for all three.
 	 * @param int               $limit       At most this many hits.
-	 * @param string            $userId      The person searching.
+	 * @param string            $userId      The person searching (unused until sources-per-user-oauth lands).
 	 *
 	 * @return array{hits: array<int, array<string, mixed>>, moreCount: int, notices: array<int, string>} REQ-DCC-004 hits.
 	 *
@@ -284,7 +284,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider {
 	 * Fetch the content behind a search hit's handle. integriq keeps no copy.
 	 *
 	 * @param string $handle The hit's `remoteId`: `driveItem:{driveId}:{itemId}`.
-	 * @param string $userId The person fetching.
+	 * @param string $userId The person fetching (unused until sources-per-user-oauth lands).
 	 *
 	 * @return array{fileName: string, mimeType: string, content: string}|null Null for an unknown handle,
 	 *         a mail or chat hit (no delegated grant yet), or a refusal.
