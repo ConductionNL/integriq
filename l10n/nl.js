@@ -2115,7 +2115,25 @@ OC.L10N.register(
         "When the cleanup job removed the bodies": "Wanneer de opschoontaak de inhoud verwijderde",
         "Replay request": "Herhaalverzoek",
         "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission": "Het verzoek dat een mislukte aanroep verstuurde, zonder geheimen, bewaard zodat de aanroep herhaald kan worden. Alleen leesbaar met het herhaalrecht",
-        "The source could not be saved. Nothing changed.": "De bron kon niet worden opgeslagen. Er is niets veranderd."
+        "The source could not be saved. Nothing changed.": "De bron kon niet worden opgeslagen. Er is niets veranderd.",
+        "Attempts made so far (ZDS case messages are retried after 5 s, 30 s, 2 min and 10 min)": "Aantal pogingen tot nu toe (ZDS-zaakberichten worden opnieuw verstuurd na 5 s, 30 s, 2 min en 10 min)",
+        "Case Identification": "Zaakidentificatie",
+        "Correlation Id": "Correlatie-id",
+        "Envelope": "Envelop",
+        "Fault Code": "Foutcode",
+        "HTTP Status": "HTTP-status",
+        "HTTP status of the last attempt; 0 when the case system did not answer": "HTTP-status van de laatste poging; 0 als het zaaksysteem niet antwoordde",
+        "Inbound: processed|failed (the OR upsert outcome). Outbound: sent|failed (the transport dispatch outcome). A ZDS case message is retrying while a transient failure waits for its next attempt": "Inkomend: processed|failed (de uitkomst van de OR-upsert). Uitgaand: sent|failed (de uitkomst van het verzenden). Een ZDS-zaakbericht wordt opnieuw geprobeerd zolang een tijdelijke fout op de volgende poging wacht",
+        "Next Attempt At": "Volgende poging op",
+        "Round-trip time of the last attempt in milliseconds": "Doorlooptijd van de laatste poging in milliseconden",
+        "The StUF fout code or transport code of the last failure (StUF067, TIMEOUT, NETWORK, CIRCUIT_OPEN)": "De StUF-foutcode of transportcode van de laatste mislukking (StUF067, TIMEOUT, NETWORK, CIRCUIT_OPEN)",
+        "The StUF-ZKN source the ZDS case message went to": "De StUF-ZKN-bron waar het ZDS-zaakbericht naartoe ging",
+        "The ZDS case client operation this message carried; absent on stuf-zkn-bridge rows, which the bridge's own retry sweep handles": "De ZDS-zaakclientbewerking die dit bericht uitvoerde; ontbreekt bij stuf-zkn-bridge-rijen, die de eigen herhaalronde van de bridge afhandelt",
+        "The app that asked for the ZDS case message (e.g. dossiq)": "De app die het ZDS-zaakbericht aanvroeg (bijvoorbeeld dossiq)",
+        "The asking app's correlation id, echoed on StufZdsCaseConcludedEvent": "Het correlatie-id van de aanvragende app, teruggegeven op StufZdsCaseConcludedEvent",
+        "The envelope of a retrying kennisgeving, kept so the retry resends it unchanged; erased when the message concludes": "De envelop van een kennisgeving die opnieuw wordt geprobeerd, bewaard zodat de nieuwe poging hem ongewijzigd verstuurt; gewist zodra het bericht is afgerond",
+        "The zaak identificatie in the case system, when known": "De zaakidentificatie in het zaaksysteem, als die bekend is",
+        "When a retrying message is sent again": "Wanneer een bericht dat opnieuw wordt geprobeerd weer wordt verstuurd"
     },
     "nplurals=2; plural=(n != 1);"
 )
