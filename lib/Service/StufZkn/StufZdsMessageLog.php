@@ -96,7 +96,14 @@ class StufZdsMessageLog {
 		$found = null;
 		if ($sourceId !== '') {
 			try {
-				$found = $this->objectService->find(id: $sourceId, register: self::REGISTER, schema: self::SCHEMA_SOURCE, _rbac: false, _multitenancy: false, _render: false);
+				$found = $this->objectService->find(
+					id: $sourceId,
+					register: self::REGISTER,
+					schema: self::SCHEMA_SOURCE,
+					_rbac: false,
+					_multitenancy: false,
+					_render: false
+				);
 			} catch (Throwable $exception) {
 				$found = null;
 			}
@@ -217,7 +224,14 @@ class StufZdsMessageLog {
 	 */
 	public function find(string $messageId): ?array {
 		try {
-			$found = $this->objectService->find(id: $messageId, register: self::REGISTER, schema: self::SCHEMA_MESSAGE, _rbac: false, _multitenancy: false, _render: false);
+			$found = $this->objectService->find(
+				id: $messageId,
+				register: self::REGISTER,
+				schema: self::SCHEMA_MESSAGE,
+				_rbac: false,
+				_multitenancy: false,
+				_render: false
+			);
 		} catch (Throwable $exception) {
 			return null;
 		}
@@ -245,7 +259,14 @@ class StufZdsMessageLog {
 			$uuid = null;
 		}
 
-		$saved     = $this->objectService->saveObject(object: $row, register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid, _rbac: false, _multitenancy: false);
+		$saved     = $this->objectService->saveObject(
+			object: $row,
+			register: self::REGISTER,
+			schema: self::SCHEMA_MESSAGE,
+			uuid: $uuid,
+			_rbac: false,
+			_multitenancy: false
+		);
 		$row['id'] = (string)($saved->getUuid() ?? $uuid ?? '');
 		return $row;
 	}//end save()

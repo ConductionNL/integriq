@@ -75,7 +75,9 @@ class StufZdsCredentialResolver {
 
 		$encrypted = (string)($wsse['encryptedPassword'] ?? '');
 		if ($encrypted === '') {
-			throw new StufZknProviderException(message: 'The source names a WS-Security user but no `authentication.wsse.encryptedPassword`; no plaintext fallback is permitted.');
+			throw new StufZknProviderException(
+				message: 'The source names a WS-Security user but no `authentication.wsse.encryptedPassword`; no plaintext fallback is permitted.'
+			);
 		}
 
 		try {

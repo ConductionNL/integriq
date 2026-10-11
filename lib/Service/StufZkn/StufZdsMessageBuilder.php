@@ -226,7 +226,13 @@ class StufZdsMessageBuilder {
 		$referenceNumber = $this->generateReferentienummer();
 
 		$body = '<zkn:genereerZaakIdentificatie_Di02>'
-			. $this->stuurgegevens(messageCode: 'Di02', routing: $routing, entityType: '', role: 'genereerZaakIdentificatie', referenceNumber: $referenceNumber)
+			. $this->stuurgegevens(
+				messageCode: 'Di02',
+				routing: $routing,
+				entityType: '',
+				role: 'genereerZaakIdentificatie',
+				referenceNumber: $referenceNumber
+			)
 			. '</zkn:genereerZaakIdentificatie_Di02>';
 
 		return ['referentienummer' => $referenceNumber, 'xml' => $this->envelope(bodyXml: $body, routing: $routing)];
@@ -349,7 +355,9 @@ class StufZdsMessageBuilder {
 			$bytes  = (string)($document['bytes'] ?? '');
 			$total += strlen($bytes);
 			if ($total > $limitBytes) {
-				throw new StufZknTranslationException(message: sprintf('The documents are %d bytes before base64, over the limit of %d bytes.', $total, $limitBytes));
+				throw new StufZknTranslationException(
+					message: sprintf('The documents are %d bytes before base64, over the limit of %d bytes.', $total, $limitBytes)
+				);
 			}
 
 			$encoded[] = [

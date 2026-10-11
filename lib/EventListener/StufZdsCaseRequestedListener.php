@@ -74,7 +74,10 @@ class StufZdsCaseRequestedListener implements IEventListener {
 		try {
 			$result = $this->dispatch(event: $event);
 		} catch (Throwable $exception) {
-			$this->logger->warning('[integriq] a StUF-ZDS case request was refused: ' . $exception->getMessage(), ['operation' => $event->getOperation(), 'sourceApp' => $event->getSourceApp()]);
+			$this->logger->warning(
+				'[integriq] a StUF-ZDS case request was refused: ' . $exception->getMessage(),
+				['operation' => $event->getOperation(), 'sourceApp' => $event->getSourceApp()]
+			);
 			$event->refuse(reason: $exception->getMessage());
 			return;
 		}
@@ -109,11 +112,31 @@ class StufZdsCaseRequestedListener implements IEventListener {
 		$caseId = (string)($args['caseIdentification'] ?? '');
 
 		return match ($event->getOperation()) {
-			'creeerZaak' => $this->client->creeerZaak(sourceId: $sourceId, case: (array)($args['case'] ?? []), zaaktypeOmschrijving: (string)($args['zaaktypeOmschrijving'] ?? ''), context: $context),
-			'actualiseerZaak' => $this->client->actualiseerZaak(sourceId: $sourceId, caseIdentification: $caseId, changes: (array)($args['changes'] ?? []), context: $context),
-			'geefZaakdetails' => $this->client->geefZaakdetails(sourceId: $sourceId, caseIdentification: $caseId, wantedElements: array_map('strval', (array)($args['wantedElements'] ?? [])), context: $context),
+			'creeerZaak' => $this->client->creeerZaak(
+				sourceId: $sourceId,
+				case: (array)($args['case'] ?? []),
+				zaaktypeOmschrijving: (string)($args['zaaktypeOmschrijving'] ?? ''),
+				context: $context
+			),
+			'actualiseerZaak' => $this->client->actualiseerZaak(
+				sourceId: $sourceId,
+				caseIdentification: $caseId,
+				changes: (array)($args['changes'] ?? []),
+				context: $context
+			),
+			'geefZaakdetails' => $this->client->geefZaakdetails(
+				sourceId: $sourceId,
+				caseIdentification: $caseId,
+				wantedElements: array_map('strval', (array)($args['wantedElements'] ?? [])),
+				context: $context
+			),
 			'genereerZaakIdentificatie' => $this->client->genereerZaakIdentificatie(sourceId: $sourceId, context: $context),
-			'vrijBericht' => $this->client->vrijBericht(sourceId: $sourceId, name: (string)($args['name'] ?? ''), payload: (array)($args['payload'] ?? []), context: $context),
+			'vrijBericht' => $this->client->vrijBericht(
+				sourceId: $sourceId,
+				name: (string)($args['name'] ?? ''),
+				payload: (array)($args['payload'] ?? []),
+				context: $context
+			),
 			default => null,
 		};
 	}//end dispatch()

@@ -334,7 +334,13 @@ class StufZknClient implements StufZknProviderInterface {
 		}
 
 		if (str_starts_with($address, 'https://') === false) {
-			return $this->transmitFailure(code: 'TRANSPORT_NON_HTTPS', omschrijving: 'Endpoint URL is not HTTPS', details: '', kind: 'permanent', durationMs: 0);
+			return $this->transmitFailure(
+				code: 'TRANSPORT_NON_HTTPS',
+				omschrijving: 'Endpoint URL is not HTTPS',
+				details: '',
+				kind: 'permanent',
+				durationMs: 0
+			);
 		}
 
 		$started = microtime(true);
@@ -351,7 +357,13 @@ class StufZknClient implements StufZknProviderInterface {
 			$previous = $exception->getPrevious();
 			if ($previous === null) {
 				// Refused before sending: no address or no usable credential.
-				return $this->transmitFailure(code: 'TRANSPORT_CONFIGURATION', omschrijving: 'The source cannot send', details: $message, kind: 'permanent', durationMs: 0);
+				return $this->transmitFailure(
+					code: 'TRANSPORT_CONFIGURATION',
+					omschrijving: 'The source cannot send',
+					details: $message,
+					kind: 'permanent',
+					durationMs: 0
+				);
 			}
 
 			$code = 'NETWORK';
@@ -403,6 +415,7 @@ class StufZknClient implements StufZknProviderInterface {
 	 * @param string $soapAction          The SOAPAction header value.
 	 * @param string $envelopeXml         The rendered envelope.
 	 * @param string $url                 The address; '' for `configuration.baseUrl`.
+	 * @param int    $timeoutSeconds      The read timeout; 0 for the client default.
 	 *
 	 * @return ResponseInterface The answer, whatever its status.
 	 *

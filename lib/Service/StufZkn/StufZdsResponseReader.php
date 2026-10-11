@@ -74,7 +74,14 @@ class StufZdsResponseReader {
 			return ['crossRefnummer' => '', 'caseIdentification' => null];
 		}
 
-		$caseId = $this->first(xml: $root, paths: ['//*[local-name()="antwoord"]/*[local-name()="object"]/*[local-name()="identificatie"]', '//*[local-name()="zaak"]/*[local-name()="identificatie"]', '//*[local-name()="identificatie"]']);
+		$caseId = $this->first(
+			xml: $root,
+			paths: [
+				'//*[local-name()="antwoord"]/*[local-name()="object"]/*[local-name()="identificatie"]',
+				'//*[local-name()="zaak"]/*[local-name()="identificatie"]',
+				'//*[local-name()="identificatie"]',
+			]
+		);
 		if ($caseId === '') {
 			$caseId = null;
 		}
@@ -144,7 +151,10 @@ class StufZdsResponseReader {
 			return ['code' => 'PARSE_ERROR', 'omschrijving' => 'The answer could not be read', 'details' => '', 'kind' => 'permanent'];
 		}
 
-		$code = $this->first(xml: $root, paths: ['//*[local-name()="body"]/*[local-name()="code"]', '//*[local-name()="fout"]/*[local-name()="code"]', '//*[local-name()="code"]']);
+		$code = $this->first(
+			xml: $root,
+			paths: ['//*[local-name()="body"]/*[local-name()="code"]', '//*[local-name()="fout"]/*[local-name()="code"]', '//*[local-name()="code"]']
+		);
 		$kind = 'permanent';
 		if (in_array($code, self::TRANSIENT_CODES, true) === true) {
 			$kind = 'transient';

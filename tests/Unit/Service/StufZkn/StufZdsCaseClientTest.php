@@ -47,6 +47,7 @@ use OCA\Integriq\Service\StufZkn\StufZdsCircuitBreaker;
 use OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageBuilder;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
+use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
 use OCA\Integriq\Service\StufZkn\StufZdsResponseReader;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
@@ -64,6 +65,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsCaseClient
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsMessageLog
+ * @covers \OCA\Integriq\Service\StufZkn\StufZdsOutbound
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver
  * @covers \OCA\Integriq\Service\StufZkn\StufZknClient
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsMessageBuilder
@@ -114,6 +116,13 @@ class StufZdsCaseClientTest extends TestCase {
 	 * @var array<string,int>
 	 */
 	private array $config = [];
+
+	/**
+	 * The outbound side of the last built client (it owns retry()).
+	 *
+	 * @var StufZdsOutbound
+	 */
+	private StufZdsOutbound $outbound;
 
 	/**
 	 * Set up the source and the doubles.
@@ -208,17 +217,19 @@ class StufZdsCaseClientTest extends TestCase {
 			}
 		);
 
-		return new StufZdsCaseClient(
-			new StufZdsMessageBuilder(),
+		$breaker        = new StufZdsCircuitBreaker($appConfig, $logger);
+		$log            = new StufZdsMessageLog($objects);
+		$this->outbound = new StufZdsOutbound(
 			new StufZknClient(new Client(['handler' => $stack]), $crypto, $l10n, $logger, new MtlsConfigResolver($crypto), new MtlsTransportService(new MtlsTransportOptionsBuilder(), $logger)),
 			new StufZdsResponseReader(),
-			new StufZdsCircuitBreaker($appConfig, $logger),
-			new StufZdsCredentialResolver($crypto),
-			new StufZdsMessageLog($objects),
+			$breaker,
+			$log,
 			$jobs,
 			$dispatcher,
 			$logger
 		);
+
+		return new StufZdsCaseClient(new StufZdsMessageBuilder(), $this->outbound, new StufZdsResponseReader(), $breaker, new StufZdsCredentialResolver($crypto), $log);
 	}//end client()
 
 	/**
@@ -333,7 +344,7 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertTrue($first['retrying']);
 		$this->assertSame('TIMEOUT', $first['fout']['code']);
 
-		$client->retry($first['messageId']);
+		$this->outbound->retry($first['messageId']);
 
 		$this->assertSame((string)$this->history[0]['request']->getBody(), (string)$this->history[1]['request']->getBody());
 		$this->assertSame('"http://www.egem.nl/StUF/sector/zkn/0310/meldBesluit_Du01"', $this->history[1]['request']->getHeaderLine('SOAPAction'));
@@ -370,11 +381,11 @@ class StufZdsCaseClientTest extends TestCase {
 		$client = $this->client(array_fill(0, 5, new Response(502, [], '')));
 		$first  = $client->creeerZaak('zsh', [], 'Melding');
 		for ($i = 0; $i < 3; $i++) {
-			$client->retry($first['messageId']);
+			$this->outbound->retry($first['messageId']);
 		}
 
 		// Four failures opened the circuit: the next retry is not an attempt, it waits out the cooldown.
-		$client->retry($first['messageId']);
+		$this->outbound->retry($first['messageId']);
 		$this->assertCount(4, $this->history);
 		$this->assertSame('retrying', $this->rows[$first['messageId']]['status']);
 
@@ -384,7 +395,7 @@ class StufZdsCaseClientTest extends TestCase {
 			}
 		}
 
-		$client->retry($first['messageId']);
+		$this->outbound->retry($first['messageId']);
 
 		$this->assertCount(5, $this->history);
 		foreach ([5, 30, 120, 600, StufZdsCircuitBreaker::COOLDOWN_SECONDS] as $index => $delay) {
