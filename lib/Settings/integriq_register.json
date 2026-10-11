@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.5"
+    "version": "1.1.6"
   },
   "x-openregister": {
     "type": "application",
@@ -6239,8 +6239,8 @@
         "slug": "stuf_message",
         "title": "StUF-ZKN Message",
         "icon": "FileXmlBox",
-        "version": "1.0.0",
-        "summary": "Audit record for one inbound zakLk01/edcLk01 kennisgeving or one outbound zakLk01 kennisgeving send, produced by the stuf-zkn-bridge connector",
+        "version": "1.1.0",
+        "summary": "Audit record for one inbound zakLk01/edcLk01 kennisgeving, one outbound zakLk01 kennisgeving send, or one StUF-ZDS case message sent by the ZDS case client",
         "description": "A StUF-ZKN Message tracks either one inbound zakLk01/edcLk01 kennisgeving (a municipality's legacy StUF estate pushing a zaak/document create/update/vervallen) or one outbound zakLk01 kennisgeving (an OR/ZGW zaak change translated and sent to a subscribed StUF consumer): never merged into a single mutable row, except that a redelivered inbound message with the same referentienummer updates its own row in place (idempotency), never creating a duplicate. See openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md.",
         "required": [
           "direction",
@@ -6263,6 +6263,10 @@
             "enum": [
               "zakLk01",
               "edcLk01",
+              "zakLk02",
+              "zakLv01",
+              "genereerZaakIdentificatie_Di02",
+              "vrijBericht_Du01",
               "unknown"
             ],
             "description": "The StUF-ZKN berichttype tag; \"unknown\" when an inbound envelope could not even be identified",
@@ -6298,9 +6302,10 @@
             "enum": [
               "processed",
               "sent",
-              "failed"
+              "failed",
+              "retrying"
             ],
-            "description": "Inbound: processed|failed (the OR upsert outcome). Outbound: sent|failed (the transport dispatch outcome)",
+            "description": "Inbound: processed|failed (the OR upsert outcome). Outbound: sent|failed (the transport dispatch outcome). A ZDS case message is retrying while a transient failure waits for its next attempt",
             "title": "Status"
           },
           "error": {
@@ -6313,6 +6318,69 @@
             "format": "date-time",
             "description": "Timestamp of this record's last write",
             "title": "Synced At"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "creeerZaak",
+              "actualiseerZaak",
+              "geefZaakdetails",
+              "genereerZaakIdentificatie",
+              "vrijBericht"
+            ],
+            "description": "The ZDS case client operation this message carried; absent on stuf-zkn-bridge rows, which the bridge's own retry sweep handles",
+            "title": "Operation"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "The StUF-ZKN source the ZDS case message went to",
+            "title": "Source"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "The app that asked for the ZDS case message (e.g. dossiq)",
+            "title": "Source App"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "The asking app's correlation id, echoed on StufZdsCaseConcludedEvent",
+            "title": "Correlation Id"
+          },
+          "caseIdentification": {
+            "type": "string",
+            "description": "The zaak identificatie in the case system, when known",
+            "title": "Case Identification"
+          },
+          "attempts": {
+            "type": "integer",
+            "description": "Attempts made so far (ZDS case messages are retried after 5 s, 30 s, 2 min and 10 min)",
+            "title": "Attempts"
+          },
+          "httpStatus": {
+            "type": "integer",
+            "description": "HTTP status of the last attempt; 0 when the case system did not answer",
+            "title": "HTTP Status"
+          },
+          "durationMs": {
+            "type": "integer",
+            "description": "Round-trip time of the last attempt in milliseconds",
+            "title": "Duration (ms)"
+          },
+          "faultCode": {
+            "type": "string",
+            "description": "The StUF fout code or transport code of the last failure (StUF067, TIMEOUT, NETWORK, CIRCUIT_OPEN)",
+            "title": "Fault Code"
+          },
+          "nextAttemptAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When a retrying message is sent again",
+            "title": "Next Attempt At"
+          },
+          "envelope": {
+            "type": "string",
+            "description": "The envelope of a retrying kennisgeving, kept so the retry resends it unchanged; erased when the message concludes",
+            "title": "Envelope"
           }
         },
         "x-openregister-seed": [],
