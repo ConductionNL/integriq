@@ -81,6 +81,8 @@ class StufZdsConfirmationController extends Controller {
 	 * Read the raw request body (a seam: `php://input` cannot be driven from a unit test).
 	 *
 	 * @return string The raw body, '' when there is none.
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	protected function readRawBody(): string {
 		return (string)file_get_contents(filename: 'php://input');
