@@ -3479,7 +3479,11 @@ OC.L10N.register(
         "The asking app's correlation id, echoed on StufZdsCaseConcludedEvent": "The asking app's correlation id, echoed on StufZdsCaseConcludedEvent",
         "The envelope of a retrying kennisgeving, kept so the retry resends it unchanged; erased when the message concludes": "The envelope of a retrying kennisgeving, kept so the retry resends it unchanged; erased when the message concludes",
         "The zaak identificatie in the case system, when known": "The zaak identificatie in the case system, when known",
-        "When a retrying message is sent again": "When a retrying message is sent again"
+        "When a retrying message is sent again": "When a retrying message is sent again",
+        "Confirmation": "Confirmation",
+        "Confirmed At": "Confirmed At",
+        "The asynchronous confirmation the case system sent after processing the kennisgeving": "The asynchronous confirmation the case system sent after processing the kennisgeving",
+        "When the asynchronous confirmation arrived": "When the asynchronous confirmation arrived"
     },
     "nplurals=2; plural=(n != 1);"
 )

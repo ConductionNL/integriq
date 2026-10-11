@@ -117,3 +117,34 @@ or a refusal when nothing was sent. When a kennisgeving concludes, integriq SHAL
 - GIVEN a request for a vrij bericht the source does not register
 - WHEN the listener handles it
 - THEN the event carries a refusal and no result
+
+### Requirement: Asynchronous confirmations conclude the message
+
+Integriq SHALL receive the asynchronous Bv01/Bv03/Fo01/Fo02/Fo03 a case system sends after
+processing a kennisgeving, at `POST /api/stuf-zkn/confirmations` and, for a sibling app that
+receives it on its own URL, through `StufZdsConfirmationReceivedEvent`. The caller SHALL
+authenticate with the WS-Security UsernameToken of the source the outbound row went to; a source
+without one accepts no confirmation. An unknown crossRefnummer SHALL answer exactly like a wrong
+password (422), so a referentienummer cannot be probed. A bevestiging SHALL make the row `sent`
+and end any pending retry; a foutbericht SHALL make it `failed` with the case system's fout. Each
+new confirmation SHALL dispatch `StufZdsCaseConcludedEvent` with `confirmation` in the result; a
+repeated one is acknowledged but not announced again.
+
+#### Scenario: A Bv01 confirms the row
+
+- GIVEN an outbound creeerZaak row with referentienummer REF-1
+- WHEN the case system posts a Bv01 with crossRefnummer REF-1 and the source's UsernameToken
+- THEN the answer is a Bv03 (200), the row records `confirmation` Bv01 and the zaak identificatie
+- AND `StufZdsCaseConcludedEvent` is dispatched with success true
+
+#### Scenario: A Fo01 fails the row
+
+- GIVEN an outbound row with referentienummer REF-1
+- WHEN the case system posts a Fo01 with fout StUF064
+- THEN the row is `failed` with faultCode StUF064 and the conclusion carries success false
+
+#### Scenario: An unknown crossRefnummer cannot be told from a wrong password
+
+- GIVEN no outbound row with referentienummer REF-404
+- WHEN a Bv01 cross-referencing REF-404 arrives
+- THEN the answer is the same 422 a wrong password gets, and nothing changes

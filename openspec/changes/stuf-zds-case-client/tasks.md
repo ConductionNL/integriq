@@ -13,3 +13,6 @@
 - [x] `StufZdsCaseRequestedEvent`, `StufZdsCaseRequestedListener`, `StufZdsCaseConcludedEvent`,
       registered in `Application`.
 - [x] Unit tests, with every audit row validated against the real `stuf_message` schema.
+- [x] `StufZdsConfirmationReceiver`, `StufZdsConfirmationController` (`/api/stuf-zkn/confirmations`),
+      `StufZdsConfirmationReceivedEvent` and its listener (dossiq's `/api/stuf/inbound` forwards
+      through it for one release); `stuf_message.confirmation` and `confirmedAt`.

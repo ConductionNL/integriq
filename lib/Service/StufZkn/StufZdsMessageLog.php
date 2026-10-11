@@ -214,6 +214,88 @@ class StufZdsMessageLog {
 	}//end conclude()
 
 	/**
+	 * Record the asynchronous confirmation the case system sent for an outbound row.
+	 *
+	 * A bevestiging (Bv) makes the row `sent` and ends any pending retry; a
+	 * foutbericht (Fo) makes it `failed` with the case system's fout.
+	 *
+	 * @param array       $row                The outbound row.
+	 * @param string      $berichtcode        Bv01, Bv03, Fo01, Fo02 or Fo03.
+	 * @param array|null  $fout               The fout, for a foutbericht.
+	 * @param string|null $caseIdentification The zaak identificatie the confirmation named, if any.
+	 *
+	 * @return array The stored row.
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 */
+	public function confirm(array $row, string $berichtcode, ?array $fout, ?string $caseIdentification): array {
+		$row['confirmation'] = $berichtcode;
+		$row['confirmedAt']  = (new DateTime())->format('c');
+		$row['syncedAt']     = $row['confirmedAt'];
+		$row['status']       = 'sent';
+		unset($row['faultCode'], $row['error'], $row['envelope'], $row['nextAttemptAt']);
+		if ($fout !== null) {
+			$row['status']    = 'failed';
+			$row['faultCode'] = (string)($fout['code'] ?? '');
+			$row['error']     = trim((string)($fout['omschrijving'] ?? '') . ' ' . (string)($fout['details'] ?? ''));
+			$row = array_filter($row, static fn ($value): bool => $value !== '');
+		}
+
+		if ($caseIdentification !== null && $caseIdentification !== '') {
+			$row['caseIdentification'] = $caseIdentification;
+		}
+
+		return $this->save(row: $row, uuid: (string)($row['id'] ?? ''));
+	}//end confirm()
+
+	/**
+	 * Find the outbound row a confirmation cross-references.
+	 *
+	 * @param string $referentienummer The outbound message's referentienummer.
+	 *
+	 * @return array|null The row, `id` set, or null.
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 */
+	public function findOutbound(string $referentienummer): ?array {
+		if ($referentienummer === '') {
+			return null;
+		}
+
+		try {
+			$matches = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => self::REGISTER,
+						'schema' => self::SCHEMA_MESSAGE,
+						'direction' => 'outbound',
+						'referentienummer' => $referentienummer,
+					],
+					'limit' => 1,
+				],
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $exception) {
+			return null;
+		}
+
+		$results = ($matches['results'] ?? $matches);
+		$found   = null;
+		if (is_array($results) === true) {
+			$found = ($results[0] ?? null);
+		}
+
+		if ($found === null) {
+			return null;
+		}
+
+		$row       = $found->getObject();
+		$row['id'] = (string)$found->getUuid();
+		return $row;
+	}//end findOutbound()
+
+	/**
 	 * Read one row.
 	 *
 	 * @param string $messageId The row uuid.

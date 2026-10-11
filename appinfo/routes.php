@@ -256,6 +256,9 @@ return [
 		// iwmoIjw#createMessage.
 		['name' => 'stufZkn#inbound', 'url' => '/api/stuf-zkn/inbound', 'verb' => 'POST'],
 		['name' => 'stufZkn#outbound', 'url' => '/api/stuf-zkn/kennisgevingen', 'verb' => 'POST'],
+		// The asynchronous Bv01/Fo01 a case system sends after processing a ZDS
+		// kennisgeving (stuf-zds-case-client); WS-Security of the source is its auth.
+		['name' => 'stufZdsConfirmation#receive', 'url' => '/api/stuf-zkn/confirmations', 'verb' => 'POST'],
 
 		// FSC (Federatieve Service Connectiviteit) connectivity — the standard
 		// that replaced NLX in 2025 (openspec/changes/fsc-connectivity). Both

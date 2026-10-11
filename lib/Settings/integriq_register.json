@@ -6381,6 +6381,24 @@
             "type": "string",
             "description": "The envelope of a retrying kennisgeving, kept so the retry resends it unchanged; erased when the message concludes",
             "title": "Envelope"
+          },
+          "confirmation": {
+            "type": "string",
+            "enum": [
+              "Bv01",
+              "Bv03",
+              "Fo01",
+              "Fo02",
+              "Fo03"
+            ],
+            "description": "The asynchronous confirmation the case system sent after processing the kennisgeving",
+            "title": "Confirmation"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the asynchronous confirmation arrived",
+            "title": "Confirmed At"
           }
         },
         "x-openregister-seed": [],

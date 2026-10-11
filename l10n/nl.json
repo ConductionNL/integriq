@@ -2141,7 +2141,11 @@
         "The asking app's correlation id, echoed on StufZdsCaseConcludedEvent": "De correlatie-id van de vragende app, teruggegeven op StufZdsCaseConcludedEvent",
         "The envelope of a retrying kennisgeving, kept so the retry resends it unchanged; erased when the message concludes": "De envelop van een kennisgeving die opnieuw wordt verstuurd, bewaard zodat de herhaling hem ongewijzigd verstuurt; gewist zodra het bericht is afgerond",
         "The zaak identificatie in the case system, when known": "De zaakidentificatie in het zaaksysteem, als die bekend is",
-        "When a retrying message is sent again": "Wanneer een bericht dat opnieuw wordt verstuurd weer verzonden wordt"
+        "When a retrying message is sent again": "Wanneer een bericht dat opnieuw wordt verstuurd weer verzonden wordt",
+        "Confirmation": "Bevestiging",
+        "Confirmed At": "Bevestigd om",
+        "The asynchronous confirmation the case system sent after processing the kennisgeving": "De asynchrone bevestiging die het zaaksysteem stuurde nadat het de kennisgeving verwerkte",
+        "When the asynchronous confirmation arrived": "Wanneer de asynchrone bevestiging binnenkwam"
     },
     "plurals": {}
 }
