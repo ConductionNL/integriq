@@ -20,10 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\Registry\MapsSourceFieldsInterface;
 use OCA\Integriq\Service\Registry\RegistryUpdateClient;
 use OCA\Integriq\Service\Registry\SubscriptionChange;
-use OCA\Integriq\Service\Registry\SubscriptionProviderInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
 use OCA\Integriq\Service\Registry\SubscriptionRoster;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -102,7 +100,7 @@ class RegistrySubscriptionPollJob extends TimedJob {
 				continue;
 			}
 
-			$this->postChanges(registryId: (string)$registryId, changes: $changes, provider: $provider);
+			$this->postChanges(registryId: (string)$registryId, changes: $changes);
 		}
 	}//end run()
 
@@ -111,105 +109,48 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 *
 	 * @param string $registryId Registry id.
 	 * @param iterable<SubscriptionChange> $changes The polled changes.
-	 * @param SubscriptionProviderInterface|null $provider The binding that polled them, for its field maps.
 	 *
-	 * @return int How many updates were posted.
+	 * @return int How many changes were posted.
 	 *
 	 * @spec openspec/specs/registry-subscription-connector/spec.md
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
-	public function postChanges(string $registryId, iterable $changes, ?SubscriptionProviderInterface $provider = null): int {
+	public function postChanges(string $registryId, iterable $changes): int {
 		$posted = 0;
 
-		foreach ($changes as $polled) {
-			foreach ($this->perTarget(registryId: $registryId, change: $polled, provider: $provider) as $change) {
-				if ($this->post(registryId: $registryId, change: $change) === true) {
-					$posted++;
-				}
-			}
-		}
-
-		return $posted;
-	}//end postChanges()
-
-	/**
-	 * One change per target schema that follows the identity, each in that
-	 * schema's own names. An identity with no recorded target, or a binding
-	 * without maps, gives the change unchanged.
-	 *
-	 * @param string $registryId Registry id.
-	 * @param SubscriptionChange $change The polled change, in the source's names.
-	 * @param SubscriptionProviderInterface|null $provider The binding.
-	 *
-	 * @return array<int,SubscriptionChange> The changes to post.
-	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
-	 */
-	private function perTarget(string $registryId, SubscriptionChange $change, ?SubscriptionProviderInterface $provider): array {
-		if (($provider instanceof MapsSourceFieldsInterface) === false) {
-			return [$change];
-		}
-
-		$targets = $this->roster->targets(registryId: $registryId, identity: $change->getIdentity());
-		if ($targets === []) {
-			return [$change];
-		}
-
-		$changes = [];
-		foreach ($targets as $target) {
-			$map = $provider->fieldMapFor(targetSchema: $target);
-			if ($map === null) {
-				$changes[] = $change;
+		foreach ($changes as $change) {
+			if ($change->isEmpty() === true) {
+				// An unchanged payload posts nothing.
 				continue;
 			}
 
-			$changes[] = $change->mappedTo(map: $map);
-		}
+			$status = $this->updateClient->postUpdate($registryId, $change->toArray());
+			if ($status === 422) {
+				$this->logger->warning(
+					'registry-subscription.update.rejected',
+					[
+						'registry' => $registryId,
+						'eventReference' => $change->getEventReference(),
+						'reason' => 'a property outside the owned set; not retried',
+					]
+				);
+				continue;
+			}
 
-		return $changes;
-	}//end perTarget()
+			if ($status >= 200 && $status <= 299) {
+				$posted++;
+				continue;
+			}
 
-	/**
-	 * Post one change. A 422 is a property outside the owned set and is not
-	 * retried; any other failure is left for the next run.
-	 *
-	 * @param string $registryId Registry id.
-	 * @param SubscriptionChange $change The change.
-	 *
-	 * @return bool True when OpenRegister accepted it.
-	 */
-	private function post(string $registryId, SubscriptionChange $change): bool {
-		if ($change->isEmpty() === true) {
-			// An unchanged payload posts nothing.
-			return false;
-		}
-
-		$status = $this->updateClient->postUpdate($registryId, $change->toArray());
-		if ($status === 422) {
 			$this->logger->warning(
-				'registry-subscription.update.rejected',
+				'registry-subscription.update.deferred',
 				[
 					'registry' => $registryId,
-					'eventReference' => $change->getEventReference(),
-					'reason' => 'a property outside the owned set; not retried',
+					'status' => $status,
+					'reason' => 'left for the next scheduled run',
 				]
 			);
-			return false;
-		}
+		}//end foreach
 
-		if ($status >= 200 && $status <= 299) {
-			return true;
-		}
-
-		$this->logger->warning(
-			'registry-subscription.update.deferred',
-			[
-				'registry' => $registryId,
-				'status' => $status,
-				'reason' => 'left for the next scheduled run',
-			]
-		);
-
-		return false;
-	}//end post()
+		return $posted;
+	}//end postChanges()
 }//end class
