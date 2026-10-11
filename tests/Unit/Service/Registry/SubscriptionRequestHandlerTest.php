@@ -25,6 +25,7 @@ use OCA\Integriq\Service\Registry\RegistryUpdateClient;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
 use OCA\Integriq\Service\Registry\SubscriptionRequestHandler;
 use OCA\Integriq\Service\Registry\SubscriptionRoster;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -166,4 +167,119 @@ class SubscriptionRequestHandlerTest extends TestCase {
 
 		$this->assertSame([], $roster->identities('brp'));
 	}//end testTheRosterHoldsIdentitiesOnly()
+
+	/**
+	 * A schema-mapper double that resolves an id to a slug, or throws.
+	 *
+	 * @param string|null $slug The slug to answer, or null to throw.
+	 *
+	 * @return SchemaMapper The double.
+	 */
+	private function schemaMapper(?string $slug): SchemaMapper {
+		$mapper = $this->createMock(SchemaMapper::class);
+		if ($slug === null) {
+			$mapper->method('find')->willThrowException(new \RuntimeException('schema 12 not found'));
+			return $mapper;
+		}
+
+		$mapper->method('find')->willReturn(
+			new class($slug) {
+				/**
+				 * Constructor.
+				 *
+				 * @param string $slug The slug.
+				 */
+				public function __construct(private string $slug) {
+				}
+
+				/**
+				 * The slug.
+				 *
+				 * @return string The slug.
+				 */
+				public function getSlug(): string {
+					return $this->slug;
+				}
+			}
+		);
+
+		return $mapper;
+	}//end schemaMapper()
+
+	/**
+	 * A handler around the log binding and the given schema mapper.
+	 *
+	 * @param SubscriptionRoster $roster The roster.
+	 * @param SchemaMapper|null $schemaMapper The schema mapper.
+	 *
+	 * @return SubscriptionRequestHandler The handler.
+	 */
+	private function handler(SubscriptionRoster $roster, ?SchemaMapper $schemaMapper): SubscriptionRequestHandler {
+		$updateClient = $this->updateClient();
+		$updateClient->method('postUpdate')->willReturn(200);
+
+		return new SubscriptionRequestHandler(
+			new SubscriptionRegistry([new LogSubscriptionProvider($this->createMock(LoggerInterface::class))]),
+			$roster,
+			$updateClient,
+			$this->createMock(LoggerInterface::class),
+			$schemaMapper
+		);
+	}//end handler()
+
+	/**
+	 * An active subscription records the requesting object's schema slug as a
+	 * target for that identity (REQ-RSC-004).
+	 *
+	 * @return void
+	 */
+	public function testAnActiveSubscriptionRecordsTheTargetSchemaSlug(): void {
+		$roster = $this->roster();
+
+		$this->handler($roster, $this->schemaMapper('brpPerson'))
+			->handle(['registry' => 'log', 'identityValue' => '999993653', 'schema' => '12']);
+
+		$this->assertSame(['brpPerson'], $roster->targets('log', '999993653'));
+	}//end testAnActiveSubscriptionRecordsTheTargetSchemaSlug()
+
+	/**
+	 * A schema id that does not resolve is recorded as given, so the target
+	 * still receives the source's own names rather than nothing.
+	 *
+	 * @return void
+	 */
+	public function testAnUnresolvableSchemaIsRecordedAsGiven(): void {
+		$roster = $this->roster();
+
+		$this->handler($roster, $this->schemaMapper(null))
+			->handle(['registry' => 'log', 'identityValue' => '999993653', 'schema' => '12']);
+
+		$this->assertSame(['12'], $roster->targets('log', '999993653'));
+	}//end testAnUnresolvableSchemaIsRecordedAsGiven()
+
+	/**
+	 * A request without a schema records no target, and a second request for
+	 * another schema adds to the first instead of replacing it.
+	 *
+	 * @return void
+	 */
+	public function testTargetsAccumulatePerIdentity(): void {
+		$roster = $this->roster();
+
+		$this->handler($roster, $this->schemaMapper('brpPerson'))
+			->handle(['registry' => 'log', 'identityValue' => '999993653']);
+		$this->assertSame([], $roster->targets('log', '999993653'));
+
+		$this->handler($roster, $this->schemaMapper('brpPerson'))
+			->handle(['registry' => 'log', 'identityValue' => '999993653', 'schema' => '12']);
+		$this->handler($roster, $this->schemaMapper('resident'))
+			->handle(['registry' => 'log', 'identityValue' => '999993653', 'schema' => '14']);
+		$this->handler($roster, $this->schemaMapper('brpPerson'))
+			->handle(['registry' => 'log', 'identityValue' => '999993653', 'schema' => '12']);
+
+		$this->assertSame(['brpPerson', 'resident'], $roster->targets('log', '999993653'));
+
+		$roster->remove('log', '999993653');
+		$this->assertSame([], $roster->targets('log', '999993653'));
+	}//end testTargetsAccumulatePerIdentity()
 }//end class
