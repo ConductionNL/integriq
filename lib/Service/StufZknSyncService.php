@@ -349,6 +349,12 @@ class StufZknSyncService {
 				continue;
 			}
 
+			// A ZDS case message (it names its operation) has its own retry
+			// schedule, StufZdsRetryJob; its failure here is final.
+			if (($data['operation'] ?? '') !== '') {
+				continue;
+			}
+
 			try {
 				$this->retryOne(message: $message, data: $data);
 				$retried++;
