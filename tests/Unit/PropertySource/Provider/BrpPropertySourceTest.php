@@ -54,8 +54,8 @@ class BrpPropertySourceTest extends TestCase {
 		$gateway = $this->gateway();
 		$gateway->expects($this->once())
 			->method('read')
-			->with('brp', BrpPropertySource::SOURCE_SLUG, '/brp/999993653', [])
-			->willReturn(['burgerservicenummer' => '999993653', 'naam' => 'De Vries']);
+			->with('brp', BrpPropertySource::SOURCE_SLUG, '/personen', [], $this->callback(static fn (array $body): bool => $body['burgerservicenummer'] === ['999993653']))
+			->willReturn(['personen' => [['burgerservicenummer' => '999993653', 'naam' => 'De Vries']]]);
 
 		$value = (new BrpPropertySource($gateway))->resolve('999993653');
 
@@ -71,8 +71,8 @@ class BrpPropertySourceTest extends TestCase {
 		$gateway = $this->gateway();
 		$gateway->expects($this->once())
 			->method('read')
-			->with('brp', 'brp-acceptatie', $this->anything(), $this->anything())
-			->willReturn(['burgerservicenummer' => '999993653']);
+			->with('brp', 'brp-acceptatie', $this->anything(), $this->anything(), $this->anything())
+			->willReturn(['personen' => [['burgerservicenummer' => '999993653']]]);
 
 		(new BrpPropertySource($gateway))->resolve('999993653', ['source' => 'brp-acceptatie']);
 	}//end testADeclaredSourceOverridesTheDefaultSlug()
