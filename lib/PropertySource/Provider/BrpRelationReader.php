@@ -38,7 +38,8 @@ use Psr\Log\LoggerInterface;
  *  - It does not go through PropertySourceResolver, whose cache is keyed on
  *    the person alone and would hand the relations to a later reader who
  *    asked for a name.
- *  - The call stays out of the call log, and the log line this class writes
+ *  - The call log gets a record without any body: who asked, when, which
+ *    source and the outcome (decision 229). The log line this class writes
  *    carries no number and no part of the answer.
  *
  * The answer is a plain array, so an app that reaches this class by name at
@@ -130,7 +131,7 @@ class BrpRelationReader {
 		}
 
 		try {
-			$body = $this->gateway->readUnrecorded(
+			$body = $this->gateway->readWithoutBodies(
 				BrpPropertySource::ID,
 				$sourceSlug,
 				'/personen',

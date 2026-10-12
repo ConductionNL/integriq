@@ -1,7 +1,8 @@
 # registry-field-source (delta)
 
 @e2e exclude Outbound registry call with no browser surface; covered by PHPUnit
-(BrpRelationReaderTest, RegistryProviderContractTest, RegistrySourceGatewayTest).
+(BrpRelationReaderTest, BrpRelationReadCallLogTest, RegistryProviderContractTest,
+RegistrySourceGatewayTest).
 
 ## ADDED Requirements
 
@@ -14,9 +15,11 @@ the registry. It SHALL ask for `partners.burgerservicenummer`, `ouders.burgerser
 `kinderen.burgerservicenummer` and for no other field. It SHALL answer whether the question was
 answered, the reason when it was not, and each relation as a relation name (`partner`, `parent`,
 `child`) with a burgerservicenummer. A question that was not answered SHALL NOT be reported as a
-person without relations. The call SHALL NOT be written to the call log or to the property value
-cache, and no burgerservicenummer and no part of the answer SHALL be written to the application
-log. The `brp` property source binding SHALL leave relation fields out of its own question.
+person without relations. The call SHALL be written to the call log as one record without any
+body, naming the source, the asking user, the moment and the outcome (decision 229); that record
+SHALL hold no burgerservicenummer and no part of the question or the answer. The call SHALL NOT be
+written to the property value cache, and no burgerservicenummer and no part of the answer SHALL be
+written to the application log. The `brp` property source binding SHALL leave relation fields out of its own question.
 
 #### Scenario: The relations of the seeded person are read
 
@@ -38,6 +41,13 @@ log. The `brp` property source binding SHALL leave relation fields out of its ow
 - **WHEN** the registry refuses, fails or answers without the person
 - **THEN** the answer SHALL say the read is not available
 - **AND** it SHALL hold no relations
+
+#### Scenario: The read leaves a record of who asked, without bodies
+
+- **GIVEN** a BRP source with the setting on and an open investigation window
+- **WHEN** a user reads the relations of a person, answered or refused
+- **THEN** the call log SHALL hold one record naming that user, the source and the status
+- **AND** the stored record, read as one string, SHALL hold no burgerservicenummer and no part of the question or the answer
 
 #### Scenario: Nothing personal is logged
 
