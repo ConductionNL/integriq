@@ -78,11 +78,11 @@ class BrpRelationReaderTest extends TestCase {
 	private function reader(?array $configuration, array|\Throwable $answer): BrpRelationReader {
 		$gateway = $this->getMockBuilder(RegistrySourceGateway::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['read', 'readUnrecorded', 'configuration'])
+			->onlyMethods(['read', 'readWithoutBodies', 'configuration'])
 			->getMock();
 		$gateway->method('configuration')->willReturn($configuration);
 		$gateway->expects($this->never())->method('read');
-		$gateway->method('readUnrecorded')->willReturnCallback(
+		$gateway->method('readWithoutBodies')->willReturnCallback(
 			function (...$arguments) use ($answer): array {
 				$this->calls[] = $arguments;
 				if ($answer instanceof \Throwable) {
@@ -130,11 +130,11 @@ class BrpRelationReaderTest extends TestCase {
 	/**
 	 * The question asks for the three relation numbers and no other field,
 	 * with the number in the body. The reader's gateway double fails on a
-	 * recorded read, so every call here went the unrecorded way.
+	 * read that records bodies, so every call here went the way that withholds them.
 	 *
 	 * @return void
 	 */
-	public function testOnlyTheRelationNumbersAreAskedForAndTheCallIsNotRecorded(): void {
+	public function testOnlyTheRelationNumbersAreAskedForAndNoBodyIsRecorded(): void {
 		$this->reader(['relationFields' => true], self::shipped())->read('999990019', ['source' => 'brp-acceptatie']);
 
 		$this->assertCount(1, $this->calls);
@@ -149,7 +149,7 @@ class BrpRelationReaderTest extends TestCase {
 			],
 			$this->calls[0][4]
 		);
-	}//end testOnlyTheRelationNumbersAreAskedForAndTheCallIsNotRecorded()
+	}//end testOnlyTheRelationNumbersAreAskedForAndNoBodyIsRecorded()
 
 	/**
 	 * A source without the setting is never asked for relations.

@@ -89,21 +89,23 @@ class RegistrySourceGatewayTest extends TestCase {
 	}//end testAQuestionWithABodyIsAPost()
 
 	/**
-	 * An unrecorded read reaches the call engine with `persistLog` false, so
-	 * no call log row is written for it.
+	 * A read that withholds its bodies reaches the call engine recorded, with
+	 * `withholdBodies` on.
 	 *
 	 * @return void
 	 */
-	public function testAReadTheCallerAsksNotToRecordIsNotWrittenToTheCallLog(): void {
+	public function testAReadThatWithholdsItsBodiesSaysSoToTheCallEngine(): void {
 		$this->gateway()->read('brp', 'brp-haalcentraal', '/personen', [], ['type' => 'RaadpleegMetBurgerservicenummer']);
-		$this->assertTrue(end($this->call['rest']), 'A read is written to the call log (persistLog, the call engine\'s last parameter)');
+		$this->assertCount(9, $this->call['rest']);
+		$this->assertFalse(end($this->call['rest']), 'A plain read withholds nothing (withholdBodies, the call engine\'s last parameter)');
 
-		$answer = $this->gateway()->readUnrecorded('brp', 'brp-haalcentraal', '/personen', [], ['type' => 'RaadpleegMetBurgerservicenummer']);
+		$answer = $this->gateway()->readWithoutBodies('brp', 'brp-haalcentraal', '/personen', [], ['type' => 'RaadpleegMetBurgerservicenummer']);
 		$this->assertSame(['ok' => true], $answer);
 		$this->assertSame('POST', $this->call['method']);
-		$this->assertCount(8, $this->call['rest']);
-		$this->assertFalse(end($this->call['rest']));
-	}//end testAReadTheCallerAsksNotToRecordIsNotWrittenToTheCallLog()
+		$this->assertCount(9, $this->call['rest']);
+		$this->assertTrue($this->call['rest'][7], 'The call is recorded (persistLog)');
+		$this->assertTrue(end($this->call['rest']), 'Its bodies are withheld (withholdBodies)');
+	}//end testAReadThatWithholdsItsBodiesSaysSoToTheCallEngine()
 
 	/**
 	 * The configuration of a source is read by slug; no source is null.

@@ -84,16 +84,19 @@ class RegistrySourceGateway {
 	}//end read()
 
 	/**
-	 * Read from a configured source without writing the call to the call log.
+	 * Read from a configured source and record the call without any body.
 	 *
 	 * For an answer that must never be stored, such as a person's family
-	 * relations: the call log keeps bodies during an investigation window and
-	 * keeps a failed request for a replay.
+	 * relations. The call log gets a record that names the source, the user,
+	 * the moment and the outcome, so an administrator can show who consulted
+	 * the registry. It holds no request body, no response body and no replay
+	 * request, also while an investigation window is open on the source.
+	 * Send every identifier in the body: the URL path is recorded.
 	 *
 	 * @param string $providerId Provider id asking, for the failure message.
 	 * @param string $sourceSlug Slug of the configured source.
 	 * @param string $endpoint Endpoint on that source.
-	 * @param array<string,mixed> $query Query parameters.
+	 * @param array<string,mixed> $query Query parameters. They are sent and not recorded.
 	 * @param array<string,mixed>|null $json A JSON body. Given, the call is a POST.
 	 *
 	 * @return array<string,mixed> Decoded response body.
@@ -103,7 +106,7 @@ class RegistrySourceGateway {
 	 *
 	 * @spec openspec/changes/brp-relations-read/specs/registry-field-source/spec.md#requirement-brp-relations-are-read-only-where-the-source-says-the-municipality-may
 	 */
-	public function readUnrecorded(string $providerId, string $sourceSlug, string $endpoint, array $query = [], ?array $json = null): array {
+	public function readWithoutBodies(string $providerId, string $sourceSlug, string $endpoint, array $query = [], ?array $json = null): array {
 		$source = $this->source(providerId: $providerId, sourceSlug: $sourceSlug);
 		$question = $this->question(query: $query, json: $json);
 
@@ -115,10 +118,10 @@ class RegistrySourceGateway {
 				endpoint: $endpoint,
 				method: $question['method'],
 				config: $question['config'],
-				persistLog: false
+				withholdBodies: true
 			)
 		);
-	}//end readUnrecorded()
+	}//end readWithoutBodies()
 
 	/**
 	 * The configured source under a slug.

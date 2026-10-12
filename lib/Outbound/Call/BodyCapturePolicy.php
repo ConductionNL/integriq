@@ -36,6 +36,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Integriq\Service\RetentionDefaults;
 use OCP\IAppConfig;
+use OCP\IUserSession;
 use Psr\Clock\ClockInterface;
 use Throwable;
 
@@ -82,14 +83,23 @@ class BodyCapturePolicy {
 	public const REQUEST_BODY_KEYS = ['body', 'json', 'form_params', 'multipart'];
 
 	/**
+	 * What a record that withholds its bodies keeps of the response.
+	 *
+	 * @var array<int,string>
+	 */
+	public const WITHHELD_RESPONSE_KEYS = ['statusCode', 'statusMessage', 'responseTime', 'size', 'encoding'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Reads the window maximum and the body retention.
 	 * @param ClockInterface|null $clock The clock; the system clock when absent.
+	 * @param IUserSession|null $userSession Names the asking user on a record that withholds its bodies.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly ?ClockInterface $clock = null,
+		private readonly ?IUserSession $userSession = null,
 	) {
 
 	}//end __construct()
@@ -202,6 +212,64 @@ class BodyCapturePolicy {
 		return ['request' => $request, 'response' => $response];
 
 	}//end strip()
+
+	/**
+	 * The record of a call whose caller withholds its bodies: no body, no
+	 * replay request, and the asking user by name. Run it after {@see apply()},
+	 * so neither a window nor `logBody` puts a body back.
+	 *
+	 * @param array<string,mixed> $record The call record.
+	 *
+	 * @return array<string,mixed> The record to write.
+	 *
+	 * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
+	 */
+	public function withheldRecord(array $record): array {
+		$record = $this->withhold(record: $record);
+		$record['bodyCaptured'] = false;
+
+		$userId = $this->userSession?->getUser()?->getUID();
+		if ($userId !== null && $userId !== '') {
+			$record['userId'] = $userId;
+		}
+
+		return $record;
+
+	}//end withheldRecord()
+
+	/**
+	 * Reduce a record to what may be kept of a call whose caller withholds its bodies.
+	 *
+	 * The request keeps its method and its URL without the query string. The
+	 * response keeps its status, timing and size. Everything else goes: both
+	 * bodies, the headers, the query, the replay request and the body expiry.
+	 * An identifier in the URL path stays, so a caller that withholds bodies
+	 * must send its identifiers in the body.
+	 *
+	 * @param array<string,mixed> $record The call record, or its request and response only.
+	 *
+	 * @return array<string,mixed> The record without bodies.
+	 *
+	 * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
+	 */
+	public function withhold(array $record): array {
+		$request = $this->asArray(value: ($record['request'] ?? []));
+		$response = $this->asArray(value: ($record['response'] ?? []));
+
+		$url = (string)($request['url'] ?? '');
+		$record['request'] = [
+			'url' => (string)preg_replace('/[?#].*$/s', '', $url),
+			'method' => (string)($request['method'] ?? ''),
+		];
+		$record['response'] = array_intersect_key($response, array_flip(self::WITHHELD_RESPONSE_KEYS));
+		unset($record['replayRequest'], $record['bodyExpiresAt']);
+		if (array_key_exists('bodyCaptured', $record) === true) {
+			$record['bodyCaptured'] = false;
+		}
+
+		return $record;
+
+	}//end withhold()
 
 	/**
 	 * Apply the policy to a call record before it is written.
