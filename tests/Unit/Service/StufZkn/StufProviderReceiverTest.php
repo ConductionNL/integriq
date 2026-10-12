@@ -44,6 +44,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderReceiver
+ * @covers \OCA\Integriq\Service\StufZkn\StufProviderRequestReader
  * @covers \OCA\Integriq\Event\StufProviderQueryEvent
  * @covers \OCA\Integriq\Event\StufCaseQueryEvent
  * @covers \OCA\Integriq\Event\StufCaseMutationEvent

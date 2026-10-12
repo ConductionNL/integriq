@@ -33,9 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\StufZkn;
 
-use OCA\Integriq\Event\StufCaseMutationEvent;
 use OCA\Integriq\Event\StufCaseQueryEvent;
-use OCA\Integriq\Event\StufDocumentMutationEvent;
 use OCA\Integriq\Event\StufPersonQueryEvent;
 use OCA\Integriq\Event\StufProviderQueryEvent;
 use OCA\Integriq\Exception\StufZknProviderException;
@@ -97,6 +95,7 @@ class StufProviderReceiver {
 	 * @param IEventDispatcher          $dispatcher  Carries the question to the owning app.
 	 * @param LoggerInterface           $logger      The logger.
 	 * @param StufXmlParser             $xmlParser   The hardened XML parser.
+	 * @param StufProviderRequestReader $reader      Reads the question out of the envelope.
 	 */
 	public function __construct(
 		private readonly StufZdsMessageLog $log,
@@ -105,6 +104,7 @@ class StufProviderReceiver {
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
 		private readonly StufXmlParser $xmlParser = new StufXmlParser(),
+		private readonly StufProviderRequestReader $reader = new StufProviderRequestReader(),
 	) {
 
 	}//end __construct()
@@ -135,7 +135,7 @@ class StufProviderReceiver {
 			return $this->fault(statusCode: 400, berichtcode: 'Fo02', code: 'StUF001', omschrijving: 'Ongeldig bericht', stuurgegevens: []);
 		}
 
-		$message     = $this->messageElement(root: $root);
+		$message     = $this->reader->messageElement(root: $root);
 		$berichttype = '';
 		if ($message !== null) {
 			$berichttype = $message->getName();
@@ -147,16 +147,28 @@ class StufProviderReceiver {
 		$source = $this->authenticatedSource(root: $root, sourceId: $sourceId);
 		if ($source === null) {
 			$this->logger->warning('StUF provider request refused for source {id}: not authenticated', ['id' => $sourceId]);
-			return $this->fault(statusCode: 401, berichtcode: $faultCode, code: 'StUF063', omschrijving: 'Authenticatie mislukt', stuurgegevens: $reply);
+			return $this->fault(
+				statusCode: 401,
+				berichtcode: $faultCode,
+				code: 'StUF063',
+				omschrijving: 'Authenticatie mislukt',
+				stuurgegevens: $reply
+			);
 		}
 
 		$reply = $this->replyStuurgegevens(root: $root, source: $source);
 		if ($message === null || in_array($berichttype, (self::MESSAGES[$service] ?? []), true) === false) {
 			$this->logger->warning('StUF provider request {type} not taken on route {service}', ['type' => $berichttype, 'service' => $service]);
-			return $this->fault(statusCode: 400, berichtcode: $faultCode, code: 'StUF001', omschrijving: 'Berichttype wordt niet ondersteund', stuurgegevens: $reply);
+			return $this->fault(
+				statusCode: 400,
+				berichtcode: $faultCode,
+				code: 'StUF001',
+				omschrijving: 'Berichttype wordt niet ondersteund',
+				stuurgegevens: $reply
+			);
 		}
 
-		$event = $this->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
+		$event = $this->reader->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
 		try {
 			$this->dispatcher->dispatchTyped($event);
 		} catch (Throwable $exception) {
@@ -180,7 +192,13 @@ class StufProviderReceiver {
 	private function answer(StufProviderQueryEvent $event, string $faultCode, array $reply): array {
 		if ($event->isAnswered() === false) {
 			$this->logger->warning('StUF provider request {ref} was not answered by any app', ['ref' => $event->getReferentienummer()]);
-			return $this->fault(statusCode: 500, berichtcode: $faultCode, code: 'StUF055', omschrijving: 'Het bericht is niet beantwoord', stuurgegevens: $reply);
+			return $this->fault(
+				statusCode: 500,
+				berichtcode: $faultCode,
+				code: 'StUF055',
+				omschrijving: 'Het bericht is niet beantwoord',
+				stuurgegevens: $reply
+			);
 		}
 
 		$refusal = $event->getRefusal();
@@ -199,51 +217,6 @@ class StufProviderReceiver {
 
 		return ['statusCode' => 200, 'body' => $this->xml->buildBv01(stuurgegevens: $reply)];
 	}//end answer()
-
-	/**
-	 * Build the typed event for one message.
-	 *
-	 * @param SimpleXMLElement $message          The StUF message element.
-	 * @param string           $sourceId         The source id.
-	 * @param string           $referentienummer The request's referentienummer.
-	 *
-	 * @return StufProviderQueryEvent The event.
-	 */
-	private function event(SimpleXMLElement $message, string $sourceId, string $referentienummer): StufProviderQueryEvent {
-		$type = $message->getName();
-		if ($type === 'zakLv01') {
-			return new StufCaseQueryEvent(
-				sourceId: $sourceId,
-				referentienummer: $referentienummer,
-				criteria: $this->leaves(element: $this->first(xml: $message, path: './*[local-name()="gelijk"]'))
-			);
-		}
-
-		if ($type === 'npsLv01') {
-			$bsn = $this->text(xml: $message, path: './*[local-name()="gelijk"]/*[local-name()="inp.bsn" or local-name()="bsn"]');
-			return new StufPersonQueryEvent(sourceId: $sourceId, referentienummer: $referentienummer, bsn: $bsn);
-		}
-
-		$object       = $this->first(xml: $message, path: './*[local-name()="object"]');
-		$fields       = $this->leaves(element: $object);
-		$mutatiesoort = $this->text(xml: $message, path: './*[local-name()="parameters"]/*[local-name()="mutatiesoort"]');
-		if ($mutatiesoort === '' && $object !== null) {
-			$mutatiesoort = $this->attribute(element: $object, name: 'verwerkingssoort');
-		}
-
-		if ($type === 'edcLk01') {
-			$fields['zaakidentificatie'] = $this->text(
-				xml: $message,
-				path: './*[local-name()="object"]/*[local-name()="isRelevantVoor"]/*[local-name()="gerelateerde"]/*[local-name()="identificatie"]'
-			);
-			return new StufDocumentMutationEvent(sourceId: $sourceId, referentienummer: $referentienummer, mutatiesoort: $mutatiesoort, fields: $fields);
-		}
-
-		$zaaktype = './*[local-name()="object"]/*[local-name()="isVan"]/*[local-name()="gerelateerde"]/*[local-name()="';
-		$fields['zaaktypeCode']         = $this->text(xml: $message, path: $zaaktype . 'code"]');
-		$fields['zaaktypeOmschrijving'] = $this->text(xml: $message, path: $zaaktype . 'omschrijving"]');
-		return new StufCaseMutationEvent(sourceId: $sourceId, referentienummer: $referentienummer, mutatiesoort: $mutatiesoort, fields: array_filter($fields, static fn(string $value): bool => $value !== ''));
-	}//end event()
 
 	/**
 	 * The source, when it accepts provider requests and the envelope's UsernameToken matches it.
@@ -275,8 +248,8 @@ class StufProviderReceiver {
 		}
 
 		$tokenPath = '//*[local-name()="Security"]/*[local-name()="UsernameToken"]/*[local-name()="';
-		$username  = $this->text(xml: $root, path: $tokenPath . 'Username"]');
-		$password  = $this->text(xml: $root, path: $tokenPath . 'Password"]');
+		$username  = $this->reader->text(xml: $root, path: $tokenPath . 'Username"]');
+		$password  = $this->reader->text(xml: $root, path: $tokenPath . 'Password"]');
 		if (hash_equals($token['username'], $username) === false || hash_equals($token['password'], $password) === false) {
 			return null;
 		}
@@ -296,9 +269,9 @@ class StufProviderReceiver {
 		$zender = '//*[local-name()="stuurgegevens"]/*[local-name()="zender"]/*[local-name()="';
 		$reply  = [
 			'zenderOrganisatie' => (string)($source['configuration']['organisatie'] ?? ''),
-			'ontvangerOrganisatie' => $this->text(xml: $root, path: $zender . 'organisatie"]'),
-			'ontvangerApplicatie' => $this->text(xml: $root, path: $zender . 'applicatie"]'),
-			'crossRefnummer' => $this->text(xml: $root, path: '//*[local-name()="stuurgegevens"]/*[local-name()="referentienummer"]'),
+			'ontvangerOrganisatie' => $this->reader->text(xml: $root, path: $zender . 'organisatie"]'),
+			'ontvangerApplicatie' => $this->reader->text(xml: $root, path: $zender . 'applicatie"]'),
+			'crossRefnummer' => $this->reader->text(xml: $root, path: '//*[local-name()="stuurgegevens"]/*[local-name()="referentienummer"]'),
 		];
 		$applicatie = (string)($source['configuration']['applicatie'] ?? '');
 		if ($applicatie !== '') {
@@ -325,11 +298,12 @@ class StufProviderReceiver {
 			$plek = 'server';
 		}
 
+		$body = $this->xml->buildFo02(code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);
 		if ($berichtcode === 'Fo01') {
-			return ['statusCode' => $statusCode, 'body' => $this->xml->buildFo01(code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek)];
+			$body = $this->xml->buildFo01(code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);
 		}
 
-		return ['statusCode' => $statusCode, 'body' => $this->xml->buildFo02(code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek)];
+		return ['statusCode' => $statusCode, 'body' => $body];
 	}//end fault()
 
 	/**
@@ -362,88 +336,5 @@ class StufProviderReceiver {
 		return $this->xmlParser->parse(xml: $rawXml);
 	}//end parse()
 
-	/**
-	 * The first element inside the SOAP Body.
-	 *
-	 * @param SimpleXMLElement $root The envelope.
-	 *
-	 * @return SimpleXMLElement|null The StUF message element.
-	 */
-	private function messageElement(SimpleXMLElement $root): ?SimpleXMLElement {
-		return $this->first(xml: $root, path: '//*[local-name()="Body"]/*[1]');
-	}//end messageElement()
 
-	/**
-	 * Every leaf child of an element, by local name.
-	 *
-	 * @param SimpleXMLElement|null $element The parent.
-	 *
-	 * @return array<string, string> Local name to trimmed text.
-	 */
-	private function leaves(?SimpleXMLElement $element): array {
-		$result = [];
-		if ($element === null) {
-			return $result;
-		}
-
-		foreach (($element->xpath('./*[not(*)]') ?: []) as $child) {
-			$value = trim((string)$child);
-			if ($value !== '') {
-				$result[$child->getName()] = $value;
-			}
-		}
-
-		return $result;
-	}//end leaves()
-
-	/**
-	 * An attribute in any namespace, by local name.
-	 *
-	 * @param SimpleXMLElement $element The element.
-	 * @param string           $name    The attribute's local name.
-	 *
-	 * @return string The value, '' when absent.
-	 */
-	private function attribute(SimpleXMLElement $element, string $name): string {
-		$found = $element->xpath('./@*[local-name()="' . $name . '"]');
-		if (is_array($found) === false || $found === []) {
-			return '';
-		}
-
-		return trim((string)$found[0]);
-	}//end attribute()
-
-	/**
-	 * The first node an xpath finds.
-	 *
-	 * @param SimpleXMLElement $xml  The context.
-	 * @param string           $path The xpath.
-	 *
-	 * @return SimpleXMLElement|null The node.
-	 */
-	private function first(SimpleXMLElement $xml, string $path): ?SimpleXMLElement {
-		$found = $xml->xpath($path);
-		if (is_array($found) === false || $found === []) {
-			return null;
-		}
-
-		return $found[0];
-	}//end first()
-
-	/**
-	 * The trimmed text of the first node an xpath finds.
-	 *
-	 * @param SimpleXMLElement $xml  The context.
-	 * @param string           $path The xpath.
-	 *
-	 * @return string The text, '' when none.
-	 */
-	private function text(SimpleXMLElement $xml, string $path): string {
-		$found = $this->first(xml: $xml, path: $path);
-		if ($found === null) {
-			return '';
-		}
-
-		return trim((string)$found);
-	}//end text()
 }//end class
