@@ -118,18 +118,32 @@ class BrpPropertySource implements PropertySourceProviderInterface {
 	 * @param string $identifier The burgerservicenummer.
 	 * @param array<string,mixed> $config Declared configuration; `source` overrides the slug, `fields`
 	 *                                    the fields asked for (a municipality's authorisation decides
-	 *                                    which it may ask).
+	 *                                    which it may ask). Relation fields are left out of the question.
 	 *
 	 * @return array<string,mixed> The person as the registry holds it.
 	 *
 	 * @throws SourceUnreachableException When the registry knows no such identifier.
 	 *
 	 * @spec openspec/changes/registry-bindings-speak-the-registry-api/specs/registry-field-source/spec.md#requirement-a-registry-binding-asks-the-way-its-registry-answers
+	 * @spec openspec/changes/brp-relations-read/specs/registry-field-source/spec.md#requirement-brp-relations-are-read-only-where-the-source-says-the-municipality-may
 	 */
 	public function resolve(string $identifier, array $config = []): array {
 		$fields = self::DEFAULT_FIELDS;
 		if (is_array($config['fields'] ?? null) === true && $config['fields'] !== []) {
 			$fields = array_values(array_map('strval', $config['fields']));
+		}
+
+		// A person's partner, parents and children are read by BrpRelationReader
+		// alone, behind the source's own setting and outside the value cache. A
+		// property that declares them here does not get them.
+		$fields = array_values(
+			array_filter(
+				$fields,
+				static fn (string $field): bool => preg_match('/^(partners|ouders|kinderen)(\.|$)/', $field) !== 1
+			)
+		);
+		if ($fields === []) {
+			$fields = self::DEFAULT_FIELDS;
 		}
 
 		$body = $this->gateway->read(

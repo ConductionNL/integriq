@@ -108,10 +108,27 @@ class RegistryProviderContractTest extends TestCase {
 	 */
 	public function testDeclaredFieldsAreAskedFor(): void {
 		$gateway = $this->gateway(self::shipped('brp-haalcentraal-source.json'));
-		(new BrpPropertySource($gateway))->resolve('999990019', ['fields' => ['burgerservicenummer', 'partners.burgerservicenummer']]);
+		(new BrpPropertySource($gateway))->resolve('999990019', ['fields' => ['burgerservicenummer', 'nationaliteiten']]);
 
-		$this->assertSame(['burgerservicenummer', 'partners.burgerservicenummer'], $this->calls[0][4]['fields']);
+		$this->assertSame(['burgerservicenummer', 'nationaliteiten'], $this->calls[0][4]['fields']);
 	}//end testDeclaredFieldsAreAskedFor()
+
+	/**
+	 * A property cannot ask for a person's partner, parents or children: that
+	 * read belongs to BrpRelationReader, behind the source's setting. The
+	 * person read caches its answer per person, so a relation in it would
+	 * reach the next reader of that person.
+	 *
+	 * @return void
+	 */
+	public function testAPropertyCannotAskForRelationFields(): void {
+		$source = new BrpPropertySource($this->gateway(self::shipped('brp-haalcentraal-source.json')));
+		$source->resolve('999990019', ['fields' => ['naam', 'partners.burgerservicenummer', 'ouders', 'kinderen.naam']]);
+		$source->resolve('999990019', ['fields' => ['partners']]);
+
+		$this->assertSame(['naam'], $this->calls[0][4]['fields']);
+		$this->assertSame(BrpPropertySource::DEFAULT_FIELDS, $this->calls[1][4]['fields']);
+	}//end testAPropertyCannotAskForRelationFields()
 
 	/**
 	 * An envelope without a person is no record.
