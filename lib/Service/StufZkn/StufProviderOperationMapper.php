@@ -28,7 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\StufZkn;
 
-use DateTimeImmutable;
 use SimpleXMLElement;
 
 /**
@@ -267,16 +266,15 @@ class StufProviderOperationMapper {
 	 * @return string The ISO date, '' when empty or not a date.
 	 */
 	private static function isoDate(string $stuf): string {
-		if (preg_match('/^\d{8}/', $stuf) !== 1) {
+		if (preg_match('/^(\d{4})(\d{2})(\d{2})/', $stuf, $parts) !== 1) {
 			return '';
 		}
 
-		$date = DateTimeImmutable::createFromFormat('!Ymd', substr($stuf, 0, 8));
-		if ($date === false || $date->format('Ymd') !== substr($stuf, 0, 8)) {
+		if (checkdate((int)$parts[2], (int)$parts[3], (int)$parts[1]) === false) {
 			return '';
 		}
 
-		return $date->format('Y-m-d');
+		return $parts[1] . '-' . $parts[2] . '-' . $parts[3];
 	}//end isoDate()
 
 	/**

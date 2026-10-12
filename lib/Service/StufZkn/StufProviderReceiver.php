@@ -89,6 +89,20 @@ class StufProviderReceiver {
 	private const MAX_BODY_BYTES = 2097152;
 
 	/**
+	 * The request came in on integriq's own route.
+	 *
+	 * @var string
+	 */
+	private const ORIGIN_ROUTE = 'route';
+
+	/**
+	 * A sibling app handed the request over from its own URL.
+	 *
+	 * @var string
+	 */
+	private const ORIGIN_FORWARDED = 'forwarded';
+
+	/**
 	 * The HTTP status each refusal kind goes back with.
 	 *
 	 * None of them is rewritten on the way out: the routes sit on a plain
@@ -141,14 +155,44 @@ class StufProviderReceiver {
 	 * @param string $rawXml   The raw request body.
 	 * @param string $sourceId The integriq StUF-ZKN source the request is for.
 	 * @param string $service  SERVICE_CASES or SERVICE_PERSONS.
-	 * @param bool   $forwarded True when a sibling app handed the request over from its own URL.
 	 *
 	 * @return array The answer (ProviderAnswer).
 	 *
 	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 */
+	public function receive(string $rawXml, string $sourceId, string $service): array {
+		return $this->process(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_ROUTE);
+	}//end receive()
+
+	/**
+	 * Receive a provider request a sibling app handed over from its own URL.
+	 *
+	 * A query is answered as on integriq's route. A write is refused: decision
+	 * 206 lets a write in on integriq's own route only.
+	 *
+	 * @param string $rawXml   The raw request body.
+	 * @param string $sourceId The integriq StUF-ZKN source the request is for.
+	 * @param string $service  SERVICE_CASES or SERVICE_PERSONS.
+	 *
+	 * @return array The answer (ProviderAnswer).
+	 *
 	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-writes-arrive-on-integriqs-own-route-only
 	 */
-	public function receive(string $rawXml, string $sourceId, string $service, bool $forwarded = false): array {
+	public function receiveForwarded(string $rawXml, string $sourceId, string $service): array {
+		return $this->process(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_FORWARDED);
+	}//end receiveForwarded()
+
+	/**
+	 * Authenticate, read, ask the owning app and render the answer.
+	 *
+	 * @param string $rawXml   The raw request body.
+	 * @param string $sourceId The integriq StUF-ZKN source the request is for.
+	 * @param string $service  SERVICE_CASES or SERVICE_PERSONS.
+	 * @param string $origin   ORIGIN_ROUTE or ORIGIN_FORWARDED.
+	 *
+	 * @return array The answer (ProviderAnswer).
+	 */
+	private function process(string $rawXml, string $sourceId, string $service, string $origin): array {
 		if (strlen($rawXml) > self::MAX_BODY_BYTES) {
 			return $this->fault(statusCode: 413, berichtcode: 'Fo02', code: 'StUF001', omschrijving: 'Bericht te groot', stuurgegevens: []);
 		}
@@ -192,23 +236,16 @@ class StufProviderReceiver {
 		}
 
 		$event = $this->reader->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
-		$isWrite = ($event instanceof StufCaseMutationEvent || $event instanceof StufDocumentMutationEvent);
-		if ($forwarded === true && $isWrite === true) {
-			// Decision 206: a write comes in on integriq's own route, never through a sibling app's URL.
-			$this->logger->warning('StUF provider write {type} refused: it arrived on a sibling app\'s URL', ['type' => $berichttype]);
+		$unfit = $this->unfitWrite(event: $event, origin: $origin);
+		if ($unfit !== null) {
+			$this->logger->warning('StUF provider write {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);
 			return $this->fault(
-				statusCode: 403,
+				statusCode: $unfit['statusCode'],
 				berichtcode: $faultCode,
 				code: 'StUF058',
-				omschrijving: 'Schrijven kan alleen op het StUF-adres van integriq',
+				omschrijving: $unfit['reason'],
 				stuurgegevens: $reply
 			);
-		}
-
-		$unfit = $this->unfitWrite(event: $event);
-		if ($unfit !== null) {
-			$this->logger->warning('StUF provider write {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit]);
-			return $this->fault(statusCode: 400, berichtcode: $faultCode, code: 'StUF058', omschrijving: $unfit, stuurgegevens: $reply);
 		}
 
 		try {
@@ -218,7 +255,7 @@ class StufProviderReceiver {
 		}
 
 		return $this->answer(event: $event, faultCode: $faultCode, reply: $reply);
-	}//end receive()
+	}//end process()
 
 	/**
 	 * Render the owning app's answer, its refusal, or the silence.
@@ -270,24 +307,31 @@ class StufProviderReceiver {
 	/**
 	 * Why a write message is not put to the owning app at all, or null when it is.
 	 *
-	 * @param StufProviderQueryEvent $event The event the message became.
+	 * @param StufProviderQueryEvent $event  The event the message became.
+	 * @param string                 $origin ORIGIN_ROUTE or ORIGIN_FORWARDED.
 	 *
-	 * @return string|null The reason, safe to return; null for a query or a write this adapter carries out.
+	 * @return array{statusCode:int,reason:string}|null The refusal, its reason safe to return; null for a query or a write this adapter carries out.
 	 *
 	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-only-create-update-and-document-add-are-carried-out
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-writes-arrive-on-integriqs-own-route-only
 	 */
-	private function unfitWrite(StufProviderQueryEvent $event): ?string {
+	private function unfitWrite(StufProviderQueryEvent $event, string $origin): ?array {
 		if (($event instanceof StufCaseMutationEvent) === false && ($event instanceof StufDocumentMutationEvent) === false) {
 			return null;
 		}
 
+		if ($origin !== self::ORIGIN_ROUTE) {
+			// Decision 206: a write comes in on integriq's own route, never through a sibling app's URL.
+			return ['statusCode' => 403, 'reason' => 'Schrijven kan alleen op het StUF-adres van integriq'];
+		}
+
 		$operation = $event->getOperation();
 		if (($operation['action'] ?? StufProviderOperationMapper::ACTION_UNSUPPORTED) === StufProviderOperationMapper::ACTION_UNSUPPORTED) {
-			return 'Mutatiesoort wordt niet ondersteund';
+			return ['statusCode' => 400, 'reason' => 'Mutatiesoort wordt niet ondersteund'];
 		}
 
 		if (isset($operation['contentError']) === true) {
-			return 'De inhoud van het document is geen geldige base64';
+			return ['statusCode' => 400, 'reason' => 'De inhoud van het document is geen geldige base64'];
 		}
 
 		return null;

@@ -441,14 +441,14 @@ class StufProviderReceiverTest extends TestCase {
 	 */
 	public function testAForwardedWriteIsRefusedAndAForwardedQueryIsNot(): void {
 		foreach ([self::creeerZaak(), self::zakLk01(), self::voegZaakdocumentToe(inhoud: base64_encode('x'))] as $xml) {
-			$answer = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases', forwarded: true);
+			$answer = $this->receiver()->receiveForwarded(rawXml: $xml, sourceId: 'zsh', service: 'cases');
 			$this->assertSame(403, $answer['statusCode']);
 			$this->assertStringContainsString('Fo03Bericht', $answer['body']);
 		}
 
 		$this->assertSame([], $this->events);
 
-		$query = $this->receiver()->receive(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases', forwarded: true);
+		$query = $this->receiver()->receiveForwarded(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases');
 		$this->assertSame(200, $query['statusCode']);
 		$this->assertCount(1, $this->events);
 	}//end testAForwardedWriteIsRefusedAndAForwardedQueryIsNot()
