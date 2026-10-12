@@ -82,6 +82,8 @@ use OCA\Integriq\EventListener\StufZdsCaseRequestedListener;
 use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
 use OCA\Integriq\EventListener\StufZdsConfirmationReceivedListener;
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
+use OCA\Integriq\EventListener\StufProviderRequestReceivedListener;
+use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
 use OCA\Integriq\EventListener\ExchangeMappingRequestedListener;
 use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
 use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
@@ -409,6 +411,8 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(StufZdsCaseRequestedEvent::class, StufZdsCaseRequestedListener::class);
 		// A confirmation a sibling app received on its own wire-contract URL (dossiq /api/stuf/inbound, one release).
 		$context->registerEventListener(StufZdsConfirmationReceivedEvent::class, StufZdsConfirmationReceivedListener::class);
+		// A provider request a sibling app received on its own wire-contract URL (dossiq /api/stuf/cases and friends, one release, decision 199).
+		$context->registerEventListener(StufProviderRequestReceivedEvent::class, StufProviderRequestReceivedListener::class);
 		$context->registerEventListener(ExchangeMappingRequestedEvent::class, ExchangeMappingRequestedListener::class);
 		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);
 		// OpenTelemetry export (observability-opentelemetry-export D2): the
