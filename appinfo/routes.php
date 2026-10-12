@@ -259,6 +259,11 @@ return [
 		// The asynchronous Bv01/Fo01 a case system sends after processing a ZDS
 		// kennisgeving (stuf-zds-case-client); WS-Security of the source is its auth.
 		['name' => 'stufZdsConfirmation#receive', 'url' => '/api/stuf-zkn/confirmations', 'verb' => 'POST'],
+		// StUF provider requests a case system sends (decision 199: dossiq's provider
+		// side moved here). The owning app answers through typed events; WS-Security
+		// of the named source is the auth.
+		['name' => 'stufProvider#cases', 'url' => '/api/stuf-zkn/provider/{sourceId}/cases', 'verb' => 'POST'],
+		['name' => 'stufProvider#persons', 'url' => '/api/stuf-zkn/provider/{sourceId}/persons', 'verb' => 'POST'],
 
 		// FSC (Federatieve Service Connectiviteit) connectivity — the standard
 		// that replaced NLX in 2025 (openspec/changes/fsc-connectivity). Both
