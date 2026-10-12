@@ -66,6 +66,8 @@ use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
 use OCA\Integriq\Event\SourceRequestedEvent;
+use OCA\Integriq\Event\DocumentFetchRequestedEvent;
+use OCA\Integriq\Event\DocumentSearchRequestedEvent;
 use OCA\Integriq\EventListener\CloudEventListener;
 use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
 use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
@@ -145,6 +147,8 @@ use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\EventListener\DigitalPostSendRequestedListener;
 use OCA\Integriq\EventListener\OptOutChangeRequestedListener;
 use OCA\Integriq\EventListener\OutboundSendDecisionRequestedListener;
+use OCA\Integriq\EventListener\DocumentFetchRequestedListener;
+use OCA\Integriq\EventListener\DocumentSearchRequestedListener;
 use OCA\Integriq\Gateway\GatewayCatalogue;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
@@ -360,6 +364,9 @@ class Application extends App implements IBootstrap {
 		// webhook steps) asks for the Source for that base URL here, so the call
 		// can run through `openconnector.source-call` like every other one.
 		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
+		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
+		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
+		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
 		// Connection registry (connection-registry D5/D6): apps report a
 		// connection status or ask for a fresh resolve with two typed events,
 		// and enabling or disabling an app syncs or resolves its declared
