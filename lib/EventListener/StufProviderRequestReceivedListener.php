@@ -63,7 +63,12 @@ class StufProviderRequestReceivedListener implements IEventListener {
 			return;
 		}
 
-		$answer = $this->receiver->receive(rawXml: $event->getRawXml(), sourceId: $event->getSourceId(), service: $event->getService());
+		$answer = $this->receiver->receive(
+			rawXml: $event->getRawXml(),
+			sourceId: $event->getSourceId(),
+			service: $event->getService(),
+			forwarded: true
+		);
 		$event->answer(statusCode: $answer['statusCode'], body: $answer['body']);
 	}//end handle()
 }//end class

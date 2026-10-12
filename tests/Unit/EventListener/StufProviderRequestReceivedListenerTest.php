@@ -39,7 +39,7 @@ class StufProviderRequestReceivedListenerTest extends TestCase {
 	 */
 	public function testTheReceiversAnswerLandsOnTheEvent(): void {
 		$receiver = $this->createMock(StufProviderReceiver::class);
-		$receiver->expects($this->once())->method('receive')->with('<Envelope/>', 'zsh', 'persons')->willReturn(['statusCode' => 422, 'body' => '<Fo03/>']);
+		$receiver->expects($this->once())->method('receive')->with('<Envelope/>', 'zsh', 'persons', true)->willReturn(['statusCode' => 422, 'body' => '<Fo03/>']);
 
 		$event = new StufProviderRequestReceivedEvent('dossiq', '<Envelope/>', 'zsh', 'persons');
 		$this->assertFalse($event->isHandled());

@@ -370,26 +370,6 @@ class StUFXMLBuilder {
 	}//end buildFo02()
 
 	/**
-	 * Build a Bv01 bevestiging: the answer to an accepted kennisgeving (Lk01).
-	 *
-	 * @param array $stuurgegevens Stuurgegevens configuration (crossRefnummer = the kennisgeving's referentienummer).
-	 *
-	 * @return string The complete SOAP XML string.
-	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-answers-go-back-as-stuf-responses
-	 */
-	public function buildBv01(array $stuurgegevens): string {
-		$doc = new DOMDocument(version: '1.0', encoding: 'UTF-8');
-		$doc->formatOutput = true;
-
-		$bv01 = $doc->createElementNS(self::NS_STUF, 'StUF:Bv01Bericht');
-		$bv01->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: 'Bv01', stuurgegevens: $stuurgegevens));
-		$this->wrapInEnvelope(doc: $doc, bodyContent: $bv01);
-
-		return (string)$doc->saveXML();
-	}//end buildBv01()
-
-	/**
 	 * Build a Fo01/Fo02 foutbericht inside a SOAP fault.
 	 *
 	 * @param string $berichtcode  Fo01 or Fo02.
@@ -505,7 +485,7 @@ class StUFXMLBuilder {
 	/**
 	 * Build Bv03 bevestiging SOAP response for zakLk01 operations.
 	 *
-	 * @param string $caseIdentification The zaak identifier being confirmed.
+	 * @param string $caseIdentification The zaak identifier being confirmed; '' for a Bv03 without a body.
 	 * @param array $stuurgegevens Stuurgegevens configuration.
 	 *
 	 * @return string The complete SOAP XML string.
@@ -519,11 +499,14 @@ class StUFXMLBuilder {
 		$bv03 = $doc->createElementNS(self::NS_STUF, 'StUF:Bv03Bericht');
 		$bv03->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: 'Bv03', stuurgegevens: $stuurgegevens));
 
-		$body = $doc->createElementNS(self::NS_STUF, 'StUF:body');
-		$case = $doc->createElementNS(self::NS_ZKN, 'ZKN:zaakidentificatie');
-		$case->nodeValue = $caseIdentification;
-		$body->appendChild($case);
-		$bv03->appendChild($body);
+		if ($caseIdentification !== '') {
+			$body = $doc->createElementNS(self::NS_STUF, 'StUF:body');
+			$case = $doc->createElementNS(self::NS_ZKN, 'ZKN:zaakidentificatie');
+			$case->nodeValue = $caseIdentification;
+			$body->appendChild($case);
+			$bv03->appendChild($body);
+		}
+
 
 		$this->wrapInEnvelope(doc: $doc, bodyContent: $bv03);
 
