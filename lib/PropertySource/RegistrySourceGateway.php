@@ -57,24 +57,35 @@ class RegistrySourceGateway {
 	 * @param string $sourceSlug Slug of the configured source.
 	 * @param string $endpoint Endpoint on that source.
 	 * @param array<string,mixed> $query Query parameters.
+	 * @param array<string,mixed>|null $json A JSON body. Given, the call is a POST: some registries take
+	 *                                       the question in the body so an identifier stays out of the URL.
 	 *
 	 * @return array<string,mixed> Decoded response body.
 	 *
 	 * @throws MissingSourceConfigurationException When no source is configured under the slug.
 	 * @throws SourceUnreachableException When the source did not answer with a usable body.
+	 *
+	 * @spec openspec/changes/registry-bindings-speak-the-registry-api/specs/registry-field-source/spec.md#requirement-a-registry-binding-asks-the-way-its-registry-answers
 	 */
-	public function read(string $providerId, string $sourceSlug, string $endpoint, array $query = []): array {
+	public function read(string $providerId, string $sourceSlug, string $endpoint, array $query = [], ?array $json = null): array {
 		$source = $this->connectionStore->findSourceBySlug(slug: $sourceSlug);
 		if ($source instanceof ObjectEntity === false) {
 			throw new MissingSourceConfigurationException(providerId: $providerId, sourceSlug: $sourceSlug);
+		}
+
+		$method = 'GET';
+		$config = ['query' => $query];
+		if ($json !== null) {
+			$method = 'POST';
+			$config['body'] = (string)json_encode($json);
 		}
 
 		try {
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
-				method: 'GET',
-				config: ['query' => $query]
+				method: $method,
+				config: $config
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

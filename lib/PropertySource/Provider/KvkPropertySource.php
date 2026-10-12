@@ -63,35 +63,37 @@ class KvkPropertySource implements PropertySourceProviderInterface {
 	}//end id()
 
 	/**
-	 * Type-ahead over the registry.
+	 * Type-ahead over the registry: KvK Zoeken by name.
 	 *
 	 * @param string $query Partial query.
 	 * @param array<string,mixed> $config Declared configuration; `source` overrides the slug.
 	 *
 	 * @return array<int,array<string,mixed>> Suggestions with `identifier` and `label`.
+	 *
+	 * @spec openspec/changes/registry-bindings-speak-the-registry-api/specs/registry-field-source/spec.md#requirement-a-registry-binding-asks-the-way-its-registry-answers
 	 */
 	public function suggest(string $query, array $config = []): array {
 		$body = $this->gateway->read(
 			self::ID,
 			(string)($config['source'] ?? self::SOURCE_SLUG),
-			'/kvk/suggest',
-			['q' => $query]
+			'/zoeken',
+			['naam' => $query]
 		);
 
 		$out = [];
-		foreach (($body['results'] ?? $body['_embedded'] ?? []) as $hit) {
+		foreach ((array)($body['resultaten'] ?? []) as $hit) {
 			if (is_array($hit) === false) {
 				continue;
 			}
 
-			$identifier = (string)($hit['kvkNummer'] ?? $hit['identifier'] ?? '');
+			$identifier = (string)($hit['kvkNummer'] ?? '');
 			if ($identifier === '') {
 				continue;
 			}
 
 			$out[] = [
 				'identifier' => $identifier,
-				'label' => (string)($hit['label'] ?? $hit['naam'] ?? $identifier),
+				'label' => (string)($hit['naam'] ?? $identifier),
 			];
 		}
 
@@ -101,29 +103,48 @@ class KvkPropertySource implements PropertySourceProviderInterface {
 	/**
 	 * One authoritative read by the registry's own identifier.
 	 *
+	 * KvK Zoeken answers a list of registrations under the number (the head
+	 * office, branches, the legal person). The record is the head office,
+	 * which carries the address; without one, the first row of that number.
+	 *
 	 * @param string $identifier The kvkNummer.
 	 * @param array<string,mixed> $config Declared configuration; `source` overrides the slug.
 	 *
 	 * @return array<string,mixed> The record as the registry holds it.
 	 *
 	 * @throws SourceUnreachableException When the registry knows no such identifier.
+	 *
+	 * @spec openspec/changes/registry-bindings-speak-the-registry-api/specs/registry-field-source/spec.md#requirement-a-registry-binding-asks-the-way-its-registry-answers
 	 */
 	public function resolve(string $identifier, array $config = []): array {
 		$body = $this->gateway->read(
 			self::ID,
 			(string)($config['source'] ?? self::SOURCE_SLUG),
-			'/kvk/' . rawurlencode($identifier),
-			[]
+			'/zoeken',
+			['kvkNummer' => $identifier]
 		);
 
-		if (($body['kvkNummer'] ?? null) === null && ($body['identifier'] ?? null) === null) {
+		$record = null;
+		foreach ((array)($body['resultaten'] ?? []) as $row) {
+			if (is_array($row) === false || (string)($row['kvkNummer'] ?? '') !== $identifier) {
+				continue;
+			}
+
+			if (($row['type'] ?? '') === 'hoofdvestiging') {
+				return $row;
+			}
+
+			$record ??= $row;
+		}
+
+		if ($record === null) {
 			throw new SourceUnreachableException(
 				providerId: self::ID,
 				message: sprintf('The kvk registry returned no record for "%s".', $identifier)
 			);
 		}
 
-		return $body;
+		return $record;
 	}//end resolve()
 
 	/**
