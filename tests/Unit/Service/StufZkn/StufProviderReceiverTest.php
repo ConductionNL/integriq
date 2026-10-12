@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\StufZkn;
 
+use OCA\Integriq\Controller\StufProviderController;
 use OCA\Integriq\Event\StufCaseMutationEvent;
 use OCA\Integriq\Event\StufCaseQueryEvent;
 use OCA\Integriq\Event\StufDocumentMutationEvent;
@@ -36,7 +37,11 @@ use OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\OCSController;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IRequest;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -45,6 +50,8 @@ use RuntimeException;
 /**
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderReceiver
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderRequestReader
+ * @covers \OCA\Integriq\Service\StufZkn\StufProviderOperationMapper
+ * @covers \OCA\Integriq\Controller\StufProviderController
  * @covers \OCA\Integriq\Event\StufProviderQueryEvent
  * @covers \OCA\Integriq\Event\StufCaseQueryEvent
  * @covers \OCA\Integriq\Event\StufCaseMutationEvent
@@ -195,11 +202,11 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testPersonQueryIsAnsweredAsNpsLa01()
 
 	/**
-	 * A zakLk01 becomes a StufCaseMutationEvent and acceptance a Bv01.
+	 * A zakLk01 becomes a StufCaseMutationEvent and acceptance a Bv03.
 	 *
 	 * @return void
 	 */
-	public function testCaseMutationIsAcceptedAsBv01(): void {
+	public function testCaseMutationIsAcceptedAsBv03(): void {
 		$answer = $this->receiver()->receive(rawXml: self::zakLk01(), sourceId: 'zsh', service: 'cases');
 
 		$event = $this->events[0];
@@ -208,38 +215,38 @@ class StufProviderReceiverTest extends TestCase {
 		$this->assertSame('ZAAK-2026-7', $event->getFields()['identificatie']);
 		$this->assertSame('Nieuwe omschrijving', $event->getFields()['omschrijving']);
 		$this->assertSame(200, $answer['statusCode']);
-		$this->assertStringContainsString('Bv01Bericht', $answer['body']);
+		$this->assertStringContainsString('Bv03Bericht', $answer['body']);
 		$this->assertStringContainsString('<StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>', $answer['body']);
-	}//end testCaseMutationIsAcceptedAsBv01()
+	}//end testCaseMutationIsAcceptedAsBv03()
 
 	/**
-	 * A refused kennisgeving is a Fo01 carrying the app's reason, HTTP 400.
+	 * A refused kennisgeving is a Fo03 carrying the app's reason, HTTP 400.
 	 *
 	 * @return void
 	 */
-	public function testARefusedMutationIsAFo01(): void {
+	public function testARefusedMutationIsAFo03(): void {
 		$this->owner = 'refuse';
 		$answer      = $this->receiver()->receive(rawXml: self::zakLk01(), sourceId: 'zsh', service: 'cases');
 
 		$this->assertSame(400, $answer['statusCode']);
-		$this->assertStringContainsString('Fo01Bericht', $answer['body']);
+		$this->assertStringContainsString('Fo03Bericht', $answer['body']);
 		$this->assertStringContainsString('Zaaktype is not mapped', $answer['body']);
-	}//end testARefusedMutationIsAFo01()
+	}//end testARefusedMutationIsAFo03()
 
 	/**
-	 * An unanswered kennisgeving is a Fo01 with StUF055, not a Bv01.
+	 * An unanswered kennisgeving is a Fo03 with StUF055, not a Bv03.
 	 *
 	 * @return void
 	 */
-	public function testAnUnansweredMutationIsAFo01(): void {
+	public function testAnUnansweredMutationIsAFo03(): void {
 		$this->owner = 'silent';
 		$answer      = $this->receiver()->receive(rawXml: self::zakLk01(), sourceId: 'zsh', service: 'cases');
 
 		$this->assertSame(500, $answer['statusCode']);
-		$this->assertStringContainsString('Fo01Bericht', $answer['body']);
+		$this->assertStringContainsString('Fo03Bericht', $answer['body']);
 		$this->assertStringContainsString('StUF055', $answer['body']);
-		$this->assertStringNotContainsString('Bv01Bericht', $answer['body']);
-	}//end testAnUnansweredMutationIsAFo01()
+		$this->assertStringNotContainsString('Bv03Bericht', $answer['body']);
+	}//end testAnUnansweredMutationIsAFo03()
 
 	/**
 	 * An edcLk01 becomes a StufDocumentMutationEvent.
@@ -255,7 +262,7 @@ class StufProviderReceiverTest extends TestCase {
 		$this->assertSame('DOC-1', $event->getFields()['identificatie']);
 		$this->assertSame('ZAAK-2026-7', $event->getFields()['zaakidentificatie']);
 		$this->assertSame(200, $answer['statusCode']);
-		$this->assertStringContainsString('Bv01Bericht', $answer['body']);
+		$this->assertStringContainsString('Bv03Bericht', $answer['body']);
 	}//end testDocumentMutationIsDispatched()
 
 	/**
@@ -303,6 +310,232 @@ class StufProviderReceiverTest extends TestCase {
 		$this->assertSame(413, $receiver->receive(rawXml: str_repeat('a', 2097153), sourceId: 'zsh', service: 'cases')['statusCode']);
 		$this->assertSame([], $this->events);
 	}//end testUnsupportedOrMalformedRequestsAreRefused()
+
+	/**
+	 * A creeerZaak (zakLk01, T) reaches the owning app as a generic create, without StUF names.
+	 *
+	 * @return void
+	 */
+	public function testACreateMessageMapsToAGenericCaseOperation(): void {
+		$answer = $this->receiver()->receive(rawXml: self::creeerZaak(), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertStringContainsString('Bv03Bericht', $answer['body']);
+		$this->assertStringNotContainsString('<StUF:body', $answer['body']);
+		$event = $this->events[0];
+		$this->assertInstanceOf(StufCaseMutationEvent::class, $event);
+		$this->assertSame(
+			[
+				'action' => 'create',
+				'identifier' => 'ZSH-2026-0001',
+				'title' => 'Kapvergunning Dorpsstraat 1',
+				'description' => 'Twee eiken',
+				'startDate' => '2026-10-12',
+				'registrationDate' => '2026-10-12',
+				'plannedEndDate' => '2026-12-07',
+				'caseTypeCode' => 'KAP',
+				'caseTypeName' => 'Kapvergunning',
+				'initiator' => ['type' => 'person', 'sourceId' => '999993653', 'name' => 'Jan Jansen'],
+			],
+			$event->getOperation()
+		);
+	}//end testACreateMessageMapsToAGenericCaseOperation()
+
+	/**
+	 * An updateZaak (zakLk01, W) sends the old object and then the new one: the new one counts.
+	 *
+	 * @return void
+	 */
+	public function testAnUpdateMessageTakesTheNewObject(): void {
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:omschrijving>Oud</ZKN:omschrijving></ZKN:object>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:omschrijving>Nieuw</ZKN:omschrijving><ZKN:einddatumGepland>20261231</ZKN:einddatumGepland>'
+			. '<ZKN:isVan StUF:entiteittype="ZAKZKT"><ZKN:gerelateerde StUF:entiteittype="ZKT"><ZKN:code>KAP</ZKN:code></ZKN:gerelateerde></ZKN:isVan>'
+			. '</ZKN:object></ZKN:zakLk01>';
+		$this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$event = $this->events[0];
+		$this->assertInstanceOf(StufCaseMutationEvent::class, $event);
+		$this->assertSame(
+			['action' => 'update', 'identifier' => 'ZSH-2026-0001', 'title' => 'Nieuw', 'plannedEndDate' => '2026-12-31', 'caseTypeCode' => 'KAP'],
+			$event->getOperation()
+		);
+		$this->assertSame('Nieuw', $event->getFields()['omschrijving']);
+	}//end testAnUpdateMessageTakesTheNewObject()
+
+	/**
+	 * A voegZaakdocumentToe (edcLk01, T) reaches the owning app with the decoded bytes.
+	 *
+	 * @return void
+	 */
+	public function testADocumentMessageMapsToAGenericAddDocumentOperation(): void {
+		$answer = $this->receiver()->receive(rawXml: self::voegZaakdocumentToe(inhoud: base64_encode('%PDF-1.7 besluit')), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$event = $this->events[0];
+		$this->assertInstanceOf(StufDocumentMutationEvent::class, $event);
+		$this->assertSame(
+			[
+				'action' => 'add-document',
+				'identifier' => 'DOC-1',
+				'title' => 'Besluit',
+				'description' => 'Het besluit op de aanvraag',
+				'documentTypeName' => 'Besluit',
+				'format' => 'application/pdf',
+				'language' => 'nld',
+				'author' => 'A. Ambtenaar',
+				'caseIdentifier' => 'ZSH-2026-0001',
+				'creationDate' => '2026-10-12',
+				'confidentiality' => 'beperkt_openbaar',
+				'fileName' => 'besluit.pdf',
+				'content' => '%PDF-1.7 besluit',
+			],
+			$event->getOperation()
+		);
+		$this->assertArrayNotHasKey('inhoud', $event->getFields());
+	}//end testADocumentMessageMapsToAGenericAddDocumentOperation()
+
+	/**
+	 * A delete, an end, a document change and broken base64 are refused here: the owning app is never asked.
+	 *
+	 * @return void
+	 */
+	public function testAWriteThisAdapterDoesNotCarryOutIsRefusedWithoutAsking(): void {
+		$delete = str_replace('verwerkingssoort="W"', 'verwerkingssoort="V"', self::zakLk01());
+		$change = str_replace('verwerkingssoort="T"', 'verwerkingssoort="W"', self::edcLk01());
+		$broken = self::voegZaakdocumentToe(inhoud: 'geen base64 !!');
+
+		foreach ([$delete, $change, $broken] as $xml) {
+			$answer = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+			$this->assertSame(400, $answer['statusCode']);
+			$this->assertStringContainsString('Fo03Bericht', $answer['body']);
+			$this->assertStringContainsString('StUF058', $answer['body']);
+		}
+
+		$this->assertSame([], $this->events);
+	}//end testAWriteThisAdapterDoesNotCarryOutIsRefusedWithoutAsking()
+
+	/**
+	 * A write without the source's UsernameToken, or on a source that did not opt in, never reaches the owning app.
+	 *
+	 * @return void
+	 */
+	public function testAnUnauthenticatedWriteNeverReachesTheOwningApp(): void {
+		$anonymous = str_replace('>secret<', '>guess<', self::creeerZaak());
+		foreach ([['zsh', $anonymous], ['closed', self::creeerZaak()], ['tokenless', self::creeerZaak()]] as [$sourceId, $xml]) {
+			$answer = $this->receiver()->receive(rawXml: $xml, sourceId: $sourceId, service: 'cases');
+			$this->assertSame(401, $answer['statusCode']);
+			$this->assertStringContainsString('Fo03Bericht', $answer['body']);
+			$this->assertStringContainsString('StUF063', $answer['body']);
+		}
+
+		$this->assertSame([], $this->events);
+	}//end testAnUnauthenticatedWriteNeverReachesTheOwningApp()
+
+	/**
+	 * A write handed over from a sibling app's own URL is refused: writes come in on integriq's route only.
+	 *
+	 * @return void
+	 */
+	public function testAForwardedWriteIsRefusedAndAForwardedQueryIsNot(): void {
+		foreach ([self::creeerZaak(), self::zakLk01(), self::voegZaakdocumentToe(inhoud: base64_encode('x'))] as $xml) {
+			$answer = $this->receiver()->receiveForwarded(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+			$this->assertSame(403, $answer['statusCode']);
+			$this->assertStringContainsString('Fo03Bericht', $answer['body']);
+		}
+
+		$this->assertSame([], $this->events);
+
+		$query = $this->receiver()->receiveForwarded(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases');
+		$this->assertSame(200, $query['statusCode']);
+		$this->assertCount(1, $this->events);
+	}//end testAForwardedWriteIsRefusedAndAForwardedQueryIsNot()
+
+	/**
+	 * Every refusal reaches the caller as a StUF fault with a refusing HTTP status, through the middleware.
+	 *
+	 * The response is read after Nextcloud's OCSMiddleware has seen it, which is
+	 * where a 401 or 403 from an OCSController turns into a 200.
+	 *
+	 * @return void
+	 */
+	public function testARefusedWriteReachesTheCallerAsAFaultNotAs200(): void {
+		$cases = [
+			'refuse' => [self::creeerZaak(), 400],
+			'forbidden' => [self::creeerZaak(), 403],
+			'not-found' => [self::zakLk01(), 404],
+			'conflict' => [self::creeerZaak(), 409],
+			'silent' => [self::creeerZaak(), 500],
+			'throw' => [self::voegZaakdocumentToe(inhoud: base64_encode('x')), 500],
+			'unauthenticated' => [str_replace('>secret<', '>guess<', self::creeerZaak()), 401],
+		];
+		foreach ($cases as $owner => [$xml, $status]) {
+			$this->owner = $owner;
+			$delivered   = $this->deliver(rawXml: $xml);
+
+			$this->assertSame($status, $delivered->getStatus(), $owner);
+			$this->assertStringContainsString('Fo03Bericht', (string)$delivered->render(), $owner);
+			$this->assertStringContainsString('<faultcode>', (string)$delivered->render(), $owner);
+			$this->assertStringNotContainsString('Bv03Bericht', (string)$delivered->render(), $owner);
+		}
+
+		$this->owner = 'answer';
+		$accepted    = $this->deliver(rawXml: self::creeerZaak());
+		$this->assertSame(200, $accepted->getStatus());
+		$this->assertStringContainsString('Bv03Bericht', (string)$accepted->render());
+	}//end testARefusedWriteReachesTheCallerAsAFaultNotAs200()
+
+	/**
+	 * Post one message to the real controller and read the response after the OCS middleware.
+	 *
+	 * Inside a Nextcloud server (CI) the real OCSMiddleware runs. Without one
+	 * (the bare unit run) its rule, as measured live on 4 Oct 2026, is applied
+	 * instead: a 401 or 403 from an OCSController becomes a 200.
+	 *
+	 * @param string $rawXml The request body.
+	 *
+	 * @return Response The response the caller gets.
+	 */
+	private function deliver(string $rawXml): Response {
+		$request    = $this->createMock(IRequest::class);
+		$controller = new class('integriq', $request, $this->receiver(), $rawXml) extends StufProviderController {
+			/**
+			 * Constructor.
+			 *
+			 * @param string               $appName  The app.
+			 * @param IRequest             $request  The request.
+			 * @param StufProviderReceiver $receiver The receiver.
+			 * @param string               $rawBody  The body under test.
+			 */
+			public function __construct(string $appName, IRequest $request, StufProviderReceiver $receiver, private readonly string $rawBody) {
+				parent::__construct(appName: $appName, request: $request, receiver: $receiver);
+			}
+
+			/**
+			 * The body under test.
+			 *
+			 * @return string The body.
+			 */
+			protected function readRawBody(): string {
+				return $this->rawBody;
+			}
+		};
+		$this->assertInstanceOf(Controller::class, $controller);
+		$this->assertNotInstanceOf(OCSController::class, $controller, 'An OCSController would have its 401 and 403 turned into 200.');
+
+		$response = $controller->cases(sourceId: 'zsh');
+		if (class_exists(\OC\AppFramework\Middleware\OCSMiddleware::class) === true) {
+			return (new \OC\AppFramework\Middleware\OCSMiddleware($request))->afterController($controller, 'cases', $response);
+		}
+
+		if ($controller instanceof OCSController && in_array($response->getStatus(), [401, 403], true) === true) {
+			$response->setStatus(200);
+		}
+
+		return $response;
+	}//end deliver()
 
 	/**
 	 * Build the receiver over real collaborators.
@@ -354,6 +587,11 @@ class StufProviderReceiverTest extends TestCase {
 
 		if ($this->owner === 'throw') {
 			throw new RuntimeException('database down');
+		}
+
+		if (in_array($this->owner, ['forbidden', 'not-found', 'conflict'], true) === true && $event instanceof StufProviderQueryEvent) {
+			$event->refuse(appId: 'dossiq', reason: 'Nee: ' . $this->owner, kind: $this->owner);
+			return;
 		}
 
 		if ($this->owner === 'refuse' && $event instanceof StufProviderQueryEvent) {
@@ -421,6 +659,51 @@ class StufProviderReceiverTest extends TestCase {
 				. '</ZKN:object></ZKN:edcLk01>'
 		);
 	}//end edcLk01()
+
+	/**
+	 * A creeerZaak_Lk01 as a StUF-ZDS 1.2 client sends it.
+	 *
+	 * @return string The envelope.
+	 */
+	private static function creeerZaak(): string {
+		return self::envelope(
+			body: '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>T</StUF:mutatiesoort>'
+				. '<StUF:indicatorOvername>V</StUF:indicatorOvername></ZKN:parameters>'
+				. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="T"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+				. '<ZKN:omschrijving>Kapvergunning Dorpsstraat 1</ZKN:omschrijving><ZKN:toelichting>Twee eiken</ZKN:toelichting>'
+				. '<ZKN:startdatum>20261012</ZKN:startdatum><ZKN:registratiedatum>20261012</ZKN:registratiedatum>'
+				. '<ZKN:einddatumGepland>20261207</ZKN:einddatumGepland><ZKN:einddatum StUF:noValue="geenWaarde" xsi:nil="true"'
+				. ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>'
+				. '<ZKN:isVan StUF:entiteittype="ZAKZKT" StUF:verwerkingssoort="T"><ZKN:gerelateerde StUF:entiteittype="ZKT" StUF:verwerkingssoort="I">'
+				. '<ZKN:omschrijving>Kapvergunning</ZKN:omschrijving><ZKN:code>KAP</ZKN:code></ZKN:gerelateerde></ZKN:isVan>'
+				. '<ZKN:heeftAlsInitiator StUF:entiteittype="ZAKBTRINI" StUF:verwerkingssoort="T"><ZKN:gerelateerde>'
+				. '<ZKN:natuurlijkPersoon StUF:entiteittype="NPS" StUF:verwerkingssoort="I"><BG:inp.bsn>999993653</BG:inp.bsn>'
+				. '<BG:geslachtsnaam>Jansen</BG:geslachtsnaam><BG:voornamen>Jan</BG:voornamen></ZKN:natuurlijkPersoon>'
+				. '</ZKN:gerelateerde></ZKN:heeftAlsInitiator></ZKN:object></ZKN:zakLk01>'
+		);
+	}//end creeerZaak()
+
+	/**
+	 * A voegZaakdocumentToe_Lk01 as a StUF-ZDS 1.2 client sends it.
+	 *
+	 * @param string $inhoud The inhoud element's text.
+	 *
+	 * @return string The envelope.
+	 */
+	private static function voegZaakdocumentToe(string $inhoud): string {
+		return self::envelope(
+			body: '<ZKN:edcLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>T</StUF:mutatiesoort></ZKN:parameters>'
+				. '<ZKN:object StUF:entiteittype="EDC" StUF:verwerkingssoort="T"><ZKN:identificatie>DOC-1</ZKN:identificatie>'
+				. '<ZKN:dct.omschrijving>Besluit</ZKN:dct.omschrijving><ZKN:creatiedatum>20261012</ZKN:creatiedatum>'
+				. '<ZKN:titel>Besluit</ZKN:titel><ZKN:beschrijving>Het besluit op de aanvraag</ZKN:beschrijving>'
+				. '<ZKN:formaat>application/pdf</ZKN:formaat><ZKN:taal>nld</ZKN:taal>'
+				. '<ZKN:vertrouwelijkAanduiding>BEPERKT OPENBAAR</ZKN:vertrouwelijkAanduiding><ZKN:auteur>A. Ambtenaar</ZKN:auteur>'
+				. '<ZKN:inhoud StUF:bestandsnaam="besluit.pdf">' . $inhoud . '</ZKN:inhoud>'
+				. '<ZKN:isRelevantVoor StUF:entiteittype="EDCZAK" StUF:verwerkingssoort="T"><ZKN:gerelateerde StUF:entiteittype="ZAK" StUF:verwerkingssoort="I">'
+				. '<ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie></ZKN:gerelateerde></ZKN:isRelevantVoor>'
+				. '</ZKN:object></ZKN:edcLk01>'
+		);
+	}//end voegZaakdocumentToe()
 
 	/**
 	 * An npsLv01 asking for one BSN.

@@ -40,6 +40,17 @@ use SimpleXMLElement;
 class StufProviderRequestReader {
 
 	/**
+	 * Constructor.
+	 *
+	 * @param StufProviderOperationMapper $mapper Maps a write message onto a generic case operation.
+	 */
+	public function __construct(
+		private readonly StufProviderOperationMapper $mapper = new StufProviderOperationMapper(),
+	) {
+
+	}//end __construct()
+
+	/**
 	 * Build the typed event for one message.
 	 *
 	 * @param SimpleXMLElement $message          The StUF message element.
@@ -65,7 +76,8 @@ class StufProviderRequestReader {
 			return new StufPersonQueryEvent(sourceId: $sourceId, referentienummer: $referentienummer, bsn: $bsn);
 		}
 
-		$object       = $this->first(xml: $message, path: './*[local-name()="object"]');
+		// A W kennisgeving sends the old object and then the new one: the last one holds the current values.
+		$object       = $this->mapper->currentObject(message: $message);
 		$fields       = $this->leaves(element: $object);
 		$mutatiesoort = $this->text(xml: $message, path: './*[local-name()="parameters"]/*[local-name()="mutatiesoort"]');
 		if ($mutatiesoort === '' && $object !== null) {
@@ -73,21 +85,25 @@ class StufProviderRequestReader {
 		}
 
 		if ($type === 'edcLk01') {
-			$fields['zaakidentificatie'] = $this->text(
-				xml: $message,
-				path: './*[local-name()="object"]/*[local-name()="isRelevantVoor"]/*[local-name()="gerelateerde"]/*[local-name()="identificatie"]'
+			$fields['zaakidentificatie'] = $this->relatedText(object: $object, relation: 'isRelevantVoor', element: 'identificatie');
+			unset($fields['inhoud']);
+			return new StufDocumentMutationEvent(
+				sourceId: $sourceId,
+				referentienummer: $referentienummer,
+				mutatiesoort: $mutatiesoort,
+				fields: array_filter($fields, static fn(string $value): bool => $value !== ''),
+				operation: $this->mapper->documentOperation(message: $message, mutatiesoort: $mutatiesoort)
 			);
-			return new StufDocumentMutationEvent(sourceId: $sourceId, referentienummer: $referentienummer, mutatiesoort: $mutatiesoort, fields: $fields);
 		}
 
-		$zaaktype = './*[local-name()="object"]/*[local-name()="isVan"]/*[local-name()="gerelateerde"]/*[local-name()="';
-		$fields['zaaktypeCode']         = $this->text(xml: $message, path: $zaaktype . 'code"]');
-		$fields['zaaktypeOmschrijving'] = $this->text(xml: $message, path: $zaaktype . 'omschrijving"]');
+		$fields['zaaktypeCode']         = $this->relatedText(object: $object, relation: 'isVan', element: 'code');
+		$fields['zaaktypeOmschrijving'] = $this->relatedText(object: $object, relation: 'isVan', element: 'omschrijving');
 		return new StufCaseMutationEvent(
 			sourceId: $sourceId,
 			referentienummer: $referentienummer,
 			mutatiesoort: $mutatiesoort,
-			fields: array_filter($fields, static fn(string $value): bool => $value !== '')
+			fields: array_filter($fields, static fn(string $value): bool => $value !== ''),
+			operation: $this->mapper->caseOperation(message: $message, mutatiesoort: $mutatiesoort)
 		);
 	}//end event()
 
@@ -131,6 +147,26 @@ class StufProviderRequestReader {
 
 		return $result;
 	}//end leaves()
+
+	/**
+	 * The text of one element of an object's related entity.
+	 *
+	 * @param SimpleXMLElement|null $object   The object.
+	 * @param string                $relation The relation element (isVan, isRelevantVoor).
+	 * @param string                $element  The element inside its gerelateerde.
+	 *
+	 * @return string The text, '' when absent.
+	 */
+	private function relatedText(?SimpleXMLElement $object, string $relation, string $element): string {
+		if ($object === null) {
+			return '';
+		}
+
+		return $this->text(
+			xml: $object,
+			path: './*[local-name()="' . $relation . '"]/*[local-name()="gerelateerde"]/*[local-name()="' . $element . '"]'
+		);
+	}//end relatedText()
 
 	/**
 	 * An attribute in any namespace, by local name.

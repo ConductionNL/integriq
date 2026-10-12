@@ -39,12 +39,14 @@ class StufCaseMutationEvent extends StufProviderQueryEvent {
 	 * @param string                $referentienummer The request's referentienummer.
 	 * @param string                $mutatiesoort     The StUF mutatiesoort (T, W, V, E), '' when absent.
 	 * @param array<string, string> $fields           StUF element name to value, from the object.
+	 * @param array<string, mixed>  $operation        The generic case operation the message maps to.
 	 */
 	public function __construct(
 		string $sourceId,
 		string $referentienummer,
 		private readonly string $mutatiesoort,
 		private readonly array $fields,
+		private readonly array $operation = [],
 	) {
 		parent::__construct(sourceId: $sourceId, referentienummer: $referentienummer);
 
@@ -73,6 +75,21 @@ class StufCaseMutationEvent extends StufProviderQueryEvent {
 		return $this->fields;
 
 	}//end getFields()
+
+	/**
+	 * The generic case operation this message maps to (decision 206).
+	 *
+	 * The owning app carries this out and never reads the StUF names:
+	 * {@see \OCA\Integriq\Service\StufZkn\StufProviderOperationMapper} lists the keys.
+	 *
+	 * @return array<string, mixed> The operation, `action` always set when mapped.
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function getOperation(): array {
+		return $this->operation;
+
+	}//end getOperation()
 
 	/**
 	 * Accept the kennisgeving.

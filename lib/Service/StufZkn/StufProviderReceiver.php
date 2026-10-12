@@ -33,7 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\StufZkn;
 
+use OCA\Integriq\Event\StufCaseMutationEvent;
 use OCA\Integriq\Event\StufCaseQueryEvent;
+use OCA\Integriq\Event\StufDocumentMutationEvent;
 use OCA\Integriq\Event\StufPersonQueryEvent;
 use OCA\Integriq\Event\StufProviderQueryEvent;
 use OCA\Integriq\Exception\StufZknProviderException;
@@ -87,6 +89,36 @@ class StufProviderReceiver {
 	private const MAX_BODY_BYTES = 2097152;
 
 	/**
+	 * The request came in on integriq's own route.
+	 *
+	 * @var string
+	 */
+	private const ORIGIN_ROUTE = 'route';
+
+	/**
+	 * A sibling app handed the request over from its own URL.
+	 *
+	 * @var string
+	 */
+	private const ORIGIN_FORWARDED = 'forwarded';
+
+	/**
+	 * The HTTP status each refusal kind goes back with.
+	 *
+	 * None of them is rewritten on the way out: the routes sit on a plain
+	 * Controller, and Nextcloud's OCSMiddleware only turns a 401 or 403 into a
+	 * 200 for an OCSController (StufProviderReceiverTest reads each status after it).
+	 *
+	 * @var array<string, int>
+	 */
+	private const REFUSAL_STATUS = [
+		StufProviderQueryEvent::REFUSAL_REFUSED => 400,
+		StufProviderQueryEvent::REFUSAL_FORBIDDEN => 403,
+		StufProviderQueryEvent::REFUSAL_NOT_FOUND => 404,
+		StufProviderQueryEvent::REFUSAL_CONFLICT => 409,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param StufZdsMessageLog         $log         Source reads.
@@ -112,10 +144,13 @@ class StufProviderReceiver {
 	/**
 	 * Receive one provider request.
 	 *
-	 * 200 with a zakLa01, npsLa01 or Bv01 when the owning app answered; 400 with
-	 * a Fo01/Fo02 when the request is malformed, on the wrong route, or refused by
-	 * the app; 401 when the source or its credentials do not match; 413 when the
-	 * body is too large; 500 with a StUF055 fault when nobody answered.
+	 * 200 with a zakLa01, npsLa01 or Bv03 when the owning app answered; 400 with
+	 * a Fo02/Fo03 when the request is malformed, on the wrong route, carries a
+	 * mutatiesoort this adapter does not carry out, or is refused by the app
+	 * (403, 404 or 409 when the app says it is forbidden, not found or already
+	 * there); 401 when the source or its credentials do not match; 413 when the
+	 * body is too large; 500 with a StUF055 fault when nobody answered. A fault
+	 * never travels as HTTP 200.
 	 *
 	 * @param string $rawXml   The raw request body.
 	 * @param string $sourceId The integriq StUF-ZKN source the request is for.
@@ -126,6 +161,38 @@ class StufProviderReceiver {
 	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	public function receive(string $rawXml, string $sourceId, string $service): array {
+		return $this->process(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_ROUTE);
+	}//end receive()
+
+	/**
+	 * Receive a provider request a sibling app handed over from its own URL.
+	 *
+	 * A query is answered as on integriq's route. A write is refused: decision
+	 * 206 lets a write in on integriq's own route only.
+	 *
+	 * @param string $rawXml   The raw request body.
+	 * @param string $sourceId The integriq StUF-ZKN source the request is for.
+	 * @param string $service  SERVICE_CASES or SERVICE_PERSONS.
+	 *
+	 * @return array The answer (ProviderAnswer).
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-writes-arrive-on-integriqs-own-route-only
+	 */
+	public function receiveForwarded(string $rawXml, string $sourceId, string $service): array {
+		return $this->process(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_FORWARDED);
+	}//end receiveForwarded()
+
+	/**
+	 * Authenticate, read, ask the owning app and render the answer.
+	 *
+	 * @param string $rawXml   The raw request body.
+	 * @param string $sourceId The integriq StUF-ZKN source the request is for.
+	 * @param string $service  SERVICE_CASES or SERVICE_PERSONS.
+	 * @param string $origin   ORIGIN_ROUTE or ORIGIN_FORWARDED.
+	 *
+	 * @return array The answer (ProviderAnswer).
+	 */
+	private function process(string $rawXml, string $sourceId, string $service, string $origin): array {
 		if (strlen($rawXml) > self::MAX_BODY_BYTES) {
 			return $this->fault(statusCode: 413, berichtcode: 'Fo02', code: 'StUF001', omschrijving: 'Bericht te groot', stuurgegevens: []);
 		}
@@ -169,6 +236,18 @@ class StufProviderReceiver {
 		}
 
 		$event = $this->reader->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
+		$unfit = $this->unfitWrite(event: $event, origin: $origin);
+		if ($unfit !== null) {
+			$this->logger->warning('StUF provider write {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);
+			return $this->fault(
+				statusCode: $unfit['statusCode'],
+				berichtcode: $faultCode,
+				code: 'StUF058',
+				omschrijving: $unfit['reason'],
+				stuurgegevens: $reply
+			);
+		}
+
 		try {
 			$this->dispatcher->dispatchTyped($event);
 		} catch (Throwable $exception) {
@@ -176,18 +255,19 @@ class StufProviderReceiver {
 		}
 
 		return $this->answer(event: $event, faultCode: $faultCode, reply: $reply);
-	}//end receive()
+	}//end process()
 
 	/**
 	 * Render the owning app's answer, its refusal, or the silence.
 	 *
 	 * @param StufProviderQueryEvent $event     The answered (or not) event.
-	 * @param string                 $faultCode Fo01 for a kennisgeving, Fo02 for a vraag.
+	 * @param string                 $faultCode Fo03 for a kennisgeving, Fo02 for a vraag.
 	 * @param array                  $reply     The reply stuurgegevens.
 	 *
 	 * @return array The answer (ProviderAnswer).
 	 *
 	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-an-unanswered-query-is-a-fault-never-an-empty-answer
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-refused-write-is-a-stuf-fault-with-a-refusing-status
 	 */
 	private function answer(StufProviderQueryEvent $event, string $faultCode, array $reply): array {
 		if ($event->isAnswered() === false) {
@@ -203,7 +283,12 @@ class StufProviderReceiver {
 
 		$refusal = $event->getRefusal();
 		if ($refusal !== null) {
-			return $this->fault(statusCode: 400, berichtcode: $faultCode, code: 'StUF058', omschrijving: $refusal, stuurgegevens: $reply);
+			$status = (self::REFUSAL_STATUS[$event->getRefusalKind()] ?? 400);
+			$this->logger->warning(
+				'StUF provider request {ref} refused by {app} ({kind})',
+				['ref' => $event->getReferentienummer(), 'app' => (string)$event->getAnsweredBy(), 'kind' => $event->getRefusalKind()]
+			);
+			return $this->fault(statusCode: $status, berichtcode: $faultCode, code: 'StUF058', omschrijving: $refusal, stuurgegevens: $reply);
 		}
 
 		$payload = $event->getAnswer();
@@ -215,8 +300,42 @@ class StufProviderReceiver {
 			return ['statusCode' => 200, 'body' => $this->xml->buildNpsLa01(persons: (array)($payload['persons'] ?? []), stuurgegevens: $reply)];
 		}
 
-		return ['statusCode' => 200, 'body' => $this->xml->buildBv01(stuurgegevens: $reply)];
+		// StUF-ZDS 1.2 answers every kennisgeving with a Bv03 (or a Fo03).
+		return ['statusCode' => 200, 'body' => $this->xml->buildBv03(caseIdentification: '', stuurgegevens: $reply)];
 	}//end answer()
+
+	/**
+	 * Why a write message is not put to the owning app at all, or null when it is.
+	 *
+	 * @param StufProviderQueryEvent $event  The event the message became.
+	 * @param string                 $origin ORIGIN_ROUTE or ORIGIN_FORWARDED.
+	 *
+	 * @return array{statusCode:int,reason:string}|null The refusal, its reason safe to return; null for a query or a write this adapter carries out.
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-only-create-update-and-document-add-are-carried-out
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-writes-arrive-on-integriqs-own-route-only
+	 */
+	private function unfitWrite(StufProviderQueryEvent $event, string $origin): ?array {
+		if (($event instanceof StufCaseMutationEvent) === false && ($event instanceof StufDocumentMutationEvent) === false) {
+			return null;
+		}
+
+		if ($origin !== self::ORIGIN_ROUTE) {
+			// Decision 206: a write comes in on integriq's own route, never through a sibling app's URL.
+			return ['statusCode' => 403, 'reason' => 'Schrijven kan alleen op het StUF-adres van integriq'];
+		}
+
+		$operation = $event->getOperation();
+		if (($operation['action'] ?? StufProviderOperationMapper::ACTION_UNSUPPORTED) === StufProviderOperationMapper::ACTION_UNSUPPORTED) {
+			return ['statusCode' => 400, 'reason' => 'Mutatiesoort wordt niet ondersteund'];
+		}
+
+		if (isset($operation['contentError']) === true) {
+			return ['statusCode' => 400, 'reason' => 'De inhoud van het document is geen geldige base64'];
+		}
+
+		return null;
+	}//end unfitWrite()
 
 	/**
 	 * The source, when it accepts provider requests and the envelope's UsernameToken matches it.
@@ -285,7 +404,7 @@ class StufProviderReceiver {
 	 * A fault answer.
 	 *
 	 * @param int    $statusCode    The HTTP status.
-	 * @param string $berichtcode   Fo01 or Fo02.
+	 * @param string $berichtcode   Fo02 or Fo03.
 	 * @param string $code          The StUF fault code.
 	 * @param string $omschrijving  The description, safe to return.
 	 * @param array  $stuurgegevens The reply stuurgegevens.
@@ -299,23 +418,23 @@ class StufProviderReceiver {
 		}
 
 		$body = $this->xml->buildFo02(code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);
-		if ($berichtcode === 'Fo01') {
-			$body = $this->xml->buildFo01(code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);
+		if ($berichtcode === 'Fo03') {
+			$body = $this->xml->buildFo03(code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens);
 		}
 
 		return ['statusCode' => $statusCode, 'body' => $body];
 	}//end fault()
 
 	/**
-	 * Fo01 answers a kennisgeving (Lk01), Fo02 a vraag (Lv01) and anything unknown.
+	 * Fo03 answers a kennisgeving (Lk01, as StUF-ZDS 1.2 pairs it), Fo02 a vraag (Lv01) and anything unknown.
 	 *
 	 * @param string $berichttype The message's local name.
 	 *
-	 * @return string Fo01 or Fo02.
+	 * @return string Fo02 or Fo03.
 	 */
 	private function faultCode(string $berichttype): string {
 		if (str_ends_with($berichttype, 'Lk01') === true) {
-			return 'Fo01';
+			return 'Fo03';
 		}
 
 		return 'Fo02';
