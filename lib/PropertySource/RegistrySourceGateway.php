@@ -68,25 +68,107 @@ class RegistrySourceGateway {
 	 * @spec openspec/changes/registry-bindings-speak-the-registry-api/specs/registry-field-source/spec.md#requirement-a-registry-binding-asks-the-way-its-registry-answers
 	 */
 	public function read(string $providerId, string $sourceSlug, string $endpoint, array $query = [], ?array $json = null): array {
+		$source = $this->source(providerId: $providerId, sourceSlug: $sourceSlug);
+		$question = $this->question(query: $query, json: $json);
+
+		return $this->answer(
+			providerId: $providerId,
+			sourceSlug: $sourceSlug,
+			call: fn (): ObjectEntity => $this->callService->call(
+				source: $source,
+				endpoint: $endpoint,
+				method: $question['method'],
+				config: $question['config']
+			)
+		);
+	}//end read()
+
+	/**
+	 * Read from a configured source without writing the call to the call log.
+	 *
+	 * For an answer that must never be stored, such as a person's family
+	 * relations: the call log keeps bodies during an investigation window and
+	 * keeps a failed request for a replay.
+	 *
+	 * @param string $providerId Provider id asking, for the failure message.
+	 * @param string $sourceSlug Slug of the configured source.
+	 * @param string $endpoint Endpoint on that source.
+	 * @param array<string,mixed> $query Query parameters.
+	 * @param array<string,mixed>|null $json A JSON body. Given, the call is a POST.
+	 *
+	 * @return array<string,mixed> Decoded response body.
+	 *
+	 * @throws MissingSourceConfigurationException When no source is configured under the slug.
+	 * @throws SourceUnreachableException When the source did not answer with a usable body.
+	 *
+	 * @spec openspec/changes/brp-relations-read/specs/registry-field-source/spec.md#requirement-brp-relations-are-read-only-where-the-source-says-the-municipality-may
+	 */
+	public function readUnrecorded(string $providerId, string $sourceSlug, string $endpoint, array $query = [], ?array $json = null): array {
+		$source = $this->source(providerId: $providerId, sourceSlug: $sourceSlug);
+		$question = $this->question(query: $query, json: $json);
+
+		return $this->answer(
+			providerId: $providerId,
+			sourceSlug: $sourceSlug,
+			call: fn (): ObjectEntity => $this->callService->call(
+				source: $source,
+				endpoint: $endpoint,
+				method: $question['method'],
+				config: $question['config'],
+				persistLog: false
+			)
+		);
+	}//end readUnrecorded()
+
+	/**
+	 * The configured source under a slug.
+	 *
+	 * @param string $providerId Provider id asking, for the failure message.
+	 * @param string $sourceSlug Slug of the configured source.
+	 *
+	 * @return ObjectEntity The source.
+	 *
+	 * @throws MissingSourceConfigurationException When no source is configured under the slug.
+	 */
+	private function source(string $providerId, string $sourceSlug): ObjectEntity {
 		$source = $this->connectionStore->findSourceBySlug(slug: $sourceSlug);
 		if ($source instanceof ObjectEntity === false) {
 			throw new MissingSourceConfigurationException(providerId: $providerId, sourceSlug: $sourceSlug);
 		}
 
-		$method = 'GET';
-		$config = ['query' => $query];
-		if ($json !== null) {
-			$method = 'POST';
-			$config['body'] = (string)json_encode($json);
+		return $source;
+	}//end source()
+
+	/**
+	 * The HTTP method and call configuration of a question.
+	 *
+	 * @param array<string,mixed> $query Query parameters.
+	 * @param array<string,mixed>|null $json A JSON body. Given, the call is a POST.
+	 *
+	 * @return array{method:string,config:array<string,mixed>}
+	 */
+	private function question(array $query, ?array $json): array {
+		if ($json === null) {
+			return ['method' => 'GET', 'config' => ['query' => $query]];
 		}
 
+		return ['method' => 'POST', 'config' => ['query' => $query, 'body' => (string)json_encode($json)]];
+	}//end question()
+
+	/**
+	 * Make the call and read the decoded body out of what the call engine hands back.
+	 *
+	 * @param string $providerId Provider id asking, for the failure message.
+	 * @param string $sourceSlug Slug of the configured source.
+	 * @param callable():ObjectEntity $call The call to make.
+	 *
+	 * @return array<string,mixed> Decoded response body.
+	 *
+	 * @throws SourceUnreachableException When the source did not answer with a usable body.
+	 */
+	private function answer(string $providerId, string $sourceSlug, callable $call): array {
 		try {
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: $endpoint,
-				method: $method,
-				config: $config
-			);
+			$callLog = $call();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'property-source.gateway.transport',
@@ -121,5 +203,29 @@ class RegistrySourceGateway {
 		}
 
 		return $body;
-	}//end read()
+	}//end answer()
+
+	/**
+	 * The `configuration` of a configured source, for a binding that reads a
+	 * setting an administrator keeps on the source.
+	 *
+	 * @param string $sourceSlug Slug of the configured source.
+	 *
+	 * @return array<string,mixed>|null The configuration, or null when no source is configured under the slug.
+	 *
+	 * @spec openspec/changes/brp-relations-read/specs/registry-field-source/spec.md#requirement-brp-relations-are-read-only-where-the-source-says-the-municipality-may
+	 */
+	public function configuration(string $sourceSlug): ?array {
+		$source = $this->connectionStore->findSourceBySlug(slug: $sourceSlug);
+		if ($source instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		$configuration = ($source->getObject()['configuration'] ?? []);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		return $configuration;
+	}//end configuration()
 }//end class

@@ -59,7 +59,10 @@
                   "postcode": "3511ED",
                   "woonplaats": "Utrecht",
                   "land": { "code": "6030", "omschrijving": "Nederland" }
-                }
+                },
+                "partners": [{ "burgerservicenummer": "999993653" }],
+                "ouders": [{ "burgerservicenummer": "999991723" }, { "burgerservicenummer": "999992077" }],
+                "kinderen": [{ "burgerservicenummer": "999994669" }]
               }
             ]
           },

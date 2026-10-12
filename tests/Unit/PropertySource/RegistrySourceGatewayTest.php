@@ -45,6 +45,7 @@ class RegistrySourceGatewayTest extends TestCase {
 	 */
 	private function gateway(): RegistrySourceGateway {
 		$source = new ObjectEntity();
+		$source->setObject(['slug' => 'brp-haalcentraal', 'configuration' => ['relationFields' => true]]);
 		$store  = $this->createMock(ConnectionStore::class);
 		$store->method('findSourceBySlug')->willReturn($source);
 
@@ -52,8 +53,8 @@ class RegistrySourceGatewayTest extends TestCase {
 		$log->setObject(['statusCode' => 200, 'response' => ['body' => '{"ok":true}']]);
 		$calls = $this->createMock(CallService::class);
 		$calls->method('call')->willReturnCallback(
-			function (ObjectEntity $source, string $endpoint, string $method, array $config) use ($log): ObjectEntity {
-				$this->call = ['endpoint' => $endpoint, 'method' => $method, 'config' => $config];
+			function (ObjectEntity $source, string $endpoint, string $method, array $config, ...$rest) use ($log): ObjectEntity {
+				$this->call = ['endpoint' => $endpoint, 'method' => $method, 'config' => $config, 'rest' => $rest];
 				return $log;
 			}
 		);
@@ -86,4 +87,35 @@ class RegistrySourceGatewayTest extends TestCase {
 		$this->assertSame('/personen', $this->call['endpoint']);
 		$this->assertSame('{"type":"RaadpleegMetBurgerservicenummer"}', $this->call['config']['body']);
 	}//end testAQuestionWithABodyIsAPost()
+
+	/**
+	 * An unrecorded read reaches the call engine with `persistLog` false, so
+	 * no call log row is written for it.
+	 *
+	 * @return void
+	 */
+	public function testAReadTheCallerAsksNotToRecordIsNotWrittenToTheCallLog(): void {
+		$this->gateway()->read('brp', 'brp-haalcentraal', '/personen', [], ['type' => 'RaadpleegMetBurgerservicenummer']);
+		$this->assertTrue(end($this->call['rest']), 'A read is written to the call log (persistLog, the call engine\'s last parameter)');
+
+		$answer = $this->gateway()->readUnrecorded('brp', 'brp-haalcentraal', '/personen', [], ['type' => 'RaadpleegMetBurgerservicenummer']);
+		$this->assertSame(['ok' => true], $answer);
+		$this->assertSame('POST', $this->call['method']);
+		$this->assertCount(8, $this->call['rest']);
+		$this->assertFalse(end($this->call['rest']));
+	}//end testAReadTheCallerAsksNotToRecordIsNotWrittenToTheCallLog()
+
+	/**
+	 * The configuration of a source is read by slug; no source is null.
+	 *
+	 * @return void
+	 */
+	public function testASourceConfigurationIsReadBySlug(): void {
+		$this->assertSame(['relationFields' => true], $this->gateway()->configuration('brp-haalcentraal'));
+
+		$store = $this->createMock(ConnectionStore::class);
+		$store->method('findSourceBySlug')->willReturn(null);
+		$gateway = new RegistrySourceGateway($store, $this->createMock(CallService::class), $this->createMock(LoggerInterface::class));
+		$this->assertNull($gateway->configuration('brp-haalcentraal'));
+	}//end testASourceConfigurationIsReadBySlug()
 }//end class
