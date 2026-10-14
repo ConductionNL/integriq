@@ -40,7 +40,7 @@ class BagPropertySourceTest extends TestCase {
 	private function geocoding(): PdokGeocodingClient {
 		return $this->getMockBuilder(PdokGeocodingClient::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['suggest', 'lookup', 'reverse', 'flavour'])
+			->onlyMethods(['suggest', 'find', 'lookup', 'reverse', 'flavour'])
 			->getMock();
 	}//end geocoding()
 

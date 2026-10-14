@@ -115,6 +115,42 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 	}//end suggest()
 
 	/**
+	 * A search that answers null when the Locatieserver gave no answer.
+	 *
+	 * @param string $query The query; the Locatieserver's field syntax is allowed.
+	 * @param int $rows Maximum rows to return.
+	 *
+	 * @return array<int,array<string,mixed>>|null
+	 *
+	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 */
+	public function find(string $query, int $rows = 10): ?array {
+		$payload = $this->request(
+			path: 'suggest',
+			query: [
+				'q' => $query,
+				'rows' => max(1, min(50, $rows)),
+				'fl' => 'id,weergavenaam,straatnaam,huisnummer,postcode,woonplaatsnaam,'
+					. 'provincienaam,centroide_ll,nummeraanduiding_id,adresseerbaarobject_id',
+			]
+		);
+
+		$docs = ($payload['response']['docs'] ?? null);
+		if ($payload === null || is_array($docs) === false) {
+			return null;
+		}
+
+		$out = [];
+		foreach ($docs as $doc) {
+			if (is_array($doc) === true) {
+				$out[] = $this->normaliseDoc(doc: $doc);
+			}
+		}
+
+		return $out;
+	}//end find()
+
+	/**
 	 * Lookup a specific PDOK identifier.
 	 *
 	 * @param string $pdokId PDOK Locatieserver id.
@@ -190,6 +226,18 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 	 * @return array<string,mixed> Decoded JSON payload.
 	 */
 	private function get(string $path, array $query): array {
+		return ($this->request(path: $path, query: $query) ?? ['response' => ['docs' => []]]);
+	}//end get()
+
+	/**
+	 * Execute a GET request against the Locatieserver, null when it gave no usable answer.
+	 *
+	 * @param string $path Relative path under the base URI.
+	 * @param array<string,mixed> $query Query-string parameters.
+	 *
+	 * @return array<string,mixed>|null Decoded JSON payload, or null on a transport or decode failure.
+	 */
+	private function request(string $path, array $query): ?array {
 		$uri = $this->baseUri . ltrim($path, '/');
 
 		try {
@@ -211,7 +259,7 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 					'message' => $e->getMessage(),
 				]
 			);
-			return ['response' => ['docs' => []]];
+			return null;
 		}//end try
 
 		$body = (string)$response->getBody();
@@ -225,11 +273,11 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 					'bodySize' => strlen($body),
 				]
 			);
-			return ['response' => ['docs' => []]];
+			return null;
 		}
 
 		return $decoded;
-	}//end get()
+	}//end request()
 
 	/**
 	 * Normalise a Locatieserver `docs[]` entry into the canonical PostalAddress shape.

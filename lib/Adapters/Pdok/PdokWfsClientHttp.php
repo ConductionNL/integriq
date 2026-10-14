@@ -129,6 +129,8 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	 * @param array $filterFields Optional name=value filter pairs.
 	 *
 	 * @return array<string,mixed> Parsed GeoJSON FeatureCollection.
+	 *
+	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
 	 */
 	public function getFeature(
 		string $dataset,
@@ -177,12 +179,15 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 					'bodySize' => strlen($body),
 				]
 			);
+			// `unanswered` tells a caller that decides on the answer that this
+			// empty collection is a failure, not "nothing matched".
 			return [
 				'type' => 'FeatureCollection',
 				'features' => [],
 				'totalFeatures' => 0,
 				'numberMatched' => 0,
 				'numberReturned' => 0,
+				'unanswered' => true,
 			];
 		}
 
