@@ -89,6 +89,13 @@ class StufProviderReceiver {
 	private const MAX_BODY_BYTES = 2097152;
 
 	/**
+	 * Most cases rendered into one zakLa01, however many the owning app hands back.
+	 *
+	 * @var integer
+	 */
+	private const MAX_CASES = 100;
+
+	/**
 	 * The request came in on integriq's own route.
 	 *
 	 * @var string
@@ -236,9 +243,9 @@ class StufProviderReceiver {
 		}
 
 		$event = $this->reader->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
-		$unfit = $this->unfitWrite(event: $event, origin: $origin);
+		$unfit = ($this->unfitQuery(event: $event) ?? $this->unfitWrite(event: $event, origin: $origin));
 		if ($unfit !== null) {
-			$this->logger->warning('StUF provider write {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);
+			$this->logger->warning('StUF provider {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);
 			return $this->fault(
 				statusCode: $unfit['statusCode'],
 				berichtcode: $faultCode,
@@ -293,7 +300,16 @@ class StufProviderReceiver {
 
 		$payload = $event->getAnswer();
 		if ($event instanceof StufCaseQueryEvent) {
-			return ['statusCode' => 200, 'body' => $this->xml->buildZakLa01(cases: (array)($payload['cases'] ?? []), stuurgegevens: $reply)];
+			$cases = (array)($payload['cases'] ?? []);
+			if (count($cases) > self::MAX_CASES) {
+				$this->logger->warning(
+					'StUF provider answer {ref} holds {count} cases, rendering the first {max}',
+					['ref' => $event->getReferentienummer(), 'count' => count($cases), 'max' => self::MAX_CASES]
+				);
+				$cases = array_slice($cases, 0, self::MAX_CASES);
+			}
+
+			return ['statusCode' => 200, 'body' => $this->xml->buildZakLa01(cases: $cases, stuurgegevens: $reply)];
 		}
 
 		if ($event instanceof StufPersonQueryEvent) {
@@ -303,6 +319,34 @@ class StufProviderReceiver {
 		// StUF-ZDS 1.2 answers every kennisgeving with a Bv03 (or a Fo03).
 		return ['statusCode' => 200, 'body' => $this->xml->buildBv03(caseIdentification: '', stuurgegevens: $reply)];
 	}//end answer()
+
+	/**
+	 * Why a query is not put to the owning app at all, or null when it is.
+	 *
+	 * A zakLv01 with no criterion would ask for every case, and an npsLv01 without a
+	 * 9-digit burgerservicenummer for a person nobody named: the owning app is not
+	 * asked, whatever it would have answered.
+	 *
+	 * @param StufProviderQueryEvent $event The event the message became.
+	 *
+	 * @return array{statusCode:int,reason:string}|null The refusal, its reason safe to return; null for anything but an unfit query.
+	 *
+	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 */
+	private function unfitQuery(StufProviderQueryEvent $event): ?array {
+		if ($event instanceof StufCaseQueryEvent) {
+			$criteria = array_filter($event->getCriteria(), static fn(string $value): bool => trim($value) !== '');
+			if ($criteria === []) {
+				return ['statusCode' => 400, 'reason' => 'Een zaakvraag zonder selectiecriterium wordt niet beantwoord'];
+			}
+		}
+
+		if ($event instanceof StufPersonQueryEvent && preg_match('/^\d{9}$/', $event->getBsn()) !== 1) {
+			return ['statusCode' => 400, 'reason' => 'Een persoonsvraag vraagt om een burgerservicenummer van negen cijfers'];
+		}
+
+		return null;
+	}//end unfitQuery()
 
 	/**
 	 * Why a write message is not put to the owning app at all, or null when it is.

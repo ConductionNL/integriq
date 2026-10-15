@@ -38,6 +38,9 @@ class StufCaseQueryEvent extends StufProviderQueryEvent {
 	 * @param string                $sourceId         The source the request came in on.
 	 * @param string                $referentienummer The request's referentienummer.
 	 * @param array<string, string> $criteria         StUF-ZKN element name to value (identificatie, omschrijving, startdatum).
+	 *                                                The receiver refuses a query with no criterion, but the NAMES and values
+	 *                                                are the sender's: an app answering the event must treat them as
+	 *                                                caller-controlled input and match only the names it supports.
 	 */
 	public function __construct(
 		string $sourceId,

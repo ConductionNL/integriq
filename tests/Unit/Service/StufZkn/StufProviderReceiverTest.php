@@ -157,6 +157,53 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testAnEmptyAnswerIsAnEmptyZakLa01NotAFault()
 
 	/**
+	 * A zakLv01 without any criterion, and an npsLv01 without a 9-digit BSN, are refused with a Fo02 and never put to the owning app (iq-f8).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 */
+	public function testAQueryWithoutACriterionIsRefusedWithoutAsking(): void {
+		$receiver = $this->receiver();
+		$requests = [
+			['cases', self::zakLv01(criteria: '')],
+			['cases', self::zakLv01(criteria: '<ZKN:identificatie>   </ZKN:identificatie>')],
+			['persons', self::npsLv01(criteria: '')],
+			['persons', self::npsLv01(criteria: '<BG:inp.bsn></BG:inp.bsn>')],
+			['persons', self::npsLv01(criteria: '<BG:inp.bsn>99999365</BG:inp.bsn>')],
+			['persons', self::npsLv01(criteria: '<BG:inp.bsn>9999936530</BG:inp.bsn>')],
+			['persons', self::npsLv01(criteria: '<BG:inp.bsn>99999365a</BG:inp.bsn>')],
+		];
+
+		foreach ($requests as $index => [$service, $xml]) {
+			$answer = $receiver->receive(rawXml: $xml, sourceId: 'zsh', service: $service);
+
+			$this->assertSame(400, $answer['statusCode'], 'request ' . $index);
+			$this->assertStringContainsString('Fo02', $answer['body'], 'request ' . $index);
+			$this->assertStringContainsString('StUF058', $answer['body'], 'request ' . $index);
+			$this->assertStringNotContainsString('La01', $answer['body'], 'request ' . $index);
+		}
+
+		$this->assertSame([], $this->events, 'the owning app was never asked');
+	}//end testAQueryWithoutACriterionIsRefusedWithoutAsking()
+
+	/**
+	 * However many cases the owning app answers with, at most 100 are rendered (iq-f8).
+	 *
+	 * @return void
+	 */
+	public function testTheRenderedCasesAreCapped(): void {
+		$this->owner = 'many';
+
+		$answer = $this->receiver()->receive(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertStringContainsString('<StUF:aantalVoorkomens>100</StUF:aantalVoorkomens>', $answer['body']);
+		$this->assertStringContainsString('ZAAK-100<', $answer['body']);
+		$this->assertStringNotContainsString('ZAAK-101<', $answer['body']);
+	}//end testTheRenderedCasesAreCapped()
+
+	/**
 	 * Nobody answering is a Fo02 with StUF055, never an empty zakLa01.
 	 *
 	 * @return void
@@ -605,6 +652,13 @@ class StufProviderReceiverTest extends TestCase {
 				$cases = [];
 			}
 
+			if ($this->owner === 'many') {
+				$cases = [];
+				for ($i = 1; $i <= 150; $i++) {
+					$cases[] = ['zaakidentificatie' => 'ZAAK-' . $i, 'omschrijving' => 'Zaak', 'zaaktype' => 'KAP'];
+				}
+			}
+
 			$event->answerCases(appId: 'dossiq', cases: $cases);
 		}
 
@@ -621,13 +675,14 @@ class StufProviderReceiverTest extends TestCase {
 	 * A zakLv01 asking for one zaak.
 	 *
 	 * @param string|null $password The UsernameToken password, null for no header.
+	 * @param string      $criteria The criteria inside `gelijk`.
 	 *
 	 * @return string The envelope.
 	 */
-	private static function zakLv01(?string $password='secret'): string {
+	private static function zakLv01(?string $password='secret', string $criteria='<ZKN:identificatie>ZAAK-2026-7</ZKN:identificatie>'): string {
 		return self::envelope(
 			body: '<ZKN:zakLv01>' . self::stuurgegevens(code: 'Lv01') . '<ZKN:gelijk StUF:entiteittype="ZAK">'
-				. '<ZKN:identificatie>ZAAK-2026-7</ZKN:identificatie></ZKN:gelijk></ZKN:zakLv01>',
+				. $criteria . '</ZKN:gelijk></ZKN:zakLv01>',
 			password: $password
 		);
 	}//end zakLv01()
@@ -708,12 +763,14 @@ class StufProviderReceiverTest extends TestCase {
 	/**
 	 * An npsLv01 asking for one BSN.
 	 *
+	 * @param string $criteria The criteria inside `gelijk`.
+	 *
 	 * @return string The envelope.
 	 */
-	private static function npsLv01(): string {
+	private static function npsLv01(string $criteria='<BG:inp.bsn>999993653</BG:inp.bsn>'): string {
 		return self::envelope(
 			body: '<BG:npsLv01>' . self::stuurgegevens(code: 'Lv01') . '<BG:gelijk StUF:entiteittype="NPS">'
-				. '<BG:inp.bsn>999993653</BG:inp.bsn></BG:gelijk></BG:npsLv01>'
+				. $criteria . '</BG:gelijk></BG:npsLv01>'
 		);
 	}//end npsLv01()
 
