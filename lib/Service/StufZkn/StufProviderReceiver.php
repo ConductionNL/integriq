@@ -82,13 +82,6 @@ class StufProviderReceiver {
 	];
 
 	/**
-	 * Inbound body ceiling (2 MiB): mitigates XML bombs.
-	 *
-	 * @var integer
-	 */
-	private const MAX_BODY_BYTES = 2097152;
-
-	/**
 	 * Most cases rendered into one zakLa01, however many the owning app hands back.
 	 *
 	 * @var integer
@@ -200,7 +193,7 @@ class StufProviderReceiver {
 	 * @return array The answer (ProviderAnswer).
 	 */
 	private function process(string $rawXml, string $sourceId, string $service, string $origin): array {
-		if (strlen($rawXml) > self::MAX_BODY_BYTES) {
+		if (strlen($rawXml) > StufZknRequestBody::MAX_BYTES) {
 			return $this->fault(statusCode: 413, berichtcode: 'Fo02', code: 'StUF001', omschrijving: 'Bericht te groot', stuurgegevens: []);
 		}
 

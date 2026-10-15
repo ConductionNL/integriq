@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -80,11 +81,11 @@ class StufZdsConfirmationController extends Controller {
 	/**
 	 * Read the raw request body (a seam: `php://input` cannot be driven from a unit test).
 	 *
-	 * @return string The raw body, '' when there is none.
+	 * @return string The raw body, at most one byte past the ceiling (the receiver answers 413); '' when there is none.
 	 *
 	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	protected function readRawBody(): string {
-		return (string)file_get_contents(filename: 'php://input');
+		return StufZknRequestBody::read();
 	}//end readRawBody()
 }//end class

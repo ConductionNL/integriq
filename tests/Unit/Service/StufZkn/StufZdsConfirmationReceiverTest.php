@@ -32,6 +32,7 @@ use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver;
 use OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
 use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -292,6 +293,47 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 		$this->assertSame(400, $receiver->receive(rawXml: self::envelope(code: 'Bv01', crossRef: ''))['statusCode']);
 		$this->assertSame([], $this->events);
 	}//end testWhatIsNotAConfirmationIsA400()
+
+	/**
+	 * A body over the ceiling is refused with a 413 Fo03 before it is parsed, and nothing is looked up (iq-f9).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 */
+	public function testABodyOverTheCeilingIsRefusedBeforeAnyLookup(): void {
+		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
+		$objects->expects($this->never())->method('find');
+		$objects->expects($this->never())->method('findAll');
+		$objects->expects($this->never())->method('saveObject');
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->never())->method('dispatchTyped');
+		$receiver = new StufZdsConfirmationReceiver(
+			new StufZdsMessageLog($objects),
+			new StufZdsCredentialResolver($this->createMock(ICrypto::class)),
+			new StufZknAcknowledgementBuilder(),
+			$dispatcher,
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$answer = $receiver->receive(rawXml: str_repeat('a', 2097153));
+
+		$this->assertSame(2097153, (StufZknRequestBody::MAX_BYTES + 1));
+		$this->assertSame(413, $answer['statusCode']);
+		$this->assertStringContainsString('Fo03Bericht', $answer['body']);
+		$this->assertStringContainsString('StUF001', $answer['body']);
+	}//end testABodyOverTheCeilingIsRefusedBeforeAnyLookup()
+
+	/**
+	 * A body exactly at the ceiling is not refused for its size.
+	 *
+	 * @return void
+	 */
+	public function testABodyAtTheCeilingIsNotRefusedForItsSize(): void {
+		$answer = $this->receiver()->receive(rawXml: str_repeat(' ', StufZknRequestBody::MAX_BYTES));
+
+		$this->assertSame(400, $answer['statusCode'], 'refused as no confirmation, not as too large');
+	}//end testABodyAtTheCeilingIsNotRefusedForItsSize()
 
 	/**
 	 * Build the receiver over the doubles.

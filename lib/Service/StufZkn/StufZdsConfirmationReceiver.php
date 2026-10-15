@@ -83,9 +83,10 @@ class StufZdsConfirmationReceiver {
 	/**
 	 * Receive one confirmation envelope.
 	 *
-	 * 200 with a Bv03 when it was recorded (or had been already), 400 when the
-	 * body is not a confirmation, 422 when the crossRefnummer is unknown or the
-	 * credentials do not match, 503 when the source's password cannot be read.
+	 * 200 with a Bv03 when it was recorded (or had been already), 413 when the
+	 * body is over 2 MiB, 400 when the body is not a confirmation, 422 when the
+	 * crossRefnummer is unknown or the credentials do not match, 503 when the
+	 * source's password cannot be read.
 	 *
 	 * @param string $rawXml The raw request body.
 	 *
@@ -94,6 +95,11 @@ class StufZdsConfirmationReceiver {
 	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function receive(string $rawXml): array {
+		// Before any parse or lookup: the route is public, so an oversized body is refused unread.
+		if (strlen($rawXml) > StufZknRequestBody::MAX_BYTES) {
+			return $this->refuse(statusCode: 413, reason: 'body_too_large', root: null, organisation: '');
+		}
+
 		$root = $this->parse(rawXml: $rawXml);
 		if ($root === null) {
 			return $this->refuse(statusCode: 400, reason: 'unrecognised_berichttype', root: null, organisation: '');
