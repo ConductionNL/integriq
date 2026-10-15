@@ -54,9 +54,14 @@ class DocumentConnectionGuard {
 	 *
 	 * The row is the one declared by `$sourceApp` under `$connectionKey`. An empty
 	 * key names the app's connection only when the app declares exactly one. A row
-	 * counts as linked when its `source` points at a source that still exists and is a
-	 * Microsoft 365 source (`type` equal to the adapter id).
+	 * counts as linked when its `source` points at a source that still exists.
 	 * Any failure to read answers false: an unverifiable link is a refusal.
+	 *
+	 * Limit: the link proves the app is connected to an integriq source, NOT that the
+	 * source is a Microsoft 365 one. The Microsoft 365 adapter has no source row of its
+	 * own (its credential is one app-config value, `microsoft-365_credential_id`), so
+	 * there is nothing to compare a source against. Binding the app to Microsoft 365
+	 * needs a Microsoft 365 source template or a connection-row declaration to match on.
 	 *
 	 * @param string $sourceApp     The asking app id.
 	 * @param string $connectionKey The app's connection key, or '' for its only one.
@@ -90,9 +95,7 @@ class DocumentConnectionGuard {
 				return false;
 			}
 
-			// The search and fetch run through the Microsoft 365 adapter's credential: a connection
-			// linked to any other source (a BRP source, say) must not unlock it.
-			return (($source->getObject()['type'] ?? null) === Microsoft365Adapter::ADAPTER_ID);
+			return true;
 		} catch (Throwable $e) {
 			return false;
 		}
