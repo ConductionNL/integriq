@@ -258,10 +258,12 @@ class StufProviderReceiver {
 
 		$answer = $this->answer(event: $event, faultCode: $faultCode, reply: $reply);
 
-		// The audit record of an authenticated request: who asked which source what, and how it ended.
-		// No criterion, burgerservicenummer or answer is logged.
-		$this->logger->info(
-			'StUF provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}',
+		// The audit record of an authenticated request: which source, what kind of message, and how it ended.
+		// No criterion, burgerservicenummer or answer is logged. It is logged at warning level on purpose:
+		// Nextcloud drops info lines at its default log level (2), and an audit record must survive it.
+		// The fixed `[StUF audit]` prefix is what an operator filters on.
+		$this->logger->warning(
+			'[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}',
 			[
 				'id' => (string)$source['id'],
 				'type' => $berichttype,

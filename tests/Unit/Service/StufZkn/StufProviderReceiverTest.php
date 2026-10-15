@@ -288,7 +288,7 @@ class StufProviderReceiverTest extends TestCase {
 	 */
 	public function testAnAcceptedRequestWritesOneAuditRecord(): void {
 		$records = [];
-		$this->logger->method('info')->willReturnCallback(
+		$this->logger->method('warning')->willReturnCallback(
 			function (string $message, array $context = []) use (&$records): void {
 				$records[] = [$message, $context];
 			}
@@ -297,7 +297,7 @@ class StufProviderReceiverTest extends TestCase {
 		$this->receiver()->receive(rawXml: self::npsLv01(), sourceId: 'zsh', service: 'persons');
 
 		$this->assertCount(1, $records);
-		$this->assertStringContainsString('accepted', $records[0][0]);
+		$this->assertStringStartsWith('[StUF audit] provider request accepted', $records[0][0], 'warning level, so the default log level keeps it');
 		$this->assertSame('zsh', $records[0][1]['id']);
 		$this->assertSame('npsLv01', $records[0][1]['type']);
 		$this->assertSame('REQ-1', $records[0][1]['ref']);
