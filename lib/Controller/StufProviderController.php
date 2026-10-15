@@ -113,6 +113,8 @@ class StufProviderController extends Controller {
 	 * Read the raw request body (a seam: `php://input` cannot be driven from a unit test).
 	 *
 	 * @return string The raw body, at most one byte past the ceiling (the receiver answers 413); '' when there is none.
+	 *
+	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	protected function readRawBody(): string {
 		return StufZknRequestBody::read();
