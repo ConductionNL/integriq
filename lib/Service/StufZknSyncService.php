@@ -21,14 +21,18 @@
  * row with `status=processed`, a redelivery short-circuits straight to a
  * fresh `Bv03` acknowledgement without touching the OR object again.
  *
- * AVG/persoonsgegevens hygiene: the raw inbound/outbound envelope XML is
- * NEVER persisted on `stuf_message` — a zaak/document can carry
+ * AVG/persoonsgegevens hygiene: this bridge NEVER persists the raw
+ * inbound/outbound envelope XML on `stuf_message` — a zaak/document can carry
  * persoonsgegevens (betrokkene BSN, namen) that this fleet's
  * `AvgBsnPolicyRule`/`iwmo_ijw_message` precedent already treats as
  * "never store the raw wire payload verbatim", only the correlation/audit
  * metadata (mirrors `IwmoIjwSyncService::retryOne()`'s identical, already-
  * accepted limitation: retry is best-effort at the reference level, not a
- * full replay of the original payload).
+ * full replay of the original payload). The one exception is the StUF-ZDS
+ * case client ({@see \OCA\Integriq\Service\StufZkn\StufZdsOutbound}): a
+ * kennisgeving that is waiting for a retry keeps its envelope, without the
+ * WS-Security header, on its row for at most 24 hours (`expires`); the row is
+ * admin-only and the envelope is erased when the message concludes.
  *
  * @category Service
  * @package  OCA\Integriq\Service
