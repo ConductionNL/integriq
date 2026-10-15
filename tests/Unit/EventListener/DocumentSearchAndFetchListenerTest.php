@@ -21,6 +21,7 @@ use OCA\Integriq\EventListener\DocumentSearchRequestedListener;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -81,7 +82,7 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 				: []
 		);
 		$store->method('findSource')->willReturnCallback(
-			fn (string $uuid) => ($uuid === 's-1') ? $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class) : null
+			fn (string $uuid) => ($uuid === 's-1') ? ObjectServiceMockBuilder::objectEntity($this, ['type' => 'microsoft-365'], 's-1') : null
 		);
 		$guard = new DocumentConnectionGuard($store);
 
@@ -97,10 +98,39 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 	public function testTheGuardAcceptsAnEmptyKeyForAnAppWithOneLinkedConnection(): void {
 		$store = $this->createMock(ConnectionStore::class);
 		$store->method('findRows')->willReturn([['uuid' => 'r1', 'data' => ['app' => 'dossiq', 'key' => 'documents', 'source' => 's-1']]]);
-		$store->method('findSource')->willReturn($this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class));
+		$store->method('findSource')->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['type' => 'microsoft-365'], 's-1'));
 
 		self::assertTrue((new DocumentConnectionGuard($store))->isLinked('dossiq', ''));
 	}//end testTheGuardAcceptsAnEmptyKeyForAnAppWithOneLinkedConnection()
+
+	public function testAConnectionLinkedToAnotherKindOfSourceDoesNotUnlockMicrosoft365(): void {
+		$store = $this->createMock(ConnectionStore::class);
+		$store->method('findRows')->willReturn([['uuid' => 'r1', 'data' => ['app' => 'dossiq', 'key' => 'brp', 'source' => 's-brp']]]);
+		$store->method('findSource')->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['type' => 'api', 'slug' => 'brp-haalcentraal'], 's-brp'));
+
+		self::assertFalse((new DocumentConnectionGuard($store))->isLinked('dossiq', 'brp'), 'a BRP-linked app cannot search Microsoft 365');
+		self::assertFalse((new DocumentConnectionGuard($store))->isLinked('dossiq', ''));
+	}//end testAConnectionLinkedToAnotherKindOfSourceDoesNotUnlockMicrosoft365()
+
+	public function testAnAppLinkedToABrpSourceIsRefusedBySearchAndFetch(): void {
+		$store = $this->createMock(ConnectionStore::class);
+		$store->method('findRows')->willReturn([['uuid' => 'r1', 'data' => ['app' => 'dossiq', 'key' => 'brp', 'source' => 's-brp']]]);
+		$store->method('findSource')->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['type' => 'api', 'slug' => 'brp-haalcentraal'], 's-brp'));
+		$guard = new DocumentConnectionGuard($store);
+		$adapter = $this->createMock(Microsoft365Adapter::class);
+		$adapter->method('isConnected')->willReturn(true);
+		$adapter->expects(self::never())->method('search');
+		$adapter->expects(self::never())->method('fetch');
+		$logger = $this->createMock(LoggerInterface::class);
+
+		$search = new DocumentSearchRequestedEvent('dossiq', 'brp', 'pjansen', 'x');
+		(new DocumentSearchRequestedListener($adapter, $guard, $logger))->handle($search);
+		$fetch = new DocumentFetchRequestedEvent('dossiq', 'brp', 'pjansen', 'driveItem:d1:i1');
+		(new DocumentFetchRequestedListener($adapter, $guard, $logger))->handle($fetch);
+
+		self::assertSame(['not-linked'], $search->getResult()['notices']);
+		self::assertFalse($fetch->isHandled());
+	}//end testAnAppLinkedToABrpSourceIsRefusedBySearchAndFetch()
 
 	public function testTheGuardFailsClosedWhenTheRowsCannotBeRead(): void {
 		$store = $this->createMock(ConnectionStore::class);

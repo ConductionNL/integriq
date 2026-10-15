@@ -51,6 +51,13 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 	private const MAIL_METADATA_SELECT = 'id,subject,from,receivedDateTime,hasAttachments';
 
 	/**
+	 * The adapter id, and the `type` a source linked to this adapter carries.
+	 *
+	 * @var string
+	 */
+	public const ADAPTER_ID = 'microsoft-365';
+
+	/**
 	 * The app config key naming the Graph search region an application grant needs.
 	 */
 	public const SEARCH_REGION_KEY = 'microsoft365_search_region';
@@ -89,7 +96,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
 	 */
 	public function getId(): string {
-		return 'microsoft-365';
+		return self::ADAPTER_ID;
 	}//end getId()
 
 	/**

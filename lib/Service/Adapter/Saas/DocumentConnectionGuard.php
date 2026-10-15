@@ -54,7 +54,8 @@ class DocumentConnectionGuard {
 	 *
 	 * The row is the one declared by `$sourceApp` under `$connectionKey`. An empty
 	 * key names the app's connection only when the app declares exactly one. A row
-	 * counts as linked when its `source` points at a source that still exists.
+	 * counts as linked when its `source` points at a source that still exists and is a
+	 * Microsoft 365 source (`type` equal to the adapter id).
 	 * Any failure to read answers false: an unverifiable link is a refusal.
 	 *
 	 * @param string $sourceApp     The asking app id.
@@ -80,8 +81,18 @@ class DocumentConnectionGuard {
 			}
 
 			$sourceId = (string)($rows[0]['data']['source'] ?? '');
+			if ($sourceId === '') {
+				return false;
+			}
 
-			return ($sourceId !== '' && $this->connections->findSource(uuid: $sourceId) !== null);
+			$source = $this->connections->findSource(uuid: $sourceId);
+			if ($source === null) {
+				return false;
+			}
+
+			// The search and fetch run through the Microsoft 365 adapter's credential: a connection
+			// linked to any other source (a BRP source, say) must not unlock it.
+			return (($source->getObject()['type'] ?? null) === Microsoft365Adapter::ADAPTER_ID);
 		} catch (Throwable $e) {
 			return false;
 		}
