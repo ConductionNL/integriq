@@ -75,8 +75,9 @@ class CallServiceDispatcherTest extends TestCase {
 
 		$dispatcher->dispatch('source-1', ['method' => 'GET', 'endpoint' => '/zaken']);
 		$dispatcher->dispatch('source-1', ['method' => 'GET', 'url' => 'https://zaken.example.nl/api/zaken/1?x=2']);
+		$dispatcher->dispatch('source-1', ['method' => 'GET', 'url' => 'https://zaken.example.nl/api/zaken/a.b?back=../x']);
 
-		$this->assertSame(['/zaken', '/zaken/1?x=2'], $this->endpoints);
+		$this->assertSame(['/zaken', '/zaken/1?x=2', '/zaken/a.b?back=../x'], $this->endpoints, 'dots inside a name or in the query are fine');
 	}//end testAStoredUrlUnderTheSourceBecomesTheEndpoint()
 
 	/**
@@ -87,7 +88,18 @@ class CallServiceDispatcherTest extends TestCase {
 	public function testAUrlItCannotTrustIsRefused(): void {
 		$dispatcher = $this->dispatcher();
 
-		foreach (['https://other.example.nl/api/zaken', 'https://zaken.example.nl/apiary/zaken', 'https://zaken.example.nl/api/zaken?key=***REDACTED***'] as $url) {
+		$urls = [
+			'https://other.example.nl/api/zaken',
+			'https://zaken.example.nl/apiary/zaken',
+			'https://zaken.example.nl/api/zaken?key=***REDACTED***',
+			'https://zaken.example.nl/api/../admin',
+			'https://zaken.example.nl/api/zaken/./1',
+			'https://zaken.example.nl/api/%2e%2e/admin',
+			'https://zaken.example.nl/api/%2E%2E%2Fadmin',
+			'https://zaken.example.nl/api/zaken/..',
+			'https://zaken.example.nl/api/%252e%252e/admin',
+		];
+		foreach ($urls as $url) {
 			try {
 				$dispatcher->dispatch('source-1', ['method' => 'GET', 'url' => $url]);
 				$this->fail('Expected a refusal for ' . $url);

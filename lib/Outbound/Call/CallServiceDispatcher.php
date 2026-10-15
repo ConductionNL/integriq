@@ -140,6 +140,14 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 			throw new CallDispatchException(message: 'The stored URL cannot be replayed: it is outside the source address or has a redacted part.');
 		}
 
+		// A dot segment (plain or percent-encoded) would climb out of the source's address once the path is normalised.
+		// Decoded twice, so a double-encoded `%252e%252e` does not slip through either.
+		$path = (string)preg_replace('/[?#].*$/s', '', $rest);
+		$once = rawurldecode($path);
+		if (preg_match('#(^|/)\.{1,2}(/|$)#', rawurldecode($once)) === 1 || preg_match('#(^|/)\.{1,2}(/|$)#', $once) === 1) {
+			throw new CallDispatchException(message: 'The stored URL cannot be replayed: its path holds a dot segment.');
+		}
+
 		return $rest;
 	}//end endpointOf()
 
