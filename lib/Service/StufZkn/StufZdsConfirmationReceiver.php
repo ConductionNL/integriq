@@ -65,6 +65,7 @@ class StufZdsConfirmationReceiver {
 	 * @param StufZknAcknowledgementBuilder $acks        Builds the Bv03/Fo03 answer.
 	 * @param IEventDispatcher              $dispatcher  Announces the conclusion.
 	 * @param LoggerInterface               $logger      The logger.
+	 * @param StufWsseInboundVerifier       $wsse        Checks the UsernameToken, with a replay window.
 	 * @param StufZdsResponseReader         $reader      Reads the confirmation.
 	 * @param StufXmlParser                 $xmlParser   The hardened XML parser.
 	 */
@@ -74,6 +75,7 @@ class StufZdsConfirmationReceiver {
 		private readonly StufZknAcknowledgementBuilder $acks,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly StufWsseInboundVerifier $wsse,
 		private readonly StufZdsResponseReader $reader = new StufZdsResponseReader(),
 		private readonly StufXmlParser $xmlParser = new StufXmlParser(),
 	) {
@@ -126,7 +128,17 @@ class StufZdsConfirmationReceiver {
 		}
 
 		$organisation = (string)($source['configuration']['organisatie'] ?? '');
-		if ($this->authenticates(root: $root, token: $token) === false) {
+		$authenticated = false;
+		if ($token !== null) {
+			$authenticated = $this->wsse->verify(
+				root: $root,
+				token: $token,
+				configuration: (array)($source['configuration'] ?? []),
+				sourceId: (string)($source['id'] ?? '')
+			);
+		}
+
+		if ($authenticated === false) {
 			$this->logger->warning('StUF-ZDS confirmation: credentials do not match source {id}', ['id' => ($source['id'] ?? '')]);
 			return $this->refuse(statusCode: 422, reason: 'validation_failed', root: $root, organisation: $organisation);
 		}
@@ -208,26 +220,6 @@ class StufZdsConfirmationReceiver {
 			$this->logger->warning('StUF-ZDS conclusion listener failed: {error}', ['error' => $exception->getMessage()]);
 		}
 	}//end record()
-
-	/**
-	 * Whether the envelope's UsernameToken matches the source's.
-	 *
-	 * @param SimpleXMLElement                            $root  The envelope.
-	 * @param array{username:string,password:string}|null $token The source's token, null when it has none.
-	 *
-	 * @return bool True when both match.
-	 */
-	private function authenticates(SimpleXMLElement $root, ?array $token): bool {
-		if ($token === null || $token['username'] === '' || $token['password'] === '') {
-			return false;
-		}
-
-		$tokenPath = '//*[local-name()="Security"]/*[local-name()="UsernameToken"]/*[local-name()="';
-		$username  = $this->text(xml: $root, path: $tokenPath . 'Username"]');
-		$password  = $this->text(xml: $root, path: $tokenPath . 'Password"]');
-
-		return (hash_equals($token['username'], $username) === true && hash_equals($token['password'], $password) === true);
-	}//end authenticates()
 
 	/**
 	 * A refusal: the HTTP status and a Fo03 that leaks nothing.

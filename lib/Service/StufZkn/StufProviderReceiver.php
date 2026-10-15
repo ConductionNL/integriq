@@ -126,6 +126,7 @@ class StufProviderReceiver {
 	 * @param StUFXMLBuilder            $xml         Builds the La01, Bv01 and fault answers.
 	 * @param IEventDispatcher          $dispatcher  Carries the question to the owning app.
 	 * @param LoggerInterface           $logger      The logger.
+	 * @param StufWsseInboundVerifier   $wsse        Checks the UsernameToken, with a replay window.
 	 * @param StufXmlParser             $xmlParser   The hardened XML parser.
 	 * @param StufProviderRequestReader $reader      Reads the question out of the envelope.
 	 */
@@ -135,6 +136,7 @@ class StufProviderReceiver {
 		private readonly StUFXMLBuilder $xml,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly StufWsseInboundVerifier $wsse,
 		private readonly StufXmlParser $xmlParser = new StufXmlParser(),
 		private readonly StufProviderRequestReader $reader = new StufProviderRequestReader(),
 	) {
@@ -254,7 +256,23 @@ class StufProviderReceiver {
 			$this->logger->error('StUF provider listener failed for {type}: {error}', ['type' => $berichttype, 'error' => $exception->getMessage()]);
 		}
 
-		return $this->answer(event: $event, faultCode: $faultCode, reply: $reply);
+		$answer = $this->answer(event: $event, faultCode: $faultCode, reply: $reply);
+
+		// The audit record of an authenticated request: who asked which source what, and how it ended.
+		// No criterion, burgerservicenummer or answer is logged.
+		$this->logger->info(
+			'StUF provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}',
+			[
+				'id' => (string)$source['id'],
+				'type' => $berichttype,
+				'ref' => $event->getReferentienummer(),
+				'origin' => $origin,
+				'app' => (string)$event->getAnsweredBy(),
+				'status' => $answer['statusCode'],
+			]
+		);
+
+		return $answer;
 	}//end process()
 
 	/**
@@ -403,10 +421,8 @@ class StufProviderReceiver {
 			return null;
 		}
 
-		$tokenPath = '//*[local-name()="Security"]/*[local-name()="UsernameToken"]/*[local-name()="';
-		$username  = $this->reader->text(xml: $root, path: $tokenPath . 'Username"]');
-		$password  = $this->reader->text(xml: $root, path: $tokenPath . 'Password"]');
-		if (hash_equals($token['username'], $username) === false || hash_equals($token['password'], $password) === false) {
+		$configuration = (array)($source['configuration'] ?? []);
+		if ($this->wsse->verify(root: $root, token: $token, configuration: $configuration, sourceId: $sourceId) === false) {
 			return null;
 		}
 

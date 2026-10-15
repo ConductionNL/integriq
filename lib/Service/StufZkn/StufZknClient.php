@@ -166,6 +166,12 @@ class StufZknClient implements StufZknProviderInterface {
 							'properties' => [
 								'username' => ['type' => 'string', 'description' => 'The UsernameToken user name.'],
 								'encryptedPassword' => ['type' => 'string', 'description' => 'The UsernameToken password, encrypted.'],
+								'requireNonce' => [
+									'type' => 'boolean',
+									'default' => false,
+									'description' => 'Inbound only (provider requests and confirmations): refuse a UsernameToken that carries no Nonce and Created. '
+										. 'A token that does carry them is always checked: Created within five minutes of now, and a Nonce not seen before.',
+								],
 							],
 						],
 						'encryptedToken' => [

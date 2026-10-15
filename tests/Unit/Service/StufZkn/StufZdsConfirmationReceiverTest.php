@@ -31,11 +31,14 @@ use OCA\Integriq\Event\StufZdsCaseConcludedEvent;
 use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver;
 use OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
+use OCA\Integriq\Service\StufZkn\StufWsseInboundVerifier;
 use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\ICacheFactory;
+use OCP\IMemcache;
 use OCP\Security\ICrypto;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
@@ -83,12 +86,66 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 	private bool $cryptoBroken = false;
 
 	/**
+	 * The nonces the shared cache has seen, by key.
+	 *
+	 * @var array<string,int>
+	 */
+	private array $nonces = [];
+
+	/**
+	 * Build the verifier over a cache that remembers nonces for the test.
+	 *
+	 * @return StufWsseInboundVerifier
+	 */
+	private function verifier(): StufWsseInboundVerifier {
+		$cache = $this->createMock(IMemcache::class);
+		$cache->method('add')->willReturnCallback(
+			function (string $key, $value, int $ttl = 0): bool {
+				if (isset($this->nonces[$key]) === true) {
+					return false;
+				}
+
+				$this->nonces[$key] = $ttl;
+				return true;
+			}
+		);
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('createDistributed')->willReturn($cache);
+		$factory->method('isAvailable')->willReturn(true);
+
+		return new StufWsseInboundVerifier($factory, $this->createMock(LoggerInterface::class));
+	}//end verifier()
+
+	/**
+	 * Add a Nonce and a Created to an envelope's UsernameToken.
+	 *
+	 * @param string      $xml     The envelope.
+	 * @param string|null $nonce   The nonce, null for none.
+	 * @param string|null $created The Created time, null for none.
+	 *
+	 * @return string The envelope.
+	 */
+	private static function withFreshness(string $xml, ?string $nonce, ?string $created): string {
+		$extra = '';
+		if ($nonce !== null) {
+			$extra .= '<wsse:Nonce>' . $nonce . '</wsse:Nonce>';
+		}
+
+		if ($created !== null) {
+			$extra .= '<wsu:Created xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">' . $created . '</wsu:Created>';
+		}
+
+		return str_replace('</wsse:Password>', '</wsse:Password>' . $extra, $xml);
+	}//end withFreshness()
+
+	/**
 	 * Set up one outbound row and its source.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+		$this->nonces       = [];
 		$this->events       = [];
 		$this->cryptoBroken = false;
 		$this->sources      = [
@@ -313,7 +370,8 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 			new StufZdsCredentialResolver($this->createMock(ICrypto::class)),
 			new StufZknAcknowledgementBuilder(),
 			$dispatcher,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->verifier()
 		);
 
 		$answer = $receiver->receive(rawXml: str_repeat('a', 2097153));
@@ -334,6 +392,39 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 
 		$this->assertSame(400, $answer['statusCode'], 'refused as no confirmation, not as too large');
 	}//end testABodyAtTheCeilingIsNotRefusedForItsSize()
+
+	/**
+	 * A confirmation replayed with the same nonce is refused like a wrong password and records nothing twice (aud-f3).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 */
+	public function testAReplayedConfirmationIsRefused(): void {
+		$receiver = $this->receiver();
+		$request  = self::withFreshness(self::envelope(code: 'Bv01', crossRef: 'REF-1'), 'nonce-1', gmdate('Y-m-d\TH:i:s\Z'));
+
+		$first  = $receiver->receive(rawXml: $request);
+		$replay = $receiver->receive(rawXml: $request);
+
+		$this->assertSame(200, $first['statusCode']);
+		$this->assertSame(422, $replay['statusCode']);
+		$this->assertStringContainsString('Fo03Bericht', $replay['body']);
+	}//end testAReplayedConfirmationIsRefused()
+
+	/**
+	 * A stale Created is refused; a source that requires a nonce refuses a plain token.
+	 *
+	 * @return void
+	 */
+	public function testAStaleCreatedAndAMissingRequiredNonceAreRefused(): void {
+		$stale = self::withFreshness(self::envelope(code: 'Bv01', crossRef: 'REF-1'), 'n-stale', gmdate('Y-m-d\TH:i:s\Z', (time() - 3600)));
+		$this->assertSame(422, $this->receiver()->receive(rawXml: $stale)['statusCode']);
+
+		$this->sources['zsh']['configuration']['authentication']['wsse']['requireNonce'] = true;
+		$this->assertSame(422, $this->receiver()->receive(rawXml: self::envelope(code: 'Bv01', crossRef: 'REF-1'))['statusCode']);
+		$this->assertSame([], $this->events);
+	}//end testAStaleCreatedAndAMissingRequiredNonceAreRefused()
 
 	/**
 	 * Build the receiver over the doubles.
@@ -400,7 +491,8 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 			new StufZdsCredentialResolver($crypto),
 			new StufZknAcknowledgementBuilder(),
 			$dispatcher,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->verifier()
 		);
 	}//end receiver()
 
