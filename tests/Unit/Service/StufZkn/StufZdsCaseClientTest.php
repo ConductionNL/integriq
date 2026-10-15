@@ -226,7 +226,9 @@ class StufZdsCaseClientTest extends TestCase {
 			$log,
 			$jobs,
 			$dispatcher,
-			$logger
+			$logger,
+			new StufZdsMessageBuilder(),
+			new StufZdsCredentialResolver($crypto)
 		);
 
 		return new StufZdsCaseClient(new StufZdsMessageBuilder(), $this->outbound, new StufZdsResponseReader(), $breaker, new StufZdsCredentialResolver($crypto), $log);
@@ -355,6 +357,41 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertSame('c-9', $this->events[0]->getCorrelationId());
 		$this->assertSame(2, $this->events[0]->getAttempts());
 	}//end testRetryResendsTheSameEnvelopeAndConcludes()
+
+	/**
+	 * The envelope kept on the row for a retry holds no credentials, yet every transmission carries the token (iq-f1).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+	 */
+	public function testThePersistedEnvelopeHoldsNoCredentialsButEveryAttemptSendsThem(): void {
+		$client = $this->client([new Response(503, [], ''), self::bevestiging()]);
+		$first  = $client->creeerZaak('zsh', ['omschrijving' => 'Melding', 'betrokkenen' => [['bsn' => '999993653']]], 'Melding openbare ruimte');
+		$this->assertTrue($first['retrying']);
+
+		$row = $this->rows[$first['messageId']];
+		$this->assertStringContainsString('999993653', $row['envelope'], 'The envelope is kept for the retry');
+		$this->assertStringNotContainsString('plain-password', $row['envelope']);
+		$this->assertStringNotContainsString('UsernameToken', $row['envelope']);
+		$this->assertStringNotContainsString('wsse:Password', $row['envelope']);
+		$this->assertArrayHasKey('expires', $row, 'A row that keeps an envelope expires, so an abandoned retry is swept');
+
+		$sent = (string)$this->history[0]['request']->getBody();
+		$this->assertStringContainsString('<wsse:Username>zds</wsse:Username>', $sent);
+		$this->assertStringContainsString('<wsse:Password>plain-password</wsse:Password>', $sent);
+		$this->assertLessThan(strpos($sent, '<soapenv:Body>'), strpos($sent, '<wsse:UsernameToken>'), 'The token is in the header');
+
+		// The retry resends the stored envelope and adds the token again.
+		$this->outbound->retry($first['messageId']);
+		$this->assertCount(2, $this->history);
+		$this->assertSame($sent, (string)$this->history[1]['request']->getBody(), 'The retry carries the same token');
+
+		$concluded = $this->rows[$first['messageId']];
+		$this->assertSame('sent', $concluded['status']);
+		$this->assertArrayNotHasKey('envelope', $concluded);
+		$this->assertArrayNotHasKey('expires', $concluded, 'A concluded row is an audit record, not swept');
+	}//end testThePersistedEnvelopeHoldsNoCredentialsButEveryAttemptSendsThem()
 
 	/**
 	 * A permanent StUF fout fails at once: no retry, conclusion announced.

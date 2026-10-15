@@ -6379,8 +6379,14 @@
           },
           "envelope": {
             "type": "string",
-            "description": "The envelope of a retrying kennisgeving, kept so the retry resends it unchanged; erased when the message concludes",
+            "description": "The envelope of a retrying kennisgeving, kept so the retry resends it; it carries no WS-Security credentials (the UsernameToken is added at send time); erased when the message concludes",
             "title": "Envelope"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Retention horizon of a row that keeps an envelope for a retry: the retention sweep removes the row when it passes without the message having concluded; cleared when it concludes",
+            "title": "Expires At"
           },
           "confirmation": {
             "type": "string",

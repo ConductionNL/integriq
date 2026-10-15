@@ -417,14 +417,7 @@ class StufZdsMessageBuilder {
 	 * @return string The envelope.
 	 */
 	private function envelope(string $bodyXml, array $routing): string {
-		$header = '';
-		$wsse   = $routing['wsse'] ?? null;
-		if (is_array($wsse) === true && (string)($wsse['username'] ?? '') !== '') {
-			$header = '<soapenv:Header><wsse:Security><wsse:UsernameToken>'
-				. $this->element(name: 'wsse:Username', value: (string)$wsse['username'])
-				. $this->element(name: 'wsse:Password', value: (string)($wsse['password'] ?? ''))
-				. '</wsse:UsernameToken></wsse:Security></soapenv:Header>';
-		}
+		$header = $this->securityHeader(wsse: ($routing['wsse'] ?? null));
 
 		return '<?xml version="1.0" encoding="UTF-8"?>'
 			. '<soapenv:Envelope'
@@ -437,6 +430,48 @@ class StufZdsMessageBuilder {
 			. '<soapenv:Body>' . $bodyXml . '</soapenv:Body>'
 			. '</soapenv:Envelope>';
 	}//end envelope()
+
+	/**
+	 * The WS-Security header of a UsernameToken, or '' when there is none.
+	 *
+	 * @param array|null $wsse The resolved UsernameToken (username, password), or null.
+	 *
+	 * @return string The `soapenv:Header` element, or ''.
+	 */
+	private function securityHeader(?array $wsse): string {
+		if (is_array($wsse) === false || (string)($wsse['username'] ?? '') === '') {
+			return '';
+		}
+
+		return '<soapenv:Header><wsse:Security><wsse:UsernameToken>'
+			. $this->element(name: 'wsse:Username', value: (string)$wsse['username'])
+			. $this->element(name: 'wsse:Password', value: (string)($wsse['password'] ?? ''))
+			. '</wsse:UsernameToken></wsse:Security></soapenv:Header>';
+	}//end securityHeader()
+
+	/**
+	 * Add the WS-Security UsernameToken to an envelope built without one.
+	 *
+	 * The envelope a retry resends is persisted on the `stuf_message` row, so
+	 * it is built WITHOUT credentials; the token is added here, at send time,
+	 * from the source's decrypted password (REQ credentials stay encrypted).
+	 *
+	 * @param string     $envelopeXml The envelope, without a Security header.
+	 * @param array|null $wsse        The resolved UsernameToken, or null for none.
+	 *
+	 * @return string The envelope with the header, or unchanged when there is no token.
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+	 */
+	public function withUsernameToken(string $envelopeXml, ?array $wsse): string {
+		$header = $this->securityHeader(wsse: $wsse);
+		$body   = strpos($envelopeXml, '<soapenv:Body>');
+		if ($header === '' || $body === false || strpos($envelopeXml, '<soapenv:Header>') !== false) {
+			return $envelopeXml;
+		}
+
+		return (substr($envelopeXml, 0, $body) . $header . substr($envelopeXml, $body));
+	}//end withUsernameToken()
 
 	/**
 	 * One element with escaped text.

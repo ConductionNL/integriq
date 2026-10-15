@@ -75,6 +75,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'rule',
 		'sender_identity',
 		'source',
+		'stuf_message',
 		'verdict',
 	];
 
@@ -157,7 +158,6 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'ris_sync_record',
 		'rod_message',
 		'sms_message',
-		'stuf_message',
 		'sync_item_dead_letter',
 		'synchronization',
 		'synchronization_contract',

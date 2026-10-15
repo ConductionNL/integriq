@@ -177,7 +177,7 @@ class LogCleanUpTaskTest extends TestCase {
 		$this->assertSame('call_log', $this->queries[0]['schema']);
 		$this->assertArrayHasKey('bodyExpiresAt[lt]', $this->queries[0]);
 		$schemas = array_map(static fn (array $filters): string => $filters['schema'], array_slice($this->queries, 1));
-		$this->assertSame(['call_log', 'job_log', 'synchronization_contract_log', 'synchronization_log'], $schemas);
+		$this->assertSame(['call_log', 'stuf_message', 'job_log', 'synchronization_contract_log', 'synchronization_log'], $schemas);
 		$this->assertSame([], $this->saves);
 	}//end testRunStripsBodiesAndStillDeletesExpiredLogs()
 

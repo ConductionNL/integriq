@@ -272,7 +272,7 @@ class StufZdsCaseClient {
 	}//end restSource()
 
 	/**
-	 * The routing (zender, ontvanger, UsernameToken) of a source.
+	 * The routing (zender, ontvanger) of a source; the UsernameToken is added at send time.
 	 *
 	 * @param array $source The source.
 	 *
@@ -281,10 +281,11 @@ class StufZdsCaseClient {
 	 * @throws StufZknProviderException When the source names no organisaties or its password cannot be read.
 	 */
 	private function routing(array $source): array {
-		$routing = $this->builder->routing(
-			source: $source,
-			wsse: $this->credentials->usernameToken(sourceConfiguration: (array)($source['configuration'] ?? []))
-		);
+		// The UsernameToken is NOT built into the envelope: the envelope is persisted for a retry, so
+		// StufZdsOutbound adds the token at send time. Resolving it here only fails fast on a password
+		// that is missing or cannot be decrypted, before any row is opened.
+		$this->credentials->usernameToken(sourceConfiguration: (array)($source['configuration'] ?? []));
+		$routing = $this->builder->routing(source: $source, wsse: null);
 		if ($routing['zender']['organisatie'] === '' || $routing['ontvanger']['organisatie'] === '') {
 			throw new StufZknProviderException(
 				message: 'The StUF-ZKN source names no organisatie (configuration.organisatie) or no ontvangerOrganisatie; a StUF message needs both.'

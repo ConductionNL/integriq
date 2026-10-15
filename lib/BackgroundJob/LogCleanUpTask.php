@@ -199,6 +199,9 @@ class LogCleanUpTask extends TimedJob {
 		// Clear expired call logs.
 		$this->cleanupSchema(schema: 'call_log');
 
+		// Clear StUF-ZDS messages whose retry never concluded: they keep an envelope until `expires`.
+		$this->cleanupSchema(schema: 'stuf_message');
+
 		// Clear expired job logs.
 		$this->cleanupSchema(schema: 'job_log');
 

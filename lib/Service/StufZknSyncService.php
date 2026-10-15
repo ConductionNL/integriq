@@ -338,7 +338,9 @@ class StufZknSyncService {
 					'schema' => self::SCHEMA_MESSAGE,
 					'direction' => 'outbound',
 				],
-			]
+			],
+			_rbac: false,
+			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
 
@@ -576,7 +578,9 @@ class StufZknSyncService {
 					'referentienummer' => $referenceNumber,
 				],
 				'limit' => 1,
-			]
+			],
+			_rbac: false,
+			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
 
@@ -630,7 +634,7 @@ class StufZknSyncService {
 			$uuid = $existing->getUuid();
 		}
 
-		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid);
+		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid, _rbac: false, _multitenancy: false);
 
 	}//end persistMessage()
 
@@ -668,7 +672,9 @@ class StufZknSyncService {
 			object: $data,
 			register: self::REGISTER,
 			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			uuid: $message->getUuid(),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 	}//end retryOne()

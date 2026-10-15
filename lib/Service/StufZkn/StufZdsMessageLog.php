@@ -7,7 +7,9 @@
  * built, moved to `retrying` while a transient failure waits for its next
  * attempt, and concluded `sent` or `failed`. The envelope is kept only while
  * a retry needs it and erased at conclusion, so a concluded row holds no
- * personal data beyond the referentienummer and the zaak identificatie.
+ * personal data beyond the referentienummer and the zaak identificatie. The
+ * kept envelope carries no WS-Security credentials (they are added at send
+ * time) and its row expires, so an abandoned retry is swept.
  *
  * Also reads the StUF-ZKN source a request names, raw, so its encrypted
  * credentials survive for the transport.
@@ -69,6 +71,16 @@ class StufZdsMessageLog {
 	 * @var string
 	 */
 	public const SCHEMA_SOURCE = 'source';
+
+	/**
+	 * Seconds a row that keeps an envelope for a retry lives before the retention sweep removes it.
+	 *
+	 * Longer than the whole retry schedule plus circuit-breaker cooldowns, short
+	 * enough that an abandoned retry never keeps an envelope (zaak, BSN) for long.
+	 *
+	 * @var int
+	 */
+	public const ENVELOPE_RETENTION_SECONDS = 86400;
 
 	/**
 	 * Constructor.
@@ -142,6 +154,12 @@ class StufZdsMessageLog {
 			array_filter($fields, static fn ($value): bool => $value !== null && $value !== '')
 		);
 
+		if (isset($row['envelope']) === true) {
+			// A row that keeps an envelope for a retry gets a retention horizon, so a retry that
+			// never concludes cannot hold the envelope forever (LogCleanUpTask sweeps `expires`).
+			$row['expires'] = (new DateTime('@' . (time() + self::ENVELOPE_RETENTION_SECONDS)))->format('c');
+		}
+
 		return $this->save(row: $row, uuid: null);
 	}//end open()
 
@@ -203,7 +221,7 @@ class StufZdsMessageLog {
 			$row['caseIdentification'] = $caseIdentification;
 		}
 
-		unset($row['envelope'], $row['nextAttemptAt']);
+		unset($row['envelope'], $row['nextAttemptAt'], $row['expires']);
 		foreach (['faultCode', 'error'] as $empty) {
 			if ($row[$empty] === '') {
 				unset($row[$empty]);
@@ -233,7 +251,7 @@ class StufZdsMessageLog {
 		$row['confirmedAt']  = (new DateTime())->format('c');
 		$row['syncedAt']     = $row['confirmedAt'];
 		$row['status']       = 'sent';
-		unset($row['faultCode'], $row['error'], $row['envelope'], $row['nextAttemptAt']);
+		unset($row['faultCode'], $row['error'], $row['envelope'], $row['nextAttemptAt'], $row['expires']);
 		if ($fout !== null) {
 			$row['status']    = 'failed';
 			$row['faultCode'] = (string)($fout['code'] ?? '');
