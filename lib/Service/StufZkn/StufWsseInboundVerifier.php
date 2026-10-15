@@ -10,6 +10,11 @@
  * plaintext password, so without this a captured request replays for as long
  * as the password stays.
  *
+ * The protection is transitional: a token without `Nonce` and `Created` is
+ * accepted unless the source sets `authentication.wsse.requireNonce`, and an
+ * attacker can strip both elements from a captured request. Sources should set
+ * `requireNonce`; PasswordDigest is the follow-up.
+ *
  * @category Service
  * @package  OCA\Integriq\Service\StufZkn
  *

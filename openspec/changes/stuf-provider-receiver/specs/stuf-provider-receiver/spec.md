@@ -22,10 +22,33 @@ The receiver SHALL accept a request only for a `stuf-zkn` source that sets
 when the envelope's UsernameToken matches it. An unknown source, a source that did not opt in and a
 wrong password SHALL get the same refusal, so the route is not an oracle for configured sources.
 
+A UsernameToken that carries a `Nonce` and a `Created` SHALL also be fresh and unused: `Created`
+within five minutes of now, and a nonce not seen before for that source and user. A repeat SHALL get
+the same refusal as a wrong password. A token with only one of the two SHALL be refused.
+
+This replay protection is TRANSITIONAL. A token with neither `Nonce` nor `Created` is accepted on
+its password alone while the source's `authentication.wsse.requireNonce` is false (the default,
+kept so existing case systems keep working), and an attacker who can read a captured request can
+strip both elements and replay it. A source SHOULD set `requireNonce` to true as soon as its case
+system sends them. Moving to `PasswordDigest` (Base64(SHA1(Nonce + Created + Password)), so the
+password and the replay protection cannot be separated) is the follow-up that closes this.
+
 #### Scenario: A wrong password is refused before anything is asked
 
 - GIVEN a source that accepts provider requests
 - WHEN a zakLv01 arrives with a different password
+- THEN the answer is HTTP 401 with a fault and no event is dispatched
+
+#### Scenario: A replayed nonce is refused
+
+- GIVEN a source that accepts provider requests and a request carrying a Nonce and a fresh Created
+- WHEN the same request arrives a second time
+- THEN the answer is HTTP 401 with a fault and no event is dispatched
+
+#### Scenario: A source that requires a nonce refuses a plain token
+
+- GIVEN a source with `authentication.wsse.requireNonce` true
+- WHEN a zakLv01 arrives with the right password and no Nonce or Created
 - THEN the answer is HTTP 401 with a fault and no event is dispatched
 
 ### Requirement: Each query reaches the owning app as a typed event
