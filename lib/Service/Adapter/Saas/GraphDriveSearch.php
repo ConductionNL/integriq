@@ -158,6 +158,11 @@ final class GraphDriveSearch {
 			return null;
 		}
 
+		// Dots survive rawurlencode, so a `..` segment would climb out of /items/ once Graph normalises the path.
+		if (in_array($parts[1], ['.', '..'], true) === true || in_array($parts[2], ['.', '..'], true) === true) {
+			return null;
+		}
+
 		return '/v1.0/drives/' . rawurlencode($parts[1]) . '/items/' . rawurlencode($parts[2]);
 	}//end itemPath()
 

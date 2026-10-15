@@ -134,6 +134,8 @@ class Microsoft365DocumentSearchTest extends TestCase {
 		);
 		self::assertNull($adapter->fetch(handle: 'message:m1', userId: 'pjansen'));
 		self::assertNull($adapter->fetch(handle: 'driveItem::i1', userId: 'pjansen'));
+		self::assertNull($adapter->fetch(handle: 'driveItem:d1:..', userId: 'pjansen'), 'a dot segment would climb out of /items/');
+		self::assertNull($adapter->fetch(handle: 'driveItem:..:i1', userId: 'pjansen'));
 	}//end testAFetchAnswersTheDriveItemAndRefusesOtherHandles()
 
 	public function testWithoutACredentialTheSourceIsNotConnected(): void {
