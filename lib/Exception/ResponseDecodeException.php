@@ -28,7 +28,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
 /**
  * Signals that a response body could not be decoded in the requested mode.
  *
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
  */
 class ResponseDecodeException extends RuntimeException {
 
@@ -69,7 +69,7 @@ class ResponseDecodeException extends RuntimeException {
 	 *
 	 * @return string The mode.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
 	 */
 	public function getMode(): string {
 		return $this->mode;
@@ -80,7 +80,7 @@ class ResponseDecodeException extends RuntimeException {
 	 *
 	 * @return string The reason.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
 	 */
 	public function getReason(): string {
 		return $this->reason;

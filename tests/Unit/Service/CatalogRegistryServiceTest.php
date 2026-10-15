@@ -148,7 +148,7 @@ class CatalogRegistryServiceTest extends TestCase {
 		$this->assertContains('source-template:slo-curriculum', $slugs);
 
 		// sources-github-publiccode: the GitHub API (dormant, broker credential) and raw files.
-		// @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-github-is-a-source-template-that-holds-only-a-credential-reference-req-ghp-001
+		// @spec openspec/specs/github-publiccode-source/spec.md#requirement-github-is-a-source-template-that-holds-only-a-credential-reference-req-ghp-001
 		$this->assertContains('source-template:github-api', $slugs);
 		$this->assertContains('source-template:github-raw', $slugs);
 

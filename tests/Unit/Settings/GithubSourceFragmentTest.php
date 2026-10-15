@@ -21,7 +21,7 @@ namespace OCA\Integriq\Tests\Unit\Settings;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-github-is-a-source-template-that-holds-only-a-credential-reference-req-ghp-001
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-github-is-a-source-template-that-holds-only-a-credential-reference-req-ghp-001
  */
 class GithubSourceFragmentTest extends TestCase {
 
