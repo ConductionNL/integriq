@@ -19,7 +19,7 @@ An empty answer reads as "no such zaak" to the caller, which is a lie when nobod
 - Four typed events, one per message: `StufCaseQueryEvent` (zakLv01), `StufCaseMutationEvent`
   (zakLk01), `StufPersonQueryEvent` (npsLv01) and `StufDocumentMutationEvent` (edcLk01). Each carries
   the source id and the parsed question, and has a synchronous answer slot.
-- Answers go back as zakLa01, npsLa01 or Bv01. A refusal goes back as a Fo01 (kennisgeving) or Fo02
+- Answers go back as zakLa01, npsLa01 or Bv03. A refusal goes back as a Fo03 (kennisgeving) or Fo02
   (vraag). An event nobody answered goes back as a fault with StUF055, never as an empty answer.
 - `StufProviderRequestReceivedEvent` lets a sibling app forward a request that arrived on its own
   wire-contract URL (dossiq's `/api/stuf/cases`, `/persons`, `/zaken`, `/personen`, one release).

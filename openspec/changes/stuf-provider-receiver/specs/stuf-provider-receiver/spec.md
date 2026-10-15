@@ -45,8 +45,8 @@ route only npsLv01.
 ### Requirement: Answers go back as StUF responses
 
 An answered case query SHALL go back as a zakLa01, a person query as an npsLa01, and an accepted
-mutation as a Bv01, each cross-referencing the request's referentienummer. A refusal by the owning
-app SHALL go back as a Fo01 for a kennisgeving and a Fo02 for a vraag, with HTTP 400.
+mutation as a Bv03, each cross-referencing the request's referentienummer. A refusal by the owning
+app SHALL go back as a Fo03 for a kennisgeving and a Fo02 for a vraag, with HTTP 400.
 
 #### Scenario: A found zaak is answered as a zakLa01
 
@@ -58,7 +58,7 @@ app SHALL go back as a Fo01 for a kennisgeving and a Fo02 for a vraag, with HTTP
 
 When no listener answers the event, or the listener fails, the receiver SHALL answer with a fault
 carrying StUF055, never with an empty zakLa01 or npsLa01: a fault for a vraag is a Fo02, for a
-kennisgeving a Fo01.
+kennisgeving a Fo03.
 
 #### Scenario: Nobody answers a case query
 
