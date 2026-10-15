@@ -140,6 +140,10 @@ class StufWsseInboundVerifier {
 	/**
 	 * Record a nonce and say whether this is its first use inside the window.
 	 *
+	 * The check is atomic only when the distributed cache is an IMemcache (`add()`:
+	 * APCu, Redis, Memcached). On a plain ICache it is check-then-set, so two
+	 * identical requests that arrive at the same instant can both pass.
+	 *
 	 * With no shared cache to remember it in, a repeat cannot be told from a first
 	 * use, so the nonce is not trusted: the token is accepted only when the source
 	 * does not require one, and the gap is logged.
