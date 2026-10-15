@@ -249,4 +249,60 @@ class PdokGeocodingClientHttpTest extends TestCase {
 		$this->assertSame('adr-no-coords', $result[0]['pdokId']);
 	}//end testInvalidCentroidLlIsDropped()
 
+	/**
+	 * Find answers the normalised docs, asking the suggest endpoint with the query as given.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 */
+	public function testFindNormalisesDocsAndClampsRows(): void {
+		$payload = ['response' => ['docs' => [$this->lauriergrachtDoc('adr-1', 'Lauriergracht 37, 1016 RG Amsterdam'), 'not-a-doc']]];
+		$client = $this->buildClient([new Response(200, ['Content-Type' => 'application/json'], json_encode($payload))]);
+
+		$result = $client->find('nummeraanduiding_id:0363200000406543', 500);
+
+		$this->assertIsArray($result);
+		$this->assertCount(1, $result);
+		$this->assertSame('0363200000406543', $result[0]['bagAddressId']);
+		parse_str($this->history[0]['request']->getUri()->getQuery(), $query);
+		$this->assertSame('nummeraanduiding_id:0363200000406543', $query['q']);
+		$this->assertSame('50', $query['rows']);
+		$this->assertStringContainsString('nummeraanduiding_id', $query['fl']);
+	}//end testFindNormalisesDocsAndClampsRows()
+
+	/**
+	 * An empty docs list is an answer (nothing found), not a missing answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 */
+	public function testFindWithNoDocsAnswersAnEmptyList(): void {
+		$client = $this->buildClient([new Response(200, [], json_encode(['response' => ['docs' => []]]))]);
+
+		$this->assertSame([], $client->find('nummeraanduiding_id:0363200000999999'));
+	}//end testFindWithNoDocsAnswersAnEmptyList()
+
+	/**
+	 * No answer is null: a transport failure, a body that is not JSON, or JSON without docs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 */
+	public function testFindWithoutAnAnswerIsNull(): void {
+		$client = $this->buildClient(
+			[
+				new Response(500, [], 'Service Unavailable'),
+				new Response(200, ['Content-Type' => 'text/html'], '<html>maintenance</html>'),
+				new Response(200, [], json_encode(['response' => ['numFound' => 0]])),
+			]
+		);
+
+		$this->assertNull($client->find('q'));
+		$this->assertNull($client->find('q'));
+		$this->assertNull($client->find('q'));
+	}//end testFindWithoutAnAnswerIsNull()
+
 }//end class

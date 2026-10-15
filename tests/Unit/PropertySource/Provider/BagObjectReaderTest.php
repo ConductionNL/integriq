@@ -27,13 +27,16 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
+use OCA\Integriq\Adapters\Pdok\PdokWfsClient;
 use OCA\Integriq\Adapters\Pdok\PdokWfsClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokWfsClientMock;
 use OCA\Integriq\PropertySource\Provider\BagObjectReader;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use RuntimeException;
 
 /**
  * Two kinds of double, both real classes: the mock flavours integriq ships
@@ -281,4 +284,75 @@ class BagObjectReaderTest extends TestCase {
 		$this->assertSame(BagObjectReader::REASON_UNKNOWN_TYPE, $reader->read('ligplaats', '0363030000000001')['reason']);
 		$this->assertSame([], $this->history);
 	}//end testAMalformedQuestionIsNotAsked()
+
+	/**
+	 * A client that throws is an unanswered read, never "not found".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 */
+	public function testAClientThatThrowsIsUnreachable(): void {
+		$wfs = new class extends PdokWfsClient {
+			public function getCapabilities(string $dataset): string {
+				throw new RuntimeException('down');
+			}
+
+			public function describeFeatureType(string $dataset, string $featureType): string {
+				throw new RuntimeException('down');
+			}
+
+			public function getFeature(string $dataset, string $featureType, ?array $bbox = null, int $count = 10, string $srsName = 'EPSG:28992', array $filterFields = []): array {
+				throw new RuntimeException('down');
+			}
+
+			public function flavour(): string {
+				return 'http';
+			}
+		};
+		$geocoding = new class extends PdokGeocodingClient {
+			public function suggest(string $query, int $rows = 10): array {
+				throw new RuntimeException('down');
+			}
+
+			public function find(string $query, int $rows = 10): ?array {
+				throw new RuntimeException('down');
+			}
+
+			public function lookup(string $pdokId): ?array {
+				throw new RuntimeException('down');
+			}
+
+			public function reverse(float $latitude, float $longitude): array {
+				throw new RuntimeException('down');
+			}
+
+			public function flavour(): string {
+				return 'http';
+			}
+		};
+		$reader = new BagObjectReader($wfs, $geocoding, new NullLogger());
+
+		foreach ([['pand', '0363100012167579'], ['verblijfsobject', '0363010000406543'], ['nummeraanduiding', '0363200000406543']] as [$type, $id]) {
+			$answer = $reader->read($type, $id);
+
+			$this->assertFalse($answer['available'], $type);
+			$this->assertFalse($answer['found'], $type);
+			$this->assertSame(BagObjectReader::REASON_UNREACHABLE, $answer['reason'], $type);
+			$this->assertFalse($answer['simulated'], $type);
+		}
+	}//end testAClientThatThrowsIsUnreachable()
+
+	/**
+	 * The shipped mock's find answers its canned address.
+	 *
+	 * @return void
+	 */
+	public function testTheShippedMockFindAnswersItsCannedAddress(): void {
+		$found = (new PdokGeocodingClientMock())->find('nummeraanduiding_id:0363200000406543');
+
+		$this->assertCount(1, $found);
+		$this->assertArrayHasKey('bagAddressId', $found[0]);
+	}//end testTheShippedMockFindAnswersItsCannedAddress()
+
 }//end class
