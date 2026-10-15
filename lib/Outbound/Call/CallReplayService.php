@@ -126,6 +126,19 @@ class CallReplayService {
 
 		$request = $this->requestOf(record: $record);
 
+		if ($this->requestIsKept(record: $record, request: $request) === false) {
+			// The bodies aged out or were never kept (REQ-OCD-009): sending what is left would be a bare
+			// request the partner takes for a new call, and it would be recorded as a replay.
+			return [
+				'call' => $uuid,
+				'kind' => CallRecorder::KIND_REPLAYED,
+				'succeeded' => false,
+				'sent' => false,
+				'mappingVersion' => $resolved['version'],
+				'detail' => 'The request is no longer kept, so this call cannot be replayed.',
+			];
+		}
+
 		if ($dryRun === true) {
 			// A dry run writes nothing at all: no call, no attempt, no record.
 			// An administrator uses it to look at a payload, and looking must
@@ -389,6 +402,46 @@ class CallReplayService {
 
 		return $this->bagOf(value: ($record['request'] ?? null));
 	}//end requestOf()
+
+	/**
+	 * Whether the record still holds the request it would replay.
+	 *
+	 * A call that kept `replayRequest` can always be replayed. Without one, a
+	 * GET or HEAD has nothing to lose, but any other method needs the body it
+	 * sent: the record is refused when its bodies were stripped (`bodyExpiredAt`),
+	 * were withheld or never captured (`bodyCaptured: false`), or, for a record
+	 * that predates `bodyCaptured`, when the stored request holds no body.
+	 *
+	 * @param array<string,mixed> $record The stored call record.
+	 * @param array<string,mixed> $request The request `requestOf()` chose.
+	 *
+	 * @return bool True when the request can be replayed as it was sent.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	private function requestIsKept(array $record, array $request): bool {
+		if ($this->bagOf(value: ($record['replayRequest'] ?? null)) !== []) {
+			return true;
+		}
+
+		if ($request === []) {
+			return false;
+		}
+
+		$method = strtoupper((string)($request['method'] ?? 'POST'));
+		if ($method === 'GET' || $method === 'HEAD') {
+			return true;
+		}
+
+		$captured = ($record['bodyCaptured'] ?? null);
+		$hasBody = (isset($request['body']) === true || isset($request['json']) === true);
+
+		return (
+			empty($record['bodyExpiredAt']) === true
+			&& $captured !== false
+			&& ($captured === true || $hasBody === true)
+		);
+	}//end requestIsKept()
 
 	/**
 	 * A stored bag narrowed to an array.

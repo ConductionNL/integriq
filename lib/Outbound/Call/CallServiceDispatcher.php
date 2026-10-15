@@ -59,7 +59,7 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 	 * Send one call through the engine.
 	 *
 	 * @param string $target The source to call.
-	 * @param array<string,mixed> $request The request: `method`, `endpoint`, `headers`, `body`.
+	 * @param array<string,mixed> $request The request: `method`, `endpoint` (or the stored `url`), `headers`, `body`.
 	 *
 	 * @return array{statusCode:int,body:mixed,headers:array<string,mixed>,durationMs:int,detail:string}
 	 *         What came back.
@@ -80,7 +80,7 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 		try {
 			$log = $this->callService->call(
 				source: $source,
-				endpoint: (string)($request['endpoint'] ?? ''),
+				endpoint: $this->endpointOf(source: $source, request: $request),
 				method: strtoupper((string)($request['method'] ?? 'POST')),
 				config: $config,
 			);
@@ -108,6 +108,40 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 		];
 
 	}//end dispatch()
+
+	/**
+	 * The endpoint a request names, from `endpoint` or from a stored call record's `url`.
+	 *
+	 * A call record stores `url` and `method`, not `endpoint`. A `url` is taken as the endpoint
+	 * only when it lies under the source's own address and has no redacted part: a URL whose
+	 * secrets were replaced on the way into the log would be replayed with the placeholder.
+	 *
+	 * @param ObjectEntity $source The source being called.
+	 * @param array<string,mixed> $request The request.
+	 *
+	 * @return string The endpoint, relative to the source.
+	 *
+	 * @throws CallDispatchException When the stored URL is outside the source's address or was redacted.
+	 */
+	private function endpointOf(ObjectEntity $source, array $request): string {
+		$endpoint = (string)($request['endpoint'] ?? '');
+		$url = (string)($request['url'] ?? '');
+		if ($endpoint !== '' || $url === '') {
+			return $endpoint;
+		}
+
+		$location = rtrim((string)($source->getObject()['location'] ?? ''), '/');
+		if ($location === '' || stripos($url, $location) !== 0 || stripos($url, 'REDACTED') !== false) {
+			throw new CallDispatchException(message: 'The stored URL cannot be replayed: it is outside the source address or has a redacted part.');
+		}
+
+		$rest = substr($url, strlen($location));
+		if ($rest !== '' && $rest[0] !== '/' && $rest[0] !== '?') {
+			throw new CallDispatchException(message: 'The stored URL cannot be replayed: it is outside the source address or has a redacted part.');
+		}
+
+		return $rest;
+	}//end endpointOf()
 
 	/**
 	 * Resolve the target source.
