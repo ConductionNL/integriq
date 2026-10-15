@@ -7683,7 +7683,7 @@ class SynchronizationService {
 	 *
 	 * @return array<string, int|null>|null The headers to raise with, or null when this is no rate limit.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
 	 */
 	private function rateLimitHeadersFromResponse(?int $statusCode, array $headers): ?array {
 		if ($statusCode !== 403 && $statusCode !== 429) {
@@ -7726,7 +7726,7 @@ class SynchronizationService {
 	 *
 	 * @return int|null The reset time.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
 	 */
 	private function rateLimitResetAt(?string $reset, ?string $retryAfter): ?int {
 		if ($reset !== null && ctype_digit(trim($reset)) === true) {

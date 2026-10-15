@@ -259,7 +259,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the mode is unknown.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
 	 */
 	public static function assertDecode(array $config, IL10N $l10n): void {
 		if (array_key_exists('decode', $config) === false) {

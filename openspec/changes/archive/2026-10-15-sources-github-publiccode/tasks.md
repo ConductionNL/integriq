@@ -47,6 +47,6 @@ Kind: code. Size M. Half for opencatalogi `publiccode-github-harvest`.
 
 ## Verification
 - [x] `openspec validate sources-github-publiccode --strict` passes
-- [ ] `composer check:strict` once before push; PHPUnit exit code read
+- [x] `composer check:strict` once before push; PHPUnit exit code read (verified: CI on the head of #2429, b29ce4398, green for lint, phpcs, phpmd, psalm, phpstan and PHPUnit; `check:no-legacy-types` and `check:routes` rerun on b29ce4398 on 2026-10-15, both exit 0)
 - [x] Live on :8095: templates seeded, code search mock pages by `Link` and suspends on 403, a real publiccode.yml decodes
-- [ ] Authenticated crawl against real GitHub (coordinator, needs the PAT)
+- [x] Authenticated crawl against real GitHub (coordinator, needs the PAT) (verified: WOO-585 rig against real github.com through `github-api` with `credentialRef` `github-publiccode`, credential holding Wilco's own GitHub token, 24 of 24 shards, 698 components on 2026-10-01 (OpenCatalogi change publiccode-github-harvest task 7.5) and 902 on 2026-10-13 (WOO-585 test plan, scenario 4))

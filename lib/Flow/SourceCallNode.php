@@ -836,7 +836,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @throws FlowNodeException When a named mode cannot decode the body.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-file-that-does-not-decode-fails-its-item-req-ghp-003
 	 */
 	private function decodeBody(array $response, string $decode, array $context): mixed {
 		$body = ($response['body'] ?? null);
