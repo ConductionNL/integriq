@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
+use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -53,17 +54,52 @@ class LogCleanUpTaskTest extends TestCase {
 	private array $deletes = [];
 
 	/**
+	 * The `_rbac` argument of every findAll() and deleteObject() call: [kind, schema or uuid, value].
+	 *
+	 * @var array<int,array{0:string,1:string,2:mixed}>
+	 */
+	private array $rbacFlags = [];
+
+	/**
+	 * The logger of the task under test.
+	 *
+	 * @var LoggerInterface&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * Uuids whose deletion throws.
+	 *
+	 * @var array<int,string>
+	 */
+	private array $failingDeletes = [];
+
+	/**
 	 * Build the task over a store answering the given records to a body-expiry query.
 	 *
 	 * @param array<string,array<string,mixed>> $expiredBodies The call records past bodyExpiresAt, by uuid.
+	 * @param array<string,array<string,mixed>> $expiredCalls  The call_log records past `expires`, by uuid.
 	 *
 	 * @return LogCleanUpTask
 	 */
-	private function task(array $expiredBodies): LogCleanUpTask {
+	private function task(array $expiredBodies, array $expiredCalls=[]): LogCleanUpTask {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('findAll')->willReturnCallback(
-			function (array $config = []) use ($expiredBodies) {
+			function (array $config = [], bool $_rbac = true) use ($expiredBodies, $expiredCalls) {
 				$this->queries[] = $config['filters'];
+				$this->rbacFlags[] = ['findAll', (string)$config['filters']['schema'], $_rbac];
+				if (isset($config['filters']['expires[lt]']) === true && $config['filters']['schema'] === 'call_log') {
+					$rows = [];
+					foreach ($expiredCalls as $uuid => $record) {
+						$entity = new ObjectEntity();
+						$entity->setUuid($uuid);
+						$entity->setObject($record);
+						$rows[] = $entity;
+					}
+
+					return ['results' => $rows];
+				}
+
 				if (isset($config['filters']['bodyExpiresAt[lt]']) === false) {
 					return ['results' => []];
 				}
@@ -86,7 +122,12 @@ class LogCleanUpTaskTest extends TestCase {
 			}
 		);
 		$objectService->method('deleteObject')->willReturnCallback(
-			function ($uuid) {
+			function ($uuid, $register = null, $schema = null, bool $_rbac = true) {
+				$this->rbacFlags[] = ['deleteObject', (string)$uuid, $_rbac];
+				if (in_array((string)$uuid, $this->failingDeletes, true) === true) {
+					throw new \RuntimeException('refused');
+				}
+
 				$this->deletes[] = (string)$uuid;
 				return true;
 			}
@@ -94,11 +135,13 @@ class LogCleanUpTaskTest extends TestCase {
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturnArgument(2);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
 		return new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
 			$objectService,
-			new BodyCapturePolicy($appConfig)
+			new BodyCapturePolicy($appConfig),
+			$this->logger
 		);
 	}//end task()
 
@@ -180,6 +223,45 @@ class LogCleanUpTaskTest extends TestCase {
 		$this->assertSame(['call_log', 'stuf_message', 'job_log', 'synchronization_contract_log', 'synchronization_log'], $schemas);
 		$this->assertSame([], $this->saves);
 	}//end testRunStripsBodiesAndStillDeletesExpiredLogs()
+
+	/**
+	 * The retention sweep runs under cron with no session user, so it reads and deletes with RBAC off (iq-f2).
+	 *
+	 * With RBAC on, the admin-only `call_log` rule hides every row from a user-less job and nothing is deleted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testTheRetentionSweepReadsAndDeletesWithRbacOff(): void {
+		$expired = $this->capturedRecord();
+		$this->task([], ['call-old' => $expired])->run(null);
+
+		$this->assertContains('call-old', $this->deletes, 'the expired call record is deleted');
+		$this->assertNotSame([], $this->rbacFlags);
+		foreach ($this->rbacFlags as [$kind, $subject, $rbac]) {
+			$this->assertFalse($rbac, "$kind($subject) must pass _rbac: false");
+		}
+
+		$this->assertContains(['deleteObject', 'call-old', false], $this->rbacFlags);
+		$this->assertContains(['findAll', 'call_log', false], $this->rbacFlags);
+		$this->assertContains(['findAll', 'stuf_message', false], $this->rbacFlags);
+	}//end testTheRetentionSweepReadsAndDeletesWithRbacOff()
+
+	/**
+	 * A deletion that is refused is logged and the sweep goes on with the next record.
+	 *
+	 * @return void
+	 */
+	public function testARefusedDeletionIsLoggedAndTheSweepContinues(): void {
+		$this->failingDeletes = ['call-bad'];
+		$task = $this->task([], ['call-bad' => $this->capturedRecord(), 'call-good' => $this->capturedRecord()]);
+		$this->logger->expects($this->once())->method('warning')->with($this->stringContains('could not delete'));
+
+		$task->run(null);
+
+		$this->assertSame(['call-good'], $this->deletes);
+	}//end testARefusedDeletionIsLoggedAndTheSweepContinues()
 
 	/**
 	 * The task is still registered as a background job.

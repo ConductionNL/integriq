@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
+use Psr\Log\LoggerInterface;
 
 /**
  * Background job task for cleaning up expired logs.
@@ -48,11 +49,13 @@ class LogCleanUpTask extends TimedJob {
 	 * @param ITimeFactory $time Time factory for job scheduling.
 	 * @param OrObjectService $orObjectService OR object service for log operations.
 	 * @param BodyCapturePolicy $bodyCapturePolicy Strips call bodies past their expiry.
+	 * @param LoggerInterface $logger Logs a record that could not be stripped or deleted.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly OrObjectService $orObjectService,
 		private readonly BodyCapturePolicy $bodyCapturePolicy,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
 
@@ -71,13 +74,18 @@ class LogCleanUpTask extends TimedJob {
 	 * Delete expired objects for a given schema in the openconnector register.
 	 *
 	 * Finds all objects with a non-null `expires` field that is in the past,
-	 * then deletes them one by one via OR ObjectService.
+	 * then deletes them one by one via OR ObjectService. These are integriq's
+	 * own logs and the sweep runs under cron, where there is no session user:
+	 * with RBAC on, the admin-only rules (`call_log`, `stuf_message`) hide every
+	 * row and nothing would ever be deleted, so it reads and deletes with
+	 * `_rbac: false`.
 	 *
 	 * @param string $schema The schema slug to clean up.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	private function cleanupSchema(string $schema): void {
 		$now = (new DateTime())->format('Y-m-d H:i:s');
@@ -88,15 +96,21 @@ class LogCleanUpTask extends TimedJob {
 					'schema' => $schema,
 					'expires[lt]' => $now,
 				],
-			]
+			],
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$objects = $matches['results'] ?? $matches;
 		foreach ($objects as $object) {
 			try {
-				$this->orObjectService->deleteObject(uuid: $object->getUuid());
+				$this->orObjectService->deleteObject(uuid: $object->getUuid(), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Continue with remaining objects even if one deletion fails.
+				$this->logger->warning(
+					'LogCleanUpTask: could not delete expired {schema} record {uuid}: {error}',
+					['schema' => $schema, 'uuid' => $object->getUuid(), 'error' => $e->getMessage()]
+				);
 			}
 		}
 
@@ -154,6 +168,10 @@ class LogCleanUpTask extends TimedJob {
 				$stripped++;
 			} catch (\Exception $e) {
 				// Continue with the remaining records even if one write fails.
+				$this->logger->warning(
+					'LogCleanUpTask: could not strip the bodies of call record {uuid}: {error}',
+					['uuid' => $object->getUuid(), 'error' => $e->getMessage()]
+				);
 			}
 		}//end foreach
 
