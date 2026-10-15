@@ -75,6 +75,20 @@ class LogCleanUpTaskTest extends TestCase {
 	private array $failingDeletes = [];
 
 	/**
+	 * The stuf_message rows past `expires`, by uuid.
+	 *
+	 * @var array<string,array<string,mixed>>
+	 */
+	private array $expiredStuf = [];
+
+	/**
+	 * The filters of the stuf_message retention query.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private array $stufFilters = [];
+
+	/**
 	 * Build the task over a store answering the given records to a body-expiry query.
 	 *
 	 * @param array<string,array<string,mixed>> $expiredBodies The call records past bodyExpiresAt, by uuid.
@@ -88,6 +102,19 @@ class LogCleanUpTaskTest extends TestCase {
 			function (array $config = [], bool $_rbac = true) use ($expiredBodies, $expiredCalls) {
 				$this->queries[] = $config['filters'];
 				$this->rbacFlags[] = ['findAll', (string)$config['filters']['schema'], $_rbac];
+				if (isset($config['filters']['expires[lt]']) === true && $config['filters']['schema'] === 'stuf_message') {
+					$this->stufFilters = $config['filters'];
+					$rows = [];
+					foreach ($this->expiredStuf as $uuid => $record) {
+						$entity = new ObjectEntity();
+						$entity->setUuid($uuid);
+						$entity->setObject($record);
+						$rows[] = $entity;
+					}
+
+					return ['results' => $rows];
+				}
+
 				if (isset($config['filters']['expires[lt]']) === true && $config['filters']['schema'] === 'call_log') {
 					$rows = [];
 					foreach ($expiredCalls as $uuid => $record) {
@@ -247,6 +274,24 @@ class LogCleanUpTaskTest extends TestCase {
 		$this->assertContains(['findAll', 'call_log', false], $this->rbacFlags);
 		$this->assertContains(['findAll', 'stuf_message', false], $this->rbacFlags);
 	}//end testTheRetentionSweepReadsAndDeletesWithRbacOff()
+
+	/**
+	 * The stuf_message sweep deletes rows still retrying, never a concluded audit row (pre-push pp-7).
+	 *
+	 * @return void
+	 */
+	public function testTheStufMessageSweepOnlyDeletesRowsStillRetrying(): void {
+		$this->expiredStuf = [
+			'msg-retrying' => ['status' => 'retrying', 'envelope' => '<x/>', 'expires' => '2026-10-01T00:00:00+00:00'],
+			'msg-sent' => ['status' => 'sent', 'expires' => '2026-10-01T00:00:00+00:00'],
+			'msg-failed' => ['status' => 'failed', 'expires' => '2026-10-01T00:00:00+00:00'],
+		];
+
+		$this->task([])->run(null);
+
+		$this->assertSame('retrying', $this->stufFilters['status'], 'the query asks for retrying rows only');
+		$this->assertSame(['msg-retrying'], $this->deletes, 'a concluded row is not deleted even if the query returns it');
+	}//end testTheStufMessageSweepOnlyDeletesRowsStillRetrying()
 
 	/**
 	 * A deletion that is refused is logged and the sweep goes on with the next record.

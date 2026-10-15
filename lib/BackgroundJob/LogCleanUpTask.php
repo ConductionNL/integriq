@@ -81,13 +81,14 @@ class LogCleanUpTask extends TimedJob {
 	 * `_rbac: false`.
 	 *
 	 * @param string $schema The schema slug to clean up.
+	 * @param array<string,string> $only Property values a row must have to be deleted, e.g. `['status' => 'retrying']`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
-	private function cleanupSchema(string $schema): void {
+	private function cleanupSchema(string $schema, array $only = []): void {
 		$now = (new DateTime())->format('Y-m-d H:i:s');
 		$matches = $this->orObjectService->findAll(
 			config: [
@@ -95,7 +96,7 @@ class LogCleanUpTask extends TimedJob {
 					'register' => 'integriq',
 					'schema' => $schema,
 					'expires[lt]' => $now,
-				],
+				] + $only,
 			],
 			_rbac: false,
 			_multitenancy: false
@@ -103,6 +104,14 @@ class LogCleanUpTask extends TimedJob {
 
 		$objects = $matches['results'] ?? $matches;
 		foreach ($objects as $object) {
+			// The filter is a hint to OpenRegister, not a guarantee: match the guard again before deleting.
+			$data = $object->getObject();
+			foreach ($only as $property => $value) {
+				if (is_array($data) === false || ($data[$property] ?? null) !== $value) {
+					continue 2;
+				}
+			}
+
 			try {
 				$this->orObjectService->deleteObject(uuid: $object->getUuid(), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
@@ -218,7 +227,8 @@ class LogCleanUpTask extends TimedJob {
 		$this->cleanupSchema(schema: 'call_log');
 
 		// Clear StUF-ZDS messages whose retry never concluded: they keep an envelope until `expires`.
-		$this->cleanupSchema(schema: 'stuf_message');
+		// Only rows still `retrying`: a concluded row is an audit record, whatever its `expires` says.
+		$this->cleanupSchema(schema: 'stuf_message', only: ['status' => 'retrying']);
 
 		// Clear expired job logs.
 		$this->cleanupSchema(schema: 'job_log');
