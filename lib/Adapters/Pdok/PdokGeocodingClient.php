@@ -50,6 +50,24 @@ abstract class PdokGeocodingClient {
 	abstract public function suggest(string $query, int $rows = 10): array;
 
 	/**
+	 * A search that says when the Locatieserver gave no answer.
+	 *
+	 * `suggest()` answers an empty list both when nothing matched and when
+	 * the Locatieserver could not be reached. A check that decides on the
+	 * answer cannot use that, so this call answers null for "no answer" and
+	 * an empty list for "answered, nothing matched". The query may use the
+	 * Locatieserver's field syntax, such as `nummeraanduiding_id:<id>`.
+	 *
+	 * @param string $query The query.
+	 * @param int $rows Maximum rows to return.
+	 *
+	 * @return array<int,array<string,mixed>>|null Normalised PostalAddress entries, or null without an answer.
+	 *
+	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 */
+	abstract public function find(string $query, int $rows = 10): ?array;
+
+	/**
 	 * Lookup a specific PDOK identifier.
 	 *
 	 * Resolves `adres-…` / `weg-…` / `woonplaats-…` ids to a single canonical

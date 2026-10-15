@@ -170,6 +170,7 @@ class PdokWfsClientHttpTest extends TestCase {
 		$this->assertSame('FeatureCollection', $result['type']);
 		$this->assertSame([], $result['features']);
 		$this->assertSame(0, $result['totalFeatures']);
+		$this->assertTrue($result['unanswered']);
 	}//end testGetFeatureReturnsEmptyCollectionOnDecodeFailure()
 
 }//end class
