@@ -372,6 +372,11 @@ class ProductSubscriptionsController extends Controller {
 	 *
 	 * That is a deliberate choice and the reason this method has no `@throws`.
 	 *
+	 * The rows are read with RBAC off: `call_log` is admin-only, so with RBAC on
+	 * a delegated integriq administrator (who passes #[AuthorizedAdminSetting])
+	 * was shown zero traffic for every product. Only aggregates leave this
+	 * controller, never a row.
+	 *
 	 * @param string $productId The api_product's id.
 	 *
 	 * @return array<int, array<string, mixed>> Each row's own fields.
@@ -388,7 +393,9 @@ class ProductSubscriptionsController extends Controller {
 					],
 					'sort' => ['created' => 'desc'],
 					'limit' => self::ANALYTICS_ROW_LIMIT,
-				]
+				],
+				_rbac: false,
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: failed to fetch product call_log rows for analytics: ' . $e->getMessage());
