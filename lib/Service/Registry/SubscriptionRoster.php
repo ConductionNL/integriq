@@ -28,6 +28,11 @@ use OCP\IAppConfig;
  * OpenRegister, which is the whole point of superseding the store-and-copy
  * design.
  *
+ * Both maps are keyed by a followed BSN or KvK number. They are stored lazy,
+ * so Nextcloud does not load them on every request, and sensitive, so
+ * `occ config:list` and the admin UI do not print them. Reads ask for lazy
+ * values, which also returns a value an older release stored eagerly.
+ *
  * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
 class SubscriptionRoster {
@@ -65,7 +70,7 @@ class SubscriptionRoster {
 	 * @spec openspec/specs/registry-subscription-connector/spec.md
 	 */
 	public function identities(string $registryId): array {
-		$raw = $this->appConfig->getValueString(self::APP_ID, (self::KEY_PREFIX . $registryId), '{}');
+		$raw = $this->appConfig->getValueString(self::APP_ID, (self::KEY_PREFIX . $registryId), '{}', lazy: true);
 		$decoded = json_decode($raw, true);
 
 		if (is_array($decoded) === true) {
@@ -162,7 +167,7 @@ class SubscriptionRoster {
 	 * @return array<string,mixed> Identity value to target slugs.
 	 */
 	private function allTargets(string $registryId): array {
-		$raw = $this->appConfig->getValueString(self::APP_ID, (self::TARGETS_PREFIX . $registryId), '{}');
+		$raw = $this->appConfig->getValueString(self::APP_ID, (self::TARGETS_PREFIX . $registryId), '{}', lazy: true);
 		$decoded = json_decode($raw, true);
 
 		if (is_array($decoded) === true) {
@@ -186,7 +191,7 @@ class SubscriptionRoster {
 			$encoded = '{}';
 		}
 
-		$this->appConfig->setValueString(self::APP_ID, $key, $encoded);
+		$this->appConfig->setValueString(self::APP_ID, $key, $encoded, lazy: true, sensitive: true);
 	}//end storeJson()
 
 	/**
@@ -206,7 +211,9 @@ class SubscriptionRoster {
 		$this->appConfig->setValueString(
 			self::APP_ID,
 			(self::KEY_PREFIX . $registryId),
-			$encoded
+			$encoded,
+			lazy: true,
+			sensitive: true
 		);
 	}//end store()
 }//end class
