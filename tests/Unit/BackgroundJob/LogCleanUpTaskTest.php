@@ -68,6 +68,13 @@ class LogCleanUpTaskTest extends TestCase {
 	private LoggerInterface $logger;
 
 	/**
+	 * Uuids whose save throws.
+	 *
+	 * @var array<int,string>
+	 */
+	private array $failingSaves = [];
+
+	/**
 	 * Uuids whose deletion throws.
 	 *
 	 * @var array<int,string>
@@ -144,6 +151,10 @@ class LogCleanUpTaskTest extends TestCase {
 		);
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object, $register = null, $schema = null, $uuid = null) {
+				if (in_array((string)$uuid, $this->failingSaves, true) === true) {
+					throw new \RuntimeException('refused');
+				}
+
 				$this->saves[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			}
@@ -307,6 +318,22 @@ class LogCleanUpTaskTest extends TestCase {
 
 		$this->assertSame(['call-good'], $this->deletes);
 	}//end testARefusedDeletionIsLoggedAndTheSweepContinues()
+
+	/**
+	 * A record whose bodies cannot be stripped is logged and the sweep goes on with the next one.
+	 *
+	 * @return void
+	 */
+	public function testARefusedStripIsLoggedAndTheSweepContinues(): void {
+		$this->failingSaves = ['call-bad'];
+		$task = $this->task(['call-bad' => $this->capturedRecord(), 'call-good' => $this->capturedRecord()]);
+		$this->logger->expects($this->once())->method('warning')->with($this->stringContains('could not strip'));
+
+		$this->assertSame(1, $task->stripExpiredBodies());
+
+		$this->assertCount(1, $this->saves);
+		$this->assertSame('call-good', $this->saves[0]['uuid']);
+	}//end testARefusedStripIsLoggedAndTheSweepContinues()
 
 	/**
 	 * The task is still registered as a background job.
