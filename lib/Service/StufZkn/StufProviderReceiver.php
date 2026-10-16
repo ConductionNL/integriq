@@ -82,11 +82,11 @@ class StufProviderReceiver {
 	];
 
 	/**
-	 * Inbound body ceiling (2 MiB): mitigates XML bombs.
+	 * Most cases rendered into one zakLa01, however many the owning app hands back.
 	 *
 	 * @var integer
 	 */
-	private const MAX_BODY_BYTES = 2097152;
+	private const MAX_CASES = 100;
 
 	/**
 	 * The request came in on integriq's own route.
@@ -126,6 +126,7 @@ class StufProviderReceiver {
 	 * @param StUFXMLBuilder            $xml         Builds the La01, Bv01 and fault answers.
 	 * @param IEventDispatcher          $dispatcher  Carries the question to the owning app.
 	 * @param LoggerInterface           $logger      The logger.
+	 * @param StufWsseInboundVerifier   $wsse        Checks the UsernameToken, with a replay window.
 	 * @param StufXmlParser             $xmlParser   The hardened XML parser.
 	 * @param StufProviderRequestReader $reader      Reads the question out of the envelope.
 	 */
@@ -135,6 +136,7 @@ class StufProviderReceiver {
 		private readonly StUFXMLBuilder $xml,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly StufWsseInboundVerifier $wsse,
 		private readonly StufXmlParser $xmlParser = new StufXmlParser(),
 		private readonly StufProviderRequestReader $reader = new StufProviderRequestReader(),
 	) {
@@ -193,7 +195,7 @@ class StufProviderReceiver {
 	 * @return array The answer (ProviderAnswer).
 	 */
 	private function process(string $rawXml, string $sourceId, string $service, string $origin): array {
-		if (strlen($rawXml) > self::MAX_BODY_BYTES) {
+		if (strlen($rawXml) > StufZknRequestBody::MAX_BYTES) {
 			return $this->fault(statusCode: 413, berichtcode: 'Fo02', code: 'StUF001', omschrijving: 'Bericht te groot', stuurgegevens: []);
 		}
 
@@ -236,9 +238,9 @@ class StufProviderReceiver {
 		}
 
 		$event = $this->reader->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
-		$unfit = $this->unfitWrite(event: $event, origin: $origin);
+		$unfit = ($this->unfitQuery(event: $event) ?? $this->unfitWrite(event: $event, origin: $origin));
 		if ($unfit !== null) {
-			$this->logger->warning('StUF provider write {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);
+			$this->logger->warning('StUF provider {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);
 			return $this->fault(
 				statusCode: $unfit['statusCode'],
 				berichtcode: $faultCode,
@@ -254,7 +256,25 @@ class StufProviderReceiver {
 			$this->logger->error('StUF provider listener failed for {type}: {error}', ['type' => $berichttype, 'error' => $exception->getMessage()]);
 		}
 
-		return $this->answer(event: $event, faultCode: $faultCode, reply: $reply);
+		$answer = $this->answer(event: $event, faultCode: $faultCode, reply: $reply);
+
+		// The audit record of an authenticated request: which source, what kind of message, and how it ended.
+		// No criterion, burgerservicenummer or answer is logged. It is logged at warning level on purpose:
+		// Nextcloud drops info lines at its default log level (2), and an audit record must survive it.
+		// The fixed `[StUF audit]` prefix is what an operator filters on.
+		$this->logger->warning(
+			'[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}',
+			[
+				'id' => (string)$source['id'],
+				'type' => $berichttype,
+				'ref' => $event->getReferentienummer(),
+				'origin' => $origin,
+				'app' => (string)$event->getAnsweredBy(),
+				'status' => $answer['statusCode'],
+			]
+		);
+
+		return $answer;
 	}//end process()
 
 	/**
@@ -293,7 +313,16 @@ class StufProviderReceiver {
 
 		$payload = $event->getAnswer();
 		if ($event instanceof StufCaseQueryEvent) {
-			return ['statusCode' => 200, 'body' => $this->xml->buildZakLa01(cases: (array)($payload['cases'] ?? []), stuurgegevens: $reply)];
+			$cases = (array)($payload['cases'] ?? []);
+			if (count($cases) > self::MAX_CASES) {
+				$this->logger->warning(
+					'StUF provider answer {ref} holds {count} cases, rendering the first {max}',
+					['ref' => $event->getReferentienummer(), 'count' => count($cases), 'max' => self::MAX_CASES]
+				);
+				$cases = array_slice($cases, 0, self::MAX_CASES);
+			}
+
+			return ['statusCode' => 200, 'body' => $this->xml->buildZakLa01(cases: $cases, stuurgegevens: $reply)];
 		}
 
 		if ($event instanceof StufPersonQueryEvent) {
@@ -303,6 +332,34 @@ class StufProviderReceiver {
 		// StUF-ZDS 1.2 answers every kennisgeving with a Bv03 (or a Fo03).
 		return ['statusCode' => 200, 'body' => $this->xml->buildBv03(caseIdentification: '', stuurgegevens: $reply)];
 	}//end answer()
+
+	/**
+	 * Why a query is not put to the owning app at all, or null when it is.
+	 *
+	 * A zakLv01 with no criterion would ask for every case, and an npsLv01 without a
+	 * 9-digit burgerservicenummer for a person nobody named: the owning app is not
+	 * asked, whatever it would have answered.
+	 *
+	 * @param StufProviderQueryEvent $event The event the message became.
+	 *
+	 * @return array{statusCode:int,reason:string}|null The refusal, its reason safe to return; null for anything but an unfit query.
+	 *
+	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 */
+	private function unfitQuery(StufProviderQueryEvent $event): ?array {
+		if ($event instanceof StufCaseQueryEvent) {
+			$criteria = array_filter($event->getCriteria(), static fn(string $value): bool => trim($value) !== '');
+			if ($criteria === []) {
+				return ['statusCode' => 400, 'reason' => 'Een zaakvraag zonder selectiecriterium wordt niet beantwoord'];
+			}
+		}
+
+		if ($event instanceof StufPersonQueryEvent && preg_match('/^\d{9}$/', $event->getBsn()) !== 1) {
+			return ['statusCode' => 400, 'reason' => 'Een persoonsvraag vraagt om een burgerservicenummer van negen cijfers'];
+		}
+
+		return null;
+	}//end unfitQuery()
 
 	/**
 	 * Why a write message is not put to the owning app at all, or null when it is.
@@ -366,10 +423,8 @@ class StufProviderReceiver {
 			return null;
 		}
 
-		$tokenPath = '//*[local-name()="Security"]/*[local-name()="UsernameToken"]/*[local-name()="';
-		$username  = $this->reader->text(xml: $root, path: $tokenPath . 'Username"]');
-		$password  = $this->reader->text(xml: $root, path: $tokenPath . 'Password"]');
-		if (hash_equals($token['username'], $username) === false || hash_equals($token['password'], $password) === false) {
+		$configuration = (array)($source['configuration'] ?? []);
+		if ($this->wsse->verify(root: $root, token: $token, configuration: $configuration, sourceId: $sourceId) === false) {
 			return null;
 		}
 

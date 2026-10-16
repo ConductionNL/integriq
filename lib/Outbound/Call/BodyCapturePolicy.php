@@ -321,6 +321,25 @@ class BodyCapturePolicy {
 	}//end apply()
 
 	/**
+	 * Whether a call's bodies may be kept at all: inside the source's open window, or because the caller asked.
+	 *
+	 * The same decision {@see apply()} makes for the call record, for a
+	 * consumer that stores the request and response elsewhere, such as the
+	 * execution trace step of the call.
+	 *
+	 * @param array<string,mixed> $sourceData The source the call went to.
+	 * @param bool $logBody Whether the calling code asked for the bodies.
+	 *
+	 * @return bool True when the bodies may be stored.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+	 */
+	public function captures(array $sourceData, bool $logBody): bool {
+		return ($this->decide(sourceData: $sourceData, logBody: $logBody)['capture'] === true);
+
+	}//end captures()
+
+	/**
 	 * Whether bodies are captured, and until when.
 	 *
 	 * @param array<string,mixed> $sourceData The source.

@@ -3031,9 +3031,15 @@ class CallService {
 			withholdBodies: $withholdBodies,
 		);
 
-		// A trace is stored too, so a call that withholds its bodies hands the
-		// trace the same stripped request and response the call log gets.
+		// A trace is stored too, so it follows the call log's body policy: outside
+		// an investigation window, and without logBody, the step holds no body
+		// (outbound-call-log REQ-OCD-001), and a call that withholds its bodies
+		// hands the trace the same stripped request and response the call log gets.
 		$traced = ['request' => $data['request'], 'response' => $data['response']];
+		if ($this->bodyCapturePolicy->captures(sourceData: $sourceData, logBody: (bool)$prepared['logBody']) === false) {
+			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
+		}
+
 		if ($withholdBodies === true) {
 			$traced = $this->bodyCapturePolicy->withhold(record: $traced);
 		}

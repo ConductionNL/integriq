@@ -306,6 +306,11 @@ final class WebhookProfiles {
 	/**
 	 * StUF-ZKN kennisgevingen.
 	 *
+	 * The account needs no right on `stuf_message` (admin-only): the audit rows are integriq's
+	 * own and are written with `_rbac: false`. The zaak and document upserts still run as the
+	 * account; one OpenRegister refuses is recorded as a `failed` row and answered with a Fo03
+	 * by `StufZknSyncService::receiveInbound()`. A missing connection or account answers 503.
+	 *
 	 * @return WebhookProfile
 	 *
 	 * @spec openspec/changes/stuf-zkn-inbound-on-the-consumer-model/specs/stuf-zkn-bridge/spec.md#requirement-the-inbound-endpoint-acts-as-the-stuf-zkn-connections-account-req-020
@@ -316,6 +321,7 @@ final class WebhookProfiles {
 			channel: 'stufzkn',
 			label: 'StUF-ZKN',
 			schema: 'stuf_message',
+			requiredActions: [],
 			legacySourceType: 'stuf-zkn'
 		);
 

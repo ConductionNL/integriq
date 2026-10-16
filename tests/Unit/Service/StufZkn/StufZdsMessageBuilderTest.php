@@ -245,6 +245,30 @@ class StufZdsMessageBuilderTest extends TestCase {
 	}//end testUsernameTokenHeaderOnlyWhenTheSourceNamesAUser()
 
 	/**
+	 * A token can be added at send time to an envelope built without one, and an envelope never gets two.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+	 */
+	public function testUsernameTokenCanBeAddedAtSendTime(): void {
+		$bare = $this->routing;
+		$bare['wsse'] = null;
+		$builder = $this->builder;
+		$xml = $builder->caseIdentificationRequest(routing: $bare)['xml'];
+		$this->assertStringNotContainsString('UsernameToken', $xml);
+
+		$withToken = $builder->withUsernameToken(envelopeXml: $xml, wsse: ['username' => 'stuf-user', 'password' => 's3cr<t']);
+		$xpath = $this->xpath($withToken);
+		$this->assertSame('stuf-user', $xpath->evaluate('string(//soapenv:Header/wsse:Security/wsse:UsernameToken/wsse:Username)'));
+		$this->assertSame('s3cr<t', $xpath->evaluate('string(//wsse:Password)'));
+		$this->assertSame(1, (int)$xpath->evaluate('count(//soapenv:Body)'));
+
+		$this->assertSame($xml, $builder->withUsernameToken(envelopeXml: $xml, wsse: null), 'No token, no change');
+		$this->assertSame($withToken, $builder->withUsernameToken(envelopeXml: $withToken, wsse: ['username' => 'other', 'password' => 'x']), 'An envelope with a header is left alone');
+	}//end testUsernameTokenCanBeAddedAtSendTime()
+
+	/**
 	 * A referentienummer is 26 Crockford-base32 characters and two are never the same.
 	 *
 	 * @return void

@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\StufZdsConfirmationController;
 use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
@@ -39,7 +40,7 @@ class StufZdsConfirmationControllerTest extends TestCase {
 		$receiver = $this->createMock(StufZdsConfirmationReceiver::class);
 		$receiver->expects($this->once())->method('receive')->with('<Bv01/>')->willReturn(['statusCode' => 422, 'body' => '<Fo03/>']);
 
-		$controller = new class('integriq', $this->createMock(IRequest::class), $receiver) extends StufZdsConfirmationController {
+		$controller = new class('integriq', $this->createMock(IRequest::class), $receiver, new StufZknRequestBody()) extends StufZdsConfirmationController {
 			/**
 			 * The body under test.
 			 *

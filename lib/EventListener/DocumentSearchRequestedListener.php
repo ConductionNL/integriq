@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\DocumentSearchRequestedEvent;
+use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -34,7 +35,8 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Runs the request through the Microsoft 365 adapter and writes the answer.
+ * Runs the request through the Microsoft 365 adapter and writes the answer,
+ * for an app that has a linked connection and for no other (design D3).
  *
  * @template-implements IEventListener<Event>
  *
@@ -46,10 +48,12 @@ class DocumentSearchRequestedListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param Microsoft365Adapter $adapter The Microsoft 365 source.
-	 * @param LoggerInterface     $logger  Records who asked, never what was found.
+	 * @param DocumentConnectionGuard $guard Refuses an app without a linked connection.
+	 * @param LoggerInterface     $logger  Records who asked and for what terms, never what was found.
 	 */
 	public function __construct(
 		private readonly Microsoft365Adapter $adapter,
+		private readonly DocumentConnectionGuard $guard,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -68,7 +72,19 @@ class DocumentSearchRequestedListener implements IEventListener {
 			return;
 		}
 
-		$audit = ['sourceApp' => $event->getSourceApp(), 'userId' => $event->getUserId()];
+		$audit = [
+			'sourceApp' => $event->getSourceApp(),
+			'connectionKey' => $event->getConnectionKey(),
+			'userId' => $event->getUserId(),
+			'terms' => $event->getTerms(),
+		];
+		if ($this->guard->isLinked(sourceApp: $event->getSourceApp(), connectionKey: $event->getConnectionKey()) === false) {
+			// The drive search covers the whole organisation (design D2): an app with no linked connection gets nothing and no Graph call is made.
+			$this->logger->warning('Integriq: a document search was refused, the app has no linked connection', $audit);
+			$event->setResult(['hits' => [], 'moreCount' => 0, 'notices' => ['not-linked']]);
+			return;
+		}
+
 		try {
 			if ($this->adapter->isConnected() === false) {
 				$event->setResult(['hits' => [], 'moreCount' => 0, 'notices' => ['not-connected']]);

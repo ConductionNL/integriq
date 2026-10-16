@@ -58,6 +58,13 @@ class StufZdsConfirmationReceiver {
 	public const CONFIRMATION_CODES = ['Bv01', 'Bv03', 'Fo01', 'Fo02', 'Fo03'];
 
 	/**
+	 * Body ceiling in bytes, the same as the controller's bounded read.
+	 *
+	 * @var integer
+	 */
+	private const MAX_BODY_BYTES = StufZknRequestBody::MAX_BYTES;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param StufZdsMessageLog             $log         Audit rows and source reads.
@@ -65,6 +72,7 @@ class StufZdsConfirmationReceiver {
 	 * @param StufZknAcknowledgementBuilder $acks        Builds the Bv03/Fo03 answer.
 	 * @param IEventDispatcher              $dispatcher  Announces the conclusion.
 	 * @param LoggerInterface               $logger      The logger.
+	 * @param StufWsseInboundVerifier       $wsse        Checks the UsernameToken, with a replay window.
 	 * @param StufZdsResponseReader         $reader      Reads the confirmation.
 	 * @param StufXmlParser                 $xmlParser   The hardened XML parser.
 	 */
@@ -74,6 +82,7 @@ class StufZdsConfirmationReceiver {
 		private readonly StufZknAcknowledgementBuilder $acks,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly StufWsseInboundVerifier $wsse,
 		private readonly StufZdsResponseReader $reader = new StufZdsResponseReader(),
 		private readonly StufXmlParser $xmlParser = new StufXmlParser(),
 	) {
@@ -83,9 +92,10 @@ class StufZdsConfirmationReceiver {
 	/**
 	 * Receive one confirmation envelope.
 	 *
-	 * 200 with a Bv03 when it was recorded (or had been already), 400 when the
-	 * body is not a confirmation, 422 when the crossRefnummer is unknown or the
-	 * credentials do not match, 503 when the source's password cannot be read.
+	 * 200 with a Bv03 when it was recorded (or had been already), 413 when the
+	 * body is over 2 MiB, 400 when the body is not a confirmation, 422 when the
+	 * crossRefnummer is unknown or the credentials do not match, 503 when the
+	 * source's password cannot be read.
 	 *
 	 * @param string $rawXml The raw request body.
 	 *
@@ -94,16 +104,14 @@ class StufZdsConfirmationReceiver {
 	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function receive(string $rawXml): array {
-		$root = $this->parse(rawXml: $rawXml);
-		if ($root === null) {
-			return $this->refuse(statusCode: 400, reason: 'unrecognised_berichttype', root: null, organisation: '');
+		$intake = $this->intake(rawXml: $rawXml);
+		if ($intake['answer'] !== null) {
+			return $intake['answer'];
 		}
 
-		$code     = $this->text(xml: $root, path: '//*[local-name()="stuurgegevens"]/*[local-name()="berichtcode"]');
-		$crossRef = $this->text(xml: $root, path: '//*[local-name()="stuurgegevens"]/*[local-name()="crossRefnummer"]');
-		if (in_array($code, self::CONFIRMATION_CODES, true) === false || $crossRef === '') {
-			return $this->refuse(statusCode: 400, reason: 'unrecognised_berichttype', root: $root, organisation: '');
-		}
+		$root     = $intake['root'];
+		$code     = $intake['code'];
+		$crossRef = $intake['crossRef'];
 
 		$row = $this->log->findOutbound(referentienummer: $crossRef);
 		if ($row === null) {
@@ -120,7 +128,9 @@ class StufZdsConfirmationReceiver {
 		}
 
 		$organisation = (string)($source['configuration']['organisatie'] ?? '');
-		if ($this->authenticates(root: $root, token: $token) === false) {
+		$authenticated = $this->authenticated(root: $root, token: $token, source: $source);
+
+		if ($authenticated === false) {
 			$this->logger->warning('StUF-ZDS confirmation: credentials do not match source {id}', ['id' => ($source['id'] ?? '')]);
 			return $this->refuse(statusCode: 422, reason: 'validation_failed', root: $root, organisation: $organisation);
 		}
@@ -138,6 +148,58 @@ class StufZdsConfirmationReceiver {
 			),
 		];
 	}//end receive()
+
+	/**
+	 * Check the body and read the envelope's berichtcode and crossRefnummer.
+	 *
+	 * Before any parse or lookup: the route is public, so an oversized body is refused unread.
+	 *
+	 * @param string $rawXml The raw request body.
+	 *
+	 * @return array{answer:array|null,root:SimpleXMLElement|null,code:string,crossRef:string} The refusal
+	 *         (ConfirmationAnswer) when the body cannot be a confirmation; otherwise null and the parts read.
+	 */
+	private function intake(string $rawXml): array {
+		$none = ['answer' => null, 'root' => null, 'code' => '', 'crossRef' => ''];
+		if (strlen($rawXml) > self::MAX_BODY_BYTES) {
+			return ['answer' => $this->refuse(statusCode: 413, reason: 'body_too_large', root: null, organisation: '')] + $none;
+		}
+
+		$root = $this->parse(rawXml: $rawXml);
+		if ($root === null) {
+			return ['answer' => $this->refuse(statusCode: 400, reason: 'unrecognised_berichttype', root: null, organisation: '')] + $none;
+		}
+
+		$code     = $this->text(xml: $root, path: '//*[local-name()="stuurgegevens"]/*[local-name()="berichtcode"]');
+		$crossRef = $this->text(xml: $root, path: '//*[local-name()="stuurgegevens"]/*[local-name()="crossRefnummer"]');
+		if (in_array($code, self::CONFIRMATION_CODES, true) === false || $crossRef === '') {
+			return ['answer' => $this->refuse(statusCode: 400, reason: 'unrecognised_berichttype', root: $root, organisation: '')] + $none;
+		}
+
+		return ['answer' => null, 'root' => $root, 'code' => $code, 'crossRef' => $crossRef];
+	}//end intake()
+
+	/**
+	 * Whether the envelope's UsernameToken is the source's, and fresh.
+	 *
+	 * @param SimpleXMLElement                            $root   The envelope.
+	 * @param array{username:string,password:string}|null $token  The source's token, null when it has none.
+	 * @param array                                       $source The source row.
+	 *
+	 * @return bool True when the token is valid.
+	 */
+	private function authenticated(SimpleXMLElement $root, ?array $token, array $source): bool {
+		if ($token === null) {
+			return false;
+		}
+
+		return $this->wsse->verify(
+			root: $root,
+			token: $token,
+			configuration: (array)($source['configuration'] ?? []),
+			sourceId: (string)($source['id'] ?? '')
+		);
+	}//end authenticated()
 
 	/**
 	 * Parse the envelope, or null when it is empty, carries a DOCTYPE, or is unreadable.
@@ -202,26 +264,6 @@ class StufZdsConfirmationReceiver {
 			$this->logger->warning('StUF-ZDS conclusion listener failed: {error}', ['error' => $exception->getMessage()]);
 		}
 	}//end record()
-
-	/**
-	 * Whether the envelope's UsernameToken matches the source's.
-	 *
-	 * @param SimpleXMLElement                            $root  The envelope.
-	 * @param array{username:string,password:string}|null $token The source's token, null when it has none.
-	 *
-	 * @return bool True when both match.
-	 */
-	private function authenticates(SimpleXMLElement $root, ?array $token): bool {
-		if ($token === null || $token['username'] === '' || $token['password'] === '') {
-			return false;
-		}
-
-		$tokenPath = '//*[local-name()="Security"]/*[local-name()="UsernameToken"]/*[local-name()="';
-		$username  = $this->text(xml: $root, path: $tokenPath . 'Username"]');
-		$password  = $this->text(xml: $root, path: $tokenPath . 'Password"]');
-
-		return (hash_equals($token['username'], $username) === true && hash_equals($token['password'], $password) === true);
-	}//end authenticates()
 
 	/**
 	 * A refusal: the HTTP status and a Fo03 that leaks nothing.

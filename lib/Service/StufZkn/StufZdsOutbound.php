@@ -43,6 +43,10 @@ use Throwable;
  *
  * @psalm-type ZdsResult = array{success:bool,retrying:bool,referentienummer:string,messageId:string,caseIdentification:string|null,fout:array<string,string>|null}
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The send path is one orchestration: transport, answer reader,
+ *     circuit breaker, audit log, retry job, conclusion event and, since the credentials moved out of the persisted
+ *     envelope, the message builder and credential resolver that add the UsernameToken at send time.
+ *
  * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 class StufZdsOutbound {
@@ -77,6 +81,8 @@ class StufZdsOutbound {
 	 * @param IJobList              $jobList    Schedules retries.
 	 * @param IEventDispatcher      $dispatcher Announces conclusions.
 	 * @param LoggerInterface       $logger     The logger.
+	 * @param StufZdsMessageBuilder $builder    Adds the UsernameToken to an envelope at send time.
+	 * @param StufZdsCredentialResolver $credentials Decrypts the UsernameToken at send time.
 	 */
 	public function __construct(
 		private readonly StufZknClient $transport,
@@ -86,6 +92,8 @@ class StufZdsOutbound {
 		private readonly IJobList $jobList,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly StufZdsMessageBuilder $builder,
+		private readonly StufZdsCredentialResolver $credentials,
 	) {
 
 	}//end __construct()
@@ -338,6 +346,8 @@ class StufZdsOutbound {
 	 *
 	 * The SOAPAction is `<zkn namespace>/<functie>_<berichtcode>`, the functie
 	 * read from the envelope itself (a vrij bericht is named by its template).
+	 * The WS-Security UsernameToken is added to the envelope here, never before:
+	 * what is persisted on the row for a retry holds no credentials.
 	 *
 	 * @param array  $source    The source.
 	 * @param string $operation The operation.
@@ -352,6 +362,22 @@ class StufZdsOutbound {
 		$matches       = [];
 		if (preg_match('#<stuf:functie>([^<]+)</stuf:functie>#', $envelope, $matches) === 1) {
 			$functie = html_entity_decode($matches[1], (ENT_XML1 | ENT_QUOTES), 'UTF-8');
+		}
+
+		// The persisted envelope carries no credentials; the token is added here, for the first
+		// attempt and for every retry alike, and lives only in this request.
+		try {
+			$envelope = $this->builder->withUsernameToken(
+				envelopeXml: $envelope,
+				wsse: $this->credentials->usernameToken(sourceConfiguration: $configuration)
+			);
+		} catch (StufZknProviderException $exception) {
+			return [
+				'httpStatus' => 0,
+				'responseXml' => '',
+				'durationMs' => 0,
+				'fout' => ['code' => 'CREDENTIALS', 'omschrijving' => $exception->getMessage(), 'details' => '', 'kind' => 'permanent'],
+			];
 		}
 
 		return $this->transport->transmit(

@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -47,14 +48,16 @@ class StufProviderController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                      $appName  App identifier ("integriq").
-	 * @param IRequest                    $request  Current request.
-	 * @param StufProviderReceiver $receiver Authenticates, asks the owning app and renders the answer.
+	 * @param string               $appName     App identifier ("integriq").
+	 * @param IRequest             $request     Current request.
+	 * @param StufProviderReceiver $receiver    Authenticates, asks the owning app and renders the answer.
+	 * @param StufZknRequestBody   $requestBody Reads the request body up to the ceiling.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly StufProviderReceiver $receiver,
+		private readonly StufZknRequestBody $requestBody,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -111,9 +114,11 @@ class StufProviderController extends Controller {
 	/**
 	 * Read the raw request body (a seam: `php://input` cannot be driven from a unit test).
 	 *
-	 * @return string The raw body, '' when there is none.
+	 * @return string The raw body, at most one byte past the ceiling (the receiver answers 413); '' when there is none.
+	 *
+	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	protected function readRawBody(): string {
-		return (string)file_get_contents(filename: 'php://input');
+		return $this->requestBody->read();
 	}//end readRawBody()
 }//end class

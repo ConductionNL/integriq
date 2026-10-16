@@ -33,13 +33,17 @@ use OCA\Integriq\Event\StufPersonQueryEvent;
 use OCA\Integriq\Event\StufProviderQueryEvent;
 use OCA\Integriq\Service\StUFXMLBuilder;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
+use OCA\Integriq\Service\StufZkn\StufWsseInboundVerifier;
 use OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\OCSController;
+use OCP\ICacheFactory;
+use OCP\IMemcache;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use OCP\Security\ICrypto;
@@ -86,12 +90,74 @@ class StufProviderReceiverTest extends TestCase {
 	private string $owner = 'answer';
 
 	/**
+	 * The logger the receiver under test gets.
+	 *
+	 * @var LoggerInterface&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * The nonces the shared cache has seen, by key.
+	 *
+	 * @var array<string,int>
+	 */
+	private array $nonces = [];
+
+	/**
+	 * Build the verifier over a cache that remembers nonces for the test.
+	 *
+	 * @return StufWsseInboundVerifier
+	 */
+	private function verifier(): StufWsseInboundVerifier {
+		$cache = $this->createMock(IMemcache::class);
+		$cache->method('add')->willReturnCallback(
+			function (string $key, $value, int $ttl = 0): bool {
+				if (isset($this->nonces[$key]) === true) {
+					return false;
+				}
+
+				$this->nonces[$key] = $ttl;
+				return true;
+			}
+		);
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('createDistributed')->willReturn($cache);
+		$factory->method('isAvailable')->willReturn(true);
+
+		return new StufWsseInboundVerifier($factory, $this->createMock(LoggerInterface::class));
+	}//end verifier()
+
+	/**
+	 * Add a Nonce and a Created to an envelope's UsernameToken.
+	 *
+	 * @param string      $xml     The envelope.
+	 * @param string|null $nonce   The nonce, null for none.
+	 * @param string|null $created The Created time, null for none.
+	 *
+	 * @return string The envelope.
+	 */
+	private static function withFreshness(string $xml, ?string $nonce, ?string $created): string {
+		$extra = '';
+		if ($nonce !== null) {
+			$extra .= '<wsse:Nonce>' . $nonce . '</wsse:Nonce>';
+		}
+
+		if ($created !== null) {
+			$extra .= '<wsu:Created xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">' . $created . '</wsu:Created>';
+		}
+
+		return str_replace('</wsse:Password>', '</wsse:Password>' . $extra, $xml);
+	}//end withFreshness()
+
+	/**
 	 * Set up the sources.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+		$this->nonces = [];
+		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->events  = [];
 		$this->owner   = 'answer';
 		$wsse          = ['mode' => 'wsse', 'wsse' => ['username' => 'zsh', 'encryptedPassword' => 'cipher']];
@@ -155,6 +221,138 @@ class StufProviderReceiverTest extends TestCase {
 		$this->assertSame(200, $answer['statusCode']);
 		$this->assertStringContainsString('<StUF:aantalVoorkomens>0</StUF:aantalVoorkomens>', $answer['body']);
 	}//end testAnEmptyAnswerIsAnEmptyZakLa01NotAFault()
+
+	/**
+	 * A token with a Nonce and a fresh Created is accepted once; a replay of the same request is refused like a wrong password (aud-f3).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 */
+	public function testAReplayedNonceIsRefused(): void {
+		$receiver = $this->receiver();
+		$request  = self::withFreshness(self::zakLv01(), 'nonce-1', gmdate('Y-m-d\TH:i:s\Z'));
+
+		$first  = $receiver->receive(rawXml: $request, sourceId: 'zsh', service: 'cases');
+		$replay = $receiver->receive(rawXml: $request, sourceId: 'zsh', service: 'cases');
+		$other  = $receiver->receive(rawXml: self::withFreshness(self::zakLv01(), 'nonce-2', gmdate('Y-m-d\TH:i:s\Z')), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $first['statusCode']);
+		$this->assertSame(401, $replay['statusCode']);
+		$this->assertSame(200, $other['statusCode'], 'a new nonce is accepted');
+		$this->assertCount(2, $this->events, 'the replay never reached the owning app');
+	}//end testAReplayedNonceIsRefused()
+
+	/**
+	 * A Created outside the window, an unreadable one and a Nonce without a Created are refused; a token without either is still accepted (aud-f3).
+	 *
+	 * @return void
+	 */
+	public function testAStaleOrIncompleteFreshnessIsRefused(): void {
+		$receiver = $this->receiver();
+		$requests = [
+			self::withFreshness(self::zakLv01(), 'n-stale', gmdate('Y-m-d\TH:i:s\Z', (time() - 3600))),
+			self::withFreshness(self::zakLv01(), 'n-future', gmdate('Y-m-d\TH:i:s\Z', (time() + 3600))),
+			self::withFreshness(self::zakLv01(), 'n-garbage', 'not a date'),
+			self::withFreshness(self::zakLv01(), 'n-no-created', null),
+			self::withFreshness(self::zakLv01(), null, gmdate('Y-m-d\TH:i:s\Z')),
+		];
+
+		foreach ($requests as $index => $request) {
+			$this->assertSame(401, $receiver->receive(rawXml: $request, sourceId: 'zsh', service: 'cases')['statusCode'], 'request ' . $index);
+		}
+
+		$this->assertSame([], $this->events);
+		$this->assertSame(200, $receiver->receive(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases')['statusCode'], 'a plain token still works');
+	}//end testAStaleOrIncompleteFreshnessIsRefused()
+
+	/**
+	 * A source that requires a nonce refuses a plain token (aud-f3).
+	 *
+	 * @return void
+	 */
+	public function testASourceThatRequiresANonceRefusesAPlainToken(): void {
+		$this->sources['zsh']['configuration']['authentication']['wsse']['requireNonce'] = true;
+		$receiver = $this->receiver();
+
+		$this->assertSame(401, $receiver->receive(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases')['statusCode']);
+		$this->assertSame(
+			200,
+			$receiver->receive(rawXml: self::withFreshness(self::zakLv01(), 'n-req', gmdate('Y-m-d\TH:i:s\Z')), sourceId: 'zsh', service: 'cases')['statusCode']
+		);
+	}//end testASourceThatRequiresANonceRefusesAPlainToken()
+
+	/**
+	 * An accepted request leaves one audit record naming the source, the message, the reference and the outcome, and no criterion or BSN (aud-f3).
+	 *
+	 * @return void
+	 */
+	public function testAnAcceptedRequestWritesOneAuditRecord(): void {
+		$records = [];
+		$this->logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$records): void {
+				$records[] = [$message, $context];
+			}
+		);
+
+		$this->receiver()->receive(rawXml: self::npsLv01(), sourceId: 'zsh', service: 'persons');
+
+		$this->assertCount(1, $records);
+		$this->assertStringStartsWith('[StUF audit] provider request accepted', $records[0][0], 'warning level, so the default log level keeps it');
+		$this->assertSame('zsh', $records[0][1]['id']);
+		$this->assertSame('npsLv01', $records[0][1]['type']);
+		$this->assertSame('REQ-1', $records[0][1]['ref']);
+		$this->assertSame('dossiq', $records[0][1]['app']);
+		$this->assertSame(200, $records[0][1]['status']);
+		$this->assertStringNotContainsString('999993653', (string)json_encode($records));
+	}//end testAnAcceptedRequestWritesOneAuditRecord()
+
+	/**
+	 * A zakLv01 without any criterion, and an npsLv01 without a 9-digit BSN, are refused with a Fo02 and never put to the owning app (iq-f8).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 */
+	public function testAQueryWithoutACriterionIsRefusedWithoutAsking(): void {
+		$receiver = $this->receiver();
+		$requests = [
+			['cases', self::zakLv01(criteria: '')],
+			['cases', self::zakLv01(criteria: '<ZKN:identificatie>   </ZKN:identificatie>')],
+			['persons', self::npsLv01(criteria: '')],
+			['persons', self::npsLv01(criteria: '<BG:inp.bsn></BG:inp.bsn>')],
+			['persons', self::npsLv01(criteria: '<BG:inp.bsn>99999365</BG:inp.bsn>')],
+			['persons', self::npsLv01(criteria: '<BG:inp.bsn>9999936530</BG:inp.bsn>')],
+			['persons', self::npsLv01(criteria: '<BG:inp.bsn>99999365a</BG:inp.bsn>')],
+		];
+
+		foreach ($requests as $index => [$service, $xml]) {
+			$answer = $receiver->receive(rawXml: $xml, sourceId: 'zsh', service: $service);
+
+			$this->assertSame(400, $answer['statusCode'], 'request ' . $index);
+			$this->assertStringContainsString('Fo02', $answer['body'], 'request ' . $index);
+			$this->assertStringContainsString('StUF058', $answer['body'], 'request ' . $index);
+			$this->assertStringNotContainsString('La01', $answer['body'], 'request ' . $index);
+		}
+
+		$this->assertSame([], $this->events, 'the owning app was never asked');
+	}//end testAQueryWithoutACriterionIsRefusedWithoutAsking()
+
+	/**
+	 * However many cases the owning app answers with, at most 100 are rendered (iq-f8).
+	 *
+	 * @return void
+	 */
+	public function testTheRenderedCasesAreCapped(): void {
+		$this->owner = 'many';
+
+		$answer = $this->receiver()->receive(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertStringContainsString('<StUF:aantalVoorkomens>100</StUF:aantalVoorkomens>', $answer['body']);
+		$this->assertStringContainsString('ZAAK-100<', $answer['body']);
+		$this->assertStringNotContainsString('ZAAK-101<', $answer['body']);
+	}//end testTheRenderedCasesAreCapped()
 
 	/**
 	 * Nobody answering is a Fo02 with StUF055, never an empty zakLa01.
@@ -510,7 +708,7 @@ class StufProviderReceiverTest extends TestCase {
 			 * @param string               $rawBody  The body under test.
 			 */
 			public function __construct(string $appName, IRequest $request, StufProviderReceiver $receiver, private readonly string $rawBody) {
-				parent::__construct(appName: $appName, request: $request, receiver: $receiver);
+				parent::__construct(appName: $appName, request: $request, receiver: $receiver, requestBody: new StufZknRequestBody());
 			}
 
 			/**
@@ -569,7 +767,8 @@ class StufProviderReceiverTest extends TestCase {
 			new StufZdsCredentialResolver($crypto),
 			new StUFXMLBuilder(),
 			$dispatcher,
-			$this->createMock(LoggerInterface::class)
+			$this->logger,
+			$this->verifier()
 		);
 	}//end receiver()
 
@@ -605,6 +804,13 @@ class StufProviderReceiverTest extends TestCase {
 				$cases = [];
 			}
 
+			if ($this->owner === 'many') {
+				$cases = [];
+				for ($i = 1; $i <= 150; $i++) {
+					$cases[] = ['zaakidentificatie' => 'ZAAK-' . $i, 'omschrijving' => 'Zaak', 'zaaktype' => 'KAP'];
+				}
+			}
+
 			$event->answerCases(appId: 'dossiq', cases: $cases);
 		}
 
@@ -621,13 +827,14 @@ class StufProviderReceiverTest extends TestCase {
 	 * A zakLv01 asking for one zaak.
 	 *
 	 * @param string|null $password The UsernameToken password, null for no header.
+	 * @param string      $criteria The criteria inside `gelijk`.
 	 *
 	 * @return string The envelope.
 	 */
-	private static function zakLv01(?string $password='secret'): string {
+	private static function zakLv01(?string $password='secret', string $criteria='<ZKN:identificatie>ZAAK-2026-7</ZKN:identificatie>'): string {
 		return self::envelope(
 			body: '<ZKN:zakLv01>' . self::stuurgegevens(code: 'Lv01') . '<ZKN:gelijk StUF:entiteittype="ZAK">'
-				. '<ZKN:identificatie>ZAAK-2026-7</ZKN:identificatie></ZKN:gelijk></ZKN:zakLv01>',
+				. $criteria . '</ZKN:gelijk></ZKN:zakLv01>',
 			password: $password
 		);
 	}//end zakLv01()
@@ -708,12 +915,14 @@ class StufProviderReceiverTest extends TestCase {
 	/**
 	 * An npsLv01 asking for one BSN.
 	 *
+	 * @param string $criteria The criteria inside `gelijk`.
+	 *
 	 * @return string The envelope.
 	 */
-	private static function npsLv01(): string {
+	private static function npsLv01(string $criteria='<BG:inp.bsn>999993653</BG:inp.bsn>'): string {
 		return self::envelope(
 			body: '<BG:npsLv01>' . self::stuurgegevens(code: 'Lv01') . '<BG:gelijk StUF:entiteittype="NPS">'
-				. '<BG:inp.bsn>999993653</BG:inp.bsn></BG:gelijk></BG:npsLv01>'
+				. $criteria . '</BG:gelijk></BG:npsLv01>'
 		);
 	}//end npsLv01()
 
