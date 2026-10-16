@@ -293,9 +293,20 @@ class StufProviderReceiver {
 			$status = (self::REFUSAL_STATUS[$event->getRefusalKind()] ?? 400);
 			$this->logger->warning(
 				'StUF provider request {ref} refused by {app} ({kind}): {reason}',
-				['ref' => $event->getReferentienummer(), 'app' => (string)$event->getAnsweredBy(), 'kind' => $event->getRefusalKind(), 'reason' => $refusal]
+				[
+					'ref' => $event->getReferentienummer(),
+					'app' => (string)$event->getAnsweredBy(),
+					'kind' => $event->getRefusalKind(),
+					'reason' => $refusal,
+				]
 			);
-			return $this->fault(statusCode: $status, berichtcode: $faultCode, code: 'StUF058', omschrijving: self::outwardReason(reason: $refusal), stuurgegevens: $reply);
+			return $this->fault(
+				statusCode: $status,
+				berichtcode: $faultCode,
+				code: 'StUF058',
+				omschrijving: self::outwardReason(reason: $refusal),
+				stuurgegevens: $reply
+			);
 		}
 
 		$payload = $event->getAnswer();
@@ -471,7 +482,7 @@ class StufProviderReceiver {
 	/**
 	 * The owning app's refusal as it may leave for the external case system.
 	 *
-	 * refuse() asks for a short reason safe to return, but nothing enforces it:
+	 * The refuse() method asks for a short reason safe to return, but nothing enforces it:
 	 * an app that passes an exception message would send internal errors, with
 	 * their line breaks and ids, to the remote party. One line, at most
 	 * OUTWARD_REASON_LENGTH characters, goes out; the full text is logged.

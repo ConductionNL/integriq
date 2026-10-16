@@ -325,7 +325,7 @@ class StufZdsOutbound {
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				'StUF-ZDS message {id} was concluded (sent: {sent}) but its row could not be saved: {error}',
-				['id' => (string)($row['id'] ?? ''), 'sent' => ($sent === true ? 'yes' : 'no'), 'error' => $exception->getMessage()]
+				['id' => (string)($row['id'] ?? ''), 'sent' => json_encode($sent), 'error' => $exception->getMessage()]
 			);
 			return $row;
 		}
