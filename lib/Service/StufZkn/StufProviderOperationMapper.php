@@ -177,10 +177,9 @@ class StufProviderOperationMapper {
 			return [];
 		}
 
-		$old      = $objects[0];
-		$cleared  = [];
-		$elements = $object->xpath('./*');
-		foreach ((is_array($elements) === true ? $elements : []) as $element) {
+		$old     = $objects[0];
+		$cleared = [];
+		foreach ((array)$object->xpath('./*') as $element) {
 			$this->collectCleared(element: $element, old: $old, cleared: $cleared);
 		}
 

@@ -131,11 +131,11 @@ class StufZdsOutbound {
 		$caseId = (string)($context['caseIdentification'] ?? '');
 		if ($this->isSuccess(response: $response) === false) {
 			$fout = $this->failureOf(response: $response);
-			$this->breakerRecords(sourceId: $source['id'], failure: true);
+			$this->breakerRecords(sourceId: $source['id'], record: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
 		}
 
 		if ($fout === null) {
-			$this->breakerRecords(sourceId: $source['id'], failure: false);
+			$this->breakerRecords(sourceId: $source['id'], record: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
 			if ($operation === 'genereerZaakIdentificatie') {
 				$caseId = (string)$this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
 			}
@@ -206,12 +206,12 @@ class StufZdsOutbound {
 	private function classify(array $source, array $row, array $response, int $attempt): array {
 		if ($this->isSuccess(response: $response) === true) {
 			$caseId = $this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
-			$this->breakerRecords(sourceId: $source['id'], failure: false);
+			$this->breakerRecords(sourceId: $source['id'], record: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
 			return $this->conclude(row: $row, sent: true, attempt: $attempt, transport: $response, fout: null, caseId: $caseId);
 		}
 
 		$fout = $this->failureOf(response: $response);
-		$this->breakerRecords(sourceId: $source['id'], failure: true);
+		$this->breakerRecords(sourceId: $source['id'], record: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
 		if ($this->isTransient(response: $response, fout: $fout) === false || $attempt > count(self::RETRY_BACKOFF_SECONDS)) {
 			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null);
 		}
@@ -232,7 +232,8 @@ class StufZdsOutbound {
 		}
 
 		if ($this->schedule(messageId: (string)$row['id'], delay: $delay) === false) {
-			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $this->unscheduledFout(previous: $fout), caseId: null);
+			$unscheduled = $this->unscheduledFout(previous: $fout);
+			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $unscheduled, caseId: null);
 		}
 
 		return $this->result(row: $row, success: false, retrying: true, caseId: null, fout: $fout);
@@ -341,19 +342,14 @@ class StufZdsOutbound {
 	 * with no job behind it. The failure is logged and the breaker's count
 	 * stays as it was.
 	 *
-	 * @param string $sourceId The source.
-	 * @param bool   $failure  True for a failed attempt, false for a success.
+	 * @param string   $sourceId The source.
+	 * @param callable $record   The breaker call: recordFailure or reset, given the source id.
 	 *
 	 * @return void
 	 */
-	private function breakerRecords(string $sourceId, bool $failure): void {
+	private function breakerRecords(string $sourceId, callable $record): void {
 		try {
-			if ($failure === true) {
-				$this->breaker->recordFailure(sourceId: $sourceId);
-				return;
-			}
-
-			$this->breaker->reset(sourceId: $sourceId);
+			$record($sourceId);
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				'StUF-ZDS circuit breaker for source {source} could not be updated: {error}',
@@ -365,20 +361,15 @@ class StufZdsOutbound {
 	/**
 	 * The fout of a message whose retry could not be scheduled.
 	 *
-	 * @param array|null $previous The fout of the last attempt, kept in `details`.
+	 * @param array|null $previous The fout of the last attempt; its code goes into `details`.
 	 *
 	 * @return array{code:string,omschrijving:string,details:string,kind:string}
 	 */
 	private function unscheduledFout(?array $previous): array {
-		$details = '';
-		if ($previous !== null && (string)($previous['code'] ?? '') !== '') {
-			$details = 'Last attempt: ' . (string)$previous['code'];
-		}
-
 		return [
 			'code' => 'RETRY_NOT_SCHEDULED',
 			'omschrijving' => 'The retry could not be scheduled, so the message is concluded as failed',
-			'details' => $details,
+			'details' => (string)($previous['code'] ?? ''),
 			'kind' => 'permanent',
 		];
 	}//end unscheduledFout()

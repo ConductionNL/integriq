@@ -702,6 +702,7 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertCount(1, $this->events);
 		$fout = $this->events[0]->getResult()['fout'];
 		$this->assertSame('RETRY_NOT_SCHEDULED', $fout['code']);
-		$this->assertStringStartsWith('Last attempt: ', $fout['details']);
+		$this->assertNotSame('', $fout['details'], 'The last attempt\'s fout code is kept');
+		$this->assertNotSame('RETRY_NOT_SCHEDULED', $fout['details']);
 	}//end testACooldownThatCannotBeRescheduledConcludesTheMessageAsFailed()
 }//end class
