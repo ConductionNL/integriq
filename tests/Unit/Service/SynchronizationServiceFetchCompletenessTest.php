@@ -223,6 +223,59 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase {
 	}//end testHttp500OnFirstPageBlocksDeletion()
 
 	/**
+	 * A JSONL run that read one batch of a larger file deletes nothing,
+	 * reports the batch the next run resumes at, and persists that batch on
+	 * the synchronization the run saves last.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+	 */
+	public function testJsonlBatchRunBlocksDeletionAndPersistsTheNextBatch(): void {
+		$this->stubSourceFind();
+
+		$this->callService->method('call')->willReturnCallback(
+			function ($source, string $endpoint = '', string $method = 'GET', array $config = [], bool $asynchronous = false, bool $createCertificates = true, bool $overruleAuth = false, bool $read = false, bool $runningSupportRequest = false, mixed $sink = null) {
+				file_put_contents($sink, (string)gzencode(json_encode(['id' => 'origin-1']) . "\n" . json_encode(['id' => 'origin-2']) . "\n"));
+				return $this->callLogEntity(['statusCode' => 200, 'body' => '', 'encoding' => 'UTF-8', 'headers' => []]);
+			}
+		);
+
+		$contracts = [];
+		for ($i = 1; $i <= 20; $i++) {
+			$contracts[] = ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['synchronizationId' => self::SYNC_ID, 'originId' => 'origin-' . $i, 'targetId' => 'target-' . $i],
+				'contract-uuid-' . $i
+			);
+		}
+
+		$this->orObjectService->method('findAll')
+			->willReturn(['results' => $contracts, 'total' => count($contracts)]);
+
+		$savedSynchronizations = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$savedSynchronizations) {
+				$object = ($args[0] ?? []);
+				if (($args[2] ?? null) === 'synchronization') {
+					$savedSynchronizations[] = $object;
+				}
+				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) === true ? $object : [], 'saved');
+			}
+		);
+
+		$result = $this->service->synchronize(
+			synchronization: $this->makeSyncPayload(['format' => 'jsonl', 'resultsPosition' => '_root', 'pageSize' => 1])
+		);
+
+		$this->assertSame(0, $result['result']['objects']['deleted']);
+		$this->assertSame('fetch_incomplete', $result['result']['objects']['deletionGuard']['reason']);
+		$this->assertSame(['page' => 2, 'reason' => 'batch_limit_reached'], $result['result']['resume']);
+		$this->assertNotEmpty($savedSynchronizations);
+		$this->assertSame(2, end($savedSynchronizations)['currentPage'], 'the run must not overwrite the next batch with its own starting batch');
+	}//end testJsonlBatchRunBlocksDeletionAndPersistsTheNextBatch()
+
+	/**
 	 * TC reproducing #1001: 2 valid pages then a non-2xx on page 3 → the
 	 * page-1/2 objects are still returned, the fetch is marked incomplete, and
 	 * a cleanup pass fed `fetchComplete: false` deletes nothing even though

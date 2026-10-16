@@ -142,6 +142,13 @@ class SynchronizationAction {
 
 		$response['stackTrace'][] = $response['message'] = 'Synchronized ' . $objectCount . ' successfully';
 
+		// A batched source has more to read: ask the scheduler to run this job
+		// again on the next cron tick instead of after its interval.
+		if (is_array($objects) === true && isset($objects['result']['resume']) === true) {
+			$response['resumeSoon'] = true;
+			$response['stackTrace'][] = 'More batches remain; resuming at batch ' . ($objects['result']['resume']['page'] ?? '?') . ' on the next run';
+		}
+
 		// Report back about what we have just done.
 		return $response;
 	}//end run()

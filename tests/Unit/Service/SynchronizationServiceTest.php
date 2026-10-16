@@ -791,6 +791,221 @@ class SynchronizationServiceTest extends TestCase {
 	}//end testPlainJsonlSourceWithoutGzipStillParsesLines()
 
 	/**
+	 * Stub `callService::call()` as a streaming transport: it writes the body
+	 * into the sink path the engine hands it, the way Guzzle's `sink` option
+	 * does, and leaves the call log body empty. Every sink it receives is
+	 * recorded in `$sinks`.
+	 *
+	 * @param string $body The raw response bytes.
+	 * @param array $sinks Collects the sink argument of every call.
+	 *
+	 * @return void
+	 */
+	private function stubStreamingCall(string $body, array &$sinks): void {
+		$this->callService->method('call')->willReturnCallback(
+			function (
+				$source,
+				string $endpoint = '',
+				string $method = 'GET',
+				array $config = [],
+				bool $asynchronous = false,
+				bool $createCertificates = true,
+				bool $overruleAuth = false,
+				bool $read = false,
+				bool $runningSupportRequest = false,
+				mixed $sink = null,
+			) use ($body, &$sinks) {
+				$sinks[] = $sink;
+				if (is_string($sink) === true) {
+					file_put_contents($sink, $body);
+				}
+
+				return ObjectServiceMockBuilder::objectEntity(
+					$this,
+					['response' => ['statusCode' => 200, 'body' => '', 'encoding' => 'UTF-8', 'headers' => []]],
+					'call-log-stream'
+				);
+			}
+		);
+	}//end stubStreamingCall()
+
+	/**
+	 * Build a JSONL synchronization fixture for the batch tests.
+	 *
+	 * @param int $pageSize Records per run.
+	 * @param int $currentPage The batch this run starts at.
+	 *
+	 * @return array The synchronization.
+	 */
+	private function jsonlSynchronization(int $pageSize, int $currentPage): array {
+		return [
+			'uuid' => 'sync-jsonl',
+			'sourceId' => 'source-uuid-batch',
+			'sourceType' => 'api',
+			'currentPage' => $currentPage,
+			'sourceConfig' => [
+				'endpoint' => '/download?name=full.jsonl.gz',
+				'resultsPosition' => '_root',
+				'format' => 'jsonl',
+				'pageSize' => $pageSize,
+			],
+		];
+	}//end jsonlSynchronization()
+
+	/**
+	 * A JSONL body is streamed to a temporary file, never handed back on the
+	 * call log, and the file is gone once the batch has been read.
+	 *
+	 * @return void
+	 */
+	public function testJsonlBodyIsStreamedToATemporaryFileThatIsRemoved(): void {
+		$this->stubSource(['uuid' => 'source-uuid-batch', 'location' => 'https://example.test']);
+		$sinks = [];
+		$this->stubStreamingCall((string)gzencode(json_encode(['id' => 1]) . "\n" . json_encode(['id' => 2])), $sinks);
+
+		$objects = $this->service->getAllObjectsFromApi(synchronization: $this->jsonlSynchronization(pageSize: 10, currentPage: 1));
+
+		$this->assertSame([['id' => 1], ['id' => 2]], $objects);
+		$this->assertCount(1, $sinks);
+		$this->assertIsString($sinks[0], 'the engine must pass a sink path so the body streams to disk');
+		$this->assertFileDoesNotExist($sinks[0]);
+	}//end testJsonlBodyIsStreamedToATemporaryFileThatIsRemoved()
+
+	/**
+	 * One run reads one batch; a later batch resumes where the previous run
+	 * stopped, and the last batch hands the cursor back to batch 1. No batch
+	 * of a multi-batch file reports the fetch complete, so the deletion pass
+	 * never runs on part of the source.
+	 *
+	 * @return void
+	 */
+	public function testJsonlRunsReadOneBatchAndResumeAtTheNext(): void {
+		$this->stubSource(['uuid' => 'source-uuid-batch', 'location' => 'https://example.test']);
+		$lines = [];
+		for ($i = 1; $i <= 5; $i++) {
+			$lines[] = json_encode(['id' => $i]);
+		}
+
+		// A blank and a malformed line do not count as records.
+		array_splice($lines, 2, 0, ['', 'not json']);
+		$sinks = [];
+		$this->stubStreamingCall((string)gzencode(implode("\n", $lines)), $sinks);
+
+		$saved = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved) {
+				$saved[] = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'sync-jsonl');
+			}
+		);
+
+		$fetchInfo = null;
+		$first = $this->service->getAllObjectsFromApi(synchronization: $this->jsonlSynchronization(2, 1), fetchInfo: $fetchInfo);
+		$this->assertSame([['id' => 1], ['id' => 2]], $first);
+		$this->assertFalse($fetchInfo['complete']);
+		$this->assertSame('batch_limit_reached', $fetchInfo['failureReason']);
+		$this->assertSame(2, $fetchInfo['resumePage']);
+		$this->assertSame(2, end($saved)['currentPage'], 'the next batch must be persisted for the next run');
+
+		$second = $this->service->getAllObjectsFromApi(synchronization: $this->jsonlSynchronization(2, 2), fetchInfo: $fetchInfo);
+		$this->assertSame([['id' => 3], ['id' => 4]], $second);
+		$this->assertSame(3, $fetchInfo['resumePage']);
+
+		$last = $this->service->getAllObjectsFromApi(synchronization: $this->jsonlSynchronization(2, 3), fetchInfo: $fetchInfo);
+		$this->assertSame([['id' => 5]], $last);
+		$this->assertFalse($fetchInfo['complete'], 'the last batch is not the whole source');
+		$this->assertSame(1, $fetchInfo['resumePage']);
+		$this->assertSame(1, end($saved)['currentPage']);
+	}//end testJsonlRunsReadOneBatchAndResumeAtTheNext()
+
+	/**
+	 * A file that fits in one batch read from its first line is the whole
+	 * source, so that fetch is complete.
+	 *
+	 * @return void
+	 */
+	public function testJsonlFileThatFitsOneBatchIsComplete(): void {
+		$this->stubSource(['uuid' => 'source-uuid-batch', 'location' => 'https://example.test']);
+		$sinks = [];
+		$this->stubStreamingCall(json_encode(['id' => 1]) . "\n" . json_encode(['id' => 2]) . "\n", $sinks);
+
+		$fetchInfo = null;
+		$objects = $this->service->getAllObjectsFromApi(synchronization: $this->jsonlSynchronization(2, 1), fetchInfo: $fetchInfo);
+
+		$this->assertCount(2, $objects);
+		$this->assertTrue($fetchInfo['complete']);
+		$this->assertSame(1, $fetchInfo['resumePage']);
+	}//end testJsonlFileThatFitsOneBatchIsComplete()
+
+	/**
+	 * A failed download is an incomplete fetch that keeps its batch, so the
+	 * next run retries the same batch and nothing is deleted.
+	 *
+	 * @return void
+	 */
+	public function testJsonlFailedDownloadKeepsTheBatchAndIsIncomplete(): void {
+		$this->stubSource(['uuid' => 'source-uuid-batch', 'location' => 'https://example.test']);
+		$this->stubSingleCallResponse(['statusCode' => 503, 'body' => '', 'encoding' => 'UTF-8', 'headers' => []]);
+
+		$fetchInfo = null;
+		$objects = $this->service->getAllObjectsFromApi(synchronization: $this->jsonlSynchronization(2, 4), fetchInfo: $fetchInfo);
+
+		$this->assertSame([], $objects);
+		$this->assertFalse($fetchInfo['complete']);
+		$this->assertSame('page_fetch_failed', $fetchInfo['failureReason']);
+		$this->assertSame(4, $fetchInfo['resumePage']);
+	}//end testJsonlFailedDownloadKeepsTheBatchAndIsIncomplete()
+
+	/**
+	 * Reading a large gzip JSONL file holds one line at a time.
+	 *
+	 * The fixture decompresses to about 24 MB. The control proves it is large
+	 * enough to catch a whole-body reader: decompressing it in one piece costs
+	 * more than ten times the budget the streaming reader must stay under.
+	 *
+	 * @return void
+	 */
+	public function testJsonlReaderMemoryStaysBoundedOnALargeFile(): void {
+		$path = tempnam(sys_get_temp_dir(), 'integriq-jsonl-test-');
+		$handle = gzopen($path, 'wb1');
+		$padding = str_repeat('x', 220);
+		$lineCount = 100000;
+		for ($i = 0; $i < $lineCount; $i++) {
+			gzwrite($handle, json_encode(['id' => $i, 'pad' => $padding]) . "\n");
+		}
+
+		gzclose($handle);
+
+		$budget = (2 * 1024 * 1024);
+
+		try {
+			// Control: the whole-body approach this reader replaced.
+			$before = memory_get_usage();
+			$whole = gzdecode((string)file_get_contents($path));
+			$wholeCost = (memory_get_usage() - $before);
+			unset($whole);
+			$this->assertGreaterThan(10 * $budget, $wholeCost, 'the fixture must be large enough to expose a whole-body reader');
+
+			$reader = new \ReflectionMethod(SynchronizationService::class, 'readJsonLines');
+			$baseline = memory_get_usage();
+			$peak = 0;
+			$count = 0;
+			$keysInOrder = true;
+			foreach ($reader->invoke($this->service, $path) as $index => $record) {
+				$keysInOrder = ($keysInOrder === true && $index === $count && $record['id'] === $count);
+				$count++;
+				$peak = max($peak, (memory_get_usage() - $baseline));
+			}
+
+			$this->assertSame($lineCount, $count);
+			$this->assertTrue($keysInOrder, 'records must be yielded in file order, keyed by record index');
+			$this->assertLessThan($budget, $peak, 'the reader must not hold the decompressed body');
+		} finally {
+			unlink($path);
+		}//end try
+	}//end testJsonlReaderMemoryStaysBoundedOnALargeFile()
+
+	/**
 	 * oc#97 — gzip detection also works for an ordinary (non-JSONL) JSON
 	 * body via the response `Content-Type: application/gzip` header alone
 	 * (no `.gz`-suffixed endpoint, no `configuration.decompress` hint).
