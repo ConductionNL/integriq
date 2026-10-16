@@ -292,6 +292,24 @@ Two GitHub sources come with integriq:
 
 GitHub code search allows 10 requests a minute and returns at most 1,000 results per query. To cover all of GitHub, split the search into shards, for example by file size (`size:0..500`, `size:501..1000`), and hang every shard's step directly off the trigger. Do not chain them: a chained step runs once per item of the step before it.
 
+## GitLab
+
+**GitLab raw files** (`gitlab-raw`) reads public files from projects on `https://gitlab.com`, at `/{namespace}/{project}/-/raw/{ref}/{path}`. It is enabled and needs no account. A private or missing project answers with a sign-in redirect or a 404, never with the file. Self-hosted GitLab instances are not covered by this source.
+
+## developer.overheid.nl OSS-register
+
+**developer.overheid.nl OSS-register** (`developer-overheid-oss`) calls the national register of government open-source repositories at `https://api.developer.overheid.nl/oss-register/v1`. OpenCatalogi reads it to harvest every listed repository that has a `publiccode.yml`. It starts disabled. Every request needs an API key, which each installation requests for itself:
+
+1. Request a read-only API key at https://apis.developer.overheid.nl/apis/key-aanvragen.
+2. In OpenRegister, create a credential named `developer-overheid-oss` with provider `generic-apikey`, put the key in it, and add `openconnector` to its allowed apps.
+3. Enable the source.
+
+The key stays in the credential broker. The source holds only a reference to it, at `configuration.authentication.apikey`, and a header template that sends it as `X-Api-Key` (see [App-side injection](#app-side-injection)). The CallLog shows that header redacted. Without the credential no request is sent, and the CallLog records a 409 that names the credential.
+
+To use the register's test environment, change the source's `location` to `https://api.don.apps.digilab.network/oss-register/v1` and store a key from that environment instead.
+
+The register says how many pages a listing has in a `Link` header with single-quoted `rel` values and in a `Total-Pages` header. A synchronization reads either, so a listing of up to 100 repositories (`perPage=100`) costs one request.
+
 ## YAML sources
 
 Set `configuration.format` to `yaml` on a source whose pages are YAML. A page served with a YAML content type is read as YAML without it. A page that does not parse fails, so the run never mistakes it for an empty source.

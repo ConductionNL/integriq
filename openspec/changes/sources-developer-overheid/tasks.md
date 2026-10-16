@@ -48,7 +48,7 @@ Kind: mixed under the thin-glue exception (design.md, Mixed-spec rationale). Con
 - **files**: `docs/features/sources.md`
 - **acceptance_criteria**:
   - GIVEN the manual WHEN read THEN it gives the recipe: request the key at https://apis.developer.overheid.nl/apis/key-aanvragen, create a `generic-apikey` credential `developer-overheid-oss` with `openconnector` in its allowed apps, enable the source; and how to point at the test environment
-- [ ] Implement
+- [x] Implement
 
 ### Task 6: Live check
 - **spec_ref**: `openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-the-key-is-sent-as-x-api-key-and-never-stored-or-logged-req-dos-002`
