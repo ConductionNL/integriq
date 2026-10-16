@@ -103,6 +103,13 @@ class StufProviderReceiver {
 	private const ORIGIN_FORWARDED = 'forwarded';
 
 	/**
+	 * The longest refusal text sent to the external case system.
+	 *
+	 * @var int
+	 */
+	private const OUTWARD_REASON_LENGTH = 200;
+
+	/**
 	 * The HTTP status each refusal kind goes back with.
 	 *
 	 * None of them is rewritten on the way out: the routes sit on a plain
@@ -285,10 +292,10 @@ class StufProviderReceiver {
 		if ($refusal !== null) {
 			$status = (self::REFUSAL_STATUS[$event->getRefusalKind()] ?? 400);
 			$this->logger->warning(
-				'StUF provider request {ref} refused by {app} ({kind})',
-				['ref' => $event->getReferentienummer(), 'app' => (string)$event->getAnsweredBy(), 'kind' => $event->getRefusalKind()]
+				'StUF provider request {ref} refused by {app} ({kind}): {reason}',
+				['ref' => $event->getReferentienummer(), 'app' => (string)$event->getAnsweredBy(), 'kind' => $event->getRefusalKind(), 'reason' => $refusal]
 			);
-			return $this->fault(statusCode: $status, berichtcode: $faultCode, code: 'StUF058', omschrijving: $refusal, stuurgegevens: $reply);
+			return $this->fault(statusCode: $status, berichtcode: $faultCode, code: 'StUF058', omschrijving: self::outwardReason(reason: $refusal), stuurgegevens: $reply);
 		}
 
 		$payload = $event->getAnswer();
@@ -332,6 +339,12 @@ class StufProviderReceiver {
 
 		if (isset($operation['contentError']) === true) {
 			return ['statusCode' => 400, 'reason' => 'De inhoud van het document is geen geldige base64'];
+		}
+
+		// A clear cannot reach the owning app yet; answering Bv03 would tell the
+		// sender a value was cleared that the case still holds.
+		if (($operation['clears'] ?? []) !== []) {
+			return ['statusCode' => 400, 'reason' => 'Een veld leegmaken met een W-kennisgeving wordt niet ondersteund'];
 		}
 
 		return null;
@@ -455,5 +468,28 @@ class StufProviderReceiver {
 		return $this->xmlParser->parse(xml: $rawXml);
 	}//end parse()
 
+	/**
+	 * The owning app's refusal as it may leave for the external case system.
+	 *
+	 * refuse() asks for a short reason safe to return, but nothing enforces it:
+	 * an app that passes an exception message would send internal errors, with
+	 * their line breaks and ids, to the remote party. One line, at most
+	 * OUTWARD_REASON_LENGTH characters, goes out; the full text is logged.
+	 *
+	 * @param string $reason The reason the owning app gave.
+	 *
+	 * @return string The reason for the fault's omschrijving.
+	 */
+	private static function outwardReason(string $reason): string {
+		$line = trim((string)preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $reason));
+		if ($line === '') {
+			return 'Het bericht is geweigerd';
+		}
 
+		if (mb_strlen($line) > self::OUTWARD_REASON_LENGTH) {
+			$line = rtrim(mb_substr($line, 0, (self::OUTWARD_REASON_LENGTH - 1))) . '…';
+		}
+
+		return $line;
+	}//end outwardReason()
 }//end class

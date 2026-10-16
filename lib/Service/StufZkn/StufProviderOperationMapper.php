@@ -109,7 +109,10 @@ class StufProviderOperationMapper {
 	 * Keys: `action` (always), then only what the message carried: `identifier`,
 	 * `title`, `description`, `startDate`, `registrationDate`, `plannedEndDate`,
 	 * `finalEndDate` (dates as Y-m-d), `caseTypeCode`, `caseTypeName` and
-	 * `initiator` (`type` person or company, `sourceId`, `name`).
+	 * `initiator` (`type` person or company, `sourceId`, `name`). A W that clears an
+	 * element (`xsi:nil="true"` or `StUF:noValue`) also carries `clears`, the names
+	 * of those elements, so the receiver can refuse it instead of answering Bv03
+	 * for a clear the owning app never saw.
 	 *
 	 * @param SimpleXMLElement $message      The zakLk01 element.
 	 * @param string           $mutatiesoort The StUF mutatiesoort.
@@ -145,9 +148,33 @@ class StufProviderOperationMapper {
 		$operation['caseTypeCode'] = $this->text(xml: $object, path: $type . 'code"]');
 		$operation['caseTypeName'] = $this->text(xml: $object, path: $type . 'omschrijving"]');
 		$operation['initiator']    = $this->initiator(object: $object);
+		if ($mutatiesoort === 'W') {
+			$operation['clears'] = $this->clearedElements(object: $object);
+		}
 
 		return array_filter($operation, static fn(mixed $value): bool => $value !== '' && $value !== []);
 	}//end caseOperation()
+
+	/**
+	 * The elements of an object that a kennisgeving clears.
+	 *
+	 * In StUF a W clears a value by sending the element empty with
+	 * `xsi:nil="true"` and `StUF:noValue` in the new object.
+	 *
+	 * @param SimpleXMLElement $object The new object.
+	 *
+	 * @return string[] The local names of the cleared elements, document order.
+	 */
+	private function clearedElements(SimpleXMLElement $object): array {
+		$cleared = $object->xpath(
+			'.//*[@*[local-name()="noValue"] or @*[local-name()="nil" and (. = "true" or . = "1")]]'
+		);
+		if (is_array($cleared) === false) {
+			return [];
+		}
+
+		return array_values(array_unique(array_map(static fn(SimpleXMLElement $element): string => $element->getName(), $cleared)));
+	}//end clearedElements()
 
 	/**
 	 * The generic operation for an edcLk01.

@@ -366,6 +366,49 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testAnUpdateMessageTakesTheNewObject()
 
 	/**
+	 * An update that clears a field is refused with a Fo03 rather than confirmed with a Bv03 the case does not match.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testAnUpdateThatClearsAFieldIsRefusedWithoutAsking(): void {
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:einddatumGepland>20261231</ZKN:einddatumGepland></ZKN:object>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:einddatumGepland StUF:noValue="geenWaarde" xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>'
+			. '</ZKN:object></ZKN:zakLk01>';
+
+		$answer = $this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(400, $answer['statusCode']);
+		$this->assertStringContainsString('Fo03Bericht', $answer['body']);
+		$this->assertStringContainsString('StUF058', $answer['body']);
+		$this->assertStringNotContainsString('Bv03Bericht', $answer['body']);
+		$this->assertSame([], $this->events, 'The owning app is not asked');
+	}//end testAnUpdateThatClearsAFieldIsRefusedWithoutAsking()
+
+	/**
+	 * A refusal leaves as one bounded line: an exception message with line breaks and ids does not reach the case system whole.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-refused-write-is-a-stuf-fault-with-a-refusing-status
+	 */
+	public function testARefusalLeavesAsOneBoundedLine(): void {
+		$outward = new \ReflectionMethod(StufProviderReceiver::class, 'outwardReason');
+
+		$this->assertSame('Zaaktype is not mapped', $outward->invoke(null, 'Zaaktype is not mapped'));
+		$this->assertSame('SQLSTATE[23000]: duplicate key object 7f3a', $outward->invoke(null, "SQLSTATE[23000]:\nduplicate key\r\nobject 7f3a"));
+		$this->assertSame('Het bericht is geweigerd', $outward->invoke(null, "\n\t "));
+
+		$long = $outward->invoke(null, str_repeat('x', 500));
+		$this->assertSame(200, mb_strlen($long));
+		$this->assertStringEndsWith('…', $long);
+	}//end testARefusalLeavesAsOneBoundedLine()
+
+	/**
 	 * A voegZaakdocumentToe (edcLk01, T) reaches the owning app with the decoded bytes.
 	 *
 	 * @return void
