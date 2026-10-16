@@ -171,62 +171,60 @@ class StufProviderOperationMapper {
 	 * @param SimpleXMLElement $object  The new object.
 	 *
 	 * @return string[] The paths of the cleared elements (local names joined by `/`), document order.
+	 *
+	 * One pass over each object: a message with thousands of empty elements
+	 * costs linear time, not a lookup in the old object per element.
 	 */
 	private function clearedElements(SimpleXMLElement $message, SimpleXMLElement $object): array {
-		$empty = $object->xpath('.//*[@*[local-name()="noValue"] or @*[local-name()="nil" and (. = "true" or . = "1")]]');
-		$found = $message->xpath('./*[local-name()="object"]');
-		$old   = null;
-		if (is_array($found) === true && count($found) > 1) {
-			$old = $found[0];
+		$filled = [];
+		$empty  = [];
+		$found  = $message->xpath('./*[local-name()="object"]');
+		$this->walk(element: $object, path: '', filled: $filled, empty: $empty);
+		if (is_array($found) === false || count($found) < 2) {
+			return array_keys($empty);
 		}
 
-		if (is_array($empty) === false) {
-			$empty = [];
-		}
+		$oldFilled = [];
+		$oldEmpty  = [];
+		$this->walk(element: $found[0], path: '', filled: $oldFilled, empty: $oldEmpty);
 
-		$cleared = [];
-		foreach ($empty as $element) {
-			$path = $this->pathBelow(element: $element, object: $object);
-			if ($old === null || $this->holdsValue(object: $old, path: $path) === true) {
-				$cleared[] = implode('/', $path);
-			}
-		}
-
-		return array_values(array_unique($cleared));
+		return array_keys(array_intersect_key($empty, $oldFilled));
 	}//end clearedElements()
 
 	/**
-	 * The local names from just below the object down to an element.
+	 * Collect, in one pass, the paths below an element that hold a value and those sent empty.
 	 *
-	 * @param SimpleXMLElement $element The element.
-	 * @param SimpleXMLElement $object  The object it sits in.
+	 * Paths are local names joined by `/`, from just below the element. An
+	 * element holds a value when its text, descendants included, is not blank;
+	 * it is sent empty when it carries `StUF:noValue` or `xsi:nil="true"`.
 	 *
-	 * @return string[] The local names, outermost first.
+	 * @param SimpleXMLElement    $element The element to walk below.
+	 * @param string              $path    The path of the element itself ('' for the object).
+	 * @param array<string, bool> $filled  Paths that hold a value, filled in.
+	 * @param array<string, bool> $empty   Paths sent empty, filled in, in document order.
+	 *
+	 * @return void
 	 */
-	private function pathBelow(SimpleXMLElement $element, SimpleXMLElement $object): array {
-		$depth = count((array)$object->xpath('ancestor-or-self::*'));
-		$chain = (array)$element->xpath('ancestor-or-self::*');
+	private function walk(SimpleXMLElement $element, string $path, array &$filled, array &$empty): void {
+		$children = $element->xpath('./*');
+		if (is_array($children) === false) {
+			return;
+		}
 
-		return array_map(
-			static fn(SimpleXMLElement $node): string => $node->getName(),
-			array_slice($chain, $depth)
-		);
-	}//end pathBelow()
+		foreach ($children as $child) {
+			$childPath = ltrim($path . '/' . $child->getName(), '/');
+			if (trim(dom_import_simplexml($child)->textContent) !== '') {
+				$filled[$childPath] = true;
+			}
 
-	/**
-	 * Whether an object holds a non-empty value at a path of local names.
-	 *
-	 * @param SimpleXMLElement $object The object.
-	 * @param string[]         $path   The local names, outermost first.
-	 *
-	 * @return bool True when any element at that path has non-blank text.
-	 */
-	private function holdsValue(SimpleXMLElement $object, array $path): bool {
-		$steps = array_map(static fn(string $name): string => '*[local-name()="' . $name . '"]', $path);
-		$hits  = $object->xpath('./' . implode('/', $steps) . '[normalize-space(.) != ""]');
+			$sentEmpty = $child->xpath('self::*[@*[local-name()="noValue"] or @*[local-name()="nil" and (. = "true" or . = "1")]]');
+			if (is_array($sentEmpty) === true && $sentEmpty !== []) {
+				$empty[$childPath] = true;
+			}
 
-		return is_array($hits) === true && $hits !== [];
-	}//end holdsValue()
+			$this->walk(element: $child, path: $childPath, filled: $filled, empty: $empty);
+		}
+	}//end walk()
 
 	/**
 	 * The generic operation for an edcLk01.

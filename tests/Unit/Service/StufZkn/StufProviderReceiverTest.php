@@ -453,6 +453,55 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testClearingARelationANestedValueOrWithoutAnOldObjectIsRefused()
 
 	/**
+	 * An old relation whose children are all empty holds nothing, so emptying it is no clear.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testEmptyingARelationThatHeldNothingIsPassedOn(): void {
+		$nil  = ' StUF:noValue="geenWaarde" xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		$open = '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>';
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. $open . '<ZKN:heeftAlsInitiator><ZKN:gerelateerde><ZKN:natuurlijkPersoon><BG:inp.bsn' . $nil . '/></ZKN:natuurlijkPersoon>'
+			. '</ZKN:gerelateerde></ZKN:heeftAlsInitiator></ZKN:object>'
+			. $open . '<ZKN:omschrijving>Nieuw</ZKN:omschrijving><ZKN:heeftAlsInitiator' . $nil . '/></ZKN:object></ZKN:zakLk01>';
+
+		$answer = $this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertCount(1, $this->events);
+	}//end testEmptyingARelationThatHeldNothingIsPassedOn()
+
+	/**
+	 * Finding the clears costs linear time: a W with thousands of empty elements is answered quickly.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testAWWithThousandsOfEmptyElementsIsCheckedInLinearTime(): void {
+		$nil  = ' StUF:noValue="geenWaarde" xsi:nil="true"';
+		$old  = '';
+		$new  = '';
+		for ($i = 0; $i < 5000; $i++) {
+			$old .= '<ZKN:kenmerk' . $i . '>waarde</ZKN:kenmerk' . $i . '>';
+			$new .= '<ZKN:kenmerk' . $i . $nil . '/>';
+		}
+
+		$open = '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+			. '<ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>';
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. $open . $old . '</ZKN:object>' . $open . $new . '</ZKN:object></ZKN:zakLk01>';
+
+		$started = microtime(true);
+		$answer  = $this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(400, $answer['statusCode'], 'Every element is a clear, so the W is refused');
+		$this->assertLessThan(2.0, (microtime(true) - $started), 'A per-element lookup in the old object took over 5 s here');
+	}//end testAWWithThousandsOfEmptyElementsIsCheckedInLinearTime()
+
+	/**
 	 * A refusal leaves as one bounded line: an exception message with line breaks and ids does not reach the case system whole.
 	 *
 	 * @return void
