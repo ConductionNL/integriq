@@ -349,7 +349,7 @@ class StufZdsOutbound {
 	 *
 	 * @return mixed What the call returned, or the fallback.
 	 */
-	private function breakerCall(string $sourceId, callable $call, mixed $fallback=null): mixed {
+	private function breakerCall(string $sourceId, callable $call, $fallback=null) {
 		try {
 			return $call($sourceId);
 		} catch (Throwable $exception) {
