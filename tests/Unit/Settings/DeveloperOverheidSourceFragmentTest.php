@@ -198,7 +198,7 @@ class DeveloperOverheidSourceFragmentTest extends TestCase {
 	 */
 	public function testThePlaceholderTakesTheInjectionPath(): void {
 		$source = $this->register();
-		$broker = $this->brokeredCallService(credentials: [], resolver: new class () {
+		$broker = $this->brokeredCallService(credentials: [], resolver: new class() {
 		});
 
 		$this->assertFalse($broker->hasCredentialRef(config: $source['configuration']));
@@ -212,7 +212,7 @@ class DeveloperOverheidSourceFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testACallCarriesTheKeyAndLogsItRedacted(): void {
-		$resolver = new class (self::KEY) {
+		$resolver = new class(self::KEY) {
 			/**
 			 * Recorded resolutions.
 			 *
@@ -225,7 +225,9 @@ class DeveloperOverheidSourceFragmentTest extends TestCase {
 			 *
 			 * @param string $secret The secret to hand out.
 			 */
-			public function __construct(private string $secret) {
+			public function __construct(
+				private string $secret,
+			) {
 			}
 
 			/**
@@ -268,7 +270,7 @@ class DeveloperOverheidSourceFragmentTest extends TestCase {
 	 */
 	public function testWithoutTheCredentialNoRequestIsSent(): void {
 		$service = $this->callService(
-			brokered: $this->brokeredCallService(credentials: [], resolver: new class () {
+			brokered: $this->brokeredCallService(credentials: [], resolver: new class() {
 			})
 		);
 		$service->call(source: $this->enabledSource(), endpoint: '/repositories?publiccode=true&perPage=100&page=1');
@@ -384,7 +386,7 @@ class DeveloperOverheidSourceFragmentTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new class ($objects, $apps, $session, $this->createMock(IUserManager::class), $this->createMock(LoggerInterface::class), $this->createMock(ContainerInterface::class), $resolver) extends BrokeredCallService {
+		return new class($objects, $apps, $session, $this->createMock(IUserManager::class), $this->createMock(LoggerInterface::class), $this->createMock(ContainerInterface::class), $resolver) extends BrokeredCallService {
 			/**
 			 * Constructor.
 			 *
