@@ -302,5 +302,17 @@ class Handler(BaseHTTPRequestHandler):
         return self.send_body(404, b"404: Not Found", "text/plain; charset=utf-8")
 
 
+class MockServer(ThreadingHTTPServer):
+    """A listen backlog that survives a flow's concurrent fetches.
+
+    The default backlog is 5. A harvest run fans out dozens of raw-file
+    requests at once, and the connections past the fifth were refused, which
+    integriq records as a 503 for that file.
+    """
+
+    request_queue_size = 128
+    daemon_threads = True
+
+
 if __name__ == "__main__":
-    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    MockServer(("0.0.0.0", PORT), Handler).serve_forever()
