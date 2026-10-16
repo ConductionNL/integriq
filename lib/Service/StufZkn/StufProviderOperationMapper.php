@@ -110,9 +110,9 @@ class StufProviderOperationMapper {
 	 * `title`, `description`, `startDate`, `registrationDate`, `plannedEndDate`,
 	 * `finalEndDate` (dates as Y-m-d), `caseTypeCode`, `caseTypeName` and
 	 * `initiator` (`type` person or company, `sourceId`, `name`). A W that clears an
-	 * element (`xsi:nil="true"` or `StUF:noValue`) also carries `clears`, the names
-	 * of those elements, so the receiver can refuse it instead of answering Bv03
-	 * for a clear the owning app never saw.
+	 * element the old object held (`xsi:nil="true"` or `StUF:noValue` in the new
+	 * object) also carries `clears`, the names of those elements, so the receiver
+	 * can refuse it instead of answering Bv03 for a clear the owning app never saw.
 	 *
 	 * @param SimpleXMLElement $message      The zakLk01 element.
 	 * @param string           $mutatiesoort The StUF mutatiesoort.
@@ -149,32 +149,64 @@ class StufProviderOperationMapper {
 		$operation['caseTypeName'] = $this->text(xml: $object, path: $type . 'omschrijving"]');
 		$operation['initiator']    = $this->initiator(object: $object);
 		if ($mutatiesoort === 'W') {
-			$operation['clears'] = $this->clearedElements(object: $object);
+			$operation['clears'] = $this->clearedElements(message: $message, object: $object);
 		}
 
 		return array_filter($operation, static fn(mixed $value): bool => $value !== '' && $value !== []);
 	}//end caseOperation()
 
 	/**
-	 * The elements of an object that a kennisgeving clears.
+	 * The elements a W kennisgeving clears: empty in the new object, filled in the old one.
 	 *
 	 * In StUF a W clears a value by sending the element empty with
-	 * `xsi:nil="true"` and `StUF:noValue` in the new object.
+	 * `xsi:nil="true"` and `StUF:noValue` in the new object. Many senders also
+	 * write every optional element they have no value for that way, integriq's
+	 * own translators included, so an empty element only counts as a clear when
+	 * the old object (the first `object`) holds a value for it. Only the zaak's
+	 * own elements are compared; a related object's are not this message's to
+	 * clear.
 	 *
-	 * @param SimpleXMLElement $object The new object.
+	 * @param SimpleXMLElement $message The zakLk01 element.
+	 * @param SimpleXMLElement $object  The new object.
 	 *
 	 * @return string[] The local names of the cleared elements, document order.
 	 */
-	private function clearedElements(SimpleXMLElement $object): array {
-		$cleared = $object->xpath(
-			'.//*[@*[local-name()="noValue"] or @*[local-name()="nil" and (. = "true" or . = "1")]]'
-		);
-		if (is_array($cleared) === false) {
+	private function clearedElements(SimpleXMLElement $message, SimpleXMLElement $object): array {
+		$objects = $message->xpath('./*[local-name()="object"]');
+		if (is_array($objects) === false || count($objects) < 2) {
 			return [];
 		}
 
-		return array_values(array_unique(array_map(static fn(SimpleXMLElement $element): string => $element->getName(), $cleared)));
+		$old      = $objects[0];
+		$cleared  = [];
+		$elements = $object->xpath('./*');
+		foreach ((is_array($elements) === true ? $elements : []) as $element) {
+			$this->collectCleared(element: $element, old: $old, cleared: $cleared);
+		}
+
+		return array_values(array_unique($cleared));
 	}//end clearedElements()
+
+	/**
+	 * Add an element's name to the list when it clears a value the old object holds.
+	 *
+	 * @param SimpleXMLElement $element The element of the new object.
+	 * @param SimpleXMLElement $old     The old object.
+	 * @param string[]         $cleared The list so far.
+	 *
+	 * @return void
+	 */
+	private function collectCleared(SimpleXMLElement $element, SimpleXMLElement $old, array &$cleared): void {
+		$empty = $element->xpath('self::*[@*[local-name()="noValue"] or @*[local-name()="nil" and (. = "true" or . = "1")]]');
+		if (is_array($empty) === false || $empty === []) {
+			return;
+		}
+
+		$name = $element->getName();
+		if ($this->text(xml: $old, path: './*[local-name()="' . $name . '"]') !== '') {
+			$cleared[] = $name;
+		}
+	}//end collectCleared()
 
 	/**
 	 * The generic operation for an edcLk01.

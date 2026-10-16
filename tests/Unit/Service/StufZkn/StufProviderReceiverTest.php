@@ -390,6 +390,33 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testAnUpdateThatClearsAFieldIsRefusedWithoutAsking()
 
 	/**
+	 * Empty elements the old object did not hold, top-level or nested in a relation, are no clear:
+	 * a sender that writes every empty optional element as nil still gets its update through.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testAnUpdateWithEmptyElementsTheOldObjectDidNotHoldIsPassedOn(): void {
+		$nil  = ' StUF:noValue="geenWaarde" xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:omschrijving>Oud</ZKN:omschrijving></ZKN:object>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:omschrijving>Nieuw</ZKN:omschrijving><ZKN:toelichting' . $nil . '/><ZKN:einddatum' . $nil . '/>'
+			. '<ZKN:isVan StUF:entiteittype="ZAKZKT"><ZKN:gerelateerde StUF:entiteittype="ZKT"><ZKN:code>KAP</ZKN:code>'
+			. '<ZKN:omschrijving' . $nil . '/></ZKN:gerelateerde></ZKN:isVan>'
+			. '</ZKN:object></ZKN:zakLk01>';
+
+		$answer = $this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertCount(1, $this->events, 'The owning app is asked');
+		$this->assertArrayNotHasKey('clears', $this->events[0]->getOperation());
+		$this->assertSame('Nieuw', $this->events[0]->getOperation()['title']);
+	}//end testAnUpdateWithEmptyElementsTheOldObjectDidNotHoldIsPassedOn()
+
+	/**
 	 * A refusal leaves as one bounded line: an exception message with line breaks and ids does not reach the case system whole.
 	 *
 	 * @return void
