@@ -213,7 +213,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function testAContradictingLaterConfirmationChangesNothing(): void {
 		$receiver = $this->receiver();

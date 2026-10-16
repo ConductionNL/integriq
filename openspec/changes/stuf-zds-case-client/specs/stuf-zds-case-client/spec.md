@@ -130,8 +130,16 @@ and end any pending retry; a foutbericht SHALL make it `failed` with the case sy
 first confirmation of a message SHALL dispatch `StufZdsCaseConcludedEvent` with `confirmation` in
 the result. A repeated one is acknowledged but not announced again; a later one with another code
 (a foutbericht after a bevestiging, or the reverse) is acknowledged and logged, and SHALL change
-neither the row nor what the owning app was told, so the owning app never receives two
-contradicting conclusions for one message.
+neither the row nor what the owning app was told: after the first asynchronous confirmation the
+owning app receives no second, contradicting conclusion for that message. The first asynchronous
+confirmation itself still overrides what the synchronous answer at send concluded.
+
+#### Scenario: A contradicting later confirmation changes nothing
+
+- GIVEN an outbound row with referentienummer REF-1 that a Bv01 already confirmed
+- WHEN the case system posts a Fo01 cross-referencing REF-1
+- THEN the answer is a Bv03 (200), the row stays `sent` with `confirmation` Bv01
+- AND no second `StufZdsCaseConcludedEvent` is dispatched
 
 #### Scenario: A Bv01 confirms the row
 
