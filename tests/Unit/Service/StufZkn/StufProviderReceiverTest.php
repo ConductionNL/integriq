@@ -417,6 +417,42 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testAnUpdateWithEmptyElementsTheOldObjectDidNotHoldIsPassedOn()
 
 	/**
+	 * Clearing a relation, a value nested in one, or anything in a W without an old object is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testClearingARelationANestedValueOrWithoutAnOldObjectIsRefused(): void {
+		$nil       = ' StUF:noValue="geenWaarde" xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		$initiator = '<ZKN:heeftAlsInitiator StUF:entiteittype="ZAKBTRINI"><ZKN:gerelateerde><ZKN:natuurlijkPersoon StUF:entiteittype="NPS">'
+			. '<BG:inp.bsn>999993653</BG:inp.bsn></ZKN:natuurlijkPersoon></ZKN:gerelateerde></ZKN:heeftAlsInitiator>';
+		$open      = '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>';
+		$w         = static fn (string $objects): string => self::envelope(
+			body: '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01')
+				. '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>' . $objects . '</ZKN:zakLk01>'
+		);
+
+		$messages = [
+			'relation' => $w($open . $initiator . '</ZKN:object>' . $open . '<ZKN:heeftAlsInitiator' . $nil . '/></ZKN:object>'),
+			'nested value' => $w(
+				$open . $initiator . '</ZKN:object>' . $open . '<ZKN:heeftAlsInitiator StUF:entiteittype="ZAKBTRINI"><ZKN:gerelateerde>'
+				. '<ZKN:natuurlijkPersoon StUF:entiteittype="NPS"><BG:inp.bsn' . $nil . '/></ZKN:natuurlijkPersoon></ZKN:gerelateerde>'
+				. '</ZKN:heeftAlsInitiator></ZKN:object>'
+			),
+			'no old object' => $w($open . '<ZKN:einddatumGepland' . $nil . '/></ZKN:object>'),
+		];
+		foreach ($messages as $case => $xml) {
+			$this->events = [];
+			$answer       = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+
+			$this->assertSame(400, $answer['statusCode'], $case);
+			$this->assertStringContainsString('StUF058', $answer['body'], $case);
+			$this->assertSame([], $this->events, $case . ': the owning app is not asked');
+		}
+	}//end testClearingARelationANestedValueOrWithoutAnOldObjectIsRefused()
+
+	/**
 	 * A refusal leaves as one bounded line: an exception message with line breaks and ids does not reach the case system whole.
 	 *
 	 * @return void

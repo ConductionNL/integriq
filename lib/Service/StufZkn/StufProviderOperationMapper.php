@@ -162,50 +162,71 @@ class StufProviderOperationMapper {
 	 * `xsi:nil="true"` and `StUF:noValue` in the new object. Many senders also
 	 * write every optional element they have no value for that way, integriq's
 	 * own translators included, so an empty element only counts as a clear when
-	 * the old object (the first `object`) holds a value for it. Only the zaak's
-	 * own elements are compared; a related object's are not this message's to
-	 * clear.
+	 * the old object (the first `object`) holds a value at the same path, nested
+	 * relations included. A W with a single object gives nothing to compare
+	 * with: every empty element in it counts as a clear, so it is refused rather
+	 * than answered Bv03 for values the owning app never saw cleared.
 	 *
 	 * @param SimpleXMLElement $message The zakLk01 element.
 	 * @param SimpleXMLElement $object  The new object.
 	 *
-	 * @return string[] The local names of the cleared elements, document order.
+	 * @return string[] The paths of the cleared elements (local names joined by `/`), document order.
 	 */
 	private function clearedElements(SimpleXMLElement $message, SimpleXMLElement $object): array {
-		$objects = $message->xpath('./*[local-name()="object"]');
-		if (is_array($objects) === false || count($objects) < 2) {
-			return [];
+		$empty = $object->xpath('.//*[@*[local-name()="noValue"] or @*[local-name()="nil" and (. = "true" or . = "1")]]');
+		$found = $message->xpath('./*[local-name()="object"]');
+		$old   = null;
+		if (is_array($found) === true && count($found) > 1) {
+			$old = $found[0];
 		}
 
-		$old     = $objects[0];
+		if (is_array($empty) === false) {
+			$empty = [];
+		}
+
 		$cleared = [];
-		foreach ((array)$object->xpath('./*') as $element) {
-			$this->collectCleared(element: $element, old: $old, cleared: $cleared);
+		foreach ($empty as $element) {
+			$path = $this->pathBelow(element: $element, object: $object);
+			if ($old === null || $this->holdsValue(object: $old, path: $path) === true) {
+				$cleared[] = implode('/', $path);
+			}
 		}
 
 		return array_values(array_unique($cleared));
 	}//end clearedElements()
 
 	/**
-	 * Add an element's name to the list when it clears a value the old object holds.
+	 * The local names from just below the object down to an element.
 	 *
-	 * @param SimpleXMLElement $element The element of the new object.
-	 * @param SimpleXMLElement $old     The old object.
-	 * @param string[]         $cleared The list so far.
+	 * @param SimpleXMLElement $element The element.
+	 * @param SimpleXMLElement $object  The object it sits in.
 	 *
-	 * @return void
+	 * @return string[] The local names, outermost first.
 	 */
-	private function collectCleared(SimpleXMLElement $element, SimpleXMLElement $old, array &$cleared): void {
-		$empty = $element->xpath('self::*[@*[local-name()="noValue"] or @*[local-name()="nil" and (. = "true" or . = "1")]]');
-		if (is_array($empty) === false || $empty === []) {
-			return;
-		}
+	private function pathBelow(SimpleXMLElement $element, SimpleXMLElement $object): array {
+		$depth = count((array)$object->xpath('ancestor-or-self::*'));
+		$chain = (array)$element->xpath('ancestor-or-self::*');
 
-		$name = $element->getName();
-		if ($this->text(xml: $old, path: './*[local-name()="' . $name . '"]') !== '') {
-			$cleared[] = $name;
-		}
-	}//end collectCleared()
+		return array_map(
+			static fn(SimpleXMLElement $node): string => $node->getName(),
+			array_slice($chain, $depth)
+		);
+	}//end pathBelow()
+
+	/**
+	 * Whether an object holds a non-empty value at a path of local names.
+	 *
+	 * @param SimpleXMLElement $object The object.
+	 * @param string[]         $path   The local names, outermost first.
+	 *
+	 * @return bool True when any element at that path has non-blank text.
+	 */
+	private function holdsValue(SimpleXMLElement $object, array $path): bool {
+		$steps = array_map(static fn(string $name): string => '*[local-name()="' . $name . '"]', $path);
+		$hits  = $object->xpath('./' . implode('/', $steps) . '[normalize-space(.) != ""]');
+
+		return is_array($hits) === true && $hits !== [];
+	}//end holdsValue()
 
 	/**
 	 * The generic operation for an edcLk01.
