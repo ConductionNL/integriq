@@ -11,8 +11,8 @@ Kind: mixed under the thin-glue exception (design.md, Mixed-spec rationale). Con
   - GIVEN the fragment WHEN read THEN the source is disabled, located at the register's base URL, and its only key material is the placeholder `{"credentialRef": {"credentialName": "developer-overheid-oss"}}` at `configuration.authentication.apikey`
   - GIVEN the fragment WHEN read THEN `configuration.headers.X-Api-Key` is the template `{{ source.configuration.authentication.apikey }}`
   - GIVEN the catalogue WHEN listed THEN the source is under `Government registers`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: Source `gitlab-raw`
 - **spec_ref**: `openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-gitlabcom-raw-files-are-a-credential-free-source-req-dos-003`

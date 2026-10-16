@@ -1,0 +1,36 @@
+{
+  "$comment": "ADR-037 register fragment (sources-developer-overheid). Seeds developer-overheid-oss, the developer.overheid.nl OSS-register API at https://api.developer.overheid.nl/oss-register/v1, which opencatalogi's publiccode-developer-overheid-harvest flow reads. DORMANT (isEnabled false). It holds no key: configuration.authentication.apikey is a credentialRef placeholder naming the broker credential developer-overheid-oss (ADR-064), which CallService resolves through the app-side injection path (BrokeredCallService::hydrateInjectableCredentials, OpenRegister CredentialBrokerService::resolveInjectable) before the configuration's Twig renders, so the X-Api-Key header template carries the key and the CallLog redacts that header. A top-level credentialRef (the proxy path) would not work: generic-apikey is inject-only and the broker proxy refuses it. To go live: request a read-only key at https://apis.developer.overheid.nl/apis/key-aanvragen, store it as a credential named developer-overheid-oss with provider generic-apikey and openconnector in its allowed apps, then enable the source. For the register's test environment change location to https://api.don.apps.digilab.network/oss-register/v1 and use a key from that environment. See openspec/changes/sources-developer-overheid/design.md D1.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "developer-overheid-oss"
+        },
+        "name": "developer.overheid.nl OSS-register",
+        "description": "The national register of government open-source repositories. Request a read-only API key at https://apis.developer.overheid.nl/apis/key-aanvragen, store it as a credential named developer-overheid-oss with provider generic-apikey and openconnector in its allowed apps, then enable this source.",
+        "type": "api",
+        "location": "https://api.developer.overheid.nl/oss-register/v1",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "X-Api-Key": "{{ source.configuration.authentication.apikey }}"
+          },
+          "authentication": {
+            "type": "apikey",
+            "apikey": {
+              "credentialRef": {
+                "credentialName": "developer-overheid-oss"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

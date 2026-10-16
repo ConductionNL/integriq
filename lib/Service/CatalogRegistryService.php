@@ -105,6 +105,8 @@ class CatalogRegistryService {
 	 * seed not listed here falls back to TYPE_CATEGORY_LABELS.
 	 *
 	 * @var array<string,string>
+	 *
+	 * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-the-oss-register-is-a-dormant-source-that-holds-only-a-credential-reference-req-dos-001
 	 */
 	private const SLUG_CATEGORY_OVERRIDES = [
 		'brp-haalcentraal' => 'Government registers',
@@ -130,6 +132,8 @@ class CatalogRegistryService {
 		// GitHub for the publiccode harvest (sources-github-publiccode).
 		'github-api' => 'Code hosting',
 		'github-raw' => 'Code hosting',
+		// The developer.overheid.nl OSS-register (sources-developer-overheid).
+		'developer-overheid-oss' => 'Government registers',
 	];
 
 	/**
