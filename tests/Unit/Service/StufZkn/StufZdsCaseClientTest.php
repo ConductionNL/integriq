@@ -606,6 +606,7 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertFalse($result['retrying']);
 		$this->assertSame('RETRY_NOT_SCHEDULED', $result['fout']['code']);
 		$this->assertSame('failed', $this->rows[$result['messageId']]['status']);
+		$this->assertNotSame('', $result['fout']['details'], 'The last attempt\'s fout code is kept');
 		$this->assertCount(1, $this->events, 'The owning app hears the conclusion');
 		$this->assertFalse($this->events[0]->getResult()['success']);
 	}//end testARetryThatCannotBeScheduledConcludesTheMessageAsFailed()
@@ -705,4 +706,26 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertNotSame('', $fout['details'], 'The last attempt\'s fout code is kept');
 		$this->assertNotSame('RETRY_NOT_SCHEDULED', $fout['details']);
 	}//end testACooldownThatCannotBeRescheduledConcludesTheMessageAsFailed()
+
+	/**
+	 * A retry whose circuit breaker cannot be read is sent anyway, not stranded with its job consumed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testARetryWhoseBreakerCannotBeReadIsSentAnyway(): void {
+		$client = $this->client([new Response(503, [], ''), self::bevestiging()]);
+		$first  = $client->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq', 'correlationId' => 'c-5']);
+		$this->assertTrue($first['retrying']);
+
+		// An open circuit whose cooldown has passed: allows() resets it, and that write throws.
+		$this->config['stuf.zds.o.' . substr(sha1('zsh'), 0, 32)] = (time() - 86400);
+		$this->failBreaker = true;
+		$this->outbound->retry($first['messageId']);
+
+		$this->assertCount(2, $this->history, 'The retry is sent');
+		$this->assertSame('sent', $this->rows[$first['messageId']]['status']);
+		$this->assertCount(1, $this->events);
+	}//end testARetryWhoseBreakerCannotBeReadIsSentAnyway()
 }//end class

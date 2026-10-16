@@ -131,11 +131,11 @@ class StufZdsOutbound {
 		$caseId = (string)($context['caseIdentification'] ?? '');
 		if ($this->isSuccess(response: $response) === false) {
 			$fout = $this->failureOf(response: $response);
-			$this->breakerRecords(sourceId: $source['id'], record: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
+			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
 		}
 
 		if ($fout === null) {
-			$this->breakerRecords(sourceId: $source['id'], record: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
+			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
 			if ($operation === 'genereerZaakIdentificatie') {
 				$caseId = (string)$this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
 			}
@@ -179,7 +179,9 @@ class StufZdsOutbound {
 			return;
 		}
 
-		if ($this->breaker->allows(sourceId: $source['id']) === false) {
+		// Fails open: a breaker that cannot be read must not strand the row with its job consumed.
+		$allowed = $this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->allows(sourceId: $sourceId), fallback: true);
+		if ($allowed === false) {
 			// Not an attempt: wait out the cooldown and try again.
 			if ($this->schedule(messageId: $messageId, delay: StufZdsCircuitBreaker::COOLDOWN_SECONDS) === false) {
 				$last = ['code' => (string)($row['faultCode'] ?? '')];
@@ -206,12 +208,12 @@ class StufZdsOutbound {
 	private function classify(array $source, array $row, array $response, int $attempt): array {
 		if ($this->isSuccess(response: $response) === true) {
 			$caseId = $this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
-			$this->breakerRecords(sourceId: $source['id'], record: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
+			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
 			return $this->conclude(row: $row, sent: true, attempt: $attempt, transport: $response, fout: null, caseId: $caseId);
 		}
 
 		$fout = $this->failureOf(response: $response);
-		$this->breakerRecords(sourceId: $source['id'], record: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
+		$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
 		if ($this->isTransient(response: $response, fout: $fout) === false || $attempt > count(self::RETRY_BACKOFF_SECONDS)) {
 			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null);
 		}
@@ -334,29 +336,30 @@ class StufZdsOutbound {
 	}//end concludeRow()
 
 	/**
-	 * Tell the circuit breaker how an attempt went, without letting its bookkeeping change the outcome.
+	 * Call the circuit breaker without letting its bookkeeping change a message's outcome.
 	 *
-	 * The breaker writes app config. After the case system answered, a failed
-	 * write must not reach the listener, which would refuse a zaak that now
-	 * exists; before a retry is planned it must not leave the row `retrying`
-	 * with no job behind it. The failure is logged and the breaker's count
-	 * stays as it was.
+	 * The breaker reads and writes app config. After the case system answered,
+	 * a failed call must not reach the listener, which would refuse a zaak that
+	 * now exists; around a retry it must not leave the row `retrying` with no
+	 * job behind it. The failure is logged and the fallback is returned.
 	 *
 	 * @param string   $sourceId The source.
-	 * @param callable $record   The breaker call: recordFailure or reset, given the source id.
+	 * @param callable $call     The breaker call (allows, recordFailure or reset), given the source id.
+	 * @param mixed    $fallback What to return when the call throws.
 	 *
-	 * @return void
+	 * @return mixed What the call returned, or the fallback.
 	 */
-	private function breakerRecords(string $sourceId, callable $record): void {
+	private function breakerCall(string $sourceId, callable $call, mixed $fallback=null): mixed {
 		try {
-			$record($sourceId);
+			return $call($sourceId);
 		} catch (Throwable $exception) {
 			$this->logger->error(
-				'StUF-ZDS circuit breaker for source {source} could not be updated: {error}',
+				'StUF-ZDS circuit breaker for source {source} could not be used: {error}',
 				['source' => $sourceId, 'error' => $exception->getMessage()]
 			);
+			return $fallback;
 		}
-	}//end breakerRecords()
+	}//end breakerCall()
 
 	/**
 	 * The fout of a message whose retry could not be scheduled.
