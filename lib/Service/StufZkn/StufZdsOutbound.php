@@ -141,7 +141,7 @@ class StufZdsOutbound {
 			}
 		}
 
-		$row = $this->log->conclude(row: $row, sent: ($fout === null), attempt: 1, transport: $response, fout: $fout, caseIdentification: $caseId);
+		$row = $this->concludeRow(row: $row, sent: ($fout === null), attempt: 1, transport: $response, fout: $fout, caseIdentification: $caseId);
 
 		return (
 			$this->result(row: $row, success: ($fout === null), retrying: false, caseId: $caseId, fout: $fout) + ['answer' => $response['responseXml']]
@@ -181,7 +181,10 @@ class StufZdsOutbound {
 
 		if ($this->breaker->allows(sourceId: $source['id']) === false) {
 			// Not an attempt: wait out the cooldown and try again.
-			$this->schedule(messageId: $messageId, delay: StufZdsCircuitBreaker::COOLDOWN_SECONDS);
+			if ($this->schedule(messageId: $messageId, delay: StufZdsCircuitBreaker::COOLDOWN_SECONDS) === false) {
+				$this->conclude(row: $row, sent: false, attempt: ($attempt - 1), transport: [], fout: $this->unscheduledFout(), caseId: null);
+			}
+
 			return;
 		}
 
@@ -212,9 +215,24 @@ class StufZdsOutbound {
 			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null);
 		}
 
+		// A row that cannot be marked retrying, or a retry that cannot be
+		// scheduled, would leave the message `retrying` with no job behind it and
+		// the owning app waiting for a conclusion that never comes: conclude it as
+		// failed instead.
 		$delay = self::RETRY_BACKOFF_SECONDS[($attempt - 1)];
-		$row   = $this->log->retrying(row: $row, attempt: $attempt, transport: $response, fout: $fout, retryAfter: $delay);
-		$this->schedule(messageId: (string)$row['id'], delay: $delay);
+		try {
+			$row = $this->log->retrying(row: $row, attempt: $attempt, transport: $response, fout: $fout, retryAfter: $delay);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'StUF-ZDS message {id} could not be marked for a retry: {error}',
+				['id' => (string)($row['id'] ?? ''), 'error' => $exception->getMessage()]
+			);
+			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null);
+		}
+
+		if ($this->schedule(messageId: (string)$row['id'], delay: $delay) === false) {
+			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $this->unscheduledFout(), caseId: null);
+		}
 
 		return $this->result(row: $row, success: false, retrying: true, caseId: null, fout: $fout);
 	}//end classify()
@@ -224,7 +242,9 @@ class StufZdsOutbound {
 	 *
 	 * A StUF fout in the body decides: SOAP 1.1 answers every fault with HTTP
 	 * 500, so the status alone would retry a permanent refusal four times.
-	 * Without one, the transport's verdict or the HTTP status decides.
+	 * Without one, the transport's verdict or the HTTP status decides. A body
+	 * that did not parse (`PARSE_ERROR`: a load balancer's HTML 503 page, a
+	 * plain-text 502) carries no fout, so the status decides for it too.
 	 *
 	 * @param array $response The transport result.
 	 * @param array $fout     The classified fout.
@@ -233,7 +253,7 @@ class StufZdsOutbound {
 	 */
 	private function isTransient(array $response, array $fout): bool {
 		$status = (int)$response['httpStatus'];
-		$stufFault = ($fout['code'] !== '' && (string)$response['responseXml'] !== '');
+		$stufFault = ($fout['code'] !== '' && $fout['code'] !== 'PARSE_ERROR' && (string)$response['responseXml'] !== '');
 		if ($stufFault === true || $status === 0) {
 			return ($fout['kind'] === 'transient');
 		}
@@ -255,7 +275,7 @@ class StufZdsOutbound {
 	 */
 	private function conclude(array $row, bool $sent, int $attempt, array $transport, ?array $fout, ?string $caseId): array {
 		$known  = ($caseId ?? (string)($row['caseIdentification'] ?? ''));
-		$row    = $this->log->conclude(row: $row, sent: $sent, attempt: $attempt, transport: $transport, fout: $fout, caseIdentification: $known);
+		$row    = $this->concludeRow(row: $row, sent: $sent, attempt: $attempt, transport: $transport, fout: $fout, caseIdentification: $known);
 		$result = $this->result(row: $row, success: $sent, retrying: false, caseId: $known, fout: $fout);
 
 		try {
@@ -274,6 +294,56 @@ class StufZdsOutbound {
 
 		return $result;
 	}//end conclude()
+
+	/**
+	 * Write a message's conclusion to its row, without letting a failed write undo the send.
+	 *
+	 * Once the case system answered, that answer is the outcome: a row that
+	 * cannot be saved must not turn a created zaak into a refusal, which the
+	 * caller would retry into a second zaak. The failure is logged and the
+	 * unsaved row is returned.
+	 *
+	 * @param array       $row                The row.
+	 * @param bool        $sent               Whether the case system confirmed it.
+	 * @param int         $attempt            The concluding attempt.
+	 * @param array       $transport          The transport result.
+	 * @param array|null  $fout               The fout on failure.
+	 * @param string|null $caseIdentification The zaak identificatie, if known.
+	 *
+	 * @return array The saved row, or the row as it was when the save failed.
+	 */
+	private function concludeRow(array $row, bool $sent, int $attempt, array $transport, ?array $fout, ?string $caseIdentification): array {
+		try {
+			return $this->log->conclude(
+				row: $row,
+				sent: $sent,
+				attempt: $attempt,
+				transport: $transport,
+				fout: $fout,
+				caseIdentification: $caseIdentification
+			);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'StUF-ZDS message {id} was concluded (sent: {sent}) but its row could not be saved: {error}',
+				['id' => (string)($row['id'] ?? ''), 'sent' => ($sent === true ? 'yes' : 'no'), 'error' => $exception->getMessage()]
+			);
+			return $row;
+		}
+	}//end concludeRow()
+
+	/**
+	 * The fout of a message whose retry could not be scheduled.
+	 *
+	 * @return array{code:string,omschrijving:string,details:string,kind:string}
+	 */
+	private function unscheduledFout(): array {
+		return [
+			'code' => 'RETRY_NOT_SCHEDULED',
+			'omschrijving' => 'The retry could not be scheduled, so the message is concluded as failed',
+			'details' => '',
+			'kind' => 'permanent',
+		];
+	}//end unscheduledFout()
 
 	/**
 	 * The result array of a request.
@@ -404,9 +474,9 @@ class StufZdsOutbound {
 	 * @param string $messageId The row uuid.
 	 * @param int    $delay     Seconds from now.
 	 *
-	 * @return void
+	 * @return bool False when the job could not be scheduled.
 	 */
-	private function schedule(string $messageId, int $delay): void {
+	private function schedule(string $messageId, int $delay): bool {
 		try {
 			$this->jobList->scheduleAfter(StufZdsRetryJob::class, (time() + $delay), ['messageId' => $messageId]);
 		} catch (Throwable $exception) {
@@ -414,6 +484,9 @@ class StufZdsOutbound {
 				'StUF-ZDS retry could not be scheduled for {id}: {error}',
 				['id' => $messageId, 'error' => $exception->getMessage()]
 			);
+			return false;
 		}
+
+		return true;
 	}//end schedule()
 }//end class
