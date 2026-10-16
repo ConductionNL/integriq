@@ -314,7 +314,8 @@ class CallReplayServiceTest extends TestCase {
 	 */
 	public function testARecordInsideAWindowKeepsBothBodies(): void {
 		$source = '4b1c1c1e-1111-4111-8111-111111111111';
-		$this->records[$source] = ['name' => 'stuf-partner', 'bodyCaptureUntil' => '2099-01-01T00:00:00+00:00'];
+		// An hour ahead: a window beyond the instance maximum (72 h) counts as closed.
+		$this->records[$source] = ['name' => 'stuf-partner', 'bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format(\DATE_ATOM)];
 
 		$uuid = $this->failedCall([], ['target' => $source]);
 		$record = $this->records[$uuid];
