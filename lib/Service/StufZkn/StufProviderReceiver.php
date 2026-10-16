@@ -297,7 +297,7 @@ class StufProviderReceiver {
 					'ref' => $event->getReferentienummer(),
 					'app' => (string)$event->getAnsweredBy(),
 					'kind' => $event->getRefusalKind(),
-					'reason' => $refusal,
+					'reason' => self::outwardReason(reason: $refusal),
 				]
 			);
 			return $this->fault(
@@ -484,15 +484,17 @@ class StufProviderReceiver {
 	 *
 	 * The refuse() method asks for a short reason safe to return, but nothing enforces it:
 	 * an app that passes an exception message would send internal errors, with
-	 * their line breaks and ids, to the remote party. One line, at most
-	 * OUTWARD_REASON_LENGTH characters, goes out; the full text is logged.
+	 * their line breaks and ids, to the remote party. One line of valid UTF-8,
+	 * at most OUTWARD_REASON_LENGTH characters, goes out, and the log carries
+	 * the same line, so the log holds no more of the free text than the case
+	 * system receives.
 	 *
 	 * @param string $reason The reason the owning app gave.
 	 *
 	 * @return string The reason for the fault's omschrijving.
 	 */
 	private static function outwardReason(string $reason): string {
-		$line = trim((string)preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $reason));
+		$line = trim((string)preg_replace('/[\x00-\x1F\x7F]+/u', ' ', mb_scrub($reason, 'UTF-8')));
 		if ($line === '') {
 			return 'Het bericht is geweigerd';
 		}

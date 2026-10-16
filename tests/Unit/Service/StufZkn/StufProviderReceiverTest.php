@@ -429,11 +429,28 @@ class StufProviderReceiverTest extends TestCase {
 		$this->assertSame('Zaaktype is not mapped', $outward->invoke(null, 'Zaaktype is not mapped'));
 		$this->assertSame('SQLSTATE[23000]: duplicate key object 7f3a', $outward->invoke(null, "SQLSTATE[23000]:\nduplicate key\r\nobject 7f3a"));
 		$this->assertSame('Het bericht is geweigerd', $outward->invoke(null, "\n\t "));
+		$this->assertSame('ab?(c', $outward->invoke(null, "ab\xC3(c"), 'Invalid UTF-8 is scrubbed, not dropped');
 
 		$long = $outward->invoke(null, str_repeat('x', 500));
 		$this->assertSame(200, mb_strlen($long));
 		$this->assertStringEndsWith('…', $long);
 	}//end testARefusalLeavesAsOneBoundedLine()
+
+	/**
+	 * The Fo03 the case system receives carries the owning app's refusal as one line, not as it was given.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-refused-write-is-a-stuf-fault-with-a-refusing-status
+	 */
+	public function testARefusedWriteSendsTheRefusalOutAsOneLine(): void {
+		$this->owner = 'leaky';
+		$answer      = $this->receiver()->receive(rawXml: self::zakLk01(), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(400, $answer['statusCode']);
+		$this->assertStringContainsString('SQLSTATE[23000]: Integrity constraint violation object 7f3a', $answer['body']);
+		$this->assertStringNotContainsString("SQLSTATE[23000]:\n", $answer['body']);
+	}//end testARefusedWriteSendsTheRefusalOutAsOneLine()
 
 	/**
 	 * A voegZaakdocumentToe (edcLk01, T) reaches the owning app with the decoded bytes.
@@ -651,6 +668,11 @@ class StufProviderReceiverTest extends TestCase {
 	 * @return void
 	 */
 	private function own(object $event): void {
+		if ($this->owner === 'leaky' && $event instanceof StufProviderQueryEvent) {
+			$event->refuse(appId: 'dossiq', reason: "SQLSTATE[23000]:\nIntegrity constraint violation\r\nobject 7f3a");
+			return;
+		}
+
 		if ($this->owner === 'silent') {
 			return;
 		}
