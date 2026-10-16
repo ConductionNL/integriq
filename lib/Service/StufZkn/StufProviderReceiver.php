@@ -485,9 +485,9 @@ class StufProviderReceiver {
 	 * The refuse() method asks for a short reason safe to return, but nothing enforces it:
 	 * an app that passes an exception message would send internal errors, with
 	 * their line breaks and ids, to the remote party. One line of valid UTF-8,
-	 * at most OUTWARD_REASON_LENGTH characters, goes out, and the log carries
-	 * the same line, so the log holds no more of the free text than the case
-	 * system receives.
+	 * at most OUTWARD_REASON_LENGTH columns wide (a wide character counts two),
+	 * goes out, and the log carries the same line, so the log holds no more of
+	 * the free text than the case system receives.
 	 *
 	 * @param string $reason The reason the owning app gave.
 	 *
@@ -499,10 +499,6 @@ class StufProviderReceiver {
 			return 'Het bericht is geweigerd';
 		}
 
-		if (mb_strlen($line) > self::OUTWARD_REASON_LENGTH) {
-			$line = rtrim(mb_substr($line, 0, (self::OUTWARD_REASON_LENGTH - 1))) . '…';
-		}
-
-		return $line;
+		return mb_strimwidth($line, 0, self::OUTWARD_REASON_LENGTH, '…', 'UTF-8');
 	}//end outwardReason()
 }//end class
