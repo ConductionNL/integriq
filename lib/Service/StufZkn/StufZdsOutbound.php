@@ -43,6 +43,10 @@ use Throwable;
  *
  * @psalm-type ZdsResult = array{success:bool,retrying:bool,referentienummer:string,messageId:string,caseIdentification:string|null,fout:array<string,string>|null}
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The send path is one orchestration: transport, answer reader,
+ *     circuit breaker, audit log, retry job, conclusion event and, since the credentials moved out of the persisted
+ *     envelope, the message builder and credential resolver that add the UsernameToken at send time.
+ *
  * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 class StufZdsOutbound {

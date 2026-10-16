@@ -130,6 +130,23 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 			return $endpoint;
 		}
 
+		$rest = $this->restUnderSource(source: $source, url: $url);
+		$this->assertNoDotSegment(rest: $rest);
+
+		return $rest;
+	}//end endpointOf()
+
+	/**
+	 * The part of a stored URL that follows the source's address.
+	 *
+	 * @param ObjectEntity $source The source being called.
+	 * @param string       $url    The stored URL.
+	 *
+	 * @return string The remainder: '', or a path or query that starts at the address boundary.
+	 *
+	 * @throws CallDispatchException When the URL is outside the source's address or has a redacted part.
+	 */
+	private function restUnderSource(ObjectEntity $source, string $url): string {
 		$location = rtrim((string)($source->getObject()['location'] ?? ''), '/');
 		if ($location === '' || stripos($url, $location) !== 0 || stripos($url, 'REDACTED') !== false) {
 			throw new CallDispatchException(message: 'The stored URL cannot be replayed: it is outside the source address or has a redacted part.');
@@ -140,16 +157,28 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 			throw new CallDispatchException(message: 'The stored URL cannot be replayed: it is outside the source address or has a redacted part.');
 		}
 
-		// A dot segment (plain or percent-encoded) would climb out of the source's address once the path is normalised.
-		// Decoded twice, so a double-encoded `%252e%252e` does not slip through either.
+		return $rest;
+	}//end restUnderSource()
+
+	/**
+	 * Refuse a stored URL path that holds a dot segment.
+	 *
+	 * A dot segment (plain or percent-encoded) would climb out of the source's address once the path
+	 * is normalised. Decoded twice, so a double-encoded `%252e%252e` does not slip through either.
+	 *
+	 * @param string $rest The remainder of the URL after the source's address.
+	 *
+	 * @return void
+	 *
+	 * @throws CallDispatchException When the path holds a dot segment.
+	 */
+	private function assertNoDotSegment(string $rest): void {
 		$path = (string)preg_replace('/[?#].*$/s', '', $rest);
 		$once = rawurldecode($path);
 		if (preg_match('#(^|/)\.{1,2}(/|$)#', rawurldecode($once)) === 1 || preg_match('#(^|/)\.{1,2}(/|$)#', $once) === 1) {
 			throw new CallDispatchException(message: 'The stored URL cannot be replayed: its path holds a dot segment.');
 		}
-
-		return $rest;
-	}//end endpointOf()
+	}//end assertNoDotSegment()
 
 	/**
 	 * Resolve the target source.

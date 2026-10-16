@@ -36,6 +36,7 @@ use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufWsseInboundVerifier;
 use OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
@@ -707,7 +708,7 @@ class StufProviderReceiverTest extends TestCase {
 			 * @param string               $rawBody  The body under test.
 			 */
 			public function __construct(string $appName, IRequest $request, StufProviderReceiver $receiver, private readonly string $rawBody) {
-				parent::__construct(appName: $appName, request: $request, receiver: $receiver);
+				parent::__construct(appName: $appName, request: $request, receiver: $receiver, requestBody: new StufZknRequestBody());
 			}
 
 			/**

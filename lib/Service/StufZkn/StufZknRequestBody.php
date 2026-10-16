@@ -54,8 +54,15 @@ final class StufZknRequestBody {
 	 *
 	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
-	public static function read(string $stream = 'php://input'): string {
-		$handle = @fopen($stream, 'rb');
+	public function read(string $stream = 'php://input'): string {
+		// A missing stream is answered with '' below; keep fopen()'s warning out of the log.
+		set_error_handler(static fn (): bool => true);
+		try {
+			$handle = fopen($stream, 'rb');
+		} finally {
+			restore_error_handler();
+		}
+
 		if ($handle === false) {
 			return '';
 		}

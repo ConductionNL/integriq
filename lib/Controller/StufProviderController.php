@@ -48,14 +48,16 @@ class StufProviderController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                      $appName  App identifier ("integriq").
-	 * @param IRequest                    $request  Current request.
-	 * @param StufProviderReceiver $receiver Authenticates, asks the owning app and renders the answer.
+	 * @param string               $appName     App identifier ("integriq").
+	 * @param IRequest             $request     Current request.
+	 * @param StufProviderReceiver $receiver    Authenticates, asks the owning app and renders the answer.
+	 * @param StufZknRequestBody   $requestBody Reads the request body up to the ceiling.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly StufProviderReceiver $receiver,
+		private readonly StufZknRequestBody $requestBody,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -117,6 +119,6 @@ class StufProviderController extends Controller {
 	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	protected function readRawBody(): string {
-		return StufZknRequestBody::read();
+		return $this->requestBody->read();
 	}//end readRawBody()
 }//end class

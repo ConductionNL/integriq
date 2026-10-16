@@ -35,7 +35,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\StufZkn;
 
 use DateTimeImmutable;
-use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use Psr\Log\LoggerInterface;
@@ -101,24 +100,47 @@ class StufWsseInboundVerifier {
 
 		$username = $this->text(root: $root, name: 'Username');
 		$password = $this->text(root: $root, name: 'Password');
-		if (hash_equals($token['username'], $username) === false || hash_equals($token['password'], $password) === false) {
+		if ($this->matches(token: $token, username: $username, password: $password) === false) {
 			return false;
 		}
 
-		$nonce   = $this->text(root: $root, name: 'Nonce');
-		$created = $this->text(root: $root, name: 'Created');
+		$nonce    = $this->text(root: $root, name: 'Nonce');
+		$created  = $this->text(root: $root, name: 'Created');
+		$required = $this->requiresNonce(configuration: $configuration);
 		if ($nonce === '' && $created === '') {
-			return (($configuration['authentication']['wsse']['requireNonce'] ?? false) !== true);
+			return ($required === false);
 		}
 
 		if ($nonce === '' || $created === '' || $this->isFresh(created: $created) === false) {
 			return false;
 		}
 
-		$required = (($configuration['authentication']['wsse']['requireNonce'] ?? false) === true);
-
 		return $this->firstUse(sourceId: $sourceId, username: $username, nonce: $nonce, required: $required);
 	}//end verify()
+
+	/**
+	 * Whether the user name and password of the envelope are the source's.
+	 *
+	 * @param array{username:string,password:string} $token    The source's decrypted token.
+	 * @param string                                 $username The envelope's user name.
+	 * @param string                                 $password The envelope's password.
+	 *
+	 * @return bool True when both match.
+	 */
+	private function matches(array $token, string $username, string $password): bool {
+		return (hash_equals($token['username'], $username) === true && hash_equals($token['password'], $password) === true);
+	}//end matches()
+
+	/**
+	 * Whether the source refuses a token that carries no Nonce and Created.
+	 *
+	 * @param array<string,mixed> $configuration The source's `configuration`.
+	 *
+	 * @return bool True when `authentication.wsse.requireNonce` is set.
+	 */
+	private function requiresNonce(array $configuration): bool {
+		return (($configuration['authentication']['wsse']['requireNonce'] ?? false) === true);
+	}//end requiresNonce()
 
 	/**
 	 * Whether a `Created` lies inside the window around now.
@@ -129,12 +151,12 @@ class StufWsseInboundVerifier {
 	 */
 	private function isFresh(string $created): bool {
 		try {
-			$at = (new DateTimeImmutable($created))->getTimestamp();
+			$timestamp = (new DateTimeImmutable($created))->getTimestamp();
 		} catch (Throwable $exception) {
 			return false;
 		}
 
-		return (abs(time() - $at) <= self::WINDOW_SECONDS);
+		return (abs(time() - $timestamp) <= self::WINDOW_SECONDS);
 	}//end isFresh()
 
 	/**
@@ -164,7 +186,7 @@ class StufWsseInboundVerifier {
 			return ($cache->add($key, 1, $ttl) === true);
 		}
 
-		if ($this->cacheFactory->isAvailable() === false || $cache instanceof ICache === false) {
+		if ($this->cacheFactory->isAvailable() === false) {
 			$this->logger->warning('StUF inbound nonce not checked for source {id}: no distributed cache is available', ['id' => $sourceId]);
 			return ($required === false);
 		}

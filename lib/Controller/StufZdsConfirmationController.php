@@ -47,14 +47,16 @@ class StufZdsConfirmationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                      $appName  App identifier ("integriq").
-	 * @param IRequest                    $request  Current request.
-	 * @param StufZdsConfirmationReceiver $receiver Authenticates and records the confirmation.
+	 * @param string                      $appName     App identifier ("integriq").
+	 * @param IRequest                    $request     Current request.
+	 * @param StufZdsConfirmationReceiver $receiver    Authenticates and records the confirmation.
+	 * @param StufZknRequestBody          $requestBody Reads the request body up to the ceiling.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly StufZdsConfirmationReceiver $receiver,
+		private readonly StufZknRequestBody $requestBody,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -86,6 +88,6 @@ class StufZdsConfirmationController extends Controller {
 	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	protected function readRawBody(): string {
-		return StufZknRequestBody::read();
+		return $this->requestBody->read();
 	}//end readRawBody()
 }//end class

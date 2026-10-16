@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\StufProviderController;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
@@ -44,7 +45,7 @@ class StufProviderControllerTest extends TestCase {
 			]
 		);
 
-		$controller = new class('integriq', $this->createMock(IRequest::class), $receiver) extends StufProviderController {
+		$controller = new class('integriq', $this->createMock(IRequest::class), $receiver, new StufZknRequestBody()) extends StufProviderController {
 			/**
 			 * The body under test.
 			 *

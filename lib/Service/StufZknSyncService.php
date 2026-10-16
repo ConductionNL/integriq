@@ -638,7 +638,14 @@ class StufZknSyncService {
 			$uuid = $existing->getUuid();
 		}
 
-		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid, _rbac: false, _multitenancy: false);
+		$this->objectService->saveObject(
+			object: $record,
+			register: self::REGISTER,
+			schema: self::SCHEMA_MESSAGE,
+			uuid: $uuid,
+			_rbac: false,
+			_multitenancy: false
+		);
 
 	}//end persistMessage()
 

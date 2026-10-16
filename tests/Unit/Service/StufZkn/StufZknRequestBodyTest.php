@@ -37,7 +37,7 @@ class StufZknRequestBodyTest extends TestCase {
 		file_put_contents($file, str_repeat('a', (StufZknRequestBody::MAX_BYTES + 5000)));
 
 		try {
-			$body = StufZknRequestBody::read($file);
+			$body = (new StufZknRequestBody())->read($file);
 		} finally {
 			unlink($file);
 		}
@@ -55,11 +55,11 @@ class StufZknRequestBodyTest extends TestCase {
 		file_put_contents($file, '<Envelope/>');
 
 		try {
-			$this->assertSame('<Envelope/>', StufZknRequestBody::read($file));
+			$this->assertSame('<Envelope/>', (new StufZknRequestBody())->read($file));
 		} finally {
 			unlink($file);
 		}
 
-		$this->assertSame('', StufZknRequestBody::read(sys_get_temp_dir() . '/does-not-exist-' . uniqid()));
+		$this->assertSame('', (new StufZknRequestBody())->read(sys_get_temp_dir() . '/does-not-exist-' . uniqid()));
 	}//end testABodyWithinTheCeilingIsReadWhole()
 }//end class
