@@ -7789,11 +7789,63 @@ class SynchronizationService {
 	}//end rateLimitResetAt()
 
 	/**
+	 * Read the total page count from the response headers.
+	 *
+	 * The `Link` header wins; a `Total-Pages` header is the fallback for a
+	 * source that sends no `Link` count. The developer.overheid.nl OSS-register
+	 * sends both, its `Link` with single-quoted `rel` values, and a one-page
+	 * listing must end after one request because the register does not
+	 * document what it answers for a page past the last.
+	 *
+	 * @param array $headers The response headers.
+	 *
+	 * @return int|null The last page number, or null when neither header gives one.
+	 *
+	 * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-a-listing-that-fits-on-one-page-ends-after-one-request-req-dos-004
+	 */
+	private function parseLastPageFromHeaders(array $headers): ?int {
+		return ($this->parseLastPageFromLinkHeader(headers: $headers)
+			?? $this->parseLastPageFromTotalPagesHeader(headers: $headers));
+	}//end parseLastPageFromHeaders()
+
+	/**
+	 * Read the total page count from a `Total-Pages` response header.
+	 *
+	 * Only a positive integer counts; anything else leaves the count unknown,
+	 * so the empty-page rule decides as before.
+	 *
+	 * @param array $headers The response headers.
+	 *
+	 * @return int|null The page count, or null when absent or not a positive integer.
+	 *
+	 * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-a-listing-that-fits-on-one-page-ends-after-one-request-req-dos-004
+	 */
+	private function parseLastPageFromTotalPagesHeader(array $headers): ?int {
+		$value = $this->getHeaderValue(headers: $headers, name: 'Total-Pages');
+		if ($value === null || ctype_digit(trim($value)) === false) {
+			return null;
+		}
+
+		$pages = (int)trim($value);
+		if ($pages > 0) {
+			return $pages;
+		}
+
+		return null;
+	}//end parseLastPageFromTotalPagesHeader()
+
+	/**
 	 * Read the total page count from an RFC 5988 `Link` header.
+	 *
+	 * `rel` may be double-quoted (GitHub), single-quoted (the
+	 * developer.overheid.nl OSS-register) or bare; the URL must still carry a
+	 * `page=N` parameter.
 	 *
 	 * @param array $headers The response headers.
 	 *
 	 * @return int|null The last page number, or null when not advertised.
+	 *
+	 * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-a-listing-that-fits-on-one-page-ends-after-one-request-req-dos-004
 	 */
 	private function parseLastPageFromLinkHeader(array $headers): ?int {
 		// Header names are case-insensitive and Guzzle preserves the server's
@@ -7818,8 +7870,9 @@ class SynchronizationService {
 			return null;
 		}
 
-		// <https://api.github.com/...?page=4>; rel="last"
-		if (preg_match('/<([^>]*[?&]page=(\d+)[^>]*)>\s*;\s*rel="last"/i', $link, $matches) !== 1) {
+		// <https://api.github.com/...?page=4>; rel="last", also rel='last' and
+		// rel=last. The lookahead keeps a bare `rel=lastx` from counting.
+		if (preg_match('/<([^>]*[?&]page=(\d+)[^>]*)>\s*;\s*rel=(["\']?)last\3(?=\s*(?:[,;]|$))/i', $link, $matches) !== 1) {
 			return null;
 		}
 
@@ -7925,7 +7978,10 @@ class SynchronizationService {
 		// and conclude from its empty body what the header had already said.
 		// Measured on 374 GitHub repos: 5 requests for 4 pages of data, the whole
 		// saving this header was read for.
-		$parsedLastPage = $this->parseLastPageFromLinkHeader(
+		//
+		// Without a `Link` count a `Total-Pages` header counts too, under the
+		// same rule (REQ-DOS-004).
+		$parsedLastPage = $this->parseLastPageFromHeaders(
 			headers: ($response['headers'] ?? [])
 		);
 

@@ -30,8 +30,8 @@ Kind: mixed under the thin-glue exception (design.md, Mixed-spec rationale). Con
   - GIVEN `rel='last'`, `rel="last"` or `rel=last` WHEN parsed THEN the page number is read
   - GIVEN no `Link` count and `Total-Pages: 1` WHEN a listing is fetched THEN page 2 is not requested
   - GIVEN a later page without either header WHEN fetched THEN the count found earlier stays
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Mock of the OSS-register
 - **spec_ref**: `openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-a-mock-of-the-oss-register-replays-its-shapes-req-dos-005`
