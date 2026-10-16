@@ -514,6 +514,11 @@ class JobService {
 				// Same remedy the comment at the top of this method describes.
 				$nextRunDt = new DateTime('now + ' . ($jobConfig['interval'] ?? 0) . ' seconds');
 
+				// A batched action with work left runs again on the next tick.
+				if (($result['resumeSoon'] ?? false) === true) {
+					$nextRunDt = new DateTime();
+				}
+
 				// Handle rate limiting if specified in result.
 				if (isset($result['nextRun']) === true) {
 					$nextRunRateLimit = DateTime::createFromFormat('U', (string)$result['nextRun'], $nextRunDt->getTimezone());

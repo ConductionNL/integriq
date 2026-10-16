@@ -35,7 +35,7 @@ use ReflectionMethod;
 /**
  * Verifies all ten Wave-0 connector fragments: each is valid JSON, carries
  * exactly one enabled Source + at least one Mapping + one Synchronization
- * (wired sourceId -> targetId) + one enabled Job (with a real interval and
+ * (wired sourceId -> targetId) + one disabled Job (with a real interval and
  * a `synchronizationId` argument matching the Synchronization's own slug),
  * and that concatenating all ten via the real ADR-037 deep-merge produces
  * no slug collisions.
@@ -137,10 +137,10 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 	/**
 	 * Each fragment declares exactly one enabled Source, at least one
 	 * Mapping, one Synchronization wired sourceId -> targetId, and one
-	 * enabled Job with a real (non-zero) interval whose
-	 * `arguments.synchronizationId` matches the Synchronization's own slug
-	 * — i.e. it genuinely self-schedules via Integriq's Job/cron path
-	 * rather than requiring a manual trigger.
+	 * Job with a real (non-zero) interval whose
+	 * `arguments.synchronizationId` matches the Synchronization's own slug,
+	 * so enabling the Job is all an admin does to schedule it. The Job ships
+	 * disabled: a fresh install pulls no external feed until an admin opts in.
 	 *
 	 * @dataProvider fragmentProvider
 	 *
@@ -179,12 +179,12 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 		$this->assertSame($target, $sync['targetId'] ?? null, $filename . " synchronization must target '$target'");
 		$this->assertNotEmpty($sync['sourceId'] ?? null, $filename . ' synchronization must reference a sourceId');
 
-		// Exactly one Job, enabled, self-scheduling via a real interval,
+		// Exactly one Job, disabled, with a real interval,
 		// pointed at this fragment's own synchronization.
 		$this->assertArrayHasKey('job', $bySchema, $filename . ' must declare a job object');
 		$this->assertCount(1, $bySchema['job'], $filename . ' must declare exactly one job');
 		$job = array_values($bySchema['job'])[0];
-		$this->assertTrue($job['isEnabled'] ?? false, $filename . ' job must ship isEnabled:true (Wave 0 self-schedules via OC cron)');
+		$this->assertFalse($job['isEnabled'] ?? true, $filename . ' job must ship isEnabled:false (an admin opts in to external feeds)');
 		$this->assertGreaterThan(0, $job['interval'] ?? 0, $filename . ' job must declare a non-zero interval (OC cron cadence)');
 		$this->assertSame(
 			$syncSlug,

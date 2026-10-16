@@ -163,9 +163,11 @@ tendril.
 - **AND** its `$comment` records the CSV-parser gap and the follow-up change that
   will close it
 
-#### Scenario: A live-verified connector may ship enabled
+#### Scenario: A live-verified connector ships with its Job disabled
 
 - **GIVEN** a keyless public connector whose fetch, map, upsert, and re-run dedup
   have been verified end-to-end
 - **WHEN** it is shipped
-- **THEN** it may ship with its Job `isEnabled: true`
+- **THEN** its Source may ship enabled and its Job ships `isEnabled: false`
+- **AND** an admin opts in by enabling the Job, so a fresh install pulls no
+  external feed on its first cron run
