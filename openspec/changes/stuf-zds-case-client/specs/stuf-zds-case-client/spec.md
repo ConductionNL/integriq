@@ -126,9 +126,20 @@ receives it on its own URL, through `StufZdsConfirmationReceivedEvent`. The call
 authenticate with the WS-Security UsernameToken of the source the outbound row went to; a source
 without one accepts no confirmation. An unknown crossRefnummer SHALL answer exactly like a wrong
 password (422), so a referentienummer cannot be probed. A bevestiging SHALL make the row `sent`
-and end any pending retry; a foutbericht SHALL make it `failed` with the case system's fout. Each
-new confirmation SHALL dispatch `StufZdsCaseConcludedEvent` with `confirmation` in the result; a
-repeated one is acknowledged but not announced again.
+and end any pending retry; a foutbericht SHALL make it `failed` with the case system's fout. The
+first confirmation of a message SHALL dispatch `StufZdsCaseConcludedEvent` with `confirmation` in
+the result. A repeated one is acknowledged but not announced again; a later one with another code
+(a foutbericht after a bevestiging, or the reverse) is acknowledged and logged, and SHALL change
+neither the row nor what the owning app was told: after the first asynchronous confirmation the
+owning app receives no second, contradicting conclusion for that message. The first asynchronous
+confirmation itself still overrides what the synchronous answer at send concluded.
+
+#### Scenario: A contradicting later confirmation changes nothing
+
+- GIVEN an outbound row with referentienummer REF-1 that a Bv01 already confirmed
+- WHEN the case system posts a Fo01 cross-referencing REF-1
+- THEN the answer is a Bv03 (200), the row stays `sent` with `confirmation` Bv01
+- AND no second `StufZdsCaseConcludedEvent` is dispatched
 
 #### Scenario: A Bv01 confirms the row
 

@@ -139,17 +139,17 @@ class StufZdsOutbound {
 		$caseId = (string)($context['caseIdentification'] ?? '');
 		if ($this->isSuccess(response: $response) === false) {
 			$fout = $this->failureOf(response: $response);
-			$this->breaker->recordFailure(sourceId: $source['id']);
+			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
 		}
 
 		if ($fout === null) {
-			$this->breaker->reset(sourceId: $source['id']);
+			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
 			if ($operation === 'genereerZaakIdentificatie') {
 				$caseId = (string)$this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
 			}
 		}
 
-		$row = $this->log->conclude(row: $row, sent: ($fout === null), attempt: 1, transport: $response, fout: $fout, caseIdentification: $caseId);
+		$row = $this->concludeRow(row: $row, sent: ($fout === null), attempt: 1, transport: $response, fout: $fout, caseIdentification: $caseId);
 
 		return (
 			$this->result(row: $row, success: ($fout === null), retrying: false, caseId: $caseId, fout: $fout) + ['answer' => $response['responseXml']]
@@ -187,9 +187,15 @@ class StufZdsOutbound {
 			return;
 		}
 
-		if ($this->breaker->allows(sourceId: $source['id']) === false) {
+		// Fails open: a breaker that cannot be read must not strand the row with its job consumed.
+		$allowed = $this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->allows(sourceId: $sourceId), fallback: true);
+		if ($allowed === false) {
 			// Not an attempt: wait out the cooldown and try again.
-			$this->schedule(messageId: $messageId, delay: StufZdsCircuitBreaker::COOLDOWN_SECONDS);
+			if ($this->schedule(messageId: $messageId, delay: StufZdsCircuitBreaker::COOLDOWN_SECONDS) === false) {
+				$last = ['code' => (string)($row['faultCode'] ?? '')];
+				$this->conclude(row: $row, sent: false, attempt: ($attempt - 1), transport: [], fout: $this->unscheduledFout(previous: $last), caseId: null);
+			}
+
 			return;
 		}
 
@@ -210,19 +216,35 @@ class StufZdsOutbound {
 	private function classify(array $source, array $row, array $response, int $attempt): array {
 		if ($this->isSuccess(response: $response) === true) {
 			$caseId = $this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
-			$this->breaker->reset(sourceId: $source['id']);
+			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
 			return $this->conclude(row: $row, sent: true, attempt: $attempt, transport: $response, fout: null, caseId: $caseId);
 		}
 
 		$fout = $this->failureOf(response: $response);
-		$this->breaker->recordFailure(sourceId: $source['id']);
+		$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
 		if ($this->isTransient(response: $response, fout: $fout) === false || $attempt > count(self::RETRY_BACKOFF_SECONDS)) {
 			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null);
 		}
 
+		// A row that cannot be marked retrying, or a retry that cannot be
+		// scheduled, would leave the message `retrying` with no job behind it and
+		// the owning app waiting for a conclusion that never comes: conclude it as
+		// failed instead.
 		$delay = self::RETRY_BACKOFF_SECONDS[($attempt - 1)];
-		$row   = $this->log->retrying(row: $row, attempt: $attempt, transport: $response, fout: $fout, retryAfter: $delay);
-		$this->schedule(messageId: (string)$row['id'], delay: $delay);
+		try {
+			$row = $this->log->retrying(row: $row, attempt: $attempt, transport: $response, fout: $fout, retryAfter: $delay);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'StUF-ZDS message {id} could not be marked for a retry: {error}',
+				['id' => (string)($row['id'] ?? ''), 'error' => $exception->getMessage()]
+			);
+			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null);
+		}
+
+		if ($this->schedule(messageId: (string)$row['id'], delay: $delay) === false) {
+			$unscheduled = $this->unscheduledFout(previous: $fout);
+			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $unscheduled, caseId: null);
+		}
 
 		return $this->result(row: $row, success: false, retrying: true, caseId: null, fout: $fout);
 	}//end classify()
@@ -232,7 +254,9 @@ class StufZdsOutbound {
 	 *
 	 * A StUF fout in the body decides: SOAP 1.1 answers every fault with HTTP
 	 * 500, so the status alone would retry a permanent refusal four times.
-	 * Without one, the transport's verdict or the HTTP status decides.
+	 * Without one, the transport's verdict or the HTTP status decides. A body
+	 * that did not parse (`PARSE_ERROR`: a load balancer's HTML 503 page, a
+	 * plain-text 502) carries no fout, so the status decides for it too.
 	 *
 	 * @param array $response The transport result.
 	 * @param array $fout     The classified fout.
@@ -241,7 +265,7 @@ class StufZdsOutbound {
 	 */
 	private function isTransient(array $response, array $fout): bool {
 		$status = (int)$response['httpStatus'];
-		$stufFault = ($fout['code'] !== '' && (string)$response['responseXml'] !== '');
+		$stufFault = ($fout['code'] !== '' && $fout['code'] !== 'PARSE_ERROR' && (string)$response['responseXml'] !== '');
 		if ($stufFault === true || $status === 0) {
 			return ($fout['kind'] === 'transient');
 		}
@@ -263,7 +287,7 @@ class StufZdsOutbound {
 	 */
 	private function conclude(array $row, bool $sent, int $attempt, array $transport, ?array $fout, ?string $caseId): array {
 		$known  = ($caseId ?? (string)($row['caseIdentification'] ?? ''));
-		$row    = $this->log->conclude(row: $row, sent: $sent, attempt: $attempt, transport: $transport, fout: $fout, caseIdentification: $known);
+		$row    = $this->concludeRow(row: $row, sent: $sent, attempt: $attempt, transport: $transport, fout: $fout, caseIdentification: $known);
 		$result = $this->result(row: $row, success: $sent, retrying: false, caseId: $known, fout: $fout);
 
 		try {
@@ -282,6 +306,84 @@ class StufZdsOutbound {
 
 		return $result;
 	}//end conclude()
+
+	/**
+	 * Write a message's conclusion to its row, without letting a failed write undo the send.
+	 *
+	 * Once the case system answered, that answer is the outcome: a row that
+	 * cannot be saved must not turn a created zaak into a refusal, which the
+	 * caller would retry into a second zaak. The failure is logged and the
+	 * unsaved row is returned.
+	 *
+	 * @param array       $row                The row.
+	 * @param bool        $sent               Whether the case system confirmed it.
+	 * @param int         $attempt            The concluding attempt.
+	 * @param array       $transport          The transport result.
+	 * @param array|null  $fout               The fout on failure.
+	 * @param string|null $caseIdentification The zaak identificatie, if known.
+	 *
+	 * @return array The saved row, or the row as it was when the save failed.
+	 */
+	private function concludeRow(array $row, bool $sent, int $attempt, array $transport, ?array $fout, ?string $caseIdentification): array {
+		try {
+			return $this->log->conclude(
+				row: $row,
+				sent: $sent,
+				attempt: $attempt,
+				transport: $transport,
+				fout: $fout,
+				caseIdentification: $caseIdentification
+			);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'StUF-ZDS message {id} was concluded (sent: {sent}) but its row could not be saved: {error}',
+				['id' => (string)($row['id'] ?? ''), 'sent' => json_encode($sent), 'error' => $exception->getMessage()]
+			);
+			return $row;
+		}
+	}//end concludeRow()
+
+	/**
+	 * Call the circuit breaker without letting its bookkeeping change a message's outcome.
+	 *
+	 * The breaker reads and writes app config. After the case system answered,
+	 * a failed call must not reach the listener, which would refuse a zaak that
+	 * now exists; around a retry it must not leave the row `retrying` with no
+	 * job behind it. The failure is logged and the fallback is returned.
+	 *
+	 * @param string   $sourceId The source.
+	 * @param callable $call     The breaker call (allows, recordFailure or reset), given the source id.
+	 * @param mixed    $fallback What to return when the call throws.
+	 *
+	 * @return mixed What the call returned, or the fallback.
+	 */
+	private function breakerCall(string $sourceId, callable $call, $fallback=null) {
+		try {
+			return $call($sourceId);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'StUF-ZDS circuit breaker for source {source} could not be used: {error}',
+				['source' => $sourceId, 'error' => $exception->getMessage()]
+			);
+			return $fallback;
+		}
+	}//end breakerCall()
+
+	/**
+	 * The fout of a message whose retry could not be scheduled.
+	 *
+	 * @param array|null $previous The fout of the last attempt; its code goes into `details`.
+	 *
+	 * @return array{code:string,omschrijving:string,details:string,kind:string}
+	 */
+	private function unscheduledFout(?array $previous): array {
+		return [
+			'code' => 'RETRY_NOT_SCHEDULED',
+			'omschrijving' => 'The retry could not be scheduled, so the message is concluded as failed',
+			'details' => (string)($previous['code'] ?? ''),
+			'kind' => 'permanent',
+		];
+	}//end unscheduledFout()
 
 	/**
 	 * The result array of a request.
@@ -430,9 +532,9 @@ class StufZdsOutbound {
 	 * @param string $messageId The row uuid.
 	 * @param int    $delay     Seconds from now.
 	 *
-	 * @return void
+	 * @return bool False when the job could not be scheduled.
 	 */
-	private function schedule(string $messageId, int $delay): void {
+	private function schedule(string $messageId, int $delay): bool {
 		try {
 			$this->jobList->scheduleAfter(StufZdsRetryJob::class, (time() + $delay), ['messageId' => $messageId]);
 		} catch (Throwable $exception) {
@@ -440,6 +542,9 @@ class StufZdsOutbound {
 				'StUF-ZDS retry could not be scheduled for {id}: {error}',
 				['id' => $messageId, 'error' => $exception->getMessage()]
 			);
+			return false;
 		}
+
+		return true;
 	}//end schedule()
 }//end class

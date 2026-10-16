@@ -135,8 +135,18 @@ class StufZdsConfirmationReceiver {
 			return $this->refuse(statusCode: 422, reason: 'validation_failed', root: $root, organisation: $organisation);
 		}
 
-		if (($row['confirmation'] ?? '') !== $code) {
+		// The first confirmation concludes the message. A repeat is acknowledged
+		// and changes nothing; a later one with another code (a Fo03 after a
+		// Bv03, or the reverse) is logged, so the owning app never receives two
+		// contradicting conclusions for one message.
+		$recorded = (string)($row['confirmation'] ?? '');
+		if ($recorded === '') {
 			$this->record(row: $row, code: $code, rawXml: $rawXml);
+		} else if ($recorded !== $code) {
+			$this->logger->warning(
+				'StUF-ZDS confirmation {code} for {ref} ignored: the message was already concluded by {recorded}',
+				['code' => $code, 'ref' => $crossRef, 'recorded' => $recorded]
+			);
 		}
 
 		return [

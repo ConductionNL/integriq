@@ -106,7 +106,8 @@ class BrpRelationReadCallLogTest extends TestCase {
 				'slug' => 'brp-haalcentraal',
 				'isEnabled' => true,
 				'location' => 'https://brp.example.invalid/haalcentraal/api/brp',
-				'bodyCaptureUntil' => '2999-01-01T00:00:00+00:00',
+				// An open window, an hour ahead: a window beyond the instance maximum (72 h) counts as closed.
+				'bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format(\DATE_ATOM),
 				'configuration' => ['relationFields' => true],
 			]
 		);

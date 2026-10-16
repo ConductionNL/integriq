@@ -109,7 +109,10 @@ class StufProviderOperationMapper {
 	 * Keys: `action` (always), then only what the message carried: `identifier`,
 	 * `title`, `description`, `startDate`, `registrationDate`, `plannedEndDate`,
 	 * `finalEndDate` (dates as Y-m-d), `caseTypeCode`, `caseTypeName` and
-	 * `initiator` (`type` person or company, `sourceId`, `name`).
+	 * `initiator` (`type` person or company, `sourceId`, `name`). A W that clears an
+	 * element the old object held (`xsi:nil="true"` or `StUF:noValue` in the new
+	 * object) also carries `clears`, the names of those elements, so the receiver
+	 * can refuse it instead of answering Bv03 for a clear the owning app never saw.
 	 *
 	 * @param SimpleXMLElement $message      The zakLk01 element.
 	 * @param string           $mutatiesoort The StUF mutatiesoort.
@@ -145,9 +148,83 @@ class StufProviderOperationMapper {
 		$operation['caseTypeCode'] = $this->text(xml: $object, path: $type . 'code"]');
 		$operation['caseTypeName'] = $this->text(xml: $object, path: $type . 'omschrijving"]');
 		$operation['initiator']    = $this->initiator(object: $object);
+		if ($mutatiesoort === 'W') {
+			$operation['clears'] = $this->clearedElements(message: $message, object: $object);
+		}
 
 		return array_filter($operation, static fn(mixed $value): bool => $value !== '' && $value !== []);
 	}//end caseOperation()
+
+	/**
+	 * The elements a W kennisgeving clears: empty in the new object, filled in the old one.
+	 *
+	 * In StUF a W clears a value by sending the element empty with
+	 * `xsi:nil="true"` and `StUF:noValue` in the new object. Many senders also
+	 * write every optional element they have no value for that way, integriq's
+	 * own translators included, so an empty element only counts as a clear when
+	 * the old object (the first `object`) holds a value at the same path, nested
+	 * relations included. A W with a single object gives nothing to compare
+	 * with: every empty element in it counts as a clear, so it is refused rather
+	 * than answered Bv03 for values the owning app never saw cleared.
+	 *
+	 * @param SimpleXMLElement $message The zakLk01 element.
+	 * @param SimpleXMLElement $object  The new object.
+	 *
+	 * @return string[] The paths of the cleared elements (local names joined by `/`), document order.
+	 *
+	 * One pass over each object: a message with thousands of empty elements
+	 * costs linear time, not a lookup in the old object per element.
+	 */
+	private function clearedElements(SimpleXMLElement $message, SimpleXMLElement $object): array {
+		$filled = [];
+		$empty  = [];
+		$found  = $message->xpath('./*[local-name()="object"]');
+		$this->walk(element: $object, path: '', filled: $filled, empty: $empty);
+		if (is_array($found) === false || count($found) < 2) {
+			return array_keys($empty);
+		}
+
+		$oldFilled = [];
+		$oldEmpty  = [];
+		$this->walk(element: $found[0], path: '', filled: $oldFilled, empty: $oldEmpty);
+
+		return array_keys(array_intersect_key($empty, $oldFilled));
+	}//end clearedElements()
+
+	/**
+	 * Collect, in one pass, the paths below an element that hold a value and those sent empty.
+	 *
+	 * Paths are local names joined by `/`, from just below the element. An
+	 * element holds a value when its text, descendants included, is not blank;
+	 * it is sent empty when it carries `StUF:noValue` or `xsi:nil="true"`.
+	 *
+	 * @param SimpleXMLElement    $element The element to walk below.
+	 * @param string              $path    The path of the element itself ('' for the object).
+	 * @param array<string, bool> $filled  Paths that hold a value, filled in.
+	 * @param array<string, bool> $empty   Paths sent empty, filled in, in document order.
+	 *
+	 * @return void
+	 */
+	private function walk(SimpleXMLElement $element, string $path, array &$filled, array &$empty): void {
+		$children = $element->xpath('./*');
+		if (is_array($children) === false) {
+			return;
+		}
+
+		foreach ($children as $child) {
+			$childPath = ltrim($path . '/' . $child->getName(), '/');
+			if (trim(dom_import_simplexml($child)->textContent) !== '') {
+				$filled[$childPath] = true;
+			}
+
+			$sentEmpty = $child->xpath('self::*[@*[local-name()="noValue"] or @*[local-name()="nil" and (. = "true" or . = "1")]]');
+			if (is_array($sentEmpty) === true && $sentEmpty !== []) {
+				$empty[$childPath] = true;
+			}
+
+			$this->walk(element: $child, path: $childPath, filled: $filled, empty: $empty);
+		}
+	}//end walk()
 
 	/**
 	 * The generic operation for an edcLk01.

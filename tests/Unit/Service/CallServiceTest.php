@@ -1174,7 +1174,8 @@ class CallServiceTest extends TestCase {
 				'name' => 'ted',
 				'isEnabled' => true,
 				// An open investigation window, so the request body is stored (REQ-OCD-008).
-				'bodyCaptureUntil' => '2099-01-01T00:00:00+00:00',
+				// An hour ahead: a window beyond the instance maximum (72 h) counts as closed.
+				'bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format(\DATE_ATOM),
 				'location' => 'https://api.example.invalid',
 				'configuration' => [
 					'listMethod' => 'POST',

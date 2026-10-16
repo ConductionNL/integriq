@@ -564,6 +564,182 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testAnUpdateMessageTakesTheNewObject()
 
 	/**
+	 * An update that clears a field is refused with a Fo03 rather than confirmed with a Bv03 the case does not match.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testAnUpdateThatClearsAFieldIsRefusedWithoutAsking(): void {
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:einddatumGepland>20261231</ZKN:einddatumGepland></ZKN:object>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:einddatumGepland StUF:noValue="geenWaarde" xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>'
+			. '</ZKN:object></ZKN:zakLk01>';
+
+		$answer = $this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(400, $answer['statusCode']);
+		$this->assertStringContainsString('Fo03Bericht', $answer['body']);
+		$this->assertStringContainsString('StUF058', $answer['body']);
+		$this->assertStringNotContainsString('Bv03Bericht', $answer['body']);
+		$this->assertSame([], $this->events, 'The owning app is not asked');
+	}//end testAnUpdateThatClearsAFieldIsRefusedWithoutAsking()
+
+	/**
+	 * Empty elements the old object did not hold, top-level or nested in a relation, are no clear:
+	 * a sender that writes every empty optional element as nil still gets its update through.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testAnUpdateWithEmptyElementsTheOldObjectDidNotHoldIsPassedOn(): void {
+		$nil  = ' StUF:noValue="geenWaarde" xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:omschrijving>Oud</ZKN:omschrijving></ZKN:object>'
+			. '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>'
+			. '<ZKN:omschrijving>Nieuw</ZKN:omschrijving><ZKN:toelichting' . $nil . '/><ZKN:einddatum' . $nil . '/>'
+			. '<ZKN:isVan StUF:entiteittype="ZAKZKT"><ZKN:gerelateerde StUF:entiteittype="ZKT"><ZKN:code>KAP</ZKN:code>'
+			. '<ZKN:omschrijving' . $nil . '/></ZKN:gerelateerde></ZKN:isVan>'
+			. '</ZKN:object></ZKN:zakLk01>';
+
+		$answer = $this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertCount(1, $this->events, 'The owning app is asked');
+		$this->assertArrayNotHasKey('clears', $this->events[0]->getOperation());
+		$this->assertSame('Nieuw', $this->events[0]->getOperation()['title']);
+	}//end testAnUpdateWithEmptyElementsTheOldObjectDidNotHoldIsPassedOn()
+
+	/**
+	 * Clearing a relation, a value nested in one, or anything in a W without an old object is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testClearingARelationANestedValueOrWithoutAnOldObjectIsRefused(): void {
+		$nil       = ' StUF:noValue="geenWaarde" xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		$initiator = '<ZKN:heeftAlsInitiator StUF:entiteittype="ZAKBTRINI"><ZKN:gerelateerde><ZKN:natuurlijkPersoon StUF:entiteittype="NPS">'
+			. '<BG:inp.bsn>999993653</BG:inp.bsn></ZKN:natuurlijkPersoon></ZKN:gerelateerde></ZKN:heeftAlsInitiator>';
+		$open      = '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>';
+		$w         = static fn (string $objects): string => self::envelope(
+			body: '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01')
+				. '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>' . $objects . '</ZKN:zakLk01>'
+		);
+
+		$messages = [
+			'relation' => $w($open . $initiator . '</ZKN:object>' . $open . '<ZKN:heeftAlsInitiator' . $nil . '/></ZKN:object>'),
+			'nested value' => $w(
+				$open . $initiator . '</ZKN:object>' . $open . '<ZKN:heeftAlsInitiator StUF:entiteittype="ZAKBTRINI"><ZKN:gerelateerde>'
+				. '<ZKN:natuurlijkPersoon StUF:entiteittype="NPS"><BG:inp.bsn' . $nil . '/></ZKN:natuurlijkPersoon></ZKN:gerelateerde>'
+				. '</ZKN:heeftAlsInitiator></ZKN:object>'
+			),
+			'no old object' => $w($open . '<ZKN:einddatumGepland' . $nil . '/></ZKN:object>'),
+		];
+		foreach ($messages as $case => $xml) {
+			$this->events = [];
+			$answer       = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+
+			$this->assertSame(400, $answer['statusCode'], $case);
+			$this->assertStringContainsString('StUF058', $answer['body'], $case);
+			$this->assertSame([], $this->events, $case . ': the owning app is not asked');
+		}
+	}//end testClearingARelationANestedValueOrWithoutAnOldObjectIsRefused()
+
+	/**
+	 * An old relation whose children are all empty holds nothing, so emptying it is no clear.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testEmptyingARelationThatHeldNothingIsPassedOn(): void {
+		$nil  = ' StUF:noValue="geenWaarde" xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
+		$open = '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W"><ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>';
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. $open . '<ZKN:heeftAlsInitiator><ZKN:gerelateerde><ZKN:natuurlijkPersoon><BG:inp.bsn' . $nil . '/></ZKN:natuurlijkPersoon>'
+			. '</ZKN:gerelateerde></ZKN:heeftAlsInitiator></ZKN:object>'
+			. $open . '<ZKN:omschrijving>Nieuw</ZKN:omschrijving><ZKN:heeftAlsInitiator' . $nil . '/></ZKN:object></ZKN:zakLk01>';
+
+		$answer = $this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertCount(1, $this->events);
+	}//end testEmptyingARelationThatHeldNothingIsPassedOn()
+
+	/**
+	 * Finding the clears costs linear time: a W with thousands of empty elements is answered quickly.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	public function testAWWithThousandsOfEmptyElementsIsCheckedInLinearTime(): void {
+		$nil  = ' StUF:noValue="geenWaarde" xsi:nil="true"';
+		$old  = '';
+		$new  = '';
+		for ($i = 0; $i < 5000; $i++) {
+			$old .= '<ZKN:kenmerk' . $i . '>waarde</ZKN:kenmerk' . $i . '>';
+			$new .= '<ZKN:kenmerk' . $i . $nil . '/>';
+		}
+
+		$open = '<ZKN:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="W" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+			. '<ZKN:identificatie>ZSH-2026-0001</ZKN:identificatie>';
+		$body = '<ZKN:zakLk01>' . self::stuurgegevens(code: 'Lk01') . '<ZKN:parameters><StUF:mutatiesoort>W</StUF:mutatiesoort></ZKN:parameters>'
+			. $open . $old . '</ZKN:object>' . $open . $new . '</ZKN:object></ZKN:zakLk01>';
+
+		$started = microtime(true);
+		$answer  = $this->receiver()->receive(rawXml: self::envelope(body: $body), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(400, $answer['statusCode'], 'Every element is a clear, so the W is refused');
+		$this->assertLessThan(2.0, (microtime(true) - $started), 'A per-element lookup in the old object took over 5 s here');
+	}//end testAWWithThousandsOfEmptyElementsIsCheckedInLinearTime()
+
+	/**
+	 * A refusal leaves as one bounded line: an exception message with line breaks and ids does not reach the case system whole.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-refused-write-is-a-stuf-fault-with-a-refusing-status
+	 */
+	public function testARefusalLeavesAsOneBoundedLine(): void {
+		$outward = new \ReflectionMethod(StufProviderReceiver::class, 'outwardReason');
+
+		$this->assertSame('Zaaktype is not mapped', $outward->invoke(null, 'Zaaktype is not mapped'));
+		$this->assertSame('SQLSTATE[23000]: duplicate key object 7f3a', $outward->invoke(null, "SQLSTATE[23000]:\nduplicate key\r\nobject 7f3a"));
+		$this->assertSame('Het bericht is geweigerd', $outward->invoke(null, "\n\t "));
+		$this->assertSame('ab?(c', $outward->invoke(null, "ab\xC3(c"), 'Invalid UTF-8 is scrubbed, not dropped');
+
+		$long = $outward->invoke(null, str_repeat('x', 500));
+		$this->assertSame(200, mb_strlen($long));
+		$this->assertStringEndsWith('…', $long);
+
+		$wide = $outward->invoke(null, str_repeat('日', 150));
+		$this->assertLessThanOrEqual(200, mb_strwidth($wide), 'A wide character counts two columns');
+		$this->assertStringEndsWith('…', $wide);
+	}//end testARefusalLeavesAsOneBoundedLine()
+
+	/**
+	 * The Fo03 the case system receives carries the owning app's refusal as one line, not as it was given.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-refused-write-is-a-stuf-fault-with-a-refusing-status
+	 */
+	public function testARefusedWriteSendsTheRefusalOutAsOneLine(): void {
+		$this->owner = 'leaky';
+		$answer      = $this->receiver()->receive(rawXml: self::zakLk01(), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(400, $answer['statusCode']);
+		$this->assertStringContainsString('SQLSTATE[23000]: Integrity constraint violation object 7f3a', $answer['body']);
+		$this->assertStringNotContainsString("SQLSTATE[23000]:\n", $answer['body']);
+	}//end testARefusedWriteSendsTheRefusalOutAsOneLine()
+
+	/**
 	 * A voegZaakdocumentToe (edcLk01, T) reaches the owning app with the decoded bytes.
 	 *
 	 * @return void
@@ -780,6 +956,11 @@ class StufProviderReceiverTest extends TestCase {
 	 * @return void
 	 */
 	private function own(object $event): void {
+		if ($this->owner === 'leaky' && $event instanceof StufProviderQueryEvent) {
+			$event->refuse(appId: 'dossiq', reason: "SQLSTATE[23000]:\nIntegrity constraint violation\r\nobject 7f3a");
+			return;
+		}
+
 		if ($this->owner === 'silent') {
 			return;
 		}

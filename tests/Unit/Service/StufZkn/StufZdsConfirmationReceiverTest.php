@@ -267,6 +267,25 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 	}//end testARepeatedConfirmationIsAnnouncedOnce()
 
 	/**
+	 * A later confirmation with another code is acknowledged but neither flips the row nor concludes the message again.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 */
+	public function testAContradictingLaterConfirmationChangesNothing(): void {
+		$receiver = $this->receiver();
+		$receiver->receive(rawXml: self::envelope(code: 'Bv01', crossRef: 'REF-1'));
+		$answer = $receiver->receive(rawXml: self::envelope(code: 'Fo01', crossRef: 'REF-1', fout: 'StUF064'));
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertSame('sent', $this->rows['msg-1']['status']);
+		$this->assertSame('Bv01', $this->rows['msg-1']['confirmation']);
+		$this->assertCount(1, $this->events, 'The owning app hears one conclusion');
+		$this->assertTrue($this->events[0]->getResult()['success']);
+	}//end testAContradictingLaterConfirmationChangesNothing()
+
+	/**
 	 * A wrong password is refused and changes nothing.
 	 *
 	 * @return void

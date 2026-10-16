@@ -118,6 +118,27 @@ class StufZdsCaseClientTest extends TestCase {
 	private array $config = [];
 
 	/**
+	 * The row status whose save after an attempt throws, or null when every save succeeds.
+	 *
+	 * @var string|null
+	 */
+	private ?string $failSaveOfStatus = null;
+
+	/**
+	 * Whether scheduling the retry job throws.
+	 *
+	 * @var bool
+	 */
+	private bool $failSchedule = false;
+
+	/**
+	 * Whether the circuit breaker's app-config writes throw.
+	 *
+	 * @var bool
+	 */
+	private bool $failBreaker = false;
+
+	/**
 	 * The outbound side of the last built client (it owns retry()).
 	 *
 	 * @var StufZdsOutbound
@@ -136,6 +157,9 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->scheduled = [];
 		$this->events    = [];
 		$this->config    = [];
+		$this->failSaveOfStatus = null;
+		$this->failSchedule     = false;
+		$this->failBreaker      = false;
 		$this->sources   = [
 			'zsh' => [
 				'type' => 'stuf-zkn',
@@ -189,6 +213,11 @@ class StufZdsCaseClientTest extends TestCase {
 				$this->assertSame('stuf_message', $schema);
 				$this->assertFalse($_rbac);
 				$this->assertSame([], self::schemaErrors($object), 'The row is one the stuf_message schema accepts');
+				// Only a save after an attempt: open() writes `retrying` with no attempt yet.
+				if ($this->failSaveOfStatus !== null && ($object['status'] ?? '') === $this->failSaveOfStatus && (int)($object['attempts'] ?? 0) > 0) {
+					throw new \RuntimeException('OpenRegister is down');
+				}
+
 				$uuid = $uuid ?? ('msg-' . (count($this->rows) + 1));
 				$this->rows[$uuid] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
@@ -199,6 +228,10 @@ class StufZdsCaseClientTest extends TestCase {
 		$appConfig->method('getValueInt')->willReturnCallback(fn (string $app, string $key, int $default=0): int => ($this->config[$key] ?? $default));
 		$appConfig->method('setValueInt')->willReturnCallback(
 			function (string $app, string $key, int $value): bool {
+				if ($this->failBreaker === true) {
+					throw new \RuntimeException('App config is unavailable');
+				}
+
 				$this->config[$key] = $value;
 				return true;
 			}
@@ -207,6 +240,10 @@ class StufZdsCaseClientTest extends TestCase {
 		$jobs = $this->createMock(IJobList::class);
 		$jobs->method('scheduleAfter')->willReturnCallback(
 			function (string $job, int $runAfter, $argument): void {
+				if ($this->failSchedule === true) {
+					throw new \RuntimeException('The job list is unavailable');
+				}
+
 				$this->scheduled[] = [$job, $runAfter, $argument];
 			}
 		);
@@ -541,4 +578,191 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertFalse($result['retrying']);
 		$this->assertSame([], $this->history);
 	}//end testAPlainHttpAddressIsNeverSentTo()
+
+	/**
+	 * A 5xx whose body is an HTML page, not StUF, is retried like an empty 5xx.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testA5xxWithAnHtmlPageIsRetried(): void {
+		$page   = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><html><head><title>503 Service Unavailable</title></head><body>down</body></html>';
+		$result = $this->client([new Response(503, ['Content-Type' => 'text/html'], $page)])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding openbare ruimte');
+
+		$this->assertTrue($result['retrying'], 'An unreachable case system is retried');
+		$this->assertSame('retrying', $this->rows[$result['messageId']]['status']);
+		$this->assertCount(1, $this->scheduled);
+		$this->assertSame([], $this->events);
+	}//end testA5xxWithAnHtmlPageIsRetried()
+
+	/**
+	 * A plain-text 502 is retried too.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testAPlainText502IsRetried(): void {
+		$result = $this->client([new Response(502, ['Content-Type' => 'text/plain'], 'Bad Gateway')])->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq']);
+
+		$this->assertTrue($result['retrying']);
+	}//end testAPlainText502IsRetried()
+
+	/**
+	 * A zaak the case system confirmed stays a success when its row cannot be saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testAConfirmedZaakIsASuccessWhenItsRowCannotBeSaved(): void {
+		$this->failSaveOfStatus = 'sent';
+
+		$result = $this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding openbare ruimte', ['sourceApp' => 'dossiq', 'correlationId' => 'case-1']);
+
+		$this->assertTrue($result['success'], 'The zaak exists; a refusal would make the caller create a second one');
+		$this->assertSame('0363-Z-1', $result['caseIdentification']);
+		$this->assertCount(1, $this->events);
+		$this->assertTrue($this->events[0]->getResult()['success']);
+	}//end testAConfirmedZaakIsASuccessWhenItsRowCannotBeSaved()
+
+	/**
+	 * A retry that cannot be scheduled concludes the message as failed, and says so.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testARetryThatCannotBeScheduledConcludesTheMessageAsFailed(): void {
+		$this->failSchedule = true;
+
+		$result = $this->client([new Response(503, [], '')])->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq', 'correlationId' => 'c-2']);
+
+		$this->assertFalse($result['success']);
+		$this->assertFalse($result['retrying']);
+		$this->assertSame('RETRY_NOT_SCHEDULED', $result['fout']['code']);
+		$this->assertSame('failed', $this->rows[$result['messageId']]['status']);
+		$this->assertNotSame('', $result['fout']['details'], 'The last attempt\'s fout code is kept');
+		$this->assertCount(1, $this->events, 'The owning app hears the conclusion');
+		$this->assertFalse($this->events[0]->getResult()['success']);
+	}//end testARetryThatCannotBeScheduledConcludesTheMessageAsFailed()
+
+	/**
+	 * A row that cannot be marked for a retry concludes the message as failed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testARowThatCannotBeMarkedForARetryConcludesAsFailed(): void {
+		$client = $this->client([new Response(503, [], '')]);
+		$this->failSaveOfStatus = 'retrying';
+
+		$result = $client->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq', 'correlationId' => 'c-3']);
+
+		$this->assertFalse($result['retrying']);
+		$this->assertSame([], $this->scheduled, 'No job is scheduled for a row nobody can find in the retrying state');
+		$this->assertCount(1, $this->events);
+		$this->assertFalse($this->events[0]->getResult()['success']);
+	}//end testARowThatCannotBeMarkedForARetryConcludesAsFailed()
+
+	/**
+	 * A zaak the case system confirmed stays a success when the circuit breaker cannot record it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testAConfirmedZaakIsASuccessWhenTheBreakerCannotRecordIt(): void {
+		$this->failBreaker = true;
+
+		$result = $this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding openbare ruimte', ['sourceApp' => 'dossiq', 'correlationId' => 'case-1']);
+
+		$this->assertTrue($result['success']);
+		$this->assertSame('sent', $this->rows[$result['messageId']]['status']);
+	}//end testAConfirmedZaakIsASuccessWhenTheBreakerCannotRecordIt()
+
+	/**
+	 * A failed attempt still gets its retry when the circuit breaker cannot record the failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testAFailedAttemptIsRetriedWhenTheBreakerCannotRecordIt(): void {
+		$this->failBreaker = true;
+
+		$result = $this->client([new Response(503, [], '')])->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq']);
+
+		$this->assertTrue($result['retrying']);
+		$this->assertCount(1, $this->scheduled);
+	}//end testAFailedAttemptIsRetriedWhenTheBreakerCannotRecordIt()
+
+	/**
+	 * An answered question stays answered when its row cannot be saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 */
+	public function testAnAnsweredQuestionStaysAnsweredWhenItsRowCannotBeSaved(): void {
+		$this->failSaveOfStatus = 'sent';
+		$la01 = new Response(200, [], '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310"><soapenv:Body><zkn:zakLa01><zkn:antwoord><zkn:object><zkn:identificatie>Z-5</zkn:identificatie><zkn:omschrijving>Klacht</zkn:omschrijving></zkn:object></zkn:antwoord></zkn:zakLa01></soapenv:Body></soapenv:Envelope>');
+
+		$result = $this->client([$la01])->geefZaakdetails('zsh', 'Z-5', ['omschrijving']);
+
+		$this->assertTrue($result['success']);
+		$this->assertSame('Klacht', $result['case']['omschrijving']);
+	}//end testAnAnsweredQuestionStaysAnsweredWhenItsRowCannotBeSaved()
+
+	/**
+	 * A retry that waits out an open circuit and cannot be rescheduled concludes the message as failed,
+	 * naming the last attempt's fout, without sending anything.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testACooldownThatCannotBeRescheduledConcludesTheMessageAsFailed(): void {
+		$client = $this->client([new Response(503, [], '')]);
+		$first  = $client->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq', 'correlationId' => 'c-4']);
+		$this->assertTrue($first['retrying']);
+
+		$this->config['stuf.zds.o.' . substr(sha1('zsh'), 0, 32)] = time();
+		$this->failSchedule = true;
+		$this->outbound->retry($first['messageId']);
+
+		$this->assertCount(1, $this->history, 'Nothing is sent while the circuit is open');
+		$row = $this->rows[$first['messageId']];
+		$this->assertSame('failed', $row['status']);
+		$this->assertSame(1, $row['attempts'], 'Waiting out a cooldown is no attempt');
+		$this->assertCount(1, $this->events);
+		$fout = $this->events[0]->getResult()['fout'];
+		$this->assertSame('RETRY_NOT_SCHEDULED', $fout['code']);
+		$this->assertNotSame('', $fout['details'], 'The last attempt\'s fout code is kept');
+		$this->assertNotSame('RETRY_NOT_SCHEDULED', $fout['details']);
+	}//end testACooldownThatCannotBeRescheduledConcludesTheMessageAsFailed()
+
+	/**
+	 * A retry whose circuit breaker cannot be read is sent anyway, not stranded with its job consumed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 */
+	public function testARetryWhoseBreakerCannotBeReadIsSentAnyway(): void {
+		$client = $this->client([new Response(503, [], ''), self::bevestiging()]);
+		$first  = $client->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq', 'correlationId' => 'c-5']);
+		$this->assertTrue($first['retrying']);
+
+		// An open circuit whose cooldown has passed: allows() resets it, and that write throws.
+		$this->config['stuf.zds.o.' . substr(sha1('zsh'), 0, 32)] = (time() - 86400);
+		$this->failBreaker = true;
+		$this->outbound->retry($first['messageId']);
+
+		$this->assertCount(2, $this->history, 'The retry is sent');
+		$this->assertSame('sent', $this->rows[$first['messageId']]['status']);
+		$this->assertCount(1, $this->events);
+	}//end testARetryWhoseBreakerCannotBeReadIsSentAnyway()
 }//end class

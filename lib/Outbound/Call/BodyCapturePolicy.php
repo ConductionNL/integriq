@@ -178,7 +178,13 @@ class BodyCapturePolicy {
 	 * @param array<string,mixed> $sourceData The source.
 	 * @param DateTimeInterface $now The moment of the call.
 	 *
-	 * @return bool True only for a readable window that ends after now.
+	 * A window that ends further away than the instance maximum counts as
+	 * closed. BodyCaptureController::open() refuses such a window, but a
+	 * `bodyCaptureUntil` written another way (the generic source API, a
+	 * source update, an import) skips that check, and would otherwise open a
+	 * window of any length without a reason.
+	 *
+	 * @return bool True only for a readable window that ends after now and within the maximum.
 	 *
 	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
 	 */
@@ -188,7 +194,9 @@ class BodyCapturePolicy {
 			return false;
 		}
 
-		return $end > $now;
+		$latest = DateTimeImmutable::createFromInterface($now)->modify('+' . $this->maxHours() . ' hours');
+
+		return $end > $now && $end <= $latest;
 
 	}//end isOpen()
 
