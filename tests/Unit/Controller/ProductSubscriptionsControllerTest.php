@@ -324,6 +324,21 @@ class ProductSubscriptionsControllerTest extends TestCase {
 	}//end testAnalyticsReflectsRecentTraffic()
 
 	/**
+	 * The call_log rows are read with RBAC off: the schema is admin-only, and a
+	 * delegated administrator would otherwise see zero traffic.
+	 *
+	 * @return void
+	 */
+	public function testAnalyticsReadsTheAdminOnlyCallLogWithoutRbac(): void {
+		$this->orObjectService->method('find')->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'product-1'));
+		$this->orObjectService->expects($this->once())->method('findAll')
+			->with($this->anything(), false, false)
+			->willReturn(['results' => []]);
+
+		$this->controller->analytics(productId: 'product-1');
+	}//end testAnalyticsReadsTheAdminOnlyCallLogWithoutRbac()
+
+	/**
 	 * A failed activation answers 400, not 500.
 	 *
 	 * `activateSubscription()` calls OpenRegister's `saveObject()`, which

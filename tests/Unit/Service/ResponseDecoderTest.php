@@ -24,7 +24,7 @@ use OCA\Integriq\Service\ResponseDecoder;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
  */
 class ResponseDecoderTest extends TestCase {
 

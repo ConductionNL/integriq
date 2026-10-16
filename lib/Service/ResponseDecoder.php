@@ -47,7 +47,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
  */
 
 declare(strict_types=1);
@@ -63,7 +63,7 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Decodes response bodies as JSON, YAML or base64-wrapped JSON or YAML.
  *
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
  */
 class ResponseDecoder {
 
@@ -158,7 +158,7 @@ class ResponseDecoder {
 	 *
 	 * @throws ResponseDecodeException When the body cannot be decoded in that mode.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
 	 */
 	public function decode(string $body, string $mode=self::MODE_AUTO, ?string $contentType=null): mixed {
 		$mode = strtolower(trim($mode));
@@ -188,7 +188,7 @@ class ResponseDecoder {
 	 *
 	 * @return boolean Whether it is one of {@see self::YAML_CONTENT_TYPES}.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
 	 */
 	public function isYamlContentType(?string $contentType): bool {
 		if ($contentType === null) {
@@ -212,7 +212,7 @@ class ResponseDecoder {
 	 *
 	 * @return string|null The first value, or null when the header is absent.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
 	 */
 	public static function headerValue(array $headers, string $name): ?string {
 		foreach ($headers as $key => $value) {

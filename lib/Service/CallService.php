@@ -53,6 +53,7 @@ use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Flow\FlowConfigGuard;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -175,6 +176,13 @@ class CallService {
 	private CookieJar $cookieJar;
 
 	/**
+	 * Decides whether a call's bodies are stored (Woo row 13.23, decision D5).
+	 *
+	 * @var BodyCapturePolicy
+	 */
+	private BodyCapturePolicy $bodyCapturePolicy;
+
+	/**
 	 * Retention (ms) applied to error CallLogs.
 	 *
 	 * @var integer
@@ -199,6 +207,7 @@ class CallService {
 	 * @param BrokeredCallService $brokeredCallService Brokered (credentialRef) dispatch through the OpenRegister credential broker.
 	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
 	 * @param CaseSystemOperations|null $caseSystemOperations Answers case-system sources in-process (case-system-operations-for-decidiq).
+	 * @param BodyCapturePolicy|null $bodyCapturePolicy Decides whether call bodies are stored (outbound-call-log-investigation-window).
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
 	 */
@@ -211,7 +220,9 @@ class CallService {
 		private readonly BrokeredCallService $brokeredCallService,
 		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
 		private readonly ?CaseSystemOperations $caseSystemOperations = null,
+		?BodyCapturePolicy $bodyCapturePolicy = null,
 	) {
+		$this->bodyCapturePolicy = ($bodyCapturePolicy ?? new BodyCapturePolicy(appConfig: $appConfig));
 		$this->client = new Client([]);
 		// NO AUTOESCAPE: this environment renders headers/query/body values for
 		// an HTTP call, never HTML. Left at Twig's default (HTML) for a long
@@ -763,10 +774,14 @@ class CallService {
 			$object['expires'] = $formatted;
 		}
 
+		// The call_log schema is admin-only (REQ-OCD-012): the engine records the call
+		// for whoever triggered it, so the write runs past RBAC.
 		return $this->objectService->saveObject(
 			object: $object,
 			register: 'integriq',
-			schema: 'call_log'
+			schema: 'call_log',
+			_rbac: false,
+			_multitenancy: false
 		);
 
 	}//end saveEarlyErrorLog()
@@ -1731,11 +1746,13 @@ class CallService {
 	 * @param \DateTime|null $errorExpires Expiry for error log entries.
 	 * @param ExecutionTraceContext|null $trace The active execution trace context, when present.
 	 * @param boolean $persistLog When false, return a transient (unsaved) CallLog and mutate nothing.
+	 * @param boolean $withholdBodies When true, the record is written without any body and names the user.
 	 *
 	 * @return ObjectEntity The persisted CallLog ObjectEntity with full response body set.
 	 *
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
+	 * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
 	 */
 	private function buildAndPersistCallLog(
@@ -1747,6 +1764,7 @@ class CallService {
 		?\DateTime $errorExpires,
 		?ExecutionTraceContext $trace = null,
 		bool $persistLog = true,
+		bool $withholdBodies = false,
 	): ObjectEntity {
 		// Interactive "Test connection" path (persistLog=false): return the response
 		// WITHOUT the expensive CallLog write. Persisting a CallLog runs a full
@@ -1763,14 +1781,6 @@ class CallService {
 		$data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
 
 		$statusCode = $data['response']['statusCode'];
-		$responseData = $data['response'];
-
-		// Only persist response body for 4xx/5xx errors.
-		if ($statusCode < 400 || $statusCode >= 600) {
-			if ($logBody !== true) {
-				unset($responseData['body']);
-			}
-		}
 
 		if ($statusCode < 400) {
 			$expiresChosen = $successExpires;
@@ -1786,9 +1796,19 @@ class CallService {
 			'statusCode' => $statusCode,
 			'statusMessage' => $data['response']['statusMessage'],
 			'request' => $data['request'],
-			'response' => $responseData,
+			'response' => $data['response'],
 			'created' => (new DateTime())->format('c'),
 		];
+
+		// Bodies are stored only inside the source's investigation window, or
+		// for a caller that passed logBody; a failure keeps its request for a
+		// replay (outbound-call-log REQ-OCD-001, REQ-OCD-009). Applied before
+		// the buffer, so the buffered path follows the same rule. A caller that
+		// withholds its bodies gets a record without any, whatever the rest says.
+		$callLogData = $this->bodyCapturePolicy->apply(record: $callLogData, sourceData: $sourceData, logBody: $logBody, errorExpires: $errorExpires);
+		if ($withholdBodies === true) {
+			$callLogData = $this->bodyCapturePolicy->withheldRecord(record: $callLogData);
+		}
 
 		// A call kept for ever (retention 0) has no expiry. `expires` is a
 		// date-time string on call_log, and the register refuses a null in a
@@ -2963,6 +2983,7 @@ class CallService {
 	 * @param ExecutionTraceContext|null $trace The active execution trace context, when any.
 	 * @param boolean $persistLog When false (interactive "Test connection"), a transient
 	 *                            unsaved CallLog is returned and nothing is mutated.
+	 * @param boolean $withholdBodies When true, the CallLog and the trace step hold no body.
 	 *
 	 * @return ObjectEntity The persisted CallLog entity.
 	 *
@@ -2982,6 +3003,7 @@ class CallService {
 		bool $runningSupportRequest,
 		?ExecutionTraceContext $trace,
 		bool $persistLog = true,
+		bool $withholdBodies = false,
 	): ObjectEntity {
 		$source = $prepared['source'];
 		$sourceData = $prepared['sourceData'];
@@ -3006,7 +3028,21 @@ class CallService {
 			errorExpires: $prepared['errorExpires'],
 			trace: $trace,
 			persistLog: $persistLog,
+			withholdBodies: $withholdBodies,
 		);
+
+		// A trace is stored too, so it follows the call log's body policy: outside
+		// an investigation window, and without logBody, the step holds no body
+		// (outbound-call-log REQ-OCD-001), and a call that withholds its bodies
+		// hands the trace the same stripped request and response the call log gets.
+		$traced = ['request' => $data['request'], 'response' => $data['response']];
+		if ($this->bodyCapturePolicy->captures(sourceData: $sourceData, logBody: (bool)$prepared['logBody']) === false) {
+			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
+		}
+
+		if ($withholdBodies === true) {
+			$traced = $this->bodyCapturePolicy->withhold(record: $traced);
+		}
 
 		// Phase 12b: when this call was made from within a traced execution,
 		// append a `call` step reusing the exact already-redacted request/
@@ -3024,8 +3060,8 @@ class CallService {
 				name: ($sourceData['name'] ?? $source->getUuid()),
 				timing: null,
 				status: $callStepStatus,
-				input: $data['request'],
-				output: $data['response'],
+				input: $traced['request'],
+				output: $traced['response'],
 				startedAtMicrotime: $timeStart,
 				finishedAtMicrotime: $timeEnd,
 				spanId: ($prepared['spanId'] ?? null),
@@ -3070,6 +3106,11 @@ class CallService {
 	 * @param boolean $persistLog When false (interactive "Test connection"), the response
 	 *                            is returned without writing a CallLog or mutating the
 	 *                            source — no heavy object save, no test-noise log rows.
+	 * @param boolean $withholdBodies When true, the call is recorded without any body: the record
+	 *                                names the source, the user, the moment and the outcome, and
+	 *                                holds no request body, no response body, no headers, no query
+	 *                                and no replay request. It wins over `logBody` and over an open
+	 *                                investigation window. The caller still gets the whole answer.
 	 *
 	 * @return ObjectEntity
 	 *
@@ -3099,6 +3140,7 @@ class CallService {
 		mixed $sink = null,
 		?ExecutionTraceContext $trace = null,
 		bool $persistLog = true,
+		bool $withholdBodies = false,
 	): ObjectEntity {
 		// Ocon#111 Task 0: this method previously carried an
 		// `if ($asynchronous === true) { return $response; }` branch that returned a
@@ -3163,6 +3205,7 @@ class CallService {
 			runningSupportRequest: $runningSupportRequest,
 			trace: $trace,
 			persistLog: $persistLog,
+			withholdBodies: $withholdBodies,
 		);
 
 	}//end call()

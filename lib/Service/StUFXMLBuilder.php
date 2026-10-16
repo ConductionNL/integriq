@@ -343,18 +343,54 @@ class StUFXMLBuilder {
 	 * @param string $code The StUF error code (e.g. StUF046).
 	 * @param string $omschrijving Human-readable error description.
 	 * @param array $stuurgegevens Stuurgegevens configuration.
+	 * @param string $plek Where the fault lies: client (default) or server.
 	 *
 	 * @return string The complete SOAP fault XML string.
 	 *
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	public function buildFo01(string $code, string $omschrijving, array $stuurgegevens): string {
+	public function buildFo01(string $code, string $omschrijving, array $stuurgegevens, string $plek='client'): string {
+		return $this->buildFoutbericht(berichtcode: 'Fo01', code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);
+	}//end buildFo01()
+
+	/**
+	 * Build a Fo02 SOAP fault: the foutbericht that answers a vraagbericht (Lv01).
+	 *
+	 * @param string $code         The StUF error code (e.g. StUF055).
+	 * @param string $omschrijving Human-readable error description.
+	 * @param array  $stuurgegevens Stuurgegevens configuration.
+	 * @param string $plek         Where the fault lies: client or server.
+	 *
+	 * @return string The complete SOAP fault XML string.
+	 *
+	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-an-unanswered-query-is-a-fault-never-an-empty-answer
+	 */
+	public function buildFo02(string $code, string $omschrijving, array $stuurgegevens, string $plek='server'): string {
+		return $this->buildFoutbericht(berichtcode: 'Fo02', code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);
+	}//end buildFo02()
+
+	/**
+	 * Build a Fo01/Fo02 foutbericht inside a SOAP fault.
+	 *
+	 * @param string $berichtcode  Fo01 or Fo02.
+	 * @param string $code         The StUF error code.
+	 * @param string $omschrijving Human-readable error description.
+	 * @param array  $stuurgegevens Stuurgegevens configuration.
+	 * @param string $plek         Where the fault lies: client or server.
+	 *
+	 * @return string The complete SOAP fault XML string.
+	 */
+	private function buildFoutbericht(string $berichtcode, string $code, string $omschrijving, array $stuurgegevens, string $plek): string {
 		$doc = new DOMDocument(version: '1.0', encoding: 'UTF-8');
 		$doc->formatOutput = true;
 
 		$fault = $doc->createElementNS(self::NS_SOAP, 'SOAP-ENV:Fault');
 		$faultCode = $doc->createElement('faultcode');
 		$faultCode->nodeValue = 'SOAP-ENV:Client';
+		if ($plek === 'server') {
+			$faultCode->nodeValue = 'SOAP-ENV:Server';
+		}
+
 		$fault->appendChild($faultCode);
 
 		$faultStr = $doc->createElement('faultstring');
@@ -362,21 +398,21 @@ class StUFXMLBuilder {
 		$fault->appendChild($faultStr);
 
 		$detail = $doc->createElement('detail');
-		$fo01 = $doc->createElementNS(self::NS_STUF, 'StUF:Fo01Bericht');
-		$fo01->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: 'Fo01', stuurgegevens: $stuurgegevens));
+		$message = $doc->createElementNS(self::NS_STUF, 'StUF:' . $berichtcode . 'Bericht');
+		$message->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: $berichtcode, stuurgegevens: $stuurgegevens));
 
 		$body = $doc->createElementNS(self::NS_STUF, 'StUF:body');
 		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:code', text: $code);
-		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:plek', text: 'client');
+		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:plek', text: $plek);
 		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:omschrijving', text: $omschrijving);
-		$fo01->appendChild($body);
-		$detail->appendChild($fo01);
+		$message->appendChild($body);
+		$detail->appendChild($message);
 		$fault->appendChild($detail);
 
 		$this->wrapInEnvelope(doc: $doc, bodyContent: $fault);
 
 		return (string)$doc->saveXML();
-	}//end buildFo01()
+	}//end buildFoutbericht()
 
 	/**
 	 * Build zakLa01 (zaak antwoord) SOAP response XML.
@@ -449,7 +485,7 @@ class StUFXMLBuilder {
 	/**
 	 * Build Bv03 bevestiging SOAP response for zakLk01 operations.
 	 *
-	 * @param string $caseIdentification The zaak identifier being confirmed.
+	 * @param string $caseIdentification The zaak identifier being confirmed; '' for a Bv03 without a body.
 	 * @param array $stuurgegevens Stuurgegevens configuration.
 	 *
 	 * @return string The complete SOAP XML string.
@@ -463,11 +499,14 @@ class StUFXMLBuilder {
 		$bv03 = $doc->createElementNS(self::NS_STUF, 'StUF:Bv03Bericht');
 		$bv03->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: 'Bv03', stuurgegevens: $stuurgegevens));
 
-		$body = $doc->createElementNS(self::NS_STUF, 'StUF:body');
-		$case = $doc->createElementNS(self::NS_ZKN, 'ZKN:zaakidentificatie');
-		$case->nodeValue = $caseIdentification;
-		$body->appendChild($case);
-		$bv03->appendChild($body);
+		if ($caseIdentification !== '') {
+			$body = $doc->createElementNS(self::NS_STUF, 'StUF:body');
+			$case = $doc->createElementNS(self::NS_ZKN, 'ZKN:zaakidentificatie');
+			$case->nodeValue = $caseIdentification;
+			$body->appendChild($case);
+			$bv03->appendChild($body);
+		}
+
 
 		$this->wrapInEnvelope(doc: $doc, bodyContent: $bv03);
 

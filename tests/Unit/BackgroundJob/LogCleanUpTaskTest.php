@@ -1,0 +1,349 @@
+<?php
+
+/**
+ * Unit tests for LogCleanUpTask's body stripping.
+ *
+ * @category Test
+ * @package  OCA\Integriq\Tests\Unit\BackgroundJob
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Integriq\Tests\Unit\BackgroundJob;
+
+use OCA\Integriq\BackgroundJob\LogCleanUpTask;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IAppConfig;
+use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * Captured bodies age out and the record stays.
+ */
+class LogCleanUpTaskTest extends TestCase {
+
+	/**
+	 * The filters each findAll() was asked for.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	private array $queries = [];
+
+	/**
+	 * Every save, with its uuid.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	private array $saves = [];
+
+	/**
+	 * Every delete, by uuid.
+	 *
+	 * @var array<int,string>
+	 */
+	private array $deletes = [];
+
+	/**
+	 * The `_rbac` argument of every findAll() and deleteObject() call: [kind, schema or uuid, value].
+	 *
+	 * @var array<int,array{0:string,1:string,2:mixed}>
+	 */
+	private array $rbacFlags = [];
+
+	/**
+	 * The logger of the task under test.
+	 *
+	 * @var LoggerInterface&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * Uuids whose save throws.
+	 *
+	 * @var array<int,string>
+	 */
+	private array $failingSaves = [];
+
+	/**
+	 * Uuids whose deletion throws.
+	 *
+	 * @var array<int,string>
+	 */
+	private array $failingDeletes = [];
+
+	/**
+	 * The stuf_message rows past `expires`, by uuid.
+	 *
+	 * @var array<string,array<string,mixed>>
+	 */
+	private array $expiredStuf = [];
+
+	/**
+	 * The filters of the stuf_message retention query.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private array $stufFilters = [];
+
+	/**
+	 * Build the task over a store answering the given records to a body-expiry query.
+	 *
+	 * @param array<string,array<string,mixed>> $expiredBodies The call records past bodyExpiresAt, by uuid.
+	 * @param array<string,array<string,mixed>> $expiredCalls  The call_log records past `expires`, by uuid.
+	 *
+	 * @return LogCleanUpTask
+	 */
+	private function task(array $expiredBodies, array $expiredCalls=[]): LogCleanUpTask {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('findAll')->willReturnCallback(
+			function (array $config = [], bool $_rbac = true) use ($expiredBodies, $expiredCalls) {
+				$this->queries[] = $config['filters'];
+				$this->rbacFlags[] = ['findAll', (string)$config['filters']['schema'], $_rbac];
+				if (isset($config['filters']['expires[lt]']) === true && $config['filters']['schema'] === 'stuf_message') {
+					$this->stufFilters = $config['filters'];
+					$rows = [];
+					foreach ($this->expiredStuf as $uuid => $record) {
+						$entity = new ObjectEntity();
+						$entity->setUuid($uuid);
+						$entity->setObject($record);
+						$rows[] = $entity;
+					}
+
+					return ['results' => $rows];
+				}
+
+				if (isset($config['filters']['expires[lt]']) === true && $config['filters']['schema'] === 'call_log') {
+					$rows = [];
+					foreach ($expiredCalls as $uuid => $record) {
+						$entity = new ObjectEntity();
+						$entity->setUuid($uuid);
+						$entity->setObject($record);
+						$rows[] = $entity;
+					}
+
+					return ['results' => $rows];
+				}
+
+				if (isset($config['filters']['bodyExpiresAt[lt]']) === false) {
+					return ['results' => []];
+				}
+
+				$rows = [];
+				foreach ($expiredBodies as $uuid => $record) {
+					$entity = new ObjectEntity();
+					$entity->setUuid($uuid);
+					$entity->setObject($record);
+					$rows[] = $entity;
+				}
+
+				return ['results' => $rows];
+			}
+		);
+		$objectService->method('saveObject')->willReturnCallback(
+			function ($object, $register = null, $schema = null, $uuid = null) {
+				if (in_array((string)$uuid, $this->failingSaves, true) === true) {
+					throw new \RuntimeException('refused');
+				}
+
+				$this->saves[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
+				return new ObjectEntity();
+			}
+		);
+		$objectService->method('deleteObject')->willReturnCallback(
+			function ($uuid, $register = null, $schema = null, bool $_rbac = true) {
+				$this->rbacFlags[] = ['deleteObject', (string)$uuid, $_rbac];
+				if (in_array((string)$uuid, $this->failingDeletes, true) === true) {
+					throw new \RuntimeException('refused');
+				}
+
+				$this->deletes[] = (string)$uuid;
+				return true;
+			}
+		);
+
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueInt')->willReturnArgument(2);
+		$this->logger = $this->createMock(LoggerInterface::class);
+
+		return new LogCleanUpTask(
+			$this->createMock(ITimeFactory::class),
+			$objectService,
+			new BodyCapturePolicy($appConfig),
+			$this->logger
+		);
+	}//end task()
+
+	/**
+	 * A record captured in a window whose bodies expired yesterday.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function capturedRecord(): array {
+		return [
+			'source' => '7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f',
+			'direction' => 'outbound',
+			'statusCode' => 500,
+			'statusMessage' => 'Internal Server Error',
+			'request' => ['url' => 'https://zaken.example.invalid/zaken', 'method' => 'POST', 'json' => ['bsn' => '999993653'], 'headers' => ['Accept' => 'application/json']],
+			'response' => ['statusCode' => 500, 'responseTime' => 12.5, 'headers' => ['Content-Type' => ['text/plain']], 'body' => 'fout voor 999993653'],
+			'replayRequest' => ['url' => 'https://zaken.example.invalid/zaken', 'method' => 'POST', 'json' => ['bsn' => '999993653']],
+			'bodyCaptured' => true,
+			'bodyExpiresAt' => '2026-10-08T12:00:00+00:00',
+			'created' => '2026-10-01T12:00:00+00:00',
+			'expires' => '2026-10-31T12:00:00+00:00',
+		];
+	}//end capturedRecord()
+
+	/**
+	 * Expired bodies are stripped, the record is kept with its status, timing and headers.
+	 *
+	 * @return void
+	 */
+	public function testExpiredBodiesAreStrippedAndTheRecordKept(): void {
+		$this->task(['call-1' => $this->capturedRecord()])->run(null);
+
+		$this->assertCount(1, $this->saves);
+		$saved = $this->saves[0];
+		$this->assertSame('call-1', $saved['uuid']);
+		$this->assertSame('call_log', $saved['schema']);
+		$record = $saved['object'];
+		$this->assertArrayNotHasKey('json', $record['request']);
+		$this->assertArrayNotHasKey('body', $record['response']);
+		$this->assertArrayNotHasKey('replayRequest', $record);
+		$this->assertArrayNotHasKey('bodyExpiresAt', $record);
+		$this->assertFalse($record['bodyCaptured']);
+		$this->assertArrayHasKey('bodyExpiredAt', $record);
+		$this->assertSame(500, $record['statusCode']);
+		$this->assertSame(12.5, $record['response']['responseTime']);
+		$this->assertSame(['Accept' => 'application/json'], $record['request']['headers']);
+		$this->assertStringNotContainsString('999993653', json_encode($record));
+		$this->assertNotContains('call-1', $this->deletes, 'the record itself stays until its own expiry');
+		$this->assertSame([], RegisterSchemaValidator::errors('call_log', $record), 'the register accepts the stripped record');
+	}//end testExpiredBodiesAreStrippedAndTheRecordKept()
+
+	/**
+	 * A failure outside a window keeps its replay request until the error retention ends, then loses it.
+	 *
+	 * @return void
+	 */
+	public function testReplayRequestEndsWithTheErrorRetention(): void {
+		$record = $this->capturedRecord();
+		$record['bodyCaptured'] = false;
+		unset($record['request']['json'], $record['response']['body']);
+
+		$this->task(['call-2' => $record])->run(null);
+
+		$this->assertCount(1, $this->saves);
+		$this->assertArrayNotHasKey('replayRequest', $this->saves[0]['object']);
+	}//end testReplayRequestEndsWithTheErrorRetention()
+
+	/**
+	 * The query asks only for call records past their body expiry, and run() still deletes expired logs.
+	 *
+	 * @return void
+	 */
+	public function testRunStripsBodiesAndStillDeletesExpiredLogs(): void {
+		$this->task([])->run(null);
+
+		$this->assertSame('call_log', $this->queries[0]['schema']);
+		$this->assertArrayHasKey('bodyExpiresAt[lt]', $this->queries[0]);
+		$schemas = array_map(static fn (array $filters): string => $filters['schema'], array_slice($this->queries, 1));
+		$this->assertSame(['call_log', 'stuf_message', 'job_log', 'synchronization_contract_log', 'synchronization_log'], $schemas);
+		$this->assertSame([], $this->saves);
+	}//end testRunStripsBodiesAndStillDeletesExpiredLogs()
+
+	/**
+	 * The retention sweep runs under cron with no session user, so it reads and deletes with RBAC off (iq-f2).
+	 *
+	 * With RBAC on, the admin-only `call_log` rule hides every row from a user-less job and nothing is deleted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testTheRetentionSweepReadsAndDeletesWithRbacOff(): void {
+		$expired = $this->capturedRecord();
+		$this->task([], ['call-old' => $expired])->run(null);
+
+		$this->assertContains('call-old', $this->deletes, 'the expired call record is deleted');
+		$this->assertNotSame([], $this->rbacFlags);
+		foreach ($this->rbacFlags as [$kind, $subject, $rbac]) {
+			$this->assertFalse($rbac, "$kind($subject) must pass _rbac: false");
+		}
+
+		$this->assertContains(['deleteObject', 'call-old', false], $this->rbacFlags);
+		$this->assertContains(['findAll', 'call_log', false], $this->rbacFlags);
+		$this->assertContains(['findAll', 'stuf_message', false], $this->rbacFlags);
+	}//end testTheRetentionSweepReadsAndDeletesWithRbacOff()
+
+	/**
+	 * The stuf_message sweep deletes rows still retrying, never a concluded audit row (pre-push pp-7).
+	 *
+	 * @return void
+	 */
+	public function testTheStufMessageSweepOnlyDeletesRowsStillRetrying(): void {
+		$this->expiredStuf = [
+			'msg-retrying' => ['status' => 'retrying', 'envelope' => '<x/>', 'expires' => '2026-10-01T00:00:00+00:00'],
+			'msg-sent' => ['status' => 'sent', 'expires' => '2026-10-01T00:00:00+00:00'],
+			'msg-failed' => ['status' => 'failed', 'expires' => '2026-10-01T00:00:00+00:00'],
+		];
+
+		$this->task([])->run(null);
+
+		$this->assertSame('retrying', $this->stufFilters['status'], 'the query asks for retrying rows only');
+		$this->assertSame(['msg-retrying'], $this->deletes, 'a concluded row is not deleted even if the query returns it');
+	}//end testTheStufMessageSweepOnlyDeletesRowsStillRetrying()
+
+	/**
+	 * A deletion that is refused is logged and the sweep goes on with the next record.
+	 *
+	 * @return void
+	 */
+	public function testARefusedDeletionIsLoggedAndTheSweepContinues(): void {
+		$this->failingDeletes = ['call-bad'];
+		$task = $this->task([], ['call-bad' => $this->capturedRecord(), 'call-good' => $this->capturedRecord()]);
+		$this->logger->expects($this->once())->method('warning')->with($this->stringContains('could not delete'));
+
+		$task->run(null);
+
+		$this->assertSame(['call-good'], $this->deletes);
+	}//end testARefusedDeletionIsLoggedAndTheSweepContinues()
+
+	/**
+	 * A record whose bodies cannot be stripped is logged and the sweep goes on with the next one.
+	 *
+	 * @return void
+	 */
+	public function testARefusedStripIsLoggedAndTheSweepContinues(): void {
+		$this->failingSaves = ['call-bad'];
+		$task = $this->task(['call-bad' => $this->capturedRecord(), 'call-good' => $this->capturedRecord()]);
+		$this->logger->expects($this->once())->method('warning')->with($this->stringContains('could not strip'));
+
+		$this->assertSame(1, $task->stripExpiredBodies());
+
+		$this->assertCount(1, $this->saves);
+		$this->assertSame('call-good', $this->saves[0]['uuid']);
+	}//end testARefusedStripIsLoggedAndTheSweepContinues()
+
+	/**
+	 * The task is still registered as a background job.
+	 *
+	 * @return void
+	 */
+	public function testTheTaskIsRegisteredInInfoXml(): void {
+		$xml = simplexml_load_file(dirname(__DIR__, 3) . '/appinfo/info.xml');
+		$jobs = array_map('strval', iterator_to_array($xml->{'background-jobs'}->job, false));
+
+		$this->assertContains(LogCleanUpTask::class, $jobs);
+	}//end testTheTaskIsRegisteredInInfoXml()
+}//end class

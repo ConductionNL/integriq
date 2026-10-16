@@ -106,6 +106,14 @@ $header = $authenticationService->buildWsSecurityHeader([
 
 PasswordDigest hashes the password as Base64(SHA1(Nonce + Created + Password)) per the WS-Security UsernameToken 1.0 profile. Use PasswordText only over TLS.
 
+### Inbound requests (provider requests and confirmations)
+
+Integriq authenticates the public StUF routes (`/api/stuf-zkn/provider/{sourceId}/...` and `/api/stuf-zkn/confirmations`) with the source's `authentication.wsse` UsernameToken.
+
+A token that carries a `Nonce` and a `Created` is checked for replay: `Created` must be within five minutes of now and the nonce must not have been used before. A repeat is refused like a wrong password.
+
+This is transitional. While `authentication.wsse.requireNonce` is false (the default), a token without `Nonce` and `Created` is accepted on its password alone, and anyone who captured a request can strip those elements and replay it. Set `requireNonce` to `true` on every source whose case system sends them. `PasswordDigest` is the follow-up that makes the password and the replay protection inseparable.
+
 ## XML Namespaces
 
 | Prefix | URI |

@@ -30,7 +30,7 @@ use ReflectionMethod;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 /**
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
  */
 class SynchronizationGithubPageTest extends TestCase {
 

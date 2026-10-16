@@ -91,7 +91,7 @@
           "synchronizationId": "nextcloud-appstore-to-spectr-marketplaceapp"
         },
         "interval": 604800,
-        "isEnabled": true,
+        "isEnabled": false,
         "singleRun": false,
         "allowParallelRuns": false,
         "version": "1.0.0"

@@ -114,6 +114,15 @@ class CallLogController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('No such call.')], Http::STATUS_NOT_FOUND);
 		}
 
+		// The request a failure keeps for its replay is readable only with the
+		// replay permission, and only for a call captured inside an
+		// investigation window (REQ-OCD-009).
+		$mayReadReplayRequest = ($this->actionAuth->can(user: $user, action: self::ACTION_REPLAY) === true
+			&& ($call['bodyCaptured'] ?? false) === true);
+		if ($mayReadReplayRequest === false) {
+			unset($call['replayRequest']);
+		}
+
 		return new JSONResponse(['id' => $id, 'call' => $call]);
 
 	}//end show()

@@ -21,7 +21,9 @@
 		{ "key": "consumerId", "value": "" },
 		{ "key": "subRef", "value": "" },
 		{ "key": "dsoHmacSecret", "value": "newman-dso-test-secret" },
-		{ "key": "dsoSignature", "value": "" }
+		{ "key": "dsoSignature", "value": "" },
+		{ "key": "callLogProbePass", "value": "" },
+		{ "key": "callLogProbeId", "value": "" }
 	],
 	"auth": { "type": "noauth" },
 	"item": [
@@ -794,6 +796,389 @@
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "text/plain" } ],
 						"url": { "raw": "{{noAuthBase}}/index.php/apps/integriq/api/metrics", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "integriq", "api", "metrics" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "12. Call log is admin-only (REQ-OCD-012)",
+			"item": [
+				{
+					"name": "create a non-admin probe account (admin, OCS)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.collectionVariables.set('callLogProbePass', 'Probe-' + Math.random().toString(36).slice(2) + '-Aa1!');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('probe account request answered 200', () => pm.response.to.have.status(200));",
+									"const meta = pm.response.json().ocs.meta;",
+									"pm.test('OCS ok or user exists', () => pm.expect([100, 102]).to.include(meta.statuscode));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{adminUser}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{adminPass}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/ocs/v1.php/cloud/users?format=json",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"ocs",
+								"v1.php",
+								"cloud",
+								"users"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"userid\": \"integriq-calllog-probe\", \"password\": \"{{callLogProbePass}}\"}"
+						}
+					}
+				},
+				{
+					"name": "create a call record (admin, OR CRUD)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('admin may create a call record', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json();",
+									"const id = (b['@self'] && b['@self'].id) || b.id || b.uuid;",
+									"pm.test('call record has an id', () => pm.expect(id).to.be.a('string'));",
+									"pm.collectionVariables.set('callLogProbeId', id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{adminUser}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{adminPass}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/call_log",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"call_log"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"statusCode\": 500, \"statusMessage\": \"Newman call_log lockdown probe\", \"direction\": \"outbound\"}"
+						}
+					}
+				},
+				{
+					"name": "non-admin lists call_log (no rows)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const id = pm.collectionVariables.get('callLogProbeId');",
+									"if (pm.response.code === 200) {",
+									"  const rows = pm.response.json().results || [];",
+									"  pm.test('a non-admin sees no call record', () => pm.expect(rows.length).to.eql(0));",
+									"  pm.test('the probe record is not among them', () => pm.expect(rows.map((r) => (r['@self'] && r['@self'].id) || r.id)).to.not.include(id));",
+									"} else {",
+									"  pm.test('a non-admin list is refused', () => pm.expect([401, 403, 404]).to.include(pm.response.code));",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "integriq-calllog-probe",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{callLogProbePass}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/call_log",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"call_log"
+							]
+						}
+					}
+				},
+				{
+					"name": "non-admin opens the call record (refused)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('a non-admin single read is refused', () => pm.expect([403, 404]).to.include(pm.response.code));",
+									"pm.test('the response carries no call record', () => pm.expect(pm.response.text()).to.not.include('Newman call_log lockdown probe'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "integriq-calllog-probe",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{callLogProbePass}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/call_log/{{callLogProbeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"call_log",
+								"{{callLogProbeId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "admin opens the call record (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('admin reads the call record', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{adminUser}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{adminPass}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/call_log/{{callLogProbeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"call_log",
+								"{{callLogProbeId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "remove the probe account (admin, OCS)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('probe account removed', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{adminUser}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{adminPass}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/ocs/v1.php/cloud/users/integriq-calllog-probe?format=json",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"ocs",
+								"v1.php",
+								"cloud",
+								"users",
+								"integriq-calllog-probe"
+							]
+						}
 					}
 				}
 			]

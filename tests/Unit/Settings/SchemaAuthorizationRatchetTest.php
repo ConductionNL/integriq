@@ -51,6 +51,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	private const CLOSED = [
 		'agent_action',
 		'app_connection',
+		'call_log',
 		'column_mapping',
 		'connection_alert',
 		'consumer',
@@ -74,6 +75,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'rule',
 		'sender_identity',
 		'source',
+		'stuf_message',
 		'verdict',
 	];
 
@@ -121,7 +123,6 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'approval_request',
 		'bankfeed_batch',
 		'bankfeed_connection',
-		'call_log',
 		'cardfeed_account',
 		'cardfeed_batch',
 		'catalog_item',
@@ -157,7 +158,6 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'ris_sync_record',
 		'rod_message',
 		'sms_message',
-		'stuf_message',
 		'sync_item_dead_letter',
 		'synchronization',
 		'synchronization_contract',

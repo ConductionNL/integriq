@@ -372,6 +372,20 @@ class SynchronizationService {
 	public const DEFAULT_MAX_PAGES = 50;
 
 	/**
+	 * Records one run of a `format: "jsonl"` synchronization reads at most.
+	 *
+	 * A bulk JSONL export can hold hundreds of thousands of records (Austria's
+	 * OpenTender `full.jsonl.gz` is 181,741 lines, 451 MB decompressed), and
+	 * the engine holds a run's records in memory before it processes them.
+	 * Reading a fixed-size batch per run bounds that memory; the next run
+	 * resumes at the next batch through `currentPage`. Overridable per
+	 * synchronization with `sourceConfig.pageSize`.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_JSONL_BATCH_SIZE = 5000;
+
+	/**
 	 * Percentage of PHP's memory limit a fetch may reach before it stops.
 	 *
 	 * Eighty leaves room for the item loop, the write buffers and the run log
@@ -2698,6 +2712,17 @@ class SynchronizationService {
 				// $fetchInfo held at the moment checkRateLimit() threw (REQ-009).
 				$fetchInfo = ['complete' => false, 'pagesFetched' => 0, 'failureReason' => 'rate_limited'];
 			}//end try
+
+			// A batched source (JSONL) names the batch the next run starts at.
+			// It is carried on this run's copy of the synchronization, which is
+			// what the end of the run persists, and a batch still to come is
+			// reported so the job can come back on the next cron tick.
+			if ($isTest === false && ($fetchInfo['resumePage'] ?? null) !== null) {
+				$synchronization['currentPage'] = $fetchInfo['resumePage'];
+				if ($fetchInfo['resumePage'] > 1) {
+					$result['resume'] = ['page' => $fetchInfo['resumePage'], 'reason' => $fetchInfo['failureReason']];
+				}
+			}
 
 			$fetchDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
 			$result['timing']['stages']['fetch_objects'] = [
@@ -6940,9 +6965,10 @@ class SynchronizationService {
 
 		$currentPage = 1;
 
-		// Start with the current page.
-		if (($source['rateLimitLimit'] ?? null) !== null) {
-			$currentPage = ($synchronization['currentPage'] ?? null) ?? 1;
+		// Start with the current page. A JSONL synchronization reads one batch
+		// per run, so its page is where the previous run stopped.
+		if (($source['rateLimitLimit'] ?? null) !== null || ($sourceConfig['format'] ?? null) === 'jsonl') {
+			$currentPage = (int)(($synchronization['currentPage'] ?? null) ?? 1);
 		}
 
 		// Fetch all pages recursively.
@@ -6979,6 +7005,7 @@ class SynchronizationService {
 			'complete' => $pageResult['complete'],
 			'pagesFetched' => $pageResult['pagesFetched'],
 			'failureReason' => $pageResult['failureReason'],
+			'resumePage' => ($pageResult['resumePage'] ?? null),
 		];
 
 		if ($sourceConfig['resultsPosition'] !== '_object' && array_is_list($objects) === false) {
@@ -6995,9 +7022,10 @@ class SynchronizationService {
 			}
 		}
 
-		// Reset the current page after synchronization if not a test.
+		// Reset the current page after synchronization if not a test, or keep
+		// the batch the next run resumes at.
 		if ($isTest === false) {
-			$synchronization['currentPage'] = 1;
+			$synchronization['currentPage'] = ($fetchInfo['resumePage'] ?? 1);
 			$this->persistSynchronization(synchronization: $synchronization);
 		}
 
@@ -7057,6 +7085,17 @@ class SynchronizationService {
 		?bool $usesNextEndpoint = null,
 		?bool $usesPagination = true,
 	): array {
+		if (($synchronization['sourceConfig']['format'] ?? null) === 'jsonl') {
+			return $this->fetchJsonLinesBatch(
+				source: $source,
+				endpoint: $endpoint,
+				config: $config,
+				synchronization: $synchronization,
+				page: $currentPage,
+				isTest: $isTest
+			);
+		}
+
 		// Return objects if we don't paginate.
 		if ($usesPagination === false) {
 			return $this->fetchSinglePage(
@@ -7683,7 +7722,7 @@ class SynchronizationService {
 	 *
 	 * @return array<string, int|null>|null The headers to raise with, or null when this is no rate limit.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
 	 */
 	private function rateLimitHeadersFromResponse(?int $statusCode, array $headers): ?array {
 		if ($statusCode !== 403 && $statusCode !== 429) {
@@ -7726,7 +7765,7 @@ class SynchronizationService {
 	 *
 	 * @return int|null The reset time.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
 	 */
 	private function rateLimitResetAt(?string $reset, ?string $retryAfter): ?int {
 		if ($reset !== null && ctype_digit(trim($reset)) === true) {
@@ -7918,8 +7957,6 @@ class SynchronizationService {
 			}
 		}
 
-		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
-
 		// #97: gzip-compressed bulk files (OpenTender/OCP `.jsonl.gz` registry
 		// exports). Detected via an explicit `Source.configuration.decompress:
 		// "gzip"` hint, a `.gz`-suffixed endpoint, or an `application/gzip`
@@ -7931,29 +7968,15 @@ class SynchronizationService {
 			}
 		}
 
-		// #97: line-delimited JSON (JSONL) — each non-empty line is one
-		// record, no wrapping array/object. Bypasses the json_decode/XML
-		// attempts below entirely (a JSONL body is not valid whole-document
-		// JSON). Guarded against the whole-file-in-memory ceiling by
-		// tokenising line-by-line rather than exploding a second full copy.
-		if (($sourceConfig['format'] ?? null) === 'jsonl') {
-			$result = $this->parseJsonLines(body: $body);
-
-			return [
-				'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
-				'result' => $result,
-			];
-		}
-
 		// #107: markdown- and HTML-shaped sources (spectr's keyless catalog/
 		// standards connectors — awesome_selfhosted, openalternative,
 		// don_oss_register, wikipedia_comparisons — have no JSON/XML API at
 		// all). Both are a property of the SOURCE itself (the endpoint
 		// always returns this shape, regardless of which synchronization
-		// reads it), so — unlike `sourceConfig.format: "jsonl"` above, which
+		// reads it), so — unlike `sourceConfig.format: "jsonl"`, which
 		// is per-synchronization — they are keyed off
 		// `Source.configuration.format` instead. Bypasses the
-		// json_decode/XML attempts below entirely, same as the JSONL branch.
+		// json_decode/XML attempts below entirely.
 		$sourceFormat = strtolower((string)($source['configuration']['format'] ?? ''));
 		if ($sourceFormat === 'markdown') {
 			$result = $this->parseMarkdownResponse(body: $body);
@@ -8308,45 +8331,218 @@ class SynchronizationService {
 	}//end endpointSuggestsSuffix()
 
 	/**
-	 * Parses a line-delimited JSON (JSONL) body into an array of records.
+	 * Fetch one batch of a line-delimited JSON (JSONL) source.
 	 *
-	 * Each non-empty, non-whitespace line is decoded independently; lines
-	 * that fail to decode as a JSON array/object are skipped rather than
-	 * aborting the whole page (one malformed record should not lose the
-	 * rest of a bulk file). Tokenises the body line-by-line (`strtok`)
-	 * instead of `explode()`-ing a second full in-memory copy — bulk files
-	 * can run into the tens of megabytes once decompressed, so this keeps
-	 * the peak overhead to roughly one extra line's worth rather than one
-	 * extra whole-body copy. The body itself is still held fully in memory
-	 * by this point (CallService/Guzzle already buffer the whole response),
-	 * so this is a partial mitigation, not true streaming — a genuine
-	 * streaming re-read (fetch → decompress → parse without ever holding the
-	 * full decompressed string) would need a lower-level change to how
-	 * CallService reads the HTTP response body, which is out of scope here.
+	 * The response body streams to a temporary file instead of into memory,
+	 * and the file is read back one line at a time ({@see readJsonLines()}),
+	 * so neither the compressed nor the decompressed body is ever held whole.
+	 * One run reads at most one batch of records: batch `$page` holds lines
+	 * `($page - 1) * size` up to `$page * size`. The next run resumes at
+	 * `resumePage`, which returns to 1 once the file is exhausted.
 	 *
-	 * @param string $body The decompressed (or already-plain) JSONL body.
+	 * Only a run that read the whole file from its first line is `complete`;
+	 * every other batch is incomplete, so the deletion pass never mistakes
+	 * one batch for the whole source (REQ-009).
 	 *
-	 * @return array<int, array> The decoded records, in file order.
+	 * @param array $source The source to call.
+	 * @param string $endpoint The endpoint to call.
+	 * @param array $config The call configuration.
+	 * @param array $synchronization The synchronization being run.
+	 * @param int $page The 1-based batch to read.
+	 * @param bool $isTest Whether this is a test run (reads one record).
+	 *
+	 * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int, resumePage: ?int}
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
 	 */
-	private function parseJsonLines(string $body): array {
-		$records = [];
-		$line = strtok($body, "\n");
-		while ($line !== false) {
-			$trimmed = trim($line);
-			if ($trimmed !== '') {
-				$decoded = json_decode($trimmed, true);
-				if (is_array($decoded) === true) {
-					$records[] = $decoded;
-				}
-			}
+	private function fetchJsonLinesBatch(
+		array $source,
+		string $endpoint,
+		array $config,
+		array $synchronization,
+		int $page,
+		bool $isTest,
+	): array {
+		$batchSize = $this->jsonLinesBatchSize(sourceConfig: ($synchronization['sourceConfig'] ?? []), isTest: $isTest);
+		$page = max(1, $page);
 
-			$line = strtok("\n");
+		$sinkPath = tempnam(sys_get_temp_dir(), 'integriq-jsonl-');
+		if ($sinkPath === false) {
+			$this->logger->error('SynchronizationService: no temporary file for a JSONL download from {endpoint}.', ['endpoint' => $endpoint]);
+			return $this->failedJsonLinesBatch(page: $page);
 		}
 
-		return $records;
-	}//end parseJsonLines()
+		try {
+			$callLog = $this->callSourceObject(source: $source, endpoint: $endpoint, config: $config, sink: $sinkPath);
+			$statusCode = $this->callLogStatusCode(callLog: $callLog);
+			if ($statusCode === null || $statusCode >= 400) {
+				return $this->failedJsonLinesBatch(page: $page);
+			}
+
+			$this->writeBufferedBodyToSink(response: ($this->callLogResponse(callLog: $callLog) ?? []), sinkPath: $sinkPath);
+			$batch = $this->readJsonLinesBatch(path: $sinkPath, skip: (($page - 1) * $batchSize), limit: $batchSize);
+		} finally {
+			if (file_exists($sinkPath) === true) {
+				unlink($sinkPath);
+			}
+		}
+
+		$complete = ($batch['exhausted'] === true && $page === 1 && $isTest === false);
+		$resumePage = ($page + 1);
+		if ($batch['exhausted'] === true) {
+			$resumePage = 1;
+		}
+
+		$failureReason = 'batch_limit_reached';
+		if ($complete === true) {
+			$failureReason = null;
+		}
+
+		return [
+			'objects' => $this->getAllObjectsFromArray(array: $batch['records'], synchronization: $synchronization),
+			'complete' => $complete,
+			'failureReason' => $failureReason,
+			'pagesFetched' => 1,
+			'resumePage' => $resumePage,
+		];
+	}//end fetchJsonLinesBatch()
+
+	/**
+	 * The number of JSONL records one run reads.
+	 *
+	 * @param array $sourceConfig The synchronization's source configuration.
+	 * @param bool $isTest Whether this is a test run, which reads one record.
+	 *
+	 * @return int The batch size.
+	 */
+	private function jsonLinesBatchSize(array $sourceConfig, bool $isTest): int {
+		if ($isTest === true) {
+			return 1;
+		}
+
+		$batchSize = (int)($sourceConfig['pageSize'] ?? self::DEFAULT_JSONL_BATCH_SIZE);
+		if ($batchSize < 1) {
+			return self::DEFAULT_JSONL_BATCH_SIZE;
+		}
+
+		return $batchSize;
+	}//end jsonLinesBatchSize()
+
+	/**
+	 * The result of a JSONL batch whose download failed: incomplete, and the
+	 * next run retries the same batch.
+	 *
+	 * @param int $page The batch that was asked for.
+	 *
+	 * @return array{objects: array, complete: bool, failureReason: string, pagesFetched: int, resumePage: int}
+	 */
+	private function failedJsonLinesBatch(int $page): array {
+		return [
+			'objects' => [],
+			'complete' => false,
+			'failureReason' => 'page_fetch_failed',
+			'pagesFetched' => 1,
+			'resumePage' => $page,
+		];
+	}//end failedJsonLinesBatch()
+
+	/**
+	 * Read up to `$limit` records after the first `$skip` from a JSONL file.
+	 *
+	 * Reads one record past the batch to learn whether the file has more.
+	 *
+	 * @param string $path The file to read.
+	 * @param int $skip Records to pass over.
+	 * @param int $limit Records to return at most.
+	 *
+	 * @return array{records: array<int, array>, exhausted: bool}
+	 */
+	private function readJsonLinesBatch(string $path, int $skip, int $limit): array {
+		$records = [];
+		foreach ($this->readJsonLines(path: $path) as $index => $record) {
+			if ($index < $skip) {
+				continue;
+			}
+
+			if (count($records) >= $limit) {
+				return ['records' => $records, 'exhausted' => false];
+			}
+
+			$records[] = $record;
+		}
+
+		return ['records' => $records, 'exhausted' => true];
+	}//end readJsonLinesBatch()
+
+	/**
+	 * Write a response body that arrived buffered into the sink file.
+	 *
+	 * A source answered in-process (SOAP, case-system) ignores the Guzzle sink
+	 * and returns its body on the call log instead; this puts that body where
+	 * {@see readJsonLines()} reads. A streamed response left the call log body
+	 * empty, so nothing is written.
+	 *
+	 * @param array $response The call log's `response` sub-array.
+	 * @param string $sinkPath The temporary file the body belongs in.
+	 *
+	 * @return void
+	 */
+	private function writeBufferedBodyToSink(array $response, string $sinkPath): void {
+		$body = (string)($response['body'] ?? '');
+		if ($body === '' || filesize($sinkPath) > 0) {
+			return;
+		}
+
+		if (($response['encoding'] ?? 'UTF-8') === 'base64') {
+			$decoded = base64_decode($body, true);
+			if ($decoded !== false) {
+				$body = $decoded;
+			}
+		}
+
+		file_put_contents($sinkPath, $body);
+	}//end writeBufferedBodyToSink()
+
+	/**
+	 * Yield the records of a JSONL file one line at a time.
+	 *
+	 * `gzopen()` reads a gzip file decompressed and a plain file as-is, so one
+	 * reader serves both `.jsonl` and `.jsonl.gz`. Only the current line is in
+	 * memory. Each non-empty line is decoded on its own; a line that is not a
+	 * JSON object or array is skipped rather than aborting the file, and the
+	 * yielded key counts records only, so batch boundaries do not shift with
+	 * blank or malformed lines.
+	 *
+	 * @param string $path The file to read.
+	 *
+	 * @return \Generator<int, array> The decoded records, keyed by record index.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+	 */
+	private function readJsonLines(string $path): \Generator {
+		$handle = gzopen($path, 'rb');
+		if ($handle === false) {
+			return;
+		}
+
+		try {
+			$index = 0;
+			while (($line = gzgets($handle)) !== false) {
+				$trimmed = trim($line);
+				if ($trimmed === '') {
+					continue;
+				}
+
+				$decoded = json_decode($trimmed, true);
+				if (is_array($decoded) === true) {
+					yield $index => $decoded;
+					$index++;
+				}
+			}
+		} finally {
+			gzclose($handle);
+		}
+	}//end readJsonLines()
 
 	/**
 	 * Parses a markdown-list-shaped response body into an array of records.
