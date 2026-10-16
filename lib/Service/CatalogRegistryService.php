@@ -107,6 +107,7 @@ class CatalogRegistryService {
 	 * @var array<string,string>
 	 *
 	 * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-the-oss-register-is-a-dormant-source-that-holds-only-a-credential-reference-req-dos-001
+	 * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-gitlabcom-raw-files-are-a-credential-free-source-req-dos-003
 	 */
 	private const SLUG_CATEGORY_OVERRIDES = [
 		'brp-haalcentraal' => 'Government registers',
@@ -134,6 +135,7 @@ class CatalogRegistryService {
 		'github-raw' => 'Code hosting',
 		// The developer.overheid.nl OSS-register (sources-developer-overheid).
 		'developer-overheid-oss' => 'Government registers',
+		'gitlab-raw' => 'Code hosting',
 	];
 
 	/**

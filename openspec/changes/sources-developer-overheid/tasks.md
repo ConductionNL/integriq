@@ -20,8 +20,8 @@ Kind: mixed under the thin-glue exception (design.md, Mixed-spec rationale). Con
 - **acceptance_criteria**:
   - GIVEN the fragment WHEN read THEN `gitlab-raw` is enabled, located at `https://gitlab.com`, sends `Accept: text/plain` and has no authentication
   - GIVEN the catalogue WHEN listed THEN it is under `Code hosting`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: Page count from a single-quoted `Link` and from `Total-Pages`
 - **spec_ref**: `openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-a-listing-that-fits-on-one-page-ends-after-one-request-req-dos-004`

@@ -46,6 +46,7 @@ use Twig\Loader\ArrayLoader;
 /**
  * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-the-oss-register-is-a-dormant-source-that-holds-only-a-credential-reference-req-dos-001
  * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-the-key-is-sent-as-x-api-key-and-never-stored-or-logged-req-dos-002
+ * @spec openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-gitlabcom-raw-files-are-a-credential-free-source-req-dos-003
  */
 class DeveloperOverheidSourceFragmentTest extends TestCase {
 
@@ -280,6 +281,39 @@ class DeveloperOverheidSourceFragmentTest extends TestCase {
 		$this->assertStringContainsString('developer-overheid-oss', $logs[0]['statusMessage']);
 
 	}//end testWithoutTheCredentialNoRequestIsSent()
+
+	/**
+	 * The gitlab.com raw source is enabled, asks for plain text and needs no credential.
+	 *
+	 * @return void
+	 */
+	public function testTheGitlabRawSourceNeedsNoCredential(): void {
+		$sources = $this->sources('gitlab-source.json');
+		$this->assertSame(['gitlab-raw'], array_keys($sources));
+
+		$raw = $sources['gitlab-raw'];
+		$this->assertSame('https://gitlab.com', $raw['location']);
+		$this->assertTrue($raw['isEnabled']);
+		$this->assertSame('none', $raw['auth']);
+		$this->assertSame(['headers' => ['Accept' => 'text/plain']], $raw['configuration']);
+		foreach (self::SECRET_FIELDS as $field) {
+			$this->assertArrayNotHasKey($field, $raw, sprintf('gitlab-raw carries a secret field "%s".', $field));
+		}
+
+	}//end testTheGitlabRawSourceNeedsNoCredential()
+
+	/**
+	 * The catalogue files gitlab-raw under Code hosting, next to the GitHub sources.
+	 *
+	 * @return void
+	 */
+	public function testTheCatalogueListsGitlabRawUnderCodeHosting(): void {
+		$catalogue = $this->catalogue();
+
+		$this->assertSame('Code hosting', $catalogue['source-template:gitlab-raw']['category']);
+		$this->assertSame('Code hosting', $catalogue['source-template:github-raw']['category']);
+
+	}//end testTheCatalogueListsGitlabRawUnderCodeHosting()
 
 	/**
 	 * The catalogue entries by slug, built from the real fragment directory.

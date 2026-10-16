@@ -1,0 +1,27 @@
+{
+  "$comment": "ADR-037 register fragment (sources-developer-overheid). Seeds gitlab-raw, public files on https://gitlab.com, the gitlab.com counterpart of github-raw. Opencatalogi's publiccode-developer-overheid-harvest flow reads each listed repository's publiccode.yml through it at /{namespace}/{project}/-/raw/{ref}/{path}; read it with the source-call option decode: yaml. Credential-free and enabled: it reads only public files and holds nothing secret. A private or missing project answers with a redirect to the sign-in page or a 404, and the flow drops the item. Its own fragment because GitLab is not part of the developer.overheid.nl register. See openspec/changes/sources-developer-overheid/design.md D2.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "gitlab-raw"
+        },
+        "name": "GitLab raw files",
+        "description": "Reads public files from gitlab.com projects, such as publiccode.yml, at /{namespace}/{project}/-/raw/{ref}/{path}. Needs no account.",
+        "type": "api",
+        "location": "https://gitlab.com",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "text/plain"
+          }
+        },
+        "isEnabled": true,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
