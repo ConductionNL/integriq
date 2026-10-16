@@ -8363,80 +8363,116 @@ class SynchronizationService {
 		int $page,
 		bool $isTest,
 	): array {
-		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
-		$batchSize = (int)($sourceConfig['pageSize'] ?? self::DEFAULT_JSONL_BATCH_SIZE);
-		if ($batchSize < 1) {
-			$batchSize = self::DEFAULT_JSONL_BATCH_SIZE;
-		}
-
-		if ($isTest === true) {
-			$batchSize = 1;
-		}
-
+		$batchSize = $this->jsonLinesBatchSize(sourceConfig: ($synchronization['sourceConfig'] ?? []), isTest: $isTest);
 		$page = max(1, $page);
-		$failed = [
-			'objects' => [],
-			'complete' => false,
-			'failureReason' => 'page_fetch_failed',
-			'pagesFetched' => 1,
-			'resumePage' => $page,
-		];
 
 		$sinkPath = tempnam(sys_get_temp_dir(), 'integriq-jsonl-');
 		if ($sinkPath === false) {
 			$this->logger->error('SynchronizationService: no temporary file for a JSONL download from {endpoint}.', ['endpoint' => $endpoint]);
-			return $failed;
+			return $this->failedJsonLinesBatch(page: $page);
 		}
 
 		try {
 			$callLog = $this->callSourceObject(source: $source, endpoint: $endpoint, config: $config, sink: $sinkPath);
 			$statusCode = $this->callLogStatusCode(callLog: $callLog);
 			if ($statusCode === null || $statusCode >= 400) {
-				return $failed;
+				return $this->failedJsonLinesBatch(page: $page);
 			}
 
 			$this->writeBufferedBodyToSink(response: ($this->callLogResponse(callLog: $callLog) ?? []), sinkPath: $sinkPath);
-
-			$records = [];
-			$exhausted = true;
-			$skip = (($page - 1) * $batchSize);
-			foreach ($this->readJsonLines(path: $sinkPath) as $index => $record) {
-				if ($index < $skip) {
-					continue;
-				}
-
-				if (count($records) >= $batchSize) {
-					$exhausted = false;
-					break;
-				}
-
-				$records[] = $record;
-			}
+			$batch = $this->readJsonLinesBatch(path: $sinkPath, skip: (($page - 1) * $batchSize), limit: $batchSize);
 		} finally {
 			if (file_exists($sinkPath) === true) {
 				unlink($sinkPath);
 			}
-		}//end try
+		}
 
-		$complete = ($exhausted === true && $page === 1 && $isTest === false);
+		$complete = ($batch['exhausted'] === true && $page === 1 && $isTest === false);
 		$resumePage = ($page + 1);
-		if ($exhausted === true) {
+		if ($batch['exhausted'] === true) {
 			$resumePage = 1;
 		}
 
-		$failureReason = null;
-		if ($complete === false) {
-			$failureReason = 'batch_limit_reached';
+		$failureReason = 'batch_limit_reached';
+		if ($complete === true) {
+			$failureReason = null;
 		}
 
 		return [
-			'objects' => $this->getAllObjectsFromArray(array: $records, synchronization: $synchronization),
+			'objects' => $this->getAllObjectsFromArray(array: $batch['records'], synchronization: $synchronization),
 			'complete' => $complete,
 			'failureReason' => $failureReason,
 			'pagesFetched' => 1,
 			'resumePage' => $resumePage,
 		];
 	}//end fetchJsonLinesBatch()
+
+	/**
+	 * The number of JSONL records one run reads.
+	 *
+	 * @param array $sourceConfig The synchronization's source configuration.
+	 * @param bool $isTest Whether this is a test run, which reads one record.
+	 *
+	 * @return int The batch size.
+	 */
+	private function jsonLinesBatchSize(array $sourceConfig, bool $isTest): int {
+		if ($isTest === true) {
+			return 1;
+		}
+
+		$batchSize = (int)($sourceConfig['pageSize'] ?? self::DEFAULT_JSONL_BATCH_SIZE);
+		if ($batchSize < 1) {
+			return self::DEFAULT_JSONL_BATCH_SIZE;
+		}
+
+		return $batchSize;
+	}//end jsonLinesBatchSize()
+
+	/**
+	 * The result of a JSONL batch whose download failed: incomplete, and the
+	 * next run retries the same batch.
+	 *
+	 * @param int $page The batch that was asked for.
+	 *
+	 * @return array{objects: array, complete: bool, failureReason: string, pagesFetched: int, resumePage: int}
+	 */
+	private function failedJsonLinesBatch(int $page): array {
+		return [
+			'objects' => [],
+			'complete' => false,
+			'failureReason' => 'page_fetch_failed',
+			'pagesFetched' => 1,
+			'resumePage' => $page,
+		];
+	}//end failedJsonLinesBatch()
+
+	/**
+	 * Read up to `$limit` records after the first `$skip` from a JSONL file.
+	 *
+	 * Reads one record past the batch to learn whether the file has more.
+	 *
+	 * @param string $path The file to read.
+	 * @param int $skip Records to pass over.
+	 * @param int $limit Records to return at most.
+	 *
+	 * @return array{records: array<int, array>, exhausted: bool}
+	 */
+	private function readJsonLinesBatch(string $path, int $skip, int $limit): array {
+		$records = [];
+		foreach ($this->readJsonLines(path: $path) as $index => $record) {
+			if ($index < $skip) {
+				continue;
+			}
+
+			if (count($records) >= $limit) {
+				return ['records' => $records, 'exhausted' => false];
+			}
+
+			$records[] = $record;
+		}
+
+		return ['records' => $records, 'exhausted' => true];
+	}//end readJsonLinesBatch()
 
 	/**
 	 * Write a response body that arrived buffered into the sink file.
