@@ -470,6 +470,10 @@ class StufProviderReceiverTest extends TestCase {
 		$long = $outward->invoke(null, str_repeat('x', 500));
 		$this->assertSame(200, mb_strlen($long));
 		$this->assertStringEndsWith('…', $long);
+
+		$wide = $outward->invoke(null, str_repeat('日', 150));
+		$this->assertLessThanOrEqual(200, mb_strwidth($wide), 'A wide character counts two columns');
+		$this->assertStringEndsWith('…', $wide);
 	}//end testARefusalLeavesAsOneBoundedLine()
 
 	/**

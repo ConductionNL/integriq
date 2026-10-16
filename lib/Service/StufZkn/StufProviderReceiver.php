@@ -103,7 +103,7 @@ class StufProviderReceiver {
 	private const ORIGIN_FORWARDED = 'forwarded';
 
 	/**
-	 * The longest refusal text sent to the external case system.
+	 * The widest refusal text sent to the external case system, in columns (a wide character counts two).
 	 *
 	 * @var int
 	 */
