@@ -271,6 +271,24 @@ class CallServiceBodyCaptureTest extends TestCase {
 	}//end testAWindowBeyondTheMaximumStoresNoBody()
 
 	/**
+	 * A window that ends exactly at the maximum is open; a minute beyond it is closed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testTheMaximumItselfIsStillInsideTheWindow(): void {
+		$service = $this->service(new Response(200, [], '{"uuid":"z1"}'));
+		$service->call(source: $this->source('2026-10-12T12:00:00+00:00'), endpoint: '/zaken', method: 'POST');
+		$service->call(source: $this->source('2026-10-12T12:01:00+00:00'), endpoint: '/zaken', method: 'POST');
+
+		$logs = $this->callLogs();
+		$this->assertCount(2, $logs);
+		$this->assertTrue($logs[0]['bodyCaptured'], 'NOW + 72 h is within the maximum');
+		$this->assertNoBody($logs[1]);
+	}//end testTheMaximumItselfIsStillInsideTheWindow()
+
+	/**
 	 * A window that cannot be read stores nothing.
 	 *
 	 * @return void
