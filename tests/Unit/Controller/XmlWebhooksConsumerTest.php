@@ -57,6 +57,7 @@ use OCA\Integriq\Service\StufZkn\OutboundNotificationTranslator;
 use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
 use OCA\Integriq\Service\StufZknSyncService;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCA\Integriq\Service\UwlrEduV\BasispoortSyncTranslator;
 use OCA\Integriq\Service\UwlrEduV\EduVExportEnvelopeTranslator;
 use OCA\Integriq\Service\UwlrEduV\EntreeContentSyncTranslator;
@@ -233,6 +234,27 @@ class XmlWebhooksConsumerTest extends TestCase {
 		$this->assertSame([], $this->worldWrites);
 
 	}//end testAWrongSignatureAnswers401()
+
+	/**
+	 * A StUF-ZKN kennisgeving over the body ceiling: 413 before the signature is checked, nothing written.
+	 *
+	 * The body is correctly signed, so only the size can refuse it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
+	 */
+	public function testAnOversizedStufZknKennisgevingAnswers413(): void {
+		$stuf = self::webhooks()['stuf-zkn kennisgeving'];
+		$body = str_replace('</soap:Envelope>', '<!--' . str_repeat('x', StufZknRequestBody::MAX_BYTES) . '--></soap:Envelope>', $stuf[2]);
+		$objectService = $this->world(profile: WebhookProfiles::stufZkn(), outbound: $stuf[3], schema: $stuf[4]);
+
+		$response = $this->controller(profile: 'stufZkn', objectService: $objectService, body: $body, signature: $this->signWebhook($body))->inbound();
+
+		$this->assertSame(Http::STATUS_REQUEST_ENTITY_TOO_LARGE, $response->getStatus());
+		$this->assertSame([], $this->worldWrites);
+
+	}//end testAnOversizedStufZknKennisgevingAnswers413()
 
 	/**
 	 * A connection whose account may write the schema, and the outbound message a retour answers.

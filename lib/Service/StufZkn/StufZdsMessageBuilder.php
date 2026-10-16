@@ -83,6 +83,11 @@ class StufZdsMessageBuilder {
 	/**
 	 * Build a zakLk01 creeerZaak.
 	 *
+	 * The shape is the one StUF-ZKN 3.10 defines and integriq's own provider side
+	 * reads ({@see StufProviderOperationMapper::caseOperation()}): the mutatiesoort
+	 * in `parameters`, the zaaktype under `isVan/gerelateerde` and each person under
+	 * `<role>/gerelateerde/natuurlijkPersoon`.
+	 *
 	 * @param array       $case                 The case: omschrijving, startdatum, betrokkenen[] (bsn, role), documenten[] (name, mime, bytes).
 	 * @param string      $zaaktypeOmschrijving The zaaktype the calling app maps the case type to.
 	 * @param array       $routing              Zender, ontvanger and optional wsse (see routing()).
@@ -124,9 +129,9 @@ class StufZdsMessageBuilder {
 		$parties = '';
 		foreach ((array)($case['betrokkenen'] ?? []) as $party) {
 			$role     = $this->escape(value: (string)($party['role'] ?? 'heeftAlsInitiator'));
-			$parties .= '<zkn:' . $role . '><zkn:gerelateerde stuf:entiteittype="NPS">'
+			$parties .= '<zkn:' . $role . '><zkn:gerelateerde><zkn:natuurlijkPersoon stuf:entiteittype="NPS">'
 				. $this->element(name: 'bg:inp.bsn', value: (string)($party['bsn'] ?? ''))
-				. '</zkn:gerelateerde></zkn:' . $role . '>';
+				. '</zkn:natuurlijkPersoon></zkn:gerelateerde></zkn:' . $role . '>';
 		}
 
 		$documentXml = '';
@@ -140,11 +145,14 @@ class StufZdsMessageBuilder {
 
 		$body = '<zkn:zakLk01>'
 			. $this->stuurgegevens(messageCode: 'Lk01', routing: $routing, entityType: 'ZAK', role: 'creeerZaak', referenceNumber: $referenceNumber)
+			. '<zkn:parameters><stuf:mutatiesoort>T</stuf:mutatiesoort><stuf:indicatorOvername>V</stuf:indicatorOvername></zkn:parameters>'
 			. '<zkn:object stuf:entiteittype="ZAK" stuf:verwerkingssoort="T">'
 			. $identification
 			. $this->element(name: 'zkn:omschrijving', value: (string)($case['omschrijving'] ?? ''))
 			. $this->element(name: 'zkn:startdatum', value: (string)($case['startdatum'] ?? ''))
-			. '<zkn:zaaktype>' . $this->element(name: 'zkn:omschrijving', value: $zaaktypeOmschrijving) . '</zkn:zaaktype>'
+			. '<zkn:isVan stuf:entiteittype="ZAKZKT"><zkn:gerelateerde stuf:entiteittype="ZKT">'
+			. $this->element(name: 'zkn:omschrijving', value: $zaaktypeOmschrijving)
+			. '</zkn:gerelateerde></zkn:isVan>'
 			. $parties
 			. $documentXml
 			. '</zkn:object>'

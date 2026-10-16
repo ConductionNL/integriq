@@ -731,12 +731,24 @@ class StufProviderReceiverTest extends TestCase {
 	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-refused-write-is-a-stuf-fault-with-a-refusing-status
 	 */
 	public function testARefusedWriteSendsTheRefusalOutAsOneLine(): void {
+		$records = [];
+		$this->logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$records): void {
+				$records[] = [$message, $context];
+			}
+		);
+
 		$this->owner = 'leaky';
 		$answer      = $this->receiver()->receive(rawXml: self::zakLk01(), sourceId: 'zsh', service: 'cases');
 
 		$this->assertSame(400, $answer['statusCode']);
 		$this->assertStringContainsString('SQLSTATE[23000]: Integrity constraint violation object 7f3a', $answer['body']);
 		$this->assertStringNotContainsString("SQLSTATE[23000]:\n", $answer['body']);
+
+		// The log carries the same bounded line, not the reason as the app gave it.
+		$refusals = array_values(array_filter($records, static fn (array $record): bool => str_contains($record[0], 'refused by {app}')));
+		$this->assertCount(1, $refusals);
+		$this->assertSame('SQLSTATE[23000]: Integrity constraint violation object 7f3a', $refusals[0][1]['reason']);
 	}//end testARefusedWriteSendsTheRefusalOutAsOneLine()
 
 	/**

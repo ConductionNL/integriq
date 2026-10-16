@@ -25,6 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Service\StufZkn;
 use DOMDocument;
 use DOMXPath;
 use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\StufZkn\StufProviderOperationMapper;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknNamespaces;
 use PHPUnit\Framework\TestCase;
@@ -102,10 +103,11 @@ class StufZdsMessageBuilderTest extends TestCase {
 		);
 
 		$xpath = $this->xpath($message['xml']);
-		$this->assertSame('Bezwaarschrift behandelen', $xpath->evaluate('string(//zkn:zakLk01/zkn:object/zkn:zaaktype/zkn:omschrijving)'));
+		$this->assertSame('Bezwaarschrift behandelen', $xpath->evaluate('string(//zkn:zakLk01/zkn:object/zkn:isVan/zkn:gerelateerde/zkn:omschrijving)'));
+		$this->assertSame('T', $xpath->evaluate('string(//zkn:zakLk01/zkn:parameters/stuf:mutatiesoort)'));
 		$this->assertSame('Bezwaar & beroep', $xpath->evaluate('string(//zkn:zakLk01/zkn:object/zkn:omschrijving)'));
 		$this->assertSame('T', $xpath->evaluate('string(//zkn:object/@stuf:verwerkingssoort)'));
-		$this->assertSame('999993653', $xpath->evaluate('string(//zkn:heeftAlsInitiator/zkn:gerelateerde/bg:inp.bsn)'));
+		$this->assertSame('999993653', $xpath->evaluate('string(//zkn:heeftAlsInitiator/zkn:gerelateerde/zkn:natuurlijkPersoon/bg:inp.bsn)'));
 		$this->assertSame('Lk01', $xpath->evaluate('string(//stuf:berichtcode)'));
 		$this->assertSame('creeerZaak', $xpath->evaluate('string(//stuf:functie)'));
 		$this->assertSame('dossiq', $xpath->evaluate('string(//stuf:zender/stuf:applicatie)'));
@@ -114,6 +116,34 @@ class StufZdsMessageBuilderTest extends TestCase {
 		$this->assertSame($message['referentienummer'], $xpath->evaluate('string(//stuf:referentienummer)'));
 		$this->assertSame(0.0, $xpath->evaluate('count(//zkn:object/zkn:identificatie)'));
 	}//end testCaseCreationCarriesTheMappedZaaktypeAndRouting()
+
+	/**
+	 * A creeerZaak integriq sends is read back by integriq's own provider side as the case it was built from.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 */
+	public function testCaseCreationIsReadBackByTheProviderMapper(): void {
+		$message = $this->builder->caseCreation(
+			case: ['omschrijving' => 'Bezwaar', 'startdatum' => '20261011', 'betrokkenen' => [['bsn' => '999993653', 'role' => 'heeftAlsInitiator']]],
+			zaaktypeOmschrijving: 'Bezwaarschrift behandelen',
+			routing: $this->routing,
+		);
+
+		$document = new DOMDocument();
+		$document->loadXML($message['xml']);
+		$zakLk01 = simplexml_import_dom($document->getElementsByTagNameNS(StufZknNamespaces::ZKN, 'zakLk01')->item(0));
+		$mutatiesoort = (string)($zakLk01->xpath('./*[local-name()="parameters"]/*[local-name()="mutatiesoort"]')[0] ?? '');
+
+		$operation = (new StufProviderOperationMapper())->caseOperation(message: $zakLk01, mutatiesoort: $mutatiesoort);
+
+		$this->assertSame('create', $operation['action']);
+		$this->assertSame('Bezwaar', $operation['title']);
+		$this->assertSame('2026-10-11', $operation['startDate']);
+		$this->assertSame('Bezwaarschrift behandelen', $operation['caseTypeName']);
+		$this->assertSame(['type' => 'person', 'sourceId' => '999993653'], $operation['initiator']);
+	}//end testCaseCreationIsReadBackByTheProviderMapper()
 
 	/**
 	 * A pre-allocated identificatie goes into the object.
