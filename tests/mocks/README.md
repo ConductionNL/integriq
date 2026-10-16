@@ -5,6 +5,7 @@ Small HTTP servers that replay the documented response shapes of outside systems
 | Directory | Stands in for | Used by |
 |---|---|---|
 | `github/` | GitHub code search (`GET /search/code`) with `Link` paging and `X-RateLimit-*` headers | `sources-github-publiccode` |
+| `developer-overheid/` | The developer.overheid.nl OSS-register (`GET /oss-register/v1/repositories`, `/repositories/{id}`) with single-quoted `Link`, `Total-Pages` and an `X-Api-Key` check, plus the github.com and gitlab.com raw files its records point at | `sources-developer-overheid` |
 
 ## Run one
 

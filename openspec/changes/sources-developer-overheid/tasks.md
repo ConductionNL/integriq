@@ -40,8 +40,8 @@ Kind: mixed under the thin-glue exception (design.md, Mixed-spec rationale). Con
   - GIVEN no or a wrong `X-Api-Key` WHEN any route is called THEN 401 with the register's message
   - GIVEN `TOTAL=150` WHEN pages 1 and 2 are requested THEN 100 and 50 records with the paging headers
   - GIVEN the raw routes WHEN called THEN one file is broken YAML, one is a 404 and the rest are valid publiccode.yml files
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: Sources manual
 - **spec_ref**: `openspec/changes/sources-developer-overheid/specs/developer-overheid-sources/spec.md#requirement-the-oss-register-is-a-dormant-source-that-holds-only-a-credential-reference-req-dos-001`
