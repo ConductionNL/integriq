@@ -2138,7 +2138,19 @@ OC.L10N.register(
         "Confirmation": "Bevestiging",
         "Confirmed At": "Bevestigd om",
         "The asynchronous confirmation the case system sent after processing the kennisgeving": "De asynchrone bevestiging die het zaaksysteem stuurde nadat het de kennisgeving verwerkte",
-        "When the asynchronous confirmation arrived": "Wanneer de asynchrone bevestiging binnenkwam"
+        "When the asynchronous confirmation arrived": "Wanneer de asynchrone bevestiging binnenkwam",
+        "Apply a mapping": "Een mapping toepassen",
+        "Apply a configured mapping to every item in the page, in one step execution.": "Pas een ingestelde mapping toe op elk item van de pagina, in één stap.",
+        "Commit contracts": "Contracten vastleggen",
+        "Upsert the page's synchronization contracts in one bulk call, after the objects are written.": "Leg de synchronisatiecontracten van de pagina in één keer vast, nadat de objecten zijn geschreven.",
+        "Match contracts": "Contracten opzoeken",
+        "Look up the page's synchronization contracts in one query and stamp every item create, update or skip.": "Zoek de synchronisatiecontracten van de pagina in één keer op en markeer elk item als aanmaken, bijwerken of overslaan.",
+        "Sweep stale objects": "Verouderde objecten opruimen",
+        "After a complete pass, remove objects the source no longer has — through the guarded deletion, never around it.": "Verwijder na een volledige ronde de objecten die de bron niet meer heeft. Dat gaat altijd via de beveiligde verwijdering.",
+        "Fetch files": "Bestanden ophalen",
+        "Runs a configured fetch-file rule against every record in the page, attaching its files to the object that was just written. The fetch is started, not awaited.": "Voert voor elk record van de pagina een ingestelde ophaalregel uit en hangt de bestanden aan het object dat net is geschreven. Het ophalen wordt gestart, er wordt niet op gewacht.",
+        "Fetch pages from a source": "Pagina's ophalen uit een bron",
+        "Fetch a synchronization's source and emit one item per page, each carrying that page's objects.": "Haal de bron van een synchronisatie op en geef één item per pagina door, met de objecten van die pagina."
     },
     "nplurals=2; plural=(n != 1);"
 )
