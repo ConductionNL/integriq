@@ -3492,7 +3492,9 @@
         "Confirmation": "Confirmation",
         "Confirmed At": "Confirmed At",
         "The asynchronous confirmation the case system sent after processing the kennisgeving": "The asynchronous confirmation the case system sent after processing the kennisgeving",
-        "When the asynchronous confirmation arrived": "When the asynchronous confirmation arrived"
+        "When the asynchronous confirmation arrived": "When the asynchronous confirmation arrived",
+        "Current Page Version": "Current Page Version",
+        "The version (ETag, or Last-Modified with Content-Length) of the JSONL file the current batch cycle reads; empty when the source sends neither. A later batch that finds another version starts the cycle again at batch 1.": "The version (ETag, or Last-Modified with Content-Length) of the JSONL file the current batch cycle reads; empty when the source sends neither. A later batch that finds another version starts the cycle again at batch 1."
     },
     "plurals": {}
 }
