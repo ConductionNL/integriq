@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "synchronisaties",
         "Load example data?": "Voorbeeldgegevens laden?",
         "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Voorbeeldgegevens vullen de lijsten, detailpagina’s en dashboards, zodat je de app meteen ziet werken. Elke kaart heeft een eigen knop Laden. Kies \"Geen\" op een productieomgeving.",
         "None, I will set this up myself": "Geen, ik richt dit zelf in",

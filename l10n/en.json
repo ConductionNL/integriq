@@ -1,5 +1,6 @@
 {
     "translations": {
+        "synchronizations": "synchronizations",
         "API key": "API Key",
         "Access point credential missing": "Access point credential missing",
         "Account is disabled": "Account is disabled",
