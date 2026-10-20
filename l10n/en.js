@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "synchronizations",
         "API key": "API Key",
         "Access point credential missing": "Access point credential missing",
         "Account is disabled": "Account is disabled",
