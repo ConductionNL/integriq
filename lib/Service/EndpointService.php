@@ -3274,8 +3274,13 @@ class EndpointService {
 
 		if (isset($configuration['authentication']['header']) === true) {
 			// Convert configured header name to lowercase + underscore variant
-			// for a single normalised lookup against $normalisedHeaders.
-			$lookupKey = strtolower((string)$configuration['authentication']['header']);
+			// for a single normalised lookup against $normalisedHeaders: PHP's
+			// SAPI folds a hyphenated header (e.g. `X-Corsa-Secret`) into
+			// `HTTP_X_CORSA_SECRET`, and `getHeaders()` strips the prefix and
+			// lowercases but never reintroduces the hyphen — so a configured
+			// header name with a hyphen in it never matched its own value
+			// without this replace.
+			$lookupKey = str_replace('-', '_', strtolower((string)$configuration['authentication']['header']));
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
