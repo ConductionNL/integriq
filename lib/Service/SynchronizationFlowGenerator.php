@@ -24,8 +24,7 @@
  *     → openregister.set-fields         (targetUuid, defaulted to "")
  *     → openregister.object-write       (upsert, matched on @self.uuid)
  *     → openconnector.contract-commit
- *     → openconnector.contract-sweep
- *     → openregister.end
+ *     → openconnector.contract-sweep       (IFlowEndNode — marks the pipeline's own end)
  *
  * WHY AN `explode` STEP THE DESIGN DOES NOT DRAW
  * ---------------------------------------------
@@ -722,6 +721,14 @@ class SynchronizationFlowGenerator {
 				],
 			],
 			[
+				// The pipeline's own end — no trailing `openregister.end`. That
+				// node does not just mark a path connected, it throws `FlowStop`,
+				// which `FlowEngine` reports as a `stopped` run: every generated
+				// sync then showed `stopped` instead of `completed` for an
+				// ordinary successful pass. `ContractSweepNode implements
+				// IFlowEndNode`, which satisfies the connectivity check on its
+				// own, so the run instead ends through the engine's normal "no
+				// transitions left" path and is reported `completed`.
 				'id' => 'sweep',
 				'type' => ContractSweepNode::NODE_ID,
 				'config' => [
@@ -730,7 +737,6 @@ class SynchronizationFlowGenerator {
 					'fetchComplete' => self::KEY_PAGE . '.fetchInfo.complete',
 				],
 			],
-			['id' => 'end', 'type' => 'openregister.end', 'config' => []],
 		];
 
 	}//end writeNodesFor()

@@ -59,6 +59,8 @@ namespace OCA\Integriq\Flow;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
+use OCA\OpenRegister\Service\Flow\IFlowEndNode;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -73,9 +75,20 @@ use UnexpectedValueException;
 /**
  * Sweeps stale objects after a complete pass, through the guarded deletion.
  *
+ * Implements {@see IFlowEndNode}: this is the last functional step of every
+ * generated synchronization pipeline (`SynchronizationFlowGenerator`), with no
+ * outgoing edge of its own. Without this marker the connectivity check would
+ * flag it as an unintentional dead end, and the generator used to "fix" that
+ * by appending `openregister.end` — which does something stronger than mark a
+ * path connected: it throws `FlowStop`, which `FlowEngine` reports as a
+ * `stopped` run. Every generated sync then showed `stopped` instead of
+ * `completed` for a perfectly normal pass. Marking the TYPE as an end
+ * satisfies the connectivity check without the engine ever treating a
+ * successful sweep as a deliberate early halt.
+ *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, IFlowEndNode {
 
 	use SynchronizationLogActions;
 
@@ -415,6 +428,11 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 			];
 		}//end try
 
+		$this->writeReport(
+			context: $context,
+			report: ['swept' => ['count' => $deleted]]
+		);
+
 		return [
 			FlowItems::item(
 				json: [
@@ -430,6 +448,31 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 			),
 		];
 	}//end sweep()
+
+	/**
+	 * Write this hop's swept count onto the run log, via the context's report handle.
+	 *
+	 * The full guard verdict (ratio, threshold, candidate counts, ...) stays on
+	 * the emitted item's `json.sweep` block, built by {@see self::summary()} —
+	 * this is only the count, in the bucket shape the run log's report
+	 * mechanism and its renderer expect.
+	 *
+	 * Silently a no-op when the handle is absent — a run from before this
+	 * handle existed, or a caller that never wired one.
+	 *
+	 * @param array $context The run context.
+	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
+	 *
+	 * @return void
+	 */
+	private function writeReport(array $context, array $report): void {
+		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($handle instanceof FlowStepReport) === false) {
+			return;
+		}
+
+		$handle->put(key: 'sweep', value: $report);
+	}//end writeReport()
 
 	/**
 	 * The summary block the single emitted item carries.

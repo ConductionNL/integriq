@@ -57,6 +57,7 @@ namespace OCA\Integriq\Flow;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -338,6 +339,7 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 
 		// PASS 2 — decide per item, in input order.
 		$outputList = [];
+		$outcomeCounts = ['create' => 0, 'update' => 0, 'skip' => 0, 'invalid' => 0];
 		foreach ($indexed as $index => $item) {
 			$json = (array)($item['json'] ?? []);
 			$originId = $originIds[$index];
@@ -353,6 +355,11 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 				);
 			}
 
+			$outcome = (string)($decision['outcome'] ?? 'invalid');
+			if (isset($outcomeCounts[$outcome]) === true) {
+				$outcomeCounts[$outcome]++;
+			}
+
 			$outputList[] = FlowItems::item(
 				json: FlowTemplate::write(json: $json, path: $outputKey, value: $decision),
 				binary: (array)($item['binary'] ?? []),
@@ -360,8 +367,33 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 			);
 		}
 
+		$this->writeReport(
+			context: $context,
+			report: array_map(static fn (int $count): array => ['count' => $count], $outcomeCounts)
+		);
+
 		return $outputList;
 	}//end matchPage()
+
+	/**
+	 * Write this hop's outcome tally onto the run log, via the context's report handle.
+	 *
+	 * Silently a no-op when the handle is absent — a run from before this
+	 * handle existed, or a caller that never wired one.
+	 *
+	 * @param array $context The run context.
+	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
+	 *
+	 * @return void
+	 */
+	private function writeReport(array $context, array $report): void {
+		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($handle instanceof FlowStepReport) === false) {
+			return;
+		}
+
+		$handle->put(key: 'contract', value: $report);
+	}//end writeReport()
 
 	/**
 	 * Read one item's origin id, as a trimmed string.
