@@ -36,6 +36,7 @@ use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SourcePaginateNode;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -330,6 +331,36 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->assertSame('Demo synchronization', $received['synchronization']['name']);
 
 	}//end testEmitsOneItemPerPageWithTruthfulCounts()
+
+	/**
+	 * Regression coverage: the per-page object/page counts used to be
+	 * scattered across the emitted items (`page.count`, `page.pages`) with no
+	 * single run-level total, so a flow run's log carried no way to know how
+	 * many objects or pages this hop fetched overall.
+	 */
+	public function testItReportsTheTotalObjectsAndPagesFetched(): void {
+		$this->givenOwner();
+		$this->synchronizationService->objects = $this->objects(5);
+		$this->synchronizationService->fetchInfoToWrite = [
+			'complete' => true,
+			'pagesFetched' => 2,
+			'failureReason' => null,
+		];
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			[['json' => ['trigger' => 'manual']]],
+			['synchronization' => 'demo-sync', 'pageSize' => 2, 'output' => 'page'],
+			$this->context() + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			['fetch' => ['objects' => ['count' => 5], 'pages' => ['count' => 3]]],
+			$report->take()
+		);
+
+	}//end testItReportsTheTotalObjectsAndPagesFetched()
 
 	/**
 	 * The engine's own completeness verdict rides on every page.
