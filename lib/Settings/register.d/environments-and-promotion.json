@@ -1,9 +1,13 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (environments-and-promotion). Declares two schemas: `environment` (named target/source connectivity metadata, wraps an existing `source` object per design.md Decision 1/2 — no new credential or connection format) and `promotion_audit` (append-only/immutable log schema, matching call_log/job_log's x-openregister-archival convention). Also seeds two `environment` rows (`local`, `acceptance`) plus their connectivity `source` rows via `components.objects` + `@ref:<schema>:<slug>` tokens — the SAME mechanism OpenRegister's ImportHandler::resolveSeedReferenceTokens()/importFromJson() object-import loop already processes for every other OpenConnector register fragment's seed rows (verified live against OpenRegister HEAD: lib/Service/Configuration/ImportHandler.php lines ~1946-2030 processes `components.objects` with `@ref:` token resolution INSIDE importFromJson(), called from importFromApp(), which InitializeRegister.php invokes on every occ app:enable/upgrade). Deliberately NOT using `lib/environments.seed.json` (tasks.md's literal suggestion, 'following lib/sources.seed.json convention') or a schema-embedded `x-openregister-seed` array (the convention hitl-approval-rule-action.json used): neither is consumed by any code path in this app or in OpenRegister — `lib/sources.seed.json` has zero PHP references anywhere in lib/, and `x-openregister-seed` is only preserved as a round-trippable Schema config key (lib/Db/Schema.php RESERVED_KEYS) with no importer reading it back out. Following either literal precedent would have shipped a second, orphaned seed file (the exact 'spec-says-done, feature-never-runs' defect class this fleet actively guards against) instead of materialising the two seed environments design.md's Seed Data section requires.",
   "components": {
     "registers": {
       "integriq": {
-        "schemas": ["environment", "promotion_audit"]
+        "schemas": [
+          "environment",
+          "promotion_audit"
+        ]
       }
     },
     "schemas": {
@@ -14,7 +18,11 @@
         "version": "1.0.0",
         "summary": "A named OpenConnector environment (e.g. staging, production) reachable via an existing Source",
         "description": "Named environment metadata used by the promotion workflow (environments-and-promotion). Carries NO credential or connection material of its own: `sourceRef` points at an existing `source`-schema object (type: api) whose `location` and `configuration.authentication.credentialRef` describe how to reach that environment's OpenConnector API, so dispatching a call to an environment reuses CallService::call() and BrokeredCallService's existing broker resolution unchanged. See openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001.",
-        "required": ["name", "slug", "sourceRef"],
+        "required": [
+          "name",
+          "slug",
+          "sourceRef"
+        ],
         "type": "object",
         "properties": {
           "uuid": {
@@ -34,7 +42,11 @@
           },
           "role": {
             "type": "string",
-            "enum": ["source", "target", "both"],
+            "enum": [
+              "source",
+              "target",
+              "both"
+            ],
             "default": "both",
             "description": "UI-filtering hint only (design.md Open Questions): whether this environment is typically promoted FROM, promoted TO, or both. Not enforced at promotion time: any environment may technically be used as source or target, matching how Sources aren't role-locked today either.",
             "title": "Role"
@@ -76,7 +88,12 @@
         "version": "1.0.0",
         "summary": "Append-only audit record of one promotion attempt (success or failure)",
         "description": "One row per confirmed promotion attempt (REQ-006). Records who promoted, what configuration, from which environment to which, when, the outcome, a counts-only preview summary (never entity payloads or credential values), how many credentialRef rebindings were applied, and the CallLog id the underlying CallService::call() dispatch produced (Decision 2/4 cross-reference). appendOnly/immutable, matching call_log/job_log. See openspec/specs/environments-and-promotion/spec.md#requirement-every-promotion-attempt-is-recorded-in-an-append-only-promotion-audit-log-req-006.",
-        "required": ["configurationId", "fromEnvironmentSlug", "toEnvironmentSlug", "outcome"],
+        "required": [
+          "configurationId",
+          "fromEnvironmentSlug",
+          "toEnvironmentSlug",
+          "outcome"
+        ],
         "type": "object",
         "properties": {
           "uuid": {
@@ -118,7 +135,11 @@
           },
           "outcome": {
             "type": "string",
-            "enum": ["success", "failed", "rejected"],
+            "enum": [
+              "success",
+              "failed",
+              "rejected"
+            ],
             "description": "Result of the promotion attempt",
             "title": "Outcome"
           },

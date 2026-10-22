@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (endoflife-date-source, part 2/2). Seeds one mapping + synchronization + job triple per curated product (design.md Decision 2 — one Synchronization per product keeps each SynchronizationContract's (synchronizationId, originId) collision-proof; discovery.md Finding 4). Companion to endoflife-date-source.json (schemas + source + eol_product seeds), split for reviewability per tasks.md Task 2.",
   "components": {
     "objects": [

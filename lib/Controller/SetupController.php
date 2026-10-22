@@ -36,6 +36,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\DefaultConnectorService;
 use OCA\Integriq\Service\DemoDataService;
 
 /**
@@ -47,9 +49,16 @@ class SetupController extends Controller {
 	/**
 	 * Setup contract version; matches manifest.setup.version.
 	 *
+	 * 🔴 BUMP THIS WHENEVER A STEP IS ADDED TO AN EXISTING MANIFEST. The wizard
+	 * library dismisses itself per `(appId, setup.version)` in localStorage
+	 * (`cn-setup-wizard-dismissed:<appId>:<version>`) — an operator who already
+	 * dismissed version 1 will never see a new step added to version 1, no
+	 * matter how outstanding the server reports it. Bumped from 1 to 2 when the
+	 * `default-connectors` step was added.
+	 *
 	 * @var integer
 	 */
-	private const SETUP_VERSION = 1;
+	private const SETUP_VERSION = 2;
 
 	/**
 	 * App-config key recording that the demo-data step was DEALT WITH.
@@ -78,12 +87,32 @@ class SetupController extends Controller {
 	private const DATASET_KEY = 'demo_dataset';
 
 	/**
+	 * App-config key recording that the default-connectors step was DEALT WITH.
+	 *
+	 * Same reasoning as DEMO_DECIDED_KEY — an operator who declines has finished
+	 * the step, and a step that can never be marked done reopens the wizard over
+	 * every page (nextcloud-vue#806).
+	 *
+	 * @var string
+	 */
+	private const CONNECTORS_DECIDED_KEY = 'default_connectors_decided';
+
+	/**
+	 * App-config key holding which default-connectors choice the operator picked.
+	 *
+	 * @var string
+	 */
+	private const CONNECTORS_DATASET_KEY = 'default_connectors_dataset';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest        $request         The request.
-	 * @param IAppConfig      $appConfig       Records the demo-data decision.
-	 * @param LoggerInterface $logger          Records a failed import.
-	 * @param DemoDataService $demoDataService Imports the shipped demo dataset.
+	 * @param IRequest                $request          The request.
+	 * @param IAppConfig              $appConfig        Records the demo-data and default-connectors decisions.
+	 * @param LoggerInterface         $logger           Records a failed import.
+	 * @param DemoDataService          $demoDataService  Imports the shipped demo dataset.
+	 * @param DefaultConnectorService  $connectorService Imports the shipped default source connectors.
+	 * @param ConnectionRegistryService $connectionRegistry Syncs app_connection rows once connectors are opted into.
 	 *
 	 * @return void
 	 */
@@ -92,6 +121,8 @@ class SetupController extends Controller {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly DemoDataService $demoDataService,
+		private readonly DefaultConnectorService $connectorService,
+		private readonly ConnectionRegistryService $connectionRegistry,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
@@ -113,6 +144,9 @@ class SetupController extends Controller {
 		$demoDecided = $this->appConfig->getValueString(Application::APP_ID, self::DEMO_DECIDED_KEY, '') !== '';
 		$picked      = $this->appConfig->getValueString(Application::APP_ID, self::DATASET_KEY, '');
 
+		$connectorsDecided = $this->appConfig->getValueString(Application::APP_ID, self::CONNECTORS_DECIDED_KEY, '') !== '';
+		$connectorsPicked  = $this->appConfig->getValueString(Application::APP_ID, self::CONNECTORS_DATASET_KEY, '');
+
 		return new JSONResponse(
 			data: [
 				'version'   => self::SETUP_VERSION,
@@ -121,6 +155,9 @@ class SetupController extends Controller {
 				// `optionsSource: datasets` and no options of its own, so a
 				// dataset missing from this list is a dataset nobody can pick.
 				'datasets'  => $this->demoDataService->listChoices(),
+				// Same contract as `datasets`, for the `default-connectors` step's
+				// `optionsSource: connectorDatasets`.
+				'connectorDatasets' => $this->connectorService->listChoices(),
 				// Every id of `manifest.setup.steps`, asserted by the status
 				// contract test: a step the server never reports stays open,
 				// and an open step reopens the wizard on every page.
@@ -130,6 +167,7 @@ class SetupController extends Controller {
 					// ran. A pick without a load still counts: a wizard that
 					// predates `loadAction` can only record the pick.
 					'demo-data' => ['done' => ($demoDecided === true || $picked !== '')],
+					'default-connectors' => ['done' => ($connectorsDecided === true || $connectorsPicked !== '')],
 					'done' => ['done' => true],
 				],
 			]
@@ -152,26 +190,44 @@ class SetupController extends Controller {
 		// them. The key is written in the source; only its value comes from the
 		// request.
 		$value = $this->request->getParam(self::DATASET_KEY);
-		if ($value === null) {
-			return new JSONResponse(data: ['success' => true, 'config' => []]);
+		if ($value !== null) {
+			// The step is not `multiple`, but the wizard's contract allows a list, so
+			// both shapes are read rather than one of them reaching `(string)`.
+			$submitted = $value;
+			if (is_array($value) === true) {
+				$submitted = ($value[0] ?? null);
+			}
+
+			$refusal = $this->refuseDataset(value: $submitted);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+
+			$datasetId = (string)$submitted;
+			$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, $datasetId);
+
+			return new JSONResponse(data: ['success' => true, 'config' => [self::DATASET_KEY => $datasetId]]);
 		}
 
-		// The step is not `multiple`, but the wizard's contract allows a list, so
-		// both shapes are read rather than one of them reaching `(string)`.
-		$submitted = $value;
-		if (is_array($value) === true) {
-			$submitted = ($value[0] ?? null);
+		$connectorsValue = $this->request->getParam(self::CONNECTORS_DATASET_KEY);
+		if ($connectorsValue !== null) {
+			$submitted = $connectorsValue;
+			if (is_array($connectorsValue) === true) {
+				$submitted = ($connectorsValue[0] ?? null);
+			}
+
+			$refusal = $this->refuseConnectorDataset(value: $submitted);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+
+			$datasetId = (string)$submitted;
+			$this->appConfig->setValueString(Application::APP_ID, self::CONNECTORS_DATASET_KEY, $datasetId);
+
+			return new JSONResponse(data: ['success' => true, 'config' => [self::CONNECTORS_DATASET_KEY => $datasetId]]);
 		}
 
-		$refusal = $this->refuseDataset(value: $submitted);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		$datasetId = (string)$submitted;
-		$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, $datasetId);
-
-		return new JSONResponse(data: ['success' => true, 'config' => [self::DATASET_KEY => $datasetId]]);
+		return new JSONResponse(data: ['success' => true, 'config' => []]);
 
 	}//end saveConfig()
 
@@ -205,6 +261,18 @@ class SetupController extends Controller {
 			$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DECIDED_KEY, 'skipped');
 
 			return new JSONResponse(data: ['success' => true, 'message' => 'No example data was loaded.']);
+		}
+
+		if ($actionId === 'load-default-connectors') {
+			return $this->loadConnectors();
+		}
+
+		// DECLINING IS AN ANSWER — see CONNECTORS_DECIDED_KEY.
+		if ($actionId === 'skip-default-connectors') {
+			$this->appConfig->setValueString(Application::APP_ID, self::CONNECTORS_DATASET_KEY, DefaultConnectorService::NONE_DATASET);
+			$this->appConfig->setValueString(Application::APP_ID, self::CONNECTORS_DECIDED_KEY, 'skipped');
+
+			return new JSONResponse(data: ['success' => true, 'message' => 'No default source connectors were installed.']);
 		}
 
 		return new JSONResponse(
@@ -295,6 +363,116 @@ class SetupController extends Controller {
 		);
 
 	}//end loadDataset()
+
+	/**
+	 * Import the default connectors a card's Load button asked for, or the
+	 * stored pick when nothing is posted.
+	 *
+	 * Mirrors `loadDataset()` for the `default-connectors` step — see that
+	 * method's doc comment for the "no silent default, failure is reported"
+	 * reasoning, which applies identically here.
+	 *
+	 * @return JSONResponse `{ success, message }`.
+	 *
+	 * @spec exclude Default-connector action dispatch; ADR-111 rule 1, no per-app behavioural spec.
+	 */
+	private function loadConnectors(): JSONResponse {
+		$picked = $this->appConfig->getValueString(Application::APP_ID, self::CONNECTORS_DATASET_KEY, '');
+
+		$posted = $this->request->getParam('dataset');
+		if ($posted !== null) {
+			$refusal = $this->refuseConnectorDataset(value: $posted);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+
+			$picked = (string)$posted;
+		}
+
+		// 🔴 NO SILENT DEFAULT — see `loadDataset()`'s identical comment. There is
+		// no legacy action id for this step to carry forward, so an unposted,
+		// never-picked choice is refused rather than assumed.
+		if ($picked === '') {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'Pick a dataset first.'],
+				statusCode: Http::STATUS_BAD_REQUEST,
+			);
+		}
+
+		if ($picked === DefaultConnectorService::NONE_DATASET) {
+			$this->appConfig->setValueString(Application::APP_ID, self::CONNECTORS_DATASET_KEY, DefaultConnectorService::NONE_DATASET);
+			$this->appConfig->setValueString(Application::APP_ID, self::CONNECTORS_DECIDED_KEY, 'skipped');
+
+			return new JSONResponse(data: ['success' => true, 'message' => 'No default source connectors were installed.']);
+		}
+
+		try {
+			$imported = $this->connectorService->install();
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				'Setup load-default-connectors failed: ' . $e->getMessage(),
+				['app' => Application::APP_ID, 'exception' => $e]
+			);
+
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'Could not import the default connectors: ' . $e->getMessage()],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		$this->appConfig->setValueString(Application::APP_ID, self::CONNECTORS_DATASET_KEY, $picked);
+		$this->appConfig->setValueString(Application::APP_ID, self::CONNECTORS_DECIDED_KEY, 'installed');
+
+		// 🔴 BEST-EFFORT, NOT FATAL. The connectors themselves are already
+		// installed and the decision already recorded; a connection-status row
+		// is a dashboard convenience, not something an operator who just asked
+		// for connectors should see as a failure if it stumbles.
+		try {
+			$this->connectionRegistry->sync();
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				'Setup load-default-connectors: connection declaration sync failed: ' . $e->getMessage(),
+				['app' => Application::APP_ID, 'exception' => $e]
+			);
+		}
+
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Imported ' . $imported['objects'] . ' default connector object(s).',
+			]
+		);
+
+	}//end loadConnectors()
+
+	/**
+	 * Refuse a connector-dataset id no choice answers to.
+	 *
+	 * @param mixed $value The posted value.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the choice is known.
+	 *
+	 * @spec exclude Default-connector action dispatch; ADR-111 rule 1, no per-app behavioural spec.
+	 */
+	private function refuseConnectorDataset(mixed $value): ?JSONResponse {
+		if (is_scalar($value) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'A dataset is named by a string.'],
+				statusCode: Http::STATUS_BAD_REQUEST,
+			);
+		}
+
+		$known = array_column($this->connectorService->listChoices(), 'id');
+		if (in_array((string)$value, $known, true) === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['success' => false, 'message' => 'No dataset is called "' . (string)$value . '".'],
+			statusCode: Http::STATUS_BAD_REQUEST,
+		);
+
+	}//end refuseConnectorDataset()
 
 	/**
 	 * Refuse a dataset id no dataset answers to.

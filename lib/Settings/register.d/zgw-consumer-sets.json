@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (zgw-connectors-for-dossiq). Seeds what the packaged ZGW consumer sets in lib/Settings/configurations name by slug: one disabled source per component, the inbound and write-back mappings, and the pull and write-back synchronizations, all unbound. POST /api/zgw-sets/{slug}/install (ZgwSetInstaller) binds a set to the register and schema an operator chooses. zgw-notificaties seeds only its source: it installs abonnementen, not synchronizations (design D3).",
   "components": {
     "objects": [

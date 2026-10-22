@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (integriq-adapter-psp). Seeds a dormant, mock-mode payment source for the iDEAL/ouderbijdrage use case (school fees, PO/VO), against the already-shipped live-payment-providers capability (PaymentProviderInterface / LogPaymentProvider / MolliePaymentProvider / PaymentsController). MOCK MODE: configuration.provider is 'log', so PaymentIntentService::resolveProvider() routes every call through the deterministic LogPaymentProvider -- no network call, no secret, and the checkout/status flow is demonstrably functional end-to-end WITHOUT a PSP contract. To go live: instantiate this template, set configuration.provider to 'mollie' and configuration.authentication.credentialRef to a real Mollie API key held by the OpenRegister credential broker (MolliePaymentProvider fails closed without one -- no embedded-secret fallback exists).",
   "components": {
     "objects": [

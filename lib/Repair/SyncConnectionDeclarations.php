@@ -4,8 +4,16 @@
  * Integriq SyncConnectionDeclarations Repair Step.
  *
  * Reads every enabled app's `lib/Settings/connections.json` into `app_connection`
- * rows on integriq's install and upgrade (umbrella design D5). Runs after
- * InitializeRegister, so the `app_connection` schema exists.
+ * rows (umbrella design D5). Runs after InitializeRegister, so the
+ * `app_connection` schema exists.
+ *
+ * 🔴 ON DEMAND ONLY, NEVER ON INSTALL. Same house rule as
+ * DefaultConnectorService — gated on the identical `default_connectors_dataset`
+ * decision, because a connection-status row for a Source that was never
+ * installed (declined, or not yet decided) is noise, not information. The
+ * setup wizard's opt-in action runs `ConnectionRegistryService::sync()` itself
+ * once `DefaultConnectorService::install()` succeeds, so the rows land
+ * together with the Sources they report on.
  *
  * @category Repair
  * @package  OCA\Integriq\Repair
@@ -26,7 +34,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
+use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\DefaultConnectorService;
+use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -43,10 +54,12 @@ class SyncConnectionDeclarations implements IRepairStep {
 	 *
 	 * @param ContainerInterface $container Resolves the registry service lazily,
 	 *                                      so a missing OpenRegister costs a warning, not the install.
+	 * @param IAppConfig $appConfig Reads the default-connectors opt-in decision.
 	 * @param LoggerInterface $logger Logs a failed sync.
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
+		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -73,6 +86,16 @@ class SyncConnectionDeclarations implements IRepairStep {
 	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
 	 */
 	public function run(IOutput $output): void {
+		$decision = $this->appConfig->getValueString(Application::APP_ID, DefaultConnectorService::DATASET_KEY, '');
+		if ($decision !== DefaultConnectorService::ALL_DATASET) {
+			$output->info(
+				'Integriq: default source connectors not opted into yet, skipping the connection '
+				. 'declaration sync (run the setup wizard, or POST /api/setup/action/'
+				. 'load-default-connectors, to opt in).'
+			);
+			return;
+		}
+
 		if (class_exists('\\OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			$output->info('Integriq: OpenRegister is not available, skipping the connection declaration sync');
 			return;

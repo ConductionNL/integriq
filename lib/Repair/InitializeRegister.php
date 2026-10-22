@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Settings\RegisterFragmentMerger;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -157,7 +158,20 @@ class InitializeRegister implements IRepairStep {
 					continue;
 				}
 
-				$descriptor = self::deepMergeConfig(base: $descriptor, overlay: $fragmentData);
+				// 🔴 ON DEMAND ONLY, NEVER ON INSTALL. A `$gate`-tagged fragment's
+				// `components.objects` is a default/demo source connector
+				// (DefaultConnectorService's concern, not this repair step's) —
+				// importing it unconditionally here would be the same defect
+				// DemoDataService.php:10-13 already documents for mock data. Only the
+				// OBJECTS are stripped: some gated fragments also carry a genuine
+				// schema patch (e.g. service-desk-connectors.json adds `ownership` to
+				// the shared `mapping` schema) that other features depend on whether
+				// or not the operator ever opts into the demo connector itself.
+				if (($fragmentData['$gate'] ?? null) !== null) {
+					unset($fragmentData['components']['objects']);
+				}
+
+				$descriptor = RegisterFragmentMerger::merge(base: $descriptor, overlay: $fragmentData);
 				$fragmentSig .= basename($fragmentFile) . ':' . md5($fragmentContent) . ';';
 			}//end foreach
 		}//end if
@@ -184,37 +198,4 @@ class InitializeRegister implements IRepairStep {
 		}
 
 	}//end run()
-
-	/**
-	 * Deep-merge a register fragment onto the base config (ADR-037).
-	 *
-	 * Associative arrays (OpenAPI objects like `components.schemas`, `paths`) are
-	 * merged by key union (recursing on shared keys); list arrays are concatenated;
-	 * scalars in the fragment overwrite the base. Disjoint fragments never collide.
-	 *
-	 * @param array<mixed> $base The accumulated config.
-	 * @param array<mixed> $overlay The fragment to merge in.
-	 *
-	 * @return array<mixed> The merged config.
-	 */
-	private static function deepMergeConfig(array $base, array $overlay): array {
-		foreach ($overlay as $key => $value) {
-			if (is_array($value) === true
-				&& isset($base[$key]) === true
-				&& is_array($base[$key]) === true
-			) {
-				$baseIsList = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
-				$overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
-				if ($baseIsList === true && $overlayIsList === true) {
-					$base[$key] = array_merge($base[$key], $value);
-				} else {
-					$base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
-				}
-			} else {
-				$base[$key] = $value;
-			}
-		}
-
-		return $base;
-	}//end deepMergeConfig()
 }//end class

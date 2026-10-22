@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Settings;
 
-use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Settings\RegisterFragmentMerger;
 use OCA\Integriq\Service\MessageValidation\JsonSchemaChecker;
 use OCA\Integriq\Service\MessageValidation\OpenApiChecker;
 use OCA\Integriq\Service\MessageValidation\XsdChecker;
@@ -28,7 +28,6 @@ use OCA\Integriq\Service\MessageValidationService;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 
 /**
  * The `message_schema` schema is declared by its own fragment, closed to
@@ -76,13 +75,12 @@ class MessageSchemaRegisterFragmentTest extends TestCase {
 	 */
 	private static function mergedRegister(): array {
 		$descriptor = self::json('/lib/Settings/integriq_register.json');
-		$merge = new ReflectionMethod(InitializeRegister::class, 'deepMergeConfig');
-		$fragments = glob(self::root() . '/lib/Settings/register.d/*.json');
+				$fragments = glob(self::root() . '/lib/Settings/register.d/*.json');
 		sort($fragments);
 		foreach ($fragments as $fragmentPath) {
 			$fragment = json_decode((string)file_get_contents($fragmentPath), true);
 			if (is_array($fragment) === true) {
-				$descriptor = $merge->invoke(null, $descriptor, $fragment);
+				$descriptor = RegisterFragmentMerger::merge(base: $descriptor, overlay: $fragment);
 			}
 		}
 

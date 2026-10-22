@@ -19,9 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Repair;
 
-use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Settings\RegisterFragmentMerger;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 
 /**
  * Verifies that disjoint register fragments union cleanly so concurrent
@@ -37,9 +36,7 @@ final class RegisterFragmentMergeTest extends TestCase {
 	 * @return array<mixed> Merged config.
 	 */
 	private function merge(array $base, array $overlay): array {
-		$m = new ReflectionMethod(InitializeRegister::class, 'deepMergeConfig');
-		$m->setAccessible(true);
-		return $m->invoke(null, $base, $overlay);
+		return RegisterFragmentMerger::merge(base: $base, overlay: $overlay);
 	}//end merge()
 
 	/**

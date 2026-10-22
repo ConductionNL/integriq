@@ -18,10 +18,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Helpers;
 
-use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Settings\RegisterFragmentMerger;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
-use ReflectionMethod;
 
 /**
  * Builds the integriq register as InitializeRegister imports it (the base
@@ -114,14 +113,23 @@ class RegisterSchemaValidator {
 			true,
 			flags: JSON_THROW_ON_ERROR
 		);
-		$merge = new ReflectionMethod(InitializeRegister::class, 'deepMergeConfig');
 		$fragments = glob($root . '/lib/Settings/register.d/*.json');
 		sort($fragments);
 		foreach ($fragments as $fragmentPath) {
 			$fragment = json_decode((string)file_get_contents($fragmentPath), true);
-			if (is_array($fragment) === true) {
-				$descriptor = $merge->invoke(null, $descriptor, $fragment);
+			if (is_array($fragment) === false) {
+				continue;
 			}
+
+			// Mirror InitializeRegister exactly: a `$gate`-tagged fragment's
+			// `components.objects` (its default/demo connector data) never lands via
+			// this path — only through DefaultConnectorService, on opt-in. Any schema
+			// patch the same fragment carries still applies unconditionally.
+			if (($fragment['$gate'] ?? null) !== null) {
+				unset($fragment['components']['objects']);
+			}
+
+			$descriptor = RegisterFragmentMerger::merge(base: $descriptor, overlay: $fragment);
 		}
 
 		self::$descriptor = $descriptor;

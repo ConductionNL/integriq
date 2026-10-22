@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (seed-xwiki-source). Seeds the pre-built `xwiki` OpenConnector source consumed by the OpenRegister xWiki integration leaf (XwikiProvider SOURCE_ID='xwiki'). Ships dormant (isEnabled:false) with a placeholder dev-stack location and auth:none so a fresh install resolves a base URL without pointing at an unintended host or carrying secrets. Operators set the real location/credentials and flip isEnabled via the OpenConnector Sources UI.",
   "components": {
     "objects": [

@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (connectors-service-desk-templates). Adds `ownership` to the mapping schema and seeds the dormant TOPdesk, ServiceNow and GLPI sources, their two-way mapping presets for stackiq (applications, relations, licences, contracts), a spreadsheet preset, and the dormant synchronizations stackiq's flows key their contracts on. Every source ships isEnabled:false with a placeholder host and its secret as a broker reference (ADR-064 injection path: a per-tenant host cannot be host-locked in OpenRegister's provider catalogue). Response shapes: TOPdesk Assets API spec 1.91.3, ServiceNow Table API. See openspec/changes/connectors-service-desk-templates/design.md.",
   "components": {
     "schemas": {

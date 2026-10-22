@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (integriq-flow-nodes task 4). Seeds the three demo Sources the openconnector.source-call demo in openspec/changes/integriq-flow-nodes/design.md calls, so the node has something to resolve on a fresh install. No real hosts (every location is under example.org) and no secrets: demo-forge-api names a broker credential by name and ships disabled until an administrator creates that credential. type is 'api' (the design's 'json' is not a source type CallService recognises). OpenRegister's seed import skips an object that already exists, so an administrator's edit survives a re-import. The demo flow itself lives in OpenRegister's flow register, which this register cannot seed; docs/features/flow-nodes.md carries it to paste.",
   "components": {
     "objects": [

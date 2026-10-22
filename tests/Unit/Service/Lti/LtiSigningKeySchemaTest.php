@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
-use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Settings\RegisterFragmentMerger;
 use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -36,7 +36,6 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use ReflectionMethod;
 
 /**
  * Validates generated and rotated key entries against the merged register schema.
@@ -84,8 +83,7 @@ class LtiSigningKeySchemaTest extends TestCase {
 		$root = dirname(__DIR__, 4);
 		$descriptor = json_decode((string)file_get_contents($root . '/lib/Settings/integriq_register.json'), true, flags: JSON_THROW_ON_ERROR);
 
-		$merge = new ReflectionMethod(InitializeRegister::class, 'deepMergeConfig');
-		$fragments = glob($root . '/lib/Settings/register.d/*.json');
+				$fragments = glob($root . '/lib/Settings/register.d/*.json');
 		sort($fragments);
 		foreach ($fragments as $fragmentPath) {
 			$fragment = json_decode((string)file_get_contents($fragmentPath), true);
@@ -93,7 +91,7 @@ class LtiSigningKeySchemaTest extends TestCase {
 				continue;
 			}
 
-			$descriptor = $merge->invoke(null, $descriptor, $fragment);
+			$descriptor = RegisterFragmentMerger::merge(base: $descriptor, overlay: $fragment);
 		}
 
 		return $descriptor;

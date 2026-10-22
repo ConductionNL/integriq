@@ -1,9 +1,12 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (document-generation-vendor-adapter). Declares the `documentGenerationJob` schema, one row per render integriq takes from filinq, and seeds two dormant vendor sources (SmartDocuments, Xential) in mock mode so the whole path is walkable without a licence. The job deliberately carries a hash of the merge data and never the data: the merge data of a beschikking is the case, and integriq is not where a second copy of the case belongs. `unreachableSince` is kept apart from `lastError` on purpose: a vendor nobody could reach has not refused anything, and the two must be tellable apart without reading prose. Does NOT edit lib/Settings/integriq_register.json, whose declared schema count is asserted by tests/Unit/Settings/RegisterDescriptorTest.php.",
   "components": {
     "registers": {
       "integriq": {
-        "schemas": ["documentGenerationJob"]
+        "schemas": [
+          "documentGenerationJob"
+        ]
       }
     },
     "schemas": {
@@ -14,7 +17,13 @@
         "version": "1.0.0",
         "summary": "One render asked of a vendor document generation service",
         "description": "One row per render integriq takes on filinq's behalf. See openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002.",
-        "required": ["sourceId", "providerId", "templateId", "dataHash", "status"],
+        "required": [
+          "sourceId",
+          "providerId",
+          "templateId",
+          "dataHash",
+          "status"
+        ],
         "type": "object",
         "properties": {
           "sourceId": {
@@ -50,7 +59,12 @@
           "status": {
             "type": "string",
             "title": "Status",
-            "enum": ["queued", "rendered", "failed", "unreachable"],
+            "enum": [
+              "queued",
+              "rendered",
+              "failed",
+              "unreachable"
+            ],
             "default": "queued",
             "description": "queued: the vendor took it. rendered: a document came back and was fetched whole. failed: the vendor answered no. unreachable: nobody got an answer, so nobody knows yet whether a document exists"
           },

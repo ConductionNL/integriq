@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (seed-kvk-mutatieservice-source). Seeds the `kvk-mutatieservice` source that `KvkMutatieProvider` subscribes and polls through (registry-subscription-connector REQ-RSC-001). MOCK MODE: ships with `configuration.mock:true` and a canned mutatie body so the binding is exercisable without a KvK subscription contract. The real KvK mutatieservice is a separate product from the Handelsregister Zoeken API seeded by kvk-source.json, which is why it is its own source rather than another endpoint on that one. To go live: set your KvK API key on `configuration.headers.apikey` and REMOVE `configuration.mock`.",
   "components": {
     "objects": [

@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (connectors-course-marketplace). Seeds three DORMANT course marketplace sets (Go1, LinkedIn Learning, Udemy Business): per provider one source, three mappings and three synchronizations that write each selected provider course into learniq as one Course, one LTI Lesson and one LtiToolPlacement. The three objects of one course name each other by ids derived from the provider course id with the uuidFor() mapping function (a UUID v5), so they link without a lookup and a second run updates instead of duplicating. Every provider call goes through the source's broker credential. The sets live here, not in lib/Settings/configurations/: that directory is read by ZgwSetCatalogue for the six ZGW sets only, so a file there would never be installed. Selection: the synchronization `conditions`. Retiring a withdrawn course (REQ-CMKT-003) is Task 5; until then the disappearance policy is keepAndFlag, so nothing is ever deleted. See openspec/changes/connectors-course-marketplace/design.md.",
   "components": {
     "objects": [

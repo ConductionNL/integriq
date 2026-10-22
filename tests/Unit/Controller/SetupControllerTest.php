@@ -3,6 +3,8 @@
 namespace Unit\Controller;
 
 use OCA\Integriq\Controller\SetupController;
+use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\DefaultConnectorService;
 use OCA\Integriq\Service\DemoDataService;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -23,18 +25,24 @@ class SetupControllerTest extends TestCase {
 	private IAppConfig $appConfig;
 	private LoggerInterface $logger;
 	private DemoDataService $demoData;
+	private DefaultConnectorService $connectorService;
+	private ConnectionRegistryService $connectionRegistry;
 	private SetupController $controller;
 
 	protected function setUp(): void {
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->demoData = $this->createMock(DemoDataService::class);
+		$this->connectorService = $this->createMock(DefaultConnectorService::class);
+		$this->connectionRegistry = $this->createMock(ConnectionRegistryService::class);
 
 		$this->controller = new SetupController(
 			$this->createMock(IRequest::class),
 			$this->appConfig,
 			$this->logger,
-			$this->demoData
+			$this->demoData,
+			$this->connectorService,
+			$this->connectionRegistry
 		);
 	}
 
@@ -58,7 +66,7 @@ class SetupControllerTest extends TestCase {
 		$this->assertFalse($data['steps']['demo-data']['done']);
 		// This app declares no REQUIRED step, so setup must never gate the app.
 		$this->assertTrue($data['completed']);
-		$this->assertSame(1, $data['version']);
+		$this->assertSame(2, $data['version']);
 	}
 
 	public function testTheDatasetStepLoadsFromItsCards(): void {
@@ -110,7 +118,7 @@ class SetupControllerTest extends TestCase {
 	public function testTheChoiceIsPersisted(): void {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn('demo');
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
 		$this->demoData->method('listChoices')->willReturn([
 			['id' => 'none', 'label' => 'None', 'description' => '', 'objectCount' => 0, 'icon' => ''],
 			['id' => 'demo', 'label' => 'Example data', 'description' => '', 'objectCount' => 66, 'icon' => ''],
@@ -131,7 +139,7 @@ class SetupControllerTest extends TestCase {
 		// failure would surface one step later with no clue why.
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn('atlantis');
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
 		$this->demoData->method('listChoices')->willReturn([
 			['id' => 'none', 'label' => 'None', 'description' => '', 'objectCount' => 0, 'icon' => ''],
 		]);
@@ -150,7 +158,7 @@ class SetupControllerTest extends TestCase {
 		// choice either.
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn(null);
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
 
 		$this->appConfig->expects($this->never())->method('setValueString');
 
@@ -165,7 +173,7 @@ class SetupControllerTest extends TestCase {
 		// are, so an array must not reach `(string)` and become "Array".
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn(['demo']);
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
 		$this->demoData->method('listChoices')->willReturn([
 			['id' => 'demo', 'label' => 'Example data', 'description' => '', 'objectCount' => 1, 'icon' => ''],
 		]);
@@ -182,7 +190,7 @@ class SetupControllerTest extends TestCase {
 		// otherwise reach `(string)` and raise a fatal.
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn([['demo']]);
-		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
 
 		$this->appConfig->expects($this->never())->method('setValueString');
 
@@ -315,7 +323,7 @@ class SetupControllerTest extends TestCase {
 		$request->method('getParam')
 			->willReturnCallback(static fn (string $key) => ($params[$key] ?? null));
 
-		return new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+		return new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
 	}
 
 	public function testTheCardPostsItsDatasetAndTheLoadRecordsTheChoice(): void {
@@ -372,5 +380,159 @@ class SetupControllerTest extends TestCase {
 		$response = $this->controllerPosting(['dataset' => 'demo'])->runAction('load-demo-data');
 
 		$this->assertSame(500, $response->getStatus());
+	}
+
+	public function testStatusCarriesTheConnectorOptionListTheChoiceStepReads(): void {
+		// Same contract as `datasets`, for the `default-connectors` step's
+		// `optionsSource: connectorDatasets`.
+		$this->appConfig->method('getValueString')->willReturn('');
+		$this->connectorService = $this->createMock(DefaultConnectorService::class);
+		$this->connectorService->method('listChoices')->willReturn([
+			['id' => 'none', 'label' => 'None', 'description' => 'Nothing.', 'objectCount' => 0, 'icon' => 'CloseCircleOutline'],
+			['id' => 'default-connectors', 'label' => 'Default source connectors', 'description' => 'Pre-built.', 'objectCount' => 120, 'icon' => 'ConnectionOutline'],
+		]);
+		$controller = new SetupController($this->createMock(IRequest::class), $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
+
+		$data = $controller->status()->getData();
+
+		$this->assertSame(['none', 'default-connectors'], array_column($data['connectorDatasets'], 'id'));
+		$this->assertSame(120, $data['connectorDatasets'][1]['objectCount']);
+	}
+
+	public function testChoosingNoneClosesTheConnectorsStepWithoutRunningAnything(): void {
+		$this->appConfig->method('getValueString')
+			->willReturnCallback(static fn (string $app, string $key): string
+				=> ($key === 'default_connectors_dataset' ? 'none' : ''));
+
+		$data = $this->controller->status()->getData();
+
+		$this->assertTrue($data['steps']['default-connectors']['done']);
+	}
+
+	public function testTheConnectorChoiceIsPersisted(): void {
+		// DATASET_KEY must come back null so the connectors branch is reached.
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key) => ($key === 'default_connectors_dataset' ? 'default-connectors' : null)
+		);
+		$this->connectorService = $this->createMock(DefaultConnectorService::class);
+		$this->connectorService->method('listChoices')->willReturn([
+			['id' => 'none', 'label' => 'None', 'description' => '', 'objectCount' => 0, 'icon' => ''],
+			['id' => 'default-connectors', 'label' => 'Default source connectors', 'description' => '', 'objectCount' => 120, 'icon' => ''],
+		]);
+		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
+
+		$this->appConfig->expects($this->once())
+			->method('setValueString')
+			->with('integriq', 'default_connectors_dataset', 'default-connectors');
+
+		$data = $controller->saveConfig()->getData();
+
+		$this->assertTrue($data['success']);
+		$this->assertSame('default-connectors', $data['config']['default_connectors_dataset']);
+	}
+
+	public function testSkippingConnectorsClosesTheStep(): void {
+		$written = [];
+		$this->appConfig->method('setValueString')
+			->willReturnCallback(static function (string $app, string $key, string $value) use (&$written): bool {
+				$written[$key] = $value;
+
+				return true;
+			});
+
+		$response = $this->controller->runAction('skip-default-connectors');
+
+		$this->assertTrue($response->getData()['success']);
+		$this->assertSame('skipped', $written['default_connectors_decided'] ?? null);
+		$this->assertSame('none', $written['default_connectors_dataset'] ?? null, 'skipping IS choosing none');
+	}
+
+	public function testLoadingConnectorsWithoutAChoiceRefusesRatherThanGuessing(): void {
+		// 🔴 NO SILENT DEFAULT — same reasoning as the demo-data step. There is
+		// no legacy action id here to fall back on.
+		$this->appConfig->method('getValueString')->willReturn('');
+		$this->connectorService->expects($this->never())->method('install');
+
+		$response = $this->controller->runAction('load-default-connectors');
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertFalse($response->getData()['success']);
+	}
+
+	public function testTheConnectorCardPostsItsDatasetAndTheLoadRecordsTheChoice(): void {
+		$this->appConfig->method('getValueString')->willReturn('');
+		$this->connectorService = $this->createMock(DefaultConnectorService::class);
+		$this->connectorService->method('listChoices')->willReturn([
+			['id' => 'none', 'label' => 'None', 'description' => '', 'objectCount' => 0, 'icon' => ''],
+			['id' => 'default-connectors', 'label' => 'Default source connectors', 'description' => '', 'objectCount' => 120, 'icon' => ''],
+		]);
+		$this->connectorService->expects($this->once())->method('install')
+			->willReturn(['objects' => 120, 'registers' => 1, 'schemas' => 1]);
+		$this->connectionRegistry->expects($this->once())->method('sync');
+
+		$written = [];
+		$this->appConfig->method('setValueString')
+			->willReturnCallback(static function (string $app, string $key, string $value) use (&$written): bool {
+				$written[$key] = $value;
+
+				return true;
+			});
+
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key) => ($key === 'dataset' ? 'default-connectors' : null)
+		);
+		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
+
+		$data = $controller->runAction('load-default-connectors')->getData();
+
+		$this->assertTrue($data['success']);
+		$this->assertStringContainsString('120', $data['message']);
+		$this->assertSame(
+			['default_connectors_dataset' => 'default-connectors', 'default_connectors_decided' => 'installed'],
+			$written
+		);
+	}
+
+	public function testAFailedConnectorLoadIsReportedAndLeavesTheStepUndecided(): void {
+		$this->appConfig->method('getValueString')->willReturn('default-connectors');
+		$this->connectorService->method('install')
+			->willThrowException(new RuntimeException('OpenRegister is not installed.'));
+
+		$this->appConfig->expects($this->never())->method('setValueString');
+		$this->logger->expects($this->once())->method('error');
+
+		$response = $this->controller->runAction('load-default-connectors');
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertFalse($response->getData()['success']);
+		$this->assertStringContainsString('OpenRegister is not installed.', $response->getData()['message']);
+	}
+
+	public function testAFailedConnectionSyncIsLoggedButDoesNotFailTheConnectorInstall(): void {
+		// 🔴 BEST-EFFORT, NOT FATAL. The connectors themselves already landed;
+		// a connection-status row is a dashboard convenience, so a sync failure
+		// must not make a successful connector install read as a failure.
+		$this->appConfig->method('getValueString')->willReturn('');
+		$this->connectorService->method('listChoices')->willReturn([
+			['id' => 'default-connectors', 'label' => 'Default source connectors', 'description' => '', 'objectCount' => 120, 'icon' => ''],
+		]);
+		$this->connectorService->method('install')
+			->willReturn(['objects' => 120, 'registers' => 1, 'schemas' => 1]);
+		$this->connectionRegistry->method('sync')
+			->willThrowException(new RuntimeException('OpenRegister is not installed.'));
+		$this->logger->expects($this->once())->method('error');
+
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key) => ($key === 'dataset' ? 'default-connectors' : null)
+		);
+		$controller = new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->connectorService, $this->connectionRegistry);
+
+		$data = $controller->runAction('load-default-connectors')->getData();
+
+		$this->assertTrue($data['success']);
+		$this->assertStringContainsString('120', $data['message']);
 	}
 }

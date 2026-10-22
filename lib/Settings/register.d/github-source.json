@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (sources-github-publiccode). Seeds two GitHub sources for the publiccode harvest that opencatalogi's publiccode-github-harvest flow runs. github-api: the REST API at https://api.github.com, DORMANT (isEnabled false). It holds no token: configuration.authentication.credentialRef names the broker credential github-publiccode (ADR-064), which the OpenRegister broker injects as `Authorization: token <secret>` through its host-locked `github` provider. To go live: create a credential named github-publiccode with provider github (a fine-grained token with public read access is enough), then enable the source. Code search (`GET /search/code`) also needs that path in the provider's allowRules. github-raw: https://raw.githubusercontent.com, credential-free and enabled, used to fetch each publiccode.yml without spending API quota; read it with the source-call option decode: yaml. See openspec/changes/archive/2026-10-15-sources-github-publiccode/design.md D1.",
   "components": {
     "objects": [

@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (ori-public-serving Task 1). Seeds the eleven ORI resources decidiq's OriController serves as integriq endpoints under the validation prefix ori-parity/v1, each with an item mapping (OriSerializer's field table) and a list mapping (the ORI envelope), run by two after rules. Anonymous: no authentication rule, with decidiq's AnonRateLimit ceiling of 120 requests a minute per client address (anonymousRateLimit, endpoint 1.3.0, REQ-EP-013), and decidiq's CORS values: its own origin, GET and OPTIONS (cors, endpoint 1.4.0, REQ-EP-014, DECISIONS row 39). The endpoints name decidiq's register and schemas by slug (REQ-EP-011) and gate lists and single objects with one fixedFilters set (REQ-EP-010, REQ-EP-012). Seed objects are created once and never overwrite an administrator's edit. See openspec/changes/ori-public-serving/design.md D1-D4 and Gap 1.",
   "components": {
     "schemas": {
@@ -45,7 +46,14 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+                  "enum": [
+                    "GET",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "OPTIONS"
+                  ]
                 },
                 "title": "Allowed methods",
                 "description": "The request methods a browser may use. Leave it empty for GET and OPTIONS."

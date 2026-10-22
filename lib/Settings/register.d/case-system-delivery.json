@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (connectors-case-system-document-delivery, Task 4, design D4 and D5). Seeds the two push synchronizations that turn a filinq delivery into a new document in the case system, and their mappings. Both ship unbound (no source schema) and point at the dormant ZGW set sources zgw-set-documenten and zgw-set-zaken (zgw-consumer-sets.json, isEnabled false), so nothing runs until an administrator links them. The slugs object-to-zgw-document and zgw-documenten-push already belong to the zgw-documenten set (pass-through write-back of edits to documents that came from the case system), so this change seeds its own. Field names follow filinq development: caseSystemDelivery (change generate-store-in-case-system D6, deliveryStatus) and externalDocument (change zgw-document-bridge, processingStatus, resultFileRef, resultExternalId, writeBackError).",
   "components": {
     "objects": [

@@ -28,9 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Settings;
 
-use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Settings\RegisterFragmentMerger;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 
 /**
  * Verifies all ten Wave-0 connector fragments: each is valid JSON, carries
@@ -83,7 +82,8 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 	}//end decodeFragment()
 
 	/**
-	 * Invoke the private static InitializeRegister::deepMergeConfig().
+	 * Invoke the real ADR-037 deep-merge, shared with InitializeRegister and
+	 * DefaultConnectorService.
 	 *
 	 * @param array<mixed> $base Base config.
 	 * @param array<mixed> $overlay Fragment.
@@ -91,9 +91,7 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 	 * @return array<mixed> Merged config.
 	 */
 	private function merge(array $base, array $overlay): array {
-		$m = new ReflectionMethod(InitializeRegister::class, 'deepMergeConfig');
-		$m->setAccessible(true);
-		return $m->invoke(null, $base, $overlay);
+		return RegisterFragmentMerger::merge(base: $base, overlay: $overlay);
 	}//end merge()
 
 	/**
@@ -236,5 +234,87 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 		$this->assertGreaterThanOrEqual(10, count($bySchema['mapping'] ?? []), 'expected at least 10 distinct mappings across Wave 0');
 
 	}//end testAllTenFragmentsMergeWithoutSlugCollisions()
+
+	/**
+	 * Every default-connector fragment (the ten Wave-0 connectors plus the
+	 * other 24 standalone/paired/bundle fragments that ship a demo `source`
+	 * object) carries `$gate: "default-connectors"`, so `InitializeRegister`
+	 * skips it unconditionally and `DefaultConnectorService` is the only path
+	 * that can import it — never on install, only through the setup wizard.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function gatedFragmentProvider(): array {
+		$filenames = [
+			// Full connector bundles (job+mapping+source+synchronization).
+			'australia-austender-connector.json',
+			'austria-datagvat-connector.json',
+			'boamp-france-connector.json',
+			'germany-bund-connector.json',
+			'greece-diavgeia-connector.json',
+			'latvia-iub-connector.json',
+			'sweden-avropa-connector.json',
+			'tenderned-connector.json',
+			'dpg-registry-connector.json',
+			'nextcloud-marketplace-connector.json',
+			// Standalone/paired sources.
+			'brp-haalcentraal-source.json',
+			'cmcom-sms-source.json',
+			'deepl-translation-source.json',
+			'document-generation-vendor-adapter.json',
+			'github-source.json',
+			'ideal-ouderbijdrage-source.json',
+			'kvk-mutatieservice-source.json',
+			'kvk-source.json',
+			'libretranslate-source.json',
+			'messagebird-sms-source.json',
+			'opencorporates-source.json',
+			'twilio-sms-source.json',
+			'whatsapp-bsp-source.json',
+			'whatsapp-cloud-api-source.json',
+			'xwiki-source.json',
+			'flow-node-demo-sources.json',
+			// Multi-object bundles.
+			'course-marketplace-connectors.json',
+			'service-desk-connectors.json',
+			'slo-curriculum-source.json',
+			'zgw-consumer-sets.json',
+			// Paired units.
+			'case-system-operations.json',
+			'case-system-delivery.json',
+			'endoflife-date-source.json',
+			'endoflife-date-source-cycles.json',
+			// Non-"source" default objects judged equally unsolicited: a
+			// self-referential environment pair, and mapping/rule/endpoint
+			// templates for features nobody asked to seed either.
+			'environments-and-promotion.json',
+			'learniq-exchange-jobs.json',
+			'ori-public-serving.json',
+		];
+
+		$cases = [];
+		foreach ($filenames as $filename) {
+			$cases[$filename] = [$filename];
+		}
+
+		return $cases;
+	}//end gatedFragmentProvider()
+
+	/**
+	 * @dataProvider gatedFragmentProvider
+	 *
+	 * @param string $filename Fragment basename.
+	 *
+	 * @return void
+	 */
+	public function testGatedFragmentCarriesTheDefaultConnectorsGate(string $filename): void {
+		$fragment = $this->decodeFragment($filename);
+
+		$this->assertSame(
+			'default-connectors',
+			$fragment['$gate'] ?? null,
+			$filename . ' must carry $gate: "default-connectors" so InitializeRegister skips it'
+		);
+	}//end testGatedFragmentCarriesTheDefaultConnectorsGate()
 
 }//end class

@@ -22,9 +22,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Settings;
 
 use OCA\Integriq\Notification\ConnectionAlertRecipientResolver;
-use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Settings\RegisterFragmentMerger;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 
 /**
  * Verifies the `approval_request` register.d fragment (Task 1), its
@@ -59,9 +58,7 @@ class HitlApprovalRegisterFragmentTest extends TestCase {
 	 * @return array<mixed> Merged config.
 	 */
 	private function merge(array $base, array $overlay): array {
-		$m = new ReflectionMethod(InitializeRegister::class, 'deepMergeConfig');
-		$m->setAccessible(true);
-		return $m->invoke(null, $base, $overlay);
+		return RegisterFragmentMerger::merge(base: $base, overlay: $overlay);
 	}//end merge()
 
 	/**

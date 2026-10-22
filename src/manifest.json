@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
     "setup": {
-      "version": 1,
+      "version": 2,
       "completionConfigKey": "setup_completed_version",
       "steps": [
         {
@@ -20,6 +20,17 @@
           "title": "Load example data?",
           "required": false,
           "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install."
+        },
+        {
+          "id": "default-connectors",
+          "type": "choice",
+          "display": "cards",
+          "optionsSource": "connectorDatasets",
+          "configKey": "default_connectors_dataset",
+          "loadAction": "load-default-connectors",
+          "title": "Install default source connectors?",
+          "required": false,
+          "body": "This app ships pre-built connectors for public APIs and services — government procurement registers, population/business lookups (BRP HaalCentraal, KVK), tender feeds (AusTender, TenderNed), SMS and translation providers, and more — plus a starter Local/Acceptance environment pair and a few feature mapping templates. Nothing is installed until you opt in. Pick \"None\" to start empty."
         },
         {
           "id": "done",

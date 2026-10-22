@@ -1,4 +1,5 @@
 {
+  "$gate": "default-connectors",
   "$comment": "ADR-037 register fragment (case-system-operations-for-decidiq). Seeds the `zgw-zaken` source of type `case-system`, which a connection declaring sourceTemplate zgw-zaken (decidiq's case-system connection) links to. CallService answers it in-process (CaseSystemOperations): read-case, list-documents, read-document, add-document and create-case, mapped onto the ZGW Zaken and Documenten APIs through two ordinary sources the administrator names in its configuration (zakenSource, documentenSource, kinds, meetingZaaktype, bronorganisatie; optional confidentialAs, publicAs, auteur), or answered from lib/Settings/case-system-mock.json with configuration.mock true. Ships disabled and unconfigured. The location is a label: nothing is ever sent to it.",
   "components": {
     "objects": [
