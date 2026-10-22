@@ -245,6 +245,7 @@ class StufProviderReceiver {
 		}
 
 		$event = $this->reader->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
+		$event->restrictToApp(appId: (string)($source['configuration']['owningApp'] ?? ''));
 		$unfit = ($this->unfitQuery(event: $event) ?? $this->unfitWrite(event: $event, origin: $origin));
 		if ($unfit !== null) {
 			$this->logger->warning('StUF provider {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);

@@ -855,40 +855,6 @@ class SynchronizationService {
 	}//end findAllSynchronizations()
 
 	/**
-	 * Persist mutations made to a synchronization back to OpenRegister.
-	 *
-	 * @param array $synchronization The synchronization payload array to persist.
-	 *
-	 * @return void
-	 */
-	/**
-	 * Persist the mid-pagination cursor, but only when something will read it.
-	 *
-	 * `getAllObjectsFromApi()` reads `currentPage` back under exactly one
-	 * condition: the source reports a rate limit (`rateLimitLimit !== null`), so
-	 * a run that was cut off mid-crawl can resume where it stopped. For every
-	 * other source the value was written on every page and never once consulted.
-	 *
-	 * It is not a cheap write — a full OpenRegister object save of the
-	 * synchronization, inside the fetch loop, and SERIAL, so no amount of page
-	 * concurrency can overlap it.
-	 *
-	 * MEASURED 2026-08-14 against a static JSON source answering in 5.3 ms, so
-	 * that the only cost left was ours: 40 pages cost 297.9 ms EACH serially, and
-	 * widening the concurrency window to 10 bought 1.24x rather than the ~10x the
-	 * window implies — because this write sat in the middle of it. Writing it only
-	 * when it is read: 297.9 -> 156.9 ms serial, 239.4 -> 131.2 ms at a window of
-	 * 5. Against a real API the whole overhead was invisible, hidden under a
-	 * source answering in 700 ms.
-	 *
-	 * @param array $synchronization The synchronization, carrying `currentPage`.
-	 * @param array $source The source, whose rate-limit fields decide this.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md
-	 */
-	/**
 	 * Whether this run is close enough to PHP's memory limit to stop fetching.
 	 *
 	 * Configurable per source via `maxMemoryPercent`, defaulting to
@@ -959,6 +925,16 @@ class SynchronizationService {
 	 *
 	 * The early return is the point: a source that advertises no rate limit is
 	 * paged straight through, so there is no cursor worth a write per page.
+	 * `getAllObjectsFromApi()` reads `currentPage` back under two conditions: the
+	 * source reports a rate limit, so a run cut off mid-crawl resumes where it
+	 * stopped, or the synchronization reads a JSONL source, whose one batch per
+	 * run is saved once at the end of the run rather than here.
+	 *
+	 * It is not a cheap write: a full OpenRegister object save of the
+	 * synchronization, inside the fetch loop, and serial, so no amount of page
+	 * concurrency can overlap it. Measured 2026-08-14 against a static JSON source
+	 * answering in 5.3 ms: 40 pages cost 297.9 ms each serially with the write on
+	 * every page, and 156.9 ms with it written only when it is read.
 	 *
 	 * @param array $synchronization The synchronization to persist.
 	 * @param array $source The source, read for its `rateLimitLimit`.
@@ -2717,9 +2693,12 @@ class SynchronizationService {
 			// It is carried on this run's copy of the synchronization, which is
 			// what the end of the run persists, and a batch still to come is
 			// reported so the job can come back on the next cron tick.
+			// Only a batch that read records comes back on the next tick; a failed
+			// download keeps its batch and waits for the job's own interval.
 			if ($isTest === false && ($fetchInfo['resumePage'] ?? null) !== null) {
 				$synchronization['currentPage'] = $fetchInfo['resumePage'];
-				if ($fetchInfo['resumePage'] > 1) {
+				$synchronization['currentPageVersion'] = ($fetchInfo['sourceVersion'] ?? '');
+				if ($fetchInfo['resumePage'] > 1 && $fetchInfo['failureReason'] === 'batch_limit_reached') {
 					$result['resume'] = ['page' => $fetchInfo['resumePage'], 'reason' => $fetchInfo['failureReason']];
 				}
 			}
@@ -3158,7 +3137,20 @@ class SynchronizationService {
 				// just didn't ask for everything). Unconditional: never
 				// bypassed by forceDeletion (design.md Decision 3).
 				$syncMode = (string)($synchronization['syncMode'] ?? 'full');
-				if ($syncMode !== 'incremental') {
+
+				// A JSONL source larger than one batch never has a complete
+				// fetch, so the disappearance pass does not run for it (REQ-006).
+				// That is the design, not a guarded failure: no warning, no
+				// deletion-guarded event, once per batch.
+				$batchRun = (($fetchInfo['failureReason'] ?? null) === 'batch_limit_reached');
+				if ($syncMode !== 'incremental' && $batchRun === true) {
+					$guardInfo = [
+						'guarded' => true,
+						'reason' => 'batch_run',
+						'ratio' => null,
+						'threshold' => null,
+					];
+				} elseif ($syncMode !== 'incremental') {
 					$deletedCount = $this->deleteInvalidObjects(
 						synchronization: $synchronization,
 						synchronizedTargetIds: $synchronizedTargetIds,
@@ -7006,6 +6998,7 @@ class SynchronizationService {
 			'pagesFetched' => $pageResult['pagesFetched'],
 			'failureReason' => $pageResult['failureReason'],
 			'resumePage' => ($pageResult['resumePage'] ?? null),
+			'sourceVersion' => ($pageResult['sourceVersion'] ?? null),
 		];
 
 		if ($sourceConfig['resultsPosition'] !== '_object' && array_is_list($objects) === false) {
@@ -7026,6 +7019,10 @@ class SynchronizationService {
 		// the batch the next run resumes at.
 		if ($isTest === false) {
 			$synchronization['currentPage'] = ($fetchInfo['resumePage'] ?? 1);
+			if (($sourceConfig['format'] ?? null) === 'jsonl') {
+				$synchronization['currentPageVersion'] = ($fetchInfo['sourceVersion'] ?? '');
+			}
+
 			$this->persistSynchronization(synchronization: $synchronization);
 		}
 
@@ -8344,6 +8341,16 @@ class SynchronizationService {
 	 * every other batch is incomplete, so the deletion pass never mistakes
 	 * one batch for the whole source (REQ-009).
 	 *
+	 * Each run downloads the file again, so a cycle is tied to one version of
+	 * it: the validator of the download (ETag, else Last-Modified and
+	 * Content-Length) is kept as `currentPageVersion` next to `currentPage`.
+	 * When a later batch finds a different version, the file changed under the
+	 * cursor, and the run starts the cycle again at batch 1 of the new file
+	 * instead of skipping or repeating records of the old one.
+	 *
+	 * A `.tar` or `.tar.gz` endpoint is refused before anything is downloaded,
+	 * as {@see fetchSinglePageData()} refuses it for a non-JSONL source.
+	 *
 	 * @param array $source The source to call.
 	 * @param string $endpoint The endpoint to call.
 	 * @param array $config The call configuration.
@@ -8351,7 +8358,7 @@ class SynchronizationService {
 	 * @param int $page The 1-based batch to read.
 	 * @param bool $isTest Whether this is a test run (reads one record).
 	 *
-	 * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int, resumePage: ?int}
+	 * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int, resumePage: ?int, sourceVersion: ?string}
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
 	 */
@@ -8365,21 +8372,36 @@ class SynchronizationService {
 	): array {
 		$batchSize = $this->jsonLinesBatchSize(sourceConfig: ($synchronization['sourceConfig'] ?? []), isTest: $isTest);
 		$page = max(1, $page);
+		$storedVersion = ($synchronization['currentPageVersion'] ?? null);
+
+		if ($this->isTarGzEndpoint(endpoint: $endpoint) === true) {
+			$this->logger->warning(
+				'SynchronizationService: .tar.gz bulk sources are not supported (gzip '
+				. 'decompression alone cannot unpack a tar archive) — skipping fetch for '
+				. '{endpoint}. Deferred per oc#97; use an ETL-style loader instead.',
+				['endpoint' => $endpoint]
+			);
+			return $this->failedJsonLinesBatch(page: $page, reason: 'unsupported_archive', version: $storedVersion, pagesFetched: 0);
+		}
 
 		$sinkPath = tempnam(sys_get_temp_dir(), 'integriq-jsonl-');
 		if ($sinkPath === false) {
 			$this->logger->error('SynchronizationService: no temporary file for a JSONL download from {endpoint}.', ['endpoint' => $endpoint]);
-			return $this->failedJsonLinesBatch(page: $page);
+			return $this->failedJsonLinesBatch(page: $page, version: $storedVersion);
 		}
 
 		try {
 			$callLog = $this->callSourceObject(source: $source, endpoint: $endpoint, config: $config, sink: $sinkPath);
 			$statusCode = $this->callLogStatusCode(callLog: $callLog);
 			if ($statusCode === null || $statusCode >= 400) {
-				return $this->failedJsonLinesBatch(page: $page);
+				return $this->failedJsonLinesBatch(page: $page, version: $storedVersion);
 			}
 
-			$this->writeBufferedBodyToSink(response: ($this->callLogResponse(callLog: $callLog) ?? []), sinkPath: $sinkPath);
+			$response = ($this->callLogResponse(callLog: $callLog) ?? []);
+			$version = $this->jsonLinesFileVersion(headers: (array)($response['headers'] ?? []));
+			$page = $this->jsonLinesCyclePage(page: $page, version: $version, storedVersion: $storedVersion, endpoint: $endpoint);
+
+			$this->writeBufferedBodyToSink(response: $response, sinkPath: $sinkPath);
 			$batch = $this->readJsonLinesBatch(path: $sinkPath, skip: (($page - 1) * $batchSize), limit: $batchSize);
 		} finally {
 			if (file_exists($sinkPath) === true) {
@@ -8387,6 +8409,44 @@ class SynchronizationService {
 			}
 		}
 
+		return $this->jsonLinesBatchResult(batch: $batch, page: $page, isTest: $isTest, version: $version, synchronization: $synchronization);
+	}//end fetchJsonLinesBatch()
+
+	/**
+	 * The batch to read: batch 1 again when the file changed since the cycle's first batch.
+	 *
+	 * @param int $page The batch the cursor names.
+	 * @param string|null $version The version of this download.
+	 * @param mixed $storedVersion The version the cycle's first batch read.
+	 * @param string $endpoint The endpoint, for the log line.
+	 *
+	 * @return int The batch to read.
+	 */
+	private function jsonLinesCyclePage(int $page, ?string $version, mixed $storedVersion, string $endpoint): int {
+		if ($page === 1 || $version === null || is_string($storedVersion) === false || $storedVersion === '' || $storedVersion === $version) {
+			return $page;
+		}
+
+		$this->logger->info(
+			'SynchronizationService: the JSONL file at {endpoint} changed since batch 1 of this cycle; starting again at batch 1.',
+			['endpoint' => $endpoint, 'batch' => $page]
+		);
+
+		return 1;
+	}//end jsonLinesCyclePage()
+
+	/**
+	 * The fetch result of a JSONL batch that was read.
+	 *
+	 * @param array{records: array, exhausted: bool} $batch The batch.
+	 * @param int $page The batch that was read.
+	 * @param bool $isTest Whether this is a test run.
+	 * @param string|null $version The version of the file it was read from.
+	 * @param array $synchronization The synchronization, for the results extraction.
+	 *
+	 * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int, resumePage: int, sourceVersion: ?string}
+	 */
+	private function jsonLinesBatchResult(array $batch, int $page, bool $isTest, ?string $version, array $synchronization): array {
 		$complete = ($batch['exhausted'] === true && $page === 1 && $isTest === false);
 		$resumePage = ($page + 1);
 		if ($batch['exhausted'] === true) {
@@ -8404,8 +8464,36 @@ class SynchronizationService {
 			'failureReason' => $failureReason,
 			'pagesFetched' => 1,
 			'resumePage' => $resumePage,
+			'sourceVersion' => $version,
 		];
-	}//end fetchJsonLinesBatch()
+	}//end jsonLinesBatchResult()
+
+	/**
+	 * The version of a downloaded JSONL file, from its response headers.
+	 *
+	 * The ETag when the source sends one, else Last-Modified and Content-Length
+	 * together; null when the source sends neither, so a change cannot be seen.
+	 *
+	 * @param array $headers The response headers, as the call log holds them.
+	 *
+	 * @return string|null The version, or null.
+	 */
+	private function jsonLinesFileVersion(array $headers): ?string {
+		$byName = [];
+		foreach ($headers as $name => $value) {
+			$byName[strtolower((string)$name)] = trim(implode(',', (array)$value));
+		}
+
+		if (($byName['etag'] ?? '') !== '') {
+			return 'etag:' . $byName['etag'];
+		}
+
+		if (($byName['last-modified'] ?? '') !== '') {
+			return 'modified:' . $byName['last-modified'] . ';length:' . ($byName['content-length'] ?? '');
+		}
+
+		return null;
+	}//end jsonLinesFileVersion()
 
 	/**
 	 * The number of JSONL records one run reads.
@@ -8429,20 +8517,29 @@ class SynchronizationService {
 	}//end jsonLinesBatchSize()
 
 	/**
-	 * The result of a JSONL batch whose download failed: incomplete, and the
-	 * next run retries the same batch.
+	 * The result of a JSONL batch that read nothing: incomplete, and the next
+	 * run retries the same batch of the same file version.
 	 *
 	 * @param int $page The batch that was asked for.
+	 * @param string $reason Why nothing was read.
+	 * @param mixed $version The file version the cycle holds, kept as it was.
+	 * @param int $pagesFetched The downloads made, 0 when none was attempted.
 	 *
-	 * @return array{objects: array, complete: bool, failureReason: string, pagesFetched: int, resumePage: int}
+	 * @return array{objects: array, complete: bool, failureReason: string, pagesFetched: int, resumePage: int, sourceVersion: ?string}
 	 */
-	private function failedJsonLinesBatch(int $page): array {
+	private function failedJsonLinesBatch(int $page, string $reason='page_fetch_failed', mixed $version=null, int $pagesFetched=1): array {
+		$sourceVersion = null;
+		if (is_string($version) === true && $version !== '') {
+			$sourceVersion = $version;
+		}
+
 		return [
 			'objects' => [],
 			'complete' => false,
-			'failureReason' => 'page_fetch_failed',
-			'pagesFetched' => 1,
+			'failureReason' => $reason,
+			'pagesFetched' => $pagesFetched,
 			'resumePage' => $page,
+			'sourceVersion' => $sourceVersion,
 		];
 	}//end failedJsonLinesBatch()
 

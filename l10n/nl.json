@@ -2231,7 +2231,9 @@
         "Item ceiling": "Maximaal aantal items",
         "The most synchronised objects this step may emit as items. The summary always reports the full run.": "Het hoogste aantal gesynchroniseerde objecten dat deze stap als items mag uitgeven. De samenvatting meldt altijd de volledige run.",
         "When the run fails": "Als de run mislukt",
-        "\"stop\" (default) fails the step; \"continue\" records the error on the item and carries on; \"dead_letter\" routes the item to the flow's dead-letter handling.": "\"stop\" (standaard) laat de stap mislukken; \"continue\" zet de fout op het item en gaat door; \"dead_letter\" stuurt het item naar de dead-letterafhandeling van de flow."
+        "\"stop\" (default) fails the step; \"continue\" records the error on the item and carries on; \"dead_letter\" routes the item to the flow's dead-letter handling.": "\"stop\" (standaard) laat de stap mislukken; \"continue\" zet de fout op het item en gaat door; \"dead_letter\" stuurt het item naar de dead-letterafhandeling van de flow.",
+        "Current Page Version": "Versie van de huidige pagina",
+        "The version (ETag, or Last-Modified with Content-Length) of the JSONL file the current batch cycle reads; empty when the source sends neither. A later batch that finds another version starts the cycle again at batch 1.": "De versie (ETag, of Last-Modified met Content-Length) van het JSONL-bestand dat de huidige batchcyclus leest; leeg als de bron geen van beide meestuurt. Vindt een latere batch een andere versie, dan begint de cyclus opnieuw bij batch 1."
     },
     "plurals": {}
 }

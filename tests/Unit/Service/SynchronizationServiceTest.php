@@ -801,7 +801,7 @@ class SynchronizationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	private function stubStreamingCall(string $body, array &$sinks): void {
+	private function stubStreamingCall(string $body, array &$sinks, array $headers=[]): void {
 		$this->callService->method('call')->willReturnCallback(
 			function (
 				$source,
@@ -814,7 +814,7 @@ class SynchronizationServiceTest extends TestCase {
 				bool $read = false,
 				bool $runningSupportRequest = false,
 				mixed $sink = null,
-			) use ($body, &$sinks) {
+			) use ($body, &$sinks, $headers) {
 				$sinks[] = $sink;
 				if (is_string($sink) === true) {
 					file_put_contents($sink, $body);
@@ -822,7 +822,7 @@ class SynchronizationServiceTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity(
 					$this,
-					['response' => ['statusCode' => 200, 'body' => '', 'encoding' => 'UTF-8', 'headers' => []]],
+					['response' => ['statusCode' => 200, 'body' => '', 'encoding' => 'UTF-8', 'headers' => $headers]],
 					'call-log-stream'
 				);
 			}
@@ -936,6 +936,82 @@ class SynchronizationServiceTest extends TestCase {
 		$this->assertTrue($fetchInfo['complete']);
 		$this->assertSame(1, $fetchInfo['resumePage']);
 	}//end testJsonlFileThatFitsOneBatchIsComplete()
+
+	/**
+	 * A batch that finds another version of the file than batch 1 read starts
+	 * the cycle again at batch 1 of the new file: two records prepended
+	 * upstream would otherwise shift every later batch.
+	 *
+	 * @return void
+	 */
+	public function testJsonlCycleRestartsWhenTheFileChangesBetweenBatches(): void {
+		$this->stubSource(['uuid' => 'source-uuid-batch', 'location' => 'https://example.test']);
+		$lines = [];
+		foreach ([101, 102, 1, 2, 3, 4, 5] as $id) {
+			$lines[] = json_encode(['id' => $id]);
+		}
+
+		$sinks = [];
+		$this->stubStreamingCall((string)gzencode(implode("\n", $lines)), $sinks, ['ETag' => ['"b"']]);
+
+		$saved = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved) {
+				$saved[] = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'sync-jsonl');
+			}
+		);
+
+		$synchronization = $this->jsonlSynchronization(2, 2);
+		$synchronization['currentPageVersion'] = 'etag:"a"';
+		$fetchInfo = null;
+		$objects = $this->service->getAllObjectsFromApi(synchronization: $synchronization, fetchInfo: $fetchInfo);
+
+		$this->assertSame([['id' => 101], ['id' => 102]], $objects, 'batch 1 of the new file, not records 3-4 of a shifted one');
+		$this->assertSame(2, $fetchInfo['resumePage']);
+		$this->assertSame('etag:"b"', end($saved)['currentPageVersion']);
+	}//end testJsonlCycleRestartsWhenTheFileChangesBetweenBatches()
+
+	/**
+	 * The same version on a later batch reads on where the cycle stopped.
+	 *
+	 * @return void
+	 */
+	public function testJsonlBatchOfTheSameFileVersionReadsOn(): void {
+		$this->stubSource(['uuid' => 'source-uuid-batch', 'location' => 'https://example.test']);
+		$sinks = [];
+		$body = implode("\n", array_map(static fn (int $id): string => (string)json_encode(['id' => $id]), [1, 2, 3, 4, 5]));
+		$this->stubStreamingCall((string)gzencode($body), $sinks, ['last-modified' => ['Sun, 08 Mar 2026 03:00:05 GMT'], 'content-length' => ['11767844']]);
+
+		$synchronization = $this->jsonlSynchronization(2, 2);
+		$synchronization['currentPageVersion'] = 'modified:Sun, 08 Mar 2026 03:00:05 GMT;length:11767844';
+		$objects = $this->service->getAllObjectsFromApi(synchronization: $synchronization);
+
+		$this->assertSame([['id' => 3], ['id' => 4]], $objects);
+	}//end testJsonlBatchOfTheSameFileVersionReadsOn()
+
+	/**
+	 * A JSONL synchronization refuses a tar archive before downloading it,
+	 * like a non-JSONL one, and keeps its batch.
+	 *
+	 * @return void
+	 */
+	public function testJsonlTarGzEndpointShortCircuitsWithWarningAndNoObjects(): void {
+		$this->stubSource(['uuid' => 'source-uuid-batch', 'location' => 'https://example.test']);
+		$sinks = [];
+		$this->stubStreamingCall('not-actually-parsed', $sinks);
+		$this->logger->expects($this->once())->method('warning');
+
+		$synchronization = $this->jsonlSynchronization(2, 3);
+		$synchronization['sourceConfig']['endpoint'] = '/download?name=archive.tar.gz';
+		$fetchInfo = null;
+		$objects = $this->service->getAllObjectsFromApi(synchronization: $synchronization, fetchInfo: $fetchInfo);
+
+		$this->assertSame([], $objects);
+		$this->assertSame([], $sinks, 'nothing is downloaded');
+		$this->assertFalse($fetchInfo['complete']);
+		$this->assertSame(3, $fetchInfo['resumePage']);
+	}//end testJsonlTarGzEndpointShortCircuitsWithWarningAndNoObjects()
 
 	/**
 	 * A failed download is an incomplete fetch that keeps its batch, so the
