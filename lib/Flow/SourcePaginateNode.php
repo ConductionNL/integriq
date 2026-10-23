@@ -91,6 +91,7 @@ namespace OCA\Integriq\Flow;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -394,6 +395,8 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 
 		$emitted = [];
+		$totalObjects = 0;
+		$totalPages = 0;
 		foreach (array_values($items) as $index => $item) {
 			try {
 				[$objects, $fetchInfo] = $this->fetch(reference: $reference);
@@ -405,6 +408,9 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 					stepId: $stepId,
 					reference: $reference
 				);
+
+				$totalObjects += count($objects);
+				$totalPages += count($pages);
 
 				$emitted = array_merge(
 					$emitted,
@@ -446,8 +452,36 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 			}//end try
 		}//end foreach
 
+		$this->writeReport(
+			context: $context,
+			report: [
+				'objects' => ['count' => $totalObjects],
+				'pages' => ['count' => $totalPages],
+			]
+		);
+
 		return $emitted;
 	}//end paginateForEachItem()
+
+	/**
+	 * Write this hop's summary onto the run log, via the context's report handle.
+	 *
+	 * Silently a no-op when the handle is absent — a run from before this
+	 * handle existed, or a caller that never wired one.
+	 *
+	 * @param array $context The run context.
+	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
+	 *
+	 * @return void
+	 */
+	private function writeReport(array $context, array $report): void {
+		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($handle instanceof FlowStepReport) === false) {
+			return;
+		}
+
+		$handle->put(key: 'fetch', value: $report);
+	}//end writeReport()
 
 	/**
 	 * Fetch every object the source holds, through the existing engine.
