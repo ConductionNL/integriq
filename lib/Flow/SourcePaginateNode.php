@@ -385,6 +385,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		$emitted = [];
 		$totalObjects = 0;
 		$totalPages = 0;
+		$totalErrors = 0;
 		foreach (array_values($items) as $index => $item) {
 			try {
 				[$objects, $fetchInfo] = $this->fetch(reference: $reference);
@@ -430,6 +431,10 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 					throw $exception;
 				}
 
+				// Counted so a run whose every fetch failed does not report
+				// the same `objects 0 / pages 0` as an empty source.
+				$totalErrors++;
+
 				$emitted[] = $this->errorItem(
 					item: $item,
 					index: $index,
@@ -445,6 +450,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 			report: [
 				'objects' => ['count' => $totalObjects],
 				'pages' => ['count' => $totalPages],
+				'errors' => ['count' => $totalErrors],
 			]
 		);
 
