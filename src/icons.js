@@ -90,6 +90,7 @@ import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import RocketLaunchOutline from 'vue-material-design-icons/RocketLaunchOutline.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SchoolOutline from 'vue-material-design-icons/SchoolOutline.vue'
@@ -197,6 +198,7 @@ export default {
 	PlayOutline,
 	Plus,
 	PowerPlugOutline,
+	Refresh,
 	RocketLaunchOutline,
 	ScaleBalance,
 	SchoolOutline,
