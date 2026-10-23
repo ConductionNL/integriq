@@ -144,6 +144,31 @@ class EndpointServiceCustomHeaderAuthTest extends TestCase {
 	}//end testAHyphenatedCustomHeaderMatchesTheBagBuiltByGetHeaders()
 
 	/**
+	 * A bag keyed with hyphens (for example by a `mapping` rule rewriting
+	 * `headers`, or the `after`-phase response headers) must match too: the
+	 * bag keys are folded the same way as the configured header name.
+	 *
+	 * @return void
+	 */
+	public function testAHyphenatedBagKeyMatchesTheConfiguredHeader(): void {
+		$this->authorizationService->expects($this->once())
+			->method('authorizeApiKey')
+			->with('s3cr3t', ['s3cr3t' => 'bct']);
+
+		$result = $this->process(
+			authentication: [
+				'type' => 'apikey',
+				'header' => 'X-Corsa-Secret',
+				'keys' => ['s3cr3t' => 'bct'],
+			],
+			data: ['headers' => ['X-Corsa-Secret' => 's3cr3t']]
+		);
+
+		$this->assertIsArray(actual: $result);
+
+	}//end testAHyphenatedBagKeyMatchesTheConfiguredHeader()
+
+	/**
 	 * A genuinely missing header still 403s — the fix narrows the lookup key
 	 * mismatch, it does not loosen the header-presence guard.
 	 *
