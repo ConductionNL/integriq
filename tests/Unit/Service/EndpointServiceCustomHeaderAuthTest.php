@@ -108,6 +108,42 @@ class EndpointServiceCustomHeaderAuthTest extends TestCase {
 	}//end testAHyphenatedCustomHeaderMatchesItsUnderscoredServerKey()
 
 	/**
+	 * The same defect, end to end over the real producer: the bag is built by
+	 * `EndpointService::getHeaders()` from a server array carrying
+	 * `HTTP_X_CORSA_SECRET`, exactly as a real `X-Corsa-Secret` request
+	 * arrives, instead of being written by hand. This pins the coupling
+	 * between the bag's key shape and the authentication lookup.
+	 *
+	 * @return void
+	 */
+	public function testAHyphenatedCustomHeaderMatchesTheBagBuiltByGetHeaders(): void {
+		$this->authorizationService->expects($this->once())
+			->method('authorizeApiKey')
+			->with('s3cr3t', ['s3cr3t' => 'bct']);
+
+		$server = [
+			'HTTP_X_CORSA_SECRET' => 's3cr3t',
+			'HTTP_ACCEPT' => 'application/json',
+			'REQUEST_METHOD' => 'GET',
+		];
+
+		$getHeaders = (new ReflectionClass(EndpointService::class))->getMethod('getHeaders');
+		$headers = $getHeaders->invoke($this->service, $server, true);
+
+		$result = $this->process(
+			authentication: [
+				'type' => 'apikey',
+				'header' => 'X-Corsa-Secret',
+				'keys' => ['s3cr3t' => 'bct'],
+			],
+			data: ['headers' => $headers]
+		);
+
+		$this->assertIsArray(actual: $result);
+
+	}//end testAHyphenatedCustomHeaderMatchesTheBagBuiltByGetHeaders()
+
+	/**
 	 * A genuinely missing header still 403s — the fix narrows the lookup key
 	 * mismatch, it does not loosen the header-presence guard.
 	 *
