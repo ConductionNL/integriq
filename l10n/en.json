@@ -3528,7 +3528,13 @@
         "Valid": "Valid",
         "Name the source to monitor.": "Name the source to monitor.",
         "There is no such source.": "There is no such source.",
-        "Monitor": "Monitor"
+        "Monitor": "Monitor",
+        "Unknown source": "Unknown source",
+        "%s, via Integriq": "%s, via Integriq",
+        "The source. Fields that come from the source cannot be changed here.": "The source. Fields that come from the source cannot be changed here.",
+        "%1$d of %2$d · full log in Integriq": "%1$d of %2$d · full log in Integriq",
+        "Name the register, the schema and the record.": "Name the register, the schema and the record.",
+        "There is no such record.": "There is no such record."
     },
     "plurals": {}
 }

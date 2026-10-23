@@ -2254,7 +2254,13 @@ OC.L10N.register(
         "Valid": "Geldig",
         "Name the source to monitor.": "Noem de bron die u wilt volgen.",
         "There is no such source.": "Deze bron bestaat niet.",
-        "Monitor": "Monitor"
+        "Monitor": "Monitor",
+        "Unknown source": "Onbekende bron",
+        "%s, via Integriq": "%s, via Integriq",
+        "The source. Fields that come from the source cannot be changed here.": "De bron. Velden uit de bron kunt u hier niet wijzigen.",
+        "%1$d of %2$d · full log in Integriq": "%1$d van %2$d · volledig logboek in Integriq",
+        "Name the register, the schema and the record.": "Noem het register, het schema en het record.",
+        "There is no such record.": "Dit record bestaat niet."
     },
     "nplurals=2; plural=(n != 1);"
 )
