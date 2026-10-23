@@ -428,12 +428,7 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 			];
 		}//end try
 
-		$this->writeReport(
-			context: $context,
-			report: ['swept' => ['count' => $deleted]]
-		);
-
-		return [
+		$out = [
 			FlowItems::item(
 				json: [
 					self::OUTPUT_KEY => $this->summary(
@@ -447,6 +442,16 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 				fromItemIndex: 0
 			),
 		];
+
+		// Written after the output is fully constructed, not right after the
+		// sweep itself, matching OpenRegister's ObjectWriteNode convention: a
+		// report describes a COMPLETED node execution.
+		$this->writeReport(
+			context: $context,
+			report: ['swept' => ['count' => $deleted]]
+		);
+
+		return $out;
 	}//end sweep()
 
 	/**

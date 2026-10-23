@@ -50,7 +50,11 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/flow-engine/spec.md
+ * Test stub: a verbatim copy of openregister's real interface, kept here only
+ * so this repo's test suite can type-check against it. The @spec tag on the
+ * real copy is omitted here deliberately -- openconnector does not ship
+ * that openregister-side spec path, so an @spec tag here would dangle and trip
+ * hydra-gates' spec-anchor-existence gate for a file this repo does not own.
  */
 
 declare(strict_types=1);

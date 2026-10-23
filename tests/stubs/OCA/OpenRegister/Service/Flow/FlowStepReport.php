@@ -25,7 +25,11 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
+ * Test stub: a verbatim copy of openregister's real class, kept here only so
+ * this repo's test suite can type-check against it. The @spec tags on the
+ * real copy are omitted here deliberately -- openconnector does not ship
+ * that openregister-side spec path, so an @spec tag here would dangle and trip
+ * hydra-gates' spec-anchor-existence gate for a file this repo does not own.
  */
 
 declare(strict_types=1);
@@ -59,8 +63,6 @@ class FlowStepReport {
 	 * @param mixed $value The detail; must be JSON-serialisable.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
 	 */
 	public function put(string $key, mixed $value): void {
 		$this->detail[$key] = $value;
@@ -73,8 +75,6 @@ class FlowStepReport {
 	 * it while writing the step's log entry, and the next node starts blank.
 	 *
 	 * @return array<string, mixed> The detail written since the last take.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
 	 */
 	public function take(): array {
 		$detail = $this->detail;
