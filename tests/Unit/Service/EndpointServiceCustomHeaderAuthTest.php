@@ -108,10 +108,11 @@ class EndpointServiceCustomHeaderAuthTest extends TestCase {
 	}//end testAHyphenatedCustomHeaderMatchesItsUnderscoredServerKey()
 
 	/**
-	 * The same defect, end to end over the real producer: the bag is built by
-	 * `EndpointService::getHeaders()` from a server array carrying
-	 * `HTTP_X_CORSA_SECRET`, exactly as a real `X-Corsa-Secret` request
-	 * arrives, instead of being written by hand. This pins the coupling
+	 * The same defect, with the bag built by `EndpointService::getHeaders()`
+	 * instead of written by hand, from a server array carrying
+	 * `HTTP_X_CORSA_SECRET` (what a real `X-Corsa-Secret` request becomes).
+	 * That method has the same key map as `FlowToken::getHeaders()`, the
+	 * producer that feeds the rule in production. This pins the coupling
 	 * between the bag's key shape and the authentication lookup.
 	 *
 	 * @return void
