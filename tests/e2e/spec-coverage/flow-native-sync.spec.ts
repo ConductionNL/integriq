@@ -22,7 +22,6 @@
  *     -> openregister.set-fields         (syncedId: written uuid, else contract targetId)
  *     -> openconnector.contract-commit
  *     -> openconnector.contract-sweep
- *     -> openregister.end
  *
  * A spec that asserted "the flow page rendered" would pass against every one
  * of the failure modes this pipeline actually has, so nothing here is a render
@@ -859,7 +858,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'openregister.set-fields',
 			'openconnector.contract-commit',
 			'openconnector.contract-sweep',
-			'openregister.end',
 		])
 		expect(
 			generated.enabled,
@@ -988,7 +986,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			['openregister-object-write', 1],
 			['openconnector-contract-commit', 1],
 			['openconnector-contract-sweep', 1],
-			['openregister-end', 1],
 		] as Array<[string, number]>) {
 			await expect(
 				page.locator(`.cn-flow-detail__node--${type}`),
@@ -1042,7 +1039,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'synced-id',
 			'commit',
 			'sweep',
-			'end',
 		])
 
 		// THE OBJECTS.
@@ -1282,7 +1278,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'openregister.set-fields',
 			'openconnector.contract-commit',
 			'openconnector.contract-sweep',
-			'openregister.end',
 		])
 
 		const edges = doc.edges as Array<Record<string, unknown>>
