@@ -25,11 +25,14 @@
  *
  * @link https://OpenRegister.app
  *
- * Test stub: a verbatim copy of openregister's real class, kept here only so
- * this repo's test suite can type-check against it. The @spec tags on the
- * real copy are omitted here deliberately -- openconnector does not ship
- * that openregister-side spec path, so an @spec tag here would dangle and trip
- * hydra-gates' spec-anchor-existence gate for a file this repo does not own.
+ * Test stub: a subset of openregister's real class, carrying only
+ * `CONTEXT_KEY`, `put()` and `take()`, kept here only so this repo's test
+ * suite can type-check against it. The real class has more (`line()` and its
+ * limits among them); those are left out because no test here uses them. The
+ * @spec tags on the real copy are omitted here deliberately -- integriq does
+ * not ship that openregister-side spec path, so an @spec tag here would dangle
+ * and trip hydra-gates' spec-anchor-existence gate for a file this repo does
+ * not own.
  */
 
 declare(strict_types=1);
