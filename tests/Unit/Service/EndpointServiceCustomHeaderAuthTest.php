@@ -51,7 +51,7 @@ class EndpointServiceCustomHeaderAuthTest extends TestCase {
 
 		if (class_exists('OC\AppFramework\Http') === false) {
 			$this->markTestSkipped(
-				'Requires the internal OC\AppFramework\Http class, which the unit bootstrap does not stub.'
+				'Requires OC\AppFramework\Http (stubbed by tests/bootstrap.php when Nextcloud is absent).'
 			);
 		}
 
