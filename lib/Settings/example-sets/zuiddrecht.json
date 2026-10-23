@@ -1,0 +1,106 @@
+{
+	"set": "zuiddrecht",
+	"$comment": "integriq's part of the Zuiddrecht example set: the synchronization that brings a melding from the waste collection's case system into dossiq, so a case's \"Gesynchroniseerd van\" tab (IqGesynchroniseerdVan) has a provenance to show. The source is switched off and no job runs the synchronization: the records describe a synchronization that happened, nothing calls the made-up address. The contract finds dossiq's case by its title, so this fragment loads after dossiq's. Install with `occ openregister:example-set:install zuiddrecht`.",
+	"after": [
+		"dossiq"
+	],
+	"objects": [
+		{
+			"key": "source-zaaksysteem-afval",
+			"register": "integriq",
+			"schema": "source",
+			"data": {
+				"name": "Zaaksysteem Centric (StUF-ZKN)",
+				"description": "Het zaaksysteem van de afvalinzameling. Meldingen over afval komen hier binnen en worden naar dossiq gesynchroniseerd.",
+				"reference": "zaaksysteem-afval",
+				"location": "https://zaken.afval.zuiddrecht.example/stuf-zkn",
+				"type": "soap",
+				"isEnabled": false,
+				"status": "inactive"
+			}
+		},
+		{
+			"key": "sync-zaken-naar-register",
+			"register": "integriq",
+			"schema": "synchronization",
+			"data": {
+				"name": "Zaken naar register",
+				"description": "Meldingen uit het zaaksysteem van de afvalinzameling als zaak in dossiq.",
+				"sourceId": "{{object:source-zaaksysteem-afval.id}}",
+				"sourceType": "api",
+				"syncMode": "incremental",
+				"targetType": "register/schema",
+				"targetId": "dossiq/case",
+				"sourceLastSynced": "{{datetime:0 10:30}}",
+				"targetLastSynced": "{{datetime:0 10:30}}",
+				"status": "inactive"
+			}
+		},
+		{
+			"key": "contract-melding-afval-lindelaan",
+			"register": "integriq",
+			"schema": "synchronization_contract",
+			"lookups": {
+				"case": {
+					"register": "dossiq",
+					"schema": "case",
+					"where": {
+						"title": "Melding afval Lindelaan"
+					}
+				}
+			},
+			"data": {
+				"synchronization": "{{object:sync-zaken-naar-register.id}}",
+				"synchronizationId": "{{object:sync-zaken-naar-register.id}}",
+				"originId": "ZAAK-2026-0082",
+				"sourceId": "{{object:source-zaaksysteem-afval.id}}",
+				"targetId": "{{lookup:case}}",
+				"sourceLastSynced": "{{datetime:0 10:30}}",
+				"targetLastSynced": "{{datetime:0 10:30}}",
+				"targetLastAction": "update"
+			}
+		},
+		{
+			"key": "contract-log-1",
+			"register": "integriq",
+			"schema": "synchronization_contract_log",
+			"data": {
+				"synchronization": "{{object:sync-zaken-naar-register.id}}",
+				"synchronization_contract": "{{object:contract-melding-afval-lindelaan.id}}",
+				"message": "Zaak aangemaakt in dossiq",
+				"targetResult": "200",
+				"created": "{{datetime:-15 10:15}}",
+				"test": false,
+				"force": false
+			}
+		},
+		{
+			"key": "contract-log-2",
+			"register": "integriq",
+			"schema": "synchronization_contract_log",
+			"data": {
+				"synchronization": "{{object:sync-zaken-naar-register.id}}",
+				"synchronization_contract": "{{object:contract-melding-afval-lindelaan.id}}",
+				"message": "Status bijgewerkt naar In behandeling",
+				"targetResult": "200",
+				"created": "{{datetime:-1 10:15}}",
+				"test": false,
+				"force": false
+			}
+		},
+		{
+			"key": "contract-log-3",
+			"register": "integriq",
+			"schema": "synchronization_contract_log",
+			"data": {
+				"synchronization": "{{object:sync-zaken-naar-register.id}}",
+				"synchronization_contract": "{{object:contract-melding-afval-lindelaan.id}}",
+				"message": "Velden bijgewerkt",
+				"targetResult": "200",
+				"created": "{{datetime:0 10:30}}",
+				"test": false,
+				"force": false
+			}
+		}
+	]
+}
