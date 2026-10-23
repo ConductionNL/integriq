@@ -1020,6 +1020,18 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'the first run',
 		)
 
+		// COMPLETED, NOT STOPPED. The generated pipeline ends in the sweep
+		// node, which ends the run through the engine's "no transitions left"
+		// path. While the generator still appended `openregister.end`, that
+		// node threw `FlowStop` and every successful sync was reported
+		// `stopped`, which `SUCCESSFUL_STATUSES` accepts. Pinned here, at the
+		// generated flow's own run, so the helper stays usable for flows that
+		// end in a deliberate stop.
+		expect(
+			run.status,
+			'a successful generated sync must be reported completed, not stopped',
+		).toBe('completed')
+
 		// EVERY step ran. A run that stopped after the trigger is also
 		// "terminal", and its log would be short rather than red.
 		const executed = (run.log ?? []).map((entry: Record<string, unknown>) =>
