@@ -130,6 +130,8 @@ return [
 		// Replaying and hand-firing share one action (`call-log.replay`),
 		// because they are the same act to the receiver. The verdict leg is
 		// public and signature-gated like every other inbound endpoint here.
+		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
+		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 		['name' => 'callLog#show', 'url' => '/api/calls/{id}', 'verb' => 'GET'],
 		['name' => 'callLog#preview', 'url' => '/api/calls/{id}/preview', 'verb' => 'GET'],
 		['name' => 'callLog#replay', 'url' => '/api/calls/{id}/replay', 'verb' => 'POST'],
