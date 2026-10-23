@@ -966,7 +966,7 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 		).toBeVisible({ timeout: 30_000 })
 
 		// Each step type, identified by its per-type modifier class rather than
-		// by a total: a count of eleven is satisfied by eleven copies of the
+		// by a total: a count of ten is satisfied by ten copies of the
 		// wrong node, and `explode` being present is the whole point.
 		//
 		// `set-fields` appears TWICE and the expected count says so. Both are
