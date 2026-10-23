@@ -22,7 +22,6 @@
  *     -> openregister.set-fields         (syncedId: written uuid, else contract targetId)
  *     -> openconnector.contract-commit
  *     -> openconnector.contract-sweep
- *     -> openregister.end
  *
  * A spec that asserted "the flow page rendered" would pass against every one
  * of the failure modes this pipeline actually has, so nothing here is a render
@@ -859,7 +858,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'openregister.set-fields',
 			'openconnector.contract-commit',
 			'openconnector.contract-sweep',
-			'openregister.end',
 		])
 		expect(
 			generated.enabled,
@@ -968,7 +966,7 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 		).toBeVisible({ timeout: 30_000 })
 
 		// Each step type, identified by its per-type modifier class rather than
-		// by a total: a count of eleven is satisfied by eleven copies of the
+		// by a total: a count of ten is satisfied by ten copies of the
 		// wrong node, and `explode` being present is the whole point.
 		//
 		// `set-fields` appears TWICE and the expected count says so. Both are
@@ -988,7 +986,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			['openregister-object-write', 1],
 			['openconnector-contract-commit', 1],
 			['openconnector-contract-sweep', 1],
-			['openregister-end', 1],
 		] as Array<[string, number]>) {
 			await expect(
 				page.locator(`.cn-flow-detail__node--${type}`),
@@ -1023,6 +1020,18 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'the first run',
 		)
 
+		// COMPLETED, NOT STOPPED. The generated pipeline ends in the sweep
+		// node, which ends the run through the engine's "no transitions left"
+		// path. While the generator still appended `openregister.end`, that
+		// node threw `FlowStop` and every successful sync was reported
+		// `stopped`, which `SUCCESSFUL_STATUSES` accepts. Pinned here, at the
+		// generated flow's own run, so the helper stays usable for flows that
+		// end in a deliberate stop.
+		expect(
+			run.status,
+			'a successful generated sync must be reported completed, not stopped',
+		).toBe('completed')
+
 		// EVERY step ran. A run that stopped after the trigger is also
 		// "terminal", and its log would be short rather than red.
 		const executed = (run.log ?? []).map((entry: Record<string, unknown>) =>
@@ -1042,7 +1051,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'synced-id',
 			'commit',
 			'sweep',
-			'end',
 		])
 
 		// THE OBJECTS.
@@ -1282,7 +1290,6 @@ test.describe('The decomposed synchronization — generated, run, re-run', () =>
 			'openregister.set-fields',
 			'openconnector.contract-commit',
 			'openconnector.contract-sweep',
-			'openregister.end',
 		])
 
 		const edges = doc.edges as Array<Record<string, unknown>>

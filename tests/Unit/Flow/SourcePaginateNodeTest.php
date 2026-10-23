@@ -356,7 +356,7 @@ class SourcePaginateNodeTest extends TestCase {
 		);
 
 		$this->assertSame(
-			['fetch' => ['objects' => ['count' => 5], 'pages' => ['count' => 3]]],
+			['fetch' => ['objects' => ['count' => 5], 'pages' => ['count' => 3], 'errors' => ['count' => 0]]],
 			$report->take()
 		);
 
@@ -557,6 +557,34 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->assertStringContainsString('gateway timeout', $error['message']);
 
 	}//end testAFailedFetchContinuesWithAnErrorItem()
+
+	/**
+	 * Under `continue` every failed fetch is counted in the hop report.
+	 *
+	 * Without the `errors` bucket a run whose every fetch failed reported
+	 * `objects 0 / pages 0`, the same summary as a source that is empty.
+	 *
+	 * @return void
+	 */
+	public function testItReportsEachFailedFetchUnderContinue(): void {
+		$this->givenOwner();
+		$this->synchronizationService->throwOnFetch = new RuntimeException('gateway timeout');
+
+		$report = new FlowStepReport();
+
+		$out = $this->node->execute(
+			[['json' => ['n' => 1]], ['json' => ['n' => 2]]],
+			['synchronization' => 'demo-sync', 'onError' => 'continue'],
+			$this->context() + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertCount(expectedCount: 2, haystack: $out);
+		$this->assertSame(
+			expected: ['fetch' => ['objects' => ['count' => 0], 'pages' => ['count' => 0], 'errors' => ['count' => 2]]],
+			actual: $report->take()
+		);
+
+	}//end testItReportsEachFailedFetchUnderContinue()
 
 	/**
 	 * `dead_letter` is absorbed like `continue`: the item carries explicit
