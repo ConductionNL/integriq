@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "eşitlemeler",
         "A signing secret is configured (hidden).": "Bir imzalama gizli anahtarı yapılandırılmış (gizli).",
         "Copied to clipboard": "Panoya kopyalandı",
         "Copy": "Kopyala",

@@ -159,6 +159,39 @@ class MtlsConfigResolver {
 	}//end resolve()
 
 	/**
+	 * The expiry of the stored, encrypted mTLS certificate, without validating the rest.
+	 *
+	 * @param array<string, mixed> $authConfig The source's `configuration.authentication` object.
+	 *
+	 * @return integer|null The certificate's notAfter as a unix time, or null without readable inline material.
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+	 */
+	public function certificateNotAfter(array $authConfig): ?int {
+		$mtls = ($authConfig['mtls'] ?? null);
+		$encrypted = '';
+		if (is_array($mtls) === true && is_string(($mtls['encryptedCertificate'] ?? null)) === true) {
+			$encrypted = $mtls['encryptedCertificate'];
+		}
+
+		if ($encrypted === '') {
+			return null;
+		}
+
+		try {
+			$parsed = @openssl_x509_parse($this->decrypt(label: 'certificate', encrypted: $encrypted));
+		} catch (MtlsConfigurationException) {
+			return null;
+		}
+
+		if ($parsed === false || is_int(($parsed['validTo_time_t'] ?? null)) === false) {
+			return null;
+		}
+
+		return $parsed['validTo_time_t'];
+	}//end certificateNotAfter()
+
+	/**
 	 * Decrypt one stored field, wrapping any decrypt failure.
 	 *
 	 * @param string $label A secret-free label used only in the failure message.

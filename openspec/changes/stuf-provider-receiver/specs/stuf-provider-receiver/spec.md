@@ -57,7 +57,16 @@ The receiver SHALL turn a zakLv01 into a `StufCaseQueryEvent`, a zakLk01 into a
 `StufCaseMutationEvent`, an npsLv01 into a `StufPersonQueryEvent` and an edcLk01 into a
 `StufDocumentMutationEvent`, each carrying the source id, and wait for the answer in the event's
 synchronous answer slot. The cases route SHALL take only zakLv01, zakLk01 and edcLk01; the persons
-route only npsLv01.
+route only npsLv01. When the source names its app in `configuration.owningApp`, the receiver SHALL
+restrict the event to that app before dispatching it: an answer or refusal from another app SHALL
+not count, and a listener SHALL NOT be able to move the restriction. Without `owningApp` the first
+answer wins, as before.
+
+#### Scenario: Only the owning app's answer counts
+
+- GIVEN a source with `configuration.owningApp` `pipelinq`
+- WHEN a zakLv01 arrives and dossiq answers it
+- THEN the answer does not count and the request is answered as unanswered
 
 #### Scenario: A case query carries its criteria
 

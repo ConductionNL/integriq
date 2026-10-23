@@ -110,7 +110,16 @@ and vrijBericht against a StUF-ZKN source in `rest` mode, and refuse a source in
 A sibling app SHALL ask for a case message by dispatching `StufZdsCaseRequestedEvent` (source,
 operation, arguments, correlation id). The listener SHALL write the client's result into the event,
 or a refusal when nothing was sent. When a kennisgeving concludes, integriq SHALL dispatch
-`StufZdsCaseConcludedEvent` with the asking app, the correlation id and the result.
+`StufZdsCaseConcludedEvent` with the asking app, the correlation id and the result. A source that
+names its app in `configuration.owningApp` SHALL take case commands from that app only: a request
+whose `sourceApp` is another app SHALL be refused and nothing sent. A source that names no owning
+app takes commands from any app.
+
+#### Scenario: A command for another app's source is refused
+
+- GIVEN a source with `configuration.owningApp` `pipelinq`
+- WHEN dossiq asks for a creeerZaak on it
+- THEN the event carries a refusal naming the owning app and nothing is sent
 
 #### Scenario: A refusal is never a result
 

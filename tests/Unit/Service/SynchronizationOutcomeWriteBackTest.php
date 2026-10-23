@@ -306,7 +306,7 @@ class SynchronizationOutcomeWriteBackTest extends TestCase {
 			$this->assertSame('object', ($schema['properties']['writeBack']['type'] ?? null), $file);
 			$this->assertSame('object', ($schema['properties']['writeBack']['properties']['onSuccess']['type'] ?? null), $file);
 			$this->assertSame('object', ($schema['properties']['writeBack']['properties']['onFailure']['type'] ?? null), $file);
-			$this->assertSame('1.2.0', $schema['version'], $file);
+			$this->assertTrue(version_compare((string)$schema['version'], '1.2.0', '>='), $file . ': writeBack shipped with synchronization schema 1.2.0');
 		}
 	}//end testBothRegistersDeclareWriteBack()
 }//end class

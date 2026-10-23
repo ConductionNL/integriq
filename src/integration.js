@@ -91,6 +91,9 @@ registerIntegration({
 	// dashboard widget and the single-entity surface (the host forwards
 	// `surface` on props when a surface distinction is needed).
 	renderMode: 'mount',
+	// No card of its own: a detail page hosts it in the library card and hands
+	// it `onHeader`; a "linked" card hands it `onSummary`.
+	chrome: 'card',
 	mount,
 	unmount,
 })
