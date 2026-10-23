@@ -51,7 +51,7 @@ class EndpointServiceCustomHeaderAuthTest extends TestCase {
 
 		if (class_exists('OC\AppFramework\Http') === false) {
 			$this->markTestSkipped(
-				'Requires the internal OC\AppFramework\Http class, which the unit bootstrap does not stub.'
+				'Requires OC\AppFramework\Http (stubbed by tests/bootstrap.php when Nextcloud is absent).'
 			);
 		}
 
@@ -106,6 +106,68 @@ class EndpointServiceCustomHeaderAuthTest extends TestCase {
 		$this->assertIsArray($result);
 
 	}//end testAHyphenatedCustomHeaderMatchesItsUnderscoredServerKey()
+
+	/**
+	 * The same defect, with the bag built by `EndpointService::getHeaders()`
+	 * instead of written by hand, from a server array carrying
+	 * `HTTP_X_CORSA_SECRET` (what a real `X-Corsa-Secret` request becomes).
+	 * That method has the same key map as `FlowToken::getHeaders()`, the
+	 * producer that feeds the rule in production. This pins the coupling
+	 * between the bag's key shape and the authentication lookup.
+	 *
+	 * @return void
+	 */
+	public function testAHyphenatedCustomHeaderMatchesTheBagBuiltByGetHeaders(): void {
+		$this->authorizationService->expects($this->once())
+			->method('authorizeApiKey')
+			->with('s3cr3t', ['s3cr3t' => 'bct']);
+
+		$server = [
+			'HTTP_X_CORSA_SECRET' => 's3cr3t',
+			'HTTP_ACCEPT' => 'application/json',
+			'REQUEST_METHOD' => 'GET',
+		];
+
+		$getHeaders = (new ReflectionClass(EndpointService::class))->getMethod('getHeaders');
+		$headers = $getHeaders->invoke($this->service, $server, true);
+
+		$result = $this->process(
+			authentication: [
+				'type' => 'apikey',
+				'header' => 'X-Corsa-Secret',
+				'keys' => ['s3cr3t' => 'bct'],
+			],
+			data: ['headers' => $headers]
+		);
+
+		$this->assertIsArray(actual: $result);
+
+	}//end testAHyphenatedCustomHeaderMatchesTheBagBuiltByGetHeaders()
+
+	/**
+	 * A bag keyed with hyphens (for example by a `mapping` rule rewriting
+	 * `headers`, or the `after`-phase response headers) must match too: the
+	 * bag keys are folded the same way as the configured header name.
+	 *
+	 * @return void
+	 */
+	public function testAHyphenatedBagKeyMatchesTheConfiguredHeader(): void {
+		$this->authorizationService->expects($this->once())
+			->method('authorizeApiKey')
+			->with('s3cr3t', ['s3cr3t' => 'bct']);
+
+		$result = $this->process(
+			authentication: [
+				'type' => 'apikey',
+				'header' => 'X-Corsa-Secret',
+				'keys' => ['s3cr3t' => 'bct'],
+			],
+			data: ['headers' => ['X-Corsa-Secret' => 's3cr3t']]
+		);
+
+		$this->assertIsArray(actual: $result);
+
+	}//end testAHyphenatedBagKeyMatchesTheConfiguredHeader()
 
 	/**
 	 * A genuinely missing header still 403s — the fix narrows the lookup key
