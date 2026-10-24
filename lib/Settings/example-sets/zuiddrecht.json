@@ -1,6 +1,6 @@
 {
 	"set": "zuiddrecht",
-	"$comment": "integriq's part of the Zuiddrecht example set: the synchronization that brings a melding from the waste collection's case system into dossiq, so a case's \"Gesynchroniseerd van\" tab (IqGesynchroniseerdVan) has a provenance to show. The source is switched off and no job runs the synchronization: the records describe a synchronization that happened, nothing calls the made-up address. The contract finds dossiq's case by its title, so this fragment loads after dossiq's. The DSO part gives dossiq's VTH settings (DqVthInstellingen) three activities from the Omgevingsloket, the verzoeken that last arrived for each, and one verzoek whose activity has no mapping yet. Install with `occ openregister:example-set:install zuiddrecht`.",
+	"$comment": "integriq's part of the Zuiddrecht example set: the synchronization that brings a melding from the waste collection's case system into dossiq, so a case's \"Gesynchroniseerd van\" tab (IqGesynchroniseerdVan) has a provenance to show. The source is switched off and no job runs the synchronization: the records describe a synchronization that happened, nothing calls the made-up address. The contract finds dossiq's case by its title, so this fragment loads after dossiq's. It also names the source behind four of dossiq's connections (BRP, KvK, PDOK, StUF-ZKN), switched off like the first, so the connections page shows where each one reads from. The DSO part gives dossiq's VTH settings (DqVthInstellingen) three activities from the Omgevingsloket, the verzoeken that last arrived for each, and one verzoek whose activity has no mapping yet. Install with `occ openregister:example-set:install zuiddrecht`.",
 	"after": [
 		"dossiq"
 	],
@@ -100,6 +100,62 @@
 				"created": "{{datetime:0 10:30}}",
 				"test": false,
 				"force": false
+			}
+		},
+		{
+			"key": "source-brp-testregister",
+			"register": "integriq",
+			"schema": "source",
+			"data": {
+				"name": "Testregister met fictieve personen",
+				"description": "De BRP-bevraging (Haal Centraal) tegen het testregister met fictieve personen; geen echte inwoners.",
+				"reference": "brp-testregister",
+				"location": "https://brp.zuiddrecht.example/haalcentraal/api/brp",
+				"type": "json",
+				"isEnabled": false,
+				"status": "inactive"
+			}
+		},
+		{
+			"key": "source-kvk-testregister",
+			"register": "integriq",
+			"schema": "source",
+			"data": {
+				"name": "Testregister met fictieve bedrijven",
+				"description": "Het KvK Handelsregister in de testomgeving met fictieve bedrijven.",
+				"reference": "kvk-testregister",
+				"location": "https://kvk.zuiddrecht.example/test/api/v1",
+				"type": "json",
+				"isEnabled": false,
+				"status": "inactive"
+			}
+		},
+		{
+			"key": "source-pdok-bag",
+			"register": "integriq",
+			"schema": "source",
+			"data": {
+				"name": "PDOK BAG",
+				"description": "Adressen en gebouwen uit de BAG via PDOK.",
+				"reference": "pdok-bag",
+				"location": "https://api.pdok.nl/bzk/locatieserver/search/v3_1",
+				"type": "json",
+				"isEnabled": false,
+				"status": "inactive"
+			}
+		},
+		{
+			"key": "source-zaakmagazijn-drechtsteden",
+			"register": "integriq",
+			"schema": "source",
+			"data": {
+				"name": "Zaakmagazijn Drechtsteden",
+				"description": "Het regionale zaakmagazijn waar dossiq zaken via StUF-ZKN aan doorgeeft.",
+				"reference": "zaakmagazijn-drechtsteden",
+				"location": "https://zaakmagazijn.drechtsteden.example/stuf-zkn",
+				"type": "soap",
+				"isEnabled": false,
+				"status": "inactive"
 			}
 		},
 		{
@@ -265,6 +321,72 @@
 					}
 				],
 				"activityUnmapped": true
+			}
+		}
+	],
+	"changes": [
+		{
+			"key": "dossiq-brp-bron",
+			"register": "integriq",
+			"schema": "app_connection",
+			"where": {
+				"app": "dossiq",
+				"key": "brp"
+			},
+			"set": {
+				"source": "{{object:source-brp-testregister.id}}",
+				"lastReport": {
+					"status": "simulated",
+					"message": "Antwoorden komen uit het testregister met fictieve personen.",
+					"at": "{{datetime:-1 07:00}}"
+				},
+				"status": "simulated",
+				"statusMessage": "Antwoorden komen uit het testregister met fictieve personen.",
+				"checkedAt": "{{datetime:-1 07:00}}"
+			}
+		},
+		{
+			"key": "dossiq-kvk-bron",
+			"register": "integriq",
+			"schema": "app_connection",
+			"where": {
+				"app": "dossiq",
+				"key": "kvk"
+			},
+			"set": {
+				"source": "{{object:source-kvk-testregister.id}}"
+			}
+		},
+		{
+			"key": "dossiq-pdok-bron",
+			"register": "integriq",
+			"schema": "app_connection",
+			"where": {
+				"app": "dossiq",
+				"key": "pdok"
+			},
+			"set": {
+				"source": "{{object:source-pdok-bag.id}}"
+			}
+		},
+		{
+			"key": "dossiq-stuf-bron",
+			"register": "integriq",
+			"schema": "app_connection",
+			"where": {
+				"app": "dossiq",
+				"key": "stuf"
+			},
+			"set": {
+				"source": "{{object:source-zaakmagazijn-drechtsteden.id}}",
+				"lastReport": {
+					"status": "error",
+					"message": "2 berichten niet aangekomen",
+					"at": "{{datetime:-1 17:40}}"
+				},
+				"status": "error",
+				"statusMessage": "2 berichten niet aangekomen",
+				"checkedAt": "{{datetime:-1 17:40}}"
 			}
 		}
 	]
