@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Service\Dso\DsoActivityOverview;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
@@ -48,10 +49,12 @@ class DsoActivityMappingController extends Controller {
 	 *
 	 * @param IRequest              $request   The request.
 	 * @param DsoUnmappedActivities $unmapped  Groups the unmapped activities.
+	 * @param DsoActivityOverview   $overview  Reads the rows with their last arrival.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly DsoUnmappedActivities $unmapped,
+		private readonly DsoActivityOverview $overview,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -67,4 +70,16 @@ class DsoActivityMappingController extends Controller {
 	public function unmapped(): JSONResponse {
 		return new JSONResponse($this->unmapped->list());
 	}//end unmapped()
+
+	/**
+	 * Every row with when a verzoek last matched it, then the unmapped activities.
+	 *
+	 * @return JSONResponse `{results}`.
+	 *
+	 * @spec openspec/changes/dso-activity-overview/tasks.md#task-2
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function overview(): JSONResponse {
+		return new JSONResponse($this->overview->rows());
+	}//end overview()
 }//end class
