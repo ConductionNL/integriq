@@ -2,8 +2,8 @@
 
 /**
  * Example data for dossiq's connections page (DqInstellingen): four of
- * dossiq's connections name the source they read from, and the StUF-ZKN
- * connection reports the failure the board draws.
+ * dossiq's connections name the source they read from. StUF-ZKN's status
+ * is runtime state the connection check writes, not example data.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -24,7 +24,7 @@ class ExampleSetConnectionSourcesTest extends TestCase {
 
 	/**
 	 * Every linked source is declared in the fragment and switched off, so no
-	 * job calls a made-up address; StUF-ZKN reports its failure.
+	 * job calls a made-up address; StUF-ZKN's change sets its source only.
 	 *
 	 * @return void
 	 */
@@ -56,7 +56,9 @@ class ExampleSetConnectionSourcesTest extends TestCase {
 			actual: $linked
 		);
 
-		$stuf = array_column($set['changes'], null, 'key')['dossiq-stuf-bron']['set'];
-		$this->assertSame(expected: ['error', '2 berichten niet aangekomen'], actual: [$stuf['status'], $stuf['lastReport']['message']]);
+		// StUF-ZKN's status is runtime state: integriq's connection check writes it on every save ("Not checked
+		// yet" for a source that is switched off), so a declared failure read as "written but not kept" on every
+		// refresh. The set declares only its source. (BRP's declared "simulated" is what the check itself writes.)
+		$this->assertSame(expected: ['source'], actual: array_keys(array_column($set['changes'], null, 'key')['dossiq-stuf-bron']['set']));
 	}//end testDossiqConnectionsNameTheirSource()
 }//end class

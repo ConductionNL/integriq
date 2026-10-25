@@ -378,15 +378,7 @@
 				"key": "stuf"
 			},
 			"set": {
-				"source": "{{object:source-zaakmagazijn-drechtsteden.id}}",
-				"lastReport": {
-					"status": "error",
-					"message": "2 berichten niet aangekomen",
-					"at": "{{datetime:-1 17:40}}"
-				},
-				"status": "error",
-				"statusMessage": "2 berichten niet aangekomen",
-				"checkedAt": "{{datetime:-1 17:40}}"
+				"source": "{{object:source-zaakmagazijn-drechtsteden.id}}"
 			}
 		}
 	]
