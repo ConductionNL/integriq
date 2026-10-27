@@ -334,15 +334,7 @@
 				"key": "brp"
 			},
 			"set": {
-				"source": "{{object:source-brp-testregister.id}}",
-				"lastReport": {
-					"status": "simulated",
-					"message": "Antwoorden komen uit het testregister met fictieve personen.",
-					"at": "{{datetime:-1 07:00}}"
-				},
-				"status": "simulated",
-				"statusMessage": "Antwoorden komen uit het testregister met fictieve personen.",
-				"checkedAt": "{{datetime:-1 07:00}}"
+				"source": "{{object:source-brp-testregister.id}}"
 			}
 		},
 		{
