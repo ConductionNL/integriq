@@ -57,6 +57,16 @@
             "num": "43"
         }
     },
+    "twig-context-keys": {
+        "return": {
+            "keys": "naam,leeftijd,adres,a.b,leeg,lijst"
+        }
+    },
+    "cast-missing-keys": {
+        "return": {
+            "age": "42"
+        }
+    },
     "twig-literal": {
         "return": {
             "constant": "vast"

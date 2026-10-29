@@ -72,6 +72,8 @@ class MappingServiceExecuteGoldenTest extends TestCase {
 			'dotted-key-pass-through' => ['mapping' => $this->mapping([], true), 'input' => $input],
 			'array-value' => ['mapping' => $this->mapping(['fixed' => ['a' => 1]]), 'input' => $input],
 			'twig-template' => ['mapping' => $this->mapping(['greeting' => 'Hallo {{ naam }}', 'num' => '{{ leeftijd + 1 }}']), 'input' => $input],
+			'twig-context-keys' => ['mapping' => $this->mapping(['keys' => '{{ _context|keys|join(",") }}']), 'input' => $input],
+			'cast-missing-keys' => ['mapping' => $this->mapping(['age' => 'leeftijd'], false, [], ['missing' => 'setNullIfValue==', 'gone' => 'string', 'nope' => 'bool', 'x' => 'array', 'y' => 'jsonToArray', 'z' => 'unsetIfValue==']), 'input' => $input],
 			'twig-literal' => ['mapping' => $this->mapping(['constant' => 'vast']), 'input' => $input],
 			'twig-error' => ['mapping' => $this->mapping(['bad' => '{{ naam | nosuchfilter }}']), 'input' => $input],
 			'nested-target' => ['mapping' => $this->mapping(['deep.er.key' => 'naam']), 'input' => $input],
