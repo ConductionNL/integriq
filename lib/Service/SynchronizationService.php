@@ -50,6 +50,7 @@ use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
+use OCA\Integriq\Service\Synchronization\DeletionRun;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Ownership\DisappearanceApplier;
@@ -4535,328 +4536,387 @@ class SynchronizationService {
 		bool $forceDeletion = false,
 		?array &$guardInfo = null,
 	): int {
-		$synchronization = $this->toSynchronization(synchronization: $synchronization);
+		$run = new DeletionRun();
+		$run->synchronization = $this->toSynchronization(synchronization: $synchronization);
+		$run->synchronizationId = (($run->synchronization['id'] ?? null) ?? ($run->synchronization['uuid'] ?? null));
+		$run->sourceConfig = $this->callService->applyConfigDot(($run->synchronization['sourceConfig'] ?? []));
+		$run->synchronizedTargetIds = $synchronizedTargetIds;
+		$run->deleteRestriction = $deleteRestriction;
+		$run->data = $data;
+		$run->forceDeletion = $forceDeletion;
+		$run->guardInfo = $guardInfo;
+		$run->applier = new DisappearanceApplier();
+
+		$refusal = $this->deletionRefusal(run: $run, fetchComplete: $fetchComplete);
+		if ($refusal !== null) {
+			$guardInfo = $refusal;
+			return 0;
+		}
+
 		$deletedObjectsCount = 0;
-		$type = ($synchronization['targetType'] ?? null);
-
-		$synchronizationId = (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null));
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-
-		// Spec records-owned-by-an-external-source REQ-SOR-002: what happens to
-		// a record the source stopped carrying is declared on the synchronisation.
-		// A value this engine does not know is refused here rather than read as
-		// the default, because silently deleting under a misspelled policy is
-		// the exact failure the declaration exists to prevent.
-		// REQ-CMKT-003: the values a non-deleting policy writes (a learniq
-		// course `archived`, a placement `retired`) are declared beside the
-		// policy and refused the same way when malformed.
-		$disappearanceApplier = new DisappearanceApplier();
-		try {
-			$disappearancePolicy = DisappearancePolicy::fromSourceConfig($sourceConfig);
-			$disappearanceValues = $disappearanceApplier->valuesFrom(sourceConfig: $sourceConfig);
-		} catch (\InvalidArgumentException $policyException) {
-			$guardInfo = [
-				'guarded' => true,
-				'reason' => 'unknown_disappearance_policy',
-				'ratio' => null,
-				'threshold' => null,
-				'candidateCount' => null,
-				'totalContracts' => null,
-				'message' => $policyException->getMessage(),
-			];
-			$this->logger->warning(
-				'deleteInvalidObjects: skipped — ' . $policyException->getMessage(),
-				['synchronizationId' => $synchronizationId]
-			);
-			$this->dispatchDeletionGuardedEvent(
-				synchronizationId: (string)$synchronizationId,
-				reason: 'unknown_disappearance_policy'
-			);
-			return 0;
-		}//end try
-
-		$policyRunAt = gmdate('c');
-		$purgeInfo = ['purgedCount' => 0, 'purgeRefusals' => []];
-
-		// [NEW] REQ-018 (change cdc-incremental-sync): defense-in-depth —
-		// independently refuse to run against an incremental Synchronization
-		// regardless of caller, so a future caller that reaches this method
-		// directly (bypassing synchronizeExternToIntern()'s own gate) cannot
-		// accidentally delete against a partial incremental fetch. Checked
-		// ahead of the fetchComplete guard below (an incremental fetch can
-		// be perfectly "complete" for what it asked for — it just never
-		// asked for everything).
-		if ((string)($synchronization['syncMode'] ?? 'full') === 'incremental') {
-			$guardInfo = [
-				'guarded' => true,
-				'reason' => 'incremental_mode',
-				'ratio' => null,
-				'threshold' => null,
-				'candidateCount' => null,
-				'totalContracts' => null,
-			];
-			$this->logger->warning(
-				'deleteInvalidObjects: skipped — synchronization is in incremental sync mode',
-				['synchronizationId' => $synchronizationId]
-			);
-			$this->dispatchDeletionGuardedEvent(
-				synchronizationId: (string)$synchronizationId,
-				reason: 'incremental_mode'
-			);
-			return 0;
-		}
-
-		if ($fetchComplete === false) {
-			$guardInfo = [
-				'guarded' => true,
-				'reason' => 'fetch_incomplete',
-				'ratio' => null,
-				'threshold' => null,
-				'candidateCount' => null,
-				'totalContracts' => null,
-			];
-			$this->logger->warning(
-				'deleteInvalidObjects: skipped — preceding fetch did not complete',
-				['synchronizationId' => $synchronizationId]
-			);
-			$this->dispatchDeletionGuardedEvent(
-				synchronizationId: (string)$synchronizationId,
-				reason: 'fetch_incomplete'
-			);
-			return 0;
-		}
-
-		switch ($type) {
+		switch ($run->synchronization['targetType'] ?? null) {
 			case 'register/schema':
-
-				// The targetId must be `{registerId}/{schemaId}`; bail out (and warn)
-				// when it is not, so a malformed sync can never enter the scoped
-				// delete path with an undefined register/schema.
-				$targetIdParts = explode(separator: '/', string: (string)($synchronization['targetId'] ?? null));
-				if (count($targetIdParts) !== 2 || $targetIdParts[0] === '' || $targetIdParts[1] === '') {
-					$this->logger->warning(
-						'deleteInvalidObjects: targetId not in register/schema format',
-						[
-							'synchronizationId' => (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
-							'targetId' => ($synchronization['targetId'] ?? null),
-						]
-					);
-					break;
-				}
-
-				[$registerId, $schemaId] = $targetIdParts;
-
-				// Enumerate this synchronization's contracts straight from
-				// OpenRegister (register `openconnector`, schema
-				// `synchronization_contract`). The legacy QBMapper JOIN against
-				// `openregister_objects` to scope by the target object's schema is
-				// replaced by an explicit per-target scope-check via find() below.
-				$contractObjects = $this->findAllContractObjects(filters: ['synchronizationId' => $synchronizationId]);
-
-				// Only the TARGET IDS are needed to work out what disappeared from
-				// the source. The originId map and the full contract bodies are
-				// read solely for the contracts actually being deleted — normally
-				// a handful, and on a healthy sync none at all — so they are built
-				// below, once that set is known.
-				//
-				// Building all three up front cost a full `jsonSerialize()` per
-				// contract plus a retained copy of every one. MEASURED 2026-08-14
-				// on data.overheid.nl: after a run wrote 19,822 contracts, this
-				// method held 1.39 GB resident and burned ten minutes of CPU with
-				// no database activity and nothing left to write — for a source
-				// that had not deleted a single record. It scales with the size of
-				// the SYNCHRONIZATION, not with what changed, so a larger source
-				// does not slow down, it runs out of memory.
-				$policyCounts = ['ended' => 0, 'flagged' => 0];
-				$allContractTargetIds = [];
-				foreach ($contractObjects as $contractObject) {
-					$contractTargetId = ($contractObject->getObject()['targetId'] ?? null);
-					if ($contractTargetId !== null) {
-						$allContractTargetIds[] = $contractTargetId;
-					}
-				}
-
-				// Initialize $synchronizedTargetIds as empty array if null.
-				if ($synchronizedTargetIds === null) {
-					$synchronizedTargetIds = [];
-				}
-
-				// Check if we have contracts that became invalid or do not exist in the source anymore.
-				$targetIdsToDelete = array_diff($allContractTargetIds, $synchronizedTargetIds);
-
-				// Deletion-ratio guard: only evaluated for the bulk source-diff
-				// cleanup path (never the single-object, event-driven
-				// `$deleteRestriction === true` delete, which is already scoped
-				// to an explicitly-identified object) and only once there are
-				// enough existing contracts for a percentage to be a meaningful
-				// signal (self::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD).
-				$guardInfo = ['guarded' => false, 'reason' => null, 'ratio' => null, 'threshold' => null];
-				if ($deleteRestriction === false
-					&& count($allContractTargetIds) >= self::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD
-				) {
-					$ratio = (count($targetIdsToDelete) / count($allContractTargetIds));
-					$threshold = ($sourceConfig['deletionRatioThreshold'] ?? self::DEFAULT_DELETION_RATIO_THRESHOLD);
-
-					if ($ratio > $threshold && $forceDeletion === false) {
-						$guardInfo = [
-							'guarded' => true,
-							'reason' => 'ratio_threshold_exceeded',
-							'ratio' => $ratio,
-							'threshold' => $threshold,
-							'candidateCount' => count($targetIdsToDelete),
-							'totalContracts' => count($allContractTargetIds),
-						];
-						$this->logger->warning(
-							'deleteInvalidObjects: deletion ratio guard tripped',
-							$guardInfo + ['synchronizationId' => $synchronizationId]
-						);
-						$this->dispatchDeletionGuardedEvent(
-							synchronizationId: (string)$synchronizationId,
-							reason: 'ratio_threshold_exceeded',
-							ratio: $ratio,
-							threshold: $threshold,
-							candidateCount: count($targetIdsToDelete),
-							totalContracts: count($allContractTargetIds)
-						);
-						return 0;
-					}//end if
-
-					$guardInfo['ratio'] = $ratio;
-					$guardInfo['threshold'] = $threshold;
-				}//end if
-
-				// The delete set is known and the ratio guard has had its say, so
-				// the expensive lookups can be built for THOSE contracts only.
-				// Past the guard this is normally empty or a handful; before this
-				// change it was every contract the synchronization has ever had.
-				$wantedTargetIds = array_flip($targetIdsToDelete);
-				$allContractSourceIds = [];
-				$contractsByTargetId = [];
-				foreach ($contractObjects as $contractObject) {
-					$contract = $contractObject->jsonSerialize();
-					$contractTargetId = ($contract['targetId'] ?? null);
-					if ($contractTargetId === null || isset($wantedTargetIds[$contractTargetId]) === false) {
-						continue;
-					}
-
-					$allContractSourceIds[$contractTargetId] = ($contract['originId'] ?? null);
-					$contractsByTargetId[$contractTargetId] = $contract;
-				}
-
-				if ($deleteRestriction === true) {
-					$encodedData = json_encode($data);
-					$targetIdsToDelete = array_filter(
-						$targetIdsToDelete,
-						function (string|int $targetId) use ($encodedData, $allContractSourceIds) {
-							$sourceId = $allContractSourceIds[$targetId];
-							return str_contains($encodedData, $sourceId);
-						}
-					);
-				}
-
-				foreach ($targetIdsToDelete as $targetIdToDelete) {
-					// Scope-check: only delete when the target object actually lives
-					// in this synchronization's register/schema. This prevents a
-					// UUID collision across magic tables from silently deleting a
-					// foreign-scope object (OR#1638 / hydra#309). _rbac and
-					// _multitenancy are disabled to mirror the prior unscoped-JOIN
-					// reachability.
-					try {
-						$targetObject = $this->orObjectService->find(
-							id: (string)$targetIdToDelete,
-							register: $registerId,
-							schema: $schemaId,
-							_rbac: false,
-							_multitenancy: false
-						);
-					} catch (DoesNotExistException $exception) {
-						// Target object is gone — nothing to delete, skip silently.
-						continue;
-					} catch (\Throwable $throwable) {
-						$this->logger->warning(
-							'deleteInvalidObjects: Scope check failed',
-							[
-								'synchronizationId' => $synchronizationId,
-								'targetId' => $targetIdToDelete,
-								'error' => $throwable->getMessage(),
-							]
-						);
-						continue;
-					}//end try
-
-					// Out of scope (different register/schema, or not found).
-					if ($targetObject === null) {
-						continue;
-					}
-
-					$synchronizationContract = ($contractsByTargetId[$targetIdToDelete] ?? null);
-					if ($synchronizationContract === null) {
-						continue;
-					}
-
-					// REQ-SDP-001: under `purge` the object goes for good, with
-					// its files. It sits behind the same incremental,
-					// completeness and ratio guards as a delete, because it is
-					// the one action that cannot be undone.
-					if ($disappearancePolicy === DisappearancePolicy::PURGE) {
-						$this->purgeTarget(
-							synchronization: $synchronization,
-							contract: $synchronizationContract,
-							trigger: self::PURGE_TRIGGER_FULL_RUN,
-							reference: null,
-							purgeInfo: $purgeInfo
-						);
-						continue;
-					}
-
-					// REQ-SOR-003: under `markEnded` and `keepAndFlag` the object
-					// stays. It is only ever reached here, behind the incremental,
-					// completeness and ratio guards above, so a truncated page or a
-					// 429 ends and flags exactly as much as it deletes: nothing.
-					if ($disappearancePolicy !== DisappearancePolicy::DELETE) {
-						$this->applyDisappearancePolicy(
-							policy: $disappearancePolicy,
-							applier: $disappearanceApplier,
-							targetObject: $targetObject,
-							contract: $synchronizationContract,
-							registerId: $registerId,
-							schemaId: $schemaId,
-							runAt: $policyRunAt,
-							counts: $policyCounts,
-							values: $disappearanceValues
-						);
-						continue;
-					}
-
-					// The updateTarget() call returns an array, so no is_array() guard.
-					$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
-					$this->persistContract(contract: $synchronizationContract);
-
-					$deletedObjectsCount++;
-				}//end foreach
-
-				// REQ-SOR-003: the count of affected objects is reported on the
-				// run, so an operator can see that nothing vanished and how many
-				// records the source stopped carrying.
-				$guardInfo['endedCount'] = $policyCounts['ended'];
-				$guardInfo['flaggedCount'] = $policyCounts['flagged'];
-				$guardInfo['purgedCount'] = $purgeInfo['purgedCount'];
-				$guardInfo['purgeRefusals'] = $purgeInfo['purgeRefusals'];
-				$guardInfo['disappearancePolicy'] = $disappearancePolicy;
+				$deletedObjectsCount = $this->deleteInvalidRegisterObjects(run: $run);
 				break;
-
 			case 'nextcloud-table':
-				$deletedObjectsCount += $this->deleteInvalidTableRows(
-					synchronization: $synchronization,
+				$deletedObjectsCount = $this->deleteInvalidTableRows(
+					synchronization: $run->synchronization,
 					synchronizedTargetIds: $synchronizedTargetIds,
 					deleteRestriction: $deleteRestriction,
 					data: $data
 				);
 				break;
-		}//end switch
+		}
+
+		$guardInfo = $run->guardInfo;
 
 		return $deletedObjectsCount;
 	}//end deleteInvalidObjects()
+
+	/**
+	 * Read the disappearance policy of a deletion pass and decide whether the pass may run.
+	 *
+	 * @param DeletionRun $run           The deletion pass; its policy, values and run time are set.
+	 * @param bool        $fetchComplete Whether the preceding fetch completed.
+	 *
+	 * @return array|null The guard outcome when the pass is refused, otherwise null.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
+	 */
+	private function deletionRefusal(DeletionRun $run, bool $fetchComplete): ?array {
+		// REQ-SOR-002 and REQ-CMKT-003: a disappearance policy, or retirement values,
+		// this engine does not know are refused rather than read as the default,
+		// because silently deleting under a misspelled policy is the failure the
+		// declaration exists to prevent.
+		try {
+			$run->policy = DisappearancePolicy::fromSourceConfig($run->sourceConfig);
+			$run->values = $run->applier->valuesFrom(sourceConfig: $run->sourceConfig);
+		} catch (\InvalidArgumentException $policyException) {
+			return $this->refuseDeletion(
+				synchronizationId: $run->synchronizationId,
+				reason: 'unknown_disappearance_policy',
+				why: $policyException->getMessage(),
+				extra: ['message' => $policyException->getMessage()]
+			);
+		}//end try
+
+		$run->runAt = gmdate('c');
+
+		// REQ-018: never delete against an incremental synchronization, whoever calls,
+		// even when its fetch was complete for what it asked for.
+		if ((string)($run->synchronization['syncMode'] ?? 'full') === 'incremental') {
+			return $this->refuseDeletion(
+				synchronizationId: $run->synchronizationId,
+				reason: 'incremental_mode',
+				why: 'synchronization is in incremental sync mode'
+			);
+		}
+
+		if ($fetchComplete === false) {
+			return $this->refuseDeletion(
+				synchronizationId: $run->synchronizationId,
+				reason: 'fetch_incomplete',
+				why: 'preceding fetch did not complete'
+			);
+		}
+
+		return null;
+	}//end deletionRefusal()
+
+	/**
+	 * Refuse a deletion pass: log it, dispatch the guarded event and report why.
+	 *
+	 * @param mixed  $synchronizationId The synchronization id.
+	 * @param string $reason            The machine-readable reason.
+	 * @param string $why               The reason as logged.
+	 * @param array  $extra             Extra fields for the guard outcome.
+	 *
+	 * @return array The guard outcome.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 */
+	private function refuseDeletion(mixed $synchronizationId, string $reason, string $why, array $extra = []): array {
+		$guardInfo = array_merge(
+			[
+				'guarded' => true,
+				'reason' => $reason,
+				'ratio' => null,
+				'threshold' => null,
+				'candidateCount' => null,
+				'totalContracts' => null,
+			],
+			$extra
+		);
+		$this->logger->warning(
+			'deleteInvalidObjects: skipped — ' . $why,
+			['synchronizationId' => $synchronizationId]
+		);
+		$this->dispatchDeletionGuardedEvent(synchronizationId: (string)$synchronizationId, reason: $reason);
+
+		return $guardInfo;
+	}//end refuseDeletion()
+
+	/**
+	 * The register/schema branch of deleteInvalidObjects(): retire the target objects
+	 * whose contracts the source no longer carries.
+	 *
+	 * Only the target ids are read for every contract. The full contract bodies are read
+	 * only for the contracts being retired, after the ratio guard: reading all of them up
+	 * front held 1.39 GB for a 19,822-contract synchronization that had deleted nothing
+	 * (measured 2026-08-14 on data.overheid.nl).
+	 *
+	 * @param DeletionRun $run The deletion pass.
+	 *
+	 * @return int The count of objects that were deleted.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 */
+	private function deleteInvalidRegisterObjects(DeletionRun $run): int {
+		$targetIdParts = explode(separator: '/', string: (string)($run->synchronization['targetId'] ?? null));
+		if (count($targetIdParts) !== 2 || $targetIdParts[0] === '' || $targetIdParts[1] === '') {
+			$this->logger->warning(
+				'deleteInvalidObjects: targetId not in register/schema format',
+				['synchronizationId' => $run->synchronizationId, 'targetId' => ($run->synchronization['targetId'] ?? null)]
+			);
+			return 0;
+		}
+
+		[$run->registerId, $run->schemaId] = $targetIdParts;
+
+		$contractObjects = $this->findAllContractObjects(filters: ['synchronizationId' => $run->synchronizationId]);
+		$allContractTargetIds = $this->contractTargetIds(contractObjects: $contractObjects);
+		$targetIdsToDelete = array_diff($allContractTargetIds, ($run->synchronizedTargetIds ?? []));
+
+		if ($this->deletionRatioGuardTrips(
+			run: $run,
+			candidateCount: count($targetIdsToDelete),
+			totalContracts: count($allContractTargetIds)
+		) === true
+		) {
+			return 0;
+		}
+
+		[$sourceIds, $contractsByTargetId] = $this->contractsForTargets(contractObjects: $contractObjects, targetIds: $targetIdsToDelete);
+
+		if ($run->deleteRestriction === true) {
+			$encodedData = json_encode($run->data);
+			$targetIdsToDelete = array_filter(
+				$targetIdsToDelete,
+				fn (string|int $targetId) => str_contains($encodedData, $sourceIds[$targetId])
+			);
+		}
+
+		$deletedObjectsCount = 0;
+		foreach ($targetIdsToDelete as $targetIdToDelete) {
+			$deletedObjectsCount += $this->retireDisappearedTarget(
+				run: $run,
+				targetId: $targetIdToDelete,
+				contract: ($contractsByTargetId[$targetIdToDelete] ?? null)
+			);
+		}
+
+		// REQ-SOR-003: the run reports how many records the source stopped carrying.
+		$run->guardInfo['endedCount'] = $run->policyCounts['ended'];
+		$run->guardInfo['flaggedCount'] = $run->policyCounts['flagged'];
+		$run->guardInfo['purgedCount'] = $run->purgeInfo['purgedCount'];
+		$run->guardInfo['purgeRefusals'] = $run->purgeInfo['purgeRefusals'];
+		$run->guardInfo['disappearancePolicy'] = $run->policy;
+
+		return $deletedObjectsCount;
+	}//end deleteInvalidRegisterObjects()
+
+	/**
+	 * The target ids of a synchronization's contracts.
+	 *
+	 * @param array $contractObjects The contract objects.
+	 *
+	 * @return array The target ids, skipping contracts without one.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 */
+	private function contractTargetIds(array $contractObjects): array {
+		$targetIds = [];
+		foreach ($contractObjects as $contractObject) {
+			$targetId = ($contractObject->getObject()['targetId'] ?? null);
+			if ($targetId !== null) {
+				$targetIds[] = $targetId;
+			}
+		}
+
+		return $targetIds;
+	}//end contractTargetIds()
+
+	/**
+	 * The origin ids and full contracts of the contracts with the given target ids.
+	 *
+	 * @param array $contractObjects The contract objects.
+	 * @param array $targetIds       The target ids to read.
+	 *
+	 * @return array{0: array, 1: array} The origin ids and the contracts, both keyed by target id.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 */
+	private function contractsForTargets(array $contractObjects, array $targetIds): array {
+		$wantedTargetIds = array_flip($targetIds);
+		$sourceIds = [];
+		$contractsByTargetId = [];
+		foreach ($contractObjects as $contractObject) {
+			$contract = $contractObject->jsonSerialize();
+			$targetId = ($contract['targetId'] ?? null);
+			if ($targetId === null || isset($wantedTargetIds[$targetId]) === false) {
+				continue;
+			}
+
+			$sourceIds[$targetId] = ($contract['originId'] ?? null);
+			$contractsByTargetId[$targetId] = $contract;
+		}
+
+		return [$sourceIds, $contractsByTargetId];
+	}//end contractsForTargets()
+
+	/**
+	 * Apply the deletion-ratio guard to a bulk deletion pass.
+	 *
+	 * The guard is skipped for a restricted (single-object) delete and below
+	 * MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD contracts. It trips when the share of
+	 * candidates exceeds the threshold, unless deletion is forced.
+	 *
+	 * @param DeletionRun $run            The deletion pass; its guard outcome is updated.
+	 * @param int         $candidateCount The number of targets to delete.
+	 * @param int         $totalContracts The number of contracts with a target.
+	 *
+	 * @return bool True when the guard tripped and nothing may be deleted.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 */
+	private function deletionRatioGuardTrips(DeletionRun $run, int $candidateCount, int $totalContracts): bool {
+		$run->guardInfo = ['guarded' => false, 'reason' => null, 'ratio' => null, 'threshold' => null];
+		if ($run->deleteRestriction === true || $totalContracts < self::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD) {
+			return false;
+		}
+
+		$ratio = ($candidateCount / $totalContracts);
+		$threshold = ($run->sourceConfig['deletionRatioThreshold'] ?? self::DEFAULT_DELETION_RATIO_THRESHOLD);
+		if ($ratio > $threshold && $run->forceDeletion === false) {
+			$run->guardInfo = [
+				'guarded' => true,
+				'reason' => 'ratio_threshold_exceeded',
+				'ratio' => $ratio,
+				'threshold' => $threshold,
+				'candidateCount' => $candidateCount,
+				'totalContracts' => $totalContracts,
+			];
+			$this->logger->warning(
+				'deleteInvalidObjects: deletion ratio guard tripped',
+				$run->guardInfo + ['synchronizationId' => $run->synchronizationId]
+			);
+			$this->dispatchDeletionGuardedEvent(
+				synchronizationId: (string)$run->synchronizationId,
+				reason: 'ratio_threshold_exceeded',
+				ratio: $ratio,
+				threshold: $threshold,
+				candidateCount: $candidateCount,
+				totalContracts: $totalContracts
+			);
+			return true;
+		}//end if
+
+		$run->guardInfo['ratio'] = $ratio;
+		$run->guardInfo['threshold'] = $threshold;
+
+		return false;
+	}//end deletionRatioGuardTrips()
+
+	/**
+	 * Retire one target object the source no longer carries, under the declared policy.
+	 *
+	 * `purge` removes the object and its files for good (REQ-SDP-001), `markEnded` and
+	 * `keepAndFlag` keep it and record the absence (REQ-SOR-003), and `delete` deletes it.
+	 *
+	 * @param DeletionRun $run      The deletion pass.
+	 * @param string|int  $targetId The target object id.
+	 * @param array|null  $contract The contract that maintains it.
+	 *
+	 * @return int 1 when the object was deleted, otherwise 0.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 */
+	private function retireDisappearedTarget(DeletionRun $run, string|int $targetId, ?array $contract): int {
+		$targetObject = $this->findTargetInScope(run: $run, targetId: $targetId);
+		if ($targetObject === null || $contract === null) {
+			return 0;
+		}
+
+		if ($run->policy === DisappearancePolicy::PURGE) {
+			$this->purgeTarget(
+				synchronization: $run->synchronization,
+				contract: $contract,
+				trigger: self::PURGE_TRIGGER_FULL_RUN,
+				reference: null,
+				purgeInfo: $run->purgeInfo
+			);
+			return 0;
+		}
+
+		if ($run->policy !== DisappearancePolicy::DELETE) {
+			$this->applyDisappearancePolicy(
+				policy: $run->policy,
+				applier: $run->applier,
+				targetObject: $targetObject,
+				contract: $contract,
+				registerId: $run->registerId,
+				schemaId: $run->schemaId,
+				runAt: $run->runAt,
+				counts: $run->policyCounts,
+				values: $run->values
+			);
+			return 0;
+		}
+
+		$contract = $this->updateTarget(synchronizationContract: $contract, action: 'delete');
+		$this->persistContract(contract: $contract);
+
+		return 1;
+	}//end retireDisappearedTarget()
+
+	/**
+	 * Find a target object only when it lives in the pass's register and schema.
+	 *
+	 * This prevents a uuid collision across magic tables from deleting a foreign
+	 * object (OR#1638, hydra#309). RBAC and multitenancy are off to match the reach
+	 * of the former unscoped join.
+	 *
+	 * @param DeletionRun $run      The deletion pass.
+	 * @param string|int  $targetId The target object id.
+	 *
+	 * @return mixed The target object, or null when it is gone, out of scope or the lookup failed.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 */
+	private function findTargetInScope(DeletionRun $run, string|int $targetId): mixed {
+		try {
+			return $this->orObjectService->find(
+				id: (string)$targetId,
+				register: $run->registerId,
+				schema: $run->schemaId,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $exception) {
+			return null;
+		} catch (\Throwable $throwable) {
+			$this->logger->warning(
+				'deleteInvalidObjects: Scope check failed',
+				[
+					'synchronizationId' => $run->synchronizationId,
+					'targetId' => $targetId,
+					'error' => $throwable->getMessage(),
+				]
+			);
+			return null;
+		}//end try
+	}//end findTargetInScope()
 
 	/**
 	 * Apply a non-deleting disappearance policy to one record.
