@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
  */
-class CallReplayService {
+class CallReplayService implements CallReplayServiceInterface {
 
 	/**
 	 * The schema an exhausted call is dead-lettered into.

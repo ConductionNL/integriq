@@ -22,14 +22,20 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettings;
+use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettingsInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
+use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
+use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Exchange\ExchangeJobRunner;
 use OCA\Integriq\Service\Exchange\ExchangeJobRunnerInterface;
 use OCA\Integriq\Service\Exchange\ExchangeJobService;
 use OCA\Integriq\Service\Exchange\ExchangeJobServiceInterface;
+use OCA\Integriq\Service\Exchange\ExchangeReadModel;
+use OCA\Integriq\Service\Exchange\ExchangeReadModelInterface;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
@@ -38,6 +44,8 @@ use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCA\Integriq\Service\Lti\LtiKeyServiceInterface;
 use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
+use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
+use OCA\Integriq\Service\Lti\LtiPlatformLoginServiceInterface;
 use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
 use OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
@@ -46,6 +54,8 @@ use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
 use OCA\Integriq\Service\StufZkn\StufZdsOutboundInterface;
+use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Service\Tables\TablesSyncAdapterInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -118,5 +128,20 @@ final class ServiceRegistrar {
 		$context->registerServiceAlias(ApprovalDecisionServiceInterface::class, ApprovalDecisionService::class);
 		$context->registerServiceAlias(UwlrEduVServiceInterface::class, UwlrEduVService::class);
 		$context->registerServiceAlias(PaymentIntentServiceInterface::class, PaymentIntentService::class);
+		$context->registerServiceAlias(EudiIssuerKeyServiceInterface::class, EudiIssuerKeyService::class);
+		$context->registerServiceAlias(VerzuimloketServiceInterface::class, VerzuimloketService::class);
+		$context->registerServiceAlias(LtiPlatformLoginServiceInterface::class, LtiPlatformLoginService::class);
+		$context->registerServiceAlias(RodServiceInterface::class, RodService::class);
+		$context->registerServiceAlias(EndpointCacheServiceInterface::class, EndpointCacheService::class);
+		$context->registerServiceAlias(OsoServiceInterface::class, OsoService::class);
+		$context->registerServiceAlias(SettingsServiceInterface::class, SettingsService::class);
+		$context->registerServiceAlias(ExchangeReadModelInterface::class, ExchangeReadModel::class);
+		$context->registerServiceAlias(SearchServiceInterface::class, SearchService::class);
+		$context->registerServiceAlias(DsoAttachmentFetcherInterface::class, DsoAttachmentFetcher::class);
+		$context->registerServiceAlias(ConnectionAlertServiceInterface::class, ConnectionAlertService::class);
+		$context->registerServiceAlias(SynchronizationContractServiceInterface::class, SynchronizationContractService::class);
+		$context->registerServiceAlias(BerichtenboxSourceSettingsInterface::class, BerichtenboxSourceSettings::class);
+		$context->registerServiceAlias(ConnectionMonitorServiceInterface::class, ConnectionMonitorService::class);
+		$context->registerServiceAlias(TablesSyncAdapterInterface::class, TablesSyncAdapter::class);
 	}
 }

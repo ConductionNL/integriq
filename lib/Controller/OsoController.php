@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\OsoProviderException;
 use OCA\Integriq\Exception\OsoTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\OsoService;
+use OCA\Integriq\Service\OsoServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
@@ -63,7 +63,7 @@ class OsoController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param OsoService $osoService Export/import/retour orchestration logic.
+	 * @param OsoServiceInterface $osoService Export/import/retour orchestration logic.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -73,7 +73,7 @@ class OsoController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OsoService $osoService,
+		private readonly OsoServiceInterface $osoService,
 		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

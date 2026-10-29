@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\OsoService;
+use OCA\Integriq\Service\OsoServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -55,12 +55,12 @@ class OsoRetryJob extends TimedJob {
 	 * OsoRetryJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param OsoService $osoService The OSO service.
+	 * @param OsoServiceInterface $osoService The OSO service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly OsoService $osoService,
+		private readonly OsoServiceInterface $osoService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

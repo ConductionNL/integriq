@@ -38,11 +38,7 @@ use OCP\Security\ICrypto;
  *
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
  */
-class BerichtenboxSourceSettings {
-	/**
-	 * The plain settings an administrator may set, and nothing else.
-	 */
-	public const FIELDS = ['senderOin', 'adapterUrl', 'cpaId', 'fromPartyId', 'toPartyId', 'service', 'wusEndpoint'];
+class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface {
 
 	/**
 	 * Constructor.

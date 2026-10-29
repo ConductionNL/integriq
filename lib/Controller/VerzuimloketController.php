@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\VerzuimloketProviderException;
 use OCA\Integriq\Exception\VerzuimloketTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\VerzuimloketService;
+use OCA\Integriq\Service\VerzuimloketServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
@@ -63,7 +63,7 @@ class VerzuimloketController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param VerzuimloketService $verzuimloketService Send/retour orchestration logic.
+	 * @param VerzuimloketServiceInterface $verzuimloketService Send/retour orchestration logic.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -73,7 +73,7 @@ class VerzuimloketController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly VerzuimloketService $verzuimloketService,
+		private readonly VerzuimloketServiceInterface $verzuimloketService,
 		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

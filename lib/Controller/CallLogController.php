@@ -26,8 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Outbound\Call\CallRecorder;
-use OCA\Integriq\Outbound\Call\CallReplayService;
+use OCA\Integriq\Outbound\Call\CallRecorderInterface;
+use OCA\Integriq\Outbound\Call\CallReplayServiceInterface;
 use OCA\Integriq\Service\ActionAuthService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -69,8 +69,8 @@ class CallLogController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal.
 	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
-	 * @param CallRecorder $recorder Reads the call records.
-	 * @param CallReplayService $replayService Replays, dry runs and hand-fires.
+	 * @param CallRecorderInterface $recorder Reads the call records.
+	 * @param CallReplayServiceInterface $replayService Replays, dry runs and hand-fires.
 	 * @param IL10N $l Translations.
 	 */
 	public function __construct(
@@ -78,8 +78,8 @@ class CallLogController extends Controller {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
-		private readonly CallRecorder $recorder,
-		private readonly CallReplayService $replayService,
+		private readonly CallRecorderInterface $recorder,
+		private readonly CallReplayServiceInterface $replayService,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);

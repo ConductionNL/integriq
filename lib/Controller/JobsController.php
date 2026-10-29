@@ -23,7 +23,7 @@ namespace OCA\Integriq\Controller;
 use Exception;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\JobServiceInterface;
-use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -79,14 +79,14 @@ class JobsController extends Controller {
 	 *
 	 * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
 	 *
-	 * @param SearchService $searchService Service used to strip special query parameters.
+	 * @param SearchServiceInterface $searchService Service used to strip special query parameters.
 	 *
 	 * @return JSONResponse A JSON response containing the filtered job logs and pagination.
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function logs(SearchService $searchService): JSONResponse {
+	public function logs(SearchServiceInterface $searchService): JSONResponse {
 		try {
 			// Get filters from request.
 			$filters = $this->request->getParams();

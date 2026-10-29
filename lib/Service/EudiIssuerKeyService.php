@@ -64,14 +64,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
  */
-class EudiIssuerKeyService {
-
-	/**
-	 * Signing algorithm for the issuer key (OpenID4VCI/EUDI convention: ES256/P-256).
-	 *
-	 * @var string
-	 */
-	public const ALGORITHM = 'ES256';
+class EudiIssuerKeyService implements EudiIssuerKeyServiceInterface {
 
 	/**
 	 * Maximum number of archived (retired) public keys retained per organisation,

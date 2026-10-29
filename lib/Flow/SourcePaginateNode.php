@@ -109,21 +109,9 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SourcePaginateNodeInterface {
 
 	use SynchronizationLogActions;
-
-	/**
-	 * The step type this node answers to.
-	 *
-	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
-	 * rename: this value is written into stored flow documents (OpenRegister
-	 * objects). Renaming it makes every existing flow reference a node type
-	 * nothing answers to.
-	 *
-	 * @var string
-	 */
-	public const NODE_ID = 'openconnector.source-paginate';
 
 	/**
 	 * How many objects one emitted page carries by default.

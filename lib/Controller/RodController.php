@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\RodService;
+use OCA\Integriq\Service\RodServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
@@ -63,7 +63,7 @@ class RodController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param RodService $rodService Send/retour orchestration logic.
+	 * @param RodServiceInterface $rodService Send/retour orchestration logic.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -73,7 +73,7 @@ class RodController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RodService $rodService,
+		private readonly RodServiceInterface $rodService,
 		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

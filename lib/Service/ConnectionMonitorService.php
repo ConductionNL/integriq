@@ -34,7 +34,7 @@ use Throwable;
  *
  * @spec openspec/specs/connection-run-monitoring/spec.md
  */
-class ConnectionMonitorService {
+class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 
 	/**
 	 * The register integriq keeps its sources and call log in.
