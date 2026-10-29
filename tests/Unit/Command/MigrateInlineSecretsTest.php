@@ -31,7 +31,10 @@ use OCA\Integriq\Repair\RecordInlineSecretMigrationStatus;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCP\IAppConfig;
+use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -126,7 +129,7 @@ class MigrateInlineSecretsTest extends TestCase {
 			$written[RecordInlineSecretMigrationStatus::KEY_CLEAN]['value'],
 			'A clean post-run must write the Phase D gate to 1.'
 		);
-		$this->assertSame(InlineSecretMigrationPlanner::APP_ID, $written[RecordInlineSecretMigrationStatus::KEY_CLEAN]['app']);
+		$this->assertSame(self::installedAppId(), $written[RecordInlineSecretMigrationStatus::KEY_CLEAN]['app']);
 		$this->assertSame('0', $written[RecordInlineSecretMigrationStatus::KEY_PENDING]['value']);
 	}//end testRealRunWritesCleanPhaseDGate()
 
@@ -288,4 +291,67 @@ class MigrateInlineSecretsTest extends TestCase {
 
 		$this->assertSame(Command::SUCCESS, $exit);
 	}//end testDryRunDrivesPlannerNotExecutor()
+
+	/**
+	 * The command and the upgrade repair step write the Phase D gate under the
+	 * same app id, the one the app is installed as.
+	 *
+	 * @return void
+	 */
+	public function testCommandAndRepairStepWriteTheGateUnderTheInstalledAppId(): void {
+		$this->executor->method('migrateEverything')->willReturn(
+			[
+				'schemas' => [
+					'source' => [
+						'objects' => [],
+						'totalObjects' => 0,
+						'migrated' => 0,
+						'failed' => 0,
+						'blocked' => 0,
+						'skipped' => 0,
+						'postRun' => ['clean' => true, 'pending' => 0, 'manual' => 0],
+					],
+				],
+				'migrated' => 0,
+				'failed' => 0,
+				'blocked' => 0,
+				'skipped' => 0,
+			]
+		);
+
+		$commandApps = [];
+		$this->appConfig->method('setValueString')->willReturnCallback(
+			function (string $app, string $key) use (&$commandApps) {
+				$commandApps[$key] = $app;
+				return true;
+			}
+		);
+		$this->tester->execute([]);
+
+		$stepApps = [];
+		$stepConfig = $this->createMock(IAppConfig::class);
+		$stepConfig->method('setValueString')->willReturnCallback(
+			function (string $app, string $key) use (&$stepApps) {
+				$stepApps[$key] = $app;
+				return true;
+			}
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('no OpenRegister in this test'));
+		(new RecordInlineSecretMigrationStatus($container, $stepConfig, new NullLogger()))->run($this->createMock(IOutput::class));
+
+		$key = RecordInlineSecretMigrationStatus::KEY_CLEAN;
+		$this->assertSame(self::installedAppId(), $stepApps[$key], 'The repair step writes under the installed app id.');
+		$this->assertSame($stepApps[$key], $commandApps[$key], 'The command must write the gate where the repair step writes it.');
+	}//end testCommandAndRepairStepWriteTheGateUnderTheInstalledAppId()
+
+	/**
+	 * The app id from appinfo/info.xml.
+	 *
+	 * @return string
+	 */
+	private static function installedAppId(): string {
+		$info = simplexml_load_file(__DIR__ . '/../../../appinfo/info.xml');
+		return (string)$info->id;
+	}//end installedAppId()
 }//end class
