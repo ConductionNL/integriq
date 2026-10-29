@@ -102,11 +102,7 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 		$lookup    = $this->directionOf(mappings: $mappings, direction: 'idToSlug');
 		$syncArray = $this->translateEndpoints(data: $syncArray, lookup: $lookup);
 
-		foreach (['sourceTargetMapping', 'targetSourceMapping'] as $field) {
-			if (isset($syncArray[$field]) === true && isset($lookup['mapping'][(int)$syncArray[$field]]) === true) {
-				$syncArray[$field] = $lookup['mapping'][(int)$syncArray[$field]];
-			}
-		}
+		$syncArray = $this->exportMappingIds(syncArray: $syncArray, idToSlug: $lookup['mapping']);
 
 		foreach (self::ID_LIST_TYPES as $arrayKey => $type) {
 			if (isset($syncArray[$arrayKey]) === true && is_array($syncArray[$arrayKey]) === true) {
@@ -132,11 +128,7 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 		$lookup = $this->directionOf(mappings: $mappings, direction: 'slugToId');
 		$data   = $this->translateEndpoints(data: $data, lookup: $lookup);
 
-		foreach (['sourceTargetMapping', 'targetSourceMapping'] as $field) {
-			if (isset($data[$field]) === true && isset($lookup['mapping'][$data[$field]]) === true) {
-				$data[$field] = $lookup['mapping'][$data[$field]];
-			}
-		}
+		$data = $this->importMappingSlugs(data: $data, slugToId: $lookup['mapping']);
 
 		foreach (self::ID_LIST_TYPES as $arrayKey => $type) {
 			if (isset($data[$arrayKey]) === true && is_array($data[$arrayKey]) === true) {
@@ -219,6 +211,46 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 
 		return $data;
 	}//end translateEndpoints()
+
+	/**
+	 * The source-target and target-source mapping ids exported as their slugs, read as integers.
+	 *
+	 * @param array $syncArray The synchronization configuration.
+	 * @param mixed $idToSlug  The mapping id-to-slug lookup.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function exportMappingIds(array $syncArray, mixed $idToSlug): array {
+		foreach (['sourceTargetMapping', 'targetSourceMapping'] as $field) {
+			if (isset($syncArray[$field]) === true && isset($idToSlug[(int)$syncArray[$field]]) === true) {
+				$syncArray[$field] = $idToSlug[(int)$syncArray[$field]];
+			}
+		}
+
+		return $syncArray;
+	}//end exportMappingIds()
+
+	/**
+	 * The source-target and target-source mapping slugs imported as their ids.
+	 *
+	 * @param array $data     The synchronization configuration.
+	 * @param mixed $slugToId The mapping slug-to-id lookup.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function importMappingSlugs(array $data, mixed $slugToId): array {
+		foreach (['sourceTargetMapping', 'targetSourceMapping'] as $field) {
+			if (isset($data[$field]) === true && isset($slugToId[$data[$field]]) === true) {
+				$data[$field] = $slugToId[$data[$field]];
+			}
+		}
+
+		return $data;
+	}//end importMappingSlugs()
 
 	/**
 	 * Exported ids of a list: a numeric or UUID id becomes its slug when it has one.
