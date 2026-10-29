@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -57,12 +57,12 @@ class FetchFilesJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The time factory.
-	 * @param SynchronizationService $syncService The engine that owns the fetch path.
+	 * @param SynchronizationServiceInterface $syncService The engine that owns the fetch path.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SynchronizationService $syncService,
+		private readonly SynchronizationServiceInterface $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

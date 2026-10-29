@@ -137,6 +137,7 @@ use OCA\Integriq\Service\Forms\FormsOcsClient;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
 use OCA\Integriq\Service\Objecten\ObjectenWiring;
+use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\Tables\TablesClientInterface;
 use OCA\Integriq\Service\Tables\TablesOcsClient;
@@ -282,6 +283,8 @@ class Application extends App implements IBootstrap {
 		OpenRegisterAutoloader::register();
 
 		$this->assertStorageMigrated();
+
+		(new ServiceRegistrar())->register(context: $context);
 
 		$this->registerSettingsService(context: $context);
 
