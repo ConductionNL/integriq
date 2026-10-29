@@ -185,6 +185,8 @@ class SynchronizationFetchAllPagesTest extends TestCase {
 			'max-pages-one' => ['config' => ['maxPages' => 1], 'pages' => [$a, $b]],
 			'max-pages-zero' => ['config' => ['maxPages' => 0], 'pages' => [$a]],
 			'next-endpoint' => ['pages' => [($a + ['next' => 'https://api.invalid/items?cursor=2']), ($b + ['next' => null]), $empty]],
+			'next-endpoint-then-missing' => ['pages' => [($a + ['next' => 'https://api.invalid/items?cursor=2']), $b, $a, $empty]],
+			'second-fetch-after-link-last' => ['pages' => [$link(1, $a), $a, $b, $empty], 'twice' => true],
 			'next-endpoint-known' => ['next' => true, 'pages' => [($a + ['next' => 'https://api.invalid/items?cursor=2']), $b]],
 			'next-endpoint-same' => ['pages' => [($a + ['next' => 'https://api.invalid/items']), $b]],
 			'page-numbers-forced' => ['next' => false, 'pages' => [($a + ['next' => 'https://api.invalid/items?cursor=2']), $empty]],
@@ -228,6 +230,9 @@ class SynchronizationFetchAllPagesTest extends TestCase {
 
 			try {
 				$outcome = ['return' => $method->invoke($service, $source, '/items', ['query' => ['q' => 1]], $synchronization, ($case['currentPage'] ?? 1), ($case['isTest'] ?? false), ($case['next'] ?? null))];
+				if (($case['twice'] ?? false) === true) {
+					$outcome['second'] = $method->invoke($service, $source, '/items', ['query' => ['q' => 1]], $synchronization, 1, false, null);
+				}
 			} catch (\Throwable $exception) {
 				$outcome = ['throws' => get_class($exception), 'message' => preg_replace('/, called in .*$/', '', $exception->getMessage())];
 			} finally {

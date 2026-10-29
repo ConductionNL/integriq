@@ -303,6 +303,103 @@
             ]
         ]
     },
+    "next-endpoint-then-missing": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items?cursor=2",
+                null
+            ]
+        ]
+    },
+    "second-fetch-after-link-last": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 1
+            },
+            "second": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 3
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 3,
+                    "index": 3
+                }
+            ]
+        ]
+    },
     "next-endpoint-known": {
         "outcome": {
             "return": {
