@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\AppInfo;
 
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -51,10 +52,9 @@ class ComponentRegistrarsTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @dataProvider registrars
-	 *
 	 * @spec exclude container wiring invariant, no requirement states which contracts exist
 	 */
+	#[DataProvider('registrars')]
 	public function testEveryAliasIsAnOwnContractBoundToItsImplementation(string $registrar): void {
 		$aliases = [];
 		$context = $this->createMock(IRegistrationContext::class);
