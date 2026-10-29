@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Dso\DsoActivityOverview;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -56,7 +56,7 @@ class DsoActivityMappingController extends Controller {
 		private readonly DsoUnmappedActivities $unmapped,
 		private readonly DsoActivityOverview $overview,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

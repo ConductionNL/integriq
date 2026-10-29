@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Notification\ConnectionAlertRecipientResolver;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
@@ -58,7 +58,7 @@ class ConnectionAlertSettingsController extends Controller {
 		private readonly IL10N $l,
 		private readonly ConnectionAlertRecipientResolver $recipients,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -93,11 +93,11 @@ class ConnectionAlertSettingsController extends Controller {
 		}
 
 		if ($group === '') {
-			$this->appConfig->deleteKey(Application::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY);
 			return new JSONResponse(['group' => ConnectionAlertRecipientResolver::DEFAULT_GROUP]);
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY, $group);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY, $group);
 
 		return new JSONResponse(['group' => $group]);
 	}//end setConfig()

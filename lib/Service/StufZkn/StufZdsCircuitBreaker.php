@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\StufZkn;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -84,7 +84,7 @@ class StufZdsCircuitBreaker {
 			return true;
 		}
 
-		$openedAt = $this->appConfig->getValueInt(Application::APP_ID, $this->openKey(sourceId: $sourceId), 0);
+		$openedAt = $this->appConfig->getValueInt(AppIdentity::APP_ID, $this->openKey(sourceId: $sourceId), 0);
 		if ($openedAt === 0) {
 			return true;
 		}
@@ -113,12 +113,12 @@ class StufZdsCircuitBreaker {
 		}
 
 		$count = ($this->failureCount(sourceId: $sourceId) + 1);
-		$this->appConfig->setValueInt(Application::APP_ID, $this->countKey(sourceId: $sourceId), $count);
+		$this->appConfig->setValueInt(AppIdentity::APP_ID, $this->countKey(sourceId: $sourceId), $count);
 		if ($count < self::THRESHOLD) {
 			return false;
 		}
 
-		$this->appConfig->setValueInt(Application::APP_ID, $this->openKey(sourceId: $sourceId), time());
+		$this->appConfig->setValueInt(AppIdentity::APP_ID, $this->openKey(sourceId: $sourceId), time());
 		$this->logger->warning('StUF-ZDS circuit opened for {source} after {count} failures', ['source' => $sourceId, 'count' => $count]);
 		return true;
 	}//end recordFailure()
@@ -137,8 +137,8 @@ class StufZdsCircuitBreaker {
 			return;
 		}
 
-		$this->appConfig->setValueInt(Application::APP_ID, $this->countKey(sourceId: $sourceId), 0);
-		$this->appConfig->deleteKey(Application::APP_ID, $this->openKey(sourceId: $sourceId));
+		$this->appConfig->setValueInt(AppIdentity::APP_ID, $this->countKey(sourceId: $sourceId), 0);
+		$this->appConfig->deleteKey(AppIdentity::APP_ID, $this->openKey(sourceId: $sourceId));
 	}//end reset()
 
 	/**
@@ -152,7 +152,7 @@ class StufZdsCircuitBreaker {
 	 */
 	public function snapshot(string $sourceId): array {
 		$count    = $this->failureCount(sourceId: $sourceId);
-		$openedAt = $this->appConfig->getValueInt(Application::APP_ID, $this->openKey(sourceId: $sourceId), 0);
+		$openedAt = $this->appConfig->getValueInt(AppIdentity::APP_ID, $this->openKey(sourceId: $sourceId), 0);
 
 		$state = 'ok';
 		if ($count > 0) {
@@ -174,7 +174,7 @@ class StufZdsCircuitBreaker {
 	 * @return int The count.
 	 */
 	private function failureCount(string $sourceId): int {
-		return $this->appConfig->getValueInt(Application::APP_ID, $this->countKey(sourceId: $sourceId), 0);
+		return $this->appConfig->getValueInt(AppIdentity::APP_ID, $this->countKey(sourceId: $sourceId), 0);
 	}//end failureCount()
 
 	/**
