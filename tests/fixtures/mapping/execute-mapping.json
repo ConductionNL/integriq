@@ -1,0 +1,177 @@
+{
+    "copy-paths": {
+        "return": {
+            "name": "Jan",
+            "street": "Laan"
+        }
+    },
+    "pass-through": {
+        "return": {
+            "naam": "Jan",
+            "leeftijd": "42",
+            "adres": {
+                "straat": "Laan",
+                "nr": 3
+            },
+            "a.b": "dotted",
+            "leeg": "",
+            "lijst": [
+                1,
+                2
+            ],
+            "name": "Jan"
+        }
+    },
+    "dotted-key-in-input": {
+        "return": {
+            "d": "dotted",
+            "x": "a.b"
+        }
+    },
+    "dotted-key-pass-through": {
+        "return": {
+            "naam": "Jan",
+            "leeftijd": "42",
+            "adres": {
+                "straat": "Laan",
+                "nr": 3
+            },
+            "a.b": "dotted",
+            "leeg": "",
+            "lijst": [
+                1,
+                2
+            ]
+        }
+    },
+    "array-value": {
+        "return": {
+            "fixed": {
+                "a": 1
+            }
+        }
+    },
+    "twig-template": {
+        "return": {
+            "greeting": "Hallo Jan",
+            "num": "43"
+        }
+    },
+    "twig-literal": {
+        "return": {
+            "constant": "vast"
+        }
+    },
+    "twig-error": {
+        "throws": "Exception",
+        "message": "Error for mapping: golden, key: bad, value: {{ naam | nosuchfilter }} and with message thrown: Unknown \"nosuchfilter\" filter in \"__string_template__5b7df7729eef59df3e10ec28e5ab371c\" at line 1."
+    },
+    "nested-target": {
+        "return": {
+            "deep": {
+                "er": {
+                    "key": "Jan"
+                }
+            }
+        }
+    },
+    "unset": {
+        "return": {
+            "leeftijd": "42",
+            "adres": {
+                "straat": "Laan"
+            },
+            "a.b": "dotted",
+            "leeg": "",
+            "lijst": [
+                1,
+                2
+            ]
+        }
+    },
+    "cast-int-string": {
+        "return": {
+            "age": 42,
+            "n": "3"
+        }
+    },
+    "cast-list-and-csv": {
+        "return": {
+            "age": "42"
+        }
+    },
+    "cast-null-if-value": {
+        "return": {
+            "leeg": null
+        }
+    },
+    "root-array": {
+        "return": {
+            "straat": "Laan",
+            "nr": 3
+        }
+    },
+    "root-scalar": {
+        "return": [
+            "Jan"
+        ]
+    },
+    "root-null": {
+        "return": []
+    },
+    "root-with-other-key": {
+        "return": {
+            "#": "Jan",
+            "b": "42"
+        }
+    },
+    "empty-mapping": {
+        "return": []
+    },
+    "list": {
+        "return": {
+            "x": {
+                "name": "A"
+            },
+            "y": {
+                "name": "B"
+            }
+        }
+    },
+    "list-scalars": {
+        "return": [
+            {
+                "v": "a"
+            },
+            {
+                "v": "b"
+            }
+        ]
+    },
+    "list-input-extra-values": {
+        "return": [
+            {
+                "name": "A",
+                "v": {
+                    "naam": "A"
+                },
+                "extra": "O"
+            },
+            {
+                "name": "naam",
+                "v": "scalar",
+                "extra": "O"
+            }
+        ]
+    },
+    "list-input-no-extra": {
+        "return": [
+            {
+                "name": "A"
+            }
+        ]
+    },
+    "list-empty": {
+        "return": []
+    }
+}
