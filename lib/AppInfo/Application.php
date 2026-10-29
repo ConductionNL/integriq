@@ -23,121 +23,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
-use GuzzleHttp\Client as GuzzleHttpClient;
-use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
-use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
-use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
-use OCA\Forms\Events\FormSubmittedEvent;
-use OCA\Integriq\Mcp\IntegriqScannableServices;
-use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
-use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
-use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
-use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientHttp;
-use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
-use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
-use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
-use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
-use OCA\Integriq\Adapters\Pdok\PdokWfsClient;
-use OCA\Integriq\Adapters\Pdok\PdokWfsClientHttp;
-use OCA\Integriq\Adapters\Pdok\PdokWfsClientMock;
-use OCA\Integriq\Adapters\Pdok\PdokWmsClient;
-use OCA\Integriq\Adapters\Pdok\PdokWmsClientHttp;
-use OCA\Integriq\Adapters\Pdok\PdokWmsClientMock;
-use OCA\Integriq\Adapters\Roster\RosterImportClient;
-use OCA\Integriq\Adapters\Roster\RosterImportClientMock;
-use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
-use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
-use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
-use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
-use OCA\Integriq\Adapters\Swv\SwvHandoffClientMock;
 use OCA\Integriq\Capabilities;
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Controller\HealthController;
-use OCA\Integriq\Controller\MetricsController;
-use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
-use OCA\Integriq\Event\ConnectionStatusReportedEvent;
-use OCA\Integriq\Event\DeliveryRequestedEvent;
-use OCA\Integriq\Event\OptOutChangeRequestedEvent;
-use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
-use OCA\Integriq\Event\DocumentRenderRequestedEvent;
-use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
-use OCA\Integriq\Event\MappingExecutionRequestedEvent;
-use OCA\Integriq\Event\ExchangeJobRequestedEvent;
-use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
-use OCA\Integriq\Event\LtiLaunchRequestedEvent;
-use OCA\Integriq\Event\RosterImportRequestedEvent;
-use OCA\Integriq\Event\SourceRequestedEvent;
-use OCA\Integriq\Event\DocumentFetchRequestedEvent;
-use OCA\Integriq\Event\DocumentSearchRequestedEvent;
-use OCA\Integriq\EventListener\CloudEventListener;
-use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
-use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
-use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
-use OCA\Integriq\EventListener\DeliveryRequestedListener;
-use OCA\Integriq\EventListener\DsoActivityMappingGuardListener;
-use OCA\Integriq\EventListener\SourceRequestedListener;
-use OCA\Integriq\EventListener\DocumentRenderRequestedListener;
-use OCA\Integriq\EventListener\GatewayDeliveryRequestedListener;
-use OCA\Integriq\EventListener\MappingExecutionRequestedListener;
-use OCA\Integriq\EventListener\ExchangeAcknowledgementListener;
-use OCA\Integriq\EventListener\ExchangeJobRequestedListener;
-use OCA\Integriq\EventListener\StufZdsCaseRequestedListener;
-use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
-use OCA\Integriq\EventListener\StufZdsConfirmationReceivedListener;
-use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
-use OCA\Integriq\EventListener\StufProviderRequestReceivedListener;
-use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
-use OCA\Integriq\EventListener\ExchangeMappingRequestedListener;
-use OCA\Integriq\EventListener\EndpointCacheInvalidationListener;
-use OCA\Integriq\EventListener\NextcloudCalendarEventListener;
-use OCA\Integriq\EventListener\NextcloudFileEventListener;
-use OCA\Integriq\EventListener\NextcloudFileTagEventListener;
-use OCA\Integriq\EventListener\NextcloudFormsEventListener;
-use OCA\Integriq\EventListener\NextcloudTablesEventListener;
-use OCA\Integriq\EventListener\ObjectCreatedEventListener;
-use OCA\Integriq\EventListener\RegistrySubscriptionRequestedListener;
-use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
-use OCA\Integriq\EventListener\RosterImportRequestedListener;
-use OCA\Integriq\EventListener\SharedApprovalTaskListener;
-use OCA\Integriq\EventListener\ObjectDeletedEventListener;
-use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
-use OCA\Integriq\EventListener\DsoStamConsumerListener;
-use OCA\Integriq\EventListener\EndpointRoutingListener;
-use OCA\Integriq\EventListener\MessageSchemaDocumentListener;
-use OCA\Integriq\EventListener\SubscriptionSigningDefaultListener;
-use OCA\Integriq\EventListener\ObjectUpdatedEventListener;
-use OCA\Integriq\EventListener\ViewDeletedEventListener;
-use OCA\Integriq\EventListener\ViewUpdatedOrCreatedEventListener;
-use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
-use OCA\Integriq\Auth\Idp\LogGovernmentIdpAdapter;
-use OCA\Integriq\Broker\BrokerTransportRegistry;
-use OCA\Integriq\Broker\Transport\CloudEventsHttpTransport;
-use OCA\Integriq\Broker\Transport\KafkaRestTransport;
-use OCA\Integriq\Broker\Transport\LogBrokerTransport;
-use OCA\Integriq\Broker\Transport\RabbitMqHttpTransport;
-use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
-use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
-use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
-use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
-use OCA\Integriq\Intake\IntakeChannelRegistry;
-use OCA\Integriq\Observability\IntegriqMetricsProvider;
-use OCA\Integriq\Observability\Otel\OtlpTraceExporter;
-use OCA\Integriq\Observability\Otel\TraceExporterInterface;
-use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
-use OCA\Integriq\Outbound\Call\CallServiceDispatcher;
-use OCA\Integriq\Outbound\Identity\DnsResolverInterface;
-use OCA\Integriq\Outbound\Identity\SystemDnsResolver;
-use OCA\Integriq\Repair\InitializeActions;
-use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
-use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
-use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
-use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
-use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
-use OCA\Integriq\Service\Forms\FormsClientInterface;
-use OCA\Integriq\Service\Forms\FormsOcsClient;
-use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
-use OCA\Integriq\Service\PeppolOutboundConsumer;
-use OCA\Integriq\Service\Objecten\ObjectenWiring;
 use OCA\Integriq\Outbound\OutboundRegistrar;
 use OCA\Integriq\Flow\FlowRegistrar;
 use OCA\Integriq\Directory\DirectoryRegistrar;
@@ -146,92 +33,30 @@ use OCA\Integriq\Intake\IntakeRegistrar;
 use OCA\Integriq\Observability\ObservabilityRegistrar;
 use OCA\Integriq\Auth\AuthRegistrar;
 use OCA\Integriq\Adapters\AdaptersRegistrar;
+use OCA\Integriq\Broker\BrokerRegistrar;
+use OCA\Integriq\Controller\ControllerRegistrar;
+use OCA\Integriq\EventListener\EventListenerRegistrar;
+use OCA\Integriq\Gateway\GatewayRegistrar;
+use OCA\Integriq\Mcp\McpRegistrar;
+use OCA\Integriq\Migration\MigrationRegistrar;
+use OCA\Integriq\Notification\NotificationRegistrar;
+use OCA\Integriq\PropertySource\PropertySourceRegistrar;
+use OCA\Integriq\Repair\RepairRegistrar;
+use OCA\Integriq\Rule\RuleRegistrar;
+use OCA\Integriq\Sections\SectionsRegistrar;
+use OCA\Integriq\Settings\SettingsRegistrar;
+use OCA\Integriq\SetupCheck\SetupCheckRegistrar;
+use OCA\Integriq\Sources\SourcesRegistrar;
 use OCA\Integriq\Service\ServiceRegistrar;
-use OCA\Integriq\Service\SettingsService;
-use OCA\Integriq\Service\Tables\TablesClientInterface;
-use OCA\Integriq\Service\Tables\TablesOcsClient;
-use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
-use OCA\Integriq\SetupCheck\BerichtenboxCheck;
-use OCA\Integriq\SetupCheck\DigitalPostAccountCheck;
-use OCA\Integriq\SetupCheck\OpenRegisterDependencyCheck;
-use OCA\Integriq\SetupCheck\OpenRegisterEntryPointsCheck;
-use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
-use OCA\Integriq\Service\Registry\KvkMutatieProvider;
-use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
-use OCA\Integriq\Service\Registry\SubscriptionRegistry;
-use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
-use OCA\Integriq\EventListener\DigitalPostSendRequestedListener;
-use OCA\Integriq\EventListener\OptOutChangeRequestedListener;
-use OCA\Integriq\EventListener\OutboundSendDecisionRequestedListener;
-use OCA\Integriq\EventListener\DocumentFetchRequestedListener;
-use OCA\Integriq\EventListener\DocumentSearchRequestedListener;
-use OCA\Integriq\Gateway\GatewayCatalogue;
-use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
-use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
-use OCA\Integriq\Service\DigitalPost\LogDigitalPostProvider;
-use OCA\Integriq\Service\DigitalPost\PostexProvider;
-use OCA\Integriq\Service\Rod\LogRodProvider;
-use OCA\Integriq\Service\Rod\RodEdukoppelingClient;
-use OCA\Integriq\Service\Rod\RodProviderRegistry;
-use OCA\Integriq\Service\Verzuimloket\LogVerzuimloketProvider;
-use OCA\Integriq\Service\Verzuimloket\VerzuimloketEdukoppelingClient;
-use OCA\Integriq\Service\Verzuimloket\VerzuimloketProviderRegistry;
-use OCA\Integriq\Service\Oso\LogOsoProvider;
-use OCA\Integriq\Service\Oso\OsoKennisnetClient;
-use OCA\Integriq\Service\Oso\OsoProviderRegistry;
-use OCA\Integriq\Service\UwlrEduV\LogUwlrEduVProvider;
-use OCA\Integriq\Service\UwlrEduV\UwlrEduVKennisnetClient;
-use OCA\Integriq\Service\UwlrEduV\UwlrEduVProviderRegistry;
-use OCA\Integriq\Gateway\GatewayRegistry;
-use OCA\Integriq\Gateway\GatewayTransport;
-use OCA\Integriq\Gateway\SourceGatewayTransport;
-use OCA\Integriq\Migration\MigrationSourceRegistry;
-use OCA\Integriq\Migration\Source\FileMigrationSource;
-use OCA\Integriq\Migration\Source\RedmineMigrationSource;
-use OCA\Integriq\PropertySource\PropertySourceRegistry;
-use OCA\Integriq\PropertySource\Provider\BagPropertySource;
-use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
-use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
-use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
-use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
-use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
-use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
-use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
-use OCA\Integriq\Sources\Slo\SloCurriculumSourceAdapter;
 use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
-use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
-use OCA\OpenRegister\AppHost\IMetricsProvider;
-use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
-use OCA\OpenRegister\Event\ObjectCreatedEvent;
-use OCA\OpenRegister\Event\ObjectCreatingEvent;
-use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
-use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Event\ObjectDeletingEvent;
-use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\Tables\Event\RowAddedEvent;
-use OCA\Tables\Event\RowDeletedEvent;
-use OCA\Tables\Event\RowUpdatedEvent;
-use OCP\App\Events\AppDisableEvent;
-use OCP\App\Events\AppEnableEvent;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
-use OCP\Calendar\Events\CalendarObjectCreatedEvent;
-use OCP\Calendar\Events\CalendarObjectDeletedEvent;
-use OCP\Calendar\Events\CalendarObjectUpdatedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\Files\Events\Node\NodeCreatedEvent;
-use OCP\Files\Events\Node\NodeDeletedEvent;
-use OCP\Files\Events\Node\NodeWrittenEvent;
-use OCP\IRequest;
-use OCP\SystemTag\MapperEvent;
 use OCP\Util;
 use OCP\WorkflowEngine\Events\RegisterOperationsEvent;
 use Psr\Container\ContainerInterface;
@@ -302,8 +127,20 @@ class Application extends App implements IBootstrap {
 		(new ObservabilityRegistrar())->register(context: $context);
 		(new AuthRegistrar())->register(context: $context);
 		(new AdaptersRegistrar())->register(context: $context);
-
-		$this->registerSettingsService(context: $context);
+		(new EventListenerRegistrar())->register(context: $context);
+		(new SourcesRegistrar())->register(context: $context);
+		(new RuleRegistrar())->register(context: $context);
+		(new PropertySourceRegistrar())->register(context: $context);
+		(new BrokerRegistrar())->register(context: $context);
+		(new MigrationRegistrar())->register(context: $context);
+		(new GatewayRegistrar())->register(context: $context);
+		(new McpRegistrar())->register(context: $context);
+		(new ControllerRegistrar())->register(context: $context);
+		(new SettingsRegistrar())->register(context: $context);
+		(new SectionsRegistrar())->register(context: $context);
+		(new RepairRegistrar())->register(context: $context);
+		(new SetupCheckRegistrar())->register(context: $context);
+		(new NotificationRegistrar())->register(context: $context);
 
 		/*
 		 * Event dispatcher registration.
@@ -314,12 +151,12 @@ class Application extends App implements IBootstrap {
 		$dispatcher = $this->getContainer()->get(IEventDispatcher::class);
 		$this->registerListeners(context: $context, dispatcher: $dispatcher);
 
-		$this->registerServiceBindings(context: $context);
-
-		$this->registerAppHostObservability(context: $context);
 		$this->registerAppHostBoilerplate(context: $context);
 
-		$this->registerSetupChecksAndNotifiers(context: $context);
+		// Dashboard-http-datasource: advertise the capability so a leaf
+		// dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
+		// for the resolve façade via the OCS capabilities document.
+		$context->registerCapability(Capabilities::class);
 
 		$this->registerRegisterSlugResolver(context: $context);
 	}//end register()
@@ -333,20 +170,15 @@ class Application extends App implements IBootstrap {
 	 * @return void
 	 */
 	private function registerListeners(IRegistrationContext $context, IEventDispatcher $dispatcher): void {
-		$this->registerObjectWriteListeners(dispatcher: $dispatcher);
-		$this->registerObjectSaveGuards(dispatcher: $dispatcher);
-		$this->registerOutboundEventListeners(dispatcher: $dispatcher);
-		$this->registerSiblingRequestListeners(dispatcher: $dispatcher);
-		$this->registerConnectionAndDocumentListeners(context: $context);
-		$this->registerExchangeBindings(context: $context);
+		$listeners = new EventListenerRegistrar();
+		$listeners->registerListeners(dispatcher: $dispatcher);
 
-		$this->registerObjectenAndLaunchBindings(context: $context);
 		// Nextcloud-core-event triggers (nextcloud-event-hub). Each family
 		// normalizes its NC event into the SAME `event` CloudEvents envelope
 		// shape the OR-object pipeline above already uses, then hands off to
 		// the same processEvent/deliverMessage/retry/dead-letter machinery
 		// (EventService::handleNextcloudEvent) — see design.md Decision 2.
-		$this->registerNextcloudEventTriggers(context: $context, dispatcher: $dispatcher);
+		$this->registerNextcloudEventTriggers(listeners: $listeners, dispatcher: $dispatcher);
 
 		// WorkflowEngine (NC's Settings > Flow UI) integration: registers
 		// "Run synchronization"/"Call endpoint"/"Fire CloudEvent" as
@@ -360,293 +192,20 @@ class Application extends App implements IBootstrap {
 		// `source-call` and `synchronization-run` nodes that let a flow reach an
 		// external API through a governed Integriq Source. Guarded on the
 		// OR flow engine being present so this app still boots without it.
-		$this->registerFlowNodes(dispatcher: $dispatcher);
+		(new FlowRegistrar())->registerListeners(dispatcher: $dispatcher);
+		$this->registerMappingFunctions(dispatcher: $dispatcher);
 
-		$this->registerEndpointCacheAndIntegrationScript(dispatcher: $dispatcher);
+		$this->registerIntegrationScript(dispatcher: $dispatcher);
 	}//end registerListeners()
 
 	/**
-	 * Registers the service factories and interface bindings.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerServiceBindings(IRegistrationContext $context): void {
-		$this->registerPdokClients(context: $context);
-		$this->registerDormantSourceClients(context: $context);
-		$this->registerEndpointAndPropertyRegistries(context: $context);
-		$this->registerGovernmentIdpAdapter(context: $context);
-		$this->registerBrokerAndIntakeRegistries(context: $context);
-		$this->registerSubscriptionAndMigrationRegistries(context: $context);
-		$this->registerDigitalPostAndRodRegistries(context: $context);
-		$this->registerVerzuimloketAndOsoRegistries(context: $context);
-		$this->registerUwlrAndGatewayRegistries(context: $context);
-		$this->registerAppOwnedBindings(context: $context);
-		$this->registerPdokHttpClients(context: $context);
-		$this->registerPdokSourceAdapters(context: $context);
-		$this->registerPdokGeocodingSourceAdapter(context: $context);
-		$this->registerBerichtenboxClient(context: $context);
-		$this->registerTablesAndFormsClients(context: $context);
-	}//end registerServiceBindings()
-
-	/**
-	 * Registers the settings service factory.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerSettingsService(IRegistrationContext $context): void {
-		// Register services.
-		$context->registerService(
-			SettingsService::class,
-			function ($c) {
-				return new SettingsService(
-					db: $c->get('OCP\IDBConnection'),
-					config: $c->get('OCP\IAppConfig'),
-					logger: $c->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-	}//end registerSettingsService()
-
-	/**
-	 * Registers the listeners on OpenRegister object writes and deletes.
+	 * Registers the integration init script on every full-page render.
 	 *
 	 * @param IEventDispatcher $dispatcher The event dispatcher.
 	 *
 	 * @return void
 	 */
-	private function registerObjectWriteListeners(IEventDispatcher $dispatcher): void {
-		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ObjectCreatedEventListener::class);
-
-		// Spec registry-subscription-connector Task 3: the binding that was blocked
-		// on OpenRegister shipping the event. It has, and dispatches it from
-		// RegistrySubscriptionNotifier, so the wire shape is read rather than
-		// guessed.
-		$dispatcher->addServiceListener(
-			eventName: RegistrySubscriptionRequestedEvent::class,
-			className: RegistrySubscriptionRequestedListener::class
-		);
-		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ObjectUpdatedEventListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
-		// REQ-SOR-005 (records-owned-by-an-external-source): every delete passes
-		// OpenRegister's stoppable ObjectDeletingEvent, so the refusal of a
-		// source-owned record holds whichever page or app deletes it.
-		$dispatcher->addServiceListener(eventName: ObjectDeletingEvent::class, className: SourceOwnedDeleteGuardListener::class);
-	}//end registerObjectWriteListeners()
-
-	/**
-	 * Registers the guards that run on OpenRegister's creating and updating events.
-	 *
-	 * @param IEventDispatcher $dispatcher The event dispatcher.
-	 *
-	 * @return void
-	 */
-	private function registerObjectSaveGuards(IEventDispatcher $dispatcher): void {
-		// REQ-DSO-010 (dso-activity-mapping-table): a DSO activity mapping row
-		// needs an imowId or an activityId, and two active rows may not share an
-		// imowId; refused on OpenRegister's own save path.
-		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoActivityMappingGuardListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoActivityMappingGuardListener::class);
-		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a
-		// subscription through OpenRegister's object API, so the signing
-		// default and the unsigned-needs-a-reason refusal run on its stoppable
-		// creating/updating events, whichever page or app saves it.
-		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: SubscriptionSigningDefaultListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: SubscriptionSigningDefaultListener::class);
-		// REQ-MSV-001 (mapping-message-schema-validation): a message schema whose
-		// document does not parse for its kind is refused on OpenRegister's own
-		// save path, so the refusal holds whichever page or app saves it.
-		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: MessageSchemaDocumentListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: MessageSchemaDocumentListener::class);
-		// Live defect I1: an endpoint's endpointRegex and endpointArray follow its
-		// path on every save, as the EndpointMapper did before the OR cutover.
-		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: EndpointRoutingListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: EndpointRoutingListener::class);
-		// REQ-CON-DSO-001 (dso-intake-through-an-integriq-connection): at most one
-		// dso-stam consumer, so the STAM intake never has to guess its account.
-		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoStamConsumerListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoStamConsumerListener::class);
-	}//end registerObjectSaveGuards()
-
-	/**
-	 * Registers the listeners that turn object events into outbound messages.
-	 *
-	 * @param IEventDispatcher $dispatcher The event dispatcher.
-	 *
-	 * @return void
-	 */
-	private function registerOutboundEventListeners(IEventDispatcher $dispatcher): void {
-		// Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
-		// CloudEvents (register `openconnector` — the OpenRegister register slug,
-		// frozen across the app-id rename; schema event) created by any app.
-		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: PeppolOutboundConsumer::class);
-		// Outbound webhooks / CloudEvent subscriptions: turns any OR object
-		// create/update/delete (any app) into a CloudEvent fanned out to
-		// matching `event_subscription`s (events-cloudevents spec REQ-004).
-		// Internally gated (EventService::hasActiveSubscriptions) so an
-		// install with no configured subscriptions pays no persistence cost,
-		// and guards against re-forwarding its own `event`/`event_message`
-		// writes (would otherwise recurse — see CloudEventListener docblock).
-		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: CloudEventListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: CloudEventListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: CloudEventListener::class);
-	}//end registerOutboundEventListeners()
-
-	/**
-	 * Registers the listeners for typed requests that sibling apps dispatch.
-	 *
-	 * @param IEventDispatcher $dispatcher The event dispatcher.
-	 *
-	 * @return void
-	 */
-	private function registerSiblingRequestListeners(IEventDispatcher $dispatcher): void {
-		// ADR-041 cross-app delivery seam: a sibling app (dossiq, ...) raises
-		// a typed DeliveryRequestedEvent; this listener ingests it into the
-		// same CloudEvents pipeline (subscription routing, retry, dead-letter,
-		// replay) and writes the synchronous result slot back on the event.
-		$dispatcher->addServiceListener(eventName: DeliveryRequestedEvent::class, className: DeliveryRequestedListener::class);
-		$dispatcher->addServiceListener(eventName: DigitalPostSendRequestedEvent::class, className: DigitalPostSendRequestedListener::class);
-		// Opt-out-before-send (REQ-OOA-002, REQ-OOA-003): a sibling app asks
-		// whether it may message these people, and records a person's wish.
-		// Both answer synchronously from integriq's own opt-out table.
-		$dispatcher->addServiceListener(eventName: OutboundSendDecisionRequestedEvent::class, className: OutboundSendDecisionRequestedListener::class);
-		$dispatcher->addServiceListener(eventName: OptOutChangeRequestedEvent::class, className: OptOutChangeRequestedListener::class);
-		// A sibling app that still holds a call to a plain URL (dossiq's retired
-		// webhook steps) asks for the Source for that base URL here, so the call
-		// can run through `openconnector.source-call` like every other one.
-		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
-		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
-		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
-		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
-	}//end registerSiblingRequestListeners()
-
-	/**
-	 * Registers the connection, document and gateway event listeners.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerConnectionAndDocumentListeners(IRegistrationContext $context): void {
-		// Connection registry (connection-registry D5/D6): apps report a
-		// connection status or ask for a fresh resolve with two typed events,
-		// and enabling or disabling an app syncs or resolves its declared
-		// connections. Every listener resolves its service lazily and never
-		// throws into the sender.
-		$context->registerEventListener(ConnectionStatusReportedEvent::class, ConnectionStatusReportedListener::class);
-		$context->registerEventListener(ConnectionRefreshRequestedEvent::class, ConnectionRefreshRequestedListener::class);
-		$context->registerEventListener(AppEnableEvent::class, ConnectionAppLifecycleListener::class);
-		$context->registerEventListener(AppDisableEvent::class, ConnectionAppLifecycleListener::class);
-		// Document generation (document-generation-vendor-adapter REQ-DGV-002):
-		// filinq asks for a vendor render with a typed command and reads the
-		// job id, or the structured refusal, off the same instance.
-		$context->registerEventListener(
-			DocumentRenderRequestedEvent::class,
-			DocumentRenderRequestedListener::class
-		);
-		// A sibling runs a mapping by slug (mapping-woo-index-field-mapping
-		// REQ-WOOM-001): only an app the mapping lists in callableBy.
-		$context->registerEventListener(
-			MappingExecutionRequestedEvent::class,
-			MappingExecutionRequestedListener::class
-		);
-		// A sibling sends through a statutory gateway (statutory-gateways-and-
-		// frameworks REQ-SG-010): the caller the CORV, GGK, WKPB and publication
-		// adapters lacked.
-		$context->registerEventListener(
-			GatewayDeliveryRequestedEvent::class,
-			GatewayDeliveryRequestedListener::class
-		);
-	}//end registerConnectionAndDocumentListeners()
-
-	/**
-	 * Registers the exchange, StUF and telemetry listeners and bindings.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerExchangeBindings(IRegistrationContext $context): void {
-		// Exchange jobs another app owns (learniq-exchange-jobs-native): the
-		// owning app asks integriq to carry a job, or to store its own
-		// mapping, with two typed commands (ADR-041). The SWV hand-off client
-		// is bound to its dormant mock, the only binding that exists, so the
-		// dispatcher that routes `swv` jobs can be built at all.
-		// A decision on a mirrored approval task in the shared OpenRegister
-		// inbox, or the shared sweep's expiry of it, resolves the approval
-		// request (hitl-on-shared-tasks 2.1, 2.2). Only committed dispatches
-		// act: the listener may resume a run.
-		$context->registerEventListener(TaskTerminalEvent::class, SharedApprovalTaskListener::class);
-		$context->registerEventListener(ExchangeJobRequestedEvent::class, ExchangeJobRequestedListener::class);
-		// StUF-ZDS case messages a sibling app asks for (decision 193: dossiq's
-		// creeerZaak/actualiseerZaak/geefZaakdetails/genereerZaakIdentificatie/vrijBericht).
-		$context->registerEventListener(StufZdsCaseRequestedEvent::class, StufZdsCaseRequestedListener::class);
-		// A confirmation a sibling app received on its own wire-contract URL (dossiq /api/stuf/inbound, one release).
-		$context->registerEventListener(StufZdsConfirmationReceivedEvent::class, StufZdsConfirmationReceivedListener::class);
-		// A provider request a sibling app received on its own wire-contract URL (dossiq /api/stuf/cases and friends, one release, decision 199).
-		$context->registerEventListener(StufProviderRequestReceivedEvent::class, StufProviderRequestReceivedListener::class);
-		$context->registerEventListener(ExchangeMappingRequestedEvent::class, ExchangeMappingRequestedListener::class);
-		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);
-		// OpenTelemetry export (observability-opentelemetry-export D2): the
-		// OTLP/HTTP JSON exporter is the one binding; an SDK exporter can
-		// replace it here without touching the span mapper.
-		$context->registerServiceAlias(TraceExporterInterface::class, OtlpTraceExporter::class);
-		// An authority's later retour on an exchange job's record
-		// (connectors-data-exchange-dispatch REQ-013): one listener on the
-		// four adapters' acknowledgement events.
-		foreach (array_keys(ExchangeAcknowledgementListener::ADAPTER_OF) as $acknowledgement) {
-			$context->registerEventListener($acknowledgement, ExchangeAcknowledgementListener::class);
-		}
-	}//end registerExchangeBindings()
-
-	/**
-	 * Registers the Objecten APIs and the roster and launch listeners.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerObjectenAndLaunchBindings(IRegistrationContext $context): void {
-		// The Objecten and Objecttypen APIs: every facade service is built with
-		// its OpenRegister seams wired, or every route answers 401 or 404.
-		ObjectenWiring::register(context: $context);
-		// Rostering into planninq (rostering-adapter-targets-planninq,
-		// decision D10): learniq's timetable-import job asks integriq to
-		// deliver a rostering source; the listener always answers on the
-		// event, delivered or failed with an error code.
-		$context->registerEventListener(
-			RosterImportRequestedEvent::class,
-			RosterImportRequestedListener::class
-		);
-		// LTI platform launch (connectors-lti-platform-launch REQ-LTIL-001):
-		// learniq raises a typed launch request and reads the login
-		// initiation form, or the named refusal, off the same instance.
-		$context->registerEventListener(
-			LtiLaunchRequestedEvent::class,
-			LtiLaunchRequestedListener::class
-		);
-	}//end registerObjectenAndLaunchBindings()
-
-	/**
-	 * Registers the endpoint cache invalidation and the integration init script.
-	 *
-	 * @param IEventDispatcher $dispatcher The event dispatcher.
-	 *
-	 * @return void
-	 */
-	private function registerEndpointCacheAndIntegrationScript(IEventDispatcher $dispatcher): void {
-		// Endpoint routing cache: clear it whenever an `openconnector`/endpoint
-		// (register slug frozen across the app-id rename)
-		// object is created, updated, or deleted so the runtime path matcher
-		// (EndpointCacheService) never serves stale routing (self-gated on
-		// register+schema slug, so unrelated object writes are a cheap no-op).
-		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: EndpointCacheInvalidationListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: EndpointCacheInvalidationListener::class);
-		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: EndpointCacheInvalidationListener::class);
+	private function registerIntegrationScript(IEventDispatcher $dispatcher): void {
 		// @todo Remove this temporary listener to the software catalog application.
 		// $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
 		// Path-2 integration leaf: load the tiny `integriq-integration`
@@ -662,590 +221,7 @@ class Application extends App implements IBootstrap {
 				Util::addInitScript('integriq', 'integriq-integration');
 			}
 		);
-	}//end registerEndpointCacheAndIntegrationScript()
-
-	/**
-	 * Registers the PDOK client bindings, live or mock by feature flag.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerPdokClients(IRegistrationContext $context): void {
-		// Dormant + active PDOK source-pattern adapters (lib/Sources/Pdok/).
-		//
-		// The abstract `PdokWmsClient`, `PdokWfsClient`, and
-		// `PdokGeocodingClient` (lib/Adapters/Pdok/) resolve to the `*ClientHttp`
-		// implementation when the `pdok.feature_flag` app-config flag is `'1'` or
-		// `'true'`, and to the `*ClientMock` implementation (deterministic canned
-		// responses, no network access) otherwise.
-		$isPdokActive = static function ($c): bool {
-			$config = $c->get('OCP\IAppConfig');
-			$raw = $config->getValueString('integriq', 'pdok.feature_flag', '0');
-			return ($raw === '1' || strtolower($raw) === 'true');
-		};
-
-		$bindings = [
-			PdokWmsClient::class => [PdokWmsClientHttp::class, PdokWmsClientMock::class],
-			PdokWfsClient::class => [PdokWfsClientHttp::class, PdokWfsClientMock::class],
-			AdapterPdokGeocodingClient::class => [PdokGeocodingClientHttp::class, PdokGeocodingClientMock::class],
-		];
-		foreach ($bindings as $abstract => [$http, $mock]) {
-			$context->registerService(
-				$abstract,
-				static function ($c) use ($isPdokActive, $http, $mock) {
-					if ($isPdokActive($c) === true) {
-						return $c->get($http);
-					}
-
-					return $c->get($mock);
-				}
-			);
-		}
-	}//end registerPdokClients()
-
-	/**
-	 * Registers the dormant SLO curriculum and rostering clients.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerDormantSourceClients(IRegistrationContext $context): void {
-		// Dormant SLO curriculum adapter (slo-kerndoelen-import, lib/Sources/Slo/).
-		// The abstract `SloCurriculumClient` resolves to the recorded-fixture
-		// mock until `slo.curriculum.feature_flag` is '1' or 'true'; then to
-		// the live client, which calls SLO through CallService with the
-		// seeded `slo-curriculum` source (that source also stays disabled
-		// until an operator enters SLO's API key).
-		$context->registerService(
-			SloCurriculumClient::class,
-			static function ($c) {
-				$live = ['1' => SloCurriculumClientHttp::class, 'true' => SloCurriculumClientHttp::class];
-				$raw = strtolower($c->get('OCP\IAppConfig')->getValueString('integriq', SloCurriculumSourceAdapter::FLAG_KEY, '0'));
-
-				return $c->get($live[$raw] ?? SloCurriculumClientMock::class);
-			}
-		);
-
-		// Dormant rostering adapter (rostering-adapter-targets-planninq). The
-		// abstract `RosterImportClient` had no binding, so the adapter could
-		// not be constructed on an instance at all. No live client exists
-		// yet (each rostering system needs its own institution onboarding,
-		// D9), so the binding is the mock whatever the feature flag says; a
-		// live binding adds the flag branch the way SloCurriculumClient does.
-		$context->registerService(
-			RosterImportClient::class,
-			static function ($c) {
-				return $c->get(RosterImportClientMock::class);
-			}
-		);
-	}//end registerDormantSourceClients()
-
-	/**
-	 * Registers the endpoint rule plug-in and property-source registries.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerEndpointAndPropertyRegistries(IRegistrationContext $context): void {
-		// Endpoint rule plug-ins (gateway-endpoint-transform-and-plugins D2):
-		// integriq's own connectRelations, plus whatever sibling apps register
-		// on RegisterEndpointRulePluginsEvent, dispatched on first lookup.
-		$context->registerService(
-			EndpointRulePluginRegistry::class,
-			static function ($c): EndpointRulePluginRegistry {
-				return new EndpointRulePluginRegistry(
-					plugins: [$c->get(ConnectRelationsPlugin::class)],
-					dispatcher: $c->get(IEventDispatcher::class),
-					logger: $c->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		// The property-source registry: one keyed list of the registry
-		// bindings a schema property can name through
-		// `x-openregister-property-source`. Registered explicitly rather than
-		// autowired so the order, and therefore the first-wins collision
-		// policy, is readable in one place.
-		$context->registerService(
-			PropertySourceRegistry::class,
-			static function ($c): PropertySourceRegistry {
-				return new PropertySourceRegistry(
-					providers: [
-						$c->get(BagPropertySource::class),
-						$c->get(BrpPropertySource::class),
-						$c->get(KvkPropertySource::class),
-					],
-					logger: $c->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-	}//end registerEndpointAndPropertyRegistries()
-
-	/**
-	 * Registers the government identity provider seam.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerGovernmentIdpAdapter(IRegistrationContext $context): void {
-		// The government identity provider seam, bound to the adapter that
-		// REFUSES (openspec/specs/digid-eherkenning-auth-adapter/spec.md,
-		// "Dormant seam"). Nothing resolves this interface yet: the SAML
-		// Service Provider and the OIDC Relying Party are vendor work behind
-		// it, and until they land every authentication attempt logs and
-		// throws "broker not configured".
-		//
-		// It is registered rather than left unbound because an unbound
-		// interface fails with a container error nobody can act on, and
-		// because flipping to a live adapter must be this one line and not a
-		// search for every call site.
-		$context->registerService(
-			GovernmentIdpAdapterInterface::class,
-			static function ($c): GovernmentIdpAdapterInterface {
-				return new LogGovernmentIdpAdapter(logger: $c->get('Psr\Log\LoggerInterface'));
-			}
-		);
-	}//end registerGovernmentIdpAdapter()
-
-	/**
-	 * Registers the broker transport and intake channel registries.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerBrokerAndIntakeRegistries(IRegistrationContext $context): void {
-		// The broker transport registry: one keyed list of the brokers this
-		// instance can publish a matched CloudEvent to. Registered explicitly
-		// rather than autowired, for the same reason as the intake channel
-		// registry below: autowiring would build one with an EMPTY transport
-		// list, which fails as "no transport answers to rabbitmq" on the
-		// first matched event rather than at boot
-		// (openspec/changes/event-broker-transport).
-		//
-		// `log` is LAST, so a real transport always wins its own id and the
-		// dormant one only answers to `log`.
-		$context->registerService(
-			BrokerTransportRegistry::class,
-			static function ($c): BrokerTransportRegistry {
-				return new BrokerTransportRegistry(
-					logger: $c->get('Psr\Log\LoggerInterface'),
-					transports: [
-						$c->get(CloudEventsHttpTransport::class),
-						$c->get(KafkaRestTransport::class),
-						$c->get(RabbitMqHttpTransport::class),
-						$c->get(LogBrokerTransport::class),
-					]
-				);
-			}
-		);
-
-		// The intake channel registry: one keyed list of the channel adapters
-		// this instance has. Registered explicitly rather than autowired, for
-		// the same reason as the property-source registry above: the order,
-		// and therefore the first-wins collision policy, is readable in one
-		// place instead of depending on discovery order
-		// (openspec/changes/intake-channels-beyond-mail).
-		$context->registerService(
-			IntakeChannelRegistry::class,
-			static function ($c): IntakeChannelRegistry {
-				return new IntakeChannelRegistry(
-					logger: $c->get('Psr\Log\LoggerInterface'),
-					adapters: [
-						$c->get(FormSubmissionAdapter::class),
-						$c->get(MessagingChannelAdapter::class),
-						$c->get(PublicSpaceReportAdapter::class),
-						$c->get(TeamsChannelAdapter::class),
-					]
-				);
-			}
-		);
-	}//end registerBrokerAndIntakeRegistries()
-
-	/**
-	 * Registers the registry subscription and migration source registries.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerSubscriptionAndMigrationRegistries(IRegistrationContext $context): void {
-		// The registry subscription bindings, keyed by registry id. The `log`
-		// binding is last, so a real registry always wins its own id and the
-		// development binding only answers to `log`.
-		$context->registerService(
-			SubscriptionRegistry::class,
-			static function ($c): SubscriptionRegistry {
-				return new SubscriptionRegistry(
-					providers: [
-						$c->get(BrpVolgindicatieProvider::class),
-						$c->get(KvkMutatieProvider::class),
-						$c->get(LogSubscriptionProvider::class),
-					]
-				);
-			}
-		);
-
-		// The migration source adapters. A second incumbent is a class beside
-		// the Redmine one and a line here: no engine change, no consumer change.
-		$context->registerService(
-			MigrationSourceRegistry::class,
-			static function ($c): MigrationSourceRegistry {
-				return new MigrationSourceRegistry(
-					adapters: [
-						$c->get(FileMigrationSource::class),
-						$c->get(RedmineMigrationSource::class),
-					]
-				);
-			}
-		);
-	}//end registerSubscriptionAndMigrationRegistries()
-
-	/**
-	 * Registers the digital post and ROD provider registries.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerDigitalPostAndRodRegistries(IRegistrationContext $context): void {
-		// The digital post bindings. `log` is registered last so a real binding
-		// always wins its own id and the development one only ever answers to
-		// `log`.
-		$context->registerService(
-			DigitalPostProviderRegistry::class,
-			static function ($c): DigitalPostProviderRegistry {
-				return new DigitalPostProviderRegistry(
-					providers: [
-						$c->get(BerichtenboxProvider::class),
-						$c->get(PostexProvider::class),
-						$c->get(LogDigitalPostProvider::class),
-					]
-				);
-			}
-		);
-
-		// The ROD (DUO Register Onderwijsdeelnemers) provider bindings. `log`
-		// is registered last for the same reason as the digital post bindings
-		// above: a real binding always wins its own id.
-		$context->registerService(
-			RodProviderRegistry::class,
-			static function ($c): RodProviderRegistry {
-				return new RodProviderRegistry(
-					providers: [
-						$c->get(RodEdukoppelingClient::class),
-						$c->get(LogRodProvider::class),
-					]
-				);
-			}
-		);
-	}//end registerDigitalPostAndRodRegistries()
-
-	/**
-	 * Registers the Verzuimloket and OSO provider registries.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerVerzuimloketAndOsoRegistries(IRegistrationContext $context): void {
-		// The Verzuimloket (DUO VSV-M2M) provider bindings. `log` is registered
-		// last for the same reason as the digital post bindings above.
-		$context->registerService(
-			VerzuimloketProviderRegistry::class,
-			static function ($c): VerzuimloketProviderRegistry {
-				return new VerzuimloketProviderRegistry(
-					providers: [
-						$c->get(VerzuimloketEdukoppelingClient::class),
-						$c->get(LogVerzuimloketProvider::class),
-					]
-				);
-			}
-		);
-
-		// The OSO export provider bindings. `log` is registered last for the
-		// same reason as the digital post bindings above.
-		$context->registerService(
-			OsoProviderRegistry::class,
-			static function ($c): OsoProviderRegistry {
-				return new OsoProviderRegistry(
-					providers: [
-						$c->get(OsoKennisnetClient::class),
-						$c->get(LogOsoProvider::class),
-					]
-				);
-			}
-		);
-	}//end registerVerzuimloketAndOsoRegistries()
-
-	/**
-	 * Registers the UWLR/Edu-V provider registry and the statutory gateways.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerUwlrAndGatewayRegistries(IRegistrationContext $context): void {
-		// The UWLR/Edu-V/Basispoort/Entree-content export provider bindings.
-		// `log` is registered last for the same reason as the digital post
-		// bindings above.
-		$context->registerService(
-			UwlrEduVProviderRegistry::class,
-			static function ($c): UwlrEduVProviderRegistry {
-				return new UwlrEduVProviderRegistry(
-					providers: [
-						$c->get(UwlrEduVKennisnetClient::class),
-						$c->get(LogUwlrEduVProvider::class),
-					]
-				);
-			}
-		);
-
-		// The statutory gateway entries. Declared in one place so the catalogue
-		// page and the gateway overview can never disagree about which laws this
-		// instance reaches.
-		$context->registerService(
-			GatewayRegistry::class,
-			static function ($c): GatewayRegistry {
-				return new GatewayRegistry(entries: GatewayCatalogue::entries());
-			}
-		);
-		$context->registerServiceAlias(GatewayTransport::class, SourceGatewayTransport::class);
-	}//end registerUwlrAndGatewayRegistries()
-
-	/**
-	 * Registers the app-owned interface bindings and the agent tool alias.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerAppOwnedBindings(IRegistrationContext $context): void {
-		// Two app-owned interfaces injected BARE as required constructor
-		// parameters, with exactly one implementation each and nothing binding
-		// them. Without these lines Nextcloud's container cannot construct
-		// DomainAlignmentChecker or CallReplayService, so SenderIdentityController
-		// and CallLogController cannot be built and their NINE routes answer 500 —
-		// including `GET /unsubscribe/{token}`, the opt-out link in outbound mail,
-		// which is the one a recipient follows rather than an operator.
-		//
-		// Nothing caught it: psalm and phpstan are green because the types are
-		// right, the unit suite is green because it binds its own fixtures, and
-		// the route-reachability gate checks that a route resolves to a class and
-		// method, not that the class can be INSTANTIATED. Both interfaces arrived
-		// with their implementation and a test fixture and missed only this line
-		// (integriq#1983 review 5278999788, from PRs #2060 and #2063).
-		//
-		// AppOwnedInterfaceBindingTest pins the property rather than these two
-		// instances, so the next bare interface fails a test instead of a route.
-		$context->registerServiceAlias(DnsResolverInterface::class, SystemDnsResolver::class);
-		$context->registerServiceAlias(CallDispatcherInterface::class, CallServiceDispatcher::class);
-
-		// The hermiq-ai-tooling change: the verdict transport, and the opt-in alias under
-		// which OpenRegister's AttributeToolScanner finds the six curated agent
-		// tools (OpenRegister Application, IMcpScannableServices::<appId>).
-		$context->registerServiceAlias(HermiqVerdictClient::class, HttpHermiqVerdictClient::class);
-		$context->registerService(
-			'OCA\\OpenRegister\\Mcp\\IMcpScannableServices::integriq',
-			static fn ($c) => $c->get(IntegriqScannableServices::class)
-		);
-	}//end registerAppOwnedBindings()
-
-	/**
-	 * Registers the PDOK HTTP client factories.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerPdokHttpClients(IRegistrationContext $context): void {
-		// Explicit factories for the *ClientHttp flavours so the Guzzle
-		// ClientInterface is injected via a shared singleton; NC's
-		// auto-wiring can't construct GuzzleHttp\Client directly because
-		// ClientInterface is an interface.
-		$context->registerService(
-			PdokGeocodingClientHttp::class,
-			static function ($c) {
-				return new PdokGeocodingClientHttp(
-					httpClient: new GuzzleHttpClient(),
-					logger: $c->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-		$context->registerService(
-			PdokWmsClientHttp::class,
-			static function ($c) {
-				return new PdokWmsClientHttp(
-					httpClient: new GuzzleHttpClient(),
-					logger: $c->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-		$context->registerService(
-			PdokWfsClientHttp::class,
-			static function ($c) {
-				return new PdokWfsClientHttp(
-					httpClient: new GuzzleHttpClient(),
-					logger: $c->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-	}//end registerPdokHttpClients()
-
-	/**
-	 * Registers the PDOK WMS and WFS source adapter factories.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerPdokSourceAdapters(IRegistrationContext $context): void {
-		$context->registerService(
-			PdokWmsSourceAdapter::class,
-			static function ($c) {
-				return new PdokWmsSourceAdapter(
-					config: $c->get('OCP\IAppConfig'),
-					logger: $c->get('Psr\Log\LoggerInterface'),
-					wmsClient: $c->get(PdokWmsClient::class)
-				);
-			}
-		);
-		$context->registerService(
-			PdokWfsSourceAdapter::class,
-			static function ($c) {
-				return new PdokWfsSourceAdapter(
-					config: $c->get('OCP\IAppConfig'),
-					logger: $c->get('Psr\Log\LoggerInterface'),
-					wfsClient: $c->get(PdokWfsClient::class)
-				);
-			}
-		);
-	}//end registerPdokSourceAdapters()
-
-	/**
-	 * Registers the PDOK geocoding source adapter factory.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerPdokGeocodingSourceAdapter(IRegistrationContext $context): void {
-		$context->registerService(
-			SourcePdokGeocodingClient::class,
-			static function ($c) {
-				return new SourcePdokGeocodingClient(
-					config: $c->get('OCP\IAppConfig'),
-					logger: $c->get('Psr\Log\LoggerInterface'),
-					geocodingClient: $c->get(AdapterPdokGeocodingClient::class)
-				);
-			}
-		);
-	}//end registerPdokGeocodingSourceAdapter()
-
-	/**
-	 * Registers the Berichtenbox client binding.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerBerichtenboxClient(IRegistrationContext $context): void {
-		// MijnOverheid Berichtenbox. The client resolves to the mock until
-		// `logius.berichtenbox.feature_flag` is set, and to the live binding
-		// after (REQ-DPA-005, REQ-DPA-008). The live binding refuses a source
-		// that lacks a value it needs and names each one; the mock is never
-		// served to a flagged instance, so a simulated delivery cannot pass
-		// for a real one.
-		$context->registerService(
-			BerichtenboxClient::class,
-			static function ($c) {
-				$config = $c->get('OCP\IAppConfig');
-				$raw = $config->getValueString('integriq', 'logius.berichtenbox.feature_flag', '0');
-				$live = ($raw === '1' || strtolower($raw) === 'true');
-
-				if ($live === true) {
-					return $c->get(BerichtenboxClientHttp::class);
-				}
-
-				return $c->get(BerichtenboxClientMock::class);
-			}
-		);
-	}//end registerBerichtenboxClient()
-
-	/**
-	 * Registers the Tables and Forms client bindings.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerTablesAndFormsClients(IRegistrationContext $context): void {
-		// Tables-bridge: bind the polymorphic Tables API seam to its concrete
-		// v1-REST implementation (design.md Decision 2). `TablesOcsClient`'s
-		// own dependencies (CallService, LoggerInterface) are plain
-		// autowirable types, so only the interface binding needs an explicit
-		// factory here.
-		$context->registerService(
-			TablesClientInterface::class,
-			static function ($c) {
-				return $c->get(TablesOcsClient::class);
-			}
-		);
-
-		// Forms-connector: bind the polymorphic Forms API seam to its
-		// concrete v3-REST implementation (design.md Decision 1), identical
-		// shape to the TablesClientInterface binding above. `FormsOcsClient`'s
-		// own dependencies (CallService, LoggerInterface) are plain
-		// autowirable types, so only the interface binding needs an explicit
-		// factory here. No conditional/feature-detected binding — the client
-		// class itself has no `OCA\Forms\*` reference, so it is always
-		// safely constructible; only *usage* is feature-detected
-		// (FormsSyncAdapter::assertEnabled()).
-		$context->registerService(
-			FormsClientInterface::class,
-			static function ($c) {
-				return $c->get(FormsOcsClient::class);
-			}
-		);
-	}//end registerTablesAndFormsClients()
-
-	/**
-	 * Registers the setup checks, notifiers and capabilities.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerSetupChecksAndNotifiers(IRegistrationContext $context): void {
-		// Fail-loud admin signal when the required OpenRegister app is absent.
-		// The check uses IAppManager only (no OCA\OpenRegister\* reference) so it
-		// is safe to run while OpenRegister is disabled (REQ-ADM-003).
-		$context->registerSetupCheck(OpenRegisterDependencyCheck::class);
-		// Since gate 23 every credentialed inbound call is checked by
-		// OpenRegister; an OpenRegister older than 2.1.35 refuses them all
-		// with 401, and info.xml cannot say so. This check does.
-		$context->registerSetupCheck(OpenRegisterEntryPointsCheck::class);
-		$context->registerSetupCheck(DigitalPostAccountCheck::class);
-		$context->registerSetupCheck(BerichtenboxCheck::class);
-
-		// HITL approval workflow: the actionable approver notification is
-		// dispatched imperatively (ApprovalService::notifyApprovers(), see
-		// openspec/changes/archive/2026-07-15-hitl-approval-rule-action/design.md Decision 4) —
-		// without a notifier registered under this app id, the notification
-		// manager silently drops it when preparing it for display.
-		$context->registerNotifierService(\OCA\Integriq\Notification\ApprovalNotifier::class);
-		// DSO intake (dso-intake-through-an-integriq-connection): admin alerts when DSO-LV pushes are refused.
-		$context->registerNotifierService(\OCA\Integriq\Notification\DsoConnectionNotifier::class);
-
-		// Dashboard-http-datasource: advertise the capability so a leaf
-		// dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
-		// for the resolve façade via the OCS capabilities document.
-		$context->registerCapability(Capabilities::class);
-	}//end registerSetupChecksAndNotifiers()
+	}//end registerIntegrationScript()
 
 	/**
 	 * Registers the register slug resolver alias.
@@ -1288,9 +264,10 @@ class Application extends App implements IBootstrap {
 	}//end registerRegisterSlugResolver()
 
 	/**
-	 * Register the `nextcloud-event-triggers` capability's `IEventListener`s.
+	 * Register the feature-detected `nextcloud-event-triggers` listeners (Tables and Forms).
 	 *
-	 * Files and calendar registrations are unconditional (Decision 1):
+	 * The file and calendar listeners are registered by
+	 * {@see EventListenerRegistrar::registerListeners()}, unconditionally (Decision 1):
 	 * `OCP\Files\Events\Node\*` and `OCP\SystemTag\MapperEvent` are stable
 	 * public `OCP` API present on every NC version this app targets (NC
 	 * 28-34); `dav` (source of the OCA-internal `Cached*` calendar events)
@@ -1308,7 +285,7 @@ class Application extends App implements IBootstrap {
 	 * signals "is this event family available" for the subscription-modal
 	 * event-type picker.
 	 *
-	 * @param IRegistrationContext $context Registration context.
+	 * @param EventListenerRegistrar $listeners The registrar of the listener classes.
 	 * @param IEventDispatcher $dispatcher The NC event dispatcher.
 	 *
 	 * @return void
@@ -1318,37 +295,17 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
 	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
 	 */
-	private function registerNextcloudEventTriggers(IRegistrationContext $context, IEventDispatcher $dispatcher): void {
-		// Files (REQ-001) — unconditional, stable OCP.
-		$dispatcher->addServiceListener(eventName: NodeCreatedEvent::class, className: NextcloudFileEventListener::class);
-		$dispatcher->addServiceListener(eventName: NodeWrittenEvent::class, className: NextcloudFileEventListener::class);
-		$dispatcher->addServiceListener(eventName: NodeDeletedEvent::class, className: NextcloudFileEventListener::class);
-		$dispatcher->addServiceListener(eventName: MapperEvent::class, className: NextcloudFileTagEventListener::class);
-
-		// Calendar (REQ-002) — unconditional; `dav` ships with every
-		// instance. Both the NC32+ OCP "own calendar" family and the
-		// always-available OCA "cached subscription" family are wired so
-		// one listener normalizes whichever fires (see
-		// NextcloudCalendarEventListener's class docblock).
-		$dispatcher->addServiceListener(eventName: CalendarObjectCreatedEvent::class, className: NextcloudCalendarEventListener::class);
-		$dispatcher->addServiceListener(eventName: CalendarObjectUpdatedEvent::class, className: NextcloudCalendarEventListener::class);
-		$dispatcher->addServiceListener(eventName: CalendarObjectDeletedEvent::class, className: NextcloudCalendarEventListener::class);
-		$dispatcher->addServiceListener(eventName: CachedCalendarObjectCreatedEvent::class, className: NextcloudCalendarEventListener::class);
-		$dispatcher->addServiceListener(eventName: CachedCalendarObjectUpdatedEvent::class, className: NextcloudCalendarEventListener::class);
-		$dispatcher->addServiceListener(eventName: CachedCalendarObjectDeletedEvent::class, className: NextcloudCalendarEventListener::class);
-
+	private function registerNextcloudEventTriggers(EventListenerRegistrar $listeners, IEventDispatcher $dispatcher): void {
 		// Tables (REQ-003) — feature-detected.
 		try {
 			$appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
 			if ($this->appEnabledForAnyone(appManager: $appManager, appId: 'tables') === true) {
-				$dispatcher->addServiceListener(eventName: RowAddedEvent::class, className: NextcloudTablesEventListener::class);
-				$dispatcher->addServiceListener(eventName: RowUpdatedEvent::class, className: NextcloudTablesEventListener::class);
-				$dispatcher->addServiceListener(eventName: RowDeletedEvent::class, className: NextcloudTablesEventListener::class);
+				$listeners->registerTablesListeners(dispatcher: $dispatcher);
 			}
 
 			// Forms (REQ-004) — feature-detected.
 			if ($this->appEnabledForAnyone(appManager: $appManager, appId: 'forms') === true) {
-				$dispatcher->addServiceListener(eventName: FormSubmittedEvent::class, className: NextcloudFormsEventListener::class);
+				$listeners->registerFormsListeners(dispatcher: $dispatcher);
 			}
 		} catch (\Throwable $e) {
 			// IAppManager not resolvable this early on some SAPIs — degrade to
@@ -1424,7 +381,7 @@ class Application extends App implements IBootstrap {
 	 * nothing) rather than throwing into `Application::register()`.
 	 *
 	 * @param IRegistrationContext $context Registration context (unused — kept for
-	 *                                      signature symmetry with {@see registerNextcloudEventTriggers()}).
+	 *                                      signature symmetry with the other registration methods).
 	 * @param IEventDispatcher $dispatcher The NC event dispatcher.
 	 *
 	 * @return void
@@ -1491,11 +448,7 @@ class Application extends App implements IBootstrap {
 	 */
 
 	/**
-	 * Register Integriq's contributed flow nodes with OpenRegister's flow engine.
-	 *
-	 * Feature-detected on the OR flow engine being present: without it this is a
-	 * no-op, so Integriq still boots on an instance whose OpenRegister
-	 * predates the flow engine.
+	 * Contribute this app's mapping functions to OpenRegister's transformation engine.
 	 *
 	 * @param IEventDispatcher $dispatcher The NC event dispatcher.
 	 *
@@ -1503,31 +456,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function registerFlowNodes(IEventDispatcher $dispatcher): void {
-		// Deliberately NOT guarded on the OR event class existing.
-		//
-		// The guard that used to stand here ran during register(), and at that
-		// point OpenRegister's classes are not autoloadable yet — apps are
-		// registered in an order that puts `integriq` before
-		// `openregister`. So `class_exists()` answered FALSE on a perfectly
-		// healthy instance and this returned early: the nodes never registered,
-		// `source-call` and `synchronization-run` were absent from the palette,
-		// and a flow naming either failed only when it RAN. Verified on a clean
-		// install — the guard logged `class_exists at register(): false`, and
-		// removing it took the registry from 10 nodes to 12.
-		//
-		// Dropping it is safe, which is why the guard was never buying anything:
-		// `::class` resolves to a string and does not autoload, and
-		// addServiceListener() is lazy — FlowNodeListener is only constructed if
-		// the event actually fires, which can only happen when OpenRegister is
-		// present and dispatching it. On an instance whose OpenRegister predates
-		// the flow engine, nothing dispatches and this stays inert, which is
-		// exactly the resilience the guard was reaching for.
-		$dispatcher->addServiceListener(
-			eventName: \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
-			className: \OCA\Integriq\Flow\FlowNodeListener::class
-		);
-
+	private function registerMappingFunctions(IEventDispatcher $dispatcher): void {
 		// Same shape, same reasoning, for mapping: the transformation engine is
 		// OpenRegister's, but three Twig functions need services only this app
 		// has — callSource (CallService) and the two synchronisation-contract
@@ -1538,138 +467,21 @@ class Application extends App implements IBootstrap {
 			className: \OCA\Integriq\Listener\MappingFunctionRegistrationListener::class
 		);
 
-	}//end registerFlowNodes()
-
-	/**
-	 * Adopt the OpenRegister AppHost consumables for this app.
-	 *
-	 * WHY THE TWO `assert($appManager instanceof IAppManager)` LINES BELOW ARE NOT NOISE.
-	 * `ContainerInterface::get()` returns `mixed`, so without a narrowing statement
-	 * neither psalm nor phpstan knows what `$appManager` is, and the
-	 * `isEnabledForAnyone()` calls in both factories are checked against NOTHING. That
-	 * is precisely how the deprecated `isInstalled()` survived in these two closures
-	 * while the two controller guards they mirror were migrated (#1174) — the analysers
-	 * could not see a method call to complain about. Measured both ways: with the
-	 * assert, a deliberately misspelt method name is reported as "Call to an undefined
-	 * method OCP\App\IAppManager::…" and phpstan exits 1; without it, phpstan is silent
-	 * and exits 0.
-	 *
-	 * An inline `@var` is NOT an alternative here. This repo's phpcs standard rejects
-	 * inline doc-block comments ("Inline doc block comments are not allowed") and
-	 * mandates the single-star block-comment form, while phpstan reads `@var` ONLY from
-	 * a double-star doc block — verified on a probe file: the same annotation written
-	 * single-star bound nothing and the misspelt call went unreported. So the
-	 * phpcs-legal form of that annotation reads as a type declaration and performs no
-	 * check whatsoever.
-	 *
-	 * @param IRegistrationContext $context Registration context.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/apphost-adoption/spec.md
-	 */
-	private function registerAppHostObservability(IRegistrationContext $context): void {
-		// Build the thin integriq HealthController subclass (URL
-		// /api/health, route name health#index — both unchanged) with the
-		// engine collaborators resolved from OpenRegister's app container,
-		// scoped to this app's manifest via appName.
-		$context->registerService(
-			HealthController::class,
-			static function (ContainerInterface $c) {
-				$appManager = $c->get(\OCP\App\IAppManager::class);
-				// See registerAppHostObservability()'s docblock: this assert() is
-				// load-bearing, it is what makes the isEnabledForAnyone() call below
-				// statically checked at all.
-				assert($appManager instanceof \OCP\App\IAppManager);
-
-				// When OpenRegister is absent the engine delegate cannot be
-				// built; pass null so HealthController returns a clean 503
-				// naming the missing dependency (REQ-ADM-003) instead of a bare
-				// DI 500. Building the delegate references OpenRegister classes,
-				// so it is only done when OpenRegister is enabled.
-				$delegate = null;
-				if ($appManager->isEnabledForAnyone('openregister') === true) {
-					// phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
-					$orContainer = \OC::$server->getRegisteredAppContainer('openregister');
-					$delegate = new \OCA\OpenRegister\AppHost\Controller\GenericHealthController(
-						appName: self::APP_ID,
-						request: $c->get(IRequest::class),
-						manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
-						executor: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class)
-					);
-				}
-
-				return new HealthController(
-					appName: self::APP_ID,
-					request: $c->get(IRequest::class),
-					appManager: $appManager,
-					delegate: $delegate
-				);
-			}
-		);
-
-		// Build the thin integriq MetricsController (URL /api/metrics,
-		// route name metrics#index — both unchanged) with the engine delegate
-		// resolved from OpenRegister's app container, scoped to this app's
-		// manifest via appName. Admin-only posture is engine-owned and
-		// re-declared on the integriq method.
-		$context->registerService(
-			MetricsController::class,
-			static function (ContainerInterface $c) {
-				$appManager = $c->get(\OCP\App\IAppManager::class);
-				// See registerAppHostObservability()'s docblock: this assert() is
-				// load-bearing, it is what makes the isEnabledForAnyone() call below
-				// statically checked at all.
-				assert($appManager instanceof \OCP\App\IAppManager);
-
-				// Mirrors the HealthController guard above. When OpenRegister
-				// is absent the engine delegate cannot be built, so pass null
-				// and let MetricsController return a clean 503 instead of a
-				// bare DI 500 — getRegisteredAppContainer() throws for an app
-				// that is not registered. Building the delegate references
-				// OpenRegister classes, so it is only done when OpenRegister
-				// is enabled.
-				$delegate = null;
-				if ($appManager->isEnabledForAnyone('openregister') === true) {
-					// phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
-					$orContainer = \OC::$server->getRegisteredAppContainer('openregister');
-					$delegate = new \OCA\OpenRegister\AppHost\Controller\GenericMetricsController(
-						appName: self::APP_ID,
-						request: $c->get(IRequest::class),
-						manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
-						engine: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
-					);
-				}
-
-				return new MetricsController(
-					appName: self::APP_ID,
-					request: $c->get(IRequest::class),
-					appManager: $appManager,
-					delegate: $delegate
-				);
-			}
-		);
-
-		// Provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies):
-		// the per-Source circuit_breaker_state gauge needs each Source's OWN
-		// field value (1/0), not a row count — declarative tableCount/objectCount
-		// descriptors only aggregate counts. The `{"kind":"provider"}` metric
-		// descriptor in src/manifest.json merges this provider's samples into
-		// the /api/metrics response; the engine resolves it via this alias.
-		$context->registerServiceAlias(
-			IMetricsProvider::class . '::integriq',
-			IntegriqMetricsProvider::class
-		);
-	}//end registerAppHostObservability()
+	}//end registerMappingFunctions()
 
 	/**
 	 * Adopt the AppHost boilerplate generics that are a clean, behaviour-preserving win.
+	 *
+	 * The factories of the adopted classes live in their components' registrars
+	 * ({@see \OCA\Integriq\Controller\ControllerRegistrar}, {@see \OCA\Integriq\Settings\SettingsRegistrar},
+	 * {@see \OCA\Integriq\Sections\SectionsRegistrar} and {@see \OCA\Integriq\Repair\RepairRegistrar}).
+	 * This method keeps the factory of the OpenRegister action-auth service they share.
 	 *
 	 * ADR-040. The per-user Preferences controller, the admin Settings/Section
 	 * pair, and the ADR-023 action-matrix repair step are adopted here — each
 	 * a one-line subclass of an OpenRegister AppHost generic, with the
 	 * per-app collaborators (appId, section metadata, translated section name,
-	 * app-scoped action-auth service) injected by the factories below.
+	 * app-scoped action-auth service) injected by those factories.
 	 * `OCA\Integriq\Controller\PreferencesController` was a byte-for-byte
 	 * copy of OpenRegister's engine-owned {@see GenericPreferencesController}
 	 * (same `pref_` user-value namespace, same `[a-z0-9-]{0,64}` key
@@ -1677,7 +489,7 @@ class Application extends App implements IBootstrap {
 	 * user scoping), so it is deleted and the `/api/preferences/{key}`
 	 * GET/PUT routes now resolve to the leaf-namespaced class
 	 * `OCA\Integriq\AppHost\Controller\GenericPreferencesController`,
-	 * registered here as a service that constructs the OpenRegister generic with
+	 * registered as a service that constructs the OpenRegister generic with
 	 * `appName = integriq` injected — so every user value stays scoped to
 	 * THIS app's namespace, never OpenRegister's. URLs + JSON contract unchanged;
 	 * the engine owns the (identical, user-scoped, no-IDOR) auth posture so the
@@ -1753,29 +565,6 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/apphost-adoption/spec.md
 	 */
 	private function registerAppHostBoilerplate(IRegistrationContext $context): void {
-		// Bind the AppHost preferences controller (which does not physically
-		// exist in this app — same pattern as the Health/Metrics observability
-		// aliases) to the OpenRegister generic, with appName=integriq so
-		// the `pref_` user-value namespace is scoped to this app.
-		//
-		// The service key MUST be the STANDARD `OCA\Integriq\Controller\…`
-		// namespace, because that is the class name NC's App::main synthesises
-		// from the plain `genericPreferences#…` route name (see the matching
-		// note in appinfo/routes.php). A non-standard namespace key (e.g.
-		// `…\AppHost\Controller\…`) is never looked up by the router, so every
-		// request 503s with "App controller is not enabled".
-		$context->registerService(
-			'OCA\\Integriq\\Controller\\GenericPreferencesController',
-			static function (ContainerInterface $c) {
-				return new GenericPreferencesController(
-					appName: self::APP_ID,
-					request: $c->get(IRequest::class),
-					config: $c->get(\OCP\IConfig::class),
-					userSession: $c->get(\OCP\IUserSession::class)
-				);
-			}
-		);
-
 		// App-scoped generic action-auth service, used only to seed the
 		// matrix in InitializeActions below (reads/writes the identical
 		// `actions` IAppConfig key, under the `integriq` app id, that
@@ -1794,119 +583,8 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
-		$this->registerAppHostAdminSettings(context: $context);
-
-		// InitializeRegister (register.d fragment-merge repair step) stays
-		// bespoke — NOT adopted here, unlike InitializeActions below. Its
-		// ADR-037 `deepMergeConfig()` fragment-union algorithm is pinned by
-		// reflection-based unit tests (RegisterFragmentMergeTest,
-		// EudiRegisterFragmentTest, HitlApprovalRegisterFragmentTest) that
-		// assert against `InitializeRegister::deepMergeConfig()` directly;
-		// the equivalent logic in OpenRegister's `AppHostSettingsService` is
-		// `private` and lives in a different class, so converting to
-		// `GenericInitializeSettings` would either break that fragment-merge
-		// coverage or require duplicating the algorithm as a test stub —
-		// deferred rather than trading away a safety net for a pure refactor.
-		// It keeps resolving via plain autowiring (its own constructor is
-		// unchanged), so no factory is registered for it here.
-		$context->registerService(
-			InitializeActions::class,
-			/**
-			 * Build the leaf InitializeActions repair step.
-			 *
-			 * @param ContainerInterface $c App-scoped DI container.
-			 *
-			 * @return InitializeActions
-			 *
-			 * @psalm-suppress TooManyArguments see IntegriqAdminSettings above.
-			 */
-			static function (ContainerInterface $c) {
-				return new InitializeActions(
-					appId: self::APP_ID,
-					actionAuth: $c->get(GenericActionAuthService::class),
-					appManager: $c->get(\OCP\App\IAppManager::class),
-					logger: $c->get(\Psr\Log\LoggerInterface::class)
-				);
-			}
-		);
 
 	}//end registerAppHostBoilerplate()
-
-	/**
-	 * Bind the leaf `IntegriqAdmin` settings form + section class names to
-	 * the AppHost `GenericAdminSettings`/`GenericSettingsSection` generics.
-	 *
-	 * Split out of {@see registerAppHostBoilerplate()} to keep both methods
-	 * under the project's method-length threshold. See that method's docblock
-	 * for the full behaviour-preservation rationale.
-	 *
-	 * @param IRegistrationContext $context Registration context.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/apphost-adoption/spec.md
-	 */
-	private function registerAppHostAdminSettings(IRegistrationContext $context): void {
-		// Admin settings form + section: pinned to the pre-adoption metadata
-		// (section id `integriq`, priority 10 / 97, icon `app-dark.svg`).
-		$context->registerService(
-			IntegriqAdminSettings::class,
-			/**
-			 * Build the leaf IntegriqAdmin settings form.
-			 *
-			 * IntegriqAdminSettings extends OpenRegister's
-			 * GenericAdminSettings (peer app, not in vendor — see psalm.xml's
-			 * UndefinedClass allowlist for the same class); Psalm cannot
-			 * resolve the inherited constructor and treats the subclass as
-			 * argument-less.
-			 *
-			 * @param ContainerInterface $c App-scoped DI container.
-			 *
-			 * @return IntegriqAdminSettings
-			 *
-			 * @psalm-suppress TooManyArguments
-			 */
-			static function (ContainerInterface $c) {
-				return new IntegriqAdminSettings(
-					appId: self::APP_ID,
-					sectionId: 'integriq',
-					priority: 10,
-					appManager: $c->get(\OCP\App\IAppManager::class),
-					initialState: $c->get(\OCP\AppFramework\Services\IInitialState::class),
-					appConfig: $c->get(\OCP\IAppConfig::class)
-				);
-			}
-		);
-
-		$context->registerService(
-			IntegriqAdminSection::class,
-			/**
-			 * Build the leaf IntegriqAdmin settings section.
-			 *
-			 * Resolves integriq's own scoped IL10N and translates the
-			 * section name BEFORE constructing the generic section, which has
-			 * no l10n hook of its own (see class docblock).
-			 *
-			 * @param ContainerInterface $c App-scoped DI container.
-			 *
-			 * @return IntegriqAdminSection
-			 *
-			 * @psalm-suppress TooManyArguments see IntegriqAdminSettings above.
-			 */
-			static function (ContainerInterface $c) {
-				$name = $c->get(\OCP\IL10N::class)->t('Integriq');
-
-				return new IntegriqAdminSection(
-					sectionId: 'integriq',
-					name: $name,
-					appId: self::APP_ID,
-					iconFile: 'app-dark.svg',
-					priority: 97,
-					urlGenerator: $c->get(\OCP\IURLGenerator::class)
-				);
-			}
-		);
-	}//end registerAppHostAdminSettings()
 
 	/**
 	 * Soft pre-flight check: warn when the legacy→OpenRegister storage migration has
@@ -1995,64 +673,8 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/apphost-adoption/spec.md
 	 */
 	public function boot(IBootContext $context): void {
-		$this->registerIntegrationProviders(context: $context);
+		(new ServiceRegistrar())->boot(context: $context);
 
 	}//end boot()
 
-	/**
-	 * Register integriq-side IntegrationProviders with OR's IntegrationRegistry.
-	 *
-	 * Per OR's pluggable-integration-registry spec (AD-1), apps register their
-	 * providers at boot — OR's registry is a shared per-request service so all
-	 * apps see the same instance.
-	 *
-	 * Currently registered:
-	 *   - SynchronizationContractProvider — surfaces SyncContract leaves on the
-	 *     OR objects they synchronise (GH #824).
-	 *   - AzureVirtualDesktopAdapter, SharePointOnlineAdapter, Microsoft365Adapter,
-	 *     S3Adapter — one reference adapter per connector-category spec
-	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
-	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
-	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
-	 *
-	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
-	 * integriq is loaded but openregister isn't enabled yet) so boot
-	 * doesn't crash on a stale install.
-	 *
-	 * @param IBootContext $context Boot context.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-integrationprovider-boot-time-registration-with-or-integrationregistry-req-002
-	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
-	 */
-	private function registerIntegrationProviders(IBootContext $context): void {
-		if (class_exists(IntegrationRegistry::class) === false) {
-			return;
-		}
-
-		try {
-			$container = $context->getServerContainer();
-			$registry = $container->get(IntegrationRegistry::class);
-			$registry->addProvider($container->get(SynchronizationContractProvider::class));
-			$registry->addProvider($container->get(AzureVirtualDesktopAdapter::class));
-			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
-			$registry->addProvider($container->get(Microsoft365Adapter::class));
-			$registry->addProvider($container->get(S3Adapter::class));
-		} catch (\Throwable $e) {
-			// Don't crash boot — log and continue. The provider just won't appear
-			// in object sidebars on this instance until the registry resolves.
-			try {
-				$context->getServerContainer()
-					->get('Psr\Log\LoggerInterface')
-					->warning(
-						'integriq: failed to register IntegrationProviders with OR — ' . $e->getMessage(),
-						['exception' => $e]
-					);
-			} catch (\Throwable) {
-				// Logger unavailable, ignore.
-			}
-		}//end try
-
-	}//end registerIntegrationProviders()
 }//end class

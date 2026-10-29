@@ -24,8 +24,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Every `lib/<Component>/<Component>Registrar` binds contracts of its own
- * component, each to a class that implements it, and Application runs it.
+ * Every `lib/<Component>/<Component>Registrar` wires only its own component,
+ * binds each contract to a class that implements it, and Application runs it.
  */
 class ComponentRegistrarsTest extends TestCase {
 	/**
@@ -46,7 +46,36 @@ class ComponentRegistrarsTest extends TestCase {
 	}
 
 	/**
-	 * Each alias names an interface of the registrar's own component, bound to a class that implements it.
+	 * Records every call a registrar makes on the registration context.
+	 *
+	 * @param string $registrar The registrar class.
+	 *
+	 * @return list<array{0: string, 1: list<mixed>}> One entry per call: method name and arguments.
+	 */
+	private function recordCalls(string $registrar): array {
+		$calls   = [];
+		$context = $this->createMock(IRegistrationContext::class);
+		foreach ((new \ReflectionClass(IRegistrationContext::class))->getMethods() as $method) {
+			$name = $method->getName();
+			$context->method($name)->willReturnCallback(
+				function (...$args) use (&$calls, $name): void {
+					$calls[] = [$name, $args];
+				}
+			);
+		}
+
+		(new $registrar())->register(context: $context);
+
+		return $calls;
+	}
+
+	/**
+	 * Each registrar wires only its own component: the services, aliases and
+	 * listeners it registers are classes of its own namespace, and every alias
+	 * resolves to a class that is its contract.
+	 *
+	 * A named service id (one with `::` in it) is an id another app looks up;
+	 * there only the bound class has to be the registrar's own.
 	 *
 	 * @param string $registrar The registrar class.
 	 *
@@ -55,23 +84,32 @@ class ComponentRegistrarsTest extends TestCase {
 	 * @spec exclude container wiring invariant, no requirement states which contracts exist
 	 */
 	#[DataProvider('registrars')]
-	public function testEveryAliasIsAnOwnContractBoundToItsImplementation(string $registrar): void {
-		$aliases = [];
-		$context = $this->createMock(IRegistrationContext::class);
-		$context->method('registerServiceAlias')->willReturnCallback(
-			function (string $alias, string $target) use (&$aliases): void {
-				$aliases[$alias] = $target;
-			}
-		);
+	public function testEachRegistrarWiresOnlyItsOwnComponent(string $registrar): void {
+		$calls = $this->recordCalls(registrar: $registrar);
 
-		(new $registrar())->register(context: $context);
-
-		$this->assertNotEmpty($aliases, $registrar . ' binds nothing.');
+		$this->assertNotEmpty($calls, $registrar . ' registers nothing.');
 		$namespace = substr($registrar, 0, (int)strrpos($registrar, '\\') + 1);
-		foreach ($aliases as $contract => $implementation) {
-			$this->assertStringStartsWith($namespace, $contract);
-			$this->assertTrue(interface_exists($contract), $contract);
-			$this->assertContains($contract, class_implements($implementation), $implementation);
+		foreach ($calls as [$method, $args]) {
+			if ($method === 'registerServiceAlias') {
+				[$contract, $implementation] = $args;
+				$this->assertStringStartsWith($namespace, $implementation, $contract);
+				if (str_contains($contract, '::') === false) {
+					$this->assertStringStartsWith($namespace, $contract);
+					$this->assertTrue(is_a($implementation, $contract, true), $implementation . ' is not a ' . $contract);
+				}
+
+				continue;
+			}
+
+			$owned = match ($method) {
+				'registerEventListener' => $args[1],
+				default => $args[0],
+			};
+			if ($method === 'registerService' && str_contains($owned, '::') === true) {
+				continue;
+			}
+
+			$this->assertStringStartsWith($namespace, $owned, $registrar . '::' . $method);
 		}
 	}
 

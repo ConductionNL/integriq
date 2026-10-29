@@ -19,7 +19,7 @@
  * controller as a nullable delegate avoids that: a nullable *parameter type*
  * is never autoloaded (only `extends`/`implements` are resolved at class
  * declaration time), and this service is built by an explicit factory in
- * {@see \OCA\Integriq\AppInfo\Application::registerAppHostObservability()},
+ * {@see \OCA\Integriq\Controller\ControllerRegistrar},
  * so the container never autowires — and therefore never resolves — that
  * parameter.
  *
