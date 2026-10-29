@@ -11578,11 +11578,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		int|string|null &$registerId = null,
 	): mixed {
 		$dataDot = new Dot($endpoint);
-		if (isset($config['objectIdPath']) === true && empty($config['objectIdPath']) === false) {
+		if (empty($config['objectIdPath']) === false) {
 			$objectId = $dataDot->get($config['objectIdPath']);
 		}
 
-		if (isset($config['subObjectFilepath']) === true && empty($config['subObjectFilepath']) === false) {
+		if (empty($config['subObjectFilepath']) === false) {
 			$endpoint = $dataDot->get($config['subObjectFilepath']);
 		}
 
@@ -11595,17 +11595,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$tags[] = $tagValue;
 		}
 
-		if (isset($endpoint['filename']) === true && empty($endpoint['filename']) === false) {
+		if (empty($endpoint['filename']) === false) {
 			$filename = $endpoint['filename'];
 		}
 
-		if (isset($endpoint['published']) === true) {
-			$published = $endpoint['published'];
-		}
-
-		if (isset($endpoint['registerId']) === true) {
-			$registerId = $endpoint['registerId'];
-		}
+		$published  = ($endpoint['published'] ?? $published);
+		$registerId = ($endpoint['registerId'] ?? $registerId);
 
 		return ($endpoint['endpoint'] ?? null);
 	}//end getFileContext()
@@ -11662,15 +11657,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md
 	 */
 	private function labelsKeptAsTags(array $config, array $labels): array {
-		$allowed = [];
-		if (isset($config['allowedLabels']) === true && is_array($config['allowedLabels']) === true) {
-			$allowed = $config['allowedLabels'];
-		}
-
-		$legacy = [];
-		if (isset($config['tags']) === true && is_array($config['tags']) === true) {
-			$legacy = $config['tags'];
-		}
+		$allowed = $this->listOrNothing(value: ($config['allowedLabels'] ?? null));
+		$legacy  = $this->listOrNothing(value: ($config['tags'] ?? null));
 
 		if ((isset($config['useLabelsAsTags']) === true && $config['useLabelsAsTags'] === true)
 			|| (empty($allowed) === true && empty($legacy) === true)
@@ -11683,6 +11671,23 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			fn ($label) => in_array($label, $allowed, true) === true || in_array($label, $legacy, true) === true
 		);
 	}//end labelsKeptAsTags()
+
+	/**
+	 * The value when it is an array, else an empty one.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md
+	 */
+	private function listOrNothing(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [];
+	}//end listOrNothing()
 
 	/**
 	 * Determines the type of a given array.
