@@ -239,6 +239,7 @@
 	"context.registerService(OCA\\Integriq\\Sources\\Pdok\\PdokWmsSourceAdapter, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Sources\\Pdok\\PdokWfsSourceAdapter, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Sources\\Pdok\\PdokGeocodingClient, closure, bool)",
+	"context.registerServiceAlias(OCA\\Integriq\\Rule\\Plugin\\EndpointRulePluginRegistryInterface, OCA\\Integriq\\Rule\\Plugin\\EndpointRulePluginRegistry)",
 	"context.registerService(OCA\\Integriq\\Rule\\Plugin\\EndpointRulePluginRegistry, closure, bool)",
 	"context.registerServiceAlias(OCA\\Integriq\\PropertySource\\ListResyncServiceInterface, OCA\\Integriq\\PropertySource\\ListResyncService)",
 	"context.registerServiceAlias(OCA\\Integriq\\PropertySource\\PropertySourceResolverInterface, OCA\\Integriq\\PropertySource\\PropertySourceResolver)",

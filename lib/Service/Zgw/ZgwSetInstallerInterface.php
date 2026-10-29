@@ -56,4 +56,13 @@ interface ZgwSetInstallerInterface {
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function bindings(): array;
+
+	/**
+	 * Every packaged set, with its title and whether it writes back.
+	 *
+	 * @return list<array{slug: string, title: string, writesBack: bool}>
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 */
+	public function catalogue(): array;
 }

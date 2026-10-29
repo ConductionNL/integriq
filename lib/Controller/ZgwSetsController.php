@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Service\Zgw\ZgwSetCatalogue;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallerInterface;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallRefusedException;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -62,21 +61,15 @@ class ZgwSetsController extends Controller {
 	 *
 	 * @return JSONResponse {results: list<{slug, title, writesBack, binding}>}
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a final table of constants with pure lookups; there is nothing to inject.
-	 *
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function index(): JSONResponse {
 		$boundTo = array_flip($this->installer->bindings());
 		$results = [];
-		foreach (ZgwSetCatalogue::SETS as $slug => $title) {
-			$results[] = [
-				'slug'       => $slug,
-				'title'      => $title,
-				'writesBack' => ZgwSetCatalogue::writesBack(slug: $slug),
-				'binding'    => ($boundTo[$slug] ?? null),
-			];
+		foreach ($this->installer->catalogue() as $set) {
+			$set['binding'] = ($boundTo[$set['slug']] ?? null);
+			$results[]      = $set;
 		}
 
 		return new JSONResponse(['results' => $results]);

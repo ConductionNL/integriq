@@ -23,6 +23,7 @@ namespace OCA\Integriq\Rule;
 
 use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
 use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
+use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 
@@ -43,6 +44,7 @@ final class RuleRegistrar {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
+		$context->registerServiceAlias(EndpointRulePluginRegistryInterface::class, EndpointRulePluginRegistry::class);
 		$this->registerEndpointRulePlugins(context: $context);
 	}//end register()
 
