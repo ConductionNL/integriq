@@ -7,8 +7,8 @@
  * trace id to the job list for {@see \OCA\Integriq\BackgroundJob\OtelExportJob},
  * so a slow or absent collector cannot change the traced work.
  *
- * @category Observability
- * @package  OCA\Integriq\Observability\Otel
+ * @category Service
+ * @package  OCA\Integriq\Service\Otel
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Observability\Otel;
+namespace OCA\Integriq\Service\Otel;
 
 use OCA\Integriq\BackgroundJob\OtelExportJob;
+use OCA\Integriq\Observability\Otel\OtelExportBreakerInterface;
+use OCA\Integriq\Observability\Otel\OtelSettingsInterface;
 use OCA\Integriq\Service\Helper\ExecutionTraceContextInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
@@ -43,17 +45,17 @@ class TraceExportQueue {
 	/**
 	 * Constructor.
 	 *
-	 * @param OtelSettings $settings The export settings.
+	 * @param OtelSettingsInterface $settings The export settings.
 	 * @param IJobList $jobList The background job list.
 	 * @param LoggerInterface $logger Logs a trace that could not be queued.
-	 * @param OtelExportBreaker|null $breaker Pauses queuing during a collector outage; absent, never paused.
+	 * @param OtelExportBreakerInterface|null $breaker Pauses queuing during a collector outage; absent, never paused.
 	 * @param ITimeFactory|null $time The clock the breaker is read against; the system clock when absent.
 	 */
 	public function __construct(
-		private readonly OtelSettings $settings,
+		private readonly OtelSettingsInterface $settings,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
-		private readonly ?OtelExportBreaker $breaker = null,
+		private readonly ?OtelExportBreakerInterface $breaker = null,
 		private readonly ?ITimeFactory $time = null,
 	) {
 
@@ -110,12 +112,12 @@ class TraceExportQueue {
 	 * warning, with the running total of skipped traces, for the first one
 	 * in each pause.
 	 *
-	 * @param OtelExportBreaker $breaker The open breaker.
+	 * @param OtelExportBreakerInterface $breaker The open breaker.
 	 * @param string $traceId The skipped trace.
 	 *
 	 * @return void
 	 */
-	private function skipWhilePaused(OtelExportBreaker $breaker, string $traceId): void {
+	private function skipWhilePaused(OtelExportBreakerInterface $breaker, string $traceId): void {
 		$skipped = $breaker->recordSkipped();
 		if ($skipped === null) {
 			return;
