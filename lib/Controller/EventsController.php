@@ -24,7 +24,7 @@ use Exception;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
@@ -85,7 +85,7 @@ class EventsController extends Controller {
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param OrObjectService $orObjectService The OR object service.
-	 * @param EventService $eventService The event service.
+	 * @param EventServiceInterface $eventService The event service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -96,7 +96,7 @@ class EventsController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly OrObjectService $orObjectService,
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
@@ -786,7 +786,7 @@ class EventsController extends Controller {
 		}
 
 		$source = (string)($messageData['payload']['source'] ?? '');
-		$messageData['nextcloudEvent'] = str_starts_with($source, EventService::NEXTCLOUD_SOURCE_PREFIX);
+		$messageData['nextcloudEvent'] = str_starts_with($source, EventServiceInterface::NEXTCLOUD_SOURCE_PREFIX);
 
 		return $messageData;
 	}//end withDeadLetterProvenance()

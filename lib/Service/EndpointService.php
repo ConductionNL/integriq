@@ -81,7 +81,7 @@ use function React\Promise\all;
  *
  * @spec openspec/specs/endpoint-runtime/spec.md
  */
-class EndpointService {
+class EndpointService implements EndpointServiceInterface {
 
 	/**
 	 * Body parameter keys stripped before forwarding a request.

@@ -70,7 +70,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -117,14 +117,14 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizations The engine that owns the fetch.
+	 * @param SynchronizationServiceInterface $synchronizations The engine that owns the fetch.
 	 * @param FlowOwner $flowOwner Resolves whose permissions the step runs with.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon and log links.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizations,
+		private readonly SynchronizationServiceInterface $synchronizations,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,

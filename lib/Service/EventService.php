@@ -86,7 +86,7 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
  */
-class EventService {
+class EventService implements EventServiceInterface {
 	/**
 	 * Base backoff interval in seconds for the first retry.
 	 *
@@ -107,30 +107,6 @@ class EventService {
 	 * @var integer
 	 */
 	private const RETRY_CAP_SECONDS = 21600;
-
-	/**
-	 * Default maximum number of delivery attempts before a message reaches
-	 * terminal `abandoned`, used when a subscription declares no
-	 * `retryPolicy.maxRetries` override.
-	 *
-	 * @var integer
-	 *
-	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
-	 */
-	private const DEFAULT_MAX_RETRIES = 5;
-
-	/**
-	 * Source prefix used by every `nextcloud-event-triggers` NC-native
-	 * producer (`/nextcloud/files`, `/nextcloud/calendar`, `/nextcloud/tables`,
-	 * `/nextcloud/forms`) — distinct from the pre-existing `/objects/<type>`
-	 * prefix OR-object events use, so provenance filtering never collides
-	 * with the shared `com.nextcloud.` TYPE prefix both namespaces use.
-	 *
-	 * @var string
-	 *
-	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
-	 */
-	public const NEXTCLOUD_SOURCE_PREFIX = '/nextcloud/';
 
 	/**
 	 * CloudEvents `type` for cross-app delivery requests ingested through the
