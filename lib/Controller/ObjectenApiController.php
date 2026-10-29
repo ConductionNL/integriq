@@ -35,8 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Objecten\ObjectEndpointHandlerInterface;
 use OCA\Integriq\Service\Objecten\ObjectenTokenService;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
@@ -67,17 +67,17 @@ class ObjectenApiController extends Controller {
 	 * @param IRequest                    $request The request.
 	 * @param ObjectenTokenService        $tokens  The one guard.
 	 * @param ObjecttypeEndpointHandler   $types   The Objecttypen API.
-	 * @param ObjectEndpointHandler       $objects The Objecten API read paths.
+	 * @param ObjectEndpointHandlerInterface       $objects The Objecten API read paths.
 	 * @param ObjectWriteHandler          $writes  The Objecten API write paths.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly ObjectenTokenService $tokens,
 		private readonly ObjecttypeEndpointHandler $types,
-		private readonly ObjectEndpointHandler $objects,
+		private readonly ObjectEndpointHandlerInterface $objects,
 		private readonly ObjectWriteHandler $writes,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

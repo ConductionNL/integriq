@@ -57,7 +57,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
  */
-class UnsubscribeTokenService {
+class UnsubscribeTokenService implements UnsubscribeTokenServiceInterface {
 
 	/**
 	 * The app-config key holding the signing secret.
@@ -89,13 +89,6 @@ class UnsubscribeTokenService {
 	public const PREFIX_V2 = 'v2';
 
 	/**
-	 * The prefix of the scoped token format.
-	 *
-	 * @var string
-	 */
-	public const PREFIX_V3 = 'v3';
-
-	/**
 	 * The app-config key holding the host and path an SMS short link starts with.
 	 *
 	 * @var string
@@ -124,20 +117,6 @@ class UnsubscribeTokenService {
 	 * @var string|null
 	 */
 	private ?string $secretCache = null;
-
-	/**
-	 * The token verifies and has not expired.
-	 *
-	 * @var string
-	 */
-	public const STATUS_VALID = 'valid';
-
-	/**
-	 * The signature verifies but the link is past its expiry.
-	 *
-	 * @var string
-	 */
-	public const STATUS_EXPIRED = 'expired';
 
 	/**
 	 * The token does not verify, so nothing in it is read.

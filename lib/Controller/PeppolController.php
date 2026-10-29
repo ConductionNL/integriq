@@ -29,7 +29,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\PeppolProviderException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\PeppolTransmissionService;
+use OCA\Integriq\Service\PeppolTransmissionServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
@@ -60,7 +60,7 @@ class PeppolController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param PeppolTransmissionService $transmissionService Lookup + transmission/callback logic.
+	 * @param PeppolTransmissionServiceInterface $transmissionService Lookup + transmission/callback logic.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (participants endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -70,7 +70,7 @@ class PeppolController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PeppolTransmissionService $transmissionService,
+		private readonly PeppolTransmissionServiceInterface $transmissionService,
 		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

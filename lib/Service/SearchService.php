@@ -38,7 +38,7 @@ use OCP\IURLGenerator;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
-class SearchService {
+class SearchService implements SearchServiceInterface {
 
 	public const BASE_OBJECT = [
 		'database' => 'objects',

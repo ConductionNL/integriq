@@ -35,7 +35,7 @@ use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Intake\IntakeReplyService;
-use OCA\Integriq\Intake\IntakeRoutingService;
+use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
@@ -84,7 +84,7 @@ class IntakeChannelsController extends Controller {
 	 * @param IUserSession $userSession Names the principal making a write.
 	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
 	 * @param IntakeChannelRegistry $registry The channels this instance has.
-	 * @param IntakeRoutingService $routingService Routes and validates.
+	 * @param IntakeRoutingServiceInterface $routingService Routes and validates.
 	 * @param IntakeReplyService $replyService Replies on the arriving channel.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param OrObjectService $orObjectService Stores routing rules and rejections.
@@ -96,7 +96,7 @@ class IntakeChannelsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IntakeChannelRegistry $registry,
-		private readonly IntakeRoutingService $routingService,
+		private readonly IntakeRoutingServiceInterface $routingService,
 		private readonly IntakeReplyService $replyService,
 		private readonly WebhookGate $gate,
 		private readonly OrObjectService $orObjectService,
@@ -226,8 +226,8 @@ class IntakeChannelsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $rule,
-			register: IntakeRoutingService::REGISTER,
-			schema: IntakeRoutingService::SCHEMA_RULE,
+			register: IntakeRoutingServiceInterface::REGISTER,
+			schema: IntakeRoutingServiceInterface::SCHEMA_RULE,
 			uuid: $targetUuid,
 		);
 
@@ -293,8 +293,8 @@ class IntakeChannelsController extends Controller {
 					'status' => 'rejected',
 					'reason' => $reason,
 				],
-				register: IntakeRoutingService::REGISTER,
-				schema: IntakeRoutingService::SCHEMA_MESSAGE,
+				register: IntakeRoutingServiceInterface::REGISTER,
+				schema: IntakeRoutingServiceInterface::SCHEMA_MESSAGE,
 			);
 		} catch (Throwable) {
 			// The rejection record is evidence, not the refusal itself: a

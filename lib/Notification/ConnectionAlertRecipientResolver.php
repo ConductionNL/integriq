@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Notification;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
 use OCP\IAppConfig;
@@ -116,7 +116,7 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 	 */
 	public function namedGroup(): string {
-		$groupId = trim($this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, ''));
+		$groupId = trim($this->appConfig->getValueString(AppIdentity::APP_ID, self::CONFIG_KEY, ''));
 		if ($groupId === '') {
 			return self::DEFAULT_GROUP;
 		}

@@ -22,7 +22,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\CallServiceInterface;
-use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Service\SourceTestService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -78,14 +78,14 @@ class SourcesController extends Controller {
 	 *
 	 * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
 	 *
-	 * @param SearchService $searchService Service used to strip special query parameters.
+	 * @param SearchServiceInterface $searchService Service used to strip special query parameters.
 	 *
 	 * @return JSONResponse A JSON response containing the filtered call logs and pagination.
 	 *
 	 * @spec openspec/specs/logs-and-statistics/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function logs(SearchService $searchService): JSONResponse {
+	public function logs(SearchServiceInterface $searchService): JSONResponse {
 		try {
 			// Get filters from request.
 			$filters = $this->request->getParams();

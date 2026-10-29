@@ -28,8 +28,8 @@ namespace OCA\Integriq\Controller;
 
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
-use OCA\Integriq\Service\Lti\LtiAgsService;
-use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Service\Lti\LtiAgsServiceInterface;
+use OCA\Integriq\Service\Lti\LtiKeyServiceInterface;
 use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
 use OCA\Integriq\Service\Lti\LtiNrpsService;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -68,18 +68,18 @@ class LtiController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
 	 * @param LtiLaunchServiceInterface $launchService OIDC login + launch validation + Deep Linking.
-	 * @param LtiAgsService $agsService Service-token issuance + AGS.
+	 * @param LtiAgsServiceInterface $agsService Service-token issuance + AGS.
 	 * @param LtiNrpsService $nrpsService NRPS roster read/pull.
-	 * @param LtiKeyService $keyService Signing-key lifecycle + JWKS publish.
+	 * @param LtiKeyServiceInterface $keyService Signing-key lifecycle + JWKS publish.
 	 * @param LoggerInterface $logger Logger for protocol-level rejections.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly LtiLaunchServiceInterface $launchService,
-		private readonly LtiAgsService $agsService,
+		private readonly LtiAgsServiceInterface $agsService,
 		private readonly LtiNrpsService $nrpsService,
-		private readonly LtiKeyService $keyService,
+		private readonly LtiKeyServiceInterface $keyService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -190,6 +190,10 @@ class LtiController extends Controller {
 	 * @return RedirectResponse|JSONResponse 302 to `launchTargetUrl` on success; 400/401 on any validation failure.
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
+	 * @no-admin-idor-exempt LTI 1.3 launch POST from the tool platform, which has no Nextcloud session.
+	 *                       LtiLaunchService::validateLaunch() authenticates it: state cookie match, the
+	 *                       platform's signed id_token, a single-use nonce, and a deployment_id claim that
+	 *                       must belong to the {deployment} in the route.
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -345,7 +349,7 @@ class LtiController extends Controller {
 			$this->agsService->assertScopedToDeployment(
 				accessToken: $token,
 				deploymentUuid: $deployment,
-				requiredScope: [LtiAgsService::SCOPE_LINEITEM, LtiAgsService::SCOPE_LINEITEM_READONLY]
+				requiredScope: [LtiAgsServiceInterface::SCOPE_LINEITEM, LtiAgsServiceInterface::SCOPE_LINEITEM_READONLY]
 			);
 		} catch (LtiValidationException $exception) {
 			return $this->renderRejection(exception: $exception);

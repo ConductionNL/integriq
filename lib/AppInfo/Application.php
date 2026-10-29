@@ -51,6 +51,7 @@ use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClientMock;
 use OCA\Integriq\Capabilities;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
@@ -137,6 +138,14 @@ use OCA\Integriq\Service\Forms\FormsOcsClient;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
 use OCA\Integriq\Service\Objecten\ObjectenWiring;
+use OCA\Integriq\Outbound\OutboundRegistrar;
+use OCA\Integriq\Flow\FlowRegistrar;
+use OCA\Integriq\Directory\DirectoryRegistrar;
+use OCA\Integriq\Connectors\ConnectorsRegistrar;
+use OCA\Integriq\Intake\IntakeRegistrar;
+use OCA\Integriq\Observability\ObservabilityRegistrar;
+use OCA\Integriq\Auth\AuthRegistrar;
+use OCA\Integriq\Adapters\AdaptersRegistrar;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\Tables\TablesClientInterface;
@@ -244,7 +253,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @var string
 	 */
-	public const APP_ID = 'integriq';
+	public const APP_ID = AppIdentity::APP_ID;
 
 	/**
 	 * Constructor.
@@ -285,6 +294,14 @@ class Application extends App implements IBootstrap {
 		$this->assertStorageMigrated();
 
 		(new ServiceRegistrar())->register(context: $context);
+		(new OutboundRegistrar())->register(context: $context);
+		(new FlowRegistrar())->register(context: $context);
+		(new DirectoryRegistrar())->register(context: $context);
+		(new ConnectorsRegistrar())->register(context: $context);
+		(new IntakeRegistrar())->register(context: $context);
+		(new ObservabilityRegistrar())->register(context: $context);
+		(new AuthRegistrar())->register(context: $context);
+		(new AdaptersRegistrar())->register(context: $context);
 
 		$this->registerSettingsService(context: $context);
 

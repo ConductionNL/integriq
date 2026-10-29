@@ -45,28 +45,7 @@ use Throwable;
  *
  * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-routing-rule-maps-a-channel-and-a-payload-onto-a-case-type-req-ic-002
  */
-class IntakeRoutingService {
-
-	/**
-	 * The OpenRegister register holding integriq's objects.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The schema one received channel message is stored under.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_MESSAGE = 'intake_message';
-
-	/**
-	 * The schema one routing rule is stored under.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_RULE = 'intake_routing_rule';
+class IntakeRoutingService implements IntakeRoutingServiceInterface {
 
 	/**
 	 * The message is stored and not yet routed.

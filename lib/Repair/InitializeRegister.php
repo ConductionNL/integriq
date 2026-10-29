@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -170,7 +170,7 @@ class InitializeRegister implements IRepairStep {
 
 		try {
 			$configurationService->importFromApp(
-				appId: Application::APP_ID,
+				appId: AppIdentity::APP_ID,
 				data: $descriptor,
 				version: $appVersion
 			);

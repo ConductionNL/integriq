@@ -58,7 +58,7 @@ use Symfony\Component\HttpFoundation\Exception\BadRequestException;
  *
  * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
  */
-class LtiKeyService {
+class LtiKeyService implements LtiKeyServiceInterface {
 
 	/**
 	 * Registration schemas this service manages keys for.

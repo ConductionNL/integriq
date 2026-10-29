@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The callback composes every broker guard by design.
  */
-class IdpLoginService {
+class IdpLoginService implements IdpLoginServiceInterface {
 
 	/**
 	 * The one error a consumer is told about, whatever went wrong.

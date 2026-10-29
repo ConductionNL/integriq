@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Dso;
 
 use DateTime;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -143,12 +143,12 @@ class DsoConnectionAlerts {
 		$now = $this->timeFactory->getTime();
 		$channel = (string)preg_replace('/[^a-z]/', '', $channel);
 		$key = $channel . self::LAST_SENT_INFIX . preg_replace('/[^a-z_]/', '', $reason);
-		$last = $this->appConfig->getValueInt(Application::APP_ID, $key, 0);
+		$last = $this->appConfig->getValueInt(AppIdentity::APP_ID, $key, 0);
 		if ($last > 0 && ($now - $last) < self::THROTTLE_SECONDS) {
 			return false;
 		}
 
-		$this->appConfig->setValueInt(Application::APP_ID, $key, $now);
+		$this->appConfig->setValueInt(AppIdentity::APP_ID, $key, $now);
 
 		$admins = $this->groupManager->get('admin');
 		if ($admins === null) {
@@ -159,7 +159,7 @@ class DsoConnectionAlerts {
 		foreach ($admins->getUsers() as $admin) {
 			try {
 				$notification = $this->notificationManager->createNotification();
-				$notification->setApp(Application::APP_ID)
+				$notification->setApp(AppIdentity::APP_ID)
 					->setUser($admin->getUID())
 					->setDateTime((new DateTime())->setTimestamp($now))
 					->setObject($channel . '_connection', $reason)

@@ -39,7 +39,7 @@ use InvalidArgumentException;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumMapper;
 use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
-use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
+use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalkerInterface;
 use OCA\Integriq\Exception\SloCurriculumException;
 use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
 use OCP\IAppConfig;
@@ -78,7 +78,7 @@ final class SloCurriculumSourceAdapter {
 	 * @param LoggerInterface $logger Structured logger.
 	 * @param SloCurriculumClient $sloClient Resolved client (mock or live).
 	 * @param SloCurriculumPresetRegistry $registry The seeded source template and mapping presets.
-	 * @param SloCurriculumTreeWalker $walker Reads and flattens SLO trees.
+	 * @param SloCurriculumTreeWalkerInterface $walker Reads and flattens SLO trees.
 	 * @param SloCurriculumMapper $mapper Maps nodes to learniq records.
 	 */
 	public function __construct(
@@ -86,7 +86,7 @@ final class SloCurriculumSourceAdapter {
 		private readonly LoggerInterface $logger,
 		private readonly SloCurriculumClient $sloClient,
 		private readonly SloCurriculumPresetRegistry $registry,
-		private readonly SloCurriculumTreeWalker $walker,
+		private readonly SloCurriculumTreeWalkerInterface $walker,
 		private readonly SloCurriculumMapper $mapper,
 	) {
 	}//end __construct()

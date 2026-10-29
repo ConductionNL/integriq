@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\WebhookSignatureService;
@@ -84,7 +84,7 @@ class OpenFormulierenSettingsController extends Controller {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 

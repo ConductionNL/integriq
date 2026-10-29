@@ -45,7 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -131,7 +131,7 @@ class MigrateLegacyStorage implements IRepairStep {
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	public function run(IOutput $output): void {
-		if ($this->appConfig->getValueString(Application::APP_ID, 'storage_migrated', 'false') === 'true') {
+		if ($this->appConfig->getValueString(AppIdentity::APP_ID, 'storage_migrated', 'false') === 'true') {
 			$output->info('Integriq: storage_migrated is already true — nothing to do.');
 			return;
 		}
@@ -152,7 +152,7 @@ class MigrateLegacyStorage implements IRepairStep {
 		}
 
 		if ($remaining === 0) {
-			$this->appConfig->setValueString(Application::APP_ID, 'storage_migrated', 'true');
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'storage_migrated', 'true');
 			$output->info(
 				'Integriq: no legacy table holds rows — storage_migrated set to true.'
 				. ' Sync-contract provenance ("Synced from") is enabled.'
@@ -273,7 +273,7 @@ class MigrateLegacyStorage implements IRepairStep {
 			);
 		}
 
-		if ($this->appConfig->getValueString(Application::APP_ID, 'storage_migrated', 'false') === 'true') {
+		if ($this->appConfig->getValueString(AppIdentity::APP_ID, 'storage_migrated', 'false') === 'true') {
 			$output->info('Integriq: storage_migrated set to true — the cutover is complete.');
 			return;
 		}

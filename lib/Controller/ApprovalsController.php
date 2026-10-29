@@ -36,7 +36,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\ApprovalDecisionService;
+use OCA\Integriq\Service\ApprovalDecisionServiceInterface;
 use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -65,7 +65,7 @@ class ApprovalsController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
 	 * @param ApprovalServiceInterface $approvalService The approval state-machine + authorization service.
-	 * @param ApprovalDecisionService $decisionService Resumes or stops the suspended run after a decision.
+	 * @param ApprovalDecisionServiceInterface $decisionService Resumes or stops the suspended run after a decision.
 	 * @param ActionAuthService $actionAuth ADR-023 action-matrix (coarse) authorization gate.
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
@@ -74,7 +74,7 @@ class ApprovalsController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ApprovalServiceInterface $approvalService,
-		private readonly ApprovalDecisionService $decisionService,
+		private readonly ApprovalDecisionServiceInterface $decisionService,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,

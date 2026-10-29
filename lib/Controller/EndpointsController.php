@@ -26,11 +26,11 @@ namespace OCA\Integriq\Controller;
 use Exception;
 use OCA\Integriq\Http\XMLResponse;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
-use OCA\Integriq\Service\EndpointCacheService;
+use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointServiceInterface;
 use OCA\Integriq\Service\ObjectService;
-use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -93,7 +93,7 @@ class EndpointsController extends Controller {
 	 * @param EndpointServiceInterface $endpointService Service for handling endpoint operations.
 	 * @param OpenRegisterCredentialBridge $authorizationService Service for handling authorization.
 	 * @param ObjectService $objectService Service for direct ObjectService operations.
-	 * @param EndpointCacheService $endpointCacheService Service for cached endpoint lookups.
+	 * @param EndpointCacheServiceInterface $endpointCacheService Service for cached endpoint lookups.
 	 * @param LoggerInterface $logger Service for logging.
 	 * @param IL10N $l The localization service.
 	 * @param EndpointCorsPolicy $corsPolicy An endpoint's own CORS policy (REQ-EP-014).
@@ -107,7 +107,7 @@ class EndpointsController extends Controller {
 		private EndpointServiceInterface $endpointService,
 		private OpenRegisterCredentialBridge $authorizationService,
 		private ObjectService $objectService,
-		private EndpointCacheService $endpointCacheService,
+		private EndpointCacheServiceInterface $endpointCacheService,
 		private LoggerInterface $logger,
 		private IL10N $l,
 		private EndpointCorsPolicy $corsPolicy,
@@ -275,7 +275,7 @@ class EndpointsController extends Controller {
 	/**
 	 * Retrieves endpoint logs with filtering and pagination support.
 	 *
-	 * @param SearchService $searchService Search service injected by route resolution.
+	 * @param SearchServiceInterface $searchService Search service injected by route resolution.
 	 *
 	 * @return JSONResponse A JSON response containing the filtered endpoint logs and pagination.
 	 *
@@ -284,7 +284,7 @@ class EndpointsController extends Controller {
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function logs(SearchService $searchService): JSONResponse {
+	public function logs(SearchServiceInterface $searchService): JSONResponse {
 		// Endpoint logging is not yet wired to the OR call_log schema.
 		// Returning an empty paginated result (instead of 500) lets clients
 		// poll without breaking; once the migration lands this returns a

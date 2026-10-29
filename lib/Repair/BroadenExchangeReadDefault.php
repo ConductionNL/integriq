@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use JsonException;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\ActionAuthService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -95,7 +95,7 @@ class BroadenExchangeReadDefault implements IRepairStep {
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
 	 */
 	public function run(IOutput $output): void {
-		if ($this->appConfig->getValueBool(Application::APP_ID, self::MARKER_KEY, false) === true) {
+		if ($this->appConfig->getValueBool(AppIdentity::APP_ID, self::MARKER_KEY, false) === true) {
 			return;
 		}
 
@@ -132,6 +132,6 @@ class BroadenExchangeReadDefault implements IRepairStep {
 	 * @return void
 	 */
 	private function markDone(): void {
-		$this->appConfig->setValueBool(Application::APP_ID, self::MARKER_KEY, true);
+		$this->appConfig->setValueBool(AppIdentity::APP_ID, self::MARKER_KEY, true);
 	}//end markDone()
 }//end class
