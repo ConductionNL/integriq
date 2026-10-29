@@ -2409,7 +2409,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			trace: $trace
 		);
 
-		// synchronizeContract() returns an Exception or the
+		// The contract synchronization returns an Exception or the
 		// `['log' => ..., 'contract' => ..., 'resultAction' => ...]` shape. Test
 		// mode returns the shape upstream; non-test extracts the contract.
 		if ($result instanceof Exception) {
