@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\MessageValidation;
 
 use OCA\Integriq\Service\MessageValidationService;
-use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -230,9 +229,14 @@ class EndpointMessageGate {
 			return;
 		}
 
+		$stored = $this->storedCallLog(uuid: (string)$callLog->getUuid());
+		if ($stored === null) {
+			return;
+		}
+
 		try {
 			$this->objects->saveObject(
-				object: array_merge($this->storableCallLog(callLog: $callLog), ['validation' => $findings]),
+				object: array_merge($stored, ['validation' => $findings]),
 				register: 'integriq',
 				schema: 'call_log',
 				uuid: (string)$callLog->getUuid(),
@@ -247,23 +251,40 @@ class EndpointMessageGate {
 	}//end record()
 
 	/**
-	 * The call log as it may be stored again: the entity a call hands back
-	 * carries the source's real response headers, so the secret ones are masked.
+	 * Read a call log row as the call stored it, in system context.
 	 *
-	 * @param ObjectEntity $callLog The call log a call handed back.
+	 * The entity a call hands back carries the full answer: its body and its
+	 * real headers. The stored row went through the body capture policy and
+	 * header redaction, so findings are added to that row and never to the
+	 * entity.
 	 *
-	 * @return array The call log data with its response headers redacted.
+	 * @param string $uuid The call log's uuid.
+	 *
+	 * @return array|null The stored call log, or null when it cannot be read.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
 	 */
-	private function storableCallLog(ObjectEntity $callLog): array {
-		$data = (array)$callLog->getObject();
-		if (is_array($data['response']['headers'] ?? null) === true) {
-			$data['response']['headers'] = (new SensitiveFieldRegistry())->redactArray(data: $data['response']['headers']);
+	private function storedCallLog(string $uuid): ?array {
+		try {
+			$entity = $this->objects->find(
+				id: $uuid,
+				register: 'integriq',
+				schema: 'call_log',
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $failure) {
+			$this->logger->error('[integriq] could not read call log ' . $uuid . ' to write validation findings: ' . $failure->getMessage());
+			return null;
 		}
 
-		return $data;
-	}//end storableCallLog()
+		if ($entity === null) {
+			$this->logger->error('[integriq] call log ' . $uuid . ' not found; validation findings are in the server log only');
+			return null;
+		}
+
+		return (array)$entity->getObject();
+	}//end storedCallLog()
 
 	/**
 	 * Read a message schema by uuid, in system context.
