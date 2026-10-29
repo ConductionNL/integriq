@@ -2409,9 +2409,24 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			trace: $trace
 		);
 
-		// The contract synchronization returns an Exception or the
-		// `['log' => ..., 'contract' => ..., 'resultAction' => ...]` shape. Test
-		// mode returns the shape upstream; non-test extracts the contract.
+		return $this->internContractResult(result: $result, isTest: $isTest);
+	}//end synchronizeInternToExtern()
+
+	/**
+	 * What an intern-to-extern run answers for a contract synchronization's result.
+	 *
+	 * The result is an Exception or the
+	 * `['log' => ..., 'contract' => ..., 'resultAction' => ...]` shape. Test
+	 * mode returns the shape upstream; non-test extracts the contract.
+	 *
+	 * @param array|Exception $result The synchronizeContract() result.
+	 * @param bool|null       $isTest Whether this is a test run.
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function internContractResult(array|Exception $result, ?bool $isTest): ?array {
 		if ($result instanceof Exception) {
 			return null;
 		}
@@ -2421,7 +2436,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		return ($result['contract'] ?? null);
-	}//end synchronizeInternToExtern()
+	}//end internContractResult()
 
 	/**
 	 * The object serialized, and extended with the properties the source
