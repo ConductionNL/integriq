@@ -48,6 +48,7 @@ use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
+use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
@@ -12347,36 +12348,36 @@ class SynchronizationService {
 		?array $contractIndex = null,
 	): array {
 		// Execution-trace REQ-002: one ordered `synchronization` step per item processed.
-		$itemStepStart = microtime(true);
+		$item = new ItemRun();
+		$item->stepStart = microtime(true);
+		$item->synchronization = $synchronization;
+		$item->flowToken = $flowToken;
+		$item->trace = $trace;
+		$item->contractIndex = $contractIndex;
+		$item->result = $result;
+		$item->sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-		$rejection = $this->screenItem(synchronization: $synchronization, object: $object, flowToken: $flowToken, sourceConfig: $sourceConfig);
+		$rejection = $this->screenItem(item: $item, object: $object);
 		if ($rejection !== null) {
-			$result['objects'][$rejection]++;
-			$this->addItemStep(
-				trace: $trace,
-				synchronization: $synchronization,
-				status: 'skipped',
-				step: ['input' => $object, 'startedAtMicrotime' => $itemStepStart]
-			);
+			$item->result['objects'][$rejection]++;
+			$this->addItemStep(item: $item, step: ['status' => 'skipped', 'input' => $object]);
 
-			return ['result' => $result, 'targetId' => null];
+			return ['result' => $item->result, 'targetId' => null];
 		}
 
 		$originId = $this->getOriginId(synchronization: $synchronization, object: $object);
 
 		// REQ-MSV-003: the source object is checked against its message schema before it is mapped.
 		$sourceFinding = $this->inspectMessage(
-			config: $sourceConfig, side: SynchronizationMessageGate::SOURCE, message: $object, originId: (string)$originId
+			config: $item->sourceConfig, side: SynchronizationMessageGate::SOURCE, message: $object, originId: (string)$originId
 		);
 		if ($sourceFinding !== null) {
-			$result['validation'][] = $sourceFinding;
+			$item->result['validation'][] = $sourceFinding;
 		}
 
-		$contract = $this->findItemContract(synchronization: $synchronization, sourceConfig: $sourceConfig, originId: $originId, index: $contractIndex);
-
-		$isNewContract = is_array($contract) === false;
-		if ($isNewContract === true) {
+		$contract = $this->findItemContract(item: $item, originId: $originId);
+		$item->isNewContract = is_array($contract) === false;
+		if ($item->isNewContract === true) {
 			$contract = ['synchronizationId' => ($synchronization['id'] ?? null), 'originId' => $originId];
 		}
 
@@ -12387,23 +12388,17 @@ class SynchronizationService {
 			object: $object,
 			isTest: $isTest,
 			force: $force,
-			log: match ($isNewContract) { true => null, false => $log },
+			log: match ($item->isNewContract) { true => null, false => $log },
 			mutationType: $mutationType,
 			trace: $trace
 		);
 
 		$contract = $contractResult['contract'];
-		$recorded = $this->recordItemResult(result: $result, synchronization: $synchronization, contractResult: $contractResult, isNew: $isNewContract);
-		$result = $recorded['result'];
+		$this->recordItemResult(item: $item, contractResult: $contractResult);
+		$status = match ($item->resultAction) { null => 'skipped', default => 'success' };
+		$this->addItemStep(item: $item, step: ['status' => $status, 'input' => $object, 'output' => $contract]);
 
-		$this->addItemStep(
-			trace: $trace,
-			synchronization: $synchronization,
-			status: match ($recorded['resultAction']) { null => 'skipped', default => 'success' },
-			step: ['input' => $object, 'output' => $contract, 'startedAtMicrotime' => $itemStepStart]
-		);
-
-		return ['result' => $result, 'targetId' => ($contract['targetId'] ?? null)];
+		return ['result' => $item->result, 'targetId' => ($contract['targetId'] ?? null)];
 	}//end processSynchronizationObject()
 
 	/**
@@ -12413,31 +12408,30 @@ class SynchronizationService {
 	 * before the conditions is fetched into the item, and an item that fails the
 	 * synchronization's conditions is skipped.
 	 *
-	 * @param array     $synchronization The synchronization.
-	 * @param mixed     $object          The source item; extended in place with fetched extra data.
-	 * @param FlowToken $flowToken       The flow token shared across the run.
-	 * @param array     $sourceConfig    The dot-expanded source config.
+	 * @param ItemRun $item   The item run.
+	 * @param mixed   $object The source item; extended in place with fetched extra data.
 	 *
 	 * @return string|null The result counter to raise ('invalid' or 'skipped'), or null when the item goes on.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function screenItem(array $synchronization, mixed &$object, FlowToken $flowToken, array $sourceConfig): ?string {
+	private function screenItem(ItemRun $item, mixed &$object): ?string {
 		// We can only deal with arrays (based on the source empty values or string might be returned).
 		if (is_array($object) === false) {
-			$this->warnNonArrayItem(synchronization: $synchronization, object: $object);
+			$this->warnNonArrayItem(synchronization: $item->synchronization, object: $object);
 			return 'invalid';
 		}
 
 		// Optional to fetch extra data now instead of later in ->synchronizeContract.
+		$sourceConfig = $item->sourceConfig;
 		if (isset($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION]) === true
 			&& ($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] === true
 			|| $sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] === 'true')
 		) {
-			$object = $this->fetchMultipleExtraData(synchronization: $synchronization, sourceConfig: $sourceConfig, object: $object);
+			$object = $this->fetchMultipleExtraData(synchronization: $item->synchronization, sourceConfig: $sourceConfig, object: $object);
 		}
 
-		if ($this->itemMeetsConditions(synchronization: $synchronization, object: $object, flowToken: $flowToken) === false) {
+		if ($this->itemMeetsConditions(item: $item, object: $object) === false) {
 			return 'skipped';
 		}
 
@@ -12475,18 +12469,16 @@ class SynchronizationService {
 	/**
 	 * Add the `synchronization` trace step of one item, with its input and output redacted (REQ-003).
 	 *
-	 * @param ExecutionTraceContext|null $trace           The trace, or null when the run is not traced.
-	 * @param array                      $synchronization The synchronization.
-	 * @param string                     $status          The step status.
-	 * @param array                      $step            `startedAtMicrotime`, and the optional raw `input` and `output`;
-	 *                                                    an input or output that is not an array is traced as empty.
+	 * @param ItemRun $item The item run; nothing is added when it is not traced.
+	 * @param array   $step `status`, and the optional raw `input` and `output`;
+	 *                      an input or output that is not an array is traced as empty.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function addItemStep(?ExecutionTraceContext $trace, array $synchronization, string $status, array $step): void {
-		if ($trace === null) {
+	private function addItemStep(ItemRun $item, array $step): void {
+		if ($item->trace === null) {
 			return;
 		}
 
@@ -12503,16 +12495,15 @@ class SynchronizationService {
 			$step[$key] = (new SensitiveFieldRegistry())->redactArray(data: $data);
 		}
 
-		$trace->addStep(
+		$item->trace->addStep(
 			...array_merge(
 				[
 					'type' => 'synchronization',
-					'name' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? 'synchronization')),
+					'name' => ($item->synchronization['name'] ?? ($item->synchronization['uuid'] ?? 'synchronization')),
 					'timing' => null,
-					'status' => $status,
 				],
 				$step,
-				['finishedAtMicrotime' => microtime(true)]
+				['startedAtMicrotime' => $item->stepStart, 'finishedAtMicrotime' => microtime(true)]
 			)
 		);
 	}//end addItemStep()
@@ -12524,22 +12515,21 @@ class SynchronizationService {
 	 * item and serialises the flow token, which is per-record work a synchronization
 	 * without conditions should not pay for.
 	 *
-	 * @param array     $synchronization The synchronization.
-	 * @param array     $object          The source item.
-	 * @param FlowToken $flowToken       The flow token shared across the run.
+	 * @param ItemRun $item   The item run.
+	 * @param array   $object The source item.
 	 *
 	 * @return bool True when there are no conditions or they hold.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function itemMeetsConditions(array $synchronization, array $object, FlowToken $flowToken): bool {
-		$conditions = ($synchronization['conditions'] ?? []);
+	private function itemMeetsConditions(ItemRun $item, array $object): bool {
+		$conditions = ($item->synchronization['conditions'] ?? []);
 		if ($conditions === []) {
 			return true;
 		}
 
 		$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
-		$conditionsObject['flowToken'] = $flowToken->__serialize();
+		$conditionsObject['flowToken'] = $item->flowToken->__serialize();
 
 		return self::conditionsHold(conditions: $conditions, data: $conditionsObject);
 	}//end itemMeetsConditions()
@@ -12551,39 +12541,34 @@ class SynchronizationService {
 	 * every origin id on the page. When a contract is found, duplicate contracts for the
 	 * same origin are reported from the matches already read (REQ-013).
 	 *
-	 * @param array      $synchronization The synchronization.
-	 * @param array      $sourceConfig    The dot-expanded source config.
-	 * @param mixed      $originId        The origin id of the item.
-	 * @param array|null $index           The page's contracts keyed by origin id, or null.
+	 * @param ItemRun $item     The item run.
+	 * @param mixed   $originId The origin id of the item.
 	 *
 	 * @return mixed The first matching contract, or null.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function findItemContract(array $synchronization, array $sourceConfig, mixed $originId, ?array $index): mixed {
+	private function findItemContract(ItemRun $item, mixed $originId): mixed {
+		$synchronizationId = (string)($item->synchronization['id'] ?? '');
 		$contractMatches = null;
-		if ($index !== null) {
-			$contractMatches = ($index[$originId] ?? []);
-			$synchronizationContract = ($contractMatches[0] ?? null);
+		if ($item->contractIndex !== null) {
+			$contractMatches = ($item->contractIndex[$originId] ?? []);
+			$contract = ($contractMatches[0] ?? null);
 		} else {
-			$synchronizationContract = $this->findContractBySyncAndOrigin(
-				synchronizationId: (string)($synchronization['id'] ?? ''),
+			$contract = $this->findContractBySyncAndOrigin(
+				synchronizationId: $synchronizationId,
 				originId: $originId,
-				justByOriginId: (isset($sourceConfig['findContractByOriginIdOnly']) === true
-					&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true),
+				justByOriginId: (isset($item->sourceConfig['findContractByOriginIdOnly']) === true
+					&& filter_var($item->sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true),
 				allMatches: $contractMatches
 			);
 		}
 
-		if (is_array($synchronizationContract) === true) {
-			$this->detectDuplicateContracts(
-				synchronizationId: (string)($synchronization['id'] ?? ''),
-				originId: $originId,
-				contracts: $contractMatches
-			);
+		if (is_array($contract) === true) {
+			$this->detectDuplicateContracts(synchronizationId: $synchronizationId, originId: $originId, contracts: $contractMatches);
 		}
 
-		return $synchronizationContract;
+		return $contract;
 	}//end findItemContract()
 
 	/**
@@ -12592,33 +12577,23 @@ class SynchronizationService {
 	 * The contract and log uuids are listed, and the result action is counted. For a
 	 * contract that did not exist yet, an `update` counts as created.
 	 *
-	 * @param array $result          The run result.
-	 * @param array $synchronization The synchronization.
-	 * @param mixed $contractResult  What synchronizeContract() returned.
-	 * @param bool  $isNew           Whether the item had no contract yet.
+	 * @param ItemRun $item           The item run; its result and result action are set.
+	 * @param mixed   $contractResult What synchronizeContract() returned.
 	 *
-	 * @return array{result: array, resultAction: mixed} The run result and the item's result action.
+	 * @return void
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function recordItemResult(array $result, array $synchronization, mixed $contractResult, bool $isNew): array {
-		$result['contracts'][] = ($contractResult['contract']['uuid'] ?? null);
-		$result['logs'][] = ($contractResult['log']['uuid'] ?? null);
+	private function recordItemResult(ItemRun $item, mixed $contractResult): void {
+		$item->result['contracts'][] = ($contractResult['contract']['uuid'] ?? null);
+		$item->result['logs'][] = ($contractResult['log']['uuid'] ?? null);
 
-		$resultAction = ($contractResult['resultAction'] ?? null);
-		if ($isNew === true && $resultAction === 'update') {
-			$resultAction = 'create';
+		$item->resultAction = ($contractResult['resultAction'] ?? null);
+		if ($item->isNewContract === true && $item->resultAction === 'update') {
+			$item->resultAction = 'create';
 		}
 
-		return [
-			'result' => $this->tallyItemResult(
-				result: $result,
-				resultAction: $resultAction,
-				synchronization: $synchronization,
-				contractResult: $contractResult
-			),
-			'resultAction' => $resultAction,
-		];
+		$this->tallyItemResult(item: $item, contractResult: $contractResult);
 	}//end recordItemResult()
 
 	/**
@@ -12627,47 +12602,42 @@ class SynchronizationService {
 	 * An unrecognised or null action counts as invalid and is logged with the shape of the
 	 * contract result, so an operator can tell a rejected object from an unknown action.
 	 *
-	 * @param array       $result          The run result.
-	 * @param string|null $resultAction    The item's result action.
-	 * @param array       $synchronization The synchronization.
-	 * @param mixed       $contractResult  What synchronizeContract() returned.
+	 * @param ItemRun $item           The item run, with its result action.
+	 * @param mixed   $contractResult What synchronizeContract() returned.
 	 *
-	 * @return array The run result with the item counted.
+	 * @return void
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function tallyItemResult(array $result, ?string $resultAction, array $synchronization, mixed $contractResult): array {
-		switch ($resultAction) {
+	private function tallyItemResult(ItemRun $item, mixed $contractResult): void {
+		switch ($item->resultAction) {
 			case 'update':
-				$result['objects']['updated']++;
-				break;
+				$item->result['objects']['updated']++;
+				return;
 			case 'create':
-				$result['objects']['created']++;
-				break;
+				$item->result['objects']['created']++;
+				return;
 			case 'delete':
-				$result['objects']['deleted']++;
-				break;
+				$item->result['objects']['deleted']++;
+				return;
 			case 'skip':
-				$result['objects']['skipped']++;
-				break;
-			default:
-				$result['objects']['invalid']++;
-				$this->logger->warning(
-					'Synchronization item counted as invalid: unrecognised resultAction',
-					[
-						'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
-						'resultAction' => $resultAction,
-						'contractResultKeys' => array_keys(($contractResult ?? [])),
-						'contractError' => (($contractResult['error'] ?? $contractResult['message']) ?? null),
-						'contractUuid' => ($contractResult['contract']['uuid'] ?? null),
-						'targetId' => ($contractResult['contract']['targetId'] ?? null),
-						'originId' => ($contractResult['contract']['originId'] ?? null),
-					]
-				);
-				break;
-		}//end switch
+				$item->result['objects']['skipped']++;
+				return;
+		}
 
-		return $result;
+		$item->result['objects']['invalid']++;
+		$this->logger->warning(
+			'Synchronization item counted as invalid: unrecognised resultAction',
+			[
+				'synchronization' => ($item->synchronization['name'] ?? ($item->synchronization['uuid'] ?? null)),
+				'resultAction' => $item->resultAction,
+				'contractResultKeys' => array_keys(($contractResult ?? [])),
+				'contractError' => (($contractResult['error'] ?? $contractResult['message']) ?? null),
+				'contractUuid' => ($contractResult['contract']['uuid'] ?? null),
+				'targetId' => ($contractResult['contract']['targetId'] ?? null),
+				'originId' => ($contractResult['contract']['originId'] ?? null),
+			]
+		);
 	}//end tallyItemResult()
 
 	/**
