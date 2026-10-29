@@ -35,6 +35,7 @@ use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\Event\EventLoopGuard;
+use OCA\Integriq\Service\Event\PushDelivery;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -47,6 +48,7 @@ use OCA\Integriq\Outbound\OutboundSendGate;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
@@ -630,184 +632,48 @@ class EventService implements EventServiceInterface {
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
 	 */
 	public function deliverMessage(ObjectEntity $message, ?ExecutionTraceContext $trace = null): bool {
-		$callStepStart = microtime(true);
-		$signed = null;
+		$delivery = new PushDelivery(message: $message, trace: $trace);
 
 		try {
-			$messageData = $message->getObject();
-			$subscriptionId = ($messageData['subscription'] ?? null);
-
-			if ($subscriptionId === null) {
+			if ($this->loadPushSubscription(delivery: $delivery) === false) {
 				return false;
 			}
 
-			// System context (ocon#147): `protocolSettings` is `writeOnly`, so a
-			// rendered read returns the subscription WITHOUT its signingSecret and
-			// headers. This is the delivery engine reading a subscription in order
-			// to sign an outbound push — not a user reading it — so it reads in
-			// system context exactly as CallService reads a source's credential.
-			//
-			// `_render: false` IS THE LOAD-BEARING ARGUMENT, not `_rbac: false`
-			// (ocon#215, openregister#389/#429). The writeOnly strip stopped being
-			// rbac-gated: RenderObject::renderEntity() computes
-			// `$doWriteOnly = $schema->hasWriteOnlyProperties()` and strips on that
-			// alone — admins, `_rbac: false` and SystemOperationContext included
-			// (only the property-`authorization` strip is still rbac-gated). So
-			// `_rbac: false` ALONE no longer preserves protocolSettings, and every
-			// push was silently going out UNSIGNED. Only `_render: false`, which
-			// returns the entity before renderEntity() is ever reached, keeps it.
-			// `$subscriptionId` holds the message's `subscription` uuid FK; the
-			// `(string)` cast is defensive (find() signs for a string $id).
-			$subscription = $this->objectService->find(
-				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false,
-				_render: false
-			);
+			$this->buildPushRequest(delivery: $delivery);
 
-			if ($subscription === null) {
-				return false;
-			}
-
-			$subscriptionData = $subscription->getObject();
-
-			if (($subscriptionData['style'] ?? '') !== 'push') {
-				return false;
-			}
-
-			// Serialize the body exactly once; the signature (when configured)
-			// covers these exact bytes.
-			$rawBody = json_encode($messageData['payload'] ?? []);
-
-			$headers = [
-				'Content-Type' => 'application/cloudevents+json',
-				...($subscriptionData['protocolSettings']['headers'] ?? []),
-			];
-
-			// REQ-SOW-001: `unsigned` (a decision with a reason on it) wins over a
-			// secret left from before, the same rule SubscriptionSigningPolicy::isSigned()
-			// reads for the list, so the list and the wire never disagree.
-			$signingSecret = ($subscriptionData['protocolSettings']['signingSecret'] ?? null);
-			$signed = ($signingSecret !== null && $signingSecret !== ''
-				&& array_key_exists('unsigned', (array)($subscriptionData['protocolSettings'] ?? [])) === false);
-			if ($signed === true) {
-				// A signing failure must surface as a failed attempt, not an
-				// unsigned send: let any exception propagate to the failure path.
-				$previousSecret = null;
-				if ($this->signatureService->isRotationGraceActive(
-					secretRotatedAt: ($subscriptionData['protocolSettings']['secretRotatedAt'] ?? null)
-				) === true
-				) {
-					$previousSecret = ($subscriptionData['protocolSettings']['previousSigningSecret'] ?? null);
-				}
-
-				$headers['X-OpenConnector-Signature'] = $this->signatureService->sign(
-					rawBody: $rawBody,
-					secret: $signingSecret,
-					previousSecret: $previousSecret
-				);
-				$headers['X-OpenConnector-Event-Id'] = $message->getUuid();
-			}
-
-			// Egress guard (integriq#2212, hydra ADR-067 decision 3): the sink is
-			// judged here, at the one place a push leaves the instance, because a
-			// subscription can be written through the object API as well as the
-			// subscribe route. A refusal is abandoned at once: retrying it only
-			// repeats the refusal.
-			$refusal = $this->refuseUnsafeSink(message: $message, subscriptionData: $subscriptionData);
+		// Egress guard (integriq#2212, hydra ADR-067 decision 3): the sink is
+		// judged here, at the one place a push leaves the instance, because a
+		// subscription can be written through the object API as well as the
+		// subscribe route. A refusal is abandoned at once: retrying it only
+		// repeats the refusal.
+			$refusal = $this->refuseUnsafeSink(message: $message, subscriptionData: $delivery->subscriptionData);
 			if ($refusal !== null) {
 				return false;
 			}
 
-			$client = $this->clientService->newClient();
-			$response = $client->post(
-				$subscriptionData['sink'],
+			$response = $this->clientService->newClient()->post(
+				$delivery->subscriptionData['sink'],
 				[
-					'body' => $rawBody,
-					'headers' => $headers,
+					'body' => $delivery->rawBody,
+					'headers' => $delivery->headers,
 					'timeout' => 30,
 				]
 			);
-
-			// Execution-trace REQ-002/REQ-003: this dispatch bypasses
-			// CallService (it uses IClientService directly), so it must
-			// redact and record its own `call` step rather than relying on
-			// CallService's already-redacted output.
-			if ($trace !== null) {
-				$sensitiveFieldRegistry = new SensitiveFieldRegistry();
-
-				$callStepStatus = 'success';
-				if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
-					$callStepStatus = 'error';
-				}
-
-				$callStepInput = $sensitiveFieldRegistry->redactArray(
-					data: [
-						'url' => ($subscriptionData['sink'] ?? null),
-						'method' => 'POST',
-						'headers' => $headers,
-					]
-				);
-				$callStepOutput = $sensitiveFieldRegistry->redactArray(
-					data: [
-						'statusCode' => $response->getStatusCode(),
-						'headers' => $response->getHeaders(),
-					]
-				);
-
-				$trace->addStep(
-					type: 'call',
-					name: ($subscriptionData['name'] ?? $subscriptionData['sink'] ?? 'webhook'),
-					timing: null,
-					status: $callStepStatus,
-					input: $callStepInput,
-					output: $callStepOutput,
-					startedAtMicrotime: $callStepStart,
-					finishedAtMicrotime: microtime(true),
-				);
-			}//end if
+			$this->tracePushCall(delivery: $delivery, response: $response);
 
 			if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-				$now = (new DateTime())->format('c');
-				$priorAttempts = (array)($messageData['attempts'] ?? []);
-				$messageData['status'] = 'delivered';
-				$messageData['deliveredAt'] = $now;
-				$messageData['lastAttempt'] = $now;
-				$messageData['nextAttempt'] = null;
-				$messageData['deliveryResponse'] = [
-					'statusCode' => $response->getStatusCode(),
-					'body' => $response->getBody(),
-				];
-				$messageData['attempts'] = $this->appendAttempt(
-					attempts: $priorAttempts,
-					at: $now,
-					statusCode: $response->getStatusCode(),
-					error: null,
-					signed: $signed
-				);
-				$this->objectService->saveObject(
-					object: $messageData,
-					register: 'integriq',
-					schema: 'event_message',
-					uuid: $message->getUuid(),
-					// System context: see processEvent().
-					_rbac: false,
-					_multitenancy: false
-				);
+				$this->markPushDelivered(delivery: $delivery, response: $response);
 				return true;
-			}//end if
+			}
 
 			$statusCode = $response->getStatusCode();
-			$retryAfter = $this->parseRetryAfter(header: $response->getHeader('Retry-After'));
 			$this->recordFailure(
 				message: $message,
 				error: 'Delivery failed with status code: ' . $statusCode,
 				statusCode: $statusCode,
-				retryAfter: $retryAfter,
-				retryPolicy: $this->resolveRetryPolicy(subscriptionData: $subscriptionData),
-				signed: $signed
+				retryAfter: $this->parseRetryAfter(header: $response->getHeader('Retry-After')),
+				retryPolicy: $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData),
+				signed: $delivery->signed
 			);
 
 			return false;
@@ -838,23 +704,223 @@ class EventService implements EventServiceInterface {
 				]
 			);
 
-			// $subscriptionData may be undefined when the exception was thrown
-			// before it was resolved (e.g. signing failure occurs after the
-			// subscription lookup, so it is always available here in practice,
-			// but defend against a future early-throw regardless).
+			// The subscription data is empty when the exception was thrown before it was read.
 			$this->recordFailure(
 				message: $message,
 				error: $e->getMessage(),
 				statusCode: null,
 				retryAfter: null,
-				retryPolicy: $this->resolveRetryPolicy(subscriptionData: ($subscriptionData ?? [])),
-				signed: $signed
+				retryPolicy: $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData),
+				signed: $delivery->signed
 			);
 
 			return false;
 		}//end try
 
 	}//end deliverMessage()
+
+	/**
+	 * Reads the message's subscription onto the delivery.
+	 *
+	 * @param PushDelivery $delivery The delivery attempt.
+	 *
+	 * @return bool True when the message names an existing push subscription.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
+	 */
+	private function loadPushSubscription(PushDelivery $delivery): bool {
+		$delivery->messageData = $delivery->message->getObject();
+		$subscriptionId = ($delivery->messageData['subscription'] ?? null);
+
+		if ($subscriptionId === null) {
+			return false;
+		}
+
+		// System context (ocon#147): `protocolSettings` is `writeOnly`, so a
+		// rendered read returns the subscription WITHOUT its signingSecret and
+		// headers. This is the delivery engine reading a subscription in order
+		// to sign an outbound push — not a user reading it — so it reads in
+		// system context exactly as CallService reads a source's credential.
+		//
+		// `_render: false` IS THE LOAD-BEARING ARGUMENT, not `_rbac: false`
+		// (ocon#215, openregister#389/#429). The writeOnly strip stopped being
+		// rbac-gated: RenderObject::renderEntity() computes
+		// `$doWriteOnly = $schema->hasWriteOnlyProperties()` and strips on that
+		// alone — admins, `_rbac: false` and SystemOperationContext included
+		// (only the property-`authorization` strip is still rbac-gated). So
+		// `_rbac: false` ALONE no longer preserves protocolSettings, and every
+		// push was silently going out UNSIGNED. Only `_render: false`, which
+		// returns the entity before renderEntity() is ever reached, keeps it.
+		// `$subscriptionId` holds the message's `subscription` uuid FK; the
+		// `(string)` cast is defensive (find() signs for a string $id).
+		$subscription = $this->objectService->find(
+			id: (string)$subscriptionId,
+			register: 'integriq',
+			schema: 'event_subscription',
+			_rbac: false,
+			_multitenancy: false,
+			_render: false
+		);
+
+		if ($subscription === null) {
+			return false;
+		}
+
+		$delivery->subscriptionData = $subscription->getObject();
+
+		return (($delivery->subscriptionData['style'] ?? '') === 'push');
+	}//end loadPushSubscription()
+
+	/**
+	 * Builds the push body and headers, and signs the body when the subscription asks for it.
+	 *
+	 * A signing failure throws, so it surfaces as a failed attempt rather than an unsigned send.
+	 *
+	 * @param PushDelivery $delivery The delivery attempt, with its subscription read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
+	 */
+	private function buildPushRequest(PushDelivery $delivery): void {
+		$subscriptionData = $delivery->subscriptionData;
+
+		// Serialize the body exactly once; the signature (when configured)
+		// covers these exact bytes.
+		$delivery->rawBody = json_encode($delivery->messageData['payload'] ?? []);
+
+		$delivery->headers = [
+			'Content-Type' => 'application/cloudevents+json',
+			...($subscriptionData['protocolSettings']['headers'] ?? []),
+		];
+
+		// REQ-SOW-001: `unsigned` (a decision with a reason on it) wins over a
+		// secret left from before, the same rule SubscriptionSigningPolicy::isSigned()
+		// reads for the list, so the list and the wire never disagree.
+		$signingSecret = ($subscriptionData['protocolSettings']['signingSecret'] ?? null);
+		$delivery->signed = ($signingSecret !== null && $signingSecret !== ''
+			&& array_key_exists('unsigned', (array)($subscriptionData['protocolSettings'] ?? [])) === false);
+		if ($delivery->signed === false) {
+			return;
+		}
+
+		$delivery->headers['X-OpenConnector-Signature'] = $this->signatureService->sign(
+			rawBody: $delivery->rawBody,
+			secret: $signingSecret,
+			previousSecret: $this->previousSigningSecret(subscriptionData: $subscriptionData)
+		);
+		$delivery->headers['X-OpenConnector-Event-Id'] = $delivery->message->getUuid();
+	}//end buildPushRequest()
+
+	/**
+	 * The previous signing secret, while the rotation grace period of the current one runs.
+	 *
+	 * @param array $subscriptionData The subscription's object data.
+	 *
+	 * @return string|null The previous secret, or null outside the grace period.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
+	 */
+	private function previousSigningSecret(array $subscriptionData): ?string {
+		if ($this->signatureService->isRotationGraceActive(
+			secretRotatedAt: ($subscriptionData['protocolSettings']['secretRotatedAt'] ?? null)
+		) === false
+		) {
+			return null;
+		}
+
+		return ($subscriptionData['protocolSettings']['previousSigningSecret'] ?? null);
+	}//end previousSigningSecret()
+
+	/**
+	 * Records the push as a redacted `call` step on the delivery's trace, if it has one.
+	 *
+	 * @param PushDelivery $delivery The delivery attempt.
+	 * @param IResponse    $response The sink's response.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
+	 */
+	private function tracePushCall(PushDelivery $delivery, IResponse $response): void {
+		// Execution-trace REQ-002/REQ-003: this dispatch bypasses
+		// CallService (it uses IClientService directly), so it must
+		// redact and record its own `call` step rather than relying on
+		// CallService's already-redacted output.
+		if ($delivery->trace === null) {
+			return;
+		}
+
+		$sensitiveFieldRegistry = new SensitiveFieldRegistry();
+		$subscriptionData = $delivery->subscriptionData;
+
+		$callStepStatus = 'success';
+		if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
+			$callStepStatus = 'error';
+		}
+
+		$delivery->trace->addStep(
+			type: 'call',
+			name: ($subscriptionData['name'] ?? $subscriptionData['sink'] ?? 'webhook'),
+			timing: null,
+			status: $callStepStatus,
+			input: $sensitiveFieldRegistry->redactArray(
+				data: [
+					'url' => ($subscriptionData['sink'] ?? null),
+					'method' => 'POST',
+					'headers' => $delivery->headers,
+				]
+			),
+			output: $sensitiveFieldRegistry->redactArray(
+				data: [
+					'statusCode' => $response->getStatusCode(),
+					'headers' => $response->getHeaders(),
+				]
+			),
+			startedAtMicrotime: $delivery->startedAt,
+			finishedAtMicrotime: microtime(true),
+		);
+	}//end tracePushCall()
+
+	/**
+	 * Saves the message as delivered, with the sink's response and one more attempt.
+	 *
+	 * @param PushDelivery $delivery The delivery attempt.
+	 * @param IResponse    $response The sink's 2xx response.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
+	 */
+	private function markPushDelivered(PushDelivery $delivery, IResponse $response): void {
+		$now = (new DateTime())->format('c');
+		$messageData = $delivery->messageData;
+		$priorAttempts = (array)($messageData['attempts'] ?? []);
+		$messageData['status'] = 'delivered';
+		$messageData['deliveredAt'] = $now;
+		$messageData['lastAttempt'] = $now;
+		$messageData['nextAttempt'] = null;
+		$messageData['deliveryResponse'] = [
+			'statusCode' => $response->getStatusCode(),
+			'body' => $response->getBody(),
+		];
+		$messageData['attempts'] = $this->appendAttempt(
+			attempts: $priorAttempts,
+			at: $now,
+			statusCode: $response->getStatusCode(),
+			error: null,
+			signed: $delivery->signed
+		);
+		$this->objectService->saveObject(
+			object: $messageData,
+			register: 'integriq',
+			schema: 'event_message',
+			uuid: $delivery->message->getUuid(),
+			// System context: see processEvent().
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end markPushDelivered()
 
 	/**
 	 * Resolve a subscription's effective retry policy, falling back to the
