@@ -98,6 +98,16 @@ class EndpointService implements EndpointServiceInterface {
 	];
 
 	/**
+	 * Exceptions a schema request answers through the mapper's validate handler.
+	 *
+	 * @var array<int, string>
+	 */
+	private const VALIDATION_EXCEPTIONS = [
+		'OCA\OpenRegister\Exception\ValidationException',
+		'OCA\OpenRegister\Exception\CustomValidationException',
+	];
+
+	/**
 	 * Rule types with an external or persisted side-effect — under a
 	 * dry-run replay (`dryRun: true`), these MUST NOT perform their write;
 	 * `processRules()` records a `skipped_dry_run` step instead
@@ -2090,177 +2100,282 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-name-its-target-register-and-schema-by-slug-req-ep-011
 	 */
 	private function handleSchemaRequest(ObjectEntity $endpoint, FlowToken &$flowToken, string $path): JSONResponse {
-		$endpointData = $endpoint->getObject();
-		// @TODO: CONVERT TO FLOWTOKENS
-		// Get request method
-		$method = $flowToken->getRequestAmended()['method'];
-		[$register, $schema] = $this->resolveTarget(targetId: (string)($endpointData['targetId'] ?? ''));
+		$context = new EndpointSchemaRequest(endpointData: $endpoint->getObject(), request: $flowToken->getRequestAmended());
+		[$register, $schema] = $this->resolveTarget(targetId: (string)($context->endpointData['targetId'] ?? ''));
+		$context->mapper = $this->objectService->getMapper(schema: $schema, register: $register);
+		$context->pathParams = $this->getPathParameters(endpointArray: ($context->endpointData['endpointArray'] ?? []), path: $path);
+		$context->parameters = $this->schemaRequestParameters(context: $context);
 
-		$mapper = $this->objectService->getMapper(schema: $schema, register: $register);
+		try {
+			$response = $this->dispatchSchemaRequest(context: $context);
+		} catch (Exception $exception) {
+			if (in_array(get_class($exception), self::VALIDATION_EXCEPTIONS) === true) {
+				return $context->mapper->getValidateHandler()->handleValidationException(exception: $exception);
+			}
 
-		$parameters = $flowToken->getRequestAmended()['parameters'];
+			throw $exception;
+		}
 
-		if (($endpointData['inputMapping'] ?? null) !== null) {
-			$inputMapping = $this->mappingService->getMapping($endpointData['inputMapping']);
+		$flowToken->setResponseOriginal($response);
+		if ($context->amendResponse === true) {
+			$flowToken->setResponseAmended($flowToken->getResponseOriginal());
+		}
+
+		return $response;
+	}//end handleSchemaRequest()
+
+	/**
+	 * The parameters a schema request works with: the request's parameters,
+	 * through the endpoint's input mapping when it has one, with the path id
+	 * added and the internal keys removed.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request, with its path parameters resolved.
+	 *
+	 * @return array The parameters.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function schemaRequestParameters(EndpointSchemaRequest $context): array {
+		$parameters = $context->request['parameters'];
+
+		if (($context->endpointData['inputMapping'] ?? null) !== null) {
+			$inputMapping = $this->mappingService->getMapping($context->endpointData['inputMapping']);
 			$parameters = $this->mappingService->executeMapping(mapping: $inputMapping, input: $parameters);
 		}
 
-		$pathParams = $this->getPathParameters(endpointArray: ($endpointData['endpointArray'] ?? []), path: $path);
-
-		if (isset($pathParams['id']) === true) {
-			$parameters['id'] = $pathParams['id'];
+		if (isset($context->pathParams['id']) === true) {
+			$parameters['id'] = $context->pathParams['id'];
 		}
 
 		foreach ($this::UNSET_PARAMETERS as $parameter) {
 			unset($parameters[$parameter]);
 		}
 
+		return $parameters;
+	}//end schemaRequestParameters()
+
+	/**
+	 * Answers a schema request with the ObjectService call its HTTP method maps to.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 *
+	 * @return JSONResponse The answer.
+	 *
+	 * @throws Exception When the HTTP method is not supported, or the mapper fails.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function dispatchSchemaRequest(EndpointSchemaRequest $context): JSONResponse {
+		switch ($context->request['method']) {
+			case 'GET':
+				return $this->getSchemaObjects(context: $context);
+			case 'POST':
+				return $this->schemaObjectResponse(
+					context: $context,
+					object: $context->mapper->createFromArray(object: $context->parameters)
+				);
+			case 'PUT':
+				return ($this->missingPutFieldsResponse(context: $context) ?? $this->updateSchemaObject(context: $context, patch: false));
+			case 'PATCH':
+				return $this->updateSchemaObject(context: $context, patch: true);
+			case 'DELETE':
+				return $this->deleteSchemaObject(context: $context);
+			default:
+				throw new Exception('Unsupported HTTP method');
+		}
+	}//end dispatchSchemaRequest()
+
+	/**
+	 * Answers a GET on a schema endpoint: one object or a page of them.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 *
+	 * @return JSONResponse The object or page, with Content-Crs echoing a requested Accept-Crs.
+	 *
+	 * @throws Exception
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoints-fixed-filters-narrow-its-collection-and-no-path-skips-them-req-ep-012
+	 */
+	private function getSchemaObjects(EndpointSchemaRequest $context): JSONResponse {
+		$expand = $this->translateVngParameters(context: $context);
 		$status = 200;
+		$objects = $this->getObjects(
+			mapper: $context->mapper,
+			parameters: $context->parameters,
+			pathParams: $context->pathParams,
+			status: $status,
+			fixedFilters: (array)($context->endpointData['fixedFilters'] ?? [])
+		);
 
 		$headers = [];
-		if (isset($flowToken->getRequestAmended()['headers']['Accept-Crs']) === true
-			&& $flowToken->getRequestAmended()['headers']['Accept-Crs'] !== ''
-		) {
-			$headers['Content-Crs'] = $flowToken->getRequestAmended()['headers']['Accept-Crs'];
+		$acceptCrs = ($context->request['headers']['Accept-Crs'] ?? null);
+		if ($acceptCrs !== null && $acceptCrs !== '') {
+			$headers['Content-Crs'] = $acceptCrs;
 		}
 
-		// Route to appropriate ObjectService method based on HTTP method.
-		try {
-			switch ($method) {
-				case 'GET':
-					$expand = [];
-					if (($endpointData['vngFilterTranslation'] ?? false) === true) {
-						$expandParam = $parameters['expand'] ?? '';
-						if ($expandParam !== '') {
-							$expand = explode(',', (string)$expandParam);
-						}
+		return new JSONResponse(
+			$this->expandSchemaObjects(objects: $objects, expand: $expand),
+			statusCode: $status,
+			headers: $headers
+		);
+	}//end getSchemaObjects()
 
-						unset($parameters['expand']);
+	/**
+	 * Translates VNG filter operators in the request parameters when the
+	 * endpoint asks for it, and takes the expand parameter off them.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request; its parameters are rewritten.
+	 *
+	 * @return array<int, string> The relations to expand (empty without VNG translation).
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function translateVngParameters(EndpointSchemaRequest $context): array {
+		if (($context->endpointData['vngFilterTranslation'] ?? false) !== true) {
+			return [];
+		}
 
-						$lookupFilters = array_filter($parameters, fn ($key) => str_starts_with($key, '_') === false, ARRAY_FILTER_USE_KEY);
-						$systemFilters = array_diff_key($parameters, $lookupFilters);
-						$parameters = array_merge($systemFilters, $this->mappingService->translateVngFilterOperators(filters: $lookupFilters));
-					}
+		$parameters = $context->parameters;
+		$expand = [];
+		$expandParam = $parameters['expand'] ?? '';
+		if ($expandParam !== '') {
+			$expand = explode(',', (string)$expandParam);
+		}
 
-					$objects = $this->getObjects(
-						mapper: $mapper,
-						parameters: $parameters,
-						pathParams: $pathParams,
-						status: $status,
-						fixedFilters: (array)($endpointData['fixedFilters'] ?? [])
-					);
-					if ($expand !== [] && isset($objects['results']) === true && is_array($objects['results']) === true) {
-						$objects['results'] = array_map(
-							fn (array $result) => $this->mappingService->expandRelations(data: $result, expand: $expand),
-							$objects['results']
-						);
-					} elseif ($expand !== [] && is_array($objects) === true && isset($objects['error']) === false) {
-						$objects = $this->mappingService->expandRelations(data: $objects, expand: $expand);
-					}
+		unset($parameters['expand']);
 
-					$response = new JSONResponse(
-						$objects,
-						statusCode: $status,
-						headers: $headers
-					);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				case 'POST':
-					$response = new JSONResponse(
-						$this->replaceInternalReferences(
-							mapper: $mapper,
-							serializedObject: $mapper->createFromArray(object: $parameters)->jsonSerialize()
-						)
-					);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				case 'PUT':
-					if (($endpointData['putPatchSemantics'] ?? false) === true) {
-						$missingFields = $this->checkPutMandatoryFields(parameters: $flowToken->getRequestAmended()['parameters'], mapper: $mapper);
-						if ($missingFields !== []) {
-							$response = new JSONResponse(
-								data: [
-									'error' => 'PUT requires all mandatory fields',
-									'fields' => $missingFields,
-								],
-								statusCode: 400
-							);
-							$flowToken->setResponseOriginal($response);
-							$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-							return $response;
-						}
-					}
+		$lookupFilters = array_filter($parameters, fn ($key) => str_starts_with($key, '_') === false, ARRAY_FILTER_USE_KEY);
+		$systemFilters = array_diff_key($parameters, $lookupFilters);
+		$context->parameters = array_merge($systemFilters, $this->mappingService->translateVngFilterOperators(filters: $lookupFilters));
 
-					$putUpdated = $mapper->updateFromArray(
-						$parameters['id'],
-						$flowToken->getRequestAmended()['parameters'],
-						true,
-						false
-					);
-					$response = new JSONResponse(
-						$this->replaceInternalReferences(
-							mapper: $mapper,
-							serializedObject: $putUpdated->jsonSerialize()
-						)
-					);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				case 'PATCH':
-					$patchUpdated = $mapper->updateFromArray(
-						$parameters['id'],
-						$flowToken->getRequestAmended()['parameters'],
-						true,
-						true
-					);
-					$response = new JSONResponse(
-						$this->replaceInternalReferences(
-							mapper: $mapper,
-							serializedObject: $patchUpdated->jsonSerialize()
-						)
-					);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				case 'DELETE':
-					if (isset($parameters['id']) === false) {
-						$response = new JSONResponse(data: ['error' => 'No id given to delete'], statusCode: 400);
-						$flowToken->setResponseOriginal($response);
-						return $response;
-					}
+		return $expand;
+	}//end translateVngParameters()
 
-					if ($mapper->delete(['id' => $parameters['id']]) !== true) {
-						$response = new JSONResponse(
-							data: ['error' => sprintf('Something went wrong deleting object: %s', $parameters['id'])],
-							statusCode: 500
-						);
-						$flowToken->setResponseOriginal($response);
-						$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-						return $response;
-					}
+	/**
+	 * Expands the named relations of a page's results, or of a single object.
+	 *
+	 * @param Entity|array $objects The page or object getObjects() answered.
+	 * @param array        $expand  The relations to expand.
+	 *
+	 * @return Entity|array The page or object, expanded; an error answer is left alone.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function expandSchemaObjects(Entity|array $objects, array $expand): Entity|array {
+		if ($expand === []) {
+			return $objects;
+		}
 
-					$response = new JSONResponse(statusCode: 204);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				default:
-					throw new Exception('Unsupported HTTP method');
-			}//end switch
-		} catch (Exception $exception) {
-			$validationExceptions = [
-				'OCA\OpenRegister\Exception\ValidationException',
-				'OCA\OpenRegister\Exception\CustomValidationException',
-			];
-			if (in_array(get_class($exception), $validationExceptions) === true) {
-				return $mapper->getValidateHandler()->handleValidationException(exception: $exception);
-			}
+		if (isset($objects['results']) === true && is_array($objects['results']) === true) {
+			$objects['results'] = array_map(
+				fn (array $result) => $this->mappingService->expandRelations(data: $result, expand: $expand),
+				$objects['results']
+			);
+			return $objects;
+		}
 
-			throw $exception;
-		}//end try
+		if (is_array($objects) === true && isset($objects['error']) === false) {
+			return $this->mappingService->expandRelations(data: $objects, expand: $expand);
+		}
 
-	}//end handleSchemaRequest()
+		return $objects;
+	}//end expandSchemaObjects()
+
+	/**
+	 * The 400 answer to a PUT that misses mandatory fields, on an endpoint with PUT/PATCH semantics.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 *
+	 * @return JSONResponse|null The 400 answer, or null when the PUT may go ahead.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function missingPutFieldsResponse(EndpointSchemaRequest $context): ?JSONResponse {
+		if (($context->endpointData['putPatchSemantics'] ?? false) !== true) {
+			return null;
+		}
+
+		$missingFields = $this->checkPutMandatoryFields(parameters: $context->request['parameters'], mapper: $context->mapper);
+		if ($missingFields === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'PUT requires all mandatory fields',
+				'fields' => $missingFields,
+			],
+			statusCode: 400
+		);
+	}//end missingPutFieldsResponse()
+
+	/**
+	 * Updates the object a PUT or PATCH names with the request body.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 * @param bool                  $patch   True for a partial update (PATCH).
+	 *
+	 * @return JSONResponse The updated object.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function updateSchemaObject(EndpointSchemaRequest $context, bool $patch): JSONResponse {
+		$updated = $context->mapper->updateFromArray(
+			$context->parameters['id'],
+			$context->request['parameters'],
+			true,
+			$patch
+		);
+
+		return $this->schemaObjectResponse(context: $context, object: $updated);
+	}//end updateSchemaObject()
+
+	/**
+	 * Answers a written object with its internal references replaced by endpoint urls.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 * @param object                $object  The object the mapper wrote.
+	 *
+	 * @return JSONResponse The object.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function schemaObjectResponse(EndpointSchemaRequest $context, object $object): JSONResponse {
+		return new JSONResponse(
+			$this->replaceInternalReferences(
+				mapper: $context->mapper,
+				serializedObject: $object->jsonSerialize()
+			)
+		);
+	}//end schemaObjectResponse()
+
+	/**
+	 * Deletes the object a DELETE names.
+	 *
+	 * A DELETE without an id answers 400 and leaves the flow token's amended response alone.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 *
+	 * @return JSONResponse 204 on success, 400 without an id, 500 when the mapper does not confirm.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function deleteSchemaObject(EndpointSchemaRequest $context): JSONResponse {
+		if (isset($context->parameters['id']) === false) {
+			$context->amendResponse = false;
+			return new JSONResponse(data: ['error' => 'No id given to delete'], statusCode: 400);
+		}
+
+		if ($context->mapper->delete(['id' => $context->parameters['id']]) !== true) {
+			return new JSONResponse(
+				data: ['error' => sprintf('Something went wrong deleting object: %s', $context->parameters['id'])],
+				statusCode: 500
+			);
+		}
+
+		return new JSONResponse(statusCode: 204);
+	}//end deleteSchemaObject()
 
 	/**
 	 * Determine which of a schema's mandatory fields are missing from a PUT body.
