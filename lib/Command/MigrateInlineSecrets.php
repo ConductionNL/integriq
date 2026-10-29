@@ -15,7 +15,7 @@
  *     schema properties while `clean` is false.
  *
  * A REAL run (no `--dry-run`) mints → VERIFIES → nulls, per source per field,
- * through {@see \OCA\Integriq\Service\Security\InlineSecretMigrationExecutor}.
+ * through {@see InlineSecretMigrationExecutorInterface}.
  * The Phase-C blocker is resolved: openregister#450 (`actingOrganisationId`) +
  * or#440 (sessionless `mint()`) let this migration mint organisation-scoped
  * credentials AND verify them round-trip without a user session. After a real
@@ -49,9 +49,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command;
 
-use OCA\Integriq\Repair\RecordInlineSecretMigrationStatus;
-use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
-use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutorInterface;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCP\IAppConfig;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -69,13 +68,13 @@ class MigrateInlineSecrets extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param InlineSecretMigrationPlanner $planner The read-only migration planner (dry-run + post-run gate).
-	 * @param InlineSecretMigrationExecutor $executor The writing executor (mint → verify → null).
+	 * @param InlineSecretMigrationPlannerInterface $planner The read-only migration planner (dry-run + post-run gate).
+	 * @param InlineSecretMigrationExecutorInterface $executor The writing executor (mint → verify → null).
 	 * @param IAppConfig $appConfig The appconfig store for the Phase D gate signal.
 	 */
 	public function __construct(
-		private readonly InlineSecretMigrationPlanner $planner,
-		private readonly InlineSecretMigrationExecutor $executor,
+		private readonly InlineSecretMigrationPlannerInterface $planner,
+		private readonly InlineSecretMigrationExecutorInterface $executor,
 		private readonly IAppConfig $appConfig,
 	) {
 		parent::__construct();
@@ -232,7 +231,7 @@ class MigrateInlineSecrets extends Command {
 		// The Phase D gate stays SOURCE-only on purpose: RemoveMigratedSourceSecretFields
 		// reads it to decide whether source's properties may be dropped, and that
 		// must not be blocked by an unrelated schema's state.
-		$sourceRun = (array)($estate['schemas'][InlineSecretMigrationPlanner::SCHEMA] ?? []);
+		$sourceRun = (array)($estate['schemas'][InlineSecretMigrationPlannerInterface::SCHEMA] ?? []);
 		$this->recordPhaseDGate(result: $sourceRun);
 
 		// Keep the source-shaped keys the renderer and the exit code speak, and
@@ -307,7 +306,7 @@ class MigrateInlineSecrets extends Command {
 	/**
 	 * Persist the post-run Phase D gate into appconfig (fails closed on a bad shape).
 	 *
-	 * Reuses {@see RecordInlineSecretMigrationStatus} keys so a real run and an
+	 * Reuses {@see \OCA\Integriq\Repair\RecordInlineSecretMigrationStatus} keys so a real run and an
 	 * upgrade repair step write the SAME signal. `clean` is '1' only when the
 	 * post-run re-plan found zero pending and zero manual-review fields.
 	 *
@@ -330,10 +329,10 @@ class MigrateInlineSecrets extends Command {
 
 		// Reuse the planner's public app id (the repair step's APP_ID is private);
 		// both resolve to 'integriq', keeping the appconfig target identical.
-		$app = InlineSecretMigrationPlanner::APP_ID;
-		$this->appConfig->setValueString(app: $app, key: RecordInlineSecretMigrationStatus::KEY_CLEAN, value: $cleanFlag);
-		$this->appConfig->setValueString(app: $app, key: RecordInlineSecretMigrationStatus::KEY_PENDING, value: (string)$pending);
-		$this->appConfig->setValueString(app: $app, key: RecordInlineSecretMigrationStatus::KEY_MANUAL, value: (string)$manual);
+		$app = InlineSecretMigrationPlannerInterface::APP_ID;
+		$this->appConfig->setValueString(app: $app, key: InlineSecretMigrationPlannerInterface::KEY_CLEAN, value: $cleanFlag);
+		$this->appConfig->setValueString(app: $app, key: InlineSecretMigrationPlannerInterface::KEY_PENDING, value: (string)$pending);
+		$this->appConfig->setValueString(app: $app, key: InlineSecretMigrationPlannerInterface::KEY_MANUAL, value: (string)$manual);
 	}//end recordPhaseDGate()
 
 	/**
