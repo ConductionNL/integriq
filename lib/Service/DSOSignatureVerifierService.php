@@ -51,7 +51,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
  */
-class DSOSignatureVerifierService implements DSOSignatureVerifierServiceInterface {
+class DSOSignatureVerifierService implements SignedPayloadVerifierInterface {
 
 	/**
 	 * Legacy name of the PKIoverheid mode, as the app config stored it.

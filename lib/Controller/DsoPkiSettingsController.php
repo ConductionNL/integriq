@@ -32,8 +32,8 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\Dso\DsoConnectionInterface;
-use OCA\Integriq\Service\DSOSignatureVerifierServiceInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\SignedPayloadVerifierInterface;
 use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -61,8 +61,8 @@ class DsoPkiSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request           The request.
-	 * @param DsoConnectionInterface               $connection        Finds, checks and saves the consumer.
-	 * @param DSOSignatureVerifierServiceInterface $signatureVerifier Chain-validation helper.
+	 * @param PortalConnectionInterface               $connection        Finds, checks and saves the consumer.
+	 * @param SignedPayloadVerifierInterface $signatureVerifier Chain-validation helper.
 	 * @param IGroupManager               $groupManager      Tells an administrator account apart.
 	 * @param IntakeGroupsInterface                $groups            Puts the chosen account in the dso-intake group.
 	 * @param IL10N                       $l                 Field errors and warnings.
@@ -72,8 +72,8 @@ class DsoPkiSettingsController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly DsoConnectionInterface $connection,
-		private readonly DSOSignatureVerifierServiceInterface $signatureVerifier,
+		private readonly PortalConnectionInterface $connection,
+		private readonly SignedPayloadVerifierInterface $signatureVerifier,
 		private readonly IGroupManager $groupManager,
 		private readonly IntakeGroupsInterface $groups,
 		private readonly IL10N $l,
@@ -139,7 +139,7 @@ class DsoPkiSettingsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {
-		$mode = $this->signatureVerifier->normalizeMode(mode: $this->request->getParam('mode', DSOSignatureVerifierServiceInterface::MODE_HMAC));
+		$mode = $this->signatureVerifier->normalizeMode(mode: $this->request->getParam('mode', SignedPayloadVerifierInterface::MODE_HMAC));
 		$trust = [
 			'mode' => $mode,
 			'hmacSecret' => (string)$this->request->getParam('hmacSecret', ''),
@@ -197,7 +197,7 @@ class DsoPkiSettingsController extends Controller {
 	 * @return JSONResponse|null The refusal.
 	 */
 	private function refusal(array $trust, string $userId, array &$warnings): ?JSONResponse {
-		if ($trust['mode'] === DSOSignatureVerifierServiceInterface::MODE_PKIOVERHEID) {
+		if ($trust['mode'] === SignedPayloadVerifierInterface::MODE_PKIOVERHEID) {
 			$errors = $this->signatureVerifier->validateChainConfig(
 				certPem: $trust['signingCertificate'],
 				rootPem: $trust['rootCa'],
@@ -250,7 +250,7 @@ class DsoPkiSettingsController extends Controller {
 			$trust['hmacSecret'] = (string)(((array)($data['authorizationConfiguration'] ?? []))['hmacSecret'] ?? '');
 		}
 
-		$data['authorizationType'] = DsoConnectionInterface::AUTHORIZATION_TYPE;
+		$data['authorizationType'] = PortalConnectionInterface::AUTHORIZATION_TYPE;
 		$data['authorizationConfiguration'] = $trust;
 		$data['userId'] = $userId;
 
