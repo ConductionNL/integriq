@@ -26,7 +26,7 @@ use OCA\Integriq\BackgroundJob\ProcessEventJob;
 use OCA\Integriq\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerTransportRegistry;
-use OCA\Integriq\Broker\CloudEventHttpBinding;
+use OCA\Integriq\Broker\CloudEventHttpBindingInterface;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Event\DeliveryConcludedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
@@ -42,8 +42,8 @@ use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
-use OCA\Integriq\Outbound\Identity\OptOutCategories;
-use OCA\Integriq\Outbound\OutboundSendGate;
+use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
+use OCA\Integriq\Outbound\OutboundSendGateInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
@@ -171,7 +171,7 @@ class EventService implements EventServiceInterface {
 	 * @param IJobList|null                 $jobList           Queues the fan-out of an object write's CloudEvent
 	 *                                                        ({@see ProcessEventJob}). Null (unit tests that
 	 *                                                        predate it) fans out inline as before.
-	 * @param OutboundSendGate|null         $sendGate          Asks the opt-out list before a delivery that names
+	 * @param OutboundSendGateInterface|null         $sendGate          Asks the opt-out list before a delivery that names
 	 *                                                        a personal recipient (opt-out-before-send). Null
 	 *                                                        (unit tests that predate it) answers such a
 	 *                                                        delivery closed unless its category is exempt.
@@ -200,7 +200,7 @@ class EventService implements EventServiceInterface {
 		?EgressGuard $egressGuard = null,
 		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
 		private readonly ?IJobList $jobList = null,
-		private readonly ?OutboundSendGate $sendGate = null,
+		private readonly ?OutboundSendGateInterface $sendGate = null,
 	) {
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
@@ -2066,7 +2066,7 @@ class EventService implements EventServiceInterface {
 	private function brokerPublication(array $cloudEvent, array $subscriptionData, array $action): BrokerPublication {
 		$contentMode = trim((string)($action['contentMode'] ?? ''));
 		if ($contentMode === '') {
-			$contentMode = CloudEventHttpBinding::MODE_STRUCTURED;
+			$contentMode = CloudEventHttpBindingInterface::MODE_STRUCTURED;
 		}
 
 		$orderingKey = trim((string)($action['orderingKey'] ?? ''));
@@ -3009,12 +3009,12 @@ class EventService implements EventServiceInterface {
 			return null;
 		}
 
-		$category = (string)($payload['category'] ?? OptOutCategories::SERVICE);
+		$category = (string)($payload['category'] ?? OptOutCategoriesInterface::SERVICE);
 		$caseRef = (string)($payload['caseRef'] ?? '');
 
 		if ($this->sendGate === null) {
-			$send = in_array(strtolower(trim($category)), OptOutCategories::FLOOR, true)
-				|| isset(OptOutCategories::DEFAULT_ALIASES[strtolower(trim($category))]) === true;
+			$send = in_array(strtolower(trim($category)), OptOutCategoriesInterface::FLOOR, true)
+				|| isset(OptOutCategoriesInterface::DEFAULT_ALIASES[strtolower(trim($category))]) === true;
 			$code = 'allowed';
 			$reason = '';
 			if ($send === false) {

@@ -42,6 +42,7 @@ final class DirectoryRegistrar {
 	 */
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(DirectorySyncServiceInterface::class, DirectorySyncService::class);
+		$context->registerServiceAlias(DirectorySourceInterface::class, DirectorySource::class);
 		$context->registerServiceAlias(ScimProvisioningServiceInterface::class, ScimProvisioningService::class);
 	}
 }

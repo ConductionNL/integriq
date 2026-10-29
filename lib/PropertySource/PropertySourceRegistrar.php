@@ -43,6 +43,8 @@ final class PropertySourceRegistrar {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
+		$context->registerServiceAlias(ListResyncServiceInterface::class, ListResyncService::class);
+		$context->registerServiceAlias(PropertySourceResolverInterface::class, PropertySourceResolver::class);
 		$this->registerPropertySourceRegistry(context: $context);
 	}//end register()
 

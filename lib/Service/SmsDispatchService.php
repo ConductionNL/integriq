@@ -33,7 +33,7 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\Integriq\Exception\SmsProviderException;
-use OCA\Integriq\Outbound\OutboundSendGate;
+use OCA\Integriq\Outbound\OutboundSendGateInterface;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\DeliveryResult;
 use OCA\Integriq\Service\Sms\LogSmsProvider;
@@ -103,7 +103,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
-	 * @param OutboundSendGate $gate Asks the opt-out list, adds the unsubscribe text, keeps the log row.
+	 * @param OutboundSendGateInterface $gate Asks the opt-out list, adds the unsubscribe text, keeps the log row.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -113,7 +113,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
-		private readonly OutboundSendGate $gate,
+		private readonly OutboundSendGateInterface $gate,
 	) {
 
 	}//end __construct()
@@ -219,7 +219,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		$sent = $this->attemptSend(message: $message, provider: $provider, to: $e164, body: $body, options: $options);
 		$sentData = $sent->getObject();
 		if ((string)($sentData['status'] ?? '') === 'failed') {
-			$this->gate->failed(uuid: $logRow, address: $e164, step: OutboundSendGate::STEP_SEND, reason: (string)($sentData['detail'] ?? ''));
+			$this->gate->failed(uuid: $logRow, address: $e164, step: OutboundSendGateInterface::STEP_SEND, reason: (string)($sentData['detail'] ?? ''));
 			return $sent;
 		}
 

@@ -44,6 +44,7 @@ final class BrokerRegistrar {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
+		$context->registerServiceAlias(CloudEventHttpBindingInterface::class, CloudEventHttpBinding::class);
 		$this->registerTransportRegistry(context: $context);
 	}//end register()
 

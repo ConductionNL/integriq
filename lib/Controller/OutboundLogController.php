@@ -28,10 +28,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\Integriq\Outbound\ForwardService;
-use OCA\Integriq\Outbound\LastContactQuery;
+use OCA\Integriq\Outbound\ForwardServiceInterface;
+use OCA\Integriq\Outbound\LastContactQueryInterface;
 use OCA\Integriq\Outbound\MessageBodyReader;
-use OCA\Integriq\Outbound\OutboundRetryService;
+use OCA\Integriq\Outbound\OutboundRetryServiceInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -73,9 +73,9 @@ class OutboundLogController extends Controller {
 	 * @param IUserSession $userSession Names the principal.
 	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 * @param MessageBodyReader $bodyReader Reads a stored body, for those allowed to.
-	 * @param OutboundRetryService $retryService Retries through the delivery pipeline.
-	 * @param ForwardService $forwardService Forwards as a new linked record.
-	 * @param LastContactQuery $lastContactQuery Answers when a recipient was last told anything.
+	 * @param OutboundRetryServiceInterface $retryService Retries through the delivery pipeline.
+	 * @param ForwardServiceInterface $forwardService Forwards as a new linked record.
+	 * @param LastContactQueryInterface $lastContactQuery Answers when a recipient was last told anything.
 	 * @param IL10N $l Translations.
 	 */
 	public function __construct(
@@ -84,9 +84,9 @@ class OutboundLogController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly MessageBodyReader $bodyReader,
-		private readonly OutboundRetryService $retryService,
-		private readonly ForwardService $forwardService,
-		private readonly LastContactQuery $lastContactQuery,
+		private readonly OutboundRetryServiceInterface $retryService,
+		private readonly ForwardServiceInterface $forwardService,
+		private readonly LastContactQueryInterface $lastContactQuery,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);

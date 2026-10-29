@@ -28,9 +28,21 @@ use OCA\Integriq\Outbound\Call\CallRecorderInterface;
 use OCA\Integriq\Outbound\Call\CallReplayService;
 use OCA\Integriq\Outbound\Call\CallReplayServiceInterface;
 use OCA\Integriq\Outbound\Call\CallServiceDispatcher;
+use OCA\Integriq\Outbound\Call\VerdictService;
+use OCA\Integriq\Outbound\Call\VerdictServiceInterface;
 use OCA\Integriq\Outbound\Identity\DnsResolverInterface;
+use OCA\Integriq\Outbound\Identity\DomainAlignmentChecker;
+use OCA\Integriq\Outbound\Identity\DomainAlignmentCheckerInterface;
+use OCA\Integriq\Outbound\Identity\HoldQueue;
+use OCA\Integriq\Outbound\Identity\HoldQueueInterface;
+use OCA\Integriq\Outbound\Identity\OptOutCategories;
+use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
+use OCA\Integriq\Outbound\Identity\OptOutTableMigrator;
+use OCA\Integriq\Outbound\Identity\OptOutTableMigratorInterface;
+use OCA\Integriq\Outbound\Identity\RecipientKey;
+use OCA\Integriq\Outbound\Identity\RecipientKeyInterface;
 use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\SenderIdentityServiceInterface;
 use OCA\Integriq\Outbound\Identity\SystemDnsResolver;
@@ -65,6 +77,16 @@ final class OutboundRegistrar {
 		$context->registerServiceAlias(UnsubscribeTokenServiceInterface::class, UnsubscribeTokenService::class);
 		$context->registerServiceAlias(SenderIdentityServiceInterface::class, SenderIdentityService::class);
 		$context->registerServiceAlias(CallRecorderInterface::class, CallRecorder::class);
+		$context->registerServiceAlias(OutboundRetryServiceInterface::class, OutboundRetryService::class);
+		$context->registerServiceAlias(OptOutCategoriesInterface::class, OptOutCategories::class);
+		$context->registerServiceAlias(OutboundSendGateInterface::class, OutboundSendGate::class);
+		$context->registerServiceAlias(DomainAlignmentCheckerInterface::class, DomainAlignmentChecker::class);
+		$context->registerServiceAlias(OptOutTableMigratorInterface::class, OptOutTableMigrator::class);
+		$context->registerServiceAlias(HoldQueueInterface::class, HoldQueue::class);
+		$context->registerServiceAlias(RecipientKeyInterface::class, RecipientKey::class);
+		$context->registerServiceAlias(VerdictServiceInterface::class, VerdictService::class);
+		$context->registerServiceAlias(ForwardServiceInterface::class, ForwardService::class);
+		$context->registerServiceAlias(LastContactQueryInterface::class, LastContactQuery::class);
 		$this->registerAppOwnedBindings(context: $context);
 	}
 	/**

@@ -29,7 +29,7 @@ use InvalidArgumentException;
  *
  * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-its-standard-and-its-conformance-claim-req-sg-001
  */
-final class GatewayDescriptor {
+final class GatewayDescriptor implements GatewayDescriptorInterface {
 	/**
 	 * The instance believes it meets the standard.
 	 */

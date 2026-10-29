@@ -22,6 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Observability;
 
+use OCA\Integriq\Observability\Otel\OtelExportBreaker;
+use OCA\Integriq\Observability\Otel\OtelExportBreakerInterface;
+use OCA\Integriq\Observability\Otel\OtelSettings;
+use OCA\Integriq\Observability\Otel\OtelSettingsInterface;
 use OCA\Integriq\Observability\Otel\OtlpTraceExporter;
 use OCA\Integriq\Observability\Otel\SpanMapper;
 use OCA\Integriq\Observability\Otel\SpanMapperInterface;
@@ -47,6 +51,8 @@ final class ObservabilityRegistrar {
 	 */
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(SpanMapperInterface::class, SpanMapper::class);
+		$context->registerServiceAlias(OtelSettingsInterface::class, OtelSettings::class);
+		$context->registerServiceAlias(OtelExportBreakerInterface::class, OtelExportBreaker::class);
 		$this->registerTraceExporter(context: $context);
 		$this->registerMetricsProvider(context: $context);
 	}

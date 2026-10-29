@@ -26,6 +26,7 @@ namespace OCA\Integriq\AppInfo;
 use OCA\Integriq\Capabilities;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Outbound\OutboundRegistrar;
+use OCA\Integriq\Expression\ExpressionRegistrar;
 use OCA\Integriq\Flow\FlowRegistrar;
 use OCA\Integriq\Directory\DirectoryRegistrar;
 use OCA\Integriq\Connectors\ConnectorsRegistrar;
@@ -33,6 +34,7 @@ use OCA\Integriq\Intake\IntakeRegistrar;
 use OCA\Integriq\Observability\ObservabilityRegistrar;
 use OCA\Integriq\Auth\AuthRegistrar;
 use OCA\Integriq\Adapters\AdaptersRegistrar;
+use OCA\Integriq\Bridge\BridgeRegistrar;
 use OCA\Integriq\Broker\BrokerRegistrar;
 use OCA\Integriq\Controller\ControllerRegistrar;
 use OCA\Integriq\Controller\HealthController;
@@ -144,6 +146,8 @@ class Application extends App implements IBootstrap {
 		(new RepairRegistrar())->register(context: $context);
 		(new SetupCheckRegistrar())->register(context: $context);
 		(new NotificationRegistrar())->register(context: $context);
+		(new BridgeRegistrar())->register(context: $context);
+		(new ExpressionRegistrar())->register(context: $context);
 
 		/*
 		 * Event dispatcher registration.

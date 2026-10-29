@@ -46,6 +46,7 @@ final class IntakeRegistrar {
 	 */
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(IntakeRoutingServiceInterface::class, IntakeRoutingService::class);
+		$context->registerServiceAlias(IntakeReplyServiceInterface::class, IntakeReplyService::class);
 		$this->registerChannelRegistry(context: $context);
 	}
 	/**
