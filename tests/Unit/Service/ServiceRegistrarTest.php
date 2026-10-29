@@ -60,7 +60,7 @@ use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\DSOParserServiceInterface;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
-use OCA\Integriq\Service\DSOSignatureVerifierServiceInterface;
+use OCA\Integriq\Service\SignedPayloadVerifierInterface;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceServiceInterface;
 use OCA\Integriq\Service\DemoDataService;
@@ -78,15 +78,15 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DsoIngestServiceInterface;
 use OCA\Integriq\Service\Dso\DsoActivityOverview;
-use OCA\Integriq\Service\Dso\DsoActivityOverviewInterface;
+use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
-use OCA\Integriq\Service\Dso\DsoConnectionAlertsInterface;
-use OCA\Integriq\Service\Dso\DsoConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
-use OCA\Integriq\Service\Dso\DsoUnmappedActivitiesInterface;
+use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
 use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicy;
@@ -331,14 +331,14 @@ class ServiceRegistrarTest extends TestCase {
 		FscCallServiceInterface::class => FscCallService::class,
 		ConnectionStoreInterface::class => ConnectionStore::class,
 		ObjectWriteHandlerInterface::class => ObjectWriteHandler::class,
-		DsoConnectionInterface::class => DsoConnection::class,
+		PortalConnectionInterface::class => DsoConnection::class,
 		ZgwSetInstallerInterface::class => ZgwSetInstaller::class,
 		AuthenticationConfigAuditorInterface::class => AuthenticationConfigAuditor::class,
 		StufZdsCaseClientInterface::class => StufZdsCaseClient::class,
 		MailboxSourceHandlerInterface::class => MailboxSourceHandler::class,
 		ObjectenTokenServiceInterface::class => ObjectenTokenService::class,
 		RunSummaryServiceInterface::class => RunSummaryService::class,
-		DSOSignatureVerifierServiceInterface::class => DSOSignatureVerifierService::class,
+		SignedPayloadVerifierInterface::class => DSOSignatureVerifierService::class,
 		ConnectionProbeServiceInterface::class => ConnectionProbeService::class,
 		WebhookSignatureServiceInterface::class => WebhookSignatureService::class,
 		SyncItemDeadLetterServiceInterface::class => SyncItemDeadLetterService::class,
@@ -358,7 +358,7 @@ class ServiceRegistrarTest extends TestCase {
 		BerichtenboxHealthInterface::class => BerichtenboxHealth::class,
 		ZgwVersionTranslationServiceInterface::class => ZgwVersionTranslationService::class,
 		SourceDestructionServiceInterface::class => SourceDestructionService::class,
-		DsoUnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
+		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
@@ -370,11 +370,11 @@ class ServiceRegistrarTest extends TestCase {
 		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,
 		SubscriptionRosterInterface::class => SubscriptionRoster::class,
 		AgentBatchGateInterface::class => AgentBatchGate::class,
-		DsoActivityOverviewInterface::class => DsoActivityOverview::class,
+		ActivityOverviewInterface::class => DsoActivityOverview::class,
 		WebhookGateInterface::class => WebhookGate::class,
 		EnvironmentServiceInterface::class => EnvironmentService::class,
 		FormsSyncAdapterInterface::class => FormsSyncAdapter::class,
-		DsoConnectionAlertsInterface::class => DsoConnectionAlerts::class,
+		PortalConnectionAlertsInterface::class => DsoConnectionAlerts::class,
 		IntakeDocumentDispatcherInterface::class => IntakeDocumentDispatcher::class,
 		EndpointCorsPolicyInterface::class => EndpointCorsPolicy::class,
 		SourceTestServiceInterface::class => SourceTestService::class,

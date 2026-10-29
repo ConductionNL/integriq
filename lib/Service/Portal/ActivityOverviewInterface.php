@@ -4,7 +4,7 @@
  * Contract of the DsoActivityOverview.
  *
  * @category Contract
- * @package  OCA\Integriq\Service\Dso
+ * @package  OCA\Integriq\Service\Portal
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,12 +17,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\Dso;
+namespace OCA\Integriq\Service\Portal;
 
 /**
- * Public operations of {@see DsoActivityOverview} that other components call.
+ * Public operations of {@see \OCA\Integriq\Service\Dso\DsoActivityOverview} that other components call.
  */
-interface DsoActivityOverviewInterface {
+interface ActivityOverviewInterface {
 	/**
 	 * Every row, active or not, with `lastReceivedAt` and `unmapped: false`,
 	 * then one row per unmapped activity with `unmapped: true` and `waiting`.

@@ -4,7 +4,7 @@
  * Contract of the DsoUnmappedActivities.
  *
  * @category Contract
- * @package  OCA\Integriq\Service\Dso
+ * @package  OCA\Integriq\Service\Portal
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,12 +17,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\Dso;
+namespace OCA\Integriq\Service\Portal;
 
 /**
- * Public operations of {@see DsoUnmappedActivities} that other components call.
+ * Public operations of {@see \OCA\Integriq\Service\Dso\DsoUnmappedActivities} that other components call.
  */
-interface DsoUnmappedActivitiesInterface {
+interface UnmappedActivitiesInterface {
 	/**
 	 * The unmapped activities, most often seen first.
 	 *

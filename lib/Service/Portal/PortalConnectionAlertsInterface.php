@@ -4,7 +4,7 @@
  * Contract of the DsoConnectionAlerts.
  *
  * @category Contract
- * @package  OCA\Integriq\Service\Dso
+ * @package  OCA\Integriq\Service\Portal
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,14 +17,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\Dso;
+namespace OCA\Integriq\Service\Portal;
 
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 
 /**
- * Public operations of {@see DsoConnectionAlerts} that other components call.
+ * Public operations of {@see \OCA\Integriq\Service\Dso\DsoConnectionAlerts} that other components call.
  */
-interface DsoConnectionAlertsInterface {
+interface PortalConnectionAlertsInterface {
 	/**
 	 * The notification subject.
 	 *

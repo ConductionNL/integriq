@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
-use OCA\Integriq\Service\Dso\DsoConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
@@ -66,7 +66,7 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 * @var array<string, string>
 	 */
 	private const INTAKE_GROUP_OF = [
-		DsoConnectionInterface::AUTHORIZATION_TYPE => IntakeGroupsInterface::DSO_INTAKE,
+		PortalConnectionInterface::AUTHORIZATION_TYPE => IntakeGroupsInterface::DSO_INTAKE,
 		OpenFormulierenConnection::AUTHORIZATION_TYPE => IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE,
 		DigitalPostAccountInterface::AUTHORIZATION_TYPE => IntakeGroupsInterface::DIGITAL_POST_SENDERS,
 	];
@@ -116,7 +116,7 @@ class ProvisionIntakeGroups implements IRepairStep {
 		}
 
 		try {
-			$connection = $this->container->get(DsoConnectionInterface::class);
+			$connection = $this->container->get(PortalConnectionInterface::class);
 		} catch (Throwable $exception) {
 			$output->warning('Intake accounts not enrolled: OpenRegister is not available (' . $exception->getMessage() . ').');
 			return;

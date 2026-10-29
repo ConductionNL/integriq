@@ -30,7 +30,7 @@ namespace OCA\Integriq\Notification;
 use InvalidArgumentException;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\Dso\DsoConnectionAlertsInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -96,7 +96,7 @@ class DsoConnectionNotifier implements INotifier {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
-		if ($notification->getApp() !== AppIdentity::APP_ID || $notification->getSubject() !== DsoConnectionAlertsInterface::SUBJECT) {
+		if ($notification->getApp() !== AppIdentity::APP_ID || $notification->getSubject() !== PortalConnectionAlertsInterface::SUBJECT) {
 			throw $this->unknownNotification();
 		}
 
@@ -123,11 +123,11 @@ class DsoConnectionNotifier implements INotifier {
 			'no_connection', 'ambiguous_connection' => $l->t('DSO-LV pushes are refused: no DSO connection is configured.'),
 			'no_account', 'account_unknown', 'account_disabled' => $l->t('DSO-LV pushes are refused: the DSO connection has no usable account.'),
 			'account_lacks_rights', 'rights_unverifiable' => $l->t('DSO-LV pushes are refused: the DSO connection account cannot store verzoeken.'),
-			DsoConnectionAlertsInterface::REASON_NOT_STORED => $l->t('A DSO verzoek could not be stored. DSO-LV will deliver it again.'),
-			DsoConnectionAlertsInterface::REASON_JOB_ACCOUNT => $l->t(
+			PortalConnectionAlertsInterface::REASON_NOT_STORED => $l->t('A DSO verzoek could not be stored. DSO-LV will deliver it again.'),
+			PortalConnectionAlertsInterface::REASON_JOB_ACCOUNT => $l->t(
 				'DSO bijlagen were not downloaded: the account that stored the verzoek is no longer usable.'
 			),
-			DsoConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the DSO intake acts as.'),
+			PortalConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the DSO intake acts as.'),
 			default => $l->t('The DSO connection needs attention.'),
 		};
 
@@ -155,10 +155,10 @@ class DsoConnectionNotifier implements INotifier {
 			'account_lacks_rights', 'rights_unverifiable' => $l->t(
 				'Open Formulieren submissions are refused: the Open Formulieren connection account cannot store submissions.'
 			),
-			DsoConnectionAlertsInterface::REASON_SUBMISSION_NOT_STORED => $l->t(
+			PortalConnectionAlertsInterface::REASON_SUBMISSION_NOT_STORED => $l->t(
 				'An Open Formulieren submission could not be stored. Open Formulieren will deliver it again.'
 			),
-			DsoConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the Open Formulieren intake acts as.'),
+			PortalConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the Open Formulieren intake acts as.'),
 			default => $l->t('The Open Formulieren connection needs attention.'),
 		};
 
@@ -200,11 +200,11 @@ class DsoConnectionNotifier implements INotifier {
 			'no_connection', 'ambiguous_connection' => $l->t('%1$s deliveries are refused: no %1$s connection is configured.', [$label]),
 			'no_account', 'account_unknown', 'account_disabled' => $l->t('%1$s deliveries are refused: the %1$s connection has no usable account.', [$label]),
 			'account_lacks_rights', 'rights_unverifiable' => $l->t('%1$s deliveries are refused: the %1$s connection account cannot store them.', [$label]),
-			DsoConnectionAlertsInterface::REASON_DELIVERY_NOT_STORED => $l->t(
+			PortalConnectionAlertsInterface::REASON_DELIVERY_NOT_STORED => $l->t(
 				'A %s delivery could not be stored. The sender will deliver it again.',
 				[$label]
 			),
-			DsoConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the %s webhook acts as.', [$label]),
+			PortalConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the %s webhook acts as.', [$label]),
 			default => $l->t('The %s connection needs attention.', [$label]),
 		};
 

@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\Dso\DsoConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -56,7 +56,7 @@ class DsoStamConsumerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param DsoConnectionInterface   $connection     Lists the existing dso-stam consumers.
+	 * @param PortalConnectionInterface   $connection     Lists the existing dso-stam consumers.
 	 * @param RegisterMapper  $registerMapper Resolves the object's register slug.
 	 * @param SchemaMapper    $schemaMapper   Resolves the object's schema slug.
 	 * @param IL10N           $l10n           Translates the refusal.
@@ -65,7 +65,7 @@ class DsoStamConsumerListener implements IEventListener {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly DsoConnectionInterface $connection,
+		private readonly PortalConnectionInterface $connection,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IL10N $l10n,
@@ -92,7 +92,7 @@ class DsoStamConsumerListener implements IEventListener {
 		$entity = $this->savedObject(event: $event);
 		$type = strtolower((string)($entity->getObject()['authorizationType'] ?? ''));
 		$webhook = WebhookProfiles::byAuthorizationType(authorizationType: $type);
-		$known = [DsoConnectionInterface::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE];
+		$known = [PortalConnectionInterface::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE];
 		if ((in_array($type, $known, true) === false && $webhook === null)
 			|| $this->isIntegriqConsumer(object: $entity) === false
 		) {
@@ -180,7 +180,7 @@ class DsoStamConsumerListener implements IEventListener {
 			return false;
 		}
 
-		return $registerSlug === DsoConnectionInterface::REGISTER && $schemaSlug === DsoConnectionInterface::SCHEMA_CONSUMER;
+		return $registerSlug === PortalConnectionInterface::REGISTER && $schemaSlug === PortalConnectionInterface::SCHEMA_CONSUMER;
 
 	}//end isIntegriqConsumer()
 }//end class
