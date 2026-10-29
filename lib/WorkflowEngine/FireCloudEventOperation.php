@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\WorkflowEngine;
 
 use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -49,13 +49,13 @@ class FireCloudEventOperation implements ISpecificOperation {
 	/**
 	 * Constructor.
 	 *
-	 * @param EventService $eventService Service used to emit CloudEvents.
+	 * @param EventServiceInterface $eventService Service used to emit CloudEvents.
 	 * @param IL10N $l10n App-scoped translator for the operation's admin-UI copy.
 	 * @param IURLGenerator $urlGenerator Nextcloud URL generator, used for the operation icon.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,

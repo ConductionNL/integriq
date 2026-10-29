@@ -89,7 +89,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -150,14 +150,14 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizationService The existing fetch engine.
+	 * @param SynchronizationServiceInterface $synchronizationService The existing fetch engine.
 	 * @param FlowOwner $flowOwner Fail-closed run-owner resolution.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizationService,
+		private readonly SynchronizationServiceInterface $synchronizationService,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,

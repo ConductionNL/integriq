@@ -25,7 +25,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Service\SynchronizationRunProgressService;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -65,7 +65,7 @@ class SynchronizationsController extends Controller {
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param OrObjectService $orObjectService The OR object service.
-	 * @param SynchronizationService $synchronizationService The synchronization service.
+	 * @param SynchronizationServiceInterface $synchronizationService The synchronization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param IUserSession $userSession The user session.
@@ -76,7 +76,7 @@ class SynchronizationsController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly OrObjectService $orObjectService,
-		private readonly SynchronizationService $synchronizationService,
+		private readonly SynchronizationServiceInterface $synchronizationService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,

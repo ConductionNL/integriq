@@ -101,7 +101,7 @@ use Twig\Error\SyntaxError;
  *   purely to reach 15 would hide the dependency surface rather than reduce it. The
  *   real reduction is splitting the engine, which is a design change and not a lint fix.
  */
-class SynchronizationService {
+class SynchronizationService implements SynchronizationServiceInterface {
 
 	/**
 	 * Total pages the last fetched page advertised via its `Link` header.
@@ -417,16 +417,6 @@ class SynchronizationService {
 	public const MAX_PREFETCH_WINDOW = 20;
 
 	/**
-	 * Default share (0.0-1.0) of a synchronization's existing contracts that
-	 * `deleteInvalidObjects()` may garbage-collect in a single run before the
-	 * deletion-ratio guard aborts the pass. Overridable per-synchronization via
-	 * `sourceConfig.deletionRatioThreshold`.
-	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
-	 */
-	public const DEFAULT_DELETION_RATIO_THRESHOLD = 0.10;
-
-	/**
 	 * What started a purge, as the contract log names it (REQ-SDP-003): a
 	 * complete full run that no longer saw the record.
 	 *
@@ -440,30 +430,6 @@ class SynchronizationService {
 	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-every-purge-is-recorded-and-a-refused-purge-stays-visible-req-sdp-003
 	 */
 	public const PURGE_TRIGGER_NOTICE = 'destructionNotice';
-
-	/**
-	 * The outcome of a destruction notice for a record no contract of the
-	 * synchronization names: nothing was touched (REQ-SDP-002).
-	 *
-	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
-	 */
-	public const DESTRUCTION_NO_CONTRACT = 'no_contract';
-
-	/**
-	 * Minimum number of existing contracts a synchronization must have before
-	 * the deletion-ratio guard is evaluated at all.
-	 *
-	 * A percentage computed from a handful of contracts is not a meaningful
-	 * signal of "mass deletion" (deleting the single existing contract is
-	 * always a 100% ratio) and the production incidents motivating this guard
-	 * (ConductionNL/integriq#1000/#1001/#1002) involve synchronizations
-	 * with dozens to thousands of contracts, not a handful. Below this floor
-	 * the guard is skipped entirely and deletion proceeds exactly as it did
-	 * before this change (still subject to the fetch-completeness gate).
-	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
-	 */
-	public const MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD = 3;
 
 	/**
 	 * Default number of a single object's file downloads allowed in flight at once.

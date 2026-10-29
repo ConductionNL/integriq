@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -45,12 +45,12 @@ class ProcessEventJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory    $time         The time factory.
-	 * @param EventService    $eventService The fan-out.
+	 * @param EventServiceInterface    $eventService The fan-out.
 	 * @param LoggerInterface $logger       The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
