@@ -26,6 +26,14 @@ use OCA\Integriq\Exception\LtiValidationException;
  */
 interface LtiAgsServiceInterface {
 	/**
+	 * AGS line-item scope URIs (1EdTech LTI Advantage AGS 2.0).
+	 *
+	 * @var string
+	 */
+	public const SCOPE_LINEITEM = 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem';
+	public const SCOPE_LINEITEM_READONLY = 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly';
+
+	/**
 	 * RFC 7523 JWT-bearer client-credentials grant: exchange a signed
 	 * `client_assertion` for a deployment-scoped access token.
 	 *
