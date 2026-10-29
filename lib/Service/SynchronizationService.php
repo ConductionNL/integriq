@@ -45,6 +45,7 @@ use OCA\Integriq\Exception\TargetWriteRefusedException;
 use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
 use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
 use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
+use OCA\Integriq\Service\Synchronization\ApiFetch;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Synchronization\ContractRun;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
@@ -7055,148 +7056,23 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	): array {
 		$fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
 
-		// Extract source configuration.
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		$fetch = new ApiFetch(synchronization: $synchronization, data: $data);
+		$fetch->isTest       = $isTest;
+		$fetch->sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		// A non-null $resolvedSource (possibly a transient, ad-hoc source that
 		// findOrCreateSourceByLocation() never persisted) is used directly —
 		// avoiding a findSource(id: ...) lookup that would throw
 		// DoesNotExistException for a source that was never saved (REQ-012).
-		$source = $resolvedSource;
-		if ($source === null) {
-			// TODO; This is the second time this function is called in the synchonysation flow,
-			// needs further refactoring investigation.
-			// @todo this is an nuessesery db call, we should refactor this.
-			$source = $this->findSource(id: ($synchronization['sourceId'] ?? null));
-		}
+		$fetch->source = ($resolvedSource ?? $this->findSource(id: ($synchronization['sourceId'] ?? null)));
 
-		// Check rate limit before proceeding.
-		$this->checkRateLimit(source: $source);
+		$this->checkRateLimit(source: $fetch->source);
 
-		// [NEW] REQ-016 (change cdc-incremental-sync): an incremental run
-		// makes its stored high-watermark cursor available as a `cursor` key
-		// in the same Twig context {{ data.* }} endpoint templating already
-		// uses, extended below to sourceConfig.query values too. A full-mode
-		// (or syncMode-absent) run gets no `cursor` key at all — the Twig
-		// context stays byte-identical to pre-existing behavior.
-		$syncMode = (string)($synchronization['syncMode'] ?? 'full');
-		$twigContext = [];
-		if ($syncMode === 'incremental') {
-			$twigContext['cursor'] = (string)($synchronization['cursorWatermark'] ?? '');
-		}
+		$this->renderApiFetchRequest(fetch: $fetch);
+		$this->configureApiFetch(fetch: $fetch);
 
-		$endpoint = $sourceConfig['endpoint'] ?? '';
-		if (is_string($endpoint) === true
-			&& str_contains($endpoint, '{{') === true
-			&& str_contains($endpoint, '}}') === true
-		) {
-			$contextData = $data ?? [];
-			if (isset($contextData['@self']['relations']) === true && is_array($contextData['@self']['relations']) === true) {
-				$contextData = array_merge($contextData['@self']['relations'], $contextData);
-			}
-
-			$endpoint = $this->mappingService->renderTemplateString(
-				template: $endpoint,
-				context: array_merge(['data' => $contextData], $twigContext)
-			);
-		}
-
-		$headers = $sourceConfig['headers'] ?? [];
-		$query = $sourceConfig['query'] ?? [];
-
-		// [NEW] REQ-016: extend the identical {{/}}-detection-then-render
-		// treatment used for sourceConfig.endpoint to each scalar value in
-		// sourceConfig.query, incremental mode only — a full-mode run keeps
-		// sourceConfig.query passed through unrendered, unchanged from
-		// current behavior (regression scenario in REQ-016).
-		if ($syncMode === 'incremental' && is_array($query) === true && empty($query) === false) {
-			$queryContextData = $data ?? [];
-			if (isset($queryContextData['@self']['relations']) === true && is_array($queryContextData['@self']['relations']) === true) {
-				$queryContextData = array_merge($queryContextData['@self']['relations'], $queryContextData);
-			}
-
-			foreach ($query as $queryKey => $queryValue) {
-				if (is_string($queryValue) === true
-					&& str_contains($queryValue, '{{') === true
-					&& str_contains($queryValue, '}}') === true
-				) {
-					$query[$queryKey] = $this->mappingService->renderTemplateString(
-						template: $queryValue,
-						context: array_merge(['data' => $queryContextData], $twigContext)
-					);
-				}
-			}
-		}
-
-		$usesPagination = true;
-		if (isset($sourceConfig['usesPagination']) === true) {
-			$usesPagination = filter_var($sourceConfig['usesPagination'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-		}
-
-		if ($sourceConfig['resultsPosition'] === '_object') {
-			$usesPagination = false;
-		}
-
-		$config = [];
-		if (empty($headers) === false) {
-			$config['headers'] = $headers;
-		}
-
-		if (empty($query) === false) {
-			$config['query'] = $query;
-		}
-
-		if (isset($sourceConfig['useDataAsRequestBody']) === true) {
-			$useDataAsRequestBody = $sourceConfig['useDataAsRequestBody'];
-		} else {
-			$useDataAsRequestBody = null;
-		}
-
-		if ($useDataAsRequestBody === '#') {
-			$config['body'] = json_encode($data);
-		} elseif (empty($useDataAsRequestBody) === false) {
-			$config['body'] = json_encode((new Dot($data))->get($useDataAsRequestBody));
-		}
-
-		$currentPage = 1;
-
-		// Start with the current page. A JSONL synchronization reads one batch
-		// per run, so its page is where the previous run stopped.
-		if (($source['rateLimitLimit'] ?? null) !== null || ($sourceConfig['format'] ?? null) === 'jsonl') {
-			$currentPage = (int)(($synchronization['currentPage'] ?? null) ?? 1);
-		}
-
-		// Fetch all pages recursively.
-		//
-		// Call logs are BUFFERED for the duration of the fetch. One page is one
-		// call is one CallLog, and that save — even stripped of RBAC, audit and
-		// validation — costs ~55 ms and runs SERIALLY inside the page fan-out,
-		// which is why widening the concurrency window barely moved the per-page
-		// number. Buffered, the logs are written once at the end instead of
-		// between every pair of pages.
-		//
-		// The flush is in a `finally`: a fetch that throws still made those calls,
-		// and losing their logs would make the failure harder to diagnose than
-		// not buffering at all.
-		$this->callService->bufferCallLogs(enabled: true);
-
-		try {
-			$pageResult = $this->fetchAllPages(
-				source: $source,
-				endpoint: $endpoint,
-				config: $config,
-				synchronization: $synchronization,
-				currentPage: $currentPage,
-				isTest: $isTest,
-				usesPagination: $usesPagination
-			);
-		} finally {
-			$this->callService->bufferCallLogs(enabled: false);
-			$this->callService->flushCallLogs();
-		}
-
-		$objects = $pageResult['objects'];
-		$fetchInfo = [
+		$pageResult = $this->fetchApiPages(fetch: $fetch);
+		$fetchInfo  = [
 			'complete' => $pageResult['complete'],
 			'pagesFetched' => $pageResult['pagesFetched'],
 			'failureReason' => $pageResult['failureReason'],
@@ -7204,33 +7080,218 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			'sourceVersion' => ($pageResult['sourceVersion'] ?? null),
 		];
 
-		if ($sourceConfig['resultsPosition'] !== '_object' && array_is_list($objects) === false) {
-			$objects = [$objects];
-		}
-
-		// Merge additional data into each object if $data is provided.
-		if ($data !== null
-			&& empty($data) === false
-			&& $useDataAsRequestBody === false
-		) {
-			foreach ($objects as &$object) {
-				$object = array_merge($object, $data);
-			}
-		}
+		$objects = $this->shapeApiFetchObjects(fetch: $fetch, objects: $pageResult['objects']);
 
 		// Reset the current page after synchronization if not a test, or keep
 		// the batch the next run resumes at.
 		if ($isTest === false) {
-			$synchronization['currentPage'] = ($fetchInfo['resumePage'] ?? 1);
-			if (($sourceConfig['format'] ?? null) === 'jsonl') {
-				$synchronization['currentPageVersion'] = ($fetchInfo['sourceVersion'] ?? '');
-			}
-
-			$this->persistSynchronization(synchronization: $synchronization);
+			$this->persistApiFetchPosition(fetch: $fetch, fetchInfo: $fetchInfo);
 		}
 
 		return $objects;
 	}//end getAllObjectsFromApi()
+
+	/**
+	 * Render the endpoint and, on an incremental run, the query values that are Twig templates.
+	 *
+	 * REQ-016: an incremental run makes its stored high-watermark cursor
+	 * available as `cursor` in the Twig context of the endpoint and of each
+	 * scalar sourceConfig.query value. A full-mode (or syncMode-absent) run gets
+	 * no `cursor` key and keeps its query unrendered.
+	 *
+	 * @param ApiFetch $fetch The fetch being built.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
+	 */
+	private function renderApiFetchRequest(ApiFetch $fetch): void {
+		$incremental = ((string)($fetch->synchronization['syncMode'] ?? 'full') === 'incremental');
+		if ($incremental === true) {
+			$fetch->twigContext['cursor'] = (string)($fetch->synchronization['cursorWatermark'] ?? '');
+		}
+
+		$fetch->endpoint = $fetch->sourceConfig['endpoint'] ?? '';
+		if ($this->isTwigTemplate(value: $fetch->endpoint) === true) {
+			$fetch->endpoint = $this->renderApiFetchTemplate(fetch: $fetch, template: $fetch->endpoint);
+		}
+
+		$fetch->query = $fetch->sourceConfig['query'] ?? [];
+		if ($incremental === false || is_array($fetch->query) === false || empty($fetch->query) === true) {
+			return;
+		}
+
+		foreach ($fetch->query as $queryKey => $queryValue) {
+			if ($this->isTwigTemplate(value: $queryValue) === true) {
+				$fetch->query[$queryKey] = $this->renderApiFetchTemplate(fetch: $fetch, template: $queryValue);
+			}
+		}
+	}//end renderApiFetchRequest()
+
+	/**
+	 * Whether a value is a string holding a Twig expression.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
+	 */
+	private function isTwigTemplate(mixed $value): bool {
+		return is_string($value) === true
+			&& str_contains($value, '{{') === true
+			&& str_contains($value, '}}') === true;
+	}//end isTwigTemplate()
+
+	/**
+	 * Render a template against the fetch's data (its relations merged under it) and Twig context.
+	 *
+	 * @param ApiFetch $fetch    The fetch being built.
+	 * @param string   $template The template.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
+	 */
+	private function renderApiFetchTemplate(ApiFetch $fetch, string $template): string {
+		$contextData = $fetch->data ?? [];
+		if (isset($contextData['@self']['relations']) === true && is_array($contextData['@self']['relations']) === true) {
+			$contextData = array_merge($contextData['@self']['relations'], $contextData);
+		}
+
+		return $this->mappingService->renderTemplateString(
+			template: $template,
+			context: array_merge(['data' => $contextData], $fetch->twigContext)
+		);
+	}//end renderApiFetchTemplate()
+
+	/**
+	 * Settle pagination, the call configuration (headers, query, body) and the start page.
+	 *
+	 * A JSONL synchronization reads one batch per run, so its page is where the
+	 * previous run stopped; so is a rate-limited source's.
+	 *
+	 * @param ApiFetch $fetch The fetch being built.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function configureApiFetch(ApiFetch $fetch): void {
+		if (isset($fetch->sourceConfig['usesPagination']) === true) {
+			$fetch->usesPagination = filter_var($fetch->sourceConfig['usesPagination'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+		}
+
+		if ($fetch->sourceConfig['resultsPosition'] === '_object') {
+			$fetch->usesPagination = false;
+		}
+
+		$headers = $fetch->sourceConfig['headers'] ?? [];
+		if (empty($headers) === false) {
+			$fetch->config['headers'] = $headers;
+		}
+
+		if (empty($fetch->query) === false) {
+			$fetch->config['query'] = $fetch->query;
+		}
+
+		$fetch->useDataAsRequestBody = ($fetch->sourceConfig['useDataAsRequestBody'] ?? null);
+		if ($fetch->useDataAsRequestBody === '#') {
+			$fetch->config['body'] = json_encode($fetch->data);
+		} elseif (empty($fetch->useDataAsRequestBody) === false) {
+			$fetch->config['body'] = json_encode((new Dot($fetch->data))->get($fetch->useDataAsRequestBody));
+		}
+
+		if (($fetch->source['rateLimitLimit'] ?? null) !== null || ($fetch->sourceConfig['format'] ?? null) === 'jsonl') {
+			$fetch->currentPage = (int)(($fetch->synchronization['currentPage'] ?? null) ?? 1);
+		}
+	}//end configureApiFetch()
+
+	/**
+	 * Fetch all pages with the call logs buffered.
+	 *
+	 * One page is one call is one CallLog, and that save runs serially inside the
+	 * page fan-out. Buffered, the logs are written once at the end. The flush is
+	 * in a `finally`: a fetch that throws still made those calls, and losing
+	 * their logs would make the failure harder to diagnose.
+	 *
+	 * @param ApiFetch $fetch The fetch being run.
+	 *
+	 * @return array The fetchAllPages() result.
+	 *
+	 * @throws GuzzleException
+	 * @throws LoaderError
+	 * @throws SyntaxError
+	 * @throws \OCP\DB\Exception
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function fetchApiPages(ApiFetch $fetch): array {
+		$this->callService->bufferCallLogs(enabled: true);
+
+		try {
+			return $this->fetchAllPages(
+				source: $fetch->source,
+				endpoint: $fetch->endpoint,
+				config: $fetch->config,
+				synchronization: $fetch->synchronization,
+				currentPage: $fetch->currentPage,
+				isTest: $fetch->isTest,
+				usesPagination: $fetch->usesPagination
+			);
+		} finally {
+			$this->callService->bufferCallLogs(enabled: false);
+			$this->callService->flushCallLogs();
+		}
+	}//end fetchApiPages()
+
+	/**
+	 * Wrap a single fetched object in a list, and merge the data into each
+	 * object when the data was not sent as the request body.
+	 *
+	 * @param ApiFetch $fetch   The fetch that ran.
+	 * @param array    $objects The fetched objects.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function shapeApiFetchObjects(ApiFetch $fetch, array $objects): array {
+		if ($fetch->sourceConfig['resultsPosition'] !== '_object' && array_is_list($objects) === false) {
+			$objects = [$objects];
+		}
+
+		if ($fetch->data !== null
+			&& empty($fetch->data) === false
+			&& $fetch->useDataAsRequestBody === false
+		) {
+			foreach ($objects as &$object) {
+				$object = array_merge($object, $fetch->data);
+			}
+		}
+
+		return $objects;
+	}//end shapeApiFetchObjects()
+
+	/**
+	 * Store the page (and, for JSONL, the file version) the next run starts at.
+	 *
+	 * @param ApiFetch $fetch     The fetch that ran.
+	 * @param array    $fetchInfo The fetch info of the run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function persistApiFetchPosition(ApiFetch $fetch, array $fetchInfo): void {
+		$synchronization = $fetch->synchronization;
+		$synchronization['currentPage'] = ($fetchInfo['resumePage'] ?? 1);
+		if (($fetch->sourceConfig['format'] ?? null) === 'jsonl') {
+			$synchronization['currentPageVersion'] = ($fetchInfo['sourceVersion'] ?? '');
+		}
+
+		$this->persistSynchronization(synchronization: $synchronization);
+	}//end persistApiFetchPosition()
 
 	/**
 	 * Recursively fetches all pages of data from the API.
