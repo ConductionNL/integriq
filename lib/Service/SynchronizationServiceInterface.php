@@ -79,6 +79,8 @@ interface SynchronizationServiceInterface {
 	 * @param $schema The schema id.
 	 *
 	 * @return array The list of records matching the source ID.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::findAllBySourceId()
 	 */
 	public function findAllBySourceId($register, $schema);
 
@@ -110,6 +112,8 @@ interface SynchronizationServiceInterface {
 	 * @return array|null The fetched parent object as array, or null when it cannot be resolved.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::resolveParentObjectForRelatedObjectTrigger()
 	 */
 	public function resolveParentObjectForRelatedObjectTrigger(
 		array $synchronization,
@@ -333,6 +337,8 @@ interface SynchronizationServiceInterface {
 	 * @param mixed $array The array to sort.
 	 *
 	 * @return bool Whether or not the sort is successful.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::sortNestedArray()
 	 */
 	public function sortNestedArray(mixed &$array): bool;
 
@@ -584,6 +590,8 @@ interface SynchronizationServiceInterface {
 	 * @param array $body The decoded JSON body of the API response.
 	 *
 	 * @return string|null The URL for the next page of results, or null if there is no next page.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::getNextlinkFromCall()
 	 */
 	public function getNextlinkFromCall(array $body): ?string;
 
@@ -595,6 +603,8 @@ interface SynchronizationServiceInterface {
 	 *
 	 * @return array An array of items extracted from the response body.
 	 * @throws Exception If the position of objects in the return body cannot be determined.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::getAllObjectsFromArray()
 	 */
 	public function getAllObjectsFromArray(array $array, array $synchronization): array;
 
@@ -618,6 +628,8 @@ interface SynchronizationServiceInterface {
 	 * @throws SyntaxError
 	 * @throws \OCP\DB\Exception
 	 * @throws GuzzleException
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::synchronizeToTarget()
 	 */
 	public function synchronizeToTarget(
 		ObjectEntity $object,
@@ -744,6 +756,8 @@ interface SynchronizationServiceInterface {
 	 * @return ObjectEntity The resulting synchronization object.
 	 *
 	 * @throws DoesNotExistException Thrown if the synchronization does not exist.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::getSynchronization()
 	 */
 	public function getSynchronization(null|string|int $id = null, array $filters = []) :ObjectEntity;
 
@@ -761,6 +775,8 @@ interface SynchronizationServiceInterface {
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
 	 * @throws Exception
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::cleanupFilesFromAttachments()
 	 */
 	public function cleanupFilesFromAttachments(string $objectId, array $attachments): int;
 }

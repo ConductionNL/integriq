@@ -47,6 +47,8 @@ final class ServiceRegistrar {
 	 * @param IRegistrationContext $context The app's registration context.
 	 *
 	 * @return void
+	 *
+	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
 		foreach (self::CONTRACTS as $contract => $implementation) {
