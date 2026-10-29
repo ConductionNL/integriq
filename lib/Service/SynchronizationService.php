@@ -46,6 +46,7 @@ use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
 use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
 use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
+use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
@@ -2569,698 +2570,881 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?string $approvalRequestId = null,
 		?ExecutionTraceContext $trace = null,
 	): SynchronizationRunLog {
-		// Start overall timing measurement.
 		$overallStartTime = microtime(true);
-		$rateLimitException = null;
 
-		// Initialize timing data in result.
-		$result = $log->getResult();
-		$result['timing'] = [
-			'stages' => [],
-			'total_ms' => 0,
-		];
+		$run = new ExternSyncRun();
+		$run->synchronization = $synchronization;
+		$run->log = $log;
+		$run->flowToken = &$flowToken;
+		$run->isTest = $isTest;
+		$run->force = $force;
+		$run->data = $data;
+		$run->mutationType = $mutationType;
+		$run->forceDeletion = $forceDeletion;
+		$run->approvalRequestId = $approvalRequestId;
+		$run->trace = $trace;
 
-		// Stage 1: Configuration and validation.
+		$this->validateExternRun(run: $run, source: $source);
+
+		if ($data !== null && $mutationType === 'delete') {
+			$this->processExternDelete(run: $run);
+		} elseif ($this->runExternBatch(run: $run) === false) {
+			return $run->log;
+		}
+
+		// The gate passed and the write phase has completed: mark the approval
+		// consumed so it cannot re-authorize a later run (REQ-015).
+		if ($run->gatedApprovalRequest !== null) {
+			$this->approvalGate->markConsumed(approvalRequest: $run->gatedApprovalRequest);
+		}
+
+		$this->runFollowUps(run: $run);
+
+		return $this->finishExternRun(run: $run, overallStartTime: $overallStartTime);
+	}//end synchronizeExternToIntern()
+
+	/**
+	 * Stage 1 of an extern-to-intern run: load the configuration and validate the source.
+	 *
+	 * A source location, when given, replaces the synchronization's own source. A
+	 * missing source or an unset declared prerequisite stops the run before any fetch.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param string|null $source A source location to use instead of the synchronization's source.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the source is missing or a prerequisite is not set.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function validateExternRun(ExternSyncRun $run, ?string $source): void {
+		$run->result = $run->log->getResult();
+		$run->result['timing'] = ['stages' => [], 'total_ms' => 0];
+
 		$stageStartTime = microtime(true);
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		$run->sourceConfig = $this->callService->applyConfigDot(($run->synchronization['sourceConfig'] ?? []));
 
-		// If a source is provided, use it instead of the synchronization's source.
 		if ($source !== null) {
-			$source = $this->findOrCreateSourceByLocation(location: $source);
-			$synchronization['sourceId'] = (string)($source['id'] ?? $source['uuid'] ?? '');
+			$run->source = $this->findOrCreateSourceByLocation(location: $source);
+			$run->synchronization['sourceId'] = (string)($run->source['id'] ?? $run->source['uuid'] ?? '');
 		}
 
-		if (empty(($synchronization['sourceId'] ?? null)) === true && $source === null) {
-			$log->setMessage('sourceId of synchronization cannot be empty. Canceling synchronization...');
-			$log = $this->synchronizationLogService->update(log: $log);
-			throw new Exception('sourceId of synchronization cannot be empty. Canceling synchronization...');
+		if (empty(($run->synchronization['sourceId'] ?? null)) === true && $run->source === null) {
+			$this->failExternRun(run: $run, message: 'sourceId of synchronization cannot be empty. Canceling synchronization...');
 		}
 
-		// A declared prerequisite that is not set stops the run before any
-		// fetch, so nothing is written that the target app would refuse.
-		$missingPrerequisite = $this->prerequisiteGuard?->missing(sourceConfig: $sourceConfig);
+		$missingPrerequisite = $this->prerequisiteGuard?->missing(sourceConfig: $run->sourceConfig);
 		if ($missingPrerequisite !== null) {
-			$log->setMessage($missingPrerequisite);
-			$log = $this->synchronizationLogService->update(log: $log);
-			throw new Exception($missingPrerequisite);
+			$this->failExternRun(run: $run, message: $missingPrerequisite);
 		}
 
-		$result['timing']['stages']['configuration_validation'] = [
+		$run->result['timing']['stages']['configuration_validation'] = [
 			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
 			'description' => 'Configuration loading and source validation',
 		];
+	}//end validateExternRun()
 
-		// Set (only) inside the batch branch below when a Synchronization
-		// batch-gate approval_request covered this run — referenced again
-		// after the branch to mark it consumed (REQ-015). Initialized here
-		// so it is always defined, including on the single-object/delete
-		// path, which is never gated (design.md Decision 6: batch-level only).
-		$gatedApprovalRequest = null;
+	/**
+	 * Records a refusal on the run log and stops the run.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param string $message Why the run stops.
+	 *
+	 * @return never
+	 *
+	 * @throws Exception Always.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function failExternRun(ExternSyncRun $run, string $message): never {
+		$run->log->setMessage($message);
+		$run->log = $this->synchronizationLogService->update(log: $run->log);
+		throw new Exception($message);
+	}//end failExternRun()
 
-		if ($data !== null && $mutationType === 'delete') {
+	/**
+	 * Processes a single-object delete run, which is never fetched, gated or cleaned up.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function processExternDelete(ExternSyncRun $run): void {
+		$this->processSynchronizationObject(
+			synchronization: $run->synchronization,
+			object: $run->data,
+			result: $run->result,
+			isTest: $run->isTest,
+			force: $run->force,
+			log: $run->log,
+			flowToken: $run->flowToken,
+			mutationType: $run->mutationType,
+			trace: $run->trace
+		);
+	}//end processExternDelete()
+
+	/**
+	 * Runs the batch stages: fetch, prepare, gate, process, embed and clean up.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return bool False when the approval gate paused the run.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function runExternBatch(ExternSyncRun $run): bool {
+		$this->fetchExternObjects(run: $run);
+		$this->prepareExternObjectList(run: $run);
+
+		if ($this->passesApprovalGate(run: $run) === false) {
+			return false;
+		}
+
+		$stageStartTime = microtime(true);
+		$this->processExternObjects(run: $run);
+		$this->embedRunContracts(run: $run);
+		$this->recordProcessingTiming(run: $run, stageStartTime: $stageStartTime);
+		$this->cleanupExternRun(run: $run);
+
+		return true;
+	}//end runExternBatch()
+
+	/**
+	 * Stage 2: fetches the objects from the source.
+	 *
+	 * A 429 aborts the fetch before it can report its own completeness, so it is
+	 * recorded as an incomplete fetch explicitly (REQ-009) and rethrown at the end.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function fetchExternObjects(ExternSyncRun $run): void {
+		$stageStartTime = microtime(true);
+		$fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
+		try {
+			// The resolved source is threaded through so the fetch chain never
+			// re-resolves it by id (REQ-012).
+			$run->objectList = $this->getAllObjectsFromSource(
+				synchronization: $run->synchronization,
+				isTest: $run->isTest,
+				data: $run->data,
+				fetchInfo: $fetchInfo,
+				resolvedSource: $run->source
+			);
+		} catch (TooManyRequestsHttpException $e) {
+			$run->rateLimitException = $e;
+			$run->objectList = [];
+			$fetchInfo = ['complete' => false, 'pagesFetched' => 0, 'failureReason' => 'rate_limited'];
+		}
+
+		$run->fetchInfo = $fetchInfo;
+		$this->applyBatchResume(run: $run);
+
+		$run->result['timing']['stages']['fetch_objects'] = [
+			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+			'description' => 'Fetching objects from external source (optimized pagination)',
+			'objects_fetched' => count($run->objectList),
+			'rate_limited' => $run->rateLimitException !== null,
+			'fetch_method' => 'optimized_sequential',
+		];
+	}//end fetchExternObjects()
+
+	/**
+	 * Carries the batch a batched (JSONL) source resumes at onto the run's synchronization.
+	 *
+	 * A batch still to come, after a batch that read records, is reported so the
+	 * job comes back on the next cron tick; a failed download keeps its batch and
+	 * waits for the job's own interval.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function applyBatchResume(ExternSyncRun $run): void {
+		$resumePage = ($run->fetchInfo['resumePage'] ?? null);
+		if ($run->isTest !== false || $resumePage === null) {
+			return;
+		}
+
+		$run->synchronization['currentPage'] = $resumePage;
+		$run->synchronization['currentPageVersion'] = ($run->fetchInfo['sourceVersion'] ?? '');
+		if ($resumePage > 1 && $run->fetchInfo['failureReason'] === 'batch_limit_reached') {
+			$run->result['resume'] = ['page' => $resumePage, 'reason' => $run->fetchInfo['failureReason']];
+		}
+	}//end applyBatchResume()
+
+	/**
+	 * Stage 3: counts the fetched objects and wraps a single `_object` result in a list.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function prepareExternObjectList(ExternSyncRun $run): void {
+		$stageStartTime = microtime(true);
+		$run->result['objects']['found'] = count($run->objectList);
+
+		if (($run->sourceConfig['resultsPosition'] ?? null) === '_object') {
+			if (array_is_list($run->objectList) === false) {
+				$run->objectList = [$run->objectList];
+			}
+
+			$run->result['objects']['found'] = count($run->objectList);
+		}
+
+		$run->result['timing']['stages']['object_preparation'] = [
+			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+			'description' => 'Object list preparation and counting',
+			'final_object_count' => count($run->objectList),
+		];
+	}//end prepareExternObjectList()
+
+	/**
+	 * The batch-level approval gate (REQ-015), checked before any write.
+	 *
+	 * A test run is never gated. Without an approved request, or when the source
+	 * changed after the previewed change set (REQ-INAV-004), the run is paused.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return bool True when the run may write.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function passesApprovalGate(ExternSyncRun $run): bool {
+		if ($run->isTest !== false || (bool)($run->sourceConfig['requiresApproval'] ?? false) !== true) {
+			return true;
+		}
+
+		// `id` first: OpenRegister exposes no top-level `uuid`.
+		$synchronizationId = (string)(($run->synchronization['id'] ?? null) ?? ($run->synchronization['uuid'] ?? ''));
+		$run->gatedApprovalRequest = $this->approvalGate->resolve(
+			synchronizationId: $synchronizationId,
+			bypassApprovalId: $run->approvalRequestId
+		);
+
+		// What this run would create, change and remove (REQ-INAV-003); removals
+		// only where REQ-010 and REQ-018 would allow a deletion in this run.
+		$changeSet = $this->buildGateChangeSet(
+			synchronization: $run->synchronization,
+			objectList: $run->objectList,
+			removalsAllowed: (
+				$run->rateLimitException === null
+				&& ($run->fetchInfo['complete'] ?? true) === true
+				&& (string)($run->synchronization['syncMode'] ?? 'full') !== 'incremental'
+			)
+		);
+
+		$superseded = $this->isApprovalSuperseded(approvalRequest: $run->gatedApprovalRequest, fingerprint: $changeSet['fingerprint']);
+		if ($run->gatedApprovalRequest !== null && $superseded === false) {
+			return true;
+		}
+
+		$this->pauseGatedRun(run: $run, synchronizationId: $synchronizationId, changeSet: $changeSet, superseded: $superseded);
+
+		return false;
+	}//end passesApprovalGate()
+
+	/**
+	 * Checks whether an approval was given for a different change set than this run's.
+	 *
+	 * A request stored before previews existed carries no fingerprint and passes.
+	 *
+	 * @param ObjectEntity|null $approvalRequest The approval request, if any.
+	 * @param mixed $fingerprint The fingerprint of this run's change set.
+	 *
+	 * @return bool True when the approval is superseded.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function isApprovalSuperseded(?ObjectEntity $approvalRequest, mixed $fingerprint): bool {
+		$previewedFingerprint = null;
+		if ($approvalRequest !== null) {
+			$previewedFingerprint = ($approvalRequest->getObject()['fingerprint'] ?? null);
+		}
+
+		return is_string($previewedFingerprint) === true
+			&& $previewedFingerprint !== ''
+			&& $previewedFingerprint !== $fingerprint;
+	}//end isApprovalSuperseded()
+
+	/**
+	 * Pauses a gated run: asks for approval and records the run as skipped.
+	 *
+	 * No writes, no garbage collection and no follow-ups run for a paused run.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param string $synchronizationId The synchronization id.
+	 * @param array $changeSet The run's change set.
+	 * @param bool $superseded Whether an earlier approval was superseded.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function pauseGatedRun(ExternSyncRun $run, string $synchronizationId, array $changeSet, bool $superseded): void {
+		$newRequest = $this->suspendGatedRun(
+			synchronization: $run->synchronization,
+			synchronizationId: $synchronizationId,
+			changeSet: $changeSet
+		);
+
+		$message = 'pending_approval';
+		if ($superseded === true) {
+			$this->approvalGate->markSuperseded(
+				approvalRequest: $run->gatedApprovalRequest,
+				supersededBy: (string)$newRequest->getUuid()
+			);
+			$run->result['approval'] = [
+				'superseded' => true,
+				'previous' => $run->gatedApprovalRequest->getUuid(),
+				'supersededBy' => $newRequest->getUuid(),
+			];
+			$message = 'approval_superseded';
+			$run->gatedApprovalRequest = null;
+		}
+
+		$count = count($run->objectList);
+		$run->result['objects'] = array_merge(
+			($run->result['objects'] ?? []),
+			['found' => $count, 'created' => 0, 'updated' => 0, 'skipped' => $count, 'deleted' => 0]
+		);
+
+		$run->log->setResult($run->result);
+		$run->log->setMessage($message);
+		$run->log = $this->synchronizationLogService->update(log: $run->log);
+	}//end pauseGatedRun()
+
+	/**
+	 * Stage 4: processes every fetched object, with batched writes.
+	 *
+	 * Target and contract writes are buffered for the loop and flushed as batched
+	 * upserts (see flushWriteBuffers()). A test run is excluded (REQ-011). The
+	 * `finally` resets the buffer flag: this shared service re-enters itself, so a
+	 * flag left on by a throw would make a later call buffer writes nothing flushes.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 */
+	private function processExternObjects(ExternSyncRun $run): void {
+		// One contract read for the whole page, before the loop; a row this
+		// pre-pass cannot read is skipped, not fatal (see originIdsForIndex()).
+		$contractIndex = $this->indexContractsByOrigin(
+			synchronizationId: (string)($run->synchronization['id'] ?? ''),
+			originIds: $this->originIdsForIndex(synchronization: $run->synchronization, objectList: $run->objectList),
+			justByOriginId: (
+				isset($run->sourceConfig['findContractByOriginIdOnly']) === true
+				&& filter_var($run->sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
+			)
+		);
+
+		$this->targetWriteBuffer = [];
+		$this->contractWriteBuffer = [];
+		$this->writeFlushMs = 0.0;
+		$this->bufferWrites = ($run->isTest === false);
+
+		try {
+			$progressProcessed = 0;
+			foreach ($run->objectList as $object) {
+				$progressProcessed++;
+				$this->processExternObject(run: $run, object: $object, contractIndex: $contractIndex, processed: $progressProcessed);
+			}
+		} finally {
+			$this->bufferWrites = false;
+			$this->flushWriteBuffers();
+		}
+	}//end processExternObjects()
+
+	/**
+	 * Processes one fetched object, isolating its failure from the rest of the run.
+	 *
+	 * A bare scalar item is wrapped as `['value' => ...]` first, so it flows through
+	 * mapping, identity and write like any other item (REQ-002/REQ-008).
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param mixed $object The fetched object.
+	 * @param array|null $contractIndex The run's contracts indexed by origin id.
+	 * @param int $processed How many objects this run has reached, this one included.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 */
+	private function processExternObject(ExternSyncRun $run, mixed $object, ?array $contractIndex, int $processed): void {
+		$this->tickRunProgress(run: $run, processed: $processed);
+
+		if (is_array($object) === false) {
+			$object = ['value' => $object];
+		}
+
+		$objectStartTime = microtime(true);
+		try {
 			$processResult = $this->processSynchronizationObject(
-				synchronization: $synchronization,
-				object: $data,
-				result: $result,
-				isTest: $isTest,
-				force: $force,
-				log: $log,
-				flowToken: $flowToken,
-				mutationType: $mutationType,
-				trace: $trace
+				synchronization: $run->synchronization,
+				flowToken: $run->flowToken,
+				object: $object,
+				result: $run->result,
+				isTest: $run->isTest,
+				force: $run->force,
+				log: $run->log,
+				trace: $run->trace,
+				contractIndex: $contractIndex
 			);
-		} else {
-			// Stage 2: Fetching objects from source.
-			$stageStartTime = microtime(true);
-			$fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
-			try {
-				// $source, when non-null here, is the transient/resolved source array
-				// built above (either an ad-hoc, never-persisted location or an
-				// existing configured Source) — threaded through so the fetch chain
-				// never re-resolves it by id (REQ-012).
-				$objectList = $this->getAllObjectsFromSource(
-					synchronization: $synchronization,
-					isTest: $isTest,
-					data: $data,
-					fetchInfo: $fetchInfo,
-					resolvedSource: $source
-				);
-			} catch (TooManyRequestsHttpException $e) {
-				$rateLimitException = $e;
-				// Ensure it's defined.
-				$objectList = [];
-				// A 429 aborts the fetch before it can report its own completeness;
-				// treat it as incomplete explicitly rather than trusting whatever
-				// $fetchInfo held at the moment checkRateLimit() threw (REQ-009).
-				$fetchInfo = ['complete' => false, 'pagesFetched' => 0, 'failureReason' => 'rate_limited'];
-			}//end try
+		} catch (\Throwable $itemException) {
+			$this->recordExternItemFailure(run: $run, object: $object, exception: $itemException);
+			$run->objectTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
+			return;
+		}
 
-			// A batched source (JSONL) names the batch the next run starts at.
-			// It is carried on this run's copy of the synchronization, which is
-			// what the end of the run persists, and a batch still to come is
-			// reported so the job can come back on the next cron tick.
-			// Only a batch that read records comes back on the next tick; a failed
-			// download keeps its batch and waits for the job's own interval.
-			if ($isTest === false && ($fetchInfo['resumePage'] ?? null) !== null) {
-				$synchronization['currentPage'] = $fetchInfo['resumePage'];
-				$synchronization['currentPageVersion'] = ($fetchInfo['sourceVersion'] ?? '');
-				if ($fetchInfo['resumePage'] > 1 && $fetchInfo['failureReason'] === 'batch_limit_reached') {
-					$result['resume'] = ['page' => $fetchInfo['resumePage'], 'reason' => $fetchInfo['failureReason']];
-				}
-			}
+		$run->objectTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
+		$this->recordExternItemResult(run: $run, processResult: $processResult);
+	}//end processExternObject()
 
-			$fetchDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
-			$result['timing']['stages']['fetch_objects'] = [
-				'duration_ms' => $fetchDuration,
-				'description' => 'Fetching objects from external source (optimized pagination)',
-				'objects_fetched' => count($objectList),
-				'rate_limited' => $rateLimitException !== null,
-				'fetch_method' => 'optimized_sequential',
-			];
+	/**
+	 * Takes a processed item's result into the run, and flushes full write buffers.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param array $processResult What processSynchronizationObject() returned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function recordExternItemResult(ExternSyncRun $run, array $processResult): void {
+		$run->result = $this->takeValidationFindings(result: $processResult['result']);
 
-			// Stage 3: Object list preparation.
-			$stageStartTime = microtime(true);
-			$result['objects']['found'] = count($objectList);
+		if ($processResult['targetId'] !== null) {
+			$run->targetIds[] = $processResult['targetId'];
+		}
 
-			if (($sourceConfig['resultsPosition'] ?? null) === '_object') {
-				if (array_is_list($objectList) === false) {
-					$objectList = [$objectList];
-				}
+		// Bound peak memory: the loop covers the run's whole object list.
+		if ($this->countBufferedTargetRows() >= self::WRITE_BUFFER_FLUSH_SIZE) {
+			$this->flushWriteBuffers();
+		}
+	}//end recordExternItemResult()
 
-				$result['objects']['found'] = count($objectList);
-			}
+	/**
+	 * Reports the run's progress; the progress service's time throttle decides what is written.
+	 *
+	 * Counted from the loop, because the run log's tallies are only filled in at the end.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param int $processed How many objects this run has reached.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function tickRunProgress(ExternSyncRun $run, int $processed): void {
+		$this->runProgressService?->tick(
+			counters: [
+				'found' => count($run->objectList),
+				'processed' => $processed,
+				'created' => (int)($run->result['objects']['created'] ?? 0),
+				'updated' => (int)($run->result['objects']['updated'] ?? 0),
+				'deleted' => (int)($run->result['objects']['deleted'] ?? 0),
+				'invalid' => (int)($run->result['objects']['invalid'] ?? 0),
+			]
+		);
+	}//end tickRunProgress()
 
-			$result['timing']['stages']['object_preparation'] = [
-				'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
-				'description' => 'Object list preparation and counting',
-				'final_object_count' => count($objectList),
-			];
+	/**
+	 * Counts a failed item as invalid, logs why and dead-letters it.
+	 *
+	 * `invalid` also counts non-array items and unrecognised result actions, so
+	 * the log line states that this item threw.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param array $object The item.
+	 * @param \Throwable $exception What the item threw.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 */
+	private function recordExternItemFailure(ExternSyncRun $run, array $object, \Throwable $exception): void {
+		$run->result['objects']['invalid']++;
 
-			// Batch-level HITL approval gate (synchronization-engine REQ-015):
-			// once fetch + mapping/preparation are done and BEFORE any write or
-			// garbage-collection begins, check `sourceConfig.requiresApproval`.
-			// A test (dry) run is never gated — REQ-011 already guarantees it
-			// makes no writes, so there is nothing to gate. Gates the whole
-			// batch via a single approval_request, not per object
-			// (design.md Decision 6).
-			if ($isTest === false && (bool)($sourceConfig['requiresApproval'] ?? false) === true) {
-				// `id` first — same reason as the run log below: OpenRegister
-				// exposes no top-level `uuid`, so this resolved to '' and the
-				// approval gate looked up (and suspended against) an empty
-				// synchronization id.
-				$synchronizationId = (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? ''));
+		$this->logger->warning(
+			'Synchronization item counted as invalid: item processing threw',
+			[
+				'synchronization' => ($run->synchronization['name'] ?? ($run->synchronization['uuid'] ?? null)),
+				'exception' => $exception->getMessage(),
+				'exceptionClass' => get_class($exception),
+				'file' => $exception->getFile() . ':' . $exception->getLine(),
+			]
+		);
 
-				$gatedApprovalRequest = $this->approvalGate->resolve(
-					synchronizationId: $synchronizationId,
-					bypassApprovalId: $approvalRequestId
-				);
+		$this->captureSyncItemFailure(synchronization: $run->synchronization, object: $object, exception: $exception);
+		$run->result = $this->takeValidationFindings(result: $run->result);
+	}//end recordExternItemFailure()
 
-				// What this run would create, change and remove, built before
-				// any write (REQ-INAV-003). Removals only where REQ-010 and
-				// REQ-018 would allow a deletion in this run.
-				$changeSet = $this->buildGateChangeSet(
-					synchronization: $synchronization,
-					objectList: $objectList,
-					removalsAllowed: (
-						$rateLimitException === null
-						&& ($fetchInfo['complete'] ?? true) === true
-						&& (string)($synchronization['syncMode'] ?? 'full') !== 'incremental'
-					)
-				);
+	/**
+	 * Resolves the run's contracts once, in one query, into `_embed.contracts`.
+	 *
+	 * `_embed.contracts` stays positionally aligned with `contracts`, with null for
+	 * a contract without uuid or one that no longer resolves. Embedding is bounded:
+	 * past `maxEmbeddedContracts` it is omitted, and the uuids stay in `contracts`.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function embedRunContracts(ExternSyncRun $run): void {
+		$contractIds = array_values(
+			array_filter(
+				($run->result['contracts'] ?? []),
+				static fn ($id): bool => $id !== null
+			)
+		);
 
-				// An accept whose source changed after the preview writes
-				// nothing and asks again (REQ-INAV-004). A request stored
-				// before previews existed carries no fingerprint and passes.
-				$previewedFingerprint = null;
-				if ($gatedApprovalRequest !== null) {
-					$previewedFingerprint = ($gatedApprovalRequest->getObject()['fingerprint'] ?? null);
-				}
-
-				$superseded = (
-					is_string($previewedFingerprint) === true
-					&& $previewedFingerprint !== ''
-					&& $previewedFingerprint !== $changeSet['fingerprint']
-				);
-
-				if ($gatedApprovalRequest === null || $superseded === true) {
-					$newRequest = $this->suspendGatedRun(
-						synchronization: $synchronization,
-						synchronizationId: $synchronizationId,
-						changeSet: $changeSet
-					);
-
-					$message = 'pending_approval';
-					if ($superseded === true) {
-						$this->approvalGate->markSuperseded(
-							approvalRequest: $gatedApprovalRequest,
-							supersededBy: (string)$newRequest->getUuid()
-						);
-						$result['approval'] = [
-							'superseded' => true,
-							'previous' => $gatedApprovalRequest->getUuid(),
-							'supersededBy' => $newRequest->getUuid(),
-						];
-						$message = 'approval_superseded';
-						$gatedApprovalRequest = null;
-					}
-
-					$result['objects']['found'] = count($objectList);
-					$result['objects']['created'] = 0;
-					$result['objects']['updated'] = 0;
-					$result['objects']['skipped'] = count($objectList);
-					$result['objects']['deleted'] = 0;
-
-					$log->setResult($result);
-					$log->setMessage($message);
-					$log = $this->synchronizationLogService->update(log: $log);
-
-					// No writes, no garbage collection, no follow-ups — the run
-					// is paused, not completed (REQ-015).
-					return $log;
-				}//end if
-			}//end if
-
-			// Stage 4: Processing individual objects.
-			$stageStartTime = microtime(true);
-			$synchronizedTargetIds = [];
-			$objectProcessingTimes = [];
-
-			// ONE contract read for the whole page, before the loop. The loop
-			// below is unchanged; it resolves each item's contract from this
-			// index rather than issuing its own query.
-			//
-			// 🔑 A ROW THIS PRE-PASS CANNOT READ IS SKIPPED, NOT FATAL. The
-			// reasoning lives on {@see self::originIdsForIndex()}, which this and
-			// origin/development arrived at independently and identically; the
-			// only thing merged here was whether it is written inline or extracted.
-			// Extracted, because this method is already long enough that phpmd
-			// counts it, and forty lines of pre-pass would be forty lines between
-			// the reader and the loop the pre-pass exists to serve.
-			$contractIndex = $this->indexContractsByOrigin(
-				synchronizationId: (string)($synchronization['id'] ?? ''),
-				originIds: $this->originIdsForIndex(synchronization: $synchronization, objectList: $objectList),
-				justByOriginId: (
-					isset($sourceConfig['findContractByOriginIdOnly']) === true
-					&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
-				)
+		$embedCap = (int)($run->sourceConfig['maxEmbeddedContracts'] ?? self::MAX_EMBEDDED_CONTRACTS);
+		if ($embedCap > 0 && count($contractIds) > $embedCap) {
+			$this->logger->info(
+				'Skipped _embed.contracts for {count} contracts (cap {cap}): inlining them would '
+				. 'cost more memory and CPU than the synchronization itself. The uuids remain in '
+				. '`contracts`.',
+				['count' => count($contractIds), 'cap' => $embedCap]
 			);
+			return;
+		}
 
-			// Buffer target and contract writes for the duration of this loop so
-			// a page's objects reach the database as batched upserts instead of
-			// one round trip per record. See flushWriteBuffers() for why BOTH
-			// sides have to be deferred together, and why the flush order is
-			// load-bearing.
-			//
-			// A test run is excluded: REQ-011 guarantees a dry run makes no
-			// writes, and synchronizeContract() returns before reaching either
-			// write, so there would be nothing to flush anyway.
-			//
-			// The `finally` is not defensive tidying — it is what makes the mode
-			// flag safe. This service is a shared container instance that
-			// re-enters itself through `synchronization` rules and `followUps`,
-			// so a flag left true by a throw would make some later, unbuffered
-			// call path silently buffer writes that nothing ever flushes.
-			$this->targetWriteBuffer = [];
-			$this->contractWriteBuffer = [];
-			$this->writeFlushMs = 0.0;
-			$this->bufferWrites = ($isTest === false);
+		$resolved = $this->resolveContractsForEmbed(contractIds: $contractIds);
+		$run->result['_embed']['contracts'] = array_map(
+			static function ($contractId) use ($resolved) {
+				if ($contractId === null) {
+					return null;
+				}
 
-			try {
-				$progressProcessed = 0;
-				foreach ($objectList as $object) {
-					// Called EVERY object; the service's time throttle decides
-					// what actually reaches the database. Deliberately not
-					// throttled by object count here — a per-N-objects rule
-					// writes 200x more on a 20,000-object corpus than on a 100
-					// one, whereas a time rule costs the same either way.
-					//
-					// Counted from the LOOP, not from `$log->getResult()`: the
-					// run-log's object tallies are only filled in once the run
-					// finishes, so reading them here reported `found=0
-					// processed=0` for the entire run — a progress record that
-					// showed `running` and never moved.
-					$progressProcessed++;
-					$this->runProgressService?->tick(
-						counters: [
-							'found' => count($objectList),
-							'processed' => $progressProcessed,
-							'created' => (int)($result['objects']['created'] ?? 0),
-							'updated' => (int)($result['objects']['updated'] ?? 0),
-							'deleted' => (int)($result['objects']['deleted'] ?? 0),
-							'invalid' => (int)($result['objects']['invalid'] ?? 0),
-						]
-					);
+				return ($resolved[(string)$contractId] ?? null);
+			},
+			($run->result['contracts'] ?? [])
+		);
+	}//end embedRunContracts()
 
-					// Bare-scalar source item coercion (synchronization-engine
-					// spec REQ-002/REQ-008, change sync-engine-scalar-items):
-					// getOriginId() and processSynchronizationObject() are
-					// `array`-typed; PHP does not coerce a scalar across a
-					// strict type hint, so an uncoerced scalar (e.g. a source
-					// returning a bare array of strings) throws a TypeError at
-					// the call boundary before either method body — and before
-					// processSynchronizationObject()'s own defensive
-					// is_array() === false skip-check — ever runs. Wrap a bare
-					// scalar into a canonical ['value' => ...] shape here, the
-					// single earliest point common to every sourceType, so it
-					// flows through mapping/identity/write like any other item
-					// instead of dead-lettering with an opaque low-level type
-					// error. A synchronization whose source returns scalar
-					// items MUST set sourceConfig.idPosition to 'value' for
-					// getOriginId()'s default idPosition ('id') to be
-					// overridden and resolve identity on this coerced shape.
-					// Guarded by is_array() === false so every existing
-					// array-shaped item — the overwhelming common case — is
-					// returned completely untouched, with no behaviour change
-					// to identity-hash semantics for non-scalar sources.
-					if (is_array($object) === false) {
-						$object = ['value' => $object];
-					}
+	/**
+	 * Loads contracts by uuid, keyed by id; best-effort, a failure yields none.
+	 *
+	 * @param array $contractIds The contract uuids.
+	 *
+	 * @return array<string, array> The serialized contracts, keyed by id.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function resolveContractsForEmbed(array $contractIds): array {
+		$resolved = [];
+		if ($contractIds === []) {
+			return $resolved;
+		}
 
-					$objectStartTime = microtime(true);
-
-					// Per-item isolation (synchronization-engine spec REQ-008,
-					// change retry-and-circuit-breaker-policies): a single
-					// object's mapping/write failure must not abort the rest of
-					// the pass — previously an uncaught exception here propagated
-					// through this un-guarded loop. On catch: capture a
-					// sync_item_dead_letter entry, count the item as invalid, and
-					// continue with the next object.
-					try {
-						$processResult = $this->processSynchronizationObject(
-							synchronization: $synchronization,
-							flowToken: $flowToken,
-							object: $object,
-							result: $result,
-							isTest: $isTest,
-							force: $force,
-							log: $log,
-							trace: $trace,
-							contractIndex: $contractIndex
-						);
-					} catch (\Throwable $itemException) {
-						$result['objects']['invalid']++;
-
-						// Log the reason as well as dead-lettering it. Without this the
-						// run log carries only a bare `invalid: N` count and the cause
-						// is reachable ONLY by querying sync_item_dead_letter objects —
-						// so a whole sync failing looks indistinguishable from the
-						// target rejecting the objects on schema validation. Note that
-						// `invalid` conflates three unrelated conditions (this throw, a
-						// non-array source item, and an unrecognised resultAction), so
-						// the message states which one this is.
-						$this->logger->warning(
-							'Synchronization item counted as invalid: item processing threw',
-							[
-								'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
-								'exception' => $itemException->getMessage(),
-								'exceptionClass' => get_class($itemException),
-								'file' => $itemException->getFile() . ':' . $itemException->getLine(),
-							]
-						);
-
-						$this->captureSyncItemFailure(synchronization: $synchronization, object: $object, exception: $itemException);
-						$result = $this->takeValidationFindings(result: $result);
-
-						$objectProcessingTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
-						continue;
-					}//end try
-
-					$objectProcessingTime = round((microtime(true) - $objectStartTime) * 1000, 2);
-					$objectProcessingTimes[] = $objectProcessingTime;
-
-					$result = $this->takeValidationFindings(result: $processResult['result']);
-
-					// `_embed` is deliberately NOT built here. It used to be, on every
-					// object, over the WHOLE accumulated `contracts` list — so the list
-					// was re-read from the database end to end once per item. Measured
-					// on a TEN record sync: 27,455 single-object contract reads, which
-					// is the list length times the object count, and ~69 seconds of
-					// database time on its own. It is enrichment for the FINAL result
-					// and nothing inside this loop reads it, so it is built once after
-					// the loop instead.
-
-					if ($processResult['targetId'] !== null) {
-						$synchronizedTargetIds[] = $processResult['targetId'];
-					}
-
-					// Bound peak memory: this loop covers the run's WHOLE object
-					// list, not one page, so an unbounded buffer would hold every
-					// mapped row of a large sync before the first write. Flushing
-					// mid-loop keeps the objects-then-contracts order intact — each
-					// flush is self-contained, and every contract it writes maps an
-					// object written by that same flush or an earlier one.
-					if ($this->countBufferedTargetRows() >= self::WRITE_BUFFER_FLUSH_SIZE) {
-						$this->flushWriteBuffers();
-					}
-				}//end foreach
-			} finally {
-				$this->bufferWrites = false;
-				$this->flushWriteBuffers();
-			}
-
-			// Resolve the run's contracts for `_embed` ONCE, in one query.
-			//
-			// `contracts` is a sparse list of OpenRegister uuids: the engine pushes
-			// `$contractUuid` unconditionally and leaves it null whenever the
-			// contract carries no uuid. A test run is the common case —
-			// synchronizeContract() returns the in-memory contract without
-			// persisting it, so a contract that did not already exist has no uuid
-			// at all, and every entry for a first-time dry run is null. Nulls are
-			// preserved positionally so `_embed.contracts` stays aligned with
-			// `contracts` itself.
-			//
-			// Embedding is best-effort enrichment and must never fail the
-			// synchronization that produced it, so a uuid that no longer resolves
-			// stays null rather than raising.
-			$contractIds = array_values(
-				array_filter(
-					($result['contracts'] ?? []),
-					static fn ($id): bool => $id !== null
-				)
-			);
-
-			// EMBEDDING IS BOUNDED, and the bound is the point. `_embed` exists so
-			// a caller reading ONE run can see its contracts inline; it was never
-			// meant to inline a whole corpus. Unbounded it resolves every contract
-			// the run touched, `jsonSerialize()`s each, holds them all in
-			// `$resolved`, copies them into `$result`, and then json-encodes the
-			// lot onto the log row.
-			//
-			// MEASURED 2026-08-14 on data.overheid.nl: a 19,822-object run wrote
-			// every object and every contract, then sat at 100% CPU with 1.2-1.4 GB
-			// resident and NO database activity for ten minutes doing this. The
-			// same sync at 2,000 objects finished in 24 s, which is why nothing
-			// smaller ever showed it. Bypassing the flow and skipping the deletion
-			// guard both reproduced it, so this is the sync's own cost.
-			//
-			// Past the cap the contract UUIDs are still returned in
-			// `$result['contracts']` — nothing is hidden, and a caller who wants a
-			// specific contract can fetch it.
-			$embedContracts = true;
-			$embedCap = (int)($sourceConfig['maxEmbeddedContracts'] ?? self::MAX_EMBEDDED_CONTRACTS);
-			if ($embedCap > 0 && count($contractIds) > $embedCap) {
-				$this->logger->info(
-					'Skipped _embed.contracts for {count} contracts (cap {cap}): inlining them would '
-					. 'cost more memory and CPU than the synchronization itself. The uuids remain in '
-					. '`contracts`.',
-					['count' => count($contractIds), 'cap' => $embedCap]
-				);
-
-				$contractIds = [];
-				$embedContracts = false;
-			}
-
-			$resolved = [];
-			if ($contractIds !== []) {
-				try {
-					foreach ($this->findAllContractObjects(filters: ['uuid' => $contractIds]) as $match) {
-						$payload = $match->jsonSerialize();
-						$key = (string)(($payload['id'] ?? null) ?? ($payload['uuid'] ?? ''));
-						if ($key !== '') {
-							$resolved[$key] = $payload;
-						}
-					}
-				} catch (\Throwable $embedException) {
-					$this->logger->warning(
-						'Could not resolve contracts for _embed: ' . $embedException->getMessage()
-					);
+		try {
+			foreach ($this->findAllContractObjects(filters: ['uuid' => $contractIds]) as $match) {
+				$payload = $match->jsonSerialize();
+				$key = (string)(($payload['id'] ?? null) ?? ($payload['uuid'] ?? ''));
+				if ($key !== '') {
+					$resolved[$key] = $payload;
 				}
 			}
+		} catch (\Throwable $embedException) {
+			$this->logger->warning(
+				'Could not resolve contracts for _embed: ' . $embedException->getMessage()
+			);
+		}
 
-			// Positionally aligned with `contracts` when embedding — but omitted
-			// entirely when capped, rather than filled with one null per contract.
-			// A list of 19,800 nulls carries no information and is the same size
-			// problem in a cheaper disguise.
-			if ($embedContracts === true) {
-				$result['_embed']['contracts'] = array_map(
-					static function ($contractId) use ($resolved) {
-						if ($contractId === null) {
-							return null;
-						}
+		return $resolved;
+	}//end resolveContractsForEmbed()
 
-						return ($resolved[(string)$contractId] ?? null);
-					},
-					($result['contracts'] ?? [])
-				);
-			}
+	/**
+	 * Records the timing of stage 4, split into database writes and everything else.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param float $stageStartTime When stage 4 started.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function recordProcessingTiming(ExternSyncRun $run, float $stageStartTime): void {
+		$totalProcessingDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
+		$objectCount = count($run->objectList);
 
-			$totalProcessingDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
+		$averagePerObjectMs = 0;
+		if ($objectCount > 0) {
+			$averagePerObjectMs = round($totalProcessingDuration / $objectCount, 2);
+		}
 
-			$averagePerObjectMs = 0;
-			if (count($objectList) > 0) {
-				$averagePerObjectMs = round($totalProcessingDuration / count($objectList), 2);
-			}
-
-			$minObjectMs = 0;
-			$maxObjectMs = 0;
-			$medianObjectMs = 0;
-			if (count($objectProcessingTimes) > 0) {
-				$minObjectMs = min($objectProcessingTimes);
-				$maxObjectMs = max($objectProcessingTimes);
-				$medianObjectMs = $this->calculateMedian(numbers: $objectProcessingTimes);
-			}
-
-			// Split the stage into the database writes and everything else, so a
-			// future measurement can tell whether the next win is in the mapping
-			// path or the storage layer instead of having to re-derive it.
-			$result['timing']['stages']['process_objects'] = [
+		$run->result['timing']['stages']['process_objects'] = array_merge(
+			[
 				'duration_ms' => $totalProcessingDuration,
 				'description' => 'Processing and synchronizing individual objects',
 				'bulk_write_ms' => round($this->writeFlushMs, 2),
 				'engine_ms' => round(($totalProcessingDuration - $this->writeFlushMs), 2),
-				'objects_processed' => count($objectList),
+				'objects_processed' => $objectCount,
 				'average_per_object_ms' => $averagePerObjectMs,
-				'min_object_ms' => $minObjectMs,
-				'max_object_ms' => $maxObjectMs,
-				'median_object_ms' => $medianObjectMs,
-			];
+			],
+			$this->summarizeObjectTimes(times: $run->objectTimes)
+		);
+	}//end recordProcessingTiming()
 
-			// Stage 5: Cleanup - Delete invalid objects.
-			$stageStartTime = microtime(true);
-
-			$deleteRestriction = (isset($sourceConfig['restrictDeletion']) === true && (bool)$sourceConfig['restrictDeletion']);
-
-			$deleteData = [];
-			if (isset($data) === true) {
-				$deleteData = $data;
-			}
-
-			// A test (dry) run MUST NOT delete anything, regardless of what the
-			// fetch found (REQ-011) — the cleanup pass is skipped entirely rather
-			// than merely guarded, so a "Test" click can never remove real data.
-			$deletedCount = 0;
-			$guardInfo = null;
-			if ($isTest === false) {
-				$fetchComplete = ($rateLimitException === null && ($fetchInfo['complete'] ?? true));
-
-				// [NEW] REQ-018 (change cdc-incremental-sync): incremental
-				// mode never runs the bulk source-diff cleanup — checked
-				// BEFORE the existing fetchComplete-gated call, so it
-				// short-circuits deletion for its own explicit reason
-				// ('incremental_mode') rather than reusing fetchComplete's
-				// 'fetch_incomplete' reason, which would be misleading (the
-				// fetch can be perfectly complete for what it asked for — it
-				// just didn't ask for everything). Unconditional: never
-				// bypassed by forceDeletion (design.md Decision 3).
-				$syncMode = (string)($synchronization['syncMode'] ?? 'full');
-
-				// A JSONL source larger than one batch never has a complete
-				// fetch, so the disappearance pass does not run for it (REQ-006).
-				// That is the design, not a guarded failure: no warning, no
-				// deletion-guarded event, once per batch.
-				$batchRun = (($fetchInfo['failureReason'] ?? null) === 'batch_limit_reached');
-				if ($syncMode !== 'incremental' && $batchRun === true) {
-					$guardInfo = [
-						'guarded' => true,
-						'reason' => 'batch_run',
-						'ratio' => null,
-						'threshold' => null,
-					];
-				} elseif ($syncMode !== 'incremental') {
-					$deletedCount = $this->deleteInvalidObjects(
-						synchronization: $synchronization,
-						synchronizedTargetIds: $synchronizedTargetIds,
-						deleteRestriction: $deleteRestriction,
-						data: $deleteData,
-						fetchComplete: $fetchComplete,
-						forceDeletion: ($forceDeletion ?? false),
-						guardInfo: $guardInfo
-					);
-				} else {
-					$guardInfo = [
-						'guarded' => true,
-						'reason' => 'incremental_mode',
-						'ratio' => null,
-						'threshold' => null,
-					];
-				}//end if
-
-				// [NEW] REQ-017: watermark advance — the same $fetchComplete
-				// boolean REQ-010 already computed above; a rate-limited or
-				// otherwise incomplete fetch (REQ-009) blocks the watermark
-				// exactly as it blocks deletion. A missing/empty
-				// sourceConfig.cursorField or an empty fetch yields a null
-				// computed watermark, which is deliberately left unpersisted
-				// (the prior watermark, if any, is retained rather than
-				// cleared).
-				if ($syncMode === 'incremental' && $fetchComplete === true) {
-					$newWatermark = $this->computeCursorWatermark(synchronization: $synchronization, objectList: $objectList);
-					if ($newWatermark !== null) {
-						$synchronization['cursorWatermark'] = $newWatermark;
-					}
-				}//end if
-			}//end if
-
-			$result['objects']['deleted'] = $deletedCount;
-			$result['objects']['deletionGuard'] = $guardInfo;
-			// REQ-SDP-001/003: a purge is counted apart from a soft delete, and a
-			// purge OpenRegister refused is listed with its reason, on the
-			// result the run log stores.
-			$result['objects']['purged'] = ($guardInfo['purgedCount'] ?? 0);
-			$result['objects']['purgeRefusals'] = ($guardInfo['purgeRefusals'] ?? []);
-
-			$result['timing']['stages']['cleanup_invalid'] = [
-				'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
-				'description' => 'Deleting invalid/orphaned objects',
-				'objects_deleted' => $deletedCount,
-			];
-		}//end if
-
-		// The gate passed (an approved, unconsumed approval_request covered
-		// this run) and the write phase above has now completed — mark it
-		// consumed so it cannot re-authorize a later run (REQ-015).
-		if ($gatedApprovalRequest !== null) {
-			$this->approvalGate->markConsumed(approvalRequest: $gatedApprovalRequest);
+	/**
+	 * Summarizes per-object processing times as minimum, maximum and median.
+	 *
+	 * @param float[] $times The processing times, in milliseconds.
+	 *
+	 * @return array{min_object_ms: float|int, max_object_ms: float|int, median_object_ms: float|int}
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function summarizeObjectTimes(array $times): array {
+		if (count($times) === 0) {
+			return ['min_object_ms' => 0, 'max_object_ms' => 0, 'median_object_ms' => 0];
 		}
 
-		// Stage 6: Follow-up synchronizations.
-		//
-		// This is Integriq's oldest chaining mechanism and it had no cycle
-		// or depth guard: A listing B as a follow-up while B lists A recursed
-		// until the process died, taking the whole request with it. The shared
-		// chain stack bounds it — a follow-up already running higher up the
-		// stack is skipped and reported, not re-entered.
-		//
-		// Chaining like this is what the OpenRegister flow migration replaces:
-		// a flow states the order explicitly, the engine bounds the recursion,
-		// and each hop gets its own persisted, inspectable run.
+		return [
+			'min_object_ms' => min($times),
+			'max_object_ms' => max($times),
+			'median_object_ms' => $this->calculateMedian(numbers: $times),
+		];
+	}//end summarizeObjectTimes()
+
+	/**
+	 * Stage 5: deletes the objects the source no longer has, and advances the cursor.
+	 *
+	 * A test run deletes nothing (REQ-011); the pass is skipped, not merely guarded.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+	 */
+	private function cleanupExternRun(ExternSyncRun $run): void {
 		$stageStartTime = microtime(true);
-		$followUpCount = 0;
-		$followUpSkipped = [];
-		$selfId = (string)($synchronization['id'] ?? ($synchronization['uuid'] ?? ''));
+		$deletedCount = 0;
+		$guardInfo = null;
+		if ($run->isTest === false) {
+			$fetchComplete = ($run->rateLimitException === null && ($run->fetchInfo['complete'] ?? true));
+			$deletedCount = $this->deleteMissingObjects(run: $run, fetchComplete: $fetchComplete, guardInfo: $guardInfo);
+			$this->advanceCursorWatermark(run: $run, fetchComplete: $fetchComplete);
+		}
+
+		$run->result['objects']['deleted'] = $deletedCount;
+		$run->result['objects']['deletionGuard'] = $guardInfo;
+		// REQ-SDP-001/003: purges are counted apart from soft deletes, with refusals listed.
+		$run->result['objects']['purged'] = ($guardInfo['purgedCount'] ?? 0);
+		$run->result['objects']['purgeRefusals'] = ($guardInfo['purgeRefusals'] ?? []);
+
+		$run->result['timing']['stages']['cleanup_invalid'] = [
+			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+			'description' => 'Deleting invalid/orphaned objects',
+			'objects_deleted' => $deletedCount,
+		];
+	}//end cleanupExternRun()
+
+	/**
+	 * Runs the deletion pass, unless the run is incremental or one batch of a larger source.
+	 *
+	 * An incremental run never runs the bulk source-diff cleanup (REQ-018), and a
+	 * JSONL source larger than one batch never has a complete fetch (REQ-006);
+	 * each is reported with its own guard reason.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param bool $fetchComplete Whether the fetch was complete.
+	 * @param array|null $guardInfo Receives why deletion was guarded, if it was.
+	 *
+	 * @return int The number of deleted objects.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
+	 */
+	private function deleteMissingObjects(ExternSyncRun $run, bool $fetchComplete, ?array &$guardInfo): int {
+		$syncMode = (string)($run->synchronization['syncMode'] ?? 'full');
+		$batchRun = (($run->fetchInfo['failureReason'] ?? null) === 'batch_limit_reached');
+		if ($syncMode === 'incremental' || $batchRun === true) {
+			$reason = 'batch_run';
+			if ($syncMode === 'incremental') {
+				$reason = 'incremental_mode';
+			}
+
+			$guardInfo = ['guarded' => true, 'reason' => $reason, 'ratio' => null, 'threshold' => null];
+			return 0;
+		}
+
+		return $this->deleteInvalidObjects(
+			synchronization: $run->synchronization,
+			synchronizedTargetIds: $run->targetIds,
+			deleteRestriction: (isset($run->sourceConfig['restrictDeletion']) === true && (bool)$run->sourceConfig['restrictDeletion']),
+			data: ($run->data ?? []),
+			fetchComplete: $fetchComplete,
+			forceDeletion: ($run->forceDeletion ?? false),
+			guardInfo: $guardInfo
+		);
+	}//end deleteMissingObjects()
+
+	/**
+	 * Advances an incremental run's cursor watermark after a complete fetch (REQ-017).
+	 *
+	 * A null computed watermark is not persisted; the prior watermark is kept.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param bool $fetchComplete Whether the fetch was complete.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017
+	 */
+	private function advanceCursorWatermark(ExternSyncRun $run, bool $fetchComplete): void {
+		if ((string)($run->synchronization['syncMode'] ?? 'full') !== 'incremental' || $fetchComplete === false) {
+			return;
+		}
+
+		$newWatermark = $this->computeCursorWatermark(synchronization: $run->synchronization, objectList: $run->objectList);
+		if ($newWatermark !== null) {
+			$run->synchronization['cursorWatermark'] = $newWatermark;
+		}
+	}//end advanceCursorWatermark()
+
+	/**
+	 * Stage 6: runs the follow-up synchronizations, skipping any already on the chain.
+	 *
+	 * The shared chain stack bounds follow-up recursion: a follow-up already running
+	 * higher up the stack is skipped and reported, not re-entered.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function runFollowUps(ExternSyncRun $run): void {
+		$stageStartTime = microtime(true);
+		$selfId = (string)($run->synchronization['id'] ?? ($run->synchronization['uuid'] ?? ''));
 		if ($selfId !== '') {
 			self::$syncChainStack[] = $selfId;
 		}
 
 		try {
-			foreach (($synchronization['followUps'] ?? []) as $followUp) {
-				if (in_array((string)$followUp, self::$syncChainStack, true) === true) {
-					$followUpSkipped[] = (string)$followUp;
-					$this->logger->warning(
-						'Skipped follow-up synchronization "' . $followUp . '": it is already running on this chain '
-						. '(cycle). Express the chain as an OpenRegister flow instead.'
-					);
-					continue;
-				}
-
-				$followUpSynchronization = $this->findSynchronization(id: $followUp);
-				$this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
-				$followUpCount++;
-			}
+			[$followUpCount, $followUpSkipped] = $this->runFollowUpChain(run: $run);
 		} finally {
 			if ($selfId !== '') {
 				array_pop(self::$syncChainStack);
 			}
 		}
 
-		$result['timing']['stages']['follow_ups'] = [
+		$run->result['timing']['stages']['follow_ups'] = [
 			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
 			'description' => 'Executing follow-up synchronizations',
 			'follow_ups_executed' => $followUpCount,
 			'follow_ups_skipped' => $followUpSkipped,
 		];
+	}//end runFollowUps()
 
-		// Calculate total timing.
-		$result['timing']['total_ms'] = round((microtime(true) - $overallStartTime) * 1000, 2);
+	/**
+	 * Runs each follow-up synchronization that is not already on the chain.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return array{0: int, 1: string[]} The number run and the ids skipped.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function runFollowUpChain(ExternSyncRun $run): array {
+		$followUpCount = 0;
+		$followUpSkipped = [];
+		foreach (($run->synchronization['followUps'] ?? []) as $followUp) {
+			if (in_array((string)$followUp, self::$syncChainStack, true) === true) {
+				$followUpSkipped[] = (string)$followUp;
+				$this->logger->warning(
+					'Skipped follow-up synchronization "' . $followUp . '": it is already running on this chain '
+					. '(cycle). Express the chain as an OpenRegister flow instead.'
+				);
+				continue;
+			}
 
-		// Add performance summary.
-		$objectsPerSecond = 0;
-		if (isset($objectList) === true && count($objectList) > 0) {
-			$objectsPerSecond = round(count($objectList) / ($result['timing']['total_ms'] / 1000), 2);
+			$followUpSynchronization = $this->findSynchronization(id: $followUp);
+			$this->synchronize(synchronization: $followUpSynchronization, isTest: $run->isTest, force: $run->force);
+			$followUpCount++;
 		}
 
-		$result['timing']['summary'] = [
-			'slowest_stage' => $this->getSlowestInternship(stages: $result['timing']['stages']),
-			'efficiency_ratio' => $this->calculateEfficiencyRatio(stages: $result['timing']['stages']),
-			'objects_per_second' => $objectsPerSecond,
-		];
+		return [$followUpCount, $followUpSkipped];
+	}//end runFollowUpChain()
 
-		$log->setResult($result);
+	/**
+	 * Completes a run: timing summary, rate-limit rethrow and synchronization persist.
+	 *
+	 * A test run persists no change to the synchronization (REQ-011).
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param float $overallStartTime When the run started.
+	 *
+	 * @return SynchronizationRunLog The updated run log.
+	 *
+	 * @throws TooManyRequestsHttpException When the fetch was rate limited.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function finishExternRun(ExternSyncRun $run, float $overallStartTime): SynchronizationRunLog {
+		$this->summarizeRunTiming(run: $run, overallStartTime: $overallStartTime);
+		$run->log->setResult($run->result);
 
-		if ($rateLimitException !== null) {
-			$log->setMessage($rateLimitException->getMessage());
-			$log = $this->synchronizationLogService->update(log: $log);
+		if ($run->rateLimitException !== null) {
+			$run->log->setMessage($run->rateLimitException->getMessage());
+			$run->log = $this->synchronizationLogService->update(log: $run->log);
 
-			// Named arguments — Symfony's positional signature is
-			// ($retryAfter, $message, $previous, $code, $headers); the previous
-			// positional call here put the headers array into $previous and
-			// fatally TypeError'd every rate-limited run at re-throw time.
+			// Named arguments: Symfony's positional signature starts with $retryAfter.
 			throw new TooManyRequestsHttpException(
-				message: $rateLimitException->getMessage(),
+				message: $run->rateLimitException->getMessage(),
 				code: 429,
-				headers: $rateLimitException->getHeaders()
+				headers: $run->rateLimitException->getHeaders()
 			);
 		}
 
-		// A test run must not persist any change to the Synchronization entity
-		// itself, including its targetLastSynced timestamp (REQ-011).
-		if ($isTest === false) {
-			$synchronization['targetLastSynced'] = (new DateTime())->format(DateTime::ATOM);
-			$this->persistSynchronization(synchronization: $synchronization);
+		if ($run->isTest === false) {
+			$run->synchronization['targetLastSynced'] = (new DateTime())->format(DateTime::ATOM);
+			$this->persistSynchronization(synchronization: $run->synchronization);
 		}
 
-		return $log;
-	}//end synchronizeExternToIntern()
+		return $run->log;
+	}//end finishExternRun()
+
+	/**
+	 * Records the run's total time and its performance summary.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 * @param float $overallStartTime When the run started.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function summarizeRunTiming(ExternSyncRun $run, float $overallStartTime): void {
+		$run->result['timing']['total_ms'] = round((microtime(true) - $overallStartTime) * 1000, 2);
+
+		$objectsPerSecond = 0;
+		if ($run->objectList !== null && count($run->objectList) > 0) {
+			$objectsPerSecond = round(count($run->objectList) / ($run->result['timing']['total_ms'] / 1000), 2);
+		}
+
+		$run->result['timing']['summary'] = [
+			'slowest_stage' => $this->getSlowestInternship(stages: $run->result['timing']['stages']),
+			'efficiency_ratio' => $this->calculateEfficiencyRatio(stages: $run->result['timing']['stages']),
+			'objects_per_second' => $objectsPerSecond,
+		];
+	}//end summarizeRunTiming()
 
 	/**
 	 * Open the approval_request that pauses a gated run, carrying its change set.
