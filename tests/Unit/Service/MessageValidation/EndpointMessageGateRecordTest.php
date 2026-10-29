@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests: recording validation findings rewrites a call log without secret headers.
+ * Unit tests: recording validation findings rewrites a call log as it was stored.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Service\MessageValidation
@@ -26,50 +26,113 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * EndpointMessageGate::record() writes the call log handed to it back to the
- * register; the answer's secret headers must not be written with it.
+ * EndpointMessageGate::record() adds findings to the call log row as the call
+ * stored it. The entity a call hands back carries the full answer (its body and
+ * its real headers); none of that may reach the stored row.
  */
 class EndpointMessageGateRecordTest extends TestCase {
 
+	private const UUID = '0d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
+
 	/**
-	 * Recording findings stores the findings and masks the answer's secret headers.
+	 * The call log row as the call stored it: headers redacted, no body.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private const STORED = [
+		'statusCode' => 200,
+		'direction' => 'outbound',
+		'bodyCaptured' => false,
+		'response' => [
+			'statusCode' => 200,
+			'headers' => [
+				'Content-Type' => ['application/json'],
+				'Set-Cookie' => [SensitiveFieldRegistry::PLACEHOLDER, SensitiveFieldRegistry::PLACEHOLDER],
+			],
+		],
+	];
+
+	/**
+	 * What the gate wrote, or null when it wrote nothing.
+	 *
+	 * @var array<string,mixed>|null
+	 */
+	private ?array $written = null;
+
+	/**
+	 * Record one finding on the call log the call handed back.
+	 *
+	 * @param array<string,mixed>|null $stored The stored row the register answers, or null when it cannot be read.
 	 *
 	 * @return void
 	 */
-	public function testRecordingFindingsStoresNoSecretResponseHeader(): void {
-		$written = null;
+	private function record(?array $stored): void {
 		$objects = $this->createMock(ObjectService::class);
-		$objects->expects($this->once())->method('saveObject')->willReturnCallback(
-			function ($object = []) use (&$written) {
-				$written = $object;
+		$objects->method('find')->willReturnCallback(
+			function ($id, ?string $register = null, ?string $schema = null) use ($stored): ?ObjectEntity {
+				if ($stored === null || $schema !== 'call_log' || (string)$id !== self::UUID) {
+					return null;
+				}
+
+				$entity = new ObjectEntity();
+				$entity->setUuid(self::UUID);
+				$entity->setObject($stored);
+				return $entity;
+			}
+		);
+		$objects->method('saveObject')->willReturnCallback(
+			function ($object = [], ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+				$this->assertSame('call_log', $schema);
+				$this->assertSame(self::UUID, $uuid);
+				$this->written = $object;
 				return new ObjectEntity();
 			}
 		);
 
-		$callLog = new ObjectEntity();
-		$callLog->setUuid('0d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c4d');
-		$callLog->setObject(
+		$handedBack = new ObjectEntity();
+		$handedBack->setUuid(self::UUID);
+		$handedBack->setObject(
 			[
 				'statusCode' => 200,
+				'direction' => 'outbound',
+				'bodyCaptured' => false,
 				'response' => [
+					'statusCode' => 200,
 					'headers' => [
 						'Content-Type' => ['application/json'],
 						'Set-Cookie' => ['session=abc123secret', 'csrf=def456secret'],
-						'X-Auth-TOKEN' => ['mixed-case-token-value'],
 					],
-					'body' => '{"ok":true}',
+					'body' => '{"bsn":"999993653"}',
 				],
 			]
 		);
 
 		$gate = new EndpointMessageGate($this->createMock(MessageValidationService::class), $objects, new NullLogger());
-		$gate->record(callLog: $callLog, findings: [['error' => 'name is required']], endpoint: 'endpoint-1');
+		$gate->record(callLog: $handedBack, findings: [['error' => 'name is required']], endpoint: 'endpoint-1');
+	}//end record()
 
-		$placeholder = SensitiveFieldRegistry::PLACEHOLDER;
-		$this->assertSame([['error' => 'name is required']], $written['validation']);
-		$this->assertSame([$placeholder, $placeholder], $written['response']['headers']['Set-Cookie']);
-		$this->assertSame([$placeholder], $written['response']['headers']['X-Auth-TOKEN']);
-		$this->assertSame(['application/json'], $written['response']['headers']['Content-Type']);
-		$this->assertSame(200, $written['statusCode']);
-	}//end testRecordingFindingsStoresNoSecretResponseHeader()
+	/**
+	 * The findings are added to the stored row; the answer's body and secret headers are not written.
+	 *
+	 * @return void
+	 */
+	public function testRecordingFindingsKeepsTheStoredRowAndAddsTheFindings(): void {
+		$this->record(stored: self::STORED);
+
+		$this->assertSame(array_merge(self::STORED, ['validation' => [['error' => 'name is required']]]), $this->written);
+		$encoded = (string)json_encode($this->written);
+		$this->assertStringNotContainsString('999993653', $encoded);
+		$this->assertStringNotContainsString('abc123secret', $encoded);
+	}//end testRecordingFindingsKeepsTheStoredRowAndAddsTheFindings()
+
+	/**
+	 * When the stored row cannot be read, nothing is written: the answer is never stored in its place.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableStoredRowIsNotReplacedByTheAnswer(): void {
+		$this->record(stored: null);
+
+		$this->assertNull($this->written);
+	}//end testAnUnreadableStoredRowIsNotReplacedByTheAnswer()
 }//end class

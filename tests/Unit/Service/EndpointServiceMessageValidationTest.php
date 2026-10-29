@@ -99,6 +99,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 			fn ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity => match ($schema) {
 				'message_schema' => ObjectServiceMockBuilder::objectEntity($this, $this->personSchema(), self::SCHEMA_UUID),
 				'source' => ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://bron.example.nl', 'isEnabled' => true], 'source-1'),
+				'call_log' => ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200, 'direction' => 'outbound', 'response' => ['statusCode' => 200]], 'call-log-1'),
 				default => null,
 			}
 		);
