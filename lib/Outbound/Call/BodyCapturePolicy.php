@@ -34,7 +34,7 @@ namespace OCA\Integriq\Outbound\Call;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\Integriq\Service\RetentionDefaults;
+use OCA\Integriq\Service\RetentionDefaultsInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Clock\ClockInterface;
@@ -391,7 +391,7 @@ class BodyCapturePolicy implements BodyCapturePolicyInterface {
 
 		// A record kept for ever still lets its replay request go after the
 		// instance's default error retention.
-		$seconds = intdiv(RetentionDefaults::CALL_LOG, 1000);
+		$seconds = intdiv(RetentionDefaultsInterface::CALL_LOG, 1000);
 
 		return $this->now()->add(new DateInterval('PT' . $seconds . 'S'))->format('c');
 

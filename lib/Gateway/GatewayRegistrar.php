@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Gateway;
 
+use OCA\Integriq\Gateway\Adapter\PublicationGateway;
+use OCA\Integriq\Gateway\Adapter\PublicationGatewayInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -43,6 +45,7 @@ final class GatewayRegistrar {
 		$context->registerServiceAlias(GatewayDescriptorInterface::class, GatewayDescriptor::class);
 		$context->registerServiceAlias(ZgwRegistryBindingInterface::class, ZgwRegistryBinding::class);
 		$context->registerServiceAlias(GatewayRegistryInterface::class, GatewayRegistry::class);
+		$context->registerServiceAlias(PublicationGatewayInterface::class, PublicationGateway::class);
 		$this->registerGateways(context: $context);
 	}//end register()
 

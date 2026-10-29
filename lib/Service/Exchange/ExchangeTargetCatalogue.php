@@ -34,7 +34,7 @@ namespace OCA\Integriq\Service\Exchange;
  *
  * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
  */
-class ExchangeTargetCatalogue {
+class ExchangeTargetCatalogue implements ExchangeTargetCatalogueInterface {
 
 	/**
 	 * Target id to {label, directions, adapter}.

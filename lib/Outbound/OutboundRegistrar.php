@@ -90,6 +90,7 @@ final class OutboundRegistrar {
 		$context->registerServiceAlias(ForwardServiceInterface::class, ForwardService::class);
 		$context->registerServiceAlias(LastContactQueryInterface::class, LastContactQuery::class);
 		$context->registerServiceAlias(BodyCapturePolicyInterface::class, BodyCapturePolicy::class);
+		$context->registerServiceAlias(MessageBodyReaderInterface::class, MessageBodyReader::class);
 		$this->registerAppOwnedBindings(context: $context);
 	}
 	/**

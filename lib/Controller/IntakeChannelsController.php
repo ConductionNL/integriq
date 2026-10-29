@@ -33,7 +33,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Exception\IntakeRoutingException;
-use OCA\Integriq\Intake\IntakeChannelRegistry;
+use OCA\Integriq\Intake\IntakeChannelRegistryInterface;
 use OCA\Integriq\Intake\IntakeReplyServiceInterface;
 use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
@@ -83,7 +83,7 @@ class IntakeChannelsController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal making a write.
 	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
-	 * @param IntakeChannelRegistry $registry The channels this instance has.
+	 * @param IntakeChannelRegistryInterface $registry The channels this instance has.
 	 * @param IntakeRoutingServiceInterface $routingService Routes and validates.
 	 * @param IntakeReplyServiceInterface $replyService Replies on the arriving channel.
 	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
@@ -95,7 +95,7 @@ class IntakeChannelsController extends Controller {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
-		private readonly IntakeChannelRegistry $registry,
+		private readonly IntakeChannelRegistryInterface $registry,
 		private readonly IntakeRoutingServiceInterface $routingService,
 		private readonly IntakeReplyServiceInterface $replyService,
 		private readonly WebhookGateInterface $gate,

@@ -34,7 +34,7 @@ use OCA\Integriq\Intake\InboundMessage;
 use OCA\Integriq\Intake\IntakeChannelAdapterInterface;
 use OCA\Integriq\Intake\IntakeChannelSourceResolver;
 use OCA\Integriq\Intake\ReplyResult;
-use OCA\Integriq\Service\Mail\CaseReferenceDetector;
+use OCA\Integriq\Service\Mail\CaseReferenceDetectorInterface;
 use OCP\Http\Client\IClientService;
 use Throwable;
 
@@ -89,12 +89,12 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 *
 	 * @param IntakeChannelSourceResolver $sourceResolver Finds this channel's source configuration.
 	 * @param IClientService $clientService The Nextcloud HTTP client factory.
-	 * @param CaseReferenceDetector $referenceDetector Reads the case reference out of the message text.
+	 * @param CaseReferenceDetectorInterface $referenceDetector Reads the case reference out of the message text.
 	 */
 	public function __construct(
 		private readonly IntakeChannelSourceResolver $sourceResolver,
 		private readonly IClientService $clientService,
-		private readonly CaseReferenceDetector $referenceDetector,
+		private readonly CaseReferenceDetectorInterface $referenceDetector,
 	) {
 
 	}//end __construct()

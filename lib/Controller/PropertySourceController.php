@@ -23,7 +23,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\PropertySource\Exception\MissingSourceConfigurationException;
 use OCA\Integriq\PropertySource\Exception\UnknownPropertySourceException;
 use OCA\Integriq\PropertySource\ListResyncServiceInterface;
-use OCA\Integriq\PropertySource\PropertySourceRegistry;
+use OCA\Integriq\PropertySource\PropertySourceRegistryInterface;
 use OCA\Integriq\PropertySource\PropertySourceResolverInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
@@ -75,7 +75,7 @@ class PropertySourceController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request The request.
-	 * @param PropertySourceRegistry $registry Registry of bindings.
+	 * @param PropertySourceRegistryInterface $registry Registry of bindings.
 	 * @param PropertySourceResolverInterface $resolver The resolver.
 	 * @param ListResyncServiceInterface $listResync On-demand resync for list-shaped providers.
 	 * @param ActionAuthServiceInterface $actionAuth ADR-023 action gate.
@@ -84,7 +84,7 @@ class PropertySourceController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PropertySourceRegistry $registry,
+		private readonly PropertySourceRegistryInterface $registry,
 		private readonly PropertySourceResolverInterface $resolver,
 		private readonly ListResyncServiceInterface $listResync,
 		private readonly ActionAuthServiceInterface $actionAuth,

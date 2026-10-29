@@ -39,7 +39,7 @@ use OCP\IUser;
  *
  * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
  */
-class MessageBodyReader {
+class MessageBodyReader implements MessageBodyReaderInterface {
 
 	/**
 	 * The ADR-023 action reading a stored body is gated by.

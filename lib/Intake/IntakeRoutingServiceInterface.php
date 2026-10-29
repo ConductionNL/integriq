@@ -81,7 +81,7 @@ interface IntakeRoutingServiceInterface {
 	 * afterwards.
 	 *
 	 * @param array<string,mixed> $rule The rule as the administrator wrote it.
-	 * @param IntakeChannelRegistry $registry The channels this instance has.
+	 * @param IntakeChannelRegistryInterface $registry The channels this instance has.
 	 *
 	 * @return void
 	 *
@@ -89,7 +89,7 @@ interface IntakeRoutingServiceInterface {
 	 *
 	 * @spec exclude declaration only, the behaviour and its spec live on IntakeRoutingService::validateRule()
 	 */
-	public function validateRule(array $rule, IntakeChannelRegistry $registry): void;
+	public function validateRule(array $rule, IntakeChannelRegistryInterface $registry): void;
 
 	/**
 	 * The first enabled rule whose channel and condition match.

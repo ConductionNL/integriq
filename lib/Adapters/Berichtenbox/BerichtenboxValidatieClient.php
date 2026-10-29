@@ -27,7 +27,7 @@ use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\MtlsConfigurationException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolverInterface;
-use OCA\Integriq\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Service\Mtls\MtlsTransportServiceInterface;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 
 /**
@@ -59,13 +59,13 @@ class BerichtenboxValidatieClient {
 	 *
 	 * @param Client $httpClient The HTTP client.
 	 * @param MtlsConfigResolverInterface $mtlsConfigResolver Decrypts and checks the stored certificate.
-	 * @param MtlsTransportService $mtlsTransport Sends with the certificate attached.
+	 * @param MtlsTransportServiceInterface $mtlsTransport Sends with the certificate attached.
 	 * @param EgressGuardInterface $egressGuard Refuses a URL integriq may not call.
 	 */
 	public function __construct(
 		private readonly Client $httpClient,
 		private readonly MtlsConfigResolverInterface $mtlsConfigResolver,
-		private readonly MtlsTransportService $mtlsTransport,
+		private readonly MtlsTransportServiceInterface $mtlsTransport,
 		private readonly EgressGuardInterface $egressGuard,
 	) {
 	}//end __construct()

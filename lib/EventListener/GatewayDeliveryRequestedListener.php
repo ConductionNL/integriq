@@ -27,7 +27,7 @@ namespace OCA\Integriq\EventListener;
 use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
 use OCA\Integriq\Gateway\Adapter\CorvGateway;
 use OCA\Integriq\Gateway\Adapter\GgkGateway;
-use OCA\Integriq\Gateway\Adapter\PublicationGateway;
+use OCA\Integriq\Gateway\Adapter\PublicationGatewayInterface;
 use OCA\Integriq\Gateway\Adapter\WkpbGateway;
 use OCA\Integriq\Gateway\GatewayDelivery;
 use OCP\EventDispatcher\Event;
@@ -52,13 +52,13 @@ class GatewayDeliveryRequestedListener implements IEventListener {
 	 * @param CorvGateway $corv CORV.
 	 * @param GgkGateway $ggk GGK.
 	 * @param WkpbGateway $wkpb WKPB.
-	 * @param PublicationGateway $publication Official publication.
+	 * @param PublicationGatewayInterface $publication Official publication.
 	 */
 	public function __construct(
 		private readonly CorvGateway $corv,
 		private readonly GgkGateway $ggk,
 		private readonly WkpbGateway $wkpb,
-		private readonly PublicationGateway $publication,
+		private readonly PublicationGatewayInterface $publication,
 	) {
 
 	}//end __construct()
@@ -87,7 +87,7 @@ class GatewayDeliveryRequestedListener implements IEventListener {
 				restriction: (array)($request['restriction'] ?? []),
 				config: $config
 			),
-			PublicationGateway::ID => $this->publication->publish(
+			PublicationGatewayInterface::ID => $this->publication->publish(
 				reference: (array)($request['reference'] ?? []),
 				instruction: (array)($request['instruction'] ?? []),
 				config: $config

@@ -39,7 +39,7 @@ use OCA\Integriq\Service\MessageValidation\XsdChecker;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ValidationOutcome::failure is the value object's named constructor.
  */
-class MessageValidationService {
+class MessageValidationService implements MessageValidationServiceInterface {
 
 	/**
 	 * Constructor.

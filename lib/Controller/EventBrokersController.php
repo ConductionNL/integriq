@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Broker\BrokerTransportRegistry;
+use OCA\Integriq\Broker\BrokerTransportRegistryInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -48,7 +48,7 @@ class EventBrokersController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param BrokerTransportRegistry $brokerRegistry The broker transports this instance has.
+	 * @param BrokerTransportRegistryInterface $brokerRegistry The broker transports this instance has.
 	 * @param IUserSession $userSession The signed-in user.
 	 * @param ActionAuthServiceInterface $actionAuth The action check (`event.subscriptions`).
 	 * @param IL10N $l The translator.
@@ -56,7 +56,7 @@ class EventBrokersController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly BrokerTransportRegistry $brokerRegistry,
+		private readonly BrokerTransportRegistryInterface $brokerRegistry,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
