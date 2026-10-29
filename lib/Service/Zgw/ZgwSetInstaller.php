@@ -45,7 +45,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a catalogue of constants with no
  * state to instantiate, the same reason ZgwSetInstallGuard gives.
  */
-class ZgwSetInstaller {
+class ZgwSetInstaller implements ZgwSetInstallerInterface {
 
 	/**
 	 * App config key holding the bindings, as JSON {"register/schema": "set slug"}.

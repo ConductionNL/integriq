@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\Service\Intake\WebhookProfiles;
-use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
+use OCA\Integriq\Service\Intake\WebhookTrustMigratorInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -85,7 +85,7 @@ class MigrateWebhookConnections implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$migrator = $this->container->get(WebhookTrustMigrator::class);
+			$migrator = $this->container->get(WebhookTrustMigratorInterface::class);
 		} catch (Throwable $exception) {
 			$output->warning('Webhook connection migration skipped: OpenRegister is not available (' . $exception->getMessage() . ').');
 			return;

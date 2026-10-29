@@ -38,7 +38,7 @@ use Throwable;
  * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
  * @spec openspec/specs/source-owned-records/spec.md#requirement-the-consuming-app-reads-ownership-through-one-contract-req-sor-006
  */
-class RecordOwnershipService {
+class RecordOwnershipService implements RecordOwnershipServiceInterface {
 	/**
 	 * The register integriq's own objects live in.
 	 */

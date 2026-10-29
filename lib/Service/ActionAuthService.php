@@ -53,7 +53,7 @@ use OCP\IUser;
  *
  * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
  */
-class ActionAuthService {
+class ActionAuthService implements ActionAuthServiceInterface {
 	private const CONFIG_KEY = 'actions';
 
 	/**

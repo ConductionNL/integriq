@@ -43,49 +43,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
  */
-class DsoConnectionAlerts {
-
-	/**
-	 * The notification subject.
-	 *
-	 * @var string
-	 */
-	public const SUBJECT = 'dso_connection_alert';
-
-	/**
-	 * Reason: OpenRegister refused a write anyway.
-	 *
-	 * @var string
-	 */
-	public const REASON_NOT_STORED = 'verzoek_not_stored';
-
-	/**
-	 * Reason: a bijlage job found no usable account.
-	 *
-	 * @var string
-	 */
-	public const REASON_JOB_ACCOUNT = 'job_account_unavailable';
-
-	/**
-	 * Reason: OpenRegister refused an Open Formulieren submission write anyway.
-	 *
-	 * @var string
-	 */
-	public const REASON_SUBMISSION_NOT_STORED = 'submission_not_stored';
-
-	/**
-	 * A signed webhook delivery whose work OpenRegister refused (503).
-	 *
-	 * @var string
-	 */
-	public const REASON_DELIVERY_NOT_STORED = 'delivery_not_stored';
-
-	/**
-	 * Reason: the migration created a connection without an account.
-	 *
-	 * @var string
-	 */
-	public const REASON_CHOOSE_ACCOUNT = 'choose_account';
+class DsoConnectionAlerts implements DsoConnectionAlertsInterface {
 
 	/**
 	 * Seconds between two notifications for the same reason.

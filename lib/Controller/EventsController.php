@@ -23,12 +23,12 @@ use DateTime;
 use Exception;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -88,8 +88,8 @@ class EventsController extends Controller {
 	 * @param EventServiceInterface $eventService The event service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
-	 * @param WebhookSignatureService $signatureService Generates signing secrets.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
+	 * @param WebhookSignatureServiceInterface $signatureService Generates signing secrets.
 	 * @param EgressGuard|null $egressGuard Judges a subscription's sink; a guard without an allowlist when not injected.
 	 */
 	public function __construct(
@@ -99,8 +99,8 @@ class EventsController extends Controller {
 		private readonly EventServiceInterface $eventService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly WebhookSignatureServiceInterface $signatureService,
 		?EgressGuard $egressGuard = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);

@@ -38,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
  */
-class BerichtenboxHealth {
+class BerichtenboxHealth implements BerichtenboxHealthInterface {
 	public const RESULT_WAIT_HOURS = 24;
 
 	public const CERTIFICATE_WARN_DAYS = 30;

@@ -32,7 +32,7 @@ use OCA\Integriq\Outbound\Identity\OptOutCategories;
 use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
 use OCA\Integriq\Outbound\Identity\SenderIdentityServiceInterface;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenServiceInterface;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -76,7 +76,7 @@ class SenderIdentityController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 * @param SenderIdentityServiceInterface $identities The identities on this instance.
 	 * @param DomainAlignmentChecker $alignment Checks SPF, DKIM and DMARC.
 	 * @param UnsubscribeTokenServiceInterface $tokens Mints and verifies unsubscribe tokens.
@@ -89,7 +89,7 @@ class SenderIdentityController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly SenderIdentityServiceInterface $identities,
 		private readonly DomainAlignmentChecker $alignment,
 		private readonly UnsubscribeTokenServiceInterface $tokens,

@@ -24,7 +24,7 @@ use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\Ownership\OwnershipState;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
-use OCA\Integriq\Service\Ownership\RecordOwnershipService;
+use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -48,7 +48,7 @@ class OwnershipController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request The request.
-	 * @param RecordOwnershipService $ownership The ownership read.
+	 * @param RecordOwnershipServiceInterface $ownership The ownership read.
 	 * @param LocalDeleteGuard $deleteGuard The delete guard.
 	 * @param OrObjectService $objectService OpenRegister's object-service facade.
 	 * @param IUserSession $userSession The current session.
@@ -56,7 +56,7 @@ class OwnershipController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RecordOwnershipService $ownership,
+		private readonly RecordOwnershipServiceInterface $ownership,
 		private readonly LocalDeleteGuard $deleteGuard,
 		private readonly OrObjectService $objectService,
 		private readonly IUserSession $userSession,

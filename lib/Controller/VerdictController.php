@@ -33,7 +33,7 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Outbound\Call\VerdictService;
-use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -71,7 +71,7 @@ class VerdictController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal reading verdicts back.
 	 * @param VerdictService $verdicts Stores and reads the verdicts.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IL10N $l Translations.
 	 */
 	public function __construct(
@@ -79,7 +79,7 @@ class VerdictController extends Controller {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly VerdictService $verdicts,
-		private readonly WebhookGate $gate,
+		private readonly WebhookGateInterface $gate,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);

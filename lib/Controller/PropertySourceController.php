@@ -25,7 +25,7 @@ use OCA\Integriq\PropertySource\Exception\UnknownPropertySourceException;
 use OCA\Integriq\PropertySource\ListResyncService;
 use OCA\Integriq\PropertySource\PropertySourceRegistry;
 use OCA\Integriq\PropertySource\PropertySourceResolver;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -78,7 +78,7 @@ class PropertySourceController extends Controller {
 	 * @param PropertySourceRegistry $registry Registry of bindings.
 	 * @param PropertySourceResolver $resolver The resolver.
 	 * @param ListResyncService $listResync On-demand resync for list-shaped providers.
-	 * @param ActionAuthService $actionAuth ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth ADR-023 action gate.
 	 * @param IUserSession $userSession The current session.
 	 */
 	public function __construct(
@@ -87,7 +87,7 @@ class PropertySourceController extends Controller {
 		private readonly PropertySourceRegistry $registry,
 		private readonly PropertySourceResolver $resolver,
 		private readonly ListResyncService $listResync,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);

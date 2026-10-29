@@ -32,7 +32,7 @@ use OCA\Integriq\Outbound\ForwardService;
 use OCA\Integriq\Outbound\LastContactQuery;
 use OCA\Integriq\Outbound\MessageBodyReader;
 use OCA\Integriq\Outbound\OutboundRetryService;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -71,7 +71,7 @@ class OutboundLogController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 * @param MessageBodyReader $bodyReader Reads a stored body, for those allowed to.
 	 * @param OutboundRetryService $retryService Retries through the delivery pipeline.
 	 * @param ForwardService $forwardService Forwards as a new linked record.
@@ -82,7 +82,7 @@ class OutboundLogController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly MessageBodyReader $bodyReader,
 		private readonly OutboundRetryService $retryService,
 		private readonly ForwardService $forwardService,

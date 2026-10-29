@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Service\FlowGraphMigrationService;
+use OCA\Integriq\Service\FlowGraphMigrationServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -93,7 +93,7 @@ class MigrateFlowStepsToGraph implements IRepairStep {
 		}
 
 		try {
-			$migration = $this->container->get(FlowGraphMigrationService::class);
+			$migration = $this->container->get(FlowGraphMigrationServiceInterface::class);
 			$report = $migration->migrate(apply: true);
 		} catch (Throwable $e) {
 			// Non-fatal by contract: the legacy runner still executes steps[],
@@ -109,11 +109,11 @@ class MigrateFlowStepsToGraph implements IRepairStep {
 		$migrated = 0;
 		$refused = 0;
 		foreach ($report as $row) {
-			if ($row['action'] === FlowGraphMigrationService::MIGRATED) {
+			if ($row['action'] === FlowGraphMigrationServiceInterface::MIGRATED) {
 				$migrated++;
 			}
 
-			if ($row['action'] === FlowGraphMigrationService::REFUSED) {
+			if ($row['action'] === FlowGraphMigrationServiceInterface::REFUSED) {
 				$refused++;
 				$this->logger->warning(
 					'MigrateFlowStepsToGraph: flow refused, staying on steps[]',

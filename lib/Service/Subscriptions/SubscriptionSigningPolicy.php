@@ -45,6 +45,7 @@ namespace OCA\Integriq\Service\Subscriptions;
 
 use DateTimeImmutable;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 
 /**
  * Decides a push subscription's signing posture, and refuses the requests that hide it.
@@ -84,9 +85,9 @@ class SubscriptionSigningPolicy {
 	/**
 	 * Wire the policy.
 	 *
-	 * @param WebhookSignatureService $signatures The existing secret generator and signer.
+	 * @param WebhookSignatureServiceInterface $signatures The existing secret generator and signer.
 	 */
-	public function __construct(private readonly WebhookSignatureService $signatures) {
+	public function __construct(private readonly WebhookSignatureServiceInterface $signatures) {
 	}//end __construct()
 
 	/**

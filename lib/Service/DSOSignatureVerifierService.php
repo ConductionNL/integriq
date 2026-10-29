@@ -51,57 +51,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
  */
-class DSOSignatureVerifierService {
-
-	/**
-	 * Legacy app-config key selecting the signing mode (`hmac` or `rsa`).
-	 * Read only by the MigrateDsoStamConnection repair step.
-	 *
-	 * @var string
-	 */
-	public const CONFIG_MODE = 'dso_pki_mode';
-
-	/**
-	 * App-config key for the HMAC shared secret (pre-production mode).
-	 *
-	 * @var string
-	 */
-	public const CONFIG_HMAC_SECRET = 'dso_pki_hmac_secret';
-
-	/**
-	 * App-config key for the PEM-encoded signing (leaf) certificate.
-	 *
-	 * @var string
-	 */
-	public const CONFIG_SIGNING_CERTIFICATE = 'dso_pki_signing_certificate';
-
-	/**
-	 * App-config key for the PEM-encoded intermediate certificate chain.
-	 *
-	 * @var string
-	 */
-	public const CONFIG_INTERMEDIATE_CHAIN = 'dso_pki_intermediate_chain';
-
-	/**
-	 * App-config key for the PEM-encoded trusted PKIoverheid root CA.
-	 *
-	 * @var string
-	 */
-	public const CONFIG_ROOT_CA = 'dso_pki_root_ca';
-
-	/**
-	 * Pre-production HMAC shared-secret signing mode.
-	 *
-	 * @var string
-	 */
-	public const MODE_HMAC = 'hmac';
-
-	/**
-	 * Production PKIoverheid certificate-chain signing mode.
-	 *
-	 * @var string
-	 */
-	public const MODE_PKIOVERHEID = 'pkioverheid';
+class DSOSignatureVerifierService implements DSOSignatureVerifierServiceInterface {
 
 	/**
 	 * Legacy name of the PKIoverheid mode, as the app config stored it.

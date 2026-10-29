@@ -30,7 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use OCA\Integriq\Exception\InvalidMessageStateException;
-use OCA\Integriq\Service\SyncItemDeadLetterService;
+use OCA\Integriq\Service\SyncItemDeadLetterServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -57,7 +57,7 @@ class SyncDeadLetterController extends Controller {
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param OrObjectService $orObjectService The OR object service.
-	 * @param SyncItemDeadLetterService $syncItemDeadLetterService The dead-letter capture/replay/discard service.
+	 * @param SyncItemDeadLetterServiceInterface $syncItemDeadLetterService The dead-letter capture/replay/discard service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 */
@@ -65,7 +65,7 @@ class SyncDeadLetterController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly OrObjectService $orObjectService,
-		private readonly SyncItemDeadLetterService $syncItemDeadLetterService,
+		private readonly SyncItemDeadLetterServiceInterface $syncItemDeadLetterService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
 	) {

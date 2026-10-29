@@ -52,21 +52,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
  */
-class DsoConnection {
-
-	/**
-	 * The OpenRegister register slug that holds consumers and verzoeken.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The consumer schema slug.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_CONSUMER = 'consumer';
+class DsoConnection implements DsoConnectionInterface {
 
 	/**
 	 * The schema the intake writes.
@@ -74,13 +60,6 @@ class DsoConnection {
 	 * @var string
 	 */
 	public const SCHEMA_VERZOEK = 'dso_verzoek';
-
-	/**
-	 * The consumer `authorizationType` of the DSO connection.
-	 *
-	 * @var string
-	 */
-	public const AUTHORIZATION_TYPE = 'dso-stam';
 
 	/**
 	 * The rights the account needs on `dso_verzoek`.

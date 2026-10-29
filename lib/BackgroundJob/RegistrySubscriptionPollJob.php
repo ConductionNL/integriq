@@ -25,7 +25,7 @@ use OCA\Integriq\Service\Registry\RegistryUpdateClient;
 use OCA\Integriq\Service\Registry\SubscriptionChange;
 use OCA\Integriq\Service\Registry\SubscriptionProviderInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
-use OCA\Integriq\Service\Registry\SubscriptionRoster;
+use OCA\Integriq\Service\Registry\SubscriptionRosterInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -55,14 +55,14 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
 	 * @param SubscriptionRegistry $registry The bindings.
-	 * @param SubscriptionRoster $roster Which identities are followed.
+	 * @param SubscriptionRosterInterface $roster Which identities are followed.
 	 * @param RegistryUpdateClient $updateClient The inbound update endpoint.
 	 * @param LoggerInterface $logger Structured logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly SubscriptionRegistry $registry,
-		private readonly SubscriptionRoster $roster,
+		private readonly SubscriptionRosterInterface $roster,
 		private readonly RegistryUpdateClient $updateClient,
 		private readonly LoggerInterface $logger,
 	) {

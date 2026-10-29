@@ -27,7 +27,7 @@ namespace OCA\Integriq\EventListener;
 
 use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
-use OCA\Integriq\Service\Ownership\RecordOwnershipService;
+use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -62,12 +62,12 @@ class SourceOwnedDeleteGuardListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param RecordOwnershipService $ownership Answers who owns the record.
+	 * @param RecordOwnershipServiceInterface $ownership Answers who owns the record.
 	 * @param LocalDeleteGuard $guard Decides, and words the refusal.
 	 * @param LoggerInterface $logger Names a guard that failed.
 	 */
 	public function __construct(
-		private readonly RecordOwnershipService $ownership,
+		private readonly RecordOwnershipServiceInterface $ownership,
 		private readonly LocalDeleteGuard $guard,
 		private readonly LoggerInterface $logger,
 	) {

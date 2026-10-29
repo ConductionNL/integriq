@@ -22,6 +22,8 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 use OCA\Integriq\Repair\MigrateDsoStamConnection;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Dso\DsoConnectionAlertsInterface;
+use OCA\Integriq\Service\Dso\DsoConnectionInterface;
 use OCA\Integriq\Tests\Helpers\DsoConnectionWorld;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
@@ -85,9 +87,9 @@ class MigrateDsoStamConnectionTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id): object => match ($id) {
-				DsoConnection::class => $connection,
+				DsoConnectionInterface::class => $connection,
 				OrObjectService::class => $objectService,
-				DsoConnectionAlerts::class => $alerts,
+				DsoConnectionAlertsInterface::class => $alerts,
 			}
 		);
 

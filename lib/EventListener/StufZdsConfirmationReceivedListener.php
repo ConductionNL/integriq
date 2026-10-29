@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
-use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver;
+use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiverInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -41,10 +41,10 @@ class StufZdsConfirmationReceivedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param StufZdsConfirmationReceiver $receiver The receiver.
+	 * @param StufZdsConfirmationReceiverInterface $receiver The receiver.
 	 */
 	public function __construct(
-		private readonly StufZdsConfirmationReceiver $receiver,
+		private readonly StufZdsConfirmationReceiverInterface $receiver,
 	) {
 
 	}//end __construct()

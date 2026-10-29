@@ -36,8 +36,8 @@ use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Intake\IntakeReplyService;
 use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -82,11 +82,11 @@ class IntakeChannelsController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal making a write.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 * @param IntakeChannelRegistry $registry The channels this instance has.
 	 * @param IntakeRoutingServiceInterface $routingService Routes and validates.
 	 * @param IntakeReplyService $replyService Replies on the arriving channel.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param OrObjectService $orObjectService Stores routing rules and rejections.
 	 * @param IL10N $l Translations.
 	 */
@@ -94,11 +94,11 @@ class IntakeChannelsController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IntakeChannelRegistry $registry,
 		private readonly IntakeRoutingServiceInterface $routingService,
 		private readonly IntakeReplyService $replyService,
-		private readonly WebhookGate $gate,
+		private readonly WebhookGateInterface $gate,
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,
 	) {

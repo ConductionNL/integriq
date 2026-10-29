@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Connectors\PdokConnectorInterface;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -49,7 +49,7 @@ class PdokController extends Controller {
 	 * @param IRequest $request Current request.
 	 * @param PdokConnectorInterface $pdokConnector Connector providing PDOK access.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 */
 	public function __construct(
@@ -57,7 +57,7 @@ class PdokController extends Controller {
 		IRequest $request,
 		private readonly PdokConnectorInterface $pdokConnector,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);

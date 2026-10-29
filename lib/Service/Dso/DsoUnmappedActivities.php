@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
  */
-class DsoUnmappedActivities {
+class DsoUnmappedActivities implements DsoUnmappedActivitiesInterface {
 
 	/**
 	 * How many of the latest flagged verzoeken are read.

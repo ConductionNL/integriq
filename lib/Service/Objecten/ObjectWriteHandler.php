@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
  */
-class ObjectWriteHandler {
+class ObjectWriteHandler implements ObjectWriteHandlerInterface {
 
 	/**
 	 * The kanaal a change is announced on.

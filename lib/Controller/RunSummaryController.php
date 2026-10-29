@@ -25,8 +25,8 @@ namespace OCA\Integriq\Controller;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\RunSummaryService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\RunSummaryServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -46,16 +46,16 @@ class RunSummaryController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request.
-	 * @param RunSummaryService $runSummary Sums a source's runs per day.
+	 * @param RunSummaryServiceInterface $runSummary Sums a source's runs per day.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly RunSummaryService $runSummary,
+		private readonly RunSummaryServiceInterface $runSummary,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
@@ -92,8 +92,8 @@ class RunSummaryController extends Controller {
 			);
 		} catch (InvalidArgumentException $exception) {
 			$message = $this->l->t('Give the dates as year-month-day, for example 2026-09-28.');
-			if ($exception->getCode() === RunSummaryService::WINDOW_TOO_LONG) {
-				$message = $this->l->t('Choose a window of at most %s days that ends after it starts.', [(string)RunSummaryService::MAX_WINDOW_DAYS]);
+			if ($exception->getCode() === RunSummaryServiceInterface::WINDOW_TOO_LONG) {
+				$message = $this->l->t('Choose a window of at most %s days that ends after it starts.', [(string)RunSummaryServiceInterface::MAX_WINDOW_DAYS]);
 			}
 
 			return new JSONResponse(['error' => $message], Http::STATUS_BAD_REQUEST);

@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/changes/dso-activity-overview/specs/dso-omgevingsloket/spec.md#requirement-administrators-read-the-activities-with-when-each-last-arrived-req-dso-014
  */
-class DsoActivityOverview {
+class DsoActivityOverview implements DsoActivityOverviewInterface {
 
 	/**
 	 * How many of the latest verzoeken are read for the last arrivals.

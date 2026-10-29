@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSettingsRefusal;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettingsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -55,7 +55,7 @@ class BerichtenboxSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request.
-	 * @param ConnectionStore $connectionStore Finds the source and reads it raw.
+	 * @param ConnectionStoreInterface $connectionStore Finds the source and reads it raw.
 	 * @param OrObjectService $objectService Saves the source, as the administrator.
 	 * @param BerichtenboxSourceSettingsInterface $settings Checks, encrypts and describes the settings.
 	 * @param IL10N $l Messages.
@@ -63,7 +63,7 @@ class BerichtenboxSettingsController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly ConnectionStore $connectionStore,
+		private readonly ConnectionStoreInterface $connectionStore,
 		private readonly OrObjectService $objectService,
 		private readonly BerichtenboxSourceSettingsInterface $settings,
 		private readonly IL10N $l,
@@ -128,7 +128,7 @@ class BerichtenboxSettingsController extends Controller {
 		}
 
 		try {
-			$saved = $this->objectService->saveObject(object: $applied['data'], register: ConnectionStore::REGISTER, schema: 'source', uuid: $uuid);
+			$saved = $this->objectService->saveObject(object: $applied['data'], register: ConnectionStoreInterface::REGISTER, schema: 'source', uuid: $uuid);
 		} catch (Throwable $e) {
 			$this->logger->error('[BerichtenboxSettingsController] the Berichtenbox source was not saved', ['exception' => $e->getMessage()]);
 			return new JSONResponse(
