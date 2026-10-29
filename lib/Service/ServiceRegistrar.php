@@ -30,18 +30,6 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  */
 final class ServiceRegistrar {
 	/**
-	 * Contract => implementing class.
-	 *
-	 * @var array<class-string, class-string>
-	 */
-	private const CONTRACTS = [
-		CallServiceInterface::class            => CallService::class,
-		EndpointServiceInterface::class        => EndpointService::class,
-		EventServiceInterface::class           => EventService::class,
-		SynchronizationServiceInterface::class => SynchronizationService::class,
-	];
-
-	/**
 	 * Register the contract aliases on the app's registration context.
 	 *
 	 * @param IRegistrationContext $context The app's registration context.
@@ -51,8 +39,9 @@ final class ServiceRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		foreach (self::CONTRACTS as $contract => $implementation) {
-			$context->registerServiceAlias($contract, $implementation);
-		}
+		$context->registerServiceAlias(CallServiceInterface::class, CallService::class);
+		$context->registerServiceAlias(EndpointServiceInterface::class, EndpointService::class);
+		$context->registerServiceAlias(EventServiceInterface::class, EventService::class);
+		$context->registerServiceAlias(SynchronizationServiceInterface::class, SynchronizationService::class);
 	}
 }
