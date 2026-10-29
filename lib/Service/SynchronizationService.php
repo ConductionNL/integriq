@@ -55,6 +55,7 @@ use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
+use OCA\Integriq\Service\Synchronization\TargetWrite;
 use OCA\Integriq\Service\Synchronization\DeletionRun;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -9942,165 +9943,284 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?string $mutationType = null,
 		?ExecutionTraceContext $trace = null,
 	): array {
-		$targetId = ($contract['targetId'] ?? null);
-		$target = $this->findSource(id: ($synchronization['targetId'] ?? null));
-		$object = [];
+		$write = new TargetWrite();
+		$write->synchronization = $synchronization;
+		$write->contract = $contract;
+		$write->endpoint = $endpoint;
+		$write->object = ($targetObject ?? []);
+		$write->trace = $trace;
+		$write->targetId = ($contract['targetId'] ?? null);
 
-		if ($targetObject !== null) {
-			$object = $targetObject;
-		}
-
-		$sourceId = ($synchronization['sourceId'] ?? null);
-		if (($synchronization['sourceType'] ?? null) === 'register/schema' && ($contract['originId'] ?? null) !== null) {
-			$sourceIds = explode(separator: '/', string: $sourceId);
-
-			$this->objectService->getOpenRegisters()->setRegister($sourceIds[0]);
-			$this->objectService->getOpenRegisters()->setSchema($sourceIds[1]);
-
-			if ($targetObject === null) {
-				$object = $this->objectService->getOpenRegisters()->find(
-					id: $contract['originId'],
-				)->jsonSerialize();
-			}
-		}
-
-		$targetConfig = $this->callService->applyConfigDot(($synchronization['targetConfig'] ?? []));
-
-		$targetLocation = $target['location'] ?? '';
-		if ($targetLocation !== '' && str_starts_with($endpoint, $targetLocation) === true) {
-			$endpoint = str_replace(search: $targetLocation, replace: '', subject: $endpoint);
-		}
+		$this->prepareTargetWrite(write: $write, readOrigin: ($targetObject === null));
 
 		if ($mutationType === 'delete') {
-			$method = 'DELETE';
-
-			// @todo check for {{targetId}} in endpoint and replace
-			if (isset($targetConfig['deleteEndpoint']) === true) {
-				$endpoint = $targetConfig['deleteEndpoint'];
-				$endpoint = str_replace(search: '{{ originId }}', replace: $sourceId, subject: $endpoint);
-				$endpoint = str_replace(search: '{{originId}}', replace: $sourceId, subject: $endpoint);
-			} else {
-				$endpoint .= "/$targetId";
-			}
-
-			if (isset($targetConfig['deleteMethod']) === true) {
-				$method = $targetConfig['deleteMethod'];
-			}
-
-			if (isset($targetConfig['deleteMapping']) === true) {
-				$deleteMapping = $this->mappingService->getMapping($targetConfig['deleteMapping']);
-				$targetConfig['json'] = $this->mappingService->executeMapping(mapping: $deleteMapping, input: $object);
-			}
-
-			$response = $this->callLogResponse(
-				callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace)
-			);
-
-			$contract['targetHash'] = md5(serialize($response['body']));
-			$contract['targetId'] = null;
-
-			return $contract;
-		}//end if
+			return $this->deleteFromTarget(write: $write);
+		}
 
 		// @TODO For now only JSON APIs are supported
-		$targetConfig['json'] = $object;
+		$write->targetConfig['json'] = $write->object;
 
 		// A pulled object already exists in the store and carries its remote id
 		// (zgw-connectors-for-dossiq D4). Without this the first local edit of a
 		// pulled zaak POSTed a second zaak.
-		if ($targetId === null) {
-			$targetId = $this->targetIdFromObject(targetConfig: $targetConfig, object: $object);
-			if ($targetId !== null) {
-				$contract['targetId'] = $targetId;
+		if ($write->targetId === null) {
+			$write->targetId = $this->targetIdFromObject(targetConfig: $write->targetConfig, object: $write->object);
+			if ($write->targetId !== null) {
+				$write->contract['targetId'] = $write->targetId;
 			}
 		}
 
-		// REQ-CSD-002: a ZGW document target creates once, in parts when the
-		// Documenten API asks for them, and never updates what it created.
-		if (is_array($targetConfig['zgwDocument'] ?? null) === true) {
-			return $this->pushZgwDocument(synchronization: $synchronization, contract: $contract, targetConfig: $targetConfig, targetId: $targetId);
+		$delivered = $this->deliverTargetDocument(write: $write);
+		if ($delivered !== null) {
+			return $delivered;
 		}
 
-		// REQ-CSD-002 over StUF-ZDS: genereerDocumentIdentificatie, then
-		// voegZaakdocumentToe; like the ZGW leg it creates once and never updates.
-		if (is_array($targetConfig['stufDocument'] ?? null) === true) {
-			return $this->pushStufDocument(synchronization: $synchronization, contract: $contract, targetConfig: $targetConfig, targetId: $targetId);
+		if ($write->targetId === null) {
+			return $this->createOnTarget(write: $write);
 		}
 
-		if ($targetId === null) {
-			if (isset($targetConfig['idInRequestBody']) === true) {
-				$targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
+		$targetObject = $this->updateOnTarget(write: $write);
+
+		return $write->contract;
+	}//end writeObjectToTarget()
+
+	/**
+	 * Resolve the target source, the object to write and the target config.
+	 *
+	 * For a register/schema source the OpenRegister context is set to the
+	 * origin's register and schema; without a given object the origin object
+	 * is read from it. An endpoint given as a full URL under the target's
+	 * location is made relative to it.
+	 *
+	 * @param TargetWrite $write      The write.
+	 * @param boolean     $readOrigin Whether to read the origin object (no object was given).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function prepareTargetWrite(TargetWrite $write, bool $readOrigin): void {
+		$synchronization = $write->synchronization;
+		$write->target = $this->findSource(id: ($synchronization['targetId'] ?? null));
+
+		if (($synchronization['sourceType'] ?? null) === 'register/schema' && ($write->contract['originId'] ?? null) !== null) {
+			$sourceIds = explode(separator: '/', string: ($synchronization['sourceId'] ?? null));
+
+			$this->objectService->getOpenRegisters()->setRegister($sourceIds[0]);
+			$this->objectService->getOpenRegisters()->setSchema($sourceIds[1]);
+
+			if ($readOrigin === true) {
+				$write->object = $this->objectService->getOpenRegisters()->find(
+					id: $write->contract['originId'],
+				)->jsonSerialize();
 			}
-
-			$this->inspectTargetBody(targetConfig: $targetConfig, contract: $contract);
-			$this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
-			$callLog = $this->callForPush(
-				synchronization: $synchronization,
-				contract: $contract,
-				call: fn (): ObjectEntity => $this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig, trace: $trace)
-			);
-			$pushFailed = $this->writeBackOnFailedAnswer(synchronization: $synchronization, contract: $contract, callLog: $callLog);
-			$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $targetConfig);
-			$response = $this->callLogResponse(callLog: $callLog);
-
-			$body = json_decode($response['body'], true);
-
-			$bodyDot = new Dot($body);
-
-			if (isset($targetConfig['idPosition']) === true) {
-				$targetId = $bodyDot->get($targetConfig['idPosition']);
-			} elseif (isset($targetConfig['idposition']) === true) {
-				// Backwards compatible if older sync still use idposition (lowercase).
-				$targetId = $bodyDot->get($targetConfig['idposition']);
-			} elseif (isset($body['id']) === true) {
-				$targetId = $body['id'];
-			} else {
-				throw new Exception('Could not determine an id from target synchronization');
-			}
-
-			$contract['targetId'] = $targetId;
-			if ($pushFailed === false) {
-				$this->writeOutcomeBack(
-					synchronization: $synchronization,
-					contract: $contract,
-					outcome: OutcomeWriteBack::SUCCESS,
-					context: ['response' => $body, 'status' => $this->callLogStatusCode(callLog: $callLog), 'targetId' => $targetId]
-				);
-			}
-
-			return $contract;
-		}//end if
-
-		$method = 'PUT';
-
-		if (isset($targetConfig['updateEndpoint']) === true) {
-			$endpoint = $targetConfig['updateEndpoint'];
-			$endpoint = str_replace(search: '{{ originId }}', replace: $targetId, subject: $endpoint);
-			$endpoint = str_replace(search: '{{originId}}', replace: $targetId, subject: $endpoint);
-		} elseif (preg_match('#^https?://#i', (string)$targetId) === 1) {
-			$endpoint = $this->endpointUnderTarget(url: (string)$targetId, targetLocation: (string)$targetLocation);
-		} else {
-			$endpoint .= "/$targetId";
 		}
 
-		if (isset($targetConfig['updateMethod']) === true) {
-			$method = $targetConfig['updateMethod'];
+		$write->targetConfig = $this->callService->applyConfigDot(($synchronization['targetConfig'] ?? []));
+
+		$targetLocation = ($write->target['location'] ?? '');
+		if ($targetLocation !== '' && str_starts_with($write->endpoint, $targetLocation) === true) {
+			$write->endpoint = str_replace(search: $targetLocation, replace: '', subject: $write->endpoint);
+		}
+	}//end prepareTargetWrite()
+
+	/**
+	 * Delete the object on the target and clear the contract's target id.
+	 *
+	 * @param TargetWrite $write The write.
+	 *
+	 * @return array The contract, its targetHash the hash of the answer body.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function deleteFromTarget(TargetWrite $write): array {
+		$targetConfig = $write->targetConfig;
+		$method = ($targetConfig['deleteMethod'] ?? 'DELETE');
+
+		if (isset($targetConfig['deleteMapping']) === true) {
+			$deleteMapping = $this->mappingService->getMapping($targetConfig['deleteMapping']);
+			$targetConfig['json'] = $this->mappingService->executeMapping(mapping: $deleteMapping, input: $write->object);
 		}
 
-		if (isset($targetConfig['updateMapping']) === true) {
-			$mapping = $this->mappingService->getMapping($targetConfig['updateMapping']);
-			$targetConfig['json'] = $this->processMapping(mapping: $mapping, data: $targetConfig['json']);
-		}
-
-		$this->inspectTargetBody(targetConfig: $targetConfig, contract: $contract);
-		$this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
-		$callLog = $this->callForPush(
-			synchronization: $synchronization,
-			contract: $contract,
-			call: fn (): ObjectEntity => $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace)
+		$response = $this->callLogResponse(
+			callLog: $this->callSourceObject(
+				source: $write->target,
+				endpoint: $this->deleteEndpoint(write: $write),
+				method: $method,
+				config: $targetConfig,
+				trace: $write->trace
+			)
 		);
-		$pushFailed = $this->writeBackOnFailedAnswer(synchronization: $synchronization, contract: $contract, callLog: $callLog);
-		$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $targetConfig);
+
+		$contract = $write->contract;
+		$contract['targetHash'] = md5(serialize($response['body']));
+		$contract['targetId'] = null;
+
+		return $contract;
+	}//end deleteFromTarget()
+
+	/**
+	 * The endpoint a delete goes to: the configured deleteEndpoint, or the target id under the endpoint.
+	 *
+	 * @param TargetWrite $write The write.
+	 *
+	 * @return string The endpoint.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function deleteEndpoint(TargetWrite $write): string {
+		// @todo check for {{targetId}} in endpoint and replace
+		if (isset($write->targetConfig['deleteEndpoint']) === true) {
+			return $this->fillOriginId(
+				template: $write->targetConfig['deleteEndpoint'],
+				value: (string)($write->synchronization['sourceId'] ?? null)
+			);
+		}
+
+		return $write->endpoint . '/' . $write->targetId;
+	}//end deleteEndpoint()
+
+	/**
+	 * Replace the `{{ originId }}` placeholder (with or without spaces) in an endpoint template.
+	 *
+	 * @param string $template The endpoint template.
+	 * @param string $value    The value to put in.
+	 *
+	 * @return string The endpoint.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function fillOriginId(string $template, string $value): string {
+		$endpoint = str_replace(search: '{{ originId }}', replace: $value, subject: $template);
+
+		return str_replace(search: '{{originId}}', replace: $value, subject: $endpoint);
+	}//end fillOriginId()
+
+	/**
+	 * Hand a document delivery to its ZGW or StUF-ZDS leg.
+	 *
+	 * REQ-CSD-002: a document target creates once, in parts when the
+	 * Documenten API asks for them, and never updates what it created; over
+	 * StUF-ZDS by genereerDocumentIdentificatie, then voegZaakdocumentToe.
+	 *
+	 * @param TargetWrite $write The write.
+	 *
+	 * @return array|null The contract when the target delivers documents, null otherwise.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function deliverTargetDocument(TargetWrite $write): ?array {
+		if (is_array($write->targetConfig['zgwDocument'] ?? null) === true) {
+			return $this->pushZgwDocument(
+				synchronization: $write->synchronization,
+				contract: $write->contract,
+				targetConfig: $write->targetConfig,
+				targetId: $write->targetId
+			);
+		}
+
+		if (is_array($write->targetConfig['stufDocument'] ?? null) === true) {
+			return $this->pushStufDocument(
+				synchronization: $write->synchronization,
+				contract: $write->contract,
+				targetConfig: $write->targetConfig,
+				targetId: $write->targetId
+			);
+		}
+
+		return null;
+	}//end deliverTargetDocument()
+
+	/**
+	 * Create the object on the target and take the remote id from the answer.
+	 *
+	 * @param TargetWrite $write The write.
+	 *
+	 * @return array The contract, its targetId the created object's id.
+	 *
+	 * @throws Exception When the answer names no id.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function createOnTarget(TargetWrite $write): array {
+		if (isset($write->targetConfig['idInRequestBody']) === true) {
+			$write->targetId = $write->targetConfig['json'][$write->targetConfig['idInRequestBody']];
+		}
+
+		$callLog = $this->sendToTarget(write: $write, method: 'POST');
+		$pushFailed = $this->writeBackOnFailedAnswer(synchronization: $write->synchronization, contract: $write->contract, callLog: $callLog);
+		$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $write->targetConfig);
+		$response = $this->callLogResponse(callLog: $callLog);
+
+		$body = json_decode($response['body'], true);
+		$targetId = $this->createdTargetId(targetConfig: $write->targetConfig, body: $body);
+
+		$contract = $write->contract;
+		$contract['targetId'] = $targetId;
+		if ($pushFailed === false) {
+			$this->writeOutcomeBack(
+				synchronization: $write->synchronization,
+				contract: $contract,
+				outcome: OutcomeWriteBack::SUCCESS,
+				context: ['response' => $body, 'status' => $this->callLogStatusCode(callLog: $callLog), 'targetId' => $targetId]
+			);
+		}
+
+		return $contract;
+	}//end createOnTarget()
+
+	/**
+	 * The id of a created object, read from the answer at the configured position or its `id`.
+	 *
+	 * @param array $targetConfig The target config.
+	 * @param mixed $body         The decoded answer body.
+	 *
+	 * @return mixed The id.
+	 *
+	 * @throws Exception When the answer names no id.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function createdTargetId(array $targetConfig, mixed $body): mixed {
+		$bodyDot = new Dot($body);
+
+		if (isset($targetConfig['idPosition']) === true) {
+			return $bodyDot->get($targetConfig['idPosition']);
+		}
+
+		// Backwards compatible if older sync still use idposition (lowercase).
+		if (isset($targetConfig['idposition']) === true) {
+			return $bodyDot->get($targetConfig['idposition']);
+		}
+
+		if (isset($body['id']) === true) {
+			return $body['id'];
+		}
+
+		throw new Exception('Could not determine an id from target synchronization');
+	}//end createdTargetId()
+
+	/**
+	 * Update the object on the target.
+	 *
+	 * @param TargetWrite $write The write.
+	 *
+	 * @return array The decoded answer body with the target id, for the caller's target object.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function updateOnTarget(TargetWrite $write): array {
+		$write->endpoint = $this->updateEndpoint(write: $write);
+		$method = ($write->targetConfig['updateMethod'] ?? 'PUT');
+
+		if (isset($write->targetConfig['updateMapping']) === true) {
+			$mapping = $this->mappingService->getMapping($write->targetConfig['updateMapping']);
+			$write->targetConfig['json'] = $this->processMapping(mapping: $mapping, data: $write->targetConfig['json']);
+		}
+
+		$callLog = $this->sendToTarget(write: $write, method: $method);
+		$pushFailed = $this->writeBackOnFailedAnswer(synchronization: $write->synchronization, contract: $write->contract, callLog: $callLog);
+		$this->refuseOnTargetConflict(callLog: $callLog, targetConfig: $write->targetConfig);
 		$response = $this->callLogResponse(callLog: $callLog);
 
 		$decodedResponseBody = json_decode($response['body'] ?? '', true);
@@ -10110,18 +10230,68 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		if ($pushFailed === false) {
 			$this->writeOutcomeBack(
-				synchronization: $synchronization,
-				contract: $contract,
+				synchronization: $write->synchronization,
+				contract: $write->contract,
 				outcome: OutcomeWriteBack::SUCCESS,
-				context: ['response' => $decodedResponseBody, 'status' => $this->callLogStatusCode(callLog: $callLog), 'targetId' => $targetId]
+				context: ['response' => $decodedResponseBody, 'status' => $this->callLogStatusCode(callLog: $callLog), 'targetId' => $write->targetId]
 			);
 		}
 
-		$body = array_merge($decodedResponseBody, ['targetId' => $targetId]);
-		$targetObject = $body;
+		return array_merge($decodedResponseBody, ['targetId' => $write->targetId]);
+	}//end updateOnTarget()
 
-		return $contract;
-	}//end writeObjectToTarget()
+	/**
+	 * The endpoint an update goes to: the configured updateEndpoint, the remote id when it
+	 * is a URL under the target, or the target id under the endpoint.
+	 *
+	 * @param TargetWrite $write The write.
+	 *
+	 * @return string The endpoint.
+	 *
+	 * @throws Exception When the remote id is a URL outside the target.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function updateEndpoint(TargetWrite $write): string {
+		if (isset($write->targetConfig['updateEndpoint']) === true) {
+			return $this->fillOriginId(template: $write->targetConfig['updateEndpoint'], value: (string)$write->targetId);
+		}
+
+		if (preg_match('#^https?://#i', (string)$write->targetId) === 1) {
+			return $this->endpointUnderTarget(url: (string)$write->targetId, targetLocation: (string)($write->target['location'] ?? ''));
+		}
+
+		return $write->endpoint . '/' . $write->targetId;
+	}//end updateEndpoint()
+
+	/**
+	 * Check the body, attach a file upload when configured, and send the write.
+	 *
+	 * A transport failure is written back onto the origin and rethrown.
+	 *
+	 * @param TargetWrite $write  The write.
+	 * @param string      $method The HTTP method.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 */
+	private function sendToTarget(TargetWrite $write, string $method): ObjectEntity {
+		$this->inspectTargetBody(targetConfig: $write->targetConfig, contract: $write->contract);
+		$this->applyFileUploadToTargetConfig(targetConfig: $write->targetConfig, contract: $write->contract);
+
+		return $this->callForPush(
+			synchronization: $write->synchronization,
+			contract: $write->contract,
+			call: fn (): ObjectEntity => $this->callSourceObject(
+				source: $write->target,
+				endpoint: $write->endpoint,
+				method: $method,
+				config: $write->targetConfig,
+				trace: $write->trace
+			)
+		);
+	}//end sendToTarget()
 
 	/**
 	 * Push one delivery as a new document to a ZGW Documenten API.
