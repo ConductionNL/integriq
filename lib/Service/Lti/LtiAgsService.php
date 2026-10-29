@@ -42,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/specs/lti-platform/spec.md
  */
-class LtiAgsService {
+class LtiAgsService implements LtiAgsServiceInterface {
 
 	/**
 	 * AGS scope URIs (1EdTech LTI Advantage AGS 2.0).

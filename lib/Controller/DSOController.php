@@ -32,8 +32,8 @@ use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\DsoIngestService;
-use OCA\Integriq\Service\DSOParserService;
+use OCA\Integriq\Service\DsoIngestServiceInterface;
+use OCA\Integriq\Service\DSOParserServiceInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoIdentity;
@@ -73,11 +73,11 @@ class DSOController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request Request object.
-	 * @param DSOParserService $parser The DSO payload parser service.
+	 * @param DSOParserServiceInterface $parser The DSO payload parser service.
 	 * @param LoggerInterface $logger Logger for error handling.
 	 * @param DsoConnection $connection The dso-stam consumer: signature, account, rights, runAs().
 	 * @param DsoConnectionAlerts $alerts Admin notifications when a push is refused with 503.
-	 * @param DsoIngestService $ingestService dso_verzoek persistence, mapping, outbound.
+	 * @param DsoIngestServiceInterface $ingestService dso_verzoek persistence, mapping, outbound.
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IUserSession $userSession The user session (status/list/outbound
 	 *                                  endpoints).
@@ -89,11 +89,11 @@ class DSOController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly DSOParserService $parser,
+		private readonly DSOParserServiceInterface $parser,
 		private readonly LoggerInterface $logger,
 		private readonly DsoConnection $connection,
 		private readonly DsoConnectionAlerts $alerts,
-		private readonly DsoIngestService $ingestService,
+		private readonly DsoIngestServiceInterface $ingestService,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,

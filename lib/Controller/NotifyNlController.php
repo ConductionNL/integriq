@@ -30,7 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\SmsDispatchService;
+use OCA\Integriq\Service\SmsDispatchServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
@@ -70,7 +70,7 @@ class NotifyNlController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param SmsDispatchService $dispatchService Send / status-poll / callback logic.
+	 * @param SmsDispatchServiceInterface $dispatchService Send / status-poll / callback logic.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (send/status endpoints).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -80,7 +80,7 @@ class NotifyNlController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SmsDispatchService $dispatchService,
+		private readonly SmsDispatchServiceInterface $dispatchService,
 		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

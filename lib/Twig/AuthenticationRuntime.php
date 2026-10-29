@@ -22,7 +22,7 @@ namespace OCA\Integriq\Twig;
 
 use Adbar\Dot;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\Integriq\Service\AuthenticationService;
+use OCA\Integriq\Service\AuthenticationServiceInterface;
 use Twig\Extension\RuntimeExtensionInterface;
 
 /**
@@ -32,10 +32,10 @@ class AuthenticationRuntime implements RuntimeExtensionInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuthenticationService $authService Service that performs the token fetches.
+	 * @param AuthenticationServiceInterface $authService Service that performs the token fetches.
 	 */
 	public function __construct(
-		private readonly AuthenticationService $authService,
+		private readonly AuthenticationServiceInterface $authService,
 	) {
 
 	}//end __construct()

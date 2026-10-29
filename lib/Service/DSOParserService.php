@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class DSOParserService {
+class DSOParserService implements DSOParserServiceInterface {
 
 	/**
 	 * Required fields in a DSO-verzoek payload.

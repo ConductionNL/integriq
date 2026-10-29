@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/execution-trace/spec.md
  */
-class ExecutionTraceService {
+class ExecutionTraceService implements ExecutionTraceServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding execution traces.

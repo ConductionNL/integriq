@@ -29,7 +29,7 @@ use InvalidArgumentException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\Exchange\ExchangeReadModel;
-use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
+use OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -58,7 +58,7 @@ class ExchangeController extends Controller {
 	 * @param string                   $appName     The app id.
 	 * @param IRequest                 $request     The request.
 	 * @param ExchangeReadModel        $readModel   The read model.
-	 * @param ExchangeRejectionService $rejections  The correction actions.
+	 * @param ExchangeRejectionServiceInterface $rejections  The correction actions.
 	 * @param ActionAuthService        $actionAuth  ADR-023 action checks.
 	 * @param IUserSession             $userSession The session.
 	 * @param IL10N                    $l           Translations.
@@ -67,7 +67,7 @@ class ExchangeController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ExchangeReadModel $readModel,
-		private readonly ExchangeRejectionService $rejections,
+		private readonly ExchangeRejectionServiceInterface $rejections,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,

@@ -22,10 +22,30 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\DigitalPost\DigitalPostService;
+use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
+use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
+use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
+use OCA\Integriq\Service\Exchange\ExchangeJobRunner;
+use OCA\Integriq\Service\Exchange\ExchangeJobRunnerInterface;
+use OCA\Integriq\Service\Exchange\ExchangeJobService;
+use OCA\Integriq\Service\Exchange\ExchangeJobServiceInterface;
+use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
+use OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface;
+use OCA\Integriq\Service\Lti\LtiAgsService;
+use OCA\Integriq\Service\Lti\LtiAgsServiceInterface;
+use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Service\Lti\LtiKeyServiceInterface;
 use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
 use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
 use OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface;
+use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
+use OCA\Integriq\Service\Objecten\ObjectEndpointHandlerInterface;
+use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
+use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
+use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
+use OCA\Integriq\Service\StufZkn\StufZdsOutboundInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -72,5 +92,31 @@ final class ServiceRegistrar {
 		$context->registerServiceAlias(FlowRunnerServiceInterface::class, FlowRunnerService::class);
 		$context->registerServiceAlias(KissSyncServiceInterface::class, KissSyncService::class);
 		$context->registerServiceAlias(JobToFlowGeneratorInterface::class, JobToFlowGenerator::class);
+		$context->registerServiceAlias(DsoIngestServiceInterface::class, DsoIngestService::class);
+		$context->registerServiceAlias(AuthenticationServiceInterface::class, AuthenticationService::class);
+		$context->registerServiceAlias(SoftwareCatalogueServiceInterface::class, SoftwareCatalogueService::class);
+		$context->registerServiceAlias(OpenFormulierenIntakeServiceInterface::class, OpenFormulierenIntakeService::class);
+		$context->registerServiceAlias(LtiKeyServiceInterface::class, LtiKeyService::class);
+		$context->registerServiceAlias(CardfeedSyncServiceInterface::class, CardfeedSyncService::class);
+		$context->registerServiceAlias(ExchangeJobServiceInterface::class, ExchangeJobService::class);
+		$context->registerServiceAlias(PeppolTransmissionServiceInterface::class, PeppolTransmissionService::class);
+		$context->registerServiceAlias(LtiAgsServiceInterface::class, LtiAgsService::class);
+		$context->registerServiceAlias(IwmoIjwSyncServiceInterface::class, IwmoIjwSyncService::class);
+		$context->registerServiceAlias(StufZdsOutboundInterface::class, StufZdsOutbound::class);
+		$context->registerServiceAlias(SmsDispatchServiceInterface::class, SmsDispatchService::class);
+		$context->registerServiceAlias(StufProviderReceiverInterface::class, StufProviderReceiver::class);
+		$context->registerServiceAlias(DigitalPostServiceInterface::class, DigitalPostService::class);
+		$context->registerServiceAlias(ExchangeRejectionServiceInterface::class, ExchangeRejectionService::class);
+		$context->registerServiceAlias(ConfigurationImportPreviewServiceInterface::class, ConfigurationImportPreviewService::class);
+		$context->registerServiceAlias(ExecutionTraceServiceInterface::class, ExecutionTraceService::class);
+		$context->registerServiceAlias(DocumentGenerationServiceInterface::class, DocumentGenerationService::class);
+		$context->registerServiceAlias(ObjectEndpointHandlerInterface::class, ObjectEndpointHandler::class);
+		$context->registerServiceAlias(ExchangeJobRunnerInterface::class, ExchangeJobRunner::class);
+		$context->registerServiceAlias(ConnectionRegistryServiceInterface::class, ConnectionRegistryService::class);
+		$context->registerServiceAlias(EudiStatusListServiceInterface::class, EudiStatusListService::class);
+		$context->registerServiceAlias(DSOParserServiceInterface::class, DSOParserService::class);
+		$context->registerServiceAlias(ApprovalDecisionServiceInterface::class, ApprovalDecisionService::class);
+		$context->registerServiceAlias(UwlrEduVServiceInterface::class, UwlrEduVService::class);
+		$context->registerServiceAlias(PaymentIntentServiceInterface::class, PaymentIntentService::class);
 	}
 }

@@ -27,7 +27,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\DocumentGenerationException;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
-use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
+use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
@@ -130,8 +130,8 @@ class DocumentGenerationController extends Controller {
 			$object['isEnabled'] = true;
 			$this->objectService->saveObject(
 				object: $object,
-				register: DocumentGenerationService::REGISTER,
-				schema: DocumentGenerationService::SCHEMA_SOURCE,
+				register: DocumentGenerationServiceInterface::REGISTER,
+				schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE,
 				uuid: $source->getUuid()
 			);
 
@@ -205,8 +205,8 @@ class DocumentGenerationController extends Controller {
 	private function source(string $sourceId) {
 		$source = $this->objectService->find(
 			id: $sourceId,
-			register: DocumentGenerationService::REGISTER,
-			schema: DocumentGenerationService::SCHEMA_SOURCE
+			register: DocumentGenerationServiceInterface::REGISTER,
+			schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE
 		);
 
 		if ($source === null) {
@@ -215,7 +215,7 @@ class DocumentGenerationController extends Controller {
 			);
 		}
 
-		if ((string)($source->getObject()['type'] ?? '') !== DocumentGenerationService::SOURCE_TYPE) {
+		if ((string)($source->getObject()['type'] ?? '') !== DocumentGenerationServiceInterface::SOURCE_TYPE) {
 			throw new DocumentGenerationException(
 				message: 'Source "' . $sourceId . '" is not a document generation source.'
 			);

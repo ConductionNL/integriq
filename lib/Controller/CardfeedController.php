@@ -30,7 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\CardfeedProviderException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\CardfeedSyncService;
+use OCA\Integriq\Service\CardfeedSyncServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -53,7 +53,7 @@ class CardfeedController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param CardfeedSyncService $syncService Enroll + discovery + sync logic.
+	 * @param CardfeedSyncServiceInterface $syncService Enroll + discovery + sync logic.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service (ADR-023).
 	 * @param IL10N $l The localization service.
@@ -62,7 +62,7 @@ class CardfeedController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly CardfeedSyncService $syncService,
+		private readonly CardfeedSyncServiceInterface $syncService,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,

@@ -30,8 +30,8 @@ use OCA\Integriq\Event\OsoAcknowledgementReceivedEvent;
 use OCA\Integriq\Event\RodAcknowledgementReceivedEvent;
 use OCA\Integriq\Event\UwlrEduVAcknowledgementReceivedEvent;
 use OCA\Integriq\Event\VerzuimloketAcknowledgementReceivedEvent;
-use OCA\Integriq\Service\Exchange\ExchangeJobService;
-use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
+use OCA\Integriq\Service\Exchange\ExchangeJobServiceInterface;
+use OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface;
 use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogue;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -71,15 +71,15 @@ class ExchangeAcknowledgementListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExchangeJobService       $jobs       Finds the job a kenmerk names.
-	 * @param ExchangeRejectionService $rejections Stores a rejecting retour.
+	 * @param ExchangeJobServiceInterface       $jobs       Finds the job a kenmerk names.
+	 * @param ExchangeRejectionServiceInterface $rejections Stores a rejecting retour.
 	 * @param ExchangeTargetCatalogue  $targets    Says which adapter carries a target.
 	 * @param IEventDispatcher         $dispatcher Tells the owning app.
 	 * @param LoggerInterface          $logger     Logger.
 	 */
 	public function __construct(
-		private readonly ExchangeJobService $jobs,
-		private readonly ExchangeRejectionService $rejections,
+		private readonly ExchangeJobServiceInterface $jobs,
+		private readonly ExchangeRejectionServiceInterface $rejections,
 		private readonly ExchangeTargetCatalogue $targets,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,

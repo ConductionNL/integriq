@@ -6,7 +6,7 @@
  * The public endpoints a case system posts its StUF provider requests to
  * (zakLv01, zakLk01, edcLk01 on cases; npsLv01 on persons), decision 199.
  * Authentication is the WS-Security UsernameToken of the source the route
- * names, checked by {@see \OCA\Integriq\Service\StufZkn\StufProviderReceiver};
+ * names, checked by {@see StufProviderReceiverInterface};
  * there is no Nextcloud session, so the routes are public and the receiver is
  * their auth.
  *
@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
+use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -50,13 +50,13 @@ class StufProviderController extends Controller {
 	 *
 	 * @param string               $appName     App identifier ("integriq").
 	 * @param IRequest             $request     Current request.
-	 * @param StufProviderReceiver $receiver    Authenticates, asks the owning app and renders the answer.
+	 * @param StufProviderReceiverInterface $receiver    Authenticates, asks the owning app and renders the answer.
 	 * @param StufZknRequestBody   $requestBody Reads the request body up to the ceiling.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly StufProviderReceiver $receiver,
+		private readonly StufProviderReceiverInterface $receiver,
 		private readonly StufZknRequestBody $requestBody,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -78,7 +78,7 @@ class StufProviderController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function cases(string $sourceId): DataDisplayResponse {
-		return $this->respond(sourceId: $sourceId, service: StufProviderReceiver::SERVICE_CASES);
+		return $this->respond(sourceId: $sourceId, service: StufProviderReceiverInterface::SERVICE_CASES);
 	}//end cases()
 
 	/**
@@ -94,7 +94,7 @@ class StufProviderController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function persons(string $sourceId): DataDisplayResponse {
-		return $this->respond(sourceId: $sourceId, service: StufProviderReceiver::SERVICE_PERSONS);
+		return $this->respond(sourceId: $sourceId, service: StufProviderReceiverInterface::SERVICE_PERSONS);
 	}//end persons()
 
 	/**

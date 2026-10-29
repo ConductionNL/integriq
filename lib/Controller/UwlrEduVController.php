@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\UwlrEduVProviderException;
 use OCA\Integriq\Exception\UwlrEduVTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\UwlrEduVService;
+use OCA\Integriq\Service\UwlrEduVServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
@@ -63,7 +63,7 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param UwlrEduVService $uwlrEduVService Send/sync/retour orchestration logic.
+	 * @param UwlrEduVServiceInterface $uwlrEduVService Send/sync/retour orchestration logic.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push/sync endpoints).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -73,7 +73,7 @@ class UwlrEduVController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly UwlrEduVService $uwlrEduVService,
+		private readonly UwlrEduVServiceInterface $uwlrEduVService,
 		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

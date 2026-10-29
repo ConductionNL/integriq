@@ -54,35 +54,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) RenderOutcome's named constructors, as above.
  */
-class DocumentGenerationService {
-
-	/**
-	 * The register the job and source objects live in.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The job schema.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_JOB = 'documentGenerationJob';
-
-	/**
-	 * The source schema.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SOURCE = 'source';
-
-	/**
-	 * The source type this service reads.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_TYPE = 'documentGeneration';
+class DocumentGenerationService implements DocumentGenerationServiceInterface {
 
 	/**
 	 * Constructor.
