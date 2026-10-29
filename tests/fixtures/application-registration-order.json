@@ -1,4 +1,8 @@
 [
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\CallServiceInterface, OCA\\Integriq\\Service\\CallService)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\EndpointServiceInterface, OCA\\Integriq\\Service\\EndpointService)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\EventServiceInterface, OCA\\Integriq\\Service\\EventService)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\SynchronizationServiceInterface, OCA\\Integriq\\Service\\SynchronizationService)",
 	"context.registerService(OCA\\Integriq\\Service\\SettingsService, closure, bool)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatedEvent, OCA\\Integriq\\EventListener\\ObjectCreatedEventListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\RegistrySubscriptionRequestedEvent, OCA\\Integriq\\EventListener\\RegistrySubscriptionRequestedListener, int)",

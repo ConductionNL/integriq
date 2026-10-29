@@ -80,7 +80,7 @@ use UnexpectedValueException;
  * @spec openspec/specs/http-call-engine/spec.md
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
-class CallService {
+class CallService implements CallServiceInterface {
 
 	private const BASE_FILENAME_LOCATION = '%s-%s';
 

@@ -28,7 +28,7 @@ use OCA\Integriq\Http\XMLResponse;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCorsPolicy;
-use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\EndpointServiceInterface;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -90,7 +90,7 @@ class EndpointsController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param EndpointService $endpointService Service for handling endpoint operations.
+	 * @param EndpointServiceInterface $endpointService Service for handling endpoint operations.
 	 * @param OpenRegisterCredentialBridge $authorizationService Service for handling authorization.
 	 * @param ObjectService $objectService Service for direct ObjectService operations.
 	 * @param EndpointCacheService $endpointCacheService Service for cached endpoint lookups.
@@ -104,7 +104,7 @@ class EndpointsController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private EndpointService $endpointService,
+		private EndpointServiceInterface $endpointService,
 		private OpenRegisterCredentialBridge $authorizationService,
 		private ObjectService $objectService,
 		private EndpointCacheService $endpointCacheService,

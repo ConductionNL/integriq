@@ -38,7 +38,7 @@ namespace OCA\Integriq\Twig;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use OC\Files\Node\File;
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SourceMappingService;
 use OCA\Integriq\Service\SynchronizationContractService;
@@ -66,14 +66,14 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	 * Constructor.
 	 *
 	 * @param MappingService $mappingService Service that executes mappings.
-	 * @param CallService $callService Service that performs outbound calls.
+	 * @param CallServiceInterface $callService Service that performs outbound calls.
 	 * @param FileService $fileService Service that resolves file metadata.
 	 * @param SourceMappingService $objectService Service that resolves OR objects.
 	 * @param SynchronizationContractService $synchronizationContractService Service for contract lookups.
 	 */
 	public function __construct(
 		private readonly MappingService $mappingService,
-		private readonly CallService $callService,
+		private readonly CallServiceInterface $callService,
 		private readonly FileService $fileService,
 		private readonly SourceMappingService $objectService,
 		private readonly SynchronizationContractService $synchronizationContractService,
