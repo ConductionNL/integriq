@@ -2768,6 +2768,17 @@ class EndpointService {
 			return $data;
 		}
 
+		$context = new EndpointRuleDispatch();
+		$context->endpoint = $endpoint;
+		$context->endpointData = $endpointData;
+		$context->request = $request;
+		$context->timing = $timing;
+		$context->objectId = $objectId;
+		$context->flowToken = $flowToken;
+		$context->resumeAfterOrder = $resumeAfterOrder;
+		$context->trace = $trace;
+		$context->dryRun = $dryRun;
+
 		try {
 			// Get all rules at once and sort by order.
 			$ruleEntities = array_filter(
@@ -2776,189 +2787,15 @@ class EndpointService {
 					$rules
 				)
 			);
-
-			// Sort rules by order.
 			usort($ruleEntities, fn ($a, $b) => (($a->getObject())['order'] ?? 0) - (($b->getObject())['order'] ?? 0));
 
-			// Process each rule in order.
 			foreach ($ruleEntities as $rule) {
-				// Skip if rule action doesn't match request method.
-				// if (strtolower($ruleData['action']) !== strtolower($request->getMethod())) {
-				// continue;
-				// }.
-				$ruleData = $rule->getObject();
-				$logicResult = null;
-
-				// Resume: rules at/before the suspended approval rule's order
-				// already ran before the pipeline suspended — skip them.
-				if ($resumeAfterOrder !== null && (($ruleData['order'] ?? 0) <= $resumeAfterOrder)) {
-					continue;
+				$context->rule = $rule;
+				$data = $this->applyEndpointRule(context: $context, data: $data);
+				if ($data instanceof JSONResponse === true || $data instanceof DataDownloadResponse === true) {
+					return $data;
 				}
-
-				$data['flowToken'] = $flowToken->__serialize();
-
-				$conditionsPassed = $this->checkRuleConditions(rule: $rule, data: $data, logicResult: $logicResult);
-				$timingMatches = (($ruleData['timing'] ?? 'before') === $timing);
-
-				// Check rule conditions.
-				if ($conditionsPassed === false || $timingMatches === false) {
-					$this->logger->info(
-						'Rule condition check failed for endpoint ' . ($endpointData['name'] ?? '')
-						. ' and rule ' . ($ruleData['name'] ?? '')
-						. ' of type: ' . ($ruleData['type'] ?? '')
-					);
-
-					// Execution-trace REQ-002 / rule-pipeline REQ-RULE-010: a
-					// rule skipped by its own condition/timing check still
-					// produces a step.
-					if ($trace !== null) {
-						$trace->addStep(
-							type: 'rule',
-							name: ($ruleData['name'] ?? ($ruleData['type'] ?? 'rule')),
-							timing: $timing,
-							status: 'skipped',
-						);
-					}
-
-					continue;
-				}//end if
-
-				if (is_string($logicResult) === true && json_decode(json: $logicResult, associative: true) !== null) {
-					$data['logicResult'] = json_decode($logicResult, true);
-				} else {
-					$data['logicResult'] = $logicResult;
-				}
-
-				$this->logger->info(
-					'Applying rule for endpoint ' . ($endpointData['name'] ?? '')
-					. ' with rule ' . ($ruleData['name'] ?? '')
-					. ' of type ' . ($ruleData['type'] ?? '')
-				);
-
-				// At this moment, setting flowToken in $data when processing rules will result in data contamination.
-				unset($data['flowToken']);
-
-				$ruleType = ($ruleData['type'] ?? '');
-
-				// Rule-pipeline REQ-RULE-011: under a dry-run replay, write-shaped
-				// rule types do not perform their write — record a
-				// `skipped_dry_run` step and continue against the pre-rule
-				// envelope. `synchronization` is a deliberate partial exception
-				// (handled inside processSyncRule() via its own $dryRun forward
-				// to SynchronizationService's isTest — it is NOT in this set).
-				if ($dryRun === true && in_array($ruleType, self::DRY_RUN_SUPPRESSED_RULE_TYPES, true) === true) {
-					if ($trace !== null) {
-						$trace->addStep(
-							type: 'rule',
-							name: ($ruleData['name'] ?? $ruleType),
-							timing: $timing,
-							status: 'skipped_dry_run',
-						);
-					}
-
-					continue;
-				}
-
-				$ruleStepStart = microtime(true);
-
-				// Process rule based on type.
-				try {
-					$result = match ($ruleType) {
-						'save_object' => $this->processSaveObjectRule(rule: $rule, data: $data),
-						'authentication' => $this->processAuthenticationRule(rule: $rule, data: $data),
-						'error' => $this->processErrorRule(rule: $rule, data: $data),
-						'mapping' => $this->processMappingRule(rule: $rule, data: $data),
-						'synchronization' => $this->processSyncRule(rule: $rule, data: $data, flowToken: $flowToken, trace: $trace, dryRun: $dryRun),
-						'javascript' => $this->processJavaScriptRule(rule: $rule, data: $data),
-						'fileparts_create' => $this->processFilePartRule(rule: $rule, data: $data, endpoint: $endpoint, objectId: $objectId),
-						'filepart_upload' => $this->processFilePartUploadRule(rule: $rule, data: $data, request: $request, objectId: $objectId),
-						'download' => $this->processDownloadRule(rule: $rule, data: $data, objectId: $objectId),
-						'extend_input' => $this->processExtendInputRule(rule: $rule, data: $data),
-						'extend_external_input' => $this->ruleService->extendExternalUrl(rule: $rule, data: $data),
-						'audit_trail' => $this->processAuditTrailRule(rule: $rule, endpoint: $endpoint, data: $data, objectId: $objectId),
-						'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
-						'locking' => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
-						'override' => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
-						'webhook_signature' => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $request),
-						'custom' => $this->processCustomRule(rule: $rule, data: $data),
-						'composite_fanout' => $this->processCompositeFanoutRule(rule: $rule, data: $data),
-						'referentienummer' => $this->processReferenceNumberRule(rule: $rule, data: $data),
-						'avg_bsn_policy' => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $timing),
-						'selfurl_hal' => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
-						'approval' => $this->processApprovalRule(
-							rule: $rule,
-							endpoint: $endpoint,
-							flowToken: $flowToken,
-							timing: $timing,
-							trace: $trace
-						),
-						'flow' => $this->processFlowRule(rule: $rule, data: $data),
-						default => throw new Exception('Unsupported rule type: ' . $ruleType),
-					};//end match
-				} catch (Exception $e) {
-					$message = 'Failed to apply rule for endpoint ' . ($endpointData['name'] ?? '')
-						. ' with rule ' . ($ruleData['name'] ?? '')
-						. ' of type ' . $ruleType
-						. '. With error message: ' . $e->getMessage();
-					$this->logger->error($message);
-
-					if ($trace !== null) {
-						$trace->addStep(
-							type: 'rule',
-							name: ($ruleData['name'] ?? $ruleType),
-							timing: $timing,
-							status: 'error',
-							output: [
-								'endpoint' => ($endpointData['name'] ?? null),
-								'rule' => ($ruleData['name'] ?? null),
-								'ruleType' => $ruleType,
-								'message' => $e->getMessage(),
-							],
-							startedAtMicrotime: $ruleStepStart,
-							finishedAtMicrotime: microtime(true),
-						);
-					}
-
-					return new JSONResponse(['error' => 'Rule processing failed'], 500);
-				}//end try
-
-				if ($trace !== null) {
-					$ruleStepInputData = [];
-					if (is_array($data) === true) {
-						$ruleStepInputData = $data;
-					}
-
-					$ruleStepOutputData = [];
-					if (is_array($result) === true) {
-						$ruleStepOutputData = $result;
-					}
-
-					$trace->addStep(
-						type: 'rule',
-						name: ($ruleData['name'] ?? $ruleType),
-						timing: $timing,
-						status: 'success',
-						input: (new SensitiveFieldRegistry())->redactArray(data: $ruleStepInputData),
-						output: (new SensitiveFieldRegistry())->redactArray(data: $ruleStepOutputData),
-						startedAtMicrotime: $ruleStepStart,
-						finishedAtMicrotime: microtime(true),
-					);
-				}//end if
-
-				// If result is JSONResponse, return error immediately.
-				if ($result instanceof JSONResponse === true || $result instanceof DataDownloadResponse === true) {
-					return $result;
-				}
-
-				// Update data with rule result.
-				$data = $result;
-
-				$this->logger->info(
-					'Successfully applied rule for endpoint ' . ($endpointData['name'] ?? '')
-					. ' with rule ' . ($ruleData['name'] ?? '')
-					. ' of type ' . $ruleType
-				);
-			}//end foreach
+			}
 
 			unset($data['body']['_extendedInput']);
 
@@ -2968,6 +2805,270 @@ class EndpointService {
 			return new JSONResponse(['error' => 'Rule processing failed'], 500);
 		}//end try
 	}//end processRules()
+
+	/**
+	 * Apply one rule of an endpoint's rule pipeline, unless it is skipped.
+	 *
+	 * A rule is skipped when a resumed run already ran it, when its conditions fail or
+	 * its timing does not match, and, for write-shaped types, under a dry run
+	 * (rule-pipeline REQ-RULE-011). Every skip but the resume one adds a trace step.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule to apply.
+	 * @param mixed                $data    The request data envelope.
+	 *
+	 * @return mixed The data after the rule, or the response that ends the pipeline.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-dry-run-mode-suppresses-write-shaped-rule-dispatch-req-rule-011
+	 */
+	private function applyEndpointRule(EndpointRuleDispatch $context, mixed $data): mixed {
+		$rule = $context->rule;
+		$ruleData = $rule->getObject();
+		$logicResult = null;
+
+		// Resume: rules at or before the suspended approval rule's order already ran.
+		if ($context->resumeAfterOrder !== null && (($ruleData['order'] ?? 0) <= $context->resumeAfterOrder)) {
+			return $data;
+		}
+
+		$data['flowToken'] = $context->flowToken->__serialize();
+
+		$conditionsPassed = $this->checkRuleConditions(rule: $rule, data: $data, logicResult: $logicResult);
+		$timingMatches = (($ruleData['timing'] ?? 'before') === $context->timing);
+		if ($conditionsPassed === false || $timingMatches === false) {
+			$this->logger->info(
+				'Rule condition check failed for endpoint ' . ($context->endpointData['name'] ?? '')
+				. ' and rule ' . ($ruleData['name'] ?? '')
+				. ' of type: ' . ($ruleData['type'] ?? '')
+			);
+			$this->addRuleStep(context: $context, step: ['name' => ($ruleData['name'] ?? ($ruleData['type'] ?? 'rule')), 'status' => 'skipped']);
+
+			return $data;
+		}
+
+		$data['logicResult'] = $logicResult;
+		if (is_string($logicResult) === true && json_decode(json: $logicResult, associative: true) !== null) {
+			$data['logicResult'] = json_decode($logicResult, true);
+		}
+
+		$this->logger->info(
+			'Applying rule for endpoint ' . ($context->endpointData['name'] ?? '')
+			. ' with rule ' . ($ruleData['name'] ?? '')
+			. ' of type ' . ($ruleData['type'] ?? '')
+		);
+
+		// At this moment, setting flowToken in $data when processing rules will result in data contamination.
+		unset($data['flowToken']);
+
+		$ruleType = ($ruleData['type'] ?? '');
+
+		// The `synchronization` type handles a dry run itself, so it is not in the suppressed set.
+		if ($context->dryRun === true && in_array($ruleType, self::DRY_RUN_SUPPRESSED_RULE_TYPES, true) === true) {
+			$this->addRuleStep(context: $context, step: ['name' => ($ruleData['name'] ?? $ruleType), 'status' => 'skipped_dry_run']);
+
+			return $data;
+		}
+
+		return $this->runEndpointRule(context: $context, data: $data);
+	}//end applyEndpointRule()
+
+	/**
+	 * Run one rule, trace it, and turn a failure into an error response.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule to run.
+	 * @param mixed                $data    The request data envelope.
+	 *
+	 * @return mixed The rule result, or the response that ends the pipeline.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 */
+	private function runEndpointRule(EndpointRuleDispatch $context, mixed $data): mixed {
+		$ruleData = $context->rule->getObject();
+		$ruleType = ($ruleData['type'] ?? '');
+		$ruleStepStart = microtime(true);
+
+		try {
+			$result = $this->dispatchEndpointRule(context: $context, data: $data);
+		} catch (Exception $e) {
+			return $this->failEndpointRule(context: $context, failure: ['exception' => $e, 'startedAt' => $ruleStepStart]);
+		}//end try
+
+		$this->traceRuleSuccess(context: $context, io: ['input' => $data, 'output' => $result, 'startedAt' => $ruleStepStart]);
+
+		if ($result instanceof JSONResponse === true || $result instanceof DataDownloadResponse === true) {
+			return $result;
+		}
+
+		$this->logger->info(
+			'Successfully applied rule for endpoint ' . ($context->endpointData['name'] ?? '')
+			. ' with rule ' . ($ruleData['name'] ?? '')
+			. ' of type ' . $ruleType
+		);
+
+		return $result;
+	}//end runEndpointRule()
+
+	/**
+	 * Log a failed rule, add its `error` step and end the pipeline with a 500.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the failed rule.
+	 * @param array                $failure The `exception` and the rule's `startedAt` microtime.
+	 *
+	 * @return JSONResponse The error response that ends the pipeline.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 */
+	private function failEndpointRule(EndpointRuleDispatch $context, array $failure): JSONResponse {
+		$ruleData = $context->rule->getObject();
+		$ruleType = ($ruleData['type'] ?? '');
+		$message = $failure['exception']->getMessage();
+		$this->logger->error(
+			'Failed to apply rule for endpoint ' . ($context->endpointData['name'] ?? '')
+			. ' with rule ' . ($ruleData['name'] ?? '')
+			. ' of type ' . $ruleType
+			. '. With error message: ' . $message
+		);
+		$this->addRuleStep(
+			context: $context,
+			step: [
+				'name' => ($ruleData['name'] ?? $ruleType),
+				'status' => 'error',
+				'output' => [
+					'endpoint' => ($context->endpointData['name'] ?? null),
+					'rule' => ($ruleData['name'] ?? null),
+					'ruleType' => $ruleType,
+					'message' => $message,
+				],
+				'startedAtMicrotime' => $failure['startedAt'],
+				'finishedAtMicrotime' => microtime(true),
+			]
+		);
+
+		return new JSONResponse(['error' => 'Rule processing failed'], 500);
+	}//end failEndpointRule()
+
+	/**
+	 * Add the `success` step of a rule, with its input and output redacted, when the run is traced.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule that ran.
+	 * @param array                $io      The rule's `input` and `output` (traced as empty when not an array), and its `startedAt` microtime.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 */
+	private function traceRuleSuccess(EndpointRuleDispatch $context, array $io): void {
+		if ($context->trace === null) {
+			return;
+		}
+
+		$ruleData = $context->rule->getObject();
+		$redactor = new SensitiveFieldRegistry();
+		$ruleStepInputData = [];
+		if (is_array($io['input']) === true) {
+			$ruleStepInputData = $io['input'];
+		}
+
+		$ruleStepOutputData = [];
+		if (is_array($io['output']) === true) {
+			$ruleStepOutputData = $io['output'];
+		}
+
+		$this->addRuleStep(
+			context: $context,
+			step: [
+				'name' => ($ruleData['name'] ?? ($ruleData['type'] ?? '')),
+				'status' => 'success',
+				'input' => $redactor->redactArray(data: $ruleStepInputData),
+				'output' => $redactor->redactArray(data: $ruleStepOutputData),
+				'startedAtMicrotime' => $io['startedAt'],
+				'finishedAtMicrotime' => microtime(true),
+			]
+		);
+	}//end traceRuleSuccess()
+
+	/**
+	 * Add a `rule` trace step for the pipeline run, when it is traced.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run.
+	 * @param array                $step    The step `name`, `status` and further addStep() arguments by name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 */
+	private function addRuleStep(EndpointRuleDispatch $context, array $step): void {
+		if ($context->trace === null) {
+			return;
+		}
+
+		$context->trace->addStep(
+			...array_merge(['type' => 'rule', 'timing' => $context->timing], $step)
+		);
+	}//end addRuleStep()
+
+	/**
+	 * Call the handler of a rule type.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule to dispatch.
+	 * @param mixed                $data    The request data envelope.
+	 *
+	 * @return mixed The handler's result.
+	 *
+	 * @throws Exception When the rule type is not supported, or the handler fails.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function dispatchEndpointRule(EndpointRuleDispatch $context, mixed $data): mixed {
+		$rule = $context->rule;
+		$ruleType = ($rule->getObject()['type'] ?? '');
+		$endpoint = $context->endpoint;
+		$objectId = $context->objectId;
+		$flowToken = $context->flowToken;
+		$handlers = [
+			'save_object' => fn () => $this->processSaveObjectRule(rule: $rule, data: $data),
+			'authentication' => fn () => $this->processAuthenticationRule(rule: $rule, data: $data),
+			'error' => fn () => $this->processErrorRule(rule: $rule, data: $data),
+			'mapping' => fn () => $this->processMappingRule(rule: $rule, data: $data),
+			'synchronization' => fn () => $this->processSyncRule(
+				rule: $rule,
+				data: $data,
+				flowToken: $flowToken,
+				trace: $context->trace,
+				dryRun: $context->dryRun
+			),
+			'javascript' => fn () => $this->processJavaScriptRule(rule: $rule, data: $data),
+			'fileparts_create' => fn () => $this->processFilePartRule(rule: $rule, data: $data, endpoint: $endpoint, objectId: $objectId),
+			'filepart_upload' => fn () => $this->processFilePartUploadRule(rule: $rule, data: $data, request: $context->request, objectId: $objectId),
+			'download' => fn () => $this->processDownloadRule(rule: $rule, data: $data, objectId: $objectId),
+			'extend_input' => fn () => $this->processExtendInputRule(rule: $rule, data: $data),
+			'extend_external_input' => fn () => $this->ruleService->extendExternalUrl(rule: $rule, data: $data),
+			'audit_trail' => fn () => $this->processAuditTrailRule(rule: $rule, endpoint: $endpoint, data: $data, objectId: $objectId),
+			'write_file' => fn () => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
+			'locking' => fn () => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
+			'override' => fn () => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
+			'webhook_signature' => fn () => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $context->request),
+			'custom' => fn () => $this->processCustomRule(rule: $rule, data: $data),
+			'composite_fanout' => fn () => $this->processCompositeFanoutRule(rule: $rule, data: $data),
+			'referentienummer' => fn () => $this->processReferenceNumberRule(rule: $rule, data: $data),
+			'avg_bsn_policy' => fn () => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $context->timing),
+			'selfurl_hal' => fn () => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
+			'approval' => fn () => $this->processApprovalRule(
+				rule: $rule,
+				endpoint: $endpoint,
+				flowToken: $flowToken,
+				timing: $context->timing,
+				trace: $context->trace
+			),
+			'flow' => fn () => $this->processFlowRule(rule: $rule, data: $data),
+		];
+
+		if (is_string($ruleType) === false || isset($handlers[$ruleType]) === false) {
+			throw new Exception('Unsupported rule type: ' . $ruleType);
+		}
+
+		return $handlers[$ruleType]();
+	}//end dispatchEndpointRule()
 
 	/**
 	 * This rule, that only can be run on timing 'after' overrides the content of a written object by the updated contents in the flow token.
