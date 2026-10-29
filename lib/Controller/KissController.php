@@ -30,7 +30,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\CallEventNotFoundException;
 use OCA\Integriq\Exception\KissProviderException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\KissSyncService;
+use OCA\Integriq\Service\KissSyncServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -54,7 +54,7 @@ class KissController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param KissSyncService $syncService Push/pull orchestration logic.
+	 * @param KissSyncServiceInterface $syncService Push/pull orchestration logic.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -63,7 +63,7 @@ class KissController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly KissSyncService $syncService,
+		private readonly KissSyncServiceInterface $syncService,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,

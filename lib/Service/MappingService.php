@@ -75,7 +75,7 @@ use Twig\Loader\ArrayLoader;
  *
  * @spec openspec/specs/mapping-and-search/spec.md
  */
-class MappingService {
+class MappingService implements MappingServiceInterface {
 	/**
 	 * The OpenRegister register slug mappings live in.
 	 *

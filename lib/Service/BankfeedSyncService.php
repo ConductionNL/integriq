@@ -55,7 +55,7 @@ use Throwable;
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
-class BankfeedSyncService {
+class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding PSD2 sources, connections, and batches.

@@ -32,7 +32,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EudiIssuanceException;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
-use OCA\Integriq\Service\EudiCredentialOfferService;
+use OCA\Integriq\Service\EudiCredentialOfferServiceInterface;
 use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiStatusListService;
 use OCP\AppFramework\Controller;
@@ -83,7 +83,7 @@ class EudiWalletController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param EudiCredentialOfferService $offerService Offer/token/credential/revocation lifecycle.
+	 * @param EudiCredentialOfferServiceInterface $offerService Offer/token/credential/revocation lifecycle.
 	 * @param EudiIssuerKeyService $keyService Issuer signing-key service (metadata JWKS).
 	 * @param EudiStatusListService $statusListService Status-list token publish.
 	 * @param OpenRegisterCredentialBridge $authorizationService Reused consumer JWT bearer verification (REQ-001).
@@ -93,7 +93,7 @@ class EudiWalletController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EudiCredentialOfferService $offerService,
+		private readonly EudiCredentialOfferServiceInterface $offerService,
 		private readonly EudiIssuerKeyService $keyService,
 		private readonly EudiStatusListService $statusListService,
 		private readonly OpenRegisterCredentialBridge $authorizationService,

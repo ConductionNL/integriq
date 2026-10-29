@@ -77,7 +77,7 @@ use Throwable;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
-class StufZknSyncService {
+class StufZknSyncService implements StufZknSyncServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding stuf-zkn sources and message records.

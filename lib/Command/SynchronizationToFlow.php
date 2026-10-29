@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Command;
 
 use OCA\Integriq\Exception\SynchronizationNotMigratableException;
-use OCA\Integriq\Service\SynchronizationFlowGenerator;
+use OCA\Integriq\Service\SynchronizationFlowGeneratorInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -56,10 +56,10 @@ class SynchronizationToFlow extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationFlowGenerator $generator The migration generator.
+	 * @param SynchronizationFlowGeneratorInterface $generator The migration generator.
 	 */
 	public function __construct(
-		private readonly SynchronizationFlowGenerator $generator,
+		private readonly SynchronizationFlowGeneratorInterface $generator,
 	) {
 		parent::__construct();
 

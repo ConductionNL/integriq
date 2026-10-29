@@ -4,7 +4,7 @@
  * Integriq configuration import/export controller.
  *
  * Thin, routed wrapper over the existing, already-tested
- * {@see \OCA\Integriq\Service\ConfigurationService} (REQ-001–REQ-005,
+ * {@see ConfigurationServiceInterface} (REQ-001–REQ-005,
  * reused unchanged) plus the non-mutating
  * {@see \OCA\Integriq\Service\ConfigurationImportPreviewService}
  * (REQ-007/REQ-009). Before connector-catalog-ui the service was fully
@@ -28,7 +28,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ConfigurationImportPreviewService;
-use OCA\Integriq\Service\ConfigurationService;
+use OCA\Integriq\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -55,7 +55,7 @@ class ConfigurationController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param ConfigurationService $configService The existing export/import service (unchanged).
+	 * @param ConfigurationServiceInterface $configService The existing export/import service (unchanged).
 	 * @param ConfigurationImportPreviewService $previewService The non-mutating preview service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
@@ -66,7 +66,7 @@ class ConfigurationController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly ConfigurationService $configService,
+		private readonly ConfigurationServiceInterface $configService,
 		private readonly ConfigurationImportPreviewService $previewService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,

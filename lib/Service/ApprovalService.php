@@ -62,7 +62,7 @@ use Throwable;
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
-class ApprovalService {
+class ApprovalService implements ApprovalServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding approval requests.
@@ -79,13 +79,6 @@ class ApprovalService {
 	 * @var string
 	 */
 	public const SCHEMA = 'approval_request';
-
-	/**
-	 * Default suspension TTL (24 hours) when a rule/synchronization does not configure one.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_TTL_SECONDS = 86400;
 
 	/**
 	 * Request/response header names (lowercase) stripped from a persisted

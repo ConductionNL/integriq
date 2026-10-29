@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\SecurityService;
-use OCA\Integriq\Service\UserService;
+use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -82,9 +82,9 @@ class UserController extends Controller {
 	/**
 	 * User service for user-related business logic
 	 *
-	 * @var UserService
+	 * @var UserServiceInterface
 	 */
-	private readonly UserService $userService;
+	private readonly UserServiceInterface $userService;
 
 	/**
 	 * Logger for application events
@@ -133,7 +133,7 @@ class UserController extends Controller {
 	 * @param IUserSession $userSession The user session manager
 	 * @param ICacheFactory $cacheFactory The cache factory for rate limiting
 	 * @param LoggerInterface $logger The logger for security events
-	 * @param UserService $userService The user service for user-related operations
+	 * @param UserServiceInterface $userService The user service for user-related operations
 	 * @param IL10N $l The localization service
 	 * @param string $corsMethods Allowed CORS methods
 	 * @param string $corsAllowedHeaders Allowed CORS headers
@@ -145,7 +145,7 @@ class UserController extends Controller {
 	 * @psalm-param   IUserSession $userSession
 	 * @psalm-param   ICacheFactory $cacheFactory
 	 * @psalm-param   LoggerInterface $logger
-	 * @psalm-param   UserService $userService
+	 * @psalm-param   UserServiceInterface $userService
 	 * @psalm-param   IL10N $l
 	 * @psalm-param   string $corsMethods
 	 * @psalm-param   string $corsAllowedHeaders
@@ -156,7 +156,7 @@ class UserController extends Controller {
 	 * @phpstan-param IUserSession $userSession
 	 * @phpstan-param ICacheFactory $cacheFactory
 	 * @phpstan-param LoggerInterface $logger
-	 * @phpstan-param UserService $userService
+	 * @phpstan-param UserServiceInterface $userService
 	 * @phpstan-param IL10N $l
 	 * @phpstan-param string $corsMethods
 	 * @phpstan-param string $corsAllowedHeaders
@@ -169,7 +169,7 @@ class UserController extends Controller {
 		IUserSession $userSession,
 		ICacheFactory $cacheFactory,
 		LoggerInterface $logger,
-		UserService $userService,
+		UserServiceInterface $userService,
 		IL10N $l,
 		string $corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		string $corsAllowedHeaders = 'Authorization, Content-Type, Accept',

@@ -30,7 +30,7 @@ use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Lti\LtiAgsService;
 use OCA\Integriq\Service\Lti\LtiKeyService;
-use OCA\Integriq\Service\Lti\LtiLaunchService;
+use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
 use OCA\Integriq\Service\Lti\LtiNrpsService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
@@ -67,7 +67,7 @@ class LtiController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param LtiLaunchService $launchService OIDC login + launch validation + Deep Linking.
+	 * @param LtiLaunchServiceInterface $launchService OIDC login + launch validation + Deep Linking.
 	 * @param LtiAgsService $agsService Service-token issuance + AGS.
 	 * @param LtiNrpsService $nrpsService NRPS roster read/pull.
 	 * @param LtiKeyService $keyService Signing-key lifecycle + JWKS publish.
@@ -76,7 +76,7 @@ class LtiController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly LtiLaunchService $launchService,
+		private readonly LtiLaunchServiceInterface $launchService,
 		private readonly LtiAgsService $agsService,
 		private readonly LtiNrpsService $nrpsService,
 		private readonly LtiKeyService $keyService,

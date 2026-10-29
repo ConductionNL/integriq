@@ -46,7 +46,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
+use OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -237,7 +237,7 @@ class MigrateLegacyStorage implements IRepairStep {
 	 */
 	private function migrateRemainingRows(IOutput $output): void {
 		try {
-			$migrator = $this->container->get(LegacyToRegisterMigrator::class);
+			$migrator = $this->container->get(LegacyToRegisterMigratorInterface::class);
 		} catch (\Throwable $e) {
 			$output->warning(
 				'Integriq: could not resolve the legacy migrator (' . $e->getMessage() . ').'
