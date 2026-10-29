@@ -34,7 +34,6 @@ use OCA\Integriq\Observability\ObservabilityRegistrar;
 use OCA\Integriq\Auth\AuthRegistrar;
 use OCA\Integriq\Adapters\AdaptersRegistrar;
 use OCA\Integriq\Broker\BrokerRegistrar;
-use OCA\Integriq\Controller\ControllerRegistrar;
 use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
 use OCA\Integriq\EventListener\EventListenerRegistrar;
@@ -51,6 +50,7 @@ use OCA\Integriq\SetupCheck\SetupCheckRegistrar;
 use OCA\Integriq\Sources\SourcesRegistrar;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
+use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\App;
@@ -138,7 +138,7 @@ class Application extends App implements IBootstrap {
 		(new MigrationRegistrar())->register(context: $context);
 		(new GatewayRegistrar())->register(context: $context);
 		(new McpRegistrar())->register(context: $context);
-		(new ControllerRegistrar())->register(context: $context);
+		$this->registerPreferencesController(context: $context);
 		(new SettingsRegistrar())->register(context: $context);
 		(new SectionsRegistrar())->register(context: $context);
 		(new RepairRegistrar())->register(context: $context);
@@ -312,6 +312,42 @@ class Application extends App implements IBootstrap {
 			}
 		);
 	}//end registerAppHostObservability()
+
+	/**
+	 * Registers the AppHost preferences controller.
+	 *
+	 * It stays in lib/AppInfo: the controller is bound in the container rather
+	 * than shipped as a class, and the route-reachability gate looks for such
+	 * bindings under lib/AppInfo only.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private function registerPreferencesController(IRegistrationContext $context): void {
+		// Bind the AppHost preferences controller (which does not physically
+		// exist in this app — same pattern as the Health/Metrics observability
+		// aliases) to the OpenRegister generic, with appName=integriq so
+		// the `pref_` user-value namespace is scoped to this app.
+		//
+		// The service key MUST be the STANDARD `OCA\Integriq\Controller\…`
+		// namespace, because that is the class name NC's App::main synthesises
+		// from the plain `genericPreferences#…` route name (see the matching
+		// note in appinfo/routes.php). A non-standard namespace key (e.g.
+		// `…\AppHost\Controller\…`) is never looked up by the router, so every
+		// request 503s with "App controller is not enabled".
+		$context->registerService(
+			'OCA\\Integriq\\Controller\\GenericPreferencesController',
+			static function (ContainerInterface $c) {
+				return new GenericPreferencesController(
+					appName: AppIdentity::APP_ID,
+					request: $c->get(IRequest::class),
+					config: $c->get(\OCP\IConfig::class),
+					userSession: $c->get(\OCP\IUserSession::class)
+				);
+			}
+		);
+	}//end registerPreferencesController()
 
 	/**
 	 * Registers the integration init script on every full-page render.
@@ -588,7 +624,7 @@ class Application extends App implements IBootstrap {
 	 * Adopt the AppHost boilerplate generics that are a clean, behaviour-preserving win.
 	 *
 	 * The factories of the adopted classes live in their components' registrars
-	 * ({@see \OCA\Integriq\Controller\ControllerRegistrar} for the preferences controller, {@see \OCA\Integriq\Settings\SettingsRegistrar},
+	 * ({@see registerPreferencesController()} for the preferences controller, {@see \OCA\Integriq\Settings\SettingsRegistrar},
 	 * {@see \OCA\Integriq\Sections\SectionsRegistrar} and {@see \OCA\Integriq\Repair\RepairRegistrar}).
 	 * This method keeps the factory of the OpenRegister action-auth service they share.
 	 *
