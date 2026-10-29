@@ -52,6 +52,7 @@ use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\FetchedFile;
 use OCA\Integriq\Service\Synchronization\SourcePage;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
+use OCA\Integriq\Service\Synchronization\PagedFetch;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
@@ -7520,17 +7521,6 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @throws TooManyRequestsHttpException When rate limit is exceeded
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 204 lines.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) 15 against a threshold of 10.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) 1445 against a threshold of 200.
-	 *   All three are the same cause: remote APIs paginate in mutually incompatible
-	 *   ways (`next` links, page counters, cursors, total-count headers, and servers
-	 *   that report none of them), and this method has to recognise whichever one it
-	 *   is looking at and still know when it has seen every page — REQ-009's
-	 *   completeness guarantee. The branches are a dialect table, and the NPath
-	 *   number is what a table looks like to a path counter. Splitting per dialect is
-	 *   the right eventual shape and is a design change, not an annotation.
 	 */
 	private function fetchAllPagesOptimized(
 		array $source,
@@ -7541,94 +7531,37 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		bool $isTest = false,
 		?bool $usesNextEndpoint = null,
 	): array {
-		$allObjects = [];
-		$currentEndpoint = $endpoint;
-		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
-		$maxPages = $sourceConfig['maxPages'] ?? $this::DEFAULT_MAX_PAGES;
-		$pageCount = 0;
-		$complete = true;
-		$failureReason = null;
+		$run = new PagedFetch(source: $source, synchronization: $synchronization);
+		$run->endpoint = $endpoint;
+		$run->config = $config;
+		$run->currentPage = $currentPage;
+		$run->usesNextEndpoint = $usesNextEndpoint;
+		$run->sourceConfig = ($synchronization['sourceConfig'] ?? []);
+		$run->maxPages = $run->sourceConfig['maxPages'] ?? $this::DEFAULT_MAX_PAGES;
 
-		// Both of these are per-fetch state on a SHARED service instance, which
-		// re-enters itself through `synchronization` rules and `followUps`, so
-		// they have to start empty for every paginated fetch.
-		//
-		// Leaving them was not merely untidy. A stale `lastPageFromLink` from a
-		// previous synchronization would stop THIS one early — silently dropping
-		// pages, which is the failure REQ-009 exists to prevent — and a
-		// `pagePrefetch` left populated by an aborted run would both block this
-		// run's fan-out (it refuses to issue a second one) and serve it another
-		// synchronization's cached pages.
-		$this->lastPageFromLink = null;
-		$this->pagePrefetch = [];
-		$this->predictedLastPage = null;
+		$this->startPagedFetch(run: $run);
 
-		// Predict the page count from the last run's contracts so page ONE can
-		// go out concurrently with the rest instead of being fetched alone to
-		// discover how many pages there are. Skipped for a `next`-link source,
-		// whose pages are only reachable one at a time by construction.
-		if ($usesNextEndpoint !== true) {
-			$dotSourceConfig = $this->callService->applyConfigDot($sourceConfig);
-			$this->predictedLastPage = $this->predictLastPage(
-				synchronization: $synchronization,
-				sourceConfig: $dotSourceConfig
-			);
-
-			// `$currentPage >= 1` because a prefetched page is matched by the page
-			// number in the request config, and page 0 is that lookup's "no
-			// pagination info" sentinel. A source numbering from zero would fetch
-			// its first page twice, so it keeps the sequential path instead.
-			if ($this->predictedLastPage !== null && $this->predictedLastPage > 1 && $currentPage >= 1) {
-				// Page one's request has to be built the SAME way the fan-out
-				// builds pages two onward, or the two will not agree on the cache
-				// key and page one gets fetched a second time. This is the only
-				// behaviour change: the first request now carries an explicit
-				// page number where it previously relied on the source's default.
-				// For any source that paginates at all these are the same page —
-				// and only a synchronization that has already run successfully
-				// reaches this branch, so the shape is one the source has served
-				// before.
-				$config = $this->getNextPage(
-					config: $config,
-					sourceConfig: $sourceConfig,
-					currentPage: $currentPage
-				);
-
-				$this->prefetchRemainingPages(
-					source: $source,
-					endpoint: $endpoint,
-					config: $config,
-					synchronization: $synchronization,
-					fromPage: $currentPage
-				);
-			}
-		}
-
-		for ($i = 0; $i < $maxPages; $i++) {
-			// Fetch the current page.
+		for ($i = 0; $i < $run->maxPages; $i++) {
 			$pageData = $this->fetchSinglePageData(
 				source: $source,
-				endpoint: $currentEndpoint,
-				config: $config,
-				synchronization: $synchronization
+				endpoint: $run->endpoint,
+				config: $run->config,
+				synchronization: $run->synchronization
 			);
 			$pageObjects = $pageData['objects'];
-			$pageCount++;
+			$run->pageCount++;
 
 			// A failed page (non-2xx/unclassifiable response, or a connect
 			// failure) must never be conflated with a natural end of
-			// pagination — checked BEFORE the empty($pageObjects) check
-			// below, which would otherwise treat a failed-and-therefore-empty
-			// page exactly like a genuinely empty final page (REQ-009).
+			// pagination, so it is checked before the empty page (REQ-009).
 			if (($pageData['failed'] ?? false) === true) {
-				$complete = false;
-				$failureReason = 'page_fetch_failed';
+				$run->markIncomplete(reason: 'page_fetch_failed');
 				break;
 			}
 
 			// If test mode is enabled, return only the first object from the first page.
 			if ($isTest === true && empty($pageObjects) === false) {
-				return ['objects' => [$pageObjects[0]], 'complete' => true, 'failureReason' => null, 'pagesFetched' => $pageCount];
+				return ['objects' => [$pageObjects[0]], 'complete' => true, 'failureReason' => null, 'pagesFetched' => $run->pageCount];
 			}
 
 			// If no objects found, we've reached the end.
@@ -7636,106 +7569,174 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				break;
 			}
 
-			// Add objects to our collection.
-			$allObjects = array_merge($allObjects, $pageObjects);
-
-			// The source told us how many pages it has, so stop on the last one
-			// rather than spending a whole extra request discovering that page
-			// N+1 is empty. Only when the header was present — without it this is
-			// null and the empty-page rule above still decides.
-			if ($this->lastPageFromLink !== null && $pageCount >= $this->lastPageFromLink) {
+			$run->objects = array_merge($run->objects, $pageObjects);
+			if ($this->advancePagedFetch(run: $run, result: $pageData['result']) === false) {
 				break;
 			}
 
-			// Page one told us the total, so the rest can go out together instead
-			// of one round trip at a time. Fetching was 58% of a 374-record sync
-			// after the write-side work — 4 GitHub pages at ~2.5s each, latency
-			// the engine was paying serially for no reason.
-			//
-			// Only fans out when the count is KNOWN. A source paginating by
-			// `next` link or by "page until empty" cannot be fanned out — its
-			// page count is unknowable until the end — and falls through to the
-			// sequential path untouched.
-			$this->prefetchRemainingPages(
-				source: $source,
-				endpoint: $currentEndpoint,
-				config: $config,
-				synchronization: $synchronization,
-				fromPage: ($pageCount + 1)
-			);
-
-			// Determine the next page URL/config.
-			$nextInfo = $this->getNextPageInfo(
-				source: $source,
-				currentEndpoint: $currentEndpoint,
-				config: $config,
-				synchronization: $synchronization,
-				currentPage: $currentPage,
-				result: $pageData['result'],
-				usesNextEndpoint: $usesNextEndpoint
-			);
-
-			if ($nextInfo === null) {
-				// No more pages.
-				break;
+			// A next page exists, but this was the last iteration the
+			// DEFAULT_MAX_PAGES safety cap allows: an unknown part of the
+			// source was never seen, as dangerous as a failed page (REQ-009).
+			if (($i + 1) >= $run->maxPages) {
+				$run->markIncomplete(reason: 'max_pages_reached');
 			}
 
-			// Update for next iteration.
-			$currentEndpoint = $nextInfo['endpoint'];
-			$config = $nextInfo['config'];
-			$currentPage = $nextInfo['page'];
-			$usesNextEndpoint = $nextInfo['usesNextEndpoint'];
-
-			// Update synchronization current page — persisted only when something
-			// will read it back ({@see self::persistPageCursor()}, which carries
-			// the measurements).
-			$synchronization['currentPage'] = $currentPage;
-			$this->persistPageCursor(synchronization: $synchronization, source: $source);
-
-			// A next page is known to exist, but this was the last iteration
-			// the DEFAULT_MAX_PAGES safety cap allows — an unknown amount of
-			// the source was never seen, which is exactly as dangerous as a
-			// mid-pagination failure (REQ-009).
-			if (($i + 1) >= $maxPages) {
-				$complete = false;
-				$failureReason = 'max_pages_reached';
-			}
-
-			// A CEILING ON MEMORY, not just on pages.
-			//
-			// `maxPages` bounds how many REQUESTS a run makes; nothing bounded how
-			// much it holds. A crawl accumulates every fetched page in memory
-			// before the item loop starts, so a source with large records reaches
-			// the PHP memory limit while still well inside its page budget — and
-			// what happens then is a fatal, mid-run, with no log line and no
-			// synchronization_log row, because the process dies before writing
-			// either. MEASURED 2026-08-14: a 19,822-object crawl held 1.4 GB
-			// resident on a container with 44 other apps sharing it.
-			//
-			// Stopping deliberately is strictly better than being killed. It uses
-			// the SAME `complete = false` path as the page cap, which already
-			// blocks the deletion pass — so a run that stopped early can never be
-			// read as "the source no longer has these records".
-			if ($this->exceededMemoryCeiling(sourceConfig: $sourceConfig) === true) {
-				$complete = false;
-				$failureReason = 'memory_ceiling_reached';
-				$this->logger->warning(
-					'Synchronization stopped after {pages} pages: {used} MB of PHP\'s {limit} MB '
-					. 'limit is in use. The pages already fetched are processed; deletion is '
-					. 'skipped because the source was not fully read. Lower `maxPages`, raise the '
-					. 'page size, or narrow the query.',
-					[
-						'pages' => ($i + 1),
-						'used' => round(memory_get_usage(true) / 1048576),
-						'limit' => round($this->phpMemoryLimitBytes() / 1048576),
-					]
-				);
+			if ($this->pagedFetchExceedsMemory(run: $run, pages: ($i + 1)) === true) {
 				break;
 			}
 		}//end for
 
-		return ['objects' => $allObjects, 'complete' => $complete, 'failureReason' => $failureReason, 'pagesFetched' => $pageCount];
+		return $run->result();
 	}//end fetchAllPagesOptimized()
+
+	/**
+	 * Reset the per-fetch state and, when the page count can be predicted, fetch the pages ahead.
+	 *
+	 * `lastPageFromLink`, `pagePrefetch` and `predictedLastPage` are per-fetch
+	 * state on a SHARED service instance, which re-enters itself through
+	 * `synchronization` rules and `followUps`, so they start empty for every
+	 * paginated fetch. A stale `lastPageFromLink` would stop this fetch early,
+	 * silently dropping pages (REQ-009), and a stale `pagePrefetch` would block
+	 * this fetch's fan-out and serve it another synchronization's pages.
+	 *
+	 * The page count is predicted from the last run's contracts, so page one can
+	 * go out together with the rest. Not for a `next`-link source, whose pages
+	 * are only reachable one at a time, and not for a source counting from page
+	 * 0: a prefetched page is matched by its page number, and 0 is that lookup's
+	 * "no pagination info" value. Page one's request is then built the same way
+	 * as the others, so the two agree on the cache key; it carries an explicit
+	 * page number where it otherwise relies on the source's default.
+	 *
+	 * @param PagedFetch $run The fetch; its config gets the first page number when it fans out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function startPagedFetch(PagedFetch $run): void {
+		$this->lastPageFromLink = null;
+		$this->pagePrefetch = [];
+		$this->predictedLastPage = null;
+
+		if ($run->usesNextEndpoint === true) {
+			return;
+		}
+
+		$this->predictedLastPage = $this->predictLastPage(
+			synchronization: $run->synchronization,
+			sourceConfig: $this->callService->applyConfigDot($run->sourceConfig)
+		);
+
+		if ($this->predictedLastPage === null || $this->predictedLastPage <= 1 || $run->currentPage < 1) {
+			return;
+		}
+
+		$run->config = $this->getNextPage(
+			config: $run->config,
+			sourceConfig: $run->sourceConfig,
+			currentPage: $run->currentPage
+		);
+
+		$this->prefetchRemainingPages(
+			source: $run->source,
+			endpoint: $run->endpoint,
+			config: $run->config,
+			synchronization: $run->synchronization,
+			fromPage: $run->currentPage
+		);
+	}//end startPagedFetch()
+
+	/**
+	 * Move a paged fetch to its next page, unless the page just read was the last.
+	 *
+	 * The `Link` header's last page stops the fetch without spending a request
+	 * on an empty page N+1. When the page count is known, the remaining pages are
+	 * fetched together instead of one round trip at a time; a source paginating
+	 * by `next` link or "until empty" falls through to the sequential path.
+	 * The page cursor is persisted only when something reads it back
+	 * ({@see self::persistPageCursor()}).
+	 *
+	 * @param PagedFetch $run    The fetch; its endpoint, config, page and cursor move on.
+	 * @param array      $result The decoded body of the page just read.
+	 *
+	 * @return bool True when there is a next page, false when the fetch is done.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function advancePagedFetch(PagedFetch $run, array $result): bool {
+		if ($this->lastPageFromLink !== null && $run->pageCount >= $this->lastPageFromLink) {
+			return false;
+		}
+
+		$this->prefetchRemainingPages(
+			source: $run->source,
+			endpoint: $run->endpoint,
+			config: $run->config,
+			synchronization: $run->synchronization,
+			fromPage: ($run->pageCount + 1)
+		);
+
+		$nextInfo = $this->getNextPageInfo(
+			source: $run->source,
+			currentEndpoint: $run->endpoint,
+			config: $run->config,
+			synchronization: $run->synchronization,
+			currentPage: $run->currentPage,
+			result: $result,
+			usesNextEndpoint: $run->usesNextEndpoint
+		);
+		if ($nextInfo === null) {
+			return false;
+		}
+
+		$run->endpoint = $nextInfo['endpoint'];
+		$run->config = $nextInfo['config'];
+		$run->currentPage = $nextInfo['page'];
+		$run->usesNextEndpoint = $nextInfo['usesNextEndpoint'];
+
+		$run->synchronization['currentPage'] = $run->currentPage;
+		$this->persistPageCursor(synchronization: $run->synchronization, source: $run->source);
+
+		return true;
+	}//end advancePagedFetch()
+
+	/**
+	 * Stop a paged fetch that holds too much of PHP's memory.
+	 *
+	 * `maxPages` bounds how many requests a run makes, not how much it holds: a
+	 * crawl keeps every fetched page in memory before the item loop starts, so a
+	 * source with large records reaches the memory limit inside its page budget
+	 * and dies mid-run with no log line and no synchronization_log row (measured
+	 * 2026-08-14: a 19,822-object crawl held 1.4 GB). Stopping deliberately marks
+	 * the fetch incomplete, which blocks the deletion pass like the page cap does.
+	 *
+	 * @param PagedFetch $run   The fetch.
+	 * @param int        $pages The number of pages read so far.
+	 *
+	 * @return bool True when the fetch must stop.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+	 */
+	private function pagedFetchExceedsMemory(PagedFetch $run, int $pages): bool {
+		if ($this->exceededMemoryCeiling(sourceConfig: $run->sourceConfig) === false) {
+			return false;
+		}
+
+		$run->markIncomplete(reason: 'memory_ceiling_reached');
+		$this->logger->warning(
+			'Synchronization stopped after {pages} pages: {used} MB of PHP\'s {limit} MB '
+			. 'limit is in use. The pages already fetched are processed; deletion is '
+			. 'skipped because the source was not fully read. Lower `maxPages`, raise the '
+			. 'page size, or narrow the query.',
+			[
+				'pages' => $pages,
+				'used' => round(memory_get_usage(true) / 1048576),
+				'limit' => round($this->phpMemoryLimitBytes() / 1048576),
+			]
+		);
+
+		return true;
+	}//end pagedFetchExceedsMemory()
 
 	/**
 	 * Gets information for the next page in pagination.
