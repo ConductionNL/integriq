@@ -11055,12 +11055,16 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function decodeFetchedBody(FetchedFile $file): void {
 		$file->body = $file->response['body'];
 
-		if (($decodedBody = json_decode(json: $file->body, associative: true)) !== null
+		$decodedJson = json_decode(json: $file->body, associative: true);
+		if ($decodedJson !== null
 			&& $this->getHeaderValue(headers: ($file->response['headers'] ?? []), name: 'Content-Disposition') === null
 		) {
-			$file->body = $decodedBody;
-		} elseif (($decodedBody = base64_decode(string: $file->body, strict: true)) !== false) {
-			$file->body = $decodedBody;
+			$file->body = $decodedJson;
+		} else {
+			$decodedBase64 = base64_decode(string: $file->body, strict: true);
+			if ($decodedBase64 !== false) {
+				$file->body = $decodedBase64;
+			}
 		}
 
 		if (isset($file->config['contentPath']) === true && empty($file->config['contentPath']) === false) {
@@ -11155,6 +11159,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @return void
 	 *
 	 * @throws DoesNotExistException When the object does not exist.
+	 * @throws Exception When OpenRegister cannot find the object or store the file.
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 */
