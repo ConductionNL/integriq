@@ -243,6 +243,7 @@ class SynchronizationWriteObjectToTargetTest extends TestCase {
 			'delete-endpoint-spaced-method-mapping' => ['mutation' => 'delete', 'contract' => ['targetId' => 't-1'], 'config' => ['deleteEndpoint' => '/remove/{{ originId }}', 'deleteMethod' => 'POST', 'deleteMapping' => 'map-del'], 'answer' => [200, '{"deleted":true}']],
 			'delete-endpoint-tight' => ['mutation' => 'delete', 'contract' => ['targetId' => 't-1'], 'config' => ['deleteEndpoint' => '/remove/{{originId}}'], 'answer' => [204, '']],
 			'delete-default-location-stripped' => ['mutation' => 'delete', 'contract' => ['targetId' => 't-2'], 'endpoint' => self::LOCATION . '/items', 'answer' => [200, '{"gone":1}']],
+			'delete-traced' => ['mutation' => 'delete', 'trace' => true, 'contract' => ['targetId' => 't-4'], 'answer' => [200, '{}']],
 			'delete-api-source' => ['mutation' => 'delete', 'sync' => ['sourceType' => 'api', 'sourceId' => 'src-9'], 'contract' => ['targetId' => 't-3'], 'answer' => [200, '[]']],
 			'create-idposition-given-object' => ['config' => ['idPosition' => 'data.id'], 'writeBack' => $writeBack, 'answer' => [201, '{"data":{"id":"new-1"}}']],
 			'create-null-object-reads-origin' => ['targetObject' => null, 'config' => ['idposition' => 'data.ref'], 'answer' => [201, '{"data":{"ref":"new-2"}}']],

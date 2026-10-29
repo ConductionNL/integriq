@@ -256,6 +256,80 @@
             ]
         ]
     },
+    "delete-traced": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": null,
+            "targetHash": "0c4b74d051a60b1b6462f91c44120a59"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/t-4",
+                "DELETE",
+                [],
+                false,
+                true
+            ]
+        ]
+    },
     "delete-api-source": {
         "contract": {
             "synchronizationId": "sync-1",
