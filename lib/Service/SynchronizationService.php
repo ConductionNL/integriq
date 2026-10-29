@@ -4506,7 +4506,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$run->synchronization = $this->toSynchronization(synchronization: $synchronization);
 		$run->synchronizationId = (($run->synchronization['id'] ?? null) ?? ($run->synchronization['uuid'] ?? null));
 		$run->sourceConfig = $this->callService->applyConfigDot(($run->synchronization['sourceConfig'] ?? []));
-		$run->synchronizedTargetIds = $synchronizedTargetIds;
+		$run->keptTargetIds = $synchronizedTargetIds;
 		$run->deleteRestriction = $deleteRestriction;
 		$run->data = $data;
 		$run->forceDeletion = $forceDeletion;
@@ -4650,7 +4650,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$contractObjects = $this->findAllContractObjects(filters: ['synchronizationId' => $run->synchronizationId]);
 		$allContractTargetIds = $this->contractTargetIds(contractObjects: $contractObjects);
-		$targetIdsToDelete = array_diff($allContractTargetIds, ($run->synchronizedTargetIds ?? []));
+		$targetIdsToDelete = array_diff($allContractTargetIds, ($run->keptTargetIds ?? []));
 
 		$counts = ['candidates' => count($targetIdsToDelete), 'total' => count($allContractTargetIds)];
 		if ($this->deletionRatioGuardTrips(run: $run, counts: $counts) === true) {

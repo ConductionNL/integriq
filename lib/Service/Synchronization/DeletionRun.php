@@ -58,7 +58,7 @@ class DeletionRun {
 	 *
 	 * @var array|null
 	 */
-	public ?array $synchronizedTargetIds = [];
+	public ?array $keptTargetIds = [];
 
 	/**
 	 * Whether deletion is restricted to the identifiers in $data.
