@@ -359,6 +359,10 @@ class EudiWalletController extends Controller {
 	 *                      generic 404 when not found/expired/consumed.
 	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-resolution-is-public-single-fetch-short-ttl-req-eudi-005
+	 * @no-admin-idor-exempt OpenID4VCI credential_offer_uri, fetched by a wallet with no Nextcloud session. The
+	 *                       offer uuid is the bearer capability: EudiCredentialOfferService::resolveOfferForWallet()
+	 *                       answers it once (offerFetchedAt), only before expiresAt and while the pre-authorized
+	 *                       code is still cached, and never for a revoked offer; brute force is throttled.
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
