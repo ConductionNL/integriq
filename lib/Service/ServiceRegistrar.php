@@ -31,6 +31,11 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 /**
  * Binds each Service contract to the class that implements it, so callers
  * outside the Service component depend on the contract only.
+ *
+ * Naming every contract and its class is this class's whole job, so its
+ * coupling grows with the number of contracts by design.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 final class ServiceRegistrar {
 	/**

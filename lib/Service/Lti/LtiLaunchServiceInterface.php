@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Lti;
 
 use OCA\Integriq\Exception\LtiValidationException;
+use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * Public operations of {@see LtiLaunchService} that other components call.
