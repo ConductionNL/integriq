@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\SourceDestructionService;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -114,7 +114,7 @@ class SourceDestroyedController extends Controller {
 		}
 
 		$outcome = $this->sourceDestruction->handleDestroyed(synchronizationId: $id, originId: $originId, reference: $reference);
-		if ($outcome['outcome'] === SynchronizationService::DESTRUCTION_NO_CONTRACT) {
+		if ($outcome['outcome'] === SynchronizationServiceInterface::DESTRUCTION_NO_CONTRACT) {
 			return new JSONResponse($outcome, Http::STATUS_NOT_FOUND);
 		}
 

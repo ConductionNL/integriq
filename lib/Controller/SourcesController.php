@@ -21,7 +21,7 @@
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Service\SourceTestService;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -340,7 +340,7 @@ class SourcesController extends Controller {
 	 * traffic to an upstream, so it follows the `dead-letter-replay`
 	 * admin-only posture rather than this app's older IDOR-prone convention.
 	 *
-	 * @param CallService $callService The CallService used to trip the breaker.
+	 * @param CallServiceInterface $callService The CallService used to trip the breaker.
 	 * @param string $id The UUID of the source to trip.
 	 *
 	 * @return JSONResponse The updated breaker state, or 404 when the source is unknown.
@@ -352,7 +352,7 @@ class SourcesController extends Controller {
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function tripCircuitBreaker(CallService $callService, string $id): JSONResponse {
+	public function tripCircuitBreaker(CallServiceInterface $callService, string $id): JSONResponse {
 		try {
 			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
@@ -377,7 +377,7 @@ class SourcesController extends Controller {
 	 * Admin-only, CSRF-protected — see {@see tripCircuitBreaker()} for the
 	 * rationale.
 	 *
-	 * @param CallService $callService The CallService used to reset the breaker.
+	 * @param CallServiceInterface $callService The CallService used to reset the breaker.
 	 * @param string $id The UUID of the source to reset.
 	 *
 	 * @return JSONResponse The updated breaker state, or 404 when the source is unknown.
@@ -385,7 +385,7 @@ class SourcesController extends Controller {
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function resetCircuitBreaker(CallService $callService, string $id): JSONResponse {
+	public function resetCircuitBreaker(CallServiceInterface $callService, string $id): JSONResponse {
 		try {
 			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
