@@ -27,8 +27,7 @@ use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
-use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
-use OCA\Integriq\Service\WebhookSignatureServiceInterface;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -82,7 +81,7 @@ class EventsController extends Controller {
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
-	 * @param WebhookSignatureServiceInterface $signatureService Generates signing secrets.
+	 * @param SubscriptionSigningPolicyInterface $signingPolicy Generates, decides on and reveals signing secrets.
 	 * @param EgressGuardInterface $egressGuard Refuses a sink that points into the instance's own network (integriq#2212).
 	 */
 	public function __construct(
@@ -93,7 +92,7 @@ class EventsController extends Controller {
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
-		private readonly WebhookSignatureServiceInterface $signatureService,
+		private readonly SubscriptionSigningPolicyInterface $signingPolicy,
 		private readonly EgressGuardInterface $egressGuard,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -199,8 +198,7 @@ class EventsController extends Controller {
 			// REQ-SOW-001: the one reveal of a generated secret. protocolSettings is
 			// writeOnly, so the stored row is read unrendered, as delivery reads it.
 			$response = $this->redactSubscription(subscription: $subscription->getObject());
-			$policy = new SubscriptionSigningPolicy(signatures: $this->signatureService);
-			if ($policy->generatesSecret(subscription: $data) === true) {
+			if ($this->signingPolicy->generatesSecret(subscription: $data) === true) {
 				$stored = $this->orObjectService->find(
 					id: (string)$subscription->getUuid(),
 					register: 'integriq',
@@ -209,7 +207,7 @@ class EventsController extends Controller {
 					_multitenancy: false,
 					_render: false
 				);
-				$response += $policy->reveal(stored: (array)$stored?->getObject());
+				$response += $this->signingPolicy->reveal(stored: (array)$stored?->getObject());
 			}
 
 			return new JSONResponse($response);
@@ -494,7 +492,7 @@ class EventsController extends Controller {
 		$data = $subscription->getObject();
 		$protocolSettings = ($data['protocolSettings'] ?? []);
 
-		$secret = $this->signatureService->generateSecret();
+		$secret = $this->signingPolicy->generateSecret();
 		$protocolSettings['signingSecret'] = $secret;
 		// A first generate clears any rotation remnants, and generating a
 		// secret is choosing to sign: an earlier `unsigned` decision ends here
@@ -553,7 +551,7 @@ class EventsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('No signing secret to rotate; generate one first')], 400);
 		}
 
-		$newSecret = $this->signatureService->generateSecret();
+		$newSecret = $this->signingPolicy->generateSecret();
 		$protocolSettings['previousSigningSecret'] = $current;
 		$protocolSettings['signingSecret'] = $newSecret;
 		$protocolSettings['secretRotatedAt'] = (new DateTime())->format('c');

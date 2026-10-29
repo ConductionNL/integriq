@@ -45,6 +45,13 @@ namespace OCA\Integriq\Adapters\Berichtenbox;
  */
 abstract class BerichtenboxClient {
 	/**
+	 * What the ebMS MessageId of a letter appends to its BerichtID.
+	 *
+	 * @var string
+	 */
+	public const TRANSPORT_MESSAGE_ID_SUFFIX = '@integriq.berichtenbox';
+
+	/**
 	 * Which binding this is, for the structured log: `mock` or `https`.
 	 *
 	 * @return string The flavour.
@@ -122,4 +129,17 @@ abstract class BerichtenboxClient {
 	 * @return void
 	 */
 	abstract public function eventProcessed(string $transportMessageId, array $config): void;
+
+	/**
+	 * The ebMS MessageId a letter travels under at the adapter.
+	 *
+	 * @param string $berichtId The BerichtID.
+	 *
+	 * @return string The ebMS MessageId.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	public function transportMessageIdFor(string $berichtId): string {
+		return $berichtId . self::TRANSPORT_MESSAGE_ID_SUFFIX;
+	}//end transportMessageIdFor()
 }//end class

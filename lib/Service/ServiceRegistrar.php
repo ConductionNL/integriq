@@ -177,6 +177,8 @@ use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver;
 use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
 use OCA\Integriq\Service\StufZkn\StufZdsOutboundInterface;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\Integriq\Service\Tables\TablesClientInterface;
 use OCA\Integriq\Service\Tables\TablesOcsClient;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
@@ -665,5 +667,6 @@ final class ServiceRegistrar {
 		$context->registerServiceAlias(ToolPlatformDetailsInterface::class, LtiPlatformDetailsService::class);
 		$context->registerServiceAlias(ActivityMappingTableInterface::class, DsoActivityTable::class);
 		$context->registerServiceAlias(ApiVersionNegotiationInterface::class, ZgwVersionNegotiationService::class);
+		$context->registerServiceAlias(SubscriptionSigningPolicyInterface::class, SubscriptionSigningPolicy::class);
 	}//end registerInjectedHelpers()
 }
