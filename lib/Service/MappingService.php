@@ -91,6 +91,24 @@ class MappingService {
 	private const SCHEMA = 'mapping';
 
 	/**
+	 * Cast prefixes that carry an argument, mapped to their cast name.
+	 *
+	 * @var array<string, string>
+	 */
+	private const CAST_ARGUMENT_PREFIXES = [
+		'unsetIfValue=='   => 'unsetIfValue',
+		'setNullIfValue==' => 'setNullIfValue',
+		'countValue:'      => 'countValue',
+	];
+
+	/**
+	 * Casts that read or change other keys of the data.
+	 *
+	 * @var string[]
+	 */
+	private const CONTEXT_CASTS = ['keyCantBeValue', 'unsetIfValue', 'setNullIfValue', 'countValue'];
+
+	/**
 	 * Create a private variable to store the twig environment.
 	 *
 	 * @var Environment
@@ -407,6 +425,9 @@ class MappingService {
 	/**
 	 * Handles a single cast.
 	 *
+	 * A cast is either a plain name (`int`) or a name with an argument
+	 * (`unsetIfValue==x`, `setNullIfValue==x`, `countValue:path`).
+	 *
 	 * @param Dot $dotArray The dotArray of the array we are mapping.
 	 * @param string $key The key of the field we want to cast.
 	 * @param string $cast The type of cast we want to do.
@@ -415,171 +436,292 @@ class MappingService {
 	 *
 	 * @spec openspec/specs/mapping-and-search/spec.md
 	 */
-	private function handleCast(Dot $dotArray, string $key, string $cast) {
-		$value = $dotArray->get($key);
-		$unsetIfValue = null;
-		$setNullIfValue = null;
-		$countValue = null;
+	private function handleCast(Dot $dotArray, string $key, string $cast): void {
+		[$castName, $argument] = $this->splitCastArgument(cast: $cast);
 
-		if (str_starts_with($cast, 'unsetIfValue==') === true) {
-			$unsetIfValue = substr($cast, 14);
-			$cast = 'unsetIfValue';
-		} elseif (str_starts_with($cast, 'setNullIfValue==') === true) {
-			$setNullIfValue = substr($cast, 16);
-			$cast = 'setNullIfValue';
-		} elseif (str_starts_with($cast, 'countValue:') === true) {
-			$countValue = substr($cast, 11);
-			$cast = 'countValue';
+		if (in_array($castName, self::CONTEXT_CASTS, true) === true) {
+			$value = $this->applyContextCast(dotArray: $dotArray, key: $key, cast: $castName, argument: $argument);
+		} else {
+			$value = $this->applyValueCast(value: $dotArray->get($key), cast: $castName);
 		}
-
-		// Todo: Add more casts.
-		switch ($cast) {
-			case 'string':
-				$value = (string)$value;
-				break;
-			case 'bool':
-			case 'boolean':
-				if ((int)$value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
-					$value = true;
-					break;
-				}
-
-				$value = false;
-				break;
-			case '?bool':
-			case '?boolean':
-				if ($value === null) {
-					break;
-				}
-
-				if ((int)$value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
-					$value = true;
-					break;
-				}
-
-				$value = false;
-
-				break;
-			case 'int':
-			case 'integer':
-				$value = (int)$value;
-				break;
-			case 'float':
-				$value = (float)$value;
-				break;
-			case 'array':
-				$value = (array)$value;
-				break;
-			case 'date':
-				$value = date($value);
-				break;
-			case 'url':
-				$value = urlencode($value);
-				break;
-			case 'urlDecode':
-				$value = urldecode($value);
-				break;
-			case 'rawurl':
-				$value = rawurlencode($value);
-				break;
-			case 'rawurlDecode':
-				$value = rawurldecode($value);
-				break;
-			case 'html':
-				$value = htmlentities($value);
-				break;
-			case 'htmlDecode':
-				$value = html_entity_decode($value);
-				break;
-			case 'base64':
-				$value = base64_encode($value);
-				break;
-			case 'base64Decode':
-				$value = base64_decode($value);
-				break;
-			case 'json':
-				$value = json_encode($value);
-				break;
-			case 'jsonToArray':
-				if (is_array($value) === true) {
-					break;
-				}
-
-				$value = html_entity_decode($value);
-				$value = json_decode($value, true);
-				break;
-			case 'utf8':
-				// See https://www.php.net/manual/en/function.iconv.php for details.
-				setlocale(LC_CTYPE, 'cs_CZ');
-				$value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
-				break;
-			case 'nullStringToNull':
-				if ($value === 'null') {
-					$value = null;
-				}
-				break;
-			case 'coordinateStringToArray':
-				$value = $this->coordinateStringToArray(coordinates: $value);
-				break;
-			case 'keyCantBeValue':
-				if ($key === $value) {
-					$dotArray->delete($key);
-				}
-				break;
-			case 'unsetIfValue':
-				if (isset($unsetIfValue) === true
-					&& $value === $unsetIfValue
-					|| ($unsetIfValue === '' && empty($value) === true)
-					|| ($unsetIfValue === '' && $value === null)
-				) {
-					$dotArray->delete($key);
-				}
-
-				if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true) {
-					$dotArray->delete($key);
-				}
-				break;
-			case 'setNullIfValue':
-				if (isset($setNullIfValue) === true
-					&& $value === $setNullIfValue
-					|| ($setNullIfValue === '' && empty($value) === true)
-					|| ($setNullIfValue === '' && $value === null)
-				) {
-					$value = null;
-				}
-
-				if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true) {
-					$value = null;
-				}
-				break;
-			case 'countValue':
-				if (isset($countValue) === true
-					&& empty($countValue) === false
-					&& $dotArray->has($countValue) === true
-					&& is_countable($dotArray->get($countValue)) === true
-				) {
-					$value = count($dotArray->get($countValue));
-				}
-				break;
-			case 'moneyStringToInt':
-				$value = str_replace('.', '', $value);
-				$value = (int)str_replace(',', '', $value);
-				break;
-			case 'intToMoneyString':
-				$value = ($value / 100);
-				$value = number_format($value, 2, ',', '.');
-				break;
-			default:
-				// @todo: error handling
-				break;
-		}//end switch
 
 		// Don't reset key that was deleted on purpose.
 		if ($dotArray->has($key) === true) {
 			$dotArray->set($key, $value);
 		}
-
 	}//end handleCast()
+
+	/**
+	 * Splits a cast into its name and its optional argument.
+	 *
+	 * @param string $cast The cast as configured on the mapping.
+	 *
+	 * @return array{0: string, 1: string|null} The cast name and its argument.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function splitCastArgument(string $cast): array {
+		foreach (self::CAST_ARGUMENT_PREFIXES as $prefix => $castName) {
+			if (str_starts_with($cast, $prefix) === true) {
+				return [$castName, substr($cast, strlen($prefix))];
+			}
+		}
+
+		return [$cast, null];
+	}//end splitCastArgument()
+
+	/**
+	 * Applies a cast that only depends on the value itself.
+	 *
+	 * Unknown casts leave the value unchanged.
+	 *
+	 * @param mixed $value The value to cast.
+	 * @param string $cast The cast name.
+	 *
+	 * @return mixed The cast value.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function applyValueCast(mixed $value, string $cast): mixed {
+		$casts = $this->getValueCasts();
+		if (isset($casts[$cast]) === false) {
+			return $value;
+		}
+
+		return $casts[$cast]($value);
+	}//end applyValueCast()
+
+	/**
+	 * Returns the casts that only depend on the value, keyed by cast name.
+	 *
+	 * @return array<string, callable(mixed): mixed>
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function getValueCasts(): array {
+		return array_merge($this->getTypeCasts(), $this->getEncodingCasts());
+	}//end getValueCasts()
+
+	/**
+	 * Returns the casts that convert a value to another type, keyed by cast name.
+	 *
+	 * @return array<string, callable(mixed): mixed>
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function getTypeCasts(): array {
+		$toBool = fn ($value) => $this->castToBool(value: $value);
+		$toNullableBool = fn ($value) => $this->castToNullableBool(value: $value);
+
+		return [
+			'string'                  => fn ($value) => (string) $value,
+			'bool'                    => $toBool,
+			'boolean'                 => $toBool,
+			'?bool'                   => $toNullableBool,
+			'?boolean'                => $toNullableBool,
+			'int'                     => fn ($value) => (int) $value,
+			'integer'                 => fn ($value) => (int) $value,
+			'float'                   => fn ($value) => (float) $value,
+			'array'                   => fn ($value) => (array) $value,
+			'jsonToArray'             => fn ($value) => $this->castJsonToArray(value: $value),
+			'nullStringToNull'        => fn ($value) => $this->castNullStringToNull(value: $value),
+			'coordinateStringToArray' => fn ($value) => $this->coordinateStringToArray(coordinates: $value),
+			'moneyStringToInt'        => fn ($value) => (int) str_replace(',', '', str_replace('.', '', $value)),
+			'intToMoneyString'        => fn ($value) => number_format(($value / 100), 2, ',', '.'),
+		];
+	}//end getTypeCasts()
+
+	/**
+	 * Returns the casts that encode or decode a string, keyed by cast name.
+	 *
+	 * @return array<string, callable(mixed): mixed>
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function getEncodingCasts(): array {
+		return [
+			'date'                    => date(...),
+			'url'                     => urlencode(...),
+			'urlDecode'               => urldecode(...),
+			'rawurl'                  => rawurlencode(...),
+			'rawurlDecode'            => rawurldecode(...),
+			'html'                    => htmlentities(...),
+			'htmlDecode'              => html_entity_decode(...),
+			'base64'                  => base64_encode(...),
+			'base64Decode'            => base64_decode(...),
+			'json'                    => json_encode(...),
+			'utf8'                    => fn ($value) => $this->castToAscii(value: $value),
+		];
+	}//end getEncodingCasts()
+
+	/**
+	 * Casts a value to a boolean: 1, "true" and "yes" (any case) are true.
+	 *
+	 * @param mixed $value The value to cast.
+	 *
+	 * @return bool The boolean value.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function castToBool(mixed $value): bool {
+		return (int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes';
+	}//end castToBool()
+
+	/**
+	 * Casts a value to a boolean, keeping null as null.
+	 *
+	 * @param mixed $value The value to cast.
+	 *
+	 * @return bool|null The boolean value, or null.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function castToNullableBool(mixed $value): ?bool {
+		if ($value === null) {
+			return null;
+		}
+
+		return $this->castToBool(value: $value);
+	}//end castToNullableBool()
+
+	/**
+	 * Turns the string "null" into null; other values pass through.
+	 *
+	 * @param mixed $value The value to cast.
+	 *
+	 * @return mixed The cast value.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function castNullStringToNull(mixed $value): mixed {
+		if ($value === 'null') {
+			return null;
+		}
+
+		return $value;
+	}//end castNullStringToNull()
+
+	/**
+	 * Decodes an HTML-encoded JSON string to an array; arrays pass through.
+	 *
+	 * @param mixed $value The value to decode.
+	 *
+	 * @return mixed The decoded value.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function castJsonToArray(mixed $value): mixed {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return json_decode(html_entity_decode($value), true);
+	}//end castJsonToArray()
+
+	/**
+	 * Transliterates a UTF-8 string to ASCII.
+	 *
+	 * See https://www.php.net/manual/en/function.iconv.php for details.
+	 *
+	 * @param mixed $value The value to transliterate.
+	 *
+	 * @return string|false The ASCII string, or false on failure.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function castToAscii(mixed $value): string|false {
+		setlocale(LC_CTYPE, 'cs_CZ');
+
+		return iconv('UTF-8', 'ASCII//TRANSLIT', $value);
+	}//end castToAscii()
+
+	/**
+	 * Applies a cast that reads or changes other keys of the data.
+	 *
+	 * @param Dot $dotArray The data being mapped.
+	 * @param string $key The key of the field to cast.
+	 * @param string $cast The cast name, one of CONTEXT_CASTS.
+	 * @param string|null $argument The cast argument, if any.
+	 *
+	 * @return mixed The value to write back to the key.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function applyContextCast(Dot $dotArray, string $key, string $cast, ?string $argument): mixed {
+		$value = $dotArray->get($key);
+
+		if ($cast === 'countValue') {
+			return $this->countReferencedValue(dotArray: $dotArray, path: $argument, value: $value);
+		}
+
+		$matches = $this->valueMatchesCastArgument(value: $value, argument: $argument);
+		if ($cast === 'keyCantBeValue') {
+			$matches = $key === $value;
+		}
+
+		if ($matches === false) {
+			return $value;
+		}
+
+		if ($cast === 'setNullIfValue') {
+			return null;
+		}
+
+		$dotArray->delete($key);
+
+		return $value;
+	}//end applyContextCast()
+
+	/**
+	 * Checks whether a value matches a cast argument.
+	 *
+	 * An empty argument matches empty values and arrays whose keys are all null.
+	 *
+	 * @param mixed $value The value to check.
+	 * @param string|null $argument The cast argument.
+	 *
+	 * @return bool True when the value matches.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function valueMatchesCastArgument(mixed $value, ?string $argument): bool {
+		if ($argument === null) {
+			return false;
+		}
+
+		if ($value === $argument) {
+			return true;
+		}
+
+		if ($argument !== '') {
+			return false;
+		}
+
+		return empty($value) === true
+			|| (is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true);
+	}//end valueMatchesCastArgument()
+
+	/**
+	 * Counts the countable value at another path, or keeps the value.
+	 *
+	 * @param Dot $dotArray The data being mapped.
+	 * @param string|null $path The path of the value to count.
+	 * @param mixed $value The current value.
+	 *
+	 * @return mixed The count, or the current value when the path is unusable.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function countReferencedValue(Dot $dotArray, ?string $path, mixed $value): mixed {
+		if (empty($path) === true
+			|| $dotArray->has($path) === false
+			|| is_countable($dotArray->get($path)) === false
+		) {
+			return $value;
+		}
+
+		return count($dotArray->get($path));
+	}//end countReferencedValue()
 
 	/**
 	 * Checks if all keys in multi-dimensional array are null.
