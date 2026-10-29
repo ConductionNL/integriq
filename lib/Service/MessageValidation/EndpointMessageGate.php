@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\MessageValidation;
 
 use OCA\Integriq\Service\MessageValidationService;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -231,7 +232,7 @@ class EndpointMessageGate {
 
 		try {
 			$this->objects->saveObject(
-				object: array_merge((array)$callLog->getObject(), ['validation' => $findings]),
+				object: array_merge($this->storableCallLog(callLog: $callLog), ['validation' => $findings]),
 				register: 'integriq',
 				schema: 'call_log',
 				uuid: (string)$callLog->getUuid(),
@@ -244,6 +245,25 @@ class EndpointMessageGate {
 			$this->logger->error('[integriq] could not write validation findings to call log ' . $callLog->getUuid() . ': ' . $failure->getMessage());
 		}
 	}//end record()
+
+	/**
+	 * The call log as it may be stored again: the entity a call hands back
+	 * carries the source's real response headers, so the secret ones are masked.
+	 *
+	 * @param ObjectEntity $callLog The call log a call handed back.
+	 *
+	 * @return array The call log data with its response headers redacted.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+	 */
+	private function storableCallLog(ObjectEntity $callLog): array {
+		$data = (array)$callLog->getObject();
+		if (is_array($data['response']['headers'] ?? null) === true) {
+			$data['response']['headers'] = (new SensitiveFieldRegistry())->redactArray(data: $data['response']['headers']);
+		}
+
+		return $data;
+	}//end storableCallLog()
 
 	/**
 	 * Read a message schema by uuid, in system context.
