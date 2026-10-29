@@ -43,9 +43,9 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 	private SynchronizationService $service;
 
 	/**
-	 * The log lines written, as [level, message].
+	 * The log lines written, as [level, message, context].
 	 *
-	 * @var array<int, array{0: string, 1: string}>
+	 * @var array<int, array{0: string, 1: string, 2: array}>
 	 */
 	private array $logged = [];
 
@@ -59,8 +59,8 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['warning', 'error'] as $level) {
 			$logger->method($level)->willReturnCallback(
-				function (string $message) use ($level): void {
-					$this->logged[] = [$level, $message];
+				function (string $message, array $context = []) use ($level): void {
+					$this->logged[] = [$level, $message, $context];
 				}
 			);
 		}
@@ -206,6 +206,10 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 			$this->fetch($this->callLog(500, ['body' => '[{"id":1}]']))
 		);
 		$this->assertSame(
+			['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => 400],
+			$this->fetch($this->callLog(400, ['body' => '[{"id":1}]']))
+		);
+		$this->assertSame(
 			['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => null],
 			$this->fetch($this->callLog(null, null))
 		);
@@ -247,6 +251,7 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 
 		$this->assertSame(['objects' => [], 'result' => []], $page);
 		$this->assertSame('warning', $this->logged[0][0]);
+		$this->assertSame(['endpoint' => '/dump.tar.gz'], $this->logged[0][2]);
 		$this->assertStringContainsString('.tar.gz bulk sources are not supported', $this->logged[0][1]);
 	}//end testATarGzEndpointIsSkipped()
 
@@ -324,6 +329,8 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 
 		$this->assertSame(['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => null], $page);
 		$this->assertSame('error', $this->logged[0][0]);
+		$this->assertSame('/items', $this->logged[0][2]['endpoint']);
+		$this->assertSame(200, $this->logged[0][2]['status']);
 	}//end testMalformedYamlFailsThePage()
 
 	/**
@@ -348,6 +355,7 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 		$page = $this->fetch($this->callLog(200, ['body' => 'garbage{']));
 		$this->assertSame(['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => 200], $page);
 		$this->assertSame('error', $this->logged[0][0]);
+		$this->assertSame(['endpoint' => '/items', 'status' => 200, 'length' => 8, 'shape' => ''], $this->logged[0][2]);
 	}//end testEmptyAndUnreadableBodies()
 
 	/**

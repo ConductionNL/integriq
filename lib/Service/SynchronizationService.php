@@ -47,6 +47,7 @@ use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
 use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
+use OCA\Integriq\Service\Synchronization\SourcePage;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
@@ -7989,6 +7990,78 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @return array The page's objects and raw result.
 	 */
 	private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array {
+		$page = new SourcePage(source: $source, endpoint: $endpoint);
+		$page->synchronization = $synchronization;
+		$callLog = $this->pageCallLog(page: $page, config: $config);
+		$page->response = $this->callLogResponse(callLog: $callLog);
+		$page->statusCode = $this->callLogStatusCode(callLog: $callLog);
+		$this->refuseRateLimitedPage(page: $page);
+
+		// A non-2xx/unclassifiable page response MUST NOT be conflated with a
+		// genuinely empty (but successful) page — the former means the fetch
+		// is incomplete and downstream cleanup must not treat it as "nothing
+		// left in the source" (REQ-009). Covers both a response body carrying
+		// an error status code and a null response with no recoverable status
+		// (network/connect failure).
+		if (($page->statusCode !== null && $page->statusCode >= 400) || $page->response === null) {
+			return $this->failedPage(page: $page);
+		}
+
+		$page->body = $page->response['body'];
+		$this->recordLastPageFromLinkHeader(response: $page->response);
+
+		// #97: .tar.gz bulk archives are NOT supported — gzip decompression
+		// alone unpacks to a tar byte stream, not parseable JSON/JSONL. Short
+		// circuit with a clear log entry instead of silently returning zero
+		// objects like the pre-existing (undetected) failure mode did.
+		if ($this->isTarGzEndpoint(endpoint: $endpoint) === true) {
+			$this->logger->warning(
+				'SynchronizationService: .tar.gz bulk sources are not supported (gzip '
+				. 'decompression alone cannot unpack a tar archive) — skipping fetch for '
+				. '{endpoint}. Deferred per oc#97; use an ETL-style loader instead.',
+				['endpoint' => $endpoint]
+			);
+			return ['objects' => [], 'result' => []];
+		}
+
+		$page->body = $this->decodePageBody(page: $page);
+
+		// #107: markdown- and HTML-shaped sources (spectr's keyless catalog/
+		// standards connectors — awesome_selfhosted, openalternative,
+		// don_oss_register, wikipedia_comparisons — have no JSON/XML API at
+		// all). Both are a property of the SOURCE itself (the endpoint
+		// always returns this shape, regardless of which synchronization
+		// reads it), so — unlike `sourceConfig.format: "jsonl"`, which
+		// is per-synchronization — they are keyed off
+		// `Source.configuration.format` instead. Bypasses the
+		// json_decode/XML attempts below entirely.
+		$sourceFormat = strtolower((string)($source['configuration']['format'] ?? ''));
+		if ($sourceFormat === 'markdown') {
+			return $this->pageOfObjects(page: $page, result: $this->parseMarkdownResponse(body: $page->body));
+		}
+
+		if ($sourceFormat === 'html') {
+			return $this->pageOfObjects(
+				page: $page,
+				result: $this->parseHtmlResponse(body: $page->body, configuration: ($source['configuration'] ?? []))
+			);
+		}
+
+		return ($this->readYamlPage(page: $page, sourceFormat: $sourceFormat) ?? $this->readParsedPage(page: $page));
+	}//end fetchSinglePageData()
+
+	/**
+	 * The call log of a page: taken from the concurrent prefetch when it is
+	 * there, called through CallService otherwise.
+	 *
+	 * @param SourcePage $page   The page.
+	 * @param array      $config The call configuration.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function pageCallLog(SourcePage $page, array $config): ObjectEntity {
 		// A page already fetched by the concurrent prefetch is consumed from
 		// there. Deliberately a cache of CALL LOGS rather than of parsed pages:
 		// everything below — rate-limit handling, status classification, format
@@ -7999,24 +8072,35 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// value substituted into the request, which for an offset-paginated
 		// source is a record offset. `index` is absent only for a config built
 		// before this method ran, where the two are the same thing anyway.
-		$page = (int)($config['pagination']['index'] ?? ($config['pagination']['page'] ?? 0));
-		if ($page > 0 && array_key_exists($page, $this->pagePrefetch) === true) {
-			$callLog = $this->pagePrefetch[$page];
-			unset($this->pagePrefetch[$page]);
-		} else {
-			// Make the API call (CallService is OpenRegister-native;
-			// callSourceObject resolves the source's OpenRegister object first).
-			$callLog = $this->callSourceObject(source: $source, endpoint: $endpoint, config: $config);
+		$pageNumber = (int)($config['pagination']['index'] ?? ($config['pagination']['page'] ?? 0));
+		if ($pageNumber > 0 && array_key_exists($pageNumber, $this->pagePrefetch) === true) {
+			$callLog = $this->pagePrefetch[$pageNumber];
+			unset($this->pagePrefetch[$pageNumber]);
+			return $callLog;
 		}
-		$response = $this->callLogResponse(callLog: $callLog);
 
-		// Check for rate limiting.
-		$statusCode = $this->callLogStatusCode(callLog: $callLog);
-		if ($response === null && $statusCode === 429) {
+		// CallService is OpenRegister-native; callSourceObject resolves the
+		// source's OpenRegister object first.
+		return $this->callSourceObject(source: $page->source, endpoint: $page->endpoint, config: $config);
+	}//end pageCallLog()
+
+	/**
+	 * Raises the source's rate limit when the page was refused for quota.
+	 *
+	 * @param SourcePage $page The page, with its response and status code read.
+	 *
+	 * @return void
+	 *
+	 * @throws TooManyRequestsHttpException On a 429 without a response, or a spent quota answered with a body.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function refuseRateLimitedPage(SourcePage $page): void {
+		if ($page->response === null && $page->statusCode === 429) {
 			throw new TooManyRequestsHttpException(
 				message: 'Rate Limit on Source exceeded.',
 				code: 429,
-				headers: $this->getRateLimitHeaders(source: $source)
+				headers: $this->getRateLimitHeaders(source: $page->source)
 			);
 		}
 
@@ -8028,33 +8112,28 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// reset. A 403 without these headers is a real refusal (a private
 		// repository, a missing scope) and stays an ordinary failed page.
 		$rateLimitHeaders = $this->rateLimitHeadersFromResponse(
-			statusCode: $statusCode,
-			headers: (array)($response['headers'] ?? [])
+			statusCode: $page->statusCode,
+			headers: (array)($page->response['headers'] ?? [])
 		);
-		if ($response !== null && $rateLimitHeaders !== null) {
+		if ($page->response !== null && $rateLimitHeaders !== null) {
 			throw new TooManyRequestsHttpException(
-				message: sprintf('Rate limit on source exceeded (status %d).', (int)$statusCode),
+				message: sprintf('Rate limit on source exceeded (status %d).', (int)$page->statusCode),
 				code: 429,
 				headers: $rateLimitHeaders
 			);
 		}
+	}//end refuseRateLimitedPage()
 
-		// A non-2xx/unclassifiable page response MUST NOT be conflated with a
-		// genuinely empty (but successful) page — the former means the fetch
-		// is incomplete and downstream cleanup must not treat it as "nothing
-		// left in the source" (REQ-009). Covers both a response body carrying
-		// an error status code and a null response with no recoverable status
-		// (network/connect failure).
-		if ($statusCode !== null && $statusCode >= 400) {
-			return ['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => $statusCode];
-		}
-
-		if ($response === null) {
-			return ['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => $statusCode];
-		}
-
-		$body = $response['body'];
-
+	/**
+	 * Records the page count a response's `Link` header gives, when it gives one.
+	 *
+	 * @param array $response The page's response.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function recordLastPageFromLinkHeader(array $response): void {
 		// How many pages the source says it has, from the RFC 5988 `Link` header.
 		// The engine only ever inspected the response BODY for a `next` key, so a
 		// source that advertises `rel="last"` — GitHub does, and it is the
@@ -8079,25 +8158,26 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		if ($parsedLastPage !== null) {
 			$this->lastPageFromLink = $parsedLastPage;
 		}
+	}//end recordLastPageFromLinkHeader()
 
-		// #97: .tar.gz bulk archives are NOT supported — gzip decompression
-		// alone unpacks to a tar byte stream, not parseable JSON/JSONL. Short
-		// circuit with a clear log entry instead of silently returning zero
-		// objects like the pre-existing (undetected) failure mode did.
-		if ($this->isTarGzEndpoint(endpoint: $endpoint) === true) {
-			$this->logger->warning(
-				'SynchronizationService: .tar.gz bulk sources are not supported (gzip '
-				. 'decompression alone cannot unpack a tar archive) — skipping fetch for '
-				. '{endpoint}. Deferred per oc#97; use an ETL-style loader instead.',
-				['endpoint' => $endpoint]
-			);
-			return ['objects' => [], 'result' => []];
-		}
+	/**
+	 * The page body as raw bytes: base64-decoded and gunzipped where the response asks for it.
+	 *
+	 * @param SourcePage $page The page, with its body read.
+	 *
+	 * @return mixed The body.
+	 *
+	 * @SuppressWarnings(PHPMD.ErrorControlOperator) gzdecode() warns on bytes that are not gzip; such a body is read as it is.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function decodePageBody(SourcePage $page): mixed {
+		$body = $page->body;
 
 		// CallService base64-encodes any response body that fails UTF-8
 		// validation (gzip-compressed bytes always will) and records that in
 		// `encoding`; decode back to raw bytes before attempting gunzip.
-		if (($response['encoding'] ?? 'UTF-8') === 'base64') {
+		if (($page->response['encoding'] ?? 'UTF-8') === 'base64') {
 			$decodedBody = base64_decode($body, true);
 			if ($decodedBody !== false) {
 				$body = $decodedBody;
@@ -8108,77 +8188,75 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// exports). Detected via an explicit `Source.configuration.decompress:
 		// "gzip"` hint, a `.gz`-suffixed endpoint, or an `application/gzip`
 		// response Content-Type — first match wins, no further guessing.
-		if ($this->isGzipPayload(source: $source, endpoint: $endpoint, response: $response) === true) {
+		if ($this->isGzipPayload(source: $page->source, endpoint: $page->endpoint, response: $page->response) === true) {
 			$decompressed = @gzdecode($body);
 			if ($decompressed !== false) {
 				$body = $decompressed;
 			}
 		}
 
-		// #107: markdown- and HTML-shaped sources (spectr's keyless catalog/
-		// standards connectors — awesome_selfhosted, openalternative,
-		// don_oss_register, wikipedia_comparisons — have no JSON/XML API at
-		// all). Both are a property of the SOURCE itself (the endpoint
-		// always returns this shape, regardless of which synchronization
-		// reads it), so — unlike `sourceConfig.format: "jsonl"`, which
-		// is per-synchronization — they are keyed off
-		// `Source.configuration.format` instead. Bypasses the
-		// json_decode/XML attempts below entirely.
-		$sourceFormat = strtolower((string)($source['configuration']['format'] ?? ''));
-		if ($sourceFormat === 'markdown') {
-			$result = $this->parseMarkdownResponse(body: $body);
+		return $body;
+	}//end decodePageBody()
 
-			return [
-				'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
-				'result' => $result,
-			];
-		}
-
-		if ($sourceFormat === 'html') {
-			$result = $this->parseHtmlResponse(body: $body, configuration: ($source['configuration'] ?? []));
-
-			return [
-				'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
-				'result' => $result,
-			];
-		}
-
+	/**
+	 * Reads a YAML page: declared on the source, or announced by the response's Content-Type.
+	 *
+	 * @param SourcePage $page         The page.
+	 * @param string     $sourceFormat The source's declared format, lower case.
+	 *
+	 * @return array|null The page, a failed page when the YAML does not parse, or null when the page is not YAML.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function readYamlPage(SourcePage $page, string $sourceFormat): ?array {
 		// YAML: declared on the source like markdown and html, or announced by
 		// the response's Content-Type. Parsed by the same decoder the
 		// source-call step uses, so a file reads the same on either path. A
 		// page that does not parse is FAILED, never an empty page: an empty
 		// page ends pagination and lets the stale sweep delete what it did not
 		// see.
-		$contentType = ResponseDecoder::headerValue(headers: (array)($response['headers'] ?? []), name: 'Content-Type');
+		$contentType = ResponseDecoder::headerValue(headers: (array)($page->response['headers'] ?? []), name: 'Content-Type');
 		$decoder = new ResponseDecoder();
-		if ($sourceFormat === 'yaml' || $decoder->isYamlContentType(contentType: $contentType) === true) {
-			try {
-				$result = $decoder->decode(body: $body, mode: ResponseDecoder::MODE_YAML);
-			} catch (ResponseDecodeException $exception) {
-				$this->logger->error(
-					'SynchronizationService: source {endpoint} answered {status} with YAML that does not parse '
-					. '({reason}). Treating the page as FAILED rather than empty.',
-					[
-						'endpoint' => $endpoint,
-						'status' => ($statusCode ?? 200),
-						'reason' => $exception->getReason(),
-					]
-				);
+		if ($sourceFormat !== 'yaml' && $decoder->isYamlContentType(contentType: $contentType) === false) {
+			return null;
+		}
 
-				return ['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => $statusCode];
-			}
+		try {
+			$result = $decoder->decode(body: $page->body, mode: ResponseDecoder::MODE_YAML);
+		} catch (ResponseDecodeException $exception) {
+			$this->logger->error(
+				'SynchronizationService: source {endpoint} answered {status} with YAML that does not parse '
+				. '({reason}). Treating the page as FAILED rather than empty.',
+				[
+					'endpoint' => $page->endpoint,
+					'status' => ($page->statusCode ?? 200),
+					'reason' => $exception->getReason(),
+				]
+			);
 
-			if (is_array($result) === false) {
-				$result = [$result];
-			}
+			return $this->failedPage(page: $page);
+		}
 
-			$this->recordLastPageFromBody(body: $result, synchronization: $synchronization);
+		if (is_array($result) === false) {
+			$result = [$result];
+		}
 
-			return [
-				'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
-				'result' => $result,
-			];
-		}//end if
+		$this->recordLastPageFromBody(body: $result, synchronization: $page->synchronization);
+
+		return $this->pageOfObjects(page: $page, result: $result);
+	}//end readYamlPage()
+
+	/**
+	 * Reads a page as JSON, or as XML when it is not JSON, and fails it when nothing could read it.
+	 *
+	 * @param SourcePage $page The page.
+	 *
+	 * @return array The page, an empty page, or a failed page.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function readParsedPage(SourcePage $page): array {
+		$body = $page->body;
 
 		// Try parsing the response body in different formats, starting with JSON.
 		//
@@ -8229,48 +8307,83 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// end-of-pagination test (REQ-009), so marking it here also stops
 			// downstream cleanup treating this as "nothing left in the source".
 			if ($parsed === false && trim($body) !== '') {
-				$shape = '';
-				if ($isHtmlDocument === true) {
-					$shape = ', HTML — check the source\'s credentials, this is the shape of a login'
-						. ' or redirect page';
-				}
-
-				$this->logger->error(
-					'SynchronizationService: source {endpoint} answered {status} with a body no parser '
-					. 'could read ({length} bytes{shape}) — treating the page as FAILED rather than empty, '
-					. 'so the run is not reported as a success that found nothing.',
-					[
-						'endpoint' => $endpoint,
-						'status' => ($statusCode ?? 200),
-						'length' => strlen($body),
-						'shape' => $shape,
-					]
-				);
-
-				return [
-					'objects' => [],
-					'result' => [],
-					'failed' => true,
-					'statusCode' => $statusCode,
-				];
-			}//end if
+				return $this->unreadablePage(page: $page, isHtmlDocument: $isHtmlDocument);
+			}
 
 			return ['objects' => [], 'result' => []];
-		}//end if
+		}
 
 		// A source that reports its TOTAL in the body tells us the page count on
 		// the very first response — the same fact `rel="last"` gives, from
 		// sources that do not send that header. Recorded into the same field, so
 		// the prefetch window and the stop-check need no knowledge of where the
 		// count came from.
-		$this->recordLastPageFromBody(body: $result, synchronization: $synchronization);
+		$this->recordLastPageFromBody(body: $result, synchronization: $page->synchronization);
 
-		// Process and return the objects from this page.
+		return $this->pageOfObjects(page: $page, result: $result);
+	}//end readParsedPage()
+
+	/**
+	 * Logs a page whose body no parser could read and fails it.
+	 *
+	 * @param SourcePage $page           The page.
+	 * @param bool       $isHtmlDocument Whether the body is an HTML document.
+	 *
+	 * @return array The failed page.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function unreadablePage(SourcePage $page, bool $isHtmlDocument): array {
+		$shape = '';
+		if ($isHtmlDocument === true) {
+			$shape = ', HTML — check the source\'s credentials, this is the shape of a login'
+				. ' or redirect page';
+		}
+
+		$this->logger->error(
+			'SynchronizationService: source {endpoint} answered {status} with a body no parser '
+			. 'could read ({length} bytes{shape}) — treating the page as FAILED rather than empty, '
+			. 'so the run is not reported as a success that found nothing.',
+			[
+				'endpoint' => $page->endpoint,
+				'status' => ($page->statusCode ?? 200),
+				'length' => strlen($page->body),
+				'shape' => $shape,
+			]
+		);
+
+		return $this->failedPage(page: $page);
+	}//end unreadablePage()
+
+	/**
+	 * A page that failed: no objects, and the status it failed with.
+	 *
+	 * @param SourcePage $page The page.
+	 *
+	 * @return array The failed page.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function failedPage(SourcePage $page): array {
+		return ['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => $page->statusCode];
+	}//end failedPage()
+
+	/**
+	 * A page's objects, found in its parsed result.
+	 *
+	 * @param SourcePage $page   The page.
+	 * @param array      $result The parsed result.
+	 *
+	 * @return array The objects and the result.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function pageOfObjects(SourcePage $page, array $result): array {
 		return [
-			'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
+			'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $page->synchronization),
 			'result' => $result,
 		];
-	}//end fetchSinglePageData()
+	}//end pageOfObjects()
 
 	/**
 	 * Learn the page count from a total the source reports in its BODY.
