@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
+use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCP\IUser;
@@ -54,14 +54,14 @@ class FetchDsoAttachmentsJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The time factory.
-	 * @param DsoAttachmentFetcher $fetcher Downloads and stores the bijlagen.
+	 * @param DsoAttachmentFetcherInterface $fetcher Downloads and stores the bijlagen.
 	 * @param DsoConnection $connection Resolves the acting account and runs as it.
 	 * @param DsoConnectionAlerts $alerts Tells the admins when no account is usable.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly DsoAttachmentFetcher $fetcher,
+		private readonly DsoAttachmentFetcherInterface $fetcher,
 		private readonly DsoConnection $connection,
 		private readonly DsoConnectionAlerts $alerts,
 		private readonly LoggerInterface $logger,

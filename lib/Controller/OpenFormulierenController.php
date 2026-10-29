@@ -37,7 +37,7 @@ use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
-use OCA\Integriq\Service\OpenFormulierenIntakeService;
+use OCA\Integriq\Service\OpenFormulierenIntakeServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -71,7 +71,7 @@ class OpenFormulierenController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param OpenFormulierenIntakeService $intakeService Ingest / mapping / handoff orchestration.
+	 * @param OpenFormulierenIntakeServiceInterface $intakeService Ingest / mapping / handoff orchestration.
 	 * @param OpenFormulierenConnection $connection The consumer that authenticates the webhook and its account.
 	 * @param DsoConnectionAlerts $alerts Admin alerts when a submission is refused (shared with DSO).
 	 * @param IUserSession $userSession The user session (status/handoff endpoints).
@@ -82,7 +82,7 @@ class OpenFormulierenController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OpenFormulierenIntakeService $intakeService,
+		private readonly OpenFormulierenIntakeServiceInterface $intakeService,
 		private readonly OpenFormulierenConnection $connection,
 		private readonly DsoConnectionAlerts $alerts,
 		private readonly IUserSession $userSession,

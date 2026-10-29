@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\IwmoIjwProviderException;
 use OCA\Integriq\Exception\IwmoIjwTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\IwmoIjwSyncServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
@@ -63,7 +63,7 @@ class IwmoIjwController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param IwmoIjwSyncService $syncService Send/retour orchestration logic.
+	 * @param IwmoIjwSyncServiceInterface $syncService Send/retour orchestration logic.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -73,7 +73,7 @@ class IwmoIjwController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IwmoIjwSyncService $syncService,
+		private readonly IwmoIjwSyncServiceInterface $syncService,
 		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

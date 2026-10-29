@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
@@ -150,7 +150,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 	 * @return array<string, string>|null
 	 */
 	private function legacyTrust(): ?array {
-		$read = fn (string $key): string => $this->appConfig->getValueString(Application::APP_ID, $key, '');
+		$read = fn (string $key): string => $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '');
 
 		$trust = [
 			'mode' => $read(DSOSignatureVerifierService::CONFIG_MODE),

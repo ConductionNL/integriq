@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Notification;
 
 use InvalidArgumentException;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
@@ -69,7 +69,7 @@ class DsoConnectionNotifier implements INotifier {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function getID(): string {
-		return Application::APP_ID . '_dso_connection';
+		return AppIdentity::APP_ID . '_dso_connection';
 	}//end getID()
 
 	/**
@@ -80,7 +80,7 @@ class DsoConnectionNotifier implements INotifier {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function getName(): string {
-		return $this->l10nFactory->get(Application::APP_ID)->t('DSO connection');
+		return $this->l10nFactory->get(AppIdentity::APP_ID)->t('DSO connection');
 	}//end getName()
 
 	/**
@@ -96,11 +96,11 @@ class DsoConnectionNotifier implements INotifier {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
-		if ($notification->getApp() !== Application::APP_ID || $notification->getSubject() !== DsoConnectionAlerts::SUBJECT) {
+		if ($notification->getApp() !== AppIdentity::APP_ID || $notification->getSubject() !== DsoConnectionAlerts::SUBJECT) {
 			throw $this->unknownNotification();
 		}
 
-		$l = $this->l10nFactory->get(Application::APP_ID, $languageCode);
+		$l = $this->l10nFactory->get(AppIdentity::APP_ID, $languageCode);
 		$reason = (string)($notification->getSubjectParameters()['reason'] ?? '');
 		$channel = (string)($notification->getSubjectParameters()['channel'] ?? DsoConnectionUnavailableException::CHANNEL_DSO);
 
@@ -215,10 +215,10 @@ class DsoConnectionNotifier implements INotifier {
 	 */
 	private function finish(INotification $notification, string $subject): INotification {
 		$notification->setParsedSubject($subject);
-		$notification->setLink($this->urlGenerator->linkToRouteAbsolute('settings.AdminSettings.index', ['section' => Application::APP_ID]));
+		$notification->setLink($this->urlGenerator->linkToRouteAbsolute('settings.AdminSettings.index', ['section' => AppIdentity::APP_ID]));
 		$notification->setIcon(
 			$this->urlGenerator->getAbsoluteURL(
-				$this->urlGenerator->imagePath(appName: Application::APP_ID, file: 'app-dark.svg')
+				$this->urlGenerator->imagePath(appName: AppIdentity::APP_ID, file: 'app-dark.svg')
 			)
 		);
 

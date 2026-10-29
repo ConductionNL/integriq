@@ -65,7 +65,7 @@ use Throwable;
  *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md
  */
-class OptOutRegistry {
+class OptOutRegistry implements OptOutRegistryInterface {
 
 	/**
 	 * The OpenRegister schema opt-outs were stored under before the table.
@@ -74,34 +74,6 @@ class OptOutRegistry {
 	 * @var string
 	 */
 	public const SCHEMA = 'recipient_opt_out';
-
-	/**
-	 * An opt-out that stops everything but the exempt categories.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_INSTANCE = 'instance';
-
-	/**
-	 * An opt-out or consent for one channel.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_CHANNEL = 'channel';
-
-	/**
-	 * An opt-out that stops the updates on one case.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_CASE = 'case';
-
-	/**
-	 * An opt-out or consent for one list.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_LIST = 'list';
 
 	/**
 	 * Every scope.

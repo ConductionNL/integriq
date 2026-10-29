@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
-use OCA\Integriq\Outbound\Identity\OptOutRegistry;
+use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -48,11 +48,11 @@ class OutboundSendDecisionRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param OptOutRegistry $registry The one decision function.
+	 * @param OptOutRegistryInterface $registry The one decision function.
 	 * @param LoggerInterface $logger Records why an event was left unhandled.
 	 */
 	public function __construct(
-		private readonly OptOutRegistry $registry,
+		private readonly OptOutRegistryInterface $registry,
 		private readonly LoggerInterface $logger,
 	) {
 

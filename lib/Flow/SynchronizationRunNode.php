@@ -91,21 +91,9 @@ use UnexpectedValueException;
  *   config and its fan-out can be wrong; splitting the class would move
  *   that branching, not remove it.
  */
-class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SynchronizationRunNodeInterface {
 
 	use SynchronizationLogActions;
-
-	/**
-	 * The step type this node answers to.
-	 *
-	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
-	 * rename: this value is written into stored flow documents (OpenRegister
-	 * objects). Renaming it makes every existing flow reference a node type
-	 * nothing answers to.
-	 *
-	 * @var string
-	 */
-	public const NODE_ID = 'openconnector.synchronization-run';
 
 	/**
 	 * The item key an unset `output` writes the per-object result under.

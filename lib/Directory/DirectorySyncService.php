@@ -59,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md
  */
-class DirectorySyncService {
+class DirectorySyncService implements DirectorySyncServiceInterface {
 
 	/**
 	 * Guard reason: the directory did not answer completely.

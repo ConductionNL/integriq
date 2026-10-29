@@ -24,7 +24,7 @@ namespace OCA\Integriq\Controller;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\RunSummaryService;
 use OCP\AppFramework\Controller;
@@ -58,7 +58,7 @@ class RunSummaryController extends Controller {
 		private readonly ActionAuthService $actionAuth,
 		private readonly IL10N $l,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

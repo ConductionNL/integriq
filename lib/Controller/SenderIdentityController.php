@@ -29,9 +29,9 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Outbound\Identity\DomainAlignmentChecker;
 use OCA\Integriq\Outbound\Identity\HoldQueue;
 use OCA\Integriq\Outbound\Identity\OptOutCategories;
-use OCA\Integriq\Outbound\Identity\OptOutRegistry;
-use OCA\Integriq\Outbound\Identity\SenderIdentityService;
-use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
+use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
+use OCA\Integriq\Outbound\Identity\SenderIdentityServiceInterface;
+use OCA\Integriq\Outbound\Identity\UnsubscribeTokenServiceInterface;
 use OCA\Integriq\Service\ActionAuthService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -77,10 +77,10 @@ class SenderIdentityController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal.
 	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
-	 * @param SenderIdentityService $identities The identities on this instance.
+	 * @param SenderIdentityServiceInterface $identities The identities on this instance.
 	 * @param DomainAlignmentChecker $alignment Checks SPF, DKIM and DMARC.
-	 * @param UnsubscribeTokenService $tokens Mints and verifies unsubscribe tokens.
-	 * @param OptOutRegistry $optOuts Holds the opt-outs an unsubscribe adds to.
+	 * @param UnsubscribeTokenServiceInterface $tokens Mints and verifies unsubscribe tokens.
+	 * @param OptOutRegistryInterface $optOuts Holds the opt-outs an unsubscribe adds to.
 	 * @param HoldQueue $holdQueue Holds and withdraws a message inside its window.
 	 * @param IL10N $l Translations.
 	 * @param IURLGenerator $urls Builds the confirmation form's target.
@@ -90,10 +90,10 @@ class SenderIdentityController extends Controller {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
-		private readonly SenderIdentityService $identities,
+		private readonly SenderIdentityServiceInterface $identities,
 		private readonly DomainAlignmentChecker $alignment,
-		private readonly UnsubscribeTokenService $tokens,
-		private readonly OptOutRegistry $optOuts,
+		private readonly UnsubscribeTokenServiceInterface $tokens,
+		private readonly OptOutRegistryInterface $optOuts,
 		private readonly HoldQueue $holdQueue,
 		private readonly IL10N $l,
 		private readonly IURLGenerator $urls,
@@ -130,7 +130,7 @@ class SenderIdentityController extends Controller {
 				'displayName' => (string)($identity['displayName'] ?? ''),
 				'address' => (string)($identity['address'] ?? ''),
 				'isDefault' => (bool)($identity['isDefault'] ?? false),
-				'quotingLevel' => (string)($identity['quotingLevel'] ?? SenderIdentityService::QUOTING_LAST),
+				'quotingLevel' => (string)($identity['quotingLevel'] ?? SenderIdentityServiceInterface::QUOTING_LAST),
 				'holdWindowSeconds' => (int)($identity['holdWindowSeconds'] ?? 0),
 				'alignment' => ($identity['alignment'] ?? null),
 				'envelope' => $this->identities->envelopeFor($identity),
@@ -312,7 +312,7 @@ class SenderIdentityController extends Controller {
 				[
 					'address' => $claim['address'],
 					'state' => 'opted-out',
-					'scope' => OptOutRegistry::SCOPE_INSTANCE,
+					'scope' => OptOutRegistryInterface::SCOPE_INSTANCE,
 					'purpose' => OptOutCategories::PURPOSE_ALL,
 					'source' => $source,
 					'sourceApp' => 'integriq',
@@ -326,11 +326,11 @@ class SenderIdentityController extends Controller {
 			);
 		}
 
-		if ($claim['format'] !== UnsubscribeTokenService::PREFIX_V3) {
-			$this->optOuts->add($claim['address'], OptOutRegistry::SCOPE_CASE, $claim['caseRef'], $source);
+		if ($claim['format'] !== UnsubscribeTokenServiceInterface::PREFIX_V3) {
+			$this->optOuts->add($claim['address'], OptOutRegistryInterface::SCOPE_CASE, $claim['caseRef'], $source);
 		}
 
-		if ($claim['format'] === UnsubscribeTokenService::PREFIX_V3) {
+		if ($claim['format'] === UnsubscribeTokenServiceInterface::PREFIX_V3) {
 			$this->optOuts->record(
 				[
 					'address' => $claim['address'],
@@ -383,7 +383,7 @@ class SenderIdentityController extends Controller {
 	 * @return TemplateResponse|null The page, or null when the link is usable.
 	 */
 	private function refusalFor(array $claim): ?TemplateResponse {
-		if ($claim['status'] === UnsubscribeTokenService::STATUS_EXPIRED) {
+		if ($claim['status'] === UnsubscribeTokenServiceInterface::STATUS_EXPIRED) {
 			return $this->unsubscribePage(
 				state: 'expired',
 				message: $this->l->t('This link has expired. Nothing was changed. Use the link in a more recent message.'),
@@ -391,7 +391,7 @@ class SenderIdentityController extends Controller {
 			);
 		}
 
-		if ($claim['status'] !== UnsubscribeTokenService::STATUS_VALID || $claim['address'] === '') {
+		if ($claim['status'] !== UnsubscribeTokenServiceInterface::STATUS_VALID || $claim['address'] === '') {
 			return $this->unsubscribePage(
 				state: 'invalid',
 				message: $this->l->t('This link is not valid. Nothing was changed.'),
@@ -412,7 +412,7 @@ class SenderIdentityController extends Controller {
 	 */
 	private function describe(array $claim): string {
 		if ($claim['purpose'] === OptOutCategories::PURPOSE_MARKETING) {
-			if ($claim['scope'] === OptOutRegistry::SCOPE_CHANNEL) {
+			if ($claim['scope'] === OptOutRegistryInterface::SCOPE_CHANNEL) {
 				return $this->l->t(
 					'You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.',
 					[$claim['channel']]
@@ -423,9 +423,9 @@ class SenderIdentityController extends Controller {
 		}
 
 		return match ($claim['scope']) {
-			OptOutRegistry::SCOPE_CHANNEL => $this->l->t('You will no longer receive these messages by %s.', [$claim['channel']]),
-			OptOutRegistry::SCOPE_LIST => $this->l->t('You will no longer receive messages from this list.'),
-			OptOutRegistry::SCOPE_INSTANCE => $this->l->t('You will no longer receive messages from us.'),
+			OptOutRegistryInterface::SCOPE_CHANNEL => $this->l->t('You will no longer receive these messages by %s.', [$claim['channel']]),
+			OptOutRegistryInterface::SCOPE_LIST => $this->l->t('You will no longer receive messages from this list.'),
+			OptOutRegistryInterface::SCOPE_INSTANCE => $this->l->t('You will no longer receive messages from us.'),
 			default => $this->l->t('You will no longer receive updates about this case.'),
 		};
 
@@ -448,7 +448,7 @@ class SenderIdentityController extends Controller {
 		$params = $response->getParams();
 		$params['action'] = $this->urls->linkToRoute('integriq.senderIdentity.unsubscribeConfirm', ['token' => $token]);
 		// Offer to stop everything unless this link already does.
-		$params['offerAll'] = ($claim['scope'] !== OptOutRegistry::SCOPE_INSTANCE || $claim['purpose'] !== OptOutCategories::PURPOSE_ALL);
+		$params['offerAll'] = ($claim['scope'] !== OptOutRegistryInterface::SCOPE_INSTANCE || $claim['purpose'] !== OptOutCategories::PURPOSE_ALL);
 		$response->setParams($params);
 
 		return $response;

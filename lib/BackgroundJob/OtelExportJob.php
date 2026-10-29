@@ -31,9 +31,9 @@ namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Observability\Otel\OtelExportBreaker;
 use OCA\Integriq\Observability\Otel\OtelSettings;
-use OCA\Integriq\Observability\Otel\SpanMapper;
+use OCA\Integriq\Observability\Otel\SpanMapperInterface;
 use OCA\Integriq\Observability\Otel\TraceExporterInterface;
-use OCA\Integriq\Service\ExecutionTraceService;
+use OCA\Integriq\Service\ExecutionTraceServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\QueuedJob;
@@ -68,8 +68,8 @@ class OtelExportJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory.
-	 * @param ExecutionTraceService $traces Reads the persisted trace.
-	 * @param SpanMapper $mapper Maps the trace to OTLP spans.
+	 * @param ExecutionTraceServiceInterface $traces Reads the persisted trace.
+	 * @param SpanMapperInterface $mapper Maps the trace to OTLP spans.
 	 * @param TraceExporterInterface $exporter Sends the spans.
 	 * @param OtelSettings $settings The export settings.
 	 * @param IJobList $jobList Schedules a retry for its run time.
@@ -78,8 +78,8 @@ class OtelExportJob extends QueuedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ExecutionTraceService $traces,
-		private readonly SpanMapper $mapper,
+		private readonly ExecutionTraceServiceInterface $traces,
+		private readonly SpanMapperInterface $mapper,
 		private readonly TraceExporterInterface $exporter,
 		private readonly OtelSettings $settings,
 		private readonly IJobList $jobList,

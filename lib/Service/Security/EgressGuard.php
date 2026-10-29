@@ -44,7 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Security;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCP\IAppConfig;
 
@@ -247,7 +247,7 @@ class EgressGuard {
 			return false;
 		}
 
-		$list = $this->appConfig->getValueString(Application::APP_ID, self::ALLOWED_HOSTS_KEY, '');
+		$list = $this->appConfig->getValueString(AppIdentity::APP_ID, self::ALLOWED_HOSTS_KEY, '');
 		foreach (explode(',', $list) as $entry) {
 			if (strtolower(trim($entry)) === $host && $host !== '') {
 				return true;

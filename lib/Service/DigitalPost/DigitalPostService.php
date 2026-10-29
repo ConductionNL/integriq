@@ -37,16 +37,7 @@ use Throwable;
  *
  * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002
  */
-class DigitalPostService {
-	/**
-	 * The register integriq's own objects live in.
-	 */
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The schema a tracked letter is stored under.
-	 */
-	public const SCHEMA = 'digitalPostMessage';
+class DigitalPostService implements DigitalPostServiceInterface {
 
 	/**
 	 * The refusal code when there is no usable digital post account.

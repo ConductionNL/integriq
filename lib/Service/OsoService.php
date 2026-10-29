@@ -57,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/oso-adapter/spec.md
  */
-class OsoService {
+class OsoService implements OsoServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding OSO sources and message records.

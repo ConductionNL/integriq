@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\ExecutionTraceService;
+use OCA\Integriq\Service\ExecutionTraceServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -61,7 +61,7 @@ class ExecutionTracesController extends Controller {
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The request interface.
-	 * @param ExecutionTraceService $executionTraceService Trace assembly/persistence/replay service.
+	 * @param ExecutionTraceServiceInterface $executionTraceService Trace assembly/persistence/replay service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The ADR-023 action authorization service.
@@ -69,7 +69,7 @@ class ExecutionTracesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ExecutionTraceService $executionTraceService,
+		private readonly ExecutionTraceServiceInterface $executionTraceService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

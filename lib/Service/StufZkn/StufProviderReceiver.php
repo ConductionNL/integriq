@@ -55,21 +55,7 @@ use Throwable;
  *
  * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
  */
-class StufProviderReceiver {
-
-	/**
-	 * The cases route.
-	 *
-	 * @var string
-	 */
-	public const SERVICE_CASES = 'cases';
-
-	/**
-	 * The persons route.
-	 *
-	 * @var string
-	 */
-	public const SERVICE_PERSONS = 'persons';
+class StufProviderReceiver implements StufProviderReceiverInterface {
 
 	/**
 	 * The berichttypes each route takes.

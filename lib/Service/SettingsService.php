@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.MissingImport)
  */
-class SettingsService {
+class SettingsService implements SettingsServiceInterface {
 	/**
 	 * SettingsService constructor.
 	 *

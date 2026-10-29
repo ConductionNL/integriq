@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\ApprovalDecisionService;
+use OCA\Integriq\Service\ApprovalDecisionServiceInterface;
 use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
@@ -83,7 +83,7 @@ class SharedApprovalTaskListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param ApprovalServiceInterface $approvalService Finds, authorizes and expires approval_request records.
-	 * @param ApprovalDecisionService $decisionService Resumes or stops the suspended run.
+	 * @param ApprovalDecisionServiceInterface $decisionService Resumes or stops the suspended run.
 	 * @param ActionAuthService $actionAuth The action matrix, the first authorization layer.
 	 * @param IUserManager $userManager Resolves the completing user.
 	 * @param IL10N $l10n Translates the fixed rejection reason.
@@ -91,7 +91,7 @@ class SharedApprovalTaskListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly ApprovalServiceInterface $approvalService,
-		private readonly ApprovalDecisionService $decisionService,
+		private readonly ApprovalDecisionServiceInterface $decisionService,
 		private readonly ActionAuthService $actionAuth,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,

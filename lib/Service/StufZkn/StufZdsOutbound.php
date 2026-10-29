@@ -49,7 +49,7 @@ use Throwable;
  *
  * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
-class StufZdsOutbound {
+class StufZdsOutbound implements StufZdsOutboundInterface {
 
 	/**
 	 * Seconds to wait before each retry of a transient failure.

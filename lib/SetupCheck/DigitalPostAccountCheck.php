@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\SetupCheck;
 
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
-use OCA\Integriq\Service\DigitalPost\DigitalPostService;
+use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;
 use OCP\SetupCheck\ISetupCheck;
@@ -128,7 +128,7 @@ class DigitalPostAccountCheck implements ISetupCheck {
 	private function hasDigitalPostSource(): bool {
 		try {
 			$result = $this->container->get(self::OBJECT_SERVICE)->findAll(
-				config: ['filters' => ['register' => DigitalPostService::REGISTER, 'schema' => 'source']],
+				config: ['filters' => ['register' => DigitalPostServiceInterface::REGISTER, 'schema' => 'source']],
 				_rbac: false,
 				_multitenancy: false
 			);

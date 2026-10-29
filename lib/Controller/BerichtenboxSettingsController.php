@@ -20,10 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSettingsRefusal;
-use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettings;
+use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettingsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -57,7 +57,7 @@ class BerichtenboxSettingsController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param ConnectionStore $connectionStore Finds the source and reads it raw.
 	 * @param OrObjectService $objectService Saves the source, as the administrator.
-	 * @param BerichtenboxSourceSettings $settings Checks, encrypts and describes the settings.
+	 * @param BerichtenboxSourceSettingsInterface $settings Checks, encrypts and describes the settings.
 	 * @param IL10N $l Messages.
 	 * @param LoggerInterface $logger Diagnostics, never a secret.
 	 */
@@ -65,11 +65,11 @@ class BerichtenboxSettingsController extends Controller {
 		IRequest $request,
 		private readonly ConnectionStore $connectionStore,
 		private readonly OrObjectService $objectService,
-		private readonly BerichtenboxSourceSettings $settings,
+		private readonly BerichtenboxSourceSettingsInterface $settings,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -117,7 +117,7 @@ class BerichtenboxSettingsController extends Controller {
 		}
 
 		$params = [];
-		foreach (array_merge(BerichtenboxSourceSettings::FIELDS, self::PARAMS) as $name) {
+		foreach (array_merge(BerichtenboxSourceSettingsInterface::FIELDS, self::PARAMS) as $name) {
 			$params[$name] = $this->request->getParam($name);
 		}
 
