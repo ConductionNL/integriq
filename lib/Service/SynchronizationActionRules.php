@@ -41,7 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\Flow\FetchFileNodeInterface;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCP\IL10N;
 
 /**
@@ -217,7 +217,7 @@ class SynchronizationActionRules {
 		foreach ($rules as $index => $rule) {
 			$nodes[] = [
 				'id' => 'fetch-file-' . ($index + 1),
-				'type' => FetchFileNodeInterface::NODE_ID,
+				'type' => FlowNodeIds::FETCH_FILE,
 				'config' => [
 					'rule' => $rule['id'],
 					'objectIdPath' => self::SYNCED_ID,

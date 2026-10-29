@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
+use OCA\Integriq\Kernel\FlowNodeIds;
 use UnexpectedValueException;
 
 /**
@@ -35,7 +36,7 @@ interface FetchFileNodeInterface {
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.fetch-file';
+	public const NODE_ID = FlowNodeIds::FETCH_FILE;
 
 	/**
 	 * The step type.
