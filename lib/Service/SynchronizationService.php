@@ -2369,48 +2369,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?string $mutationType = null,
 		?ExecutionTraceContext $trace = null,
 	): ?array {
-		$serializedObject = $object;
-		if ($object instanceof \OCA\OpenRegister\Db\ObjectEntity === true) {
-			$serializedObject = $object->jsonSerialize();
-		}
-
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-		if (isset($sourceConfig[self::EXTEND_BEFORE_CONDITIONS_LOCATION]) === true) {
-			$this->logger->debug(
-				'internToExtern before extendInputBeforeConditions',
-				[
-					'objectId' => $serializedObject['@self']['id'] ?? $serializedObject['id'] ?? null,
-					'betrokkeneIdentificatie' => $serializedObject['betrokkeneIdentificatie'] ?? null,
-				]
-			);
-
-			$fetchObject = false;
-			if (isset($sourceConfig[self::EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT]) === true) {
-				$fetchObject = filter_var(
-					$sourceConfig[self::EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT],
-					FILTER_VALIDATE_BOOLEAN
-				) === true;
-			}
-
-			$serializedObject = $this->processExtendInputRule(
-				config: [
-					'extend_input' => [
-						'properties' => $sourceConfig[self::EXTEND_BEFORE_CONDITIONS_LOCATION],
-						'fetchObject' => $fetchObject,
-					],
-				],
-				data: $serializedObject
-			);
-
-			$this->logger->debug(
-				'internToExtern after extendInputBeforeConditions',
-				[
-					'objectId' => $serializedObject['@self']['id'] ?? $serializedObject['id'] ?? null,
-					'betrokkeneIdentificatie' => $serializedObject['betrokkeneIdentificatie'] ?? null,
-				]
-			);
-		}//end if
-
+		$serializedObject = $this->extendInternBeforeConditions(synchronization: $synchronization, object: $object);
 		if (self::conditionsHold(conditions: ($synchronization['conditions'] ?? []), data: (array)$serializedObject) === false) {
 			return null;
 		}
@@ -2421,74 +2380,27 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$object = $serializedObject;
 		}
 
-		$targetConfig = ($synchronization['targetConfig'] ?? []);
-
-		$originId = null;
-		if (is_array($object) === true && isset($object['@self']['id']) === true) {
-			$originId = $object['@self']['id'];
-		} elseif (is_array($object) === true && isset($object['id']) === true) {
-			$originId = $object['id'];
-		}
-
+		$originId = $this->internOriginId(object: $object);
 		if ($object instanceof \OCA\OpenRegister\Db\ObjectEntity === true && empty($object->getUuid()) === false) {
 			$originId = $object->getUuid();
 			$object = $object->getObject();
 		}
 
-		if (isset($targetConfig['extend_input']) === true) {
-			$fetchObject = false;
+		$object = $this->extendInternForTarget(targetConfig: ($synchronization['targetConfig'] ?? []), object: $object);
 
-			// If we allow the object to be fetched again, fetch including extends (so we hook into the existing extend functionality).
-			if (isset($targetConfig['extend_input_fetch_object']) === true) {
-				switch ($targetConfig['extend_input_fetch_object']) {
-					case 0:
-					case true:
-					case 'true':
-						$fetchObject = true;
-						break;
-					default:
-						$fetchObject = false;
-						break;
-				}
-			}
-
-			$extendedObject = $this->processExtendInputRule(
-				config: ['extend_input' => ['properties' => $targetConfig['extend_input'], 'fetchObject' => $fetchObject]],
-				data: $object
-			);
-
-			$object = array_merge($object, $extendedObject);
-		}//end if
-
-		// If the source configuration contains a dot notation for the id position,
-		// we need to extract the id from the source object.
-		$synchronizationContract = null;
-		// Get the synchronization contract for this object.
-		if ($originId !== null) {
-			$synchronizationContract = $this->findContractBySyncAndOrigin(
-				synchronizationId: (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
-				originId: $originId
-			);
-		}
-
+		$synchronizationContract = $this->findInternContract(synchronization: $synchronization, originId: $originId);
 		if (is_array($synchronizationContract) === false) {
+			$synchronizationContract = [
+				'synchronizationId' => ($synchronization['id'] ?? null),
+				'originId' => $originId,
+			];
 			// Only persist if not test.
 			if ($isTest === false) {
-				$synchronizationContract = $this->createContractFromArray(
-					object: [
-						'synchronizationId' => ($synchronization['id'] ?? null),
-						'originId' => $originId,
-					]
-				);
-			} else {
-				$synchronizationContract = [
-					'synchronizationId' => ($synchronization['id'] ?? null),
-					'originId' => $originId,
-				];
+				$synchronizationContract = $this->createContractFromArray(object: $synchronizationContract);
 			}
 		}
 
-		$synchronizationContract = $this->synchronizeContract(
+		$result = $this->synchronizeContract(
 			synchronizationContract: $synchronizationContract,
 			synchronization: $synchronization,
 			flowToken: $flowToken,
@@ -2500,20 +2412,177 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			trace: $trace
 		);
 
-		// The synchronizeContract call returns either an Exception or the
-		// `['log' => ..., 'contract' => ..., 'resultAction' => ...]` result
-		// shape (test + non-test both go through the same return paths). Test
-		// mode returns the shape upstream; non-test extracts the contract.
-		if ($synchronizationContract instanceof Exception) {
+		return $this->internContractResult(result: $result, isTest: $isTest);
+	}//end synchronizeInternToExtern()
+
+	/**
+	 * What an intern-to-extern run answers for a contract synchronization's result.
+	 *
+	 * The result is an Exception or the
+	 * `['log' => ..., 'contract' => ..., 'resultAction' => ...]` shape. Test
+	 * mode returns the shape upstream; non-test extracts the contract.
+	 *
+	 * @param array|Exception $result The synchronizeContract() result.
+	 * @param bool|null       $isTest Whether this is a test run.
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function internContractResult(array|Exception $result, ?bool $isTest): ?array {
+		if ($result instanceof Exception) {
 			return null;
 		}
 
 		if ($isTest === true) {
-			return $synchronizationContract;
+			return $result;
 		}
 
-		return ($synchronizationContract['contract'] ?? null);
-	}//end synchronizeInternToExtern()
+		return ($result['contract'] ?? null);
+	}//end internContractResult()
+
+	/**
+	 * The object serialized, and extended with the properties the source
+	 * configuration asks for before the conditions are checked.
+	 *
+	 * @param array                                   $synchronization The synchronization configuration.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity|array $object          The object to be synchronized.
+	 *
+	 * @return mixed The (extended) serialized object.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function extendInternBeforeConditions(array $synchronization, \OCA\OpenRegister\Db\ObjectEntity|array $object): mixed {
+		$serializedObject = $object;
+		if ($object instanceof \OCA\OpenRegister\Db\ObjectEntity === true) {
+			$serializedObject = $object->jsonSerialize();
+		}
+
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		if (isset($sourceConfig[self::EXTEND_BEFORE_CONDITIONS_LOCATION]) === false) {
+			return $serializedObject;
+		}
+
+		$this->logger->debug('internToExtern before extendInputBeforeConditions', $this->internExtendLogContext(object: $serializedObject));
+
+		$fetchObject = false;
+		if (isset($sourceConfig[self::EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT]) === true) {
+			$fetchObject = filter_var($sourceConfig[self::EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT], FILTER_VALIDATE_BOOLEAN) === true;
+		}
+
+		$serializedObject = $this->processExtendInputRule(
+			config: [
+				'extend_input' => [
+					'properties' => $sourceConfig[self::EXTEND_BEFORE_CONDITIONS_LOCATION],
+					'fetchObject' => $fetchObject,
+				],
+			],
+			data: $serializedObject
+		);
+
+		$this->logger->debug('internToExtern after extendInputBeforeConditions', $this->internExtendLogContext(object: $serializedObject));
+
+		return $serializedObject;
+	}//end extendInternBeforeConditions()
+
+	/**
+	 * The log context of a pre-condition extension: the object's id and its betrokkeneIdentificatie.
+	 *
+	 * @param mixed $object The serialized object.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function internExtendLogContext(mixed $object): array {
+		return [
+			'objectId' => $object['@self']['id'] ?? $object['id'] ?? null,
+			'betrokkeneIdentificatie' => $object['betrokkeneIdentificatie'] ?? null,
+		];
+	}//end internExtendLogContext()
+
+	/**
+	 * The origin id of an object in array form: its `@self.id`, else its `id`.
+	 *
+	 * @param mixed $object The object to be synchronized.
+	 *
+	 * @return mixed The origin id, or null.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function internOriginId(mixed $object): mixed {
+		if (is_array($object) === false) {
+			return null;
+		}
+
+		if (isset($object['@self']['id']) === true) {
+			return $object['@self']['id'];
+		}
+
+		return ($object['id'] ?? null);
+	}//end internOriginId()
+
+	/**
+	 * The object extended with the properties the target configuration's `extend_input` names.
+	 *
+	 * With `extend_input_fetch_object` the object is fetched again including
+	 * those extends, so it hooks into the existing extend functionality.
+	 *
+	 * @param array $targetConfig The target configuration.
+	 * @param mixed $object       The object to be synchronized.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function extendInternForTarget(array $targetConfig, mixed $object): mixed {
+		if (isset($targetConfig['extend_input']) === false) {
+			return $object;
+		}
+
+		$fetchObject = false;
+		if (isset($targetConfig['extend_input_fetch_object']) === true) {
+			// Loose comparison on purpose: it decides which configured values fetch.
+			switch ($targetConfig['extend_input_fetch_object']) {
+				case 0:
+				case true:
+				case 'true':
+					$fetchObject = true;
+					break;
+				default:
+					$fetchObject = false;
+					break;
+			}
+		}
+
+		$extendedObject = $this->processExtendInputRule(
+			config: ['extend_input' => ['properties' => $targetConfig['extend_input'], 'fetchObject' => $fetchObject]],
+			data: $object
+		);
+
+		return array_merge($object, $extendedObject);
+	}//end extendInternForTarget()
+
+	/**
+	 * The synchronization's contract for an origin id, or null when there is none (or no origin id).
+	 *
+	 * @param array $synchronization The synchronization configuration.
+	 * @param mixed $originId        The origin id.
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function findInternContract(array $synchronization, mixed $originId): ?array {
+		if ($originId === null) {
+			return null;
+		}
+
+		return $this->findContractBySyncAndOrigin(
+			synchronizationId: (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
+			originId: $originId
+		);
+	}//end findInternContract()
 
 	/**
 	 * Synchronizes external source data to the internal system.
