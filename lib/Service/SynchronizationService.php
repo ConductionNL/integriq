@@ -49,6 +49,7 @@ use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Synchronization\ContractRun;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
+use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
@@ -12363,280 +12364,298 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?ExecutionTraceContext $trace = null,
 		?array $contractIndex = null,
 	): array {
-		// Execution-trace REQ-002: one ordered `synchronization` step per
-		// item processed, redacted per REQ-003 before it is buffered.
-		$itemStepStart = microtime(true);
+		// Execution-trace REQ-002: one ordered `synchronization` step per item processed.
+		$item = new ItemRun();
+		$item->stepStart = microtime(true);
+		$item->synchronization = $synchronization;
+		$item->flowToken = $flowToken;
+		$item->trace = $trace;
+		$item->contractIndex = $contractIndex;
+		$item->result = $result;
+		$item->sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
+		$rejection = $this->screenItem(item: $item, object: $object);
+		if ($rejection !== null) {
+			$item->result['objects'][$rejection]++;
+			$this->addItemStep(item: $item, step: ['status' => 'skipped', 'input' => $object]);
+
+			return ['result' => $item->result, 'targetId' => null];
+		}
+
+		$originId = $this->getOriginId(synchronization: $synchronization, object: $object);
+
+		// REQ-MSV-003: the source object is checked against its message schema before it is mapped.
+		$sourceFinding = $this->inspectMessage(
+			config: $item->sourceConfig, side: SynchronizationMessageGate::SOURCE, message: $object, originId: (string)$originId
+		);
+		if ($sourceFinding !== null) {
+			$item->result['validation'][] = $sourceFinding;
+		}
+
+		$contract = $this->findItemContract(item: $item, originId: $originId);
+		$item->isNewContract = is_array($contract) === false;
+		if ($item->isNewContract === true) {
+			$contract = ['synchronizationId' => ($synchronization['id'] ?? null), 'originId' => $originId];
+		}
+
+		$contractResult = $this->synchronizeContract(
+			synchronizationContract: $contract,
+			synchronization: $synchronization,
+			flowToken: $flowToken,
+			object: $object,
+			isTest: $isTest,
+			force: $force,
+			log: match ($item->isNewContract) { true => null, false => $log },
+			mutationType: $mutationType,
+			trace: $trace
+		);
+
+		$contract = $contractResult['contract'];
+		$this->recordItemResult(item: $item, contractResult: $contractResult);
+		$status = match ($item->resultAction) { null => 'skipped', default => 'success' };
+		$this->addItemStep(item: $item, step: ['status' => $status, 'input' => $object, 'output' => $contract]);
+
+		return ['result' => $item->result, 'targetId' => ($contract['targetId'] ?? null)];
+	}//end processSynchronizationObject()
+
+	/**
+	 * Screen a source item before its contract is looked up.
+	 *
+	 * An item that is not an array is invalid. Extra data configured to be fetched
+	 * before the conditions is fetched into the item, and an item that fails the
+	 * synchronization's conditions is skipped.
+	 *
+	 * @param ItemRun $item   The item run.
+	 * @param mixed   $object The source item; extended in place with fetched extra data.
+	 *
+	 * @return string|null The result counter to raise ('invalid' or 'skipped'), or null when the item goes on.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function screenItem(ItemRun $item, mixed &$object): ?string {
 		// We can only deal with arrays (based on the source empty values or string might be returned).
 		if (is_array($object) === false) {
-			// Second silent "invalid" path: the source item was not an array at
-			// all. Log the received type + a bounded preview so the run log's
-			// `invalid: N` can be traced back to malformed source data rather
-			// than to target-side rejection.
-			$result['objects']['invalid']++;
+			$this->warnNonArrayItem(synchronization: $item->synchronization, object: $object);
+			return 'invalid';
+		}
 
-			// Only a scalar can be previewed; an object or resource has no
-			// meaningful string form here and get_debug_type() already names it.
-			$scalarPreview = '';
-			if (is_scalar($object) === true) {
-				$scalarPreview = (string)$object;
-			}
-
-			$this->logger->warning(
-				'Synchronization item counted as invalid: source item is not an array',
-				[
-					'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
-					'receivedType' => get_debug_type($object),
-					'preview' => mb_substr($scalarPreview, 0, 200),
-				]
-			);
-			if ($trace !== null) {
-				$trace->addStep(
-					type: 'synchronization',
-					name: ($synchronization['name'] ?? ($synchronization['uuid'] ?? 'synchronization')),
-					timing: null,
-					status: 'skipped',
-					startedAtMicrotime: $itemStepStart,
-					finishedAtMicrotime: microtime(true),
-				);
-			}
-
-			return ['result' => $result, 'targetId' => null];
-		}//end if
-
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 		// Optional to fetch extra data now instead of later in ->synchronizeContract.
+		$sourceConfig = $item->sourceConfig;
 		if (isset($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION]) === true
 			&& ($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] === true
 			|| $sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] === 'true')
 		) {
-			$object = $this->fetchMultipleExtraData(synchronization: $synchronization, sourceConfig: $sourceConfig, object: $object);
+			$object = $this->fetchMultipleExtraData(synchronization: $item->synchronization, sourceConfig: $sourceConfig, object: $object);
 		}
 
-		// Built only when there is something to evaluate against it. Both halves
-		// are per-record work over the whole payload — encodeArrayKeys() walks
-		// the object recursively, and __serialize() serialises the entire flow
-		// token — and a synchronization WITHOUT conditions used to pay for both
-		// on every single record and then discard the result, because the
-		// `conditions !== []` test came after they were built rather than before.
-		$conditions = ($synchronization['conditions'] ?? []);
-		$conditionsWith = true;
-
-		if ($conditions !== []) {
-			$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
-
-			// Add the flow token to the conditions object. No null guard: the
-			// enclosing method's $flowToken parameter is non-nullable.
-			$conditionsObject['flowToken'] = $flowToken->__serialize();
-
-			$conditionsWith = self::conditionsHold(conditions: $conditions, data: $conditionsObject);
+		if ($this->itemMeetsConditions(item: $item, object: $object) === false) {
+			return 'skipped';
 		}
 
-		// Check if object adheres to conditions.
-		if ($conditionsWith === false) {
-			// Increment skipped count in log since object doesn't meet conditions.
-			$result['objects']['skipped']++;
-			if ($trace !== null) {
-				$trace->addStep(
-					type: 'synchronization',
-					name: ($synchronization['name'] ?? ($synchronization['uuid'] ?? 'synchronization')),
-					timing: null,
-					status: 'skipped',
-					input: (new SensitiveFieldRegistry())->redactArray(data: $object),
-					startedAtMicrotime: $itemStepStart,
-					finishedAtMicrotime: microtime(true),
-				);
+		return null;
+	}//end screenItem()
+
+	/**
+	 * Log a source item that is not an array, so the run log's `invalid` count can be
+	 * traced back to malformed source data rather than to a target-side rejection.
+	 *
+	 * @param array $synchronization The synchronization.
+	 * @param mixed $object          The source item.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function warnNonArrayItem(array $synchronization, mixed $object): void {
+		// Only a scalar can be previewed; get_debug_type() already names anything else.
+		$scalarPreview = '';
+		if (is_scalar($object) === true) {
+			$scalarPreview = (string)$object;
+		}
+
+		$this->logger->warning(
+			'Synchronization item counted as invalid: source item is not an array',
+			[
+				'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+				'receivedType' => get_debug_type($object),
+				'preview' => mb_substr($scalarPreview, 0, 200),
+			]
+		);
+	}//end warnNonArrayItem()
+
+	/**
+	 * Add the `synchronization` trace step of one item, with its input and output redacted (REQ-003).
+	 *
+	 * @param ItemRun $item The item run; nothing is added when it is not traced.
+	 * @param array   $step `status`, and the optional raw `input` and `output`;
+	 *                      an input or output that is not an array is traced as empty.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function addItemStep(ItemRun $item, array $step): void {
+		if ($item->trace === null) {
+			return;
+		}
+
+		foreach (['input', 'output'] as $key) {
+			if (array_key_exists($key, $step) === false) {
+				continue;
 			}
 
-			return ['result' => $result, 'targetId' => null];
+			$data = [];
+			if (is_array($step[$key]) === true) {
+				$data = $step[$key];
+			}
+
+			$step[$key] = (new SensitiveFieldRegistry())->redactArray(data: $data);
 		}
 
-		// If the source configuration contains a dot notation for the id position,
-		// we need to extract the id from the source object.
-		$originId = $this->getOriginId(synchronization: $synchronization, object: $object);
-
-		// REQ-MSV-003: the source object is checked against its message schema
-		// before it is mapped. Refuse throws, and the item loop dead-letters it;
-		// record lets it through and the finding goes onto the run log.
-		$sourceFinding = $this->inspectMessage(
-			config: $sourceConfig,
-			side: SynchronizationMessageGate::SOURCE,
-			message: $object,
-			originId: (string)$originId
+		$item->trace->addStep(
+			...array_merge(
+				[
+					'type' => 'synchronization',
+					'name' => ($item->synchronization['name'] ?? ($item->synchronization['uuid'] ?? 'synchronization')),
+					'timing' => null,
+				],
+				$step,
+				['startedAtMicrotime' => $item->stepStart, 'finishedAtMicrotime' => microtime(true)]
+			)
 		);
-		if ($sourceFinding !== null) {
-			$result['validation'][] = $sourceFinding;
+	}//end addItemStep()
+
+	/**
+	 * Whether a source item meets the synchronization's conditions.
+	 *
+	 * The conditions object is only built when there are conditions: it encodes the whole
+	 * item and serialises the flow token, which is per-record work a synchronization
+	 * without conditions should not pay for.
+	 *
+	 * @param ItemRun $item   The item run.
+	 * @param array   $object The source item.
+	 *
+	 * @return bool True when there are no conditions or they hold.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function itemMeetsConditions(ItemRun $item, array $object): bool {
+		$conditions = ($item->synchronization['conditions'] ?? []);
+		if ($conditions === []) {
+			return true;
 		}
 
-		// Get the synchronization contract for this object.
-		$findContractByOriginId = false;
-		if (isset($sourceConfig['findContractByOriginIdOnly']) === true
-			&& filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
-		) {
-			$findContractByOriginId = true;
-		}
+		$conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
+		$conditionsObject['flowToken'] = $item->flowToken->__serialize();
 
-		// Resolve from the page's pre-read index when the caller built one. A
-		// missing key is a MISS, not a reason to fall back: the bulk read covered
-		// every origin id on the page, so no entry means no contract exists.
-		// Falling back would reintroduce the per-item query for exactly the
-		// create-path items that dominate a first run.
+		return self::conditionsHold(conditions: $conditions, data: $conditionsObject);
+	}//end itemMeetsConditions()
+
+	/**
+	 * Find the contract of a source item, from the page's contract index when there is one.
+	 *
+	 * A key missing from the index is a miss, not a reason to query: the bulk read covered
+	 * every origin id on the page. When a contract is found, duplicate contracts for the
+	 * same origin are reported from the matches already read (REQ-013).
+	 *
+	 * @param ItemRun $item     The item run.
+	 * @param mixed   $originId The origin id of the item.
+	 *
+	 * @return mixed The first matching contract, or null.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function findItemContract(ItemRun $item, mixed $originId): mixed {
+		$synchronizationId = (string)($item->synchronization['id'] ?? '');
 		$contractMatches = null;
-		if ($contractIndex !== null) {
-			$contractMatches = ($contractIndex[$originId] ?? []);
-			$synchronizationContract = ($contractMatches[0] ?? null);
+		if ($item->contractIndex !== null) {
+			$contractMatches = ($item->contractIndex[$originId] ?? []);
+			$contract = ($contractMatches[0] ?? null);
 		} else {
-			$synchronizationContract = $this->findContractBySyncAndOrigin(
-				synchronizationId: (string)($synchronization['id'] ?? ''),
+			$contract = $this->findContractBySyncAndOrigin(
+				synchronizationId: $synchronizationId,
 				originId: $originId,
-				justByOriginId: $findContractByOriginId,
+				justByOriginId: (isset($item->sourceConfig['findContractByOriginIdOnly']) === true
+					&& filter_var($item->sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true),
 				allMatches: $contractMatches
 			);
 		}
 
-		// Opportunistic duplicate-contract diagnostic (REQ-013): only when the
-		// lookup actually matched (the create path cannot have duplicates yet)
-		// and reusing the match list the lookup already fetched — the common,
-		// single-contract case adds no query cost and logs nothing. Processing
-		// continues with the same first-match contract selected above.
-		if (is_array($synchronizationContract) === true) {
-			$this->detectDuplicateContracts(
-				synchronizationId: (string)($synchronization['id'] ?? ''),
-				originId: $originId,
-				contracts: $contractMatches
-			);
+		if (is_array($contract) === true) {
+			$this->detectDuplicateContracts(synchronizationId: $synchronizationId, originId: $originId, contracts: $contractMatches);
 		}
 
-		if (is_array($synchronizationContract) === false) {
-			// Only persist if not test.
-			$synchronizationContract = [
-				'synchronizationId' => ($synchronization['id'] ?? null),
-				'originId' => $originId,
-			];
+		return $contract;
+	}//end findItemContract()
 
-			$synchronizationContractResult = $this->synchronizeContract(
-				synchronizationContract: $synchronizationContract,
-				synchronization: $synchronization,
-				flowToken: $flowToken,
-				object: $object,
-				isTest: $isTest,
-				force: $force,
-				mutationType: $mutationType,
-				trace: $trace
-			);
+	/**
+	 * Record what synchronizeContract() did with one item in the run result.
+	 *
+	 * The contract and log uuids are listed, and the result action is counted. For a
+	 * contract that did not exist yet, an `update` counts as created.
+	 *
+	 * @param ItemRun $item           The item run; its result and result action are set.
+	 * @param mixed   $contractResult What synchronizeContract() returned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function recordItemResult(ItemRun $item, mixed $contractResult): void {
+		$item->result['contracts'][] = ($contractResult['contract']['uuid'] ?? null);
+		$item->result['logs'][] = ($contractResult['log']['uuid'] ?? null);
 
-			$synchronizationContract = $synchronizationContractResult['contract'];
+		$item->resultAction = ($contractResult['resultAction'] ?? null);
+		if ($item->isNewContract === true && $item->resultAction === 'update') {
+			$item->resultAction = 'create';
+		}
 
-			$contractUuid = null;
-			if (isset($synchronizationContractResult['contract']['uuid']) === true) {
-				$contractUuid = $synchronizationContractResult['contract']['uuid'];
-			}
+		$this->tallyItemResult(item: $item, contractResult: $contractResult);
+	}//end recordItemResult()
 
-			$logUuid = null;
-			if (isset($synchronizationContractResult['log']['uuid']) === true) {
-				$logUuid = $synchronizationContractResult['log']['uuid'];
-			}
-
-			$result['contracts'][] = $contractUuid;
-			$result['logs'][] = $logUuid;
-			$resultAction = $synchronizationContractResult['resultAction'] ?? null;
-			if ($resultAction === 'update') {
-				$resultAction = 'create';
-			}
-		} else {
-			// @todo this is weird
-			$synchronizationContractResult = $this->synchronizeContract(
-				synchronizationContract: $synchronizationContract,
-				synchronization: $synchronization,
-				flowToken: $flowToken,
-				object: $object,
-				isTest: $isTest,
-				force: $force,
-				log: $log,
-				mutationType: $mutationType,
-				trace: $trace
-			);
-
-			$synchronizationContract = $synchronizationContractResult['contract'];
-
-			$contractUuid = null;
-			if (isset($synchronizationContractResult['contract']['uuid']) === true) {
-				$contractUuid = $synchronizationContractResult['contract']['uuid'];
-			}
-
-			$logUuid = null;
-			if (isset($synchronizationContractResult['log']['uuid']) === true) {
-				$logUuid = $synchronizationContractResult['log']['uuid'];
-			}
-
-			$result['contracts'][] = $contractUuid;
-			$result['logs'][] = $logUuid;
-			$resultAction = $synchronizationContractResult['resultAction'] ?? null;
-		}//end if
-
-		switch ($resultAction) {
+	/**
+	 * Count one item's result action in the run result.
+	 *
+	 * An unrecognised or null action counts as invalid and is logged with the shape of the
+	 * contract result, so an operator can tell a rejected object from an unknown action.
+	 *
+	 * @param ItemRun $item           The item run, with its result action.
+	 * @param mixed   $contractResult What synchronizeContract() returned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function tallyItemResult(ItemRun $item, mixed $contractResult): void {
+		switch ($item->resultAction) {
 			case 'update':
-				$result['objects']['updated']++;
-				break;
+				$item->result['objects']['updated']++;
+				return;
 			case 'create':
-				$result['objects']['created']++;
-				break;
+				$item->result['objects']['created']++;
+				return;
 			case 'delete':
-				$result['objects']['deleted']++;
-				break;
+				$item->result['objects']['deleted']++;
+				return;
 			case 'skip':
-				$result['objects']['skipped']++;
-				break;
-			default:
-				// An unrecognised (or null) resultAction is tallied as "invalid",
-				// which historically produced a bare `invalid: N` count in the run
-				// log with no way to tell WHY — the reason was discarded here. Log
-				// the actual action plus the contract-result shape so an operator
-				// can distinguish "the target rejected the object" from "the write
-				// path returned an action this switch does not know about".
-				$result['objects']['invalid']++;
-				$this->logger->warning(
-					'Synchronization item counted as invalid: unrecognised resultAction',
-					[
-						'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
-						'resultAction' => $resultAction,
-						'contractResultKeys' => array_keys(($synchronizationContractResult ?? [])),
-						'contractError' => (($synchronizationContractResult['error'] ?? $synchronizationContractResult['message']) ?? null),
-						'contractUuid' => ($contractUuid ?? null),
-						'targetId' => ($synchronizationContract['targetId'] ?? null),
-						'originId' => ($synchronizationContract['originId'] ?? null),
-					]
-				);
-				break;
-		}//end switch
+				$item->result['objects']['skipped']++;
+				return;
+		}
 
-		$targetId = $synchronizationContract['targetId'] ?? null;
-
-		if ($trace !== null) {
-			$itemStepStatus = 'success';
-			if (($resultAction ?? null) === null) {
-				$itemStepStatus = 'skipped';
-			}
-
-			$itemStepOutputData = [];
-			if (is_array($synchronizationContract) === true) {
-				$itemStepOutputData = $synchronizationContract;
-			}
-
-			$trace->addStep(
-				type: 'synchronization',
-				name: ($synchronization['name'] ?? ($synchronization['uuid'] ?? 'synchronization')),
-				timing: null,
-				status: $itemStepStatus,
-				input: (new SensitiveFieldRegistry())->redactArray(data: $object),
-				output: (new SensitiveFieldRegistry())->redactArray(data: $itemStepOutputData),
-				startedAtMicrotime: $itemStepStart,
-				finishedAtMicrotime: microtime(true),
-			);
-		}//end if
-
-		return ['result' => $result, 'targetId' => $targetId];
-	}//end processSynchronizationObject()
+		$item->result['objects']['invalid']++;
+		$this->logger->warning(
+			'Synchronization item counted as invalid: unrecognised resultAction',
+			[
+				'synchronization' => ($item->synchronization['name'] ?? ($item->synchronization['uuid'] ?? null)),
+				'resultAction' => $item->resultAction,
+				'contractResultKeys' => array_keys(($contractResult ?? [])),
+				'contractError' => (($contractResult['error'] ?? $contractResult['message']) ?? null),
+				'contractUuid' => ($contractResult['contract']['uuid'] ?? null),
+				'targetId' => ($contractResult['contract']['targetId'] ?? null),
+				'originId' => ($contractResult['contract']['originId'] ?? null),
+			]
+		);
+	}//end tallyItemResult()
 
 	/**
 	 * Fetch a synchronization OpenRegister object by id or other characteristics.
