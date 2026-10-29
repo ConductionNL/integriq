@@ -322,7 +322,7 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 		$this->mappingService->expects($this->once())->method('translateVngFilterOperators')
 			->with(['status__in' => 'x'])
 			->willReturn(['status' => ['in' => 'x']]);
-		$this->mappingService->method('expandRelations')->willReturnCallback(
+		$this->mappingService->expects($this->exactly(2))->method('expandRelations')->willReturnCallback(
 			fn (array $data, array $expand) => $data + ['expanded' => $expand]
 		);
 
@@ -336,6 +336,7 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 			[['uuid' => 'a', 'id' => 'a', 'expanded' => ['a', 'b']], ['uuid' => 'b', 'id' => 'b', 'expanded' => ['a', 'b']]],
 			$response->getData()['results']
 		);
+		$this->assertArrayNotHasKey('expanded', $response->getData(), 'The page itself is not expanded.');
 	}//end testVngTranslationExpandsEveryResult()
 
 	/**
