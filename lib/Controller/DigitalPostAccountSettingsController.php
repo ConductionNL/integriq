@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
-use OCA\Integriq\Service\Dso\DsoConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
@@ -56,7 +56,7 @@ class DigitalPostAccountSettingsController extends Controller {
 	 *
 	 * @param IRequest           $request      The request.
 	 * @param DigitalPostAccountInterface $account      Finds and checks the account.
-	 * @param DsoConnectionInterface      $consumers    Writes the consumer.
+	 * @param PortalConnectionInterface      $consumers    Writes the consumer.
 	 * @param IntakeGroupsInterface       $groups       Enrols the account in the digital post group.
 	 * @param IGroupManager      $groupManager Says whether the account is an administrator.
 	 * @param IL10N              $l            Field errors and warnings.
@@ -67,7 +67,7 @@ class DigitalPostAccountSettingsController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly DigitalPostAccountInterface $account,
-		private readonly DsoConnectionInterface $consumers,
+		private readonly PortalConnectionInterface $consumers,
 		private readonly IntakeGroupsInterface $groups,
 		private readonly IGroupManager $groupManager,
 		private readonly IL10N $l,

@@ -29,8 +29,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Dso;
 
 use DateTime;
-use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -43,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
  */
-class DsoConnectionAlerts implements DsoConnectionAlertsInterface {
+class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 
 	/**
 	 * Seconds between two notifications for the same reason.
