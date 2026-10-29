@@ -50,6 +50,7 @@ use OCA\Integriq\Service\Synchronization\ContractRun;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\FetchedFile;
 use OCA\Integriq\Service\Synchronization\SourcePage;
+use OCA\Integriq\Service\Synchronization\TargetWrite;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
@@ -5586,12 +5587,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface If an error occurs while interacting
 	 *                                                                with the object service or data.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 167 lines. This is the single
-	 *   write path into OpenRegister and it is long because the TARGET shapes are
-	 *   many (register/schema resolution, id strategies, soft-delete, file handling,
-	 *   contract bookkeeping), not because it branches deeply. Splitting it is a real
-	 *   refactor of the engine's write side with real regression risk, and is tracked
-	 *   as such rather than done under a lint sweep.
+	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	private function updateTargetOpenRegister(
 		array $synchronizationContract,
@@ -5599,8 +5595,9 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?array &$targetObject = [],
 		?string $action = 'save',
 	): array {
-		// Setup the object service.
-		$objectService = $this->orObjectService;
+		// The one caller, updateTarget(), already hands in [] for null; this
+		// keeps the @param-out true for a delete, which never writes it back.
+		$targetObject = ($targetObject ?? []);
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		// Every write starts unbuffered; the save branch below opts in.
@@ -5608,9 +5605,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		// Whether this contract already pointed at a target BEFORE this write.
 		// That, not the state after it, is what distinguishes a create from an
-		// update — the post-write check this used to do was always true, because
-		// `targetId` is assigned from the saved entity a few lines above it, so
-		// `targetLastAction` could never say 'create'.
+		// update: `targetId` is assigned from the saved entity during the write.
 		$hadTargetId = (($synchronizationContract['targetId'] ?? null) !== null);
 
 		// If we already have an id, we need to get the object and update it.
@@ -5626,160 +5621,162 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			);
 		}
 
-		// Extract register and schema from the targetId.
-		// The targetId needs to be filled in as: {registerId} + / + {schemaId} for example: 1/1.
+		// The targetId names the target as {registerId}/{schemaId}, for example 1/1.
 		$targetId = ($synchronization['targetId'] ?? null);
 		if ($targetId === null || str_contains($targetId, '/') === false) {
 			return $synchronizationContract;
 		}
 
-		[$register, $schema] = explode('/', $targetId);
+		$write = new TargetWrite(contract: $synchronizationContract, synchronization: $synchronization);
+		[$write->register, $write->schema] = explode('/', $targetId);
+		$write->sourceConfig = $sourceConfig;
+		$write->hadTargetId = $hadTargetId;
 
-		// Save the object to the target.
 		switch ($action) {
 			case 'save':
-				if (isset($targetObject['id']) === true && ($synchronizationContract['targetId'] ?? null) === null) {
-					$synchronizationContract['targetId'] = $targetObject['id'];
-				}
-
-				$targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
-
-				// Bulk path: hand the row to the run's write buffer instead of
-				// writing it here, so a whole page of objects goes to the database
-				// as one batched upsert. Measured on a 374-record GitHub sync:
-				// 374 target writes at ~20-25ms each is 8.8s of a 16.1s run, and
-				// every one of them re-resolves the same register and schema.
-				//
-				// Three conditions have to hold, and each of them is a thing that
-				// reads the object back before the buffer would be flushed:
-				//
-				// - `$this->bufferWrites` — only the batch loop in
-				// synchronizeExternToIntern() sets it, and it always flushes
-				// afterwards. Anywhere else a buffered write has no flush to
-				// reach and would simply be dropped.
-				// - no `subObjects` — that branch calls renderEntity() on the
-				// returned entity a few lines below, which needs a real write.
-				// - no `actions` — the `after` rules in synchronizeContract() run
-				// against `targetId` and may fetch the object. This is the same
-				// condition that already gates the pre-rules contract persist, so
-				// a synchronization WITH rules keeps today's behaviour end to end
-				// rather than being half-buffered.
-				$canBufferWrite = ($this->bufferWrites === true
-					&& isset($sourceConfig['subObjects']) === false
-					&& empty($synchronization['actions'] ?? []) === true);
-
-				if ($canBufferWrite === true) {
-					return $this->bufferTargetSave(
-						synchronizationContract: $synchronizationContract,
-						synchronization: $synchronization,
-						targetObject: $targetObject,
-						sourceConfig: $sourceConfig,
-						register: $register,
-						schema: $schema,
-						hadTargetId: $hadTargetId
-					);
-				}
-
-				// `events: false` on the synchronization runs the write inside
-				// OpenRegister's SystemOperationContext, which is what actually
-				// withholds the object lifecycle event — MagicMapper checks that
-				// context, and it is the mechanism config imports and repair steps
-				// already use. saveObject()'s `silent` flag is NOT the lever here:
-				// it gates the audit row and inverse-relation work in SaveObject,
-				// while the ObjectCreated/Updated dispatch lives a layer lower in
-				// MagicMapper and never sees it. Measured that mistake — writes
-				// stayed at exactly 1,090 with `silent` set.
-				//
-				// Why it is worth a switch at all: a THIRD of every sync write on
-				// this instance was DocuDesk's MetadataService::saveEnrichedMetadata
-				// reacting to the save event and writing its own object per record.
-				//
-				// Defaults to events ON, so a sync whose objects must trigger
-				// downstream flows is untouched.
-				// `logs: false` skips the object's audit row; `validation: false`
-				// skips re-validating a row against its schema. Both default to
-				// today's behaviour and are per-synchronization, because the
-				// trade-off is per-synchronization: a bulk backfill of rows a
-				// source has already validated is a different proposition from a
-				// user-facing write, and only the author of the sync knows which
-				// one this is.
-				$writeTarget = fn (): mixed => $objectService->saveObject(
-					register: $register,
-					schema: $schema,
-					object: $targetObject,
-					uuid: ($synchronizationContract['targetId'] ?? null),
-					silent: (($sourceConfig['logs'] ?? true) === false),
-					_validation: (($sourceConfig['validation'] ?? true) !== false)
-				);
-
-				if (($sourceConfig['events'] ?? true) === false) {
-					$target = SystemWrite::run(what: 'a synchronised target object', operation: $writeTarget);
-				} else {
-					$target = $writeTarget();
-				}
-				// Get the id form the target object.
-				$synchronizationContract['targetId'] = $target->getUuid();
-
-				// NOTE: Orphan cleanup is handled by the fetch-file rule path
-				// (see SynchronizationService::fetchAndRegisterFileFromEndpoint).
-				// The duplicate per-attachment cleanup that used to live here was
-				// removed after the fetch-rule path was verified.
-				// Handle sub-objects synchronization if sourceConfig is defined.
-				if (isset($sourceConfig['subObjects']) === true) {
-					$targetObject = $objectService->renderEntity($target, ['all']);
-					$this->updateContractsForSubObjects(
-						subObjectsConfig: $sourceConfig['subObjects'],
-						synchronizationId: ($synchronization['id'] ?? null),
-						targetObject: $targetObject
-					);
-				}
-
-				// Set target last action based on whether we're creating or updating.
-				// Keyed on the contract's targetId BEFORE the write: the check
-				// used to run afterwards, against a field assigned from the saved
-				// entity a dozen lines up, so it was true for every record and the
-				// 'create' branch was unreachable. Every synchronization on this
-				// instance reported `targetLastAction: update`, including the ones
-				// that had just created the object — which is what the flow node's
-				// `outcome` and the contract provider both read.
-				if ($hadTargetId === true) {
-					$synchronizationContract['targetLastAction'] = 'update';
-				} else {
-					$synchronizationContract['targetLastAction'] = 'create';
-				}
+				$synchronizationContract = $this->saveTargetObject(write: $write, targetObject: $targetObject);
 				break;
 			case 'delete':
-				if (empty($synchronizationContract['targetId'] ?? null) === false) {
-					// The source removing its record is the owner acting, so the
-					// source-owned delete guard lets this one through.
-					$targetId = (string)$synchronizationContract['targetId'];
-					SourceOwnedDeleteGuardListener::whileTheEngineDeletes(
-						delete: static fn () => $objectService->deleteObject(uuid: $targetId)
-					);
-				}
-
-				$synchronizationContract['targetId'] = null;
-				$synchronizationContract['targetLastAction'] = 'delete';
-				break;
 			case DisappearancePolicy::PURGE:
-				// REQ-SDP-001: a permanent delete, so the object's files go
-				// with it. A refusal (another object restricts it) propagates
-				// unchanged: there is no fallback to a soft delete, and the
-				// contract keeps pointing at the object that is still there.
-				if (empty($synchronizationContract['targetId'] ?? null) === false) {
-					$targetId = (string)$synchronizationContract['targetId'];
-					SourceOwnedDeleteGuardListener::whileTheEngineDeletes(
-						delete: static fn () => $objectService->deleteObject(uuid: $targetId, permanent: true)
-					);
-				}
-
-				$synchronizationContract['targetId'] = null;
-				$synchronizationContract['targetLastAction'] = DisappearancePolicy::PURGE;
+				$synchronizationContract = $this->deleteTargetObject(write: $write, action: $action);
 				break;
-		}//end switch
+		}
 
 		return $synchronizationContract;
 	}//end updateTargetOpenRegister()
+
+	/**
+	 * Save the target object of one write, or queue it for the run's bulk write.
+	 *
+	 * Bulk path: a page of objects goes to the database as one batched upsert
+	 * instead of one write per object (measured on a 374-record GitHub sync:
+	 * 374 target writes at ~20-25ms each was 8.8s of a 16.1s run). Three
+	 * conditions have to hold, and each guards something that reads the
+	 * object back before the buffer would be flushed:
+	 *
+	 * - `$this->bufferWrites`: only the batch loop in synchronizeExternToIntern()
+	 *   sets it, and it always flushes afterwards.
+	 * - no `subObjects`: that branch renders the saved entity, which needs a real write.
+	 * - no `actions`: the `after` rules in synchronizeContract() run against
+	 *   `targetId` and may fetch the object.
+	 *
+	 * @param TargetWrite $write        The write.
+	 * @param array|null  $targetObject The mapped object to write; rewritten in place.
+	 *
+	 * @param-out array $targetObject
+	 *
+	 * @return array The contract, with `targetId` and `targetLastAction` set.
+	 *
+	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function saveTargetObject(TargetWrite $write, ?array &$targetObject): array {
+		$sourceConfig = $write->sourceConfig;
+		if (isset($targetObject['id']) === true && ($write->contract['targetId'] ?? null) === null) {
+			$write->contract['targetId'] = $targetObject['id'];
+		}
+
+		$targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
+		$write->targetObject = $targetObject;
+
+		$canBufferWrite = ($this->bufferWrites === true
+			&& isset($sourceConfig['subObjects']) === false
+			&& empty($write->synchronization['actions'] ?? []) === true);
+		if ($canBufferWrite === true) {
+			return $this->bufferTargetSave(write: $write);
+		}
+
+		$target = $this->writeTargetObject(write: $write);
+		$write->contract['targetId'] = $target->getUuid();
+
+		// Orphan cleanup is handled by the fetch-file rule path
+		// (see SynchronizationService::fetchAndRegisterFileFromEndpoint).
+		if (isset($sourceConfig['subObjects']) === true) {
+			$targetObject = $this->orObjectService->renderEntity($target, ['all']);
+			$this->updateContractsForSubObjects(
+				subObjectsConfig: $sourceConfig['subObjects'],
+				synchronizationId: ($write->synchronization['id'] ?? null),
+				targetObject: $targetObject
+			);
+		}
+
+		$write->contract['targetLastAction'] = 'create';
+		if ($write->hadTargetId === true) {
+			$write->contract['targetLastAction'] = 'update';
+		}
+
+		return $write->contract;
+	}//end saveTargetObject()
+
+	/**
+	 * Write the target object of one write to OpenRegister.
+	 *
+	 * `events: false` on the synchronization runs the write inside
+	 * OpenRegister's SystemOperationContext, which is what withholds the object
+	 * lifecycle event: MagicMapper checks that context, and config imports and
+	 * repair steps already use it. saveObject()'s `silent` flag does not: it
+	 * gates the audit row and inverse-relation work in SaveObject, while the
+	 * ObjectCreated/Updated dispatch lives a layer lower in MagicMapper.
+	 * `logs: false` skips the object's audit row; `validation: false` skips
+	 * re-validating a row against its schema. All three default to on and are
+	 * set per synchronization, because only its author knows whether a write
+	 * is a bulk backfill of already validated rows or a user-facing write.
+	 *
+	 * @param TargetWrite $write The write.
+	 *
+	 * @return mixed The saved object entity.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function writeTargetObject(TargetWrite $write): mixed {
+		$objectService = $this->orObjectService;
+		$writeTarget = fn (): mixed => $objectService->saveObject(
+			register: $write->register,
+			schema: $write->schema,
+			object: $write->targetObject,
+			uuid: ($write->contract['targetId'] ?? null),
+			silent: (($write->sourceConfig['logs'] ?? true) === false),
+			_validation: (($write->sourceConfig['validation'] ?? true) !== false)
+		);
+
+		if (($write->sourceConfig['events'] ?? true) === false) {
+			return SystemWrite::run(what: 'a synchronised target object', operation: $writeTarget);
+		}
+
+		return $writeTarget();
+	}//end writeTargetObject()
+
+	/**
+	 * Delete the target object of one write, softly or (`purge`) permanently.
+	 *
+	 * The source removing its record is the owner acting, so the source-owned
+	 * delete guard lets this delete through. A purge (REQ-SDP-001) takes the
+	 * object's files with it; a refusal (another object restricts it)
+	 * propagates unchanged, with no fallback to a soft delete.
+	 *
+	 * @param TargetWrite $write  The write.
+	 * @param string      $action `delete` or `purge`.
+	 *
+	 * @return array The contract, pointing at no target, with `targetLastAction` set to the action.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function deleteTargetObject(TargetWrite $write, string $action): array {
+		if (empty($write->contract['targetId'] ?? null) === false) {
+			$objectService = $this->orObjectService;
+			$targetId = (string)$write->contract['targetId'];
+			$permanent = ($action === DisappearancePolicy::PURGE);
+			SourceOwnedDeleteGuardListener::whileTheEngineDeletes(
+				delete: static fn () => $objectService->deleteObject(uuid: $targetId, permanent: $permanent)
+			);
+		}
+
+		$write->contract['targetId'] = null;
+		$write->contract['targetLastAction'] = $action;
+
+		return $write->contract;
+	}//end deleteTargetObject()
 
 	/**
 	 * Purge the object one contract points at, and record it (REQ-SDP-001, REQ-SDP-003).
@@ -6070,29 +6067,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * before the row lands so the contract can be built against it. OpenRegister
 	 * honours a client-supplied id on both the single and the bulk path.
 	 *
-	 * @param array $synchronizationContract The contract being updated.
-	 * @param array $synchronization The synchronization being run.
-	 * @param array $targetObject The mapped object to write.
-	 * @param array $sourceConfig The dot-expanded source config.
-	 * @param string $register The target register id.
-	 * @param string $schema The target schema id.
-	 * @param bool $hadTargetId Whether the contract already pointed at a target BEFORE this write.
+	 * @param TargetWrite $write The write: contract, synchronization, mapped object,
+	 *                           source config, target register and schema.
 	 *
 	 * @return array The contract, with `targetId` and `targetLastAction` set.
 	 */
-	private function bufferTargetSave(
-		array $synchronizationContract,
-		array $synchronization,
-		array $targetObject,
-		array $sourceConfig,
-		string $register,
-		string $schema,
-		bool $hadTargetId,
-	): array {
+	private function bufferTargetSave(TargetWrite $write): array {
+		$synchronizationContract = $write->contract;
+		$targetObject = $write->targetObject;
 		$targetUuid = ($synchronizationContract['targetId'] ?? null);
 		if ($targetUuid === null || $targetUuid === '') {
 			$targetUuid = $this->deriveTargetUuid(
-				synchronization: $synchronization,
+				synchronization: $write->synchronization,
 				synchronizationContract: $synchronizationContract
 			);
 		}
@@ -6101,17 +6087,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$synchronizationContract['targetId'] = (string)$targetUuid;
 
 		$this->bufferTargetWrite(
-			register: $register,
-			schema: $schema,
+			register: $write->register,
+			schema: $write->schema,
 			uuid: (string)$targetUuid,
 			row: $targetObject,
-			sourceConfig: $sourceConfig
+			sourceConfig: $write->sourceConfig
 		);
 
 		$this->lastTargetWriteBuffered = true;
 
 		$synchronizationContract['targetLastAction'] = 'create';
-		if ($hadTargetId === true) {
+		if ($write->hadTargetId === true) {
 			$synchronizationContract['targetLastAction'] = 'update';
 		}
 
