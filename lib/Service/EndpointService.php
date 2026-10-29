@@ -4059,94 +4059,28 @@ class EndpointService implements EndpointServiceInterface {
 			return $data;
 		}
 
-		if (is_array($config['synchronization']) === true && isset($config['synchronization']['synchronization']) === true) {
-			$synchronizationId = $config['synchronization']['synchronization'];
-		} else {
-			$synchronizationId = $config['synchronization'];
+		$synchronization = $this->syncRuleSynchronization(rule: $rule, config: $config);
+
+		// Rule-pipeline REQ-RULE-011: a dry-run replay forwards isTest: true
+		// unconditionally, reusing synchronization-engine REQ-011's existing
+		// no-write guarantee rather than a second mechanism.
+		$test = true;
+		if ($dryRun === false) {
+			$test = $this->syncRuleFlag(sources: [($data['body'] ?? null), $config], key: 'isTest');
 		}
 
-		$this->logger->debug('[EndpointService] processSyncRule ruleId=' . $rule->getUuid() . ' synchronizationId=' . $synchronizationId);
+		$force = $this->syncRuleFlag(sources: [($data['body'] ?? null), $config], key: 'force');
 
-		// Fetch the synchronization.
-		if (is_numeric($synchronizationId) === true) {
-			$synchronization = $this->synchronizationService->getSynchronization(id: (int)$synchronizationId);
-		} else {
-			$synchronization = $this->synchronizationService->getSynchronization(filters: ['reference' => $synchronizationId]);
-		}
-
-		$this->logger->debug(
-			'[EndpointService] processSyncRule synchronization fetched id=' . $synchronization->getUuid()
-			. ' name=' . $synchronization->getName()
-		);
-
-		// Check if the synchronization should be in test mode.
-		if ($dryRun === true) {
-			// Rule-pipeline REQ-RULE-011: a dry-run replay forwards isTest:
-			// true unconditionally, reusing synchronization-engine REQ-011's
-			// existing no-write guarantee rather than a second mechanism.
-			$test = true;
-		} elseif (isset($data['body']['isTest']) === true) {
-			$test = $data['body']['isTest'];
-		} elseif (isset($config['isTest']) === true) {
-			$test = $config['isTest'];
-		} else {
-			$test = false;
-		}
-
-		// Check if the synchronization should be forced.
-		if (isset($data['body']['force']) === true) {
-			$force = $data['body']['force'];
-		} elseif (isset($config['force']) === true) {
-			$force = $config['force'];
-		} else {
-			$force = false;
-		}
-
-		$object = null;
-		if (isset($data['body']) === true) {
-			$object = $data['body'];
-		}
-
-		// Set $object to a different variable becuase we might update $object with reference and want to keep what we send to synchronize.
+		$object = ($data['body'] ?? null);
+		// Kept apart because $object might be updated by reference, and the sent object must survive.
 		$sendObject = $object;
 
-		// If we have an objectIdPath, pull the id from the body and fetch the object from the database.
-		$fetchedObject = null;
+		$this->syncRuleDelay(config: $config, key: 'preDelay');
+		$fetchedObject = $this->syncRuleFetchedObject(config: $config, data: $data);
 
-		if (isset($config['synchronization']['preDelay']) === true && is_int($config['synchronization']['preDelay']) === true) {
-			sleep($config['synchronization']['preDelay']);
-		}
-
-		if (isset($config['synchronization']['objectIdPath']) === true) {
-			$dataDot = new Dot($data['body']);
-
-			$id = $dataDot->get($config['synchronization']['objectIdPath']);
-
-			if (filter_var(value: $id, filter: FILTER_VALIDATE_URL) !== false) {
-				$idExploded = explode(separator: '/', string: $id);
-				$id = end($idExploded);
-			}
-
-			$this->objectService->getOpenRegisters()->clearCurrents();
-			$fetchedObject = $this->objectService->getOpenRegisters()->find($id);
-			$foData = $fetchedObject->jsonSerialize();
-			$foData['synchronization_trigger'] = true;
-			$fetchedObject->setObject($foData);
-		}
-
-		// Run synchronization.
+		// The sourceConfig lives in the synchronization object's BODY: it is not
+		// an Entity column, so there is no getSourceConfig().
 		$mutationType = null;
-		// `getSynchronization()` returns an OpenRegister `ObjectEntity`, whose
-		// `sourceConfig` lives in the object BODY — it is not an Entity column,
-		// and `ObjectEntity` overrides no `__call`. The previous
-		// `$synchronization->getSourceConfig()` therefore always threw
-		// `BadFunctionCallException('sourceConfig is not a valid attribute')`
-		// from `Entity::getter()`, which `processRules()`'s `catch (Exception)`
-		// swallowed into a blanket HTTP 500 — i.e. EVERY `synchronization` rule
-		// on an endpoint 500'd, with the real cause hidden. Read the body the
-		// same way every other sourceConfig consumer in this codebase does
-		// (SynchronizationService reads `$synchronization['sourceConfig']`);
-		// this was the only `getSourceConfig()` call site in the app.
 		$sourceConfig = ($synchronization->getObject()['sourceConfig'] ?? []);
 		if (isset($sourceConfig['synchronizationType']) === true && $sourceConfig['synchronizationType'] === 'delete') {
 			$mutationType = 'delete';
@@ -4172,45 +4106,165 @@ class EndpointService implements EndpointServiceInterface {
 			'[EndpointService] processSyncRule synchronize complete syncId=' . $synchronization->getUuid()
 		);
 
-		// $object got updated through reference.
-		$returnedObject = $object;
+		$this->syncRuleDelay(config: $config, key: 'postDelay');
 
+		return $this->applySyncRuleResult(
+			config: $config,
+			result: ['data' => $data, 'sent' => $sendObject, 'returned' => $object, 'log' => $log]
+		);
+	}//end processSyncRule()
+
+	/**
+	 * The synchronization a synchronization rule names: by numeric id, else by reference.
+	 *
+	 * The rule's `synchronization` is the id itself, or an object carrying it under `synchronization`.
+	 *
+	 * @param ObjectEntity $rule   The rule.
+	 * @param array        $config The rule's configuration.
+	 *
+	 * @return ObjectEntity
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleSynchronization(ObjectEntity $rule, array $config): ObjectEntity {
+		$synchronizationId = $config['synchronization'];
+		if (is_array($config['synchronization']) === true && isset($config['synchronization']['synchronization']) === true) {
+			$synchronizationId = $config['synchronization']['synchronization'];
+		}
+
+		$this->logger->debug('[EndpointService] processSyncRule ruleId=' . $rule->getUuid() . ' synchronizationId=' . $synchronizationId);
+
+		if (is_numeric($synchronizationId) === true) {
+			$synchronization = $this->synchronizationService->getSynchronization(id: (int)$synchronizationId);
+		} else {
+			$synchronization = $this->synchronizationService->getSynchronization(filters: ['reference' => $synchronizationId]);
+		}
+
+		$this->logger->debug(
+			'[EndpointService] processSyncRule synchronization fetched id=' . $synchronization->getUuid()
+			. ' name=' . $synchronization->getName()
+		);
+
+		return $synchronization;
+	}//end syncRuleSynchronization()
+
+	/**
+	 * A synchronization rule flag: the first source that sets it (the request body, then the rule's configuration), else false.
+	 *
+	 * @param array  $sources Where to look, in order.
+	 * @param string $key     The flag.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleFlag(array $sources, string $key): mixed {
+		foreach ($sources as $source) {
+			if (isset($source[$key]) === true) {
+				return $source[$key];
+			}
+		}
+
+		return false;
+	}//end syncRuleFlag()
+
+	/**
+	 * Wait the whole seconds a synchronization rule configures under `preDelay` or `postDelay`.
+	 *
+	 * @param array  $config The rule's configuration.
+	 * @param string $key    'preDelay' or 'postDelay'.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleDelay(array $config, string $key): void {
+		if (isset($config['synchronization'][$key]) === true && is_int($config['synchronization'][$key]) === true) {
+			sleep($config['synchronization'][$key]);
+		}
+	}//end syncRuleDelay()
+
+	/**
+	 * The object to synchronize, fetched from OpenRegister by the id at the rule's `objectIdPath` in the body.
+	 *
+	 * A URL id is reduced to its last path segment; the fetched object is
+	 * marked as a synchronization trigger.
+	 *
+	 * @param array $config The rule's configuration.
+	 * @param array $data   The request data.
+	 *
+	 * @return ObjectEntity|null Null when the rule has no objectIdPath.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleFetchedObject(array $config, array $data): ?ObjectEntity {
+		if (isset($config['synchronization']['objectIdPath']) === false) {
+			return null;
+		}
+
+		$dataDot = new Dot($data['body']);
+		$id      = $dataDot->get($config['synchronization']['objectIdPath']);
+		if (filter_var(value: $id, filter: FILTER_VALIDATE_URL) !== false) {
+			$idExploded = explode(separator: '/', string: $id);
+			$id         = end($idExploded);
+		}
+
+		$this->objectService->getOpenRegisters()->clearCurrents();
+		$fetchedObject = $this->objectService->getOpenRegisters()->find($id);
+		$foData = $fetchedObject->jsonSerialize();
+		$foData['synchronization_trigger'] = true;
+		$fetchedObject->setObject($foData);
+
+		return $fetchedObject;
+	}//end syncRuleFetchedObject()
+
+	/**
+	 * The request data after a synchronization rule ran.
+	 *
+	 * Unless the rule retains the response, the body becomes the result merged
+	 * at the root (`mergeResultToKey: '#'`) or under a key, the result itself
+	 * (`overwriteObjectWithResult`), or the synchronization log.
+	 *
+	 * @param array $config The rule's configuration.
+	 * @param array $result The request data, the sent and returned objects and the log.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function applySyncRuleResult(array $config, array $result): array {
+		$data = $result['data'];
+		$retainResponse = false;
 		if (isset($config['synchronization']['retainResponse']) === true) {
 			$retainResponse = (bool)$config['synchronization']['retainResponse'];
-		} else {
-			$retainResponse = false;
 		}
 
-		if (isset($config['synchronization']['postDelay']) === true && is_int($config['synchronization']['postDelay']) === true) {
-			sleep($config['synchronization']['postDelay']);
+		if ($retainResponse === true) {
+			return $data;
 		}
 
-		if (isset($config['synchronizationConfig']['mergeResultToKey']) === true && $retainResponse === false) {
-			// Merge result to root send object.
-			if ($config['synchronizationConfig']['mergeResultToKey'] === '#') {
-				$data['body'] = array_merge($sendObject, $returnedObject);
-				// Merge result to configured key in send object.
-			} else {
-				$sendObject[$config['synchronizationConfig']['mergeResultToKey']] = $returnedObject;
-				$data['body'] = $sendObject;
+		$resultConfig = ($config['synchronizationConfig'] ?? []);
+		if (isset($resultConfig['mergeResultToKey']) === true) {
+			$sendObject = $result['sent'];
+			if ($resultConfig['mergeResultToKey'] === '#') {
+				$data['body'] = array_merge($sendObject, $result['returned']);
+				return $data;
 			}
 
-			// Overwrite body with result.
-		} elseif (isset($config['synchronizationConfig']['overwriteObjectWithResult']) === true
-			&& filter_var(
-				$config['synchronizationConfig']['overwriteObjectWithResult'],
-				FILTER_VALIDATE_BOOLEAN,
-				FILTER_NULL_ON_FAILURE
-			) === true
-			&& $retainResponse === false
+			$sendObject[$resultConfig['mergeResultToKey']] = $result['returned'];
+			$data['body'] = $sendObject;
+			return $data;
+		}
+
+		$data['body'] = $result['log'];
+		if (isset($resultConfig['overwriteObjectWithResult']) === true
+			&& filter_var($resultConfig['overwriteObjectWithResult'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
 		) {
-			$data['body'] = $returnedObject;
-		} elseif ($retainResponse === false) {
-			$data['body'] = $log;
-		}//end if
+			$data['body'] = $result['returned'];
+		}
 
 		return $data;
-	}//end processSyncRule()
+	}//end applySyncRuleResult()
 
 	/**
 	 * Processes a file part creation rule.
