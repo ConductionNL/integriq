@@ -36,6 +36,12 @@ use Twig\Error\SyntaxError;
 
 /**
  * Public operations of {@see SynchronizationService} that other components call.
+ *
+ * The method signatures repeat those of SynchronizationService unchanged, so the findings
+ * phpmd reports on them belong to that class and are suppressed here.
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 interface SynchronizationServiceInterface {
 	/**

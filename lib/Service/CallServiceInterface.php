@@ -29,6 +29,13 @@ use UnexpectedValueException;
 
 /**
  * Public operations of {@see CallService} that other components call.
+ *
+ * The method signatures repeat those of CallService unchanged, so the findings
+ * phpmd reports on them belong to that class and are suppressed here.
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 interface CallServiceInterface {
 	/**

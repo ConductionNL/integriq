@@ -33,6 +33,11 @@ use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Public operations of {@see EndpointService} that other components call.
+ *
+ * The method signatures repeat those of EndpointService unchanged, so the findings
+ * phpmd reports on them belong to that class and are suppressed here.
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 interface EndpointServiceInterface {
 	/**
