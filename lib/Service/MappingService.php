@@ -304,62 +304,44 @@ class MappingService implements MappingServiceInterface {
 	 * @throws LoaderError|SyntaxError Twig Exceptions.
 	 *
 	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MappingShape is a final set of pure steps on arrays; there is nothing to inject.
 	 */
 	public function executeMapping(OrMapping|ObjectEntity|array|string|int $mapping, array $input, bool $list = false): array {
 		$mapping = $this->normaliseMapping(mapping: $mapping);
 
 		if ($list === true) {
-			return $this->executeListMapping(mapping: $mapping, input: $input);
+			$list = [];
+			foreach (MappingShape::listItems(input: $input) as $key => $item) {
+				$list[$key] = $this->executeMapping(mapping: $mapping, input: $item);
+			}
+
+			return $list;
 		}
 
 		$dotArray = $this->mapToDot(mapping: $mapping, input: $input);
-		$this->applyUnsetsAndCasts(mapping: $mapping, dotArray: $dotArray);
+		MappingShape::removeUnsets(mapping: $mapping, dotArray: $dotArray);
+
+		// Cast values to a specific type: a list or a comma-separated string of casts, applied in order.
+		foreach (($mapping->getCast() ?? []) as $key => $cast) {
+			if ($dotArray->has($key) === false) {
+				continue;
+			}
+
+			if (is_array($cast) === false) {
+				$cast = explode(',', $cast);
+			}
+
+			foreach ($cast as $singleCast) {
+				$this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);
+			}
+		}
 
 		// Back to array.
 		$output = $this->encodeArrayKeys(array: $dotArray->all(), toReplace: '&#46;', replacement: '.');
 
-		return $this->rootLevelOutput(output: $output);
+		return MappingShape::rootLevelOutput(output: $output);
 	}//end executeMapping()
-
-	/**
-	 * Map every item of a list.
-	 *
-	 * A `listInput` key carries the list; the other input keys (but `value`)
-	 * are extra values merged into every item. An item that is not an array,
-	 * or any item when there are extra values, is mapped as the item's own
-	 * keys plus `value` (the item itself) plus the extra values.
-	 *
-	 * @param OrMapping $mapping The mapping recipe.
-	 * @param array     $input   The list, or `listInput` with extra values.
-	 *
-	 * @return array The mapped items, keyed as in the input list.
-	 *
-	 * @throws LoaderError|SyntaxError Twig Exceptions.
-	 *
-	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
-	 */
-	private function executeListMapping(OrMapping $mapping, array $input): array {
-		$list = [];
-		$extraValues = [];
-
-		if (array_key_exists('listInput', $input) === true) {
-			$extraValues = $input;
-			$input = $input['listInput'];
-			unset($extraValues['listInput'], $extraValues['value']);
-		}
-
-		foreach ($input as $key => $value) {
-			// Mapping function expects an array for $input, make sure we always pass an array to this function.
-			if (is_array($value) === false || empty($extraValues) === false) {
-				// Todo: we want to remove ['value' => $value] from this at some point, for now required for DOWR to work.
-				$value = array_merge((array)$value, ['value' => $value], $extraValues);
-			}
-
-			$list[$key] = $this->executeMapping(mapping: $mapping, input: $value);
-		}
-
-		return $list;
-	}//end executeListMapping()
 
 	/**
 	 * Apply a mapping's key => value pairs to one input.
@@ -407,69 +389,6 @@ class MappingService implements MappingServiceInterface {
 
 		return $dotArray;
 	}//end mapToDot()
-
-	/**
-	 * Remove a mapping's `unset` keys, then apply its casts to the keys that exist.
-	 *
-	 * A cast is a list or a comma-separated string of casts, applied in order.
-	 *
-	 * @param OrMapping $mapping  The mapping recipe.
-	 * @param Dot       $dotArray The mapped values; changed in place.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
-	 */
-	private function applyUnsetsAndCasts(OrMapping $mapping, Dot $dotArray): void {
-		foreach (($mapping->getUnset() ?? []) as $unset) {
-			if ($dotArray->has($unset) === true) {
-				$dotArray->delete($unset);
-			}
-		}
-
-		foreach (($mapping->getCast() ?? []) as $key => $cast) {
-			if ($dotArray->has($key) === false) {
-				continue;
-			}
-
-			if (is_array($cast) === false) {
-				$cast = explode(',', $cast);
-			}
-
-			foreach ($cast as $singleCast) {
-				$this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);
-			}
-		}
-	}//end applyUnsetsAndCasts()
-
-	/**
-	 * Unwrap an output whose only key is `#`: the mapping wrote the object at root level.
-	 *
-	 * The root value is returned when it is an array, as an empty array when it
-	 * is null, and wrapped in a list otherwise.
-	 *
-	 * @param array $output The mapped output.
-	 *
-	 * @return array The output.
-	 *
-	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
-	 */
-	private function rootLevelOutput(array $output): array {
-		if (array_keys($output) !== ['#']) {
-			return $output;
-		}
-
-		$rootValue = $output['#'];
-		if ($rootValue === null) {
-			return [];
-		}
-
-		if (is_array($rootValue) === true) {
-			return $rootValue;
-		}
-
-		return [$rootValue];
-	}//end rootLevelOutput()
 
 	/**
 	 * Handles a single cast.
