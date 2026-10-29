@@ -223,7 +223,7 @@ class RosterDeliveryServiceTest extends TestCase {
 	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-adapter-can-be-constructed-on-an-instance-req-006
 	 */
 	public function testApplicationBindsTheClientAndRegistersTheListener(): void {
-		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/AppInfo/Application.php');
+		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/Adapters/AdaptersRegistrar.php');
 
 		$this->assertMatchesRegularExpression(
 			'/registerService\(\s*RosterImportClient::class,\s*static function \(\$c\) \{\s*return \$c->get\(RosterImportClientMock::class\);/',
@@ -231,7 +231,7 @@ class RosterDeliveryServiceTest extends TestCase {
 		);
 		$this->assertMatchesRegularExpression(
 			'/registerEventListener\(\s*RosterImportRequestedEvent::class,\s*RosterImportRequestedListener::class\s*\)/',
-			$source
+			(string)file_get_contents(__DIR__ . '/../../../../lib/EventListener/EventListenerRegistrar.php')
 		);
 	}//end testApplicationBindsTheClientAndRegistersTheListener()
 }//end class
