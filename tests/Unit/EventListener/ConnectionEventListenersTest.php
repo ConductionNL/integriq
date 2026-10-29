@@ -23,6 +23,7 @@ use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
 use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
 use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\App\Events\AppDisableEvent;
 use OCP\App\Events\AppEnableEvent;
 use OCP\EventDispatcher\Event;
@@ -62,7 +63,7 @@ class ConnectionEventListenersTest extends TestCase {
 			return $container;
 		}
 
-		$container->method('get')->with(ConnectionRegistryService::class)->willReturn($registry);
+		$container->method('get')->with(ConnectionRegistryServiceInterface::class)->willReturn($registry);
 		return $container;
 	}//end container()
 

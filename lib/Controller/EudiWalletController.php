@@ -34,7 +34,7 @@ use OCA\Integriq\Exception\EudiIssuanceException;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EudiCredentialOfferServiceInterface;
 use OCA\Integriq\Service\EudiIssuerKeyService;
-use OCA\Integriq\Service\EudiStatusListService;
+use OCA\Integriq\Service\EudiStatusListServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -85,7 +85,7 @@ class EudiWalletController extends Controller {
 	 * @param IRequest $request The current request.
 	 * @param EudiCredentialOfferServiceInterface $offerService Offer/token/credential/revocation lifecycle.
 	 * @param EudiIssuerKeyService $keyService Issuer signing-key service (metadata JWKS).
-	 * @param EudiStatusListService $statusListService Status-list token publish.
+	 * @param EudiStatusListServiceInterface $statusListService Status-list token publish.
 	 * @param OpenRegisterCredentialBridge $authorizationService Reused consumer JWT bearer verification (REQ-001).
 	 * @param IThrottler $throttler Brute-force throttler for rejected credential presentations.
 	 * @param LoggerInterface $logger Logger for protocol-level rejections.
@@ -95,7 +95,7 @@ class EudiWalletController extends Controller {
 		IRequest $request,
 		private readonly EudiCredentialOfferServiceInterface $offerService,
 		private readonly EudiIssuerKeyService $keyService,
-		private readonly EudiStatusListService $statusListService,
+		private readonly EudiStatusListServiceInterface $statusListService,
 		private readonly OpenRegisterCredentialBridge $authorizationService,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
@@ -359,6 +359,10 @@ class EudiWalletController extends Controller {
 	 *                      generic 404 when not found/expired/consumed.
 	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-resolution-is-public-single-fetch-short-ttl-req-eudi-005
+	 * @no-admin-idor-exempt OpenID4VCI credential_offer_uri, fetched by a wallet with no Nextcloud session. The
+	 *                       offer uuid is the bearer capability: EudiCredentialOfferService::resolveOfferForWallet()
+	 *                       answers it once (offerFetchedAt), only before expiresAt and while the pre-authorized
+	 *                       code is still cached, and never for a revoked offer; brute force is throttled.
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]

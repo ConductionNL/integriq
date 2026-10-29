@@ -56,7 +56,7 @@ use Throwable;
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
-class SmsDispatchService {
+class SmsDispatchService implements SmsDispatchServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding SMS sources and messages.

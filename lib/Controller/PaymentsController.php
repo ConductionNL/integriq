@@ -30,7 +30,7 @@ namespace OCA\Integriq\Controller;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\PaymentProviderException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\PaymentIntentService;
+use OCA\Integriq\Service\PaymentIntentServiceInterface;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -59,7 +59,7 @@ class PaymentsController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param PaymentIntentService $paymentIntentService Create + webhook business logic.
+	 * @param PaymentIntentServiceInterface $paymentIntentService Create + webhook business logic.
 	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.
 	 * @param IUserSession $userSession The user session (create endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -69,7 +69,7 @@ class PaymentsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PaymentIntentService $paymentIntentService,
+		private readonly PaymentIntentServiceInterface $paymentIntentService,
 		private readonly WebhookSignatureService $signatureService,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,
