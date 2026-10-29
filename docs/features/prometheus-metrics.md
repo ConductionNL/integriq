@@ -176,7 +176,7 @@ Each `tableCount` metric descriptor is evaluated independently by the engine. If
 - **Manifest**: `src/manifest.json` — `observability.health.checks[]` + `observability.metrics[]`, the source of truth for both endpoints.
 - **Engine**: OpenRegister's `AppHost\Observability\*` (`ManifestLoader`, `HealthCheckExecutor`, `MetricsEngine`) and `AppHost\Controller\GenericHealthController`/`GenericMetricsController`.
 - **Thin app-namespace adapters**: `lib/Controller/HealthController.php`, `lib/Controller/MetricsController.php` — resolve the engine collaborators scoped to `appName=integriq` and carry the route-level auth posture (`#[PublicPage]` on health, admin-only on metrics); no metric/health logic of their own.
-- **Wiring**: `lib/Controller/ControllerRegistrar.php` (health and metrics controllers) and `lib/Observability/ObservabilityRegistrar.php` (the metrics provider).
+- **Wiring**: `lib/AppInfo/Application.php::registerAppHostObservability()` (health and metrics controllers) and `lib/Observability/ObservabilityRegistrar.php` (the metrics provider).
 - **Routes**: `appinfo/routes.php` (`health#index`, `metrics#index` — URLs unchanged).
 - **Spec**: `openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md`.
 - **Contract tests**: `tests/integration/integriq.postman_collection.json` (folder "11. Observability (AppHost health/metrics)"), run via `tests/integration/run-newman.sh`.

@@ -142,8 +142,6 @@
 	"context.registerService(OCA\\Integriq\\Gateway\\GatewayRegistry, closure, bool)",
 	"context.registerServiceAlias(OCA\\Integriq\\Gateway\\GatewayTransport, OCA\\Integriq\\Gateway\\SourceGatewayTransport)",
 	"context.registerService(OCA\\OpenRegister\\Mcp\\IMcpScannableServices::integriq, closure, bool)",
-	"context.registerService(OCA\\Integriq\\Controller\\HealthController, closure, bool)",
-	"context.registerService(OCA\\Integriq\\Controller\\MetricsController, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Controller\\GenericPreferencesController, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Settings\\IntegriqAdmin, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Sections\\IntegriqAdmin, closure, bool)",
@@ -197,6 +195,8 @@
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent, OCA\\Integriq\\Flow\\FlowNodeListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Service\\RegisterMappingFunctionsEvent, OCA\\Integriq\\Listener\\MappingFunctionRegistrationListener, int)",
 	"dispatcher.addListener(OCP\\AppFramework\\Http\\Events\\BeforeTemplateRenderedEvent, closure, int)",
+	"context.registerService(OCA\\Integriq\\Controller\\HealthController, closure, bool)",
+	"context.registerService(OCA\\Integriq\\Controller\\MetricsController, closure, bool)",
 	"context.registerService(OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService, closure, bool)",
 	"context.registerCapability(OCA\\Integriq\\Capabilities)",
 	"context.registerServiceAlias(OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface, OCA\\OpenRegister\\Service\\RegisterSlugResolver)"

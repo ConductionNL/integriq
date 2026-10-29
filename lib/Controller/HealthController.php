@@ -20,7 +20,7 @@
  * OpenRegister class.
  *
  * The constructor + delegate wiring is registered in
- * {@see \OCA\Integriq\Controller\ControllerRegistrar}.
+ * {@see \OCA\Integriq\AppInfo\Application::registerAppHostObservability()}.
  *
  * @category Controller
  * @package  OCA\Integriq\Controller
