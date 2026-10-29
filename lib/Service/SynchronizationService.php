@@ -48,6 +48,7 @@ use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Synchronization\ContractRun;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
+use OCA\Integriq\Service\Synchronization\FetchedFile;
 use OCA\Integriq\Service\Synchronization\SourcePage;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\Synchronization\ItemRun;
@@ -11016,188 +11017,290 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?string $published = null,
 		int|string|null $registerId = null,
 	): string {
-		$originalEndpoint = $prepared['originalEndpoint'];
-		$config = $prepared['config'];
-		$useSink = $prepared['useSink'];
-		$sinkPath = $prepared['sinkPath'];
-
-		$result = $callLog;
-		$response = $this->callLogResponse(callLog: $callLog);
-		$sink = null;
+		$file = new FetchedFile(prepared: $prepared, callLog: $callLog);
+		$file->response   = $this->callLogResponse(callLog: $callLog);
+		$file->objectId   = $objectId;
+		$file->tags       = $tags;
+		$file->filename   = $filename;
+		$file->published  = $published;
+		$file->registerId = $registerId;
 
 		try {
-			// Open OUR OWN read handle on the downloaded temp file. Guzzle has by
-			// now closed the handle it opened for the path, so nothing is shared.
-			if ($useSink === true) {
-				$sink = fopen($sinkPath, 'r');
-				if ($sink === false) {
-					throw new Exception("Could not reopen streamed download for {$originalEndpoint}");
-				}
+			$this->readFetchedFile(file: $file);
+
+			if (isset($file->config['write']) === true && $file->config['write'] === false) {
+				return $this->encodeFetchedFile(file: $file);
 			}
 
-			// Check if response is valid (status/headers are recorded even when the
-			// body streamed to the sink).
-			if ($response === null) {
-				throw new Exception("Failed to fetch file from endpoint: {$originalEndpoint}. No response received.");
-			}
+			$this->resolveFetchedFileTarget(file: $file);
+			$this->storeFetchedFile(file: $file);
 
-			$body = null;
-			$content = null;
-			if ($useSink === false) {
-				$body = $response['body'];
-
-				if (($decodedBody = json_decode(json: $body, associative: true)) !== null
-					&& $this->getHeaderValue(headers: ($response['headers'] ?? []), name: 'Content-Disposition') === null
-				) {
-					$body = $decodedBody;
-				} elseif (($decodedBody = base64_decode(string: $body, strict: true)) !== false) {
-					$body = $decodedBody;
-				}
-
-				if (isset($config['contentPath']) === true && empty($config['contentPath']) === false) {
-					$content = base64_decode((new Dot($body))->get($config['contentPath']));
-				}
-
-				if (isset($config['filenamePath']) === true && empty($config['filenamePath']) === false) {
-					$filename = (new Dot($body))->get($config['filenamePath']);
-				}
-			}//end if
-
-			if (isset($config['fileExtension']) === true && empty($config['fileExtension']) === false) {
-				$filename = $filename . $config['fileExtension'];
-			}
-
-			if (isset($config['write']) === true && $config['write'] === false) {
-				if ($useSink === true) {
-					rewind($sink);
-					return base64_encode((string)stream_get_contents($sink));
-				}
-
-				return base64_encode($body);
-			}
-
-			if ($filename === null) {
-				// Get a filename from the response. First try to do this using the Content-Disposition header.
-				$filename = $this->getFilenameFromHeaders(response: $response, result: $result);
-			}
-
-			if ($filename === null) {
-				throw new Exception("Could not write file from endpoint {$originalEndpoint}: no filename could be determined");
-			}
-
-			// Validate objectId format (should be a UUID).
-			if (empty($objectId) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $objectId) !== 1) {
-				throw new Exception("Invalid object ID format: {$objectId}. Expected a valid UUID.");
-			}
-
-			$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-
-			// Resolve the content handed to FileService: the streamed resource on the
-			// binary path (rewound first), otherwise the decoded string body.
-			if ($useSink === true) {
-				rewind($sink);
-				$saveContent = $sink;
-				$addContent = $sink;
-			} else {
-				$saveContent = ($content ?? $body);
-				$addContent = $response['body'];
-			}
-
-			if (empty($tags) === false && isset($config['autoShare']) === true) {
-				$shouldShare = $config['autoShare'];
-			} else {
-				$shouldShare = false;
-			}
-
-			// Determine if file should be published based on the published parameter.
-			$shouldPublish = $this->shouldPublishFile(published: $published);
-
-			try {
-				$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-				$objectEntity = $objectService->find(id: $objectId);
-				$file = $fileService->saveFile(
-					objectEntity: $objectEntity,
-					fileName: $filename,
-					content: $saveContent,
-					share: $shouldShare,
-					tags: $tags
-				);
-
-				// Publish the file if needed.
-				if ($shouldPublish === true && $file !== null) {
-					try {
-						$fileService->publishFile(object: $objectEntity, file: $filename);
-					} catch (Exception $e) {
-						// Log but don't fail the entire operation.
-						$this->logger->warning("Failed to publish file {$filename} for object {$objectId}: " . $e->getMessage(), ['exception' => $e]);
-					}
-				}
-			} catch (DoesNotExistException $exception) {
-				// If the object cannot be found, continue with register/schema/objectId combination.
-				$register = $config['register'] ?? null;
-				$schema = $config['schema'] ?? null;
-
-				$addFileShare = false;
-				if (isset($config['autoShare']) === true) {
-					$addFileShare = $config['autoShare'];
-				}
-
-				// Rewind the sink so addFile reads the full streamed body from the start.
-				if ($useSink === true) {
-					rewind($sink);
-				}
-
-				$file = $fileService->addFile(
-					objectEntity: $objectId,
-					fileName: $filename,
-					content: $addContent,
-					share: $addFileShare,
-					tags: $tags,
-					_schema: $schema,
-					_register: $register,
-					registerId: $registerId
-				);
-
-				// For the addFile case, we'll need to get the object entity to publish.
-				if ($shouldPublish === true && $file !== null) {
-					try {
-						$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-						$objectEntity = $objectService->find(id: $objectId);
-						$fileService->publishFile(object: $objectEntity, file: $filename);
-					} catch (Exception $e) {
-						// Log but don't fail the entire operation.
-						$this->logger->warning("Failed to publish file {$filename} for object {$objectId}: " . $e->getMessage(), ['exception' => $e]);
-					}
-				}
-			} catch (Exception $e) {
-				throw new Exception("Failed to save file {$filename} for object {$objectId}: " . $e->getMessage());
-			}//end try
-
-			return $originalEndpoint;
+			return $file->originalEndpoint;
 		} finally {
-			// Always release the disk-backed temp handle on the streamed path.
-			//
+			$filename = $file->filename;
+
 			// Guard on is_resource(), NOT on `!== null`: once the handle has been
 			// handed to FileService::saveFile()/addFile() the write side streams
 			// it via OCP\Files\File::putContent(), which CLOSES the source stream
-			// itself. `$sink` is then a still-non-null but already-closed handle,
-			// so the old `!== null` guard called fclose() a second time and threw
-			// "fclose(): supplied resource is not a valid stream resource" — a
-			// TypeError on PHP 8, which propagated out of fetchFile, was caught by
-			// the per-item \Throwable handler in synchronizeExternToIntern() and
-			// silently tallied EVERY streamed item as `invalid`. is_resource()
-			// returns false for a closed handle, making this release idempotent
-			// regardless of whether the write side already consumed it.
+			// itself. A second fclose() on that closed handle throws a TypeError
+			// that the per-item handler in synchronizeExternToIntern() would tally
+			// as `invalid`.
 			//
 			// The temp FILE is released by releaseFileFetch() rather than here:
 			// the concurrent path calls this save phase from a promise callback
 			// and must unlink on the rejected leg too, where this method never
 			// runs at all.
-			if (is_resource($sink) === true) {
-				fclose($sink);
+			if (is_resource($file->sink) === true) {
+				fclose($file->sink);
 			}
 		}//end try
 	}//end saveFetchedFile()
+
+	/**
+	 * Open the read handle on a streamed download, check the response, and decode
+	 * the call log's body and the configured file extension.
+	 *
+	 * Opens OUR OWN read handle on the downloaded temp file: Guzzle has by now
+	 * closed the handle it opened for the path, so nothing is shared.
+	 *
+	 * @param FetchedFile $file The file being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the streamed download cannot be reopened or there is no response.
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 */
+	private function readFetchedFile(FetchedFile $file): void {
+		if ($file->useSink === true) {
+			$file->sink = fopen($file->prepared['sinkPath'], 'r');
+			if ($file->sink === false) {
+				throw new Exception("Could not reopen streamed download for {$file->originalEndpoint}");
+			}
+		}
+
+		// Status and headers are recorded even when the body streamed to the sink.
+		if ($file->response === null) {
+			throw new Exception("Failed to fetch file from endpoint: {$file->originalEndpoint}. No response received.");
+		}
+
+		if ($file->useSink === false) {
+			$this->decodeFetchedBody(file: $file);
+		}
+
+		if (isset($file->config['fileExtension']) === true && empty($file->config['fileExtension']) === false) {
+			$file->filename = $file->filename . $file->config['fileExtension'];
+		}
+	}//end readFetchedFile()
+
+	/**
+	 * Decode the call log's body (JSON, else strict base64) and read the content
+	 * and file name from the configured paths into it.
+	 *
+	 * @param FetchedFile $file The file being saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 */
+	private function decodeFetchedBody(FetchedFile $file): void {
+		$file->body = $file->response['body'];
+
+		$decodedJson = json_decode(json: $file->body, associative: true);
+		if ($decodedJson !== null
+			&& $this->getHeaderValue(headers: ($file->response['headers'] ?? []), name: 'Content-Disposition') === null
+		) {
+			$file->body = $decodedJson;
+		} else {
+			$decodedBase64 = base64_decode(string: $file->body, strict: true);
+			if ($decodedBase64 !== false) {
+				$file->body = $decodedBase64;
+			}
+		}
+
+		if (isset($file->config['contentPath']) === true && empty($file->config['contentPath']) === false) {
+			$file->content = base64_decode((new Dot($file->body))->get($file->config['contentPath']));
+		}
+
+		if (isset($file->config['filenamePath']) === true && empty($file->config['filenamePath']) === false) {
+			$file->filename = (new Dot($file->body))->get($file->config['filenamePath']);
+		}
+	}//end decodeFetchedBody()
+
+	/**
+	 * The download base64 encoded, for an action that does not write the file.
+	 *
+	 * @param FetchedFile $file The file being saved.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 */
+	private function encodeFetchedFile(FetchedFile $file): string {
+		if ($file->useSink === true) {
+			rewind($file->sink);
+			return base64_encode((string)stream_get_contents($file->sink));
+		}
+
+		return base64_encode($file->body);
+	}//end encodeFetchedFile()
+
+	/**
+	 * Settle the file name (from the response headers when none is set yet) and
+	 * check the object id is a UUID.
+	 *
+	 * @param FetchedFile $file The file being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When no file name can be determined or the object id is not a UUID.
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 */
+	private function resolveFetchedFileTarget(FetchedFile $file): void {
+		if ($file->filename === null) {
+			$file->filename = $this->getFilenameFromHeaders(response: $file->response, result: $file->callLog);
+		}
+
+		if ($file->filename === null) {
+			throw new Exception("Could not write file from endpoint {$file->originalEndpoint}: no filename could be determined");
+		}
+
+		if (empty($file->objectId) === true
+			|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $file->objectId) !== 1
+		) {
+			throw new Exception("Invalid object ID format: {$file->objectId}. Expected a valid UUID.");
+		}
+	}//end resolveFetchedFileTarget()
+
+	/**
+	 * Store the file on its object through OpenRegister's FileService, or add it
+	 * by object id when the object cannot be found, and publish it when asked.
+	 *
+	 * @param FetchedFile $file The file being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the file cannot be saved.
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 */
+	private function storeFetchedFile(FetchedFile $file): void {
+		$file->fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+
+		// The streamed resource on the binary path (rewound first), otherwise the decoded string body.
+		if ($file->useSink === true) {
+			rewind($file->sink);
+		}
+
+		try {
+			$this->saveFetchedFileOnObject(file: $file);
+		} catch (DoesNotExistException $exception) {
+			$this->addFetchedFileById(file: $file);
+		} catch (Exception $e) {
+			throw new Exception("Failed to save file {$file->filename} for object {$file->objectId}: " . $e->getMessage());
+		}
+	}//end storeFetchedFile()
+
+	/**
+	 * Save the file on the object found by its id.
+	 *
+	 * @param FetchedFile $file The file being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When the object does not exist.
+	 * @throws Exception When OpenRegister cannot find the object or store the file.
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 */
+	private function saveFetchedFileOnObject(FetchedFile $file): void {
+		$shouldShare = false;
+		if (empty($file->tags) === false && isset($file->config['autoShare']) === true) {
+			$shouldShare = $file->config['autoShare'];
+		}
+
+		$saveContent = $file->sink;
+		if ($file->useSink === false) {
+			$saveContent = ($file->content ?? $file->body);
+		}
+
+		$objectService      = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+		$file->objectEntity = $objectService->find(id: $file->objectId);
+		$stored = $file->fileService->saveFile(
+			objectEntity: $file->objectEntity,
+			fileName: $file->filename,
+			content: $saveContent,
+			share: $shouldShare,
+			tags: $file->tags
+		);
+
+		if ($stored !== null) {
+			$this->publishFetchedFile(file: $file);
+		}
+	}//end saveFetchedFileOnObject()
+
+	/**
+	 * Add the file by object id, register and schema when the object was not found.
+	 *
+	 * @param FetchedFile $file The file being saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 */
+	private function addFetchedFileById(FetchedFile $file): void {
+		$file->objectEntity = null;
+		$addContent = $file->response['body'];
+		if ($file->useSink === true) {
+			// Rewind the sink so addFile reads the full streamed body from the start.
+			rewind($file->sink);
+			$addContent = $file->sink;
+		}
+
+		$stored = $file->fileService->addFile(
+			objectEntity: $file->objectId,
+			fileName: $file->filename,
+			content: $addContent,
+			share: ($file->config['autoShare'] ?? false),
+			tags: $file->tags,
+			_schema: ($file->config['schema'] ?? null),
+			_register: ($file->config['register'] ?? null),
+			registerId: $file->registerId
+		);
+
+		if ($stored !== null) {
+			$this->publishFetchedFile(file: $file);
+		}
+	}//end addFetchedFileById()
+
+	/**
+	 * Publish a stored file when the object's published status asks for it.
+	 *
+	 * A failure is logged, not thrown: the file itself is stored.
+	 *
+	 * @param FetchedFile $file The file being saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+	 */
+	private function publishFetchedFile(FetchedFile $file): void {
+		if ($this->shouldPublishFile(published: $file->published) === false) {
+			return;
+		}
+
+		try {
+			if ($file->objectEntity === null) {
+				$objectService      = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+				$file->objectEntity = $objectService->find(id: $file->objectId);
+			}
+
+			$file->fileService->publishFile(object: $file->objectEntity, file: $file->filename);
+		} catch (Exception $e) {
+			$this->logger->warning("Failed to publish file {$file->filename} for object {$file->objectId}: " . $e->getMessage(), ['exception' => $e]);
+		}
+	}//end publishFetchedFile()
 
 	/**
 	 * Convert a JSON target payload to multipart/form-data when fileUpload is configured.
