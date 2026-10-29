@@ -3879,6 +3879,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				object: $object,
 				log: $log,
 				flowToken: $flowToken,
+				isTest: $isTest,
 				force: $force,
 				mutationType: $mutationType,
 				trace: $trace,
