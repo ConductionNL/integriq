@@ -2481,7 +2481,7 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		return new JSONResponse(
-			$callLogData['response'] ?? [],
+			(new EndpointProxiedAnswer())->forCaller(response: (array)($callLogData['response'] ?? [])),
 			$callLogData['statusCode'] ?? 200
 		);
 	}//end handleSourceRequest()
