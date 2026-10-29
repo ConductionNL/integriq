@@ -19,15 +19,55 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\ApprovalServiceInterface;
+use OCA\Integriq\Service\BankfeedSyncService;
+use OCA\Integriq\Service\BankfeedSyncServiceInterface;
+use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\BrokeredCallServiceInterface;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\CatalogRegistryService;
+use OCA\Integriq\Service\CatalogRegistryServiceInterface;
+use OCA\Integriq\Service\ConfigurationService;
+use OCA\Integriq\Service\ConfigurationServiceInterface;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EndpointServiceInterface;
+use OCA\Integriq\Service\EudiCredentialOfferService;
+use OCA\Integriq\Service\EudiCredentialOfferServiceInterface;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\FlowRunnerServiceInterface;
+use OCA\Integriq\Service\IBabsConnectorService;
+use OCA\Integriq\Service\IBabsConnectorServiceInterface;
+use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Service\JobServiceInterface;
+use OCA\Integriq\Service\JobToFlowGenerator;
+use OCA\Integriq\Service\JobToFlowGeneratorInterface;
+use OCA\Integriq\Service\KissSyncService;
+use OCA\Integriq\Service\KissSyncServiceInterface;
+use OCA\Integriq\Service\Lti\LtiLaunchService;
+use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
+use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\MappingServiceInterface;
+use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
+use OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface;
+use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\Integriq\Service\NotificatiesSubscriberServiceInterface;
+use OCA\Integriq\Service\PromotionService;
+use OCA\Integriq\Service\PromotionServiceInterface;
+use OCA\Integriq\Service\RuleToFlowGenerator;
+use OCA\Integriq\Service\RuleToFlowGeneratorInterface;
 use OCA\Integriq\Service\ServiceRegistrar;
+use OCA\Integriq\Service\StufZknSyncService;
+use OCA\Integriq\Service\StufZknSyncServiceInterface;
+use OCA\Integriq\Service\SynchronizationFlowGenerator;
+use OCA\Integriq\Service\SynchronizationFlowGeneratorInterface;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
+use OCA\Integriq\Service\UserService;
+use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 
@@ -40,6 +80,26 @@ class ServiceRegistrarTest extends TestCase {
 		EndpointServiceInterface::class        => EndpointService::class,
 		EventServiceInterface::class           => EventService::class,
 		SynchronizationServiceInterface::class => SynchronizationService::class,
+		ConfigurationServiceInterface::class => ConfigurationService::class,
+		BrokeredCallServiceInterface::class => BrokeredCallService::class,
+		LegacyToRegisterMigratorInterface::class => LegacyToRegisterMigrator::class,
+		EudiCredentialOfferServiceInterface::class => EudiCredentialOfferService::class,
+		MappingServiceInterface::class => MappingService::class,
+		ApprovalServiceInterface::class => ApprovalService::class,
+		BankfeedSyncServiceInterface::class => BankfeedSyncService::class,
+		LtiLaunchServiceInterface::class => LtiLaunchService::class,
+		IBabsConnectorServiceInterface::class => IBabsConnectorService::class,
+		JobServiceInterface::class => JobService::class,
+		CatalogRegistryServiceInterface::class => CatalogRegistryService::class,
+		UserServiceInterface::class => UserService::class,
+		NotificatiesSubscriberServiceInterface::class => NotificatiesSubscriberService::class,
+		SynchronizationFlowGeneratorInterface::class => SynchronizationFlowGenerator::class,
+		PromotionServiceInterface::class => PromotionService::class,
+		StufZknSyncServiceInterface::class => StufZknSyncService::class,
+		RuleToFlowGeneratorInterface::class => RuleToFlowGenerator::class,
+		FlowRunnerServiceInterface::class => FlowRunnerService::class,
+		KissSyncServiceInterface::class => KissSyncService::class,
+		JobToFlowGeneratorInterface::class => JobToFlowGenerator::class,
 	];
 
 	/**

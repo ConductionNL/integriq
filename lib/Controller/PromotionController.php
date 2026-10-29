@@ -3,7 +3,7 @@
 /**
  * Integriq promotion controller.
  *
- * Thin, routed wrapper over {@see \OCA\Integriq\Service\PromotionService}
+ * Thin, routed wrapper over {@see PromotionServiceInterface}
  * (environments-and-promotion REQ-002/REQ-003/REQ-005/REQ-006). Both the
  * preview and confirm endpoints are gated by the ADR-023 `environment.promote`
  * action key — distinct from `environment.manage`, which gates
@@ -30,7 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\PromotionService;
+use OCA\Integriq\Service\PromotionServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -56,7 +56,7 @@ class PromotionController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param PromotionService $promotionService The promotion orchestration service.
+	 * @param PromotionServiceInterface $promotionService The promotion orchestration service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -66,7 +66,7 @@ class PromotionController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly PromotionService $promotionService,
+		private readonly PromotionServiceInterface $promotionService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

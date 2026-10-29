@@ -22,7 +22,7 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\Integriq\Service\SourceMappingService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Contract\RegisterSlugResolution;
@@ -74,7 +74,7 @@ class MappingsController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param MappingService $mappingService The mapping service.
+	 * @param MappingServiceInterface $mappingService The mapping service.
 	 * @param SourceMappingService $objectService The object service (OC).
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
@@ -85,7 +85,7 @@ class MappingsController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly MappingService $mappingService,
+		private readonly MappingServiceInterface $mappingService,
 		private readonly SourceMappingService $objectService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,

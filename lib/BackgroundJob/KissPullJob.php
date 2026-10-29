@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\KissSyncService;
+use OCA\Integriq\Service\KissSyncServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -57,14 +57,14 @@ class KissPullJob extends TimedJob {
 	 * KissPullJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param KissSyncService $syncService The KISS sync service.
+	 * @param KissSyncServiceInterface $syncService The KISS sync service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly KissSyncService $syncService,
+		private readonly KissSyncServiceInterface $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

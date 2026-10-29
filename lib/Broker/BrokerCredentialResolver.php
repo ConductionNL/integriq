@@ -30,7 +30,7 @@ namespace OCA\Integriq\Broker;
 
 use OCA\Integriq\Broker\Transport\RabbitMqHttpTransport;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
-use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\BrokeredCallServiceInterface;
 
 /**
  * Resolves a broker subscription's credential reference into the transport's settings.
@@ -42,10 +42,10 @@ class BrokerCredentialResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param BrokeredCallService $brokeredCalls The inject-only credential lookup sources use.
+	 * @param BrokeredCallServiceInterface $brokeredCalls The inject-only credential lookup sources use.
 	 */
 	public function __construct(
-		private readonly BrokeredCallService $brokeredCalls,
+		private readonly BrokeredCallServiceInterface $brokeredCalls,
 	) {
 	}//end __construct()
 

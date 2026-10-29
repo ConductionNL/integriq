@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class UserService {
+class UserService implements UserServiceInterface {
 	/**
 	 * UserService constructor
 	 *

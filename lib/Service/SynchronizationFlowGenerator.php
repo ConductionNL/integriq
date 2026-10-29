@@ -131,7 +131,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#3-migration--deprecation
  */
-class SynchronizationFlowGenerator {
+class SynchronizationFlowGenerator implements SynchronizationFlowGeneratorInterface {
 
 	/**
 	 * The item key the fetched page is written under.

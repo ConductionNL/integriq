@@ -93,7 +93,7 @@ use OCP\IUserManager;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#3-migration--deprecation
  */
-class JobToFlowGenerator {
+class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 
 	/**
 	 * The item key the synchronization result is written under.

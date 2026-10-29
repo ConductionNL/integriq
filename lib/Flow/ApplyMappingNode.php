@@ -56,7 +56,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -90,14 +90,14 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	/**
 	 * Constructor.
 	 *
-	 * @param MappingService $mappingService The existing transformation engine.
+	 * @param MappingServiceInterface $mappingService The existing transformation engine.
 	 * @param FlowOwner $flowOwner Fail-closed run-owner resolution.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
 	 */
 	public function __construct(
-		private readonly MappingService $mappingService,
+		private readonly MappingServiceInterface $mappingService,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,

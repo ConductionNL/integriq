@@ -93,7 +93,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#3-migration--deprecation
  */
-class RuleToFlowGenerator {
+class RuleToFlowGenerator implements RuleToFlowGeneratorInterface {
 
 	/**
 	 * The item key the synchronization result is written under.

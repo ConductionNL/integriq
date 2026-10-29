@@ -59,7 +59,7 @@ use Psr\Container\NotFoundExceptionInterface;
  * @spec openspec/specs/job-scheduling/spec.md
  * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
  */
-class JobService {
+class JobService implements JobServiceInterface {
 
 	/**
 	 * Retention (ms) applied to error JobLogs.

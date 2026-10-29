@@ -22,7 +22,7 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Service\JobServiceInterface;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -55,7 +55,7 @@ class JobsController extends Controller {
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param OrObjectService $orObjectService The OR object service.
-	 * @param JobService $jobService The job service (used by run/test action methods).
+	 * @param JobServiceInterface $jobService The job service (used by run/test action methods).
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -66,7 +66,7 @@ class JobsController extends Controller {
 		$appName,
 		IRequest $request,
 		private OrObjectService $orObjectService,
-		private JobService $jobService,
+		private JobServiceInterface $jobService,
 		private IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

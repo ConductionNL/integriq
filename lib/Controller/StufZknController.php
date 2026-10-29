@@ -43,7 +43,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\StufZknSyncService;
+use OCA\Integriq\Service\StufZknSyncServiceInterface;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
@@ -85,7 +85,7 @@ class StufZknController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param StufZknSyncService $syncService Inbound/outbound orchestration logic.
+	 * @param StufZknSyncServiceInterface $syncService Inbound/outbound orchestration logic.
 	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
 	 * @param ActionAuthService $actionAuth The action authorization service.
@@ -96,7 +96,7 @@ class StufZknController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly StufZknSyncService $syncService,
+		private readonly StufZknSyncServiceInterface $syncService,
 		private readonly WebhookGate $gate,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthService $actionAuth,

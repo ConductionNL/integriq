@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  * @SuppressWarnings(PHPMD.LongVariable)
  * @SuppressWarnings(PHPMD.MissingImport)
  */
-class ConfigurationService {
+class ConfigurationService implements ConfigurationServiceInterface {
 
 	/**
 	 * Register mapper used to enumerate registers during export/import.
