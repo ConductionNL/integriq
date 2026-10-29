@@ -1,0 +1,878 @@
+{
+    "one-page-then-empty": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ]
+        ]
+    },
+    "two-pages": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 3
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 3,
+                    "index": 3
+                }
+            ]
+        ]
+    },
+    "first-page-empty": {
+        "outcome": {
+            "return": {
+                "objects": [],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "failed-first-page": {
+        "outcome": {
+            "return": {
+                "objects": [],
+                "complete": false,
+                "failureReason": "page_fetch_failed",
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "failed-second-page": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": false,
+                "failureReason": "page_fetch_failed",
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ]
+        ]
+    },
+    "call-throws": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "source down"
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "test-mode": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "test-mode-empty": {
+        "outcome": {
+            "return": {
+                "objects": [],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "max-pages-reached": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": false,
+                "failureReason": "max_pages_reached",
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ]
+        ]
+    },
+    "max-pages-one": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": false,
+                "failureReason": "max_pages_reached",
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "max-pages-zero": {
+        "outcome": {
+            "return": {
+                "objects": [],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 0
+            }
+        },
+        "log": []
+    },
+    "next-endpoint": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items?cursor=2",
+                null
+            ]
+        ]
+    },
+    "next-endpoint-known": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items?cursor=2",
+                null
+            ]
+        ]
+    },
+    "next-endpoint-same": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "page-numbers-forced": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ]
+        ]
+    },
+    "link-last-stops": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                2
+            ]
+        ]
+    },
+    "link-last-prefetch": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    },
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 3
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                2
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                3
+            ]
+        ]
+    },
+    "link-last-one": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "predicted-prefetch": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 3
+            }
+        },
+        "log": [
+            [
+                "or.count"
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                1
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                2
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                3
+            ]
+        ]
+    },
+    "predicted-one-page": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "or.count"
+            ],
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ]
+        ]
+    },
+    "predicted-zero-start": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "or.count"
+            ],
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                2
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                3
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 1,
+                    "index": 1
+                }
+            ]
+        ]
+    },
+    "predicted-count-throws": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "or.count"
+            ],
+            [
+                "logger.debug",
+                "Could not predict the page count from existing contracts: count failed",
+                []
+            ],
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ]
+        ]
+    },
+    "predicted-next-endpoint": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ]
+        ]
+    },
+    "prefetch-window-clamped": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "logger.warning",
+                "prefetchConcurrency of {asked} is above the ceiling of {max} and has been clamped. Wider windows measured SLOWER, not faster.",
+                {
+                    "asked": 99,
+                    "max": 20
+                }
+            ],
+            [
+                "call.callAsync",
+                "/items",
+                2
+            ]
+        ]
+    },
+    "rate-limited-source-persists": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    },
+                    {
+                        "id": "c"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 3
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "or.saveObject",
+                2
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ],
+            [
+                "or.saveObject",
+                3
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 3,
+                    "index": 3
+                }
+            ]
+        ]
+    },
+    "memory-ceiling": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": false,
+                "failureReason": "memory_ceiling_reached",
+                "pagesFetched": 1
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "logger.warning",
+                "Synchronization stopped after {pages} pages: {used} MB of PHP's {limit} MB limit is in use. The pages already fetched are processed; deletion is skipped because the source was not fully read. Lower `maxPages`, raise the page size, or narrow the query.",
+                {
+                    "pages": 1,
+                    "used": "N",
+                    "limit": "N"
+                }
+            ]
+        ]
+    },
+    "memory-ceiling-off": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 2,
+                    "index": 2
+                }
+            ]
+        ]
+    },
+    "start-page-three": {
+        "outcome": {
+            "return": {
+                "objects": [
+                    {
+                        "id": "a"
+                    },
+                    {
+                        "id": "b"
+                    }
+                ],
+                "complete": true,
+                "failureReason": null,
+                "pagesFetched": 2
+            }
+        },
+        "log": [
+            [
+                "call.call",
+                "/items",
+                null
+            ],
+            [
+                "call.call",
+                "/items",
+                {
+                    "paginationQuery": "page",
+                    "paginationIn": "query",
+                    "page": 4,
+                    "index": 4
+                }
+            ]
+        ]
+    }
+}

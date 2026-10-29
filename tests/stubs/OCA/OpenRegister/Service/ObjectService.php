@@ -294,6 +294,16 @@ class ObjectService {
 	 * @param string $register
 	 * @return static
 	 */
+	/**
+	 * Count the objects matching a query.
+	 *
+	 * @param array $config The query, with its `filters`.
+	 * @return int
+	 */
+	public function count(array $config = []): int {
+		return 0;
+	}
+
 	public function setRegister(string $register): static {
 		return $this;
 	}
