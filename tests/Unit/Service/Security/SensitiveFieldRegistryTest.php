@@ -205,4 +205,82 @@ class SensitiveFieldRegistryTest extends TestCase {
 
 		$this->assertSame('Bearer live-token', $fixture['Authorization']);
 	}//end testRedactArrayDoesNotMutateCallerArray()
+	/**
+	 * A list under a sensitive key is masked item by item. PSR-7 response
+	 * headers are lists (`['Authorization' => ['Bearer x']]`), whose integer
+	 * keys say nothing about the secret they hold.
+	 *
+	 * @return void
+	 */
+	public function testRedactArrayMasksAListUnderASensitiveKey(): void {
+		$result = $this->registry->redactArray(
+			data: [
+				'headers' => [
+					'Authorization' => ['Bearer live-token'],
+					'Set-Cookie' => ['sid=1; HttpOnly', 'csrf=2'],
+					'Content-Type' => ['application/json'],
+				],
+			]
+		);
+
+		$this->assertSame(['***REDACTED***'], $result['headers']['Authorization']);
+		$this->assertSame(['***REDACTED***', '***REDACTED***'], $result['headers']['Set-Cookie']);
+		$this->assertSame(['application/json'], $result['headers']['Content-Type']);
+	}//end testRedactArrayMasksAListUnderASensitiveKey()
+
+	/**
+	 * A list under a sensitive key is masked at any depth; a map under one is
+	 * walked by its own keys, so a credential pointer survives (REQ-010) and a
+	 * password inside it does not. Other keys are untouched.
+	 *
+	 * @return void
+	 */
+	public function testRedactArrayMasksListsUnderASensitiveKeyAtAnyDepthAndWalksMaps(): void {
+		$result = $this->registry->redactArray(
+			data: [
+				'auth' => ['alice', 'hunter2', [['k' => 'v'], 7, null]],
+				'authentication' => ['credentialRef' => ['credentialId' => 'c-1'], 'password' => 'p', 'headers' => ['Cookie' => ['x']]],
+				'meta' => ['owner' => 'bob', 'tags' => ['a']],
+			]
+		);
+
+		$this->assertSame(['***REDACTED***', '***REDACTED***', [['k' => '***REDACTED***'], '***REDACTED***', '***REDACTED***']], $result['auth']);
+		$this->assertSame(
+			['credentialRef' => ['credentialId' => 'c-1'], 'password' => '***REDACTED***', 'headers' => ['Cookie' => ['***REDACTED***']]],
+			$result['authentication']
+		);
+		$this->assertSame(['owner' => 'bob', 'tags' => ['a']], $result['meta']);
+	}//end testRedactArrayMasksListsUnderASensitiveKeyAtAnyDepthAndWalksMaps()
+
+	/**
+	 * Header names match whatever their case, nested or flat; an empty list stays empty.
+	 *
+	 * @return void
+	 */
+	public function testRedactArrayMatchesMixedCaseHeaderNamesAtAnyDepth(): void {
+		$result = $this->registry->redactArray(
+			data: [
+				'output' => ['headers' => ['AUTHORIZATION' => ['Basic x'], 'x-Api-KEY' => ['k'], 'proxy-Authorization' => 'p']],
+				'headers.SET-COOKIE' => ['a=b'],
+				'Cookie' => [],
+			]
+		);
+
+		$this->assertSame(['***REDACTED***'], $result['output']['headers']['AUTHORIZATION']);
+		$this->assertSame(['***REDACTED***'], $result['output']['headers']['x-Api-KEY']);
+		$this->assertSame('***REDACTED***', $result['output']['headers']['proxy-Authorization']);
+		$this->assertSame(['***REDACTED***'], $result['headers.SET-COOKIE']);
+		$this->assertSame([], $result['Cookie']);
+	}//end testRedactArrayMatchesMixedCaseHeaderNamesAtAnyDepth()
+
+	/**
+	 * A call's extra exact names are matched case-insensitively, and a list under one is masked.
+	 *
+	 * @return void
+	 */
+	public function testRedactArrayMasksTheCallsExtraExactNames(): void {
+		$result = $this->registry->redactArray(data: ['Pin' => ['1234'], 'name' => 'n'], extraExactNames: ['pin']);
+
+		$this->assertSame(['Pin' => ['***REDACTED***'], 'name' => 'n'], $result);
+	}//end testRedactArrayMasksTheCallsExtraExactNames()
 }//end class
