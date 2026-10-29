@@ -1,0 +1,214 @@
+{
+    "string-endpoint": {
+        "return": "/plain",
+        "filename": "start.bin",
+        "tags": [],
+        "objectId": "start-object",
+        "published": null,
+        "registerId": null
+    },
+    "object-id-path": {
+        "return": "/e",
+        "filename": "start.bin",
+        "tags": [],
+        "objectId": "o-1",
+        "published": null,
+        "registerId": null
+    },
+    "empty-object-id-path": {
+        "return": "/e",
+        "filename": "start.bin",
+        "tags": [],
+        "objectId": "start-object",
+        "published": null,
+        "registerId": null
+    },
+    "sub-object-path": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "c",
+            "b",
+            "a",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "sub-object-path-string": {
+        "return": "/s",
+        "filename": "start.bin",
+        "tags": [],
+        "objectId": "start-object",
+        "published": null,
+        "registerId": null
+    },
+    "sub-object-missing": {
+        "return": null,
+        "filename": "start.bin",
+        "tags": [],
+        "objectId": "start-object",
+        "published": null,
+        "registerId": null
+    },
+    "all-tags-default": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "c",
+            "b",
+            "a",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "all-tags-appended": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "existing",
+            "c",
+            "b",
+            "a",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "all-tags-null-start": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "c",
+            "b",
+            "a",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "use-labels-as-tags": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "c",
+            "b",
+            "a",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "use-labels-truthy-not-true": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "a"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "allowed-labels": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "c",
+            "a"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "allowed-labels-empty": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "c",
+            "b",
+            "a",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "legacy-tags": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "b",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "allowed-and-legacy": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "a",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "legacy-tags-not-array": {
+        "return": "/f/1",
+        "filename": "a.pdf",
+        "tags": [
+            "c",
+            "b",
+            "a",
+            "d"
+        ],
+        "objectId": "start-object",
+        "published": "2026-01-01",
+        "registerId": 4
+    },
+    "no-labels": {
+        "return": "/e",
+        "filename": "start.bin",
+        "tags": [],
+        "objectId": "start-object",
+        "published": null,
+        "registerId": null
+    },
+    "no-endpoint-key": {
+        "return": null,
+        "filename": "x.txt",
+        "tags": [],
+        "objectId": "start-object",
+        "published": false,
+        "registerId": "r"
+    },
+    "single-tag": {
+        "return": "/e",
+        "filename": "start.bin",
+        "tags": [
+            "solo"
+        ],
+        "objectId": "start-object",
+        "published": null,
+        "registerId": null
+    },
+    "nested-label-arrays": {
+        "return": "/e",
+        "filename": "start.bin",
+        "tags": [
+            "z",
+            "y"
+        ],
+        "objectId": "start-object",
+        "published": null,
+        "registerId": null
+    }
+}
