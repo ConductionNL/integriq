@@ -143,4 +143,11 @@ class DeletionRun {
 	 * @var array
 	 */
 	public array $purgeInfo = ['purgedCount' => 0, 'purgeRefusals' => []];
+
+	/**
+	 * The contracts being retired, by target id.
+	 *
+	 * @var array
+	 */
+	public array $contractsByTargetId = [];
 }//end class
