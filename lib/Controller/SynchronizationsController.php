@@ -23,7 +23,7 @@ namespace OCA\Integriq\Controller;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Service\SynchronizationRunProgressService;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -140,14 +140,14 @@ class SynchronizationsController extends Controller {
 	 * - limit: Number of results per page (default: 20)
 	 * - offset: Offset for pagination (default: 0)
 	 *
-	 * @param SearchService $searchService Search helper service injected by route resolution.
+	 * @param SearchServiceInterface $searchService Search helper service injected by route resolution.
 	 *
 	 * @return JSONResponse A JSON response containing the filtered synchronization logs and pagination.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function logs(SearchService $searchService): JSONResponse {
+	public function logs(SearchServiceInterface $searchService): JSONResponse {
 		try {
 			// Get filters from request.
 			$filters = $this->request->getParams();

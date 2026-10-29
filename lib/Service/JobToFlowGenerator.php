@@ -83,7 +83,7 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Exception\EntityNotMigratableException;
-use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Flow\SynchronizationRunNodeInterface;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUserManager;
@@ -601,7 +601,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 
 		return [
 			'id' => 'run',
-			'type' => SynchronizationRunNode::NODE_ID,
+			'type' => SynchronizationRunNodeInterface::NODE_ID,
 			'config' => $config,
 		];
 

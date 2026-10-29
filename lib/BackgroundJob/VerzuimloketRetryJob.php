@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\VerzuimloketService;
+use OCA\Integriq\Service\VerzuimloketServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -54,12 +54,12 @@ class VerzuimloketRetryJob extends TimedJob {
 	 * VerzuimloketRetryJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param VerzuimloketService $verzuimloketService The Verzuimloket service.
+	 * @param VerzuimloketServiceInterface $verzuimloketService The Verzuimloket service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly VerzuimloketService $verzuimloketService,
+		private readonly VerzuimloketServiceInterface $verzuimloketService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

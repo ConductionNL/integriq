@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Directory\ScimProvisioningService;
+use OCA\Integriq\Directory\ScimProvisioningServiceInterface;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
@@ -93,7 +93,7 @@ class ScimController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param ScimProvisioningService $provisioningService Applies the SCIM call.
+	 * @param ScimProvisioningServiceInterface $provisioningService Applies the SCIM call.
 	 * @param OpenRegisterCredentialBridge $authorizationService The existing inbound credential check.
 	 * @param LoggerInterface $logger Logger for rejections.
 	 *
@@ -102,7 +102,7 @@ class ScimController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly ScimProvisioningService $provisioningService,
+		private readonly ScimProvisioningServiceInterface $provisioningService,
 		private readonly OpenRegisterCredentialBridge $authorizationService,
 		private readonly LoggerInterface $logger,
 	) {

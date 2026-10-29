@@ -33,7 +33,7 @@ use OCA\Integriq\Exception\TablesNotFoundException;
 use OCA\Integriq\Exception\TablesPermissionDeniedException;
 use OCA\Integriq\Exception\TablesUpstreamException;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Service\Tables\TablesSyncAdapterInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -58,7 +58,7 @@ class TablesBridgeController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The HTTP request.
-	 * @param TablesSyncAdapter $tablesSyncAdapter The Tables sync adapter (feature detection + discovery).
+	 * @param TablesSyncAdapterInterface $tablesSyncAdapter The Tables sync adapter (feature detection + discovery).
 	 * @param OrObjectService $orObjectService The OR object service (Source lookups).
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger The logger.
@@ -68,7 +68,7 @@ class TablesBridgeController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly TablesSyncAdapter $tablesSyncAdapter,
+		private readonly TablesSyncAdapterInterface $tablesSyncAdapter,
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
