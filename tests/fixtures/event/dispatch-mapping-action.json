@@ -1343,6 +1343,109 @@
             ]
         ]
     },
+    "status-500-abandons": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "abandoned",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "Mapping action call failed with status code: 500",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "statusCode": 500
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
     "retry-policy-not-array": {
         "outcome": {
             "return": false

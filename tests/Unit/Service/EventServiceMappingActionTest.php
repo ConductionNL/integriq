@@ -206,6 +206,7 @@ class EventServiceMappingActionTest extends TestCase {
 			'call-throws' => ['action' => $action, 'found' => $found, 'call' => 'throws'],
 			'fetch-throws' => ['action' => $action, 'found' => $found, 'fetch' => 'throws'],
 			'retry-policy-abandons' => ['action' => $action, 'found' => (['mapping' => null] + $found), 'subscription' => ['retryPolicy' => ['maxRetries' => 1]]],
+			'status-500-abandons' => ['action' => $action, 'found' => $found, 'call' => 500, 'subscription' => ['retryPolicy' => ['maxRetries' => 1]]],
 			'retry-policy-not-array' => ['action' => $action, 'found' => $found, 'call' => 500, 'subscription' => ['retryPolicy' => 'x'], 'message' => ['event' => 'e-1', 'retryCount' => 2, 'attempts' => [['at' => 'before']]]],
 		];
 	}//end cases()
