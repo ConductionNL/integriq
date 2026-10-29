@@ -46,6 +46,7 @@ use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
 use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
 use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
+use OCA\Integriq\Service\Synchronization\ContractRun;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
@@ -5089,361 +5090,93 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?string $mutationType = null,
 		?ExecutionTraceContext $trace = null,
 	): array|Exception {
-		$contractLog = null;
-
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-
-		// `logs: false` on the synchronization turns OFF the per-contract log
-		// object, not just the target object's audit row.
-		//
-		// This is the write that dominates a STEADY-STATE run — the nightly
-		// re-sync of a source that has not changed, which is the shape most
-		// synchronizations spend their life in. Every record writes a contract
-		// log here and updates it again a few lines below, so a run that creates
-		// nothing and updates nothing still costs two object writes per record:
-		// measured on 374 unchanged GitHub repos, 17.2 s to decide that there was
-		// nothing to do.
-		//
-		// The flag already existed and already meant "this synchronization does
-		// not need a paper trail", but it only ever reached the target object's
-		// audit row, so the engine's own logging carried on regardless. Defaults
-		// to on, so a synchronization that says nothing keeps every log it has
-		// today.
-		$contractLoggingEnabled = ((($sourceConfig['logs'] ?? true) !== false));
-
-		// We are doing something so lets log it.
-		$hasContractId = isset($synchronizationContract['id']) === true;
-		$hasLogService = ($this->synchronizationContractLogService !== null && $contractLoggingEnabled === true);
-		if ($hasContractId === true && $hasLogService === true) {
-			$contractLog = $this->synchronizationContractLogService->createFromArray(
-				object: [
-					'synchronizationId' => ($synchronization['id'] ?? null),
-					'synchronizationContractId' => $synchronizationContract['id'],
-					'source' => $object,
-					'test' => $isTest,
-					'force' => $force,
-					// `expires`, the schema's field, as an ISO 8601 string. This
-					// was `expiry`, which the schema does not have, so every
-					// contract log fell back to the log writer's own default.
-					'expires' => $this->calculateExpires(...[$this->errorContractRetention])?->format(DateTime::ATOM),
-				]
-			);
-		}
-
-		if (isset($contractLog) === true) {
-			$contractLog['synchronizationLogId'] = $log->getId();
+		$run = new ContractRun();
+		$run->synchronization = $synchronization;
+		$run->flowToken = $flowToken;
+		$run->isTest = $isTest;
+		$run->mutationType = $mutationType;
+		$run->trace = $trace;
+		$run->force = $force;
+		$run->object = &$object;
+		$run->sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		$run->contractLog = $this->openContractLog(run: $run, synchronizationContract: $synchronizationContract);
+		if ($run->contractLog !== null) {
+			$run->contractLog['synchronizationLogId'] = $log->getId();
 		}
 
 		$flowToken->setSyncInputOriginal($object);
-
-		// Check if extra data needs to be fetched.
-		// If not fetched before conditions, fetch now.
-		if (isset($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION]) === false
-			|| ($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] !== true
-			&& $sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] !== 'true')
-		) {
-			$object = $this->fetchMultipleExtraData(synchronization: $synchronization, sourceConfig: $sourceConfig, object: $object);
+		if ($this->extraDataFetchedBeforeConditions(sourceConfig: $run->sourceConfig) === false) {
+			$object = $this->fetchMultipleExtraData(synchronization: $synchronization, sourceConfig: $run->sourceConfig, object: $object);
 		}
 
 		$flowToken->setSyncOutputAmended($object);
 
-		// Get mapped hash object (some fields can make it look the object has changed even if it hasn't).
+		// Some fields can make the object look changed when it is not, so the hash is taken over the mapped hash object.
 		$hashObject = $this->mapHashObject(synchronization: $synchronization, object: $object);
-		// Let create a source hash for the object.
-		$originHash = $this->hashObject(object: $hashObject);
+		$run->originHash = $this->hashObject(object: $hashObject);
 
-		// If no source target mapping is defined, use original object.
-		if (empty($synchronization['sourceTargetMapping']) === true) {
-			$sourceTargetMapping = null;
-		} else {
-			try {
-				$sourceTargetMapping = $this->orObjectService->find(
-					id: (string)$synchronization['sourceTargetMapping'],
-					register: 'integriq',
-					schema: 'mapping'
-				);
-			} catch (DoesNotExistException $exception) {
-				return new Exception($exception->getMessage());
-			}
+		$run->mapping = $this->findSourceTargetMapping(synchronization: $synchronization);
+		if ($run->mapping instanceof Exception) {
+			return $run->mapping;
 		}
 
-		// Let's prevent pointless updates by checking:
-		// 1. If the origin hash matches (object hasn't changed)
-		// 2. If the synchronization config hasn't been updated since last check
-		// 3. If source target mapping exists, check it hasn't been updated since last check
-		// 4. If target ID and hash exist (object hasn't been removed from target)
-		// 5. Force parameter is false (otherwise always continue with update).
-		if ($force === false
-			&& $originHash === ($synchronizationContract['originHash'] ?? null)
-			&& ($synchronization['updated'] ?? null) < ($synchronizationContract['sourceLastChecked'] ?? null)
-			&& $this->mappingUnchangedSince(
-				mapping: $sourceTargetMapping,
-				lastChecked: ($synchronizationContract['sourceLastChecked'] ?? null)
-			) === true
-			&& ($synchronizationContract['targetId'] ?? null) !== null
-			&& ($synchronizationContract['targetHash'] ?? null) !== null
-		) {
-			// We checked the source so let log that.
+		if ($force === false && $this->contractIsCurrent(run: $run, contract: $synchronizationContract) === true) {
 			$synchronizationContract['sourceLastChecked'] = (new DateTime())->format(DateTime::ATOM);
-			if (isset($contractLog) === true) {
-				$expires = $this->calculateExpires(...[$this->successRetention]);
-
-				$expiresValue = null;
-				if ($expires !== null) {
-					$expiresValue = $expires->format(DateTime::ATOM);
-				}
-
-				$contractLog['expires'] = $expiresValue;
-			}
-
-			// The object has not changed and neither config nor mapping have been updated since last check.
-			if (isset($contractLog) === true && $this->synchronizationContractLogService !== null) {
-				$contractLog = $this->synchronizationContractLogService->update(log: $contractLog);
-			}
-
-			$skipLog = null;
-			if (isset($contractLog) === true) {
-				$skipLog = $contractLog;
-			}
 
 			return [
-				'log' => $skipLog,
+				'log' => $this->closeContractLog(contractLog: $run->contractLog),
 				'contract' => $synchronizationContract,
 				'resultAction' => 'skip',
 			];
-		}//end if
+		}
 
-		// The object has changed, oke let do mappig and set metadata.
-		$synchronizationContract['originHash'] = $originHash;
+		$synchronizationContract['originHash'] = $run->originHash;
 		$synchronizationContract['sourceLastChanged'] = (new DateTime())->format(DateTime::ATOM);
 		$synchronizationContract['sourceLastChecked'] = (new DateTime())->format(DateTime::ATOM);
 
-		// Execute mapping if found.
-		$objectBeforeMapping = $object;
-		if ($sourceTargetMapping !== null && $mutationType !== 'delete') {
-			$flowToken->setSyncOutputOriginal($object);
+		return $this->writeChangedContract(run: $run, contract: $synchronizationContract);
+	}//end synchronizeContract()
 
-			$object = $this->mappingService->executeMapping(mapping: $sourceTargetMapping, input: $object);
-			$flowToken->setSyncOutputAmended($object);
-		}
+	/**
+	 * Map a changed object, write it to the target and record the contract.
+	 *
+	 * A test run stops after the mapping and the `before` rules, and writes nothing.
+	 *
+	 * @param ContractRun $run      The contract run; its object is updated in place as it is mapped.
+	 * @param array       $contract The synchronization contract, marked as changed.
+	 *
+	 * @return array The contract log, the contract and the result action.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function writeChangedContract(ContractRun $run, array $contract): array {
+		$run->objectBeforeMapping = $run->object;
+		$this->transformContractObject(run: $run);
+		$contract = $this->stampTargetSynced(contract: $contract, object: $run->object);
 
-		if (isset($contractLog) === true) {
-			$contractLog['target'] = $object;
-		}
-
-		$object = $this->replaceRelatedOriginIds(
-			object: $object,
-			config: $sourceConfig['idsToReplaceWithTargetIdsBeforeRules'] ?? [],
-			replaceIdWithTargetId: true
-		);
-		$flowToken->setSyncOutputAmended($object);
-
-		if (($synchronization['actions'] ?? []) !== []) {
-			$ruleResult = $this->processRules(synchronization: $synchronization, data: $object, timing: 'before', flowToken: $flowToken);
-
-			// The processRules() call returns a JSONResponse INSTEAD of an array when a
-			// rule fails. This used to be assigned straight into $object, which
-			// then went into md5(serialize($object)) and on to updateTarget() —
-			// where a JSONResponse hit an `array|null` parameter and surfaced as
-			// a TypeError deep in the target writer, naming neither the
-			// synchronisation nor the rule that actually failed.
-			//
-			// The outcome is unchanged (the sync still fails); it now says why.
-			// Turning this into a clean skip instead would be a behaviour change
-			// for the sync engine, which is not a call to make in a lint pass.
-			if ($ruleResult instanceof JSONResponse) {
-				throw new Exception(
-					'Synchronization aborted: a "before" rule returned an error response for synchronization '
-					. ($synchronization['uuid'] ?? $synchronization['id'] ?? 'unknown')
-				);
-			}
-
-			$object = $ruleResult;
-			$flowToken->setSyncOutputAmended($object);
-		}
-
-		// Set the target hash.
-		$targetHash = md5(serialize($object));
-
-		$synchronizationContract['targetHash'] = $targetHash;
-		$synchronizationContract['targetLastChanged'] = (new DateTime())->format(DateTime::ATOM);
-		$synchronizationContract['targetLastSynced'] = (new DateTime())->format(DateTime::ATOM);
-		$synchronizationContract['sourceLastSynced'] = (new DateTime())->format(DateTime::ATOM);
-
-		// Handle synchronization based on test mode.
-		if ($isTest === true) {
-			// Return test data without updating target.
-			if (isset($contractLog) === true) {
-				$contractLog['targetResult'] = 'test';
-				$expires = $this->calculateExpires(...[$this->successRetention]);
-
-				$expiresValue = null;
-				if ($expires !== null) {
-					$expiresValue = $expires->format(DateTime::ATOM);
-				}
-
-				$contractLog['expires'] = $expiresValue;
-				if ($this->synchronizationContractLogService !== null) {
-					$contractLog = $this->synchronizationContractLogService->update(log: $contractLog);
-				}
-			}
-
-			$testLog = null;
-			if (isset($contractLog) === true) {
-				$testLog = $contractLog;
-			}
-
+		if ($run->isTest === true) {
 			return [
-				'log' => $testLog,
-				'contract' => $synchronizationContract,
+				'log' => $this->closeContractLog(contractLog: $run->contractLog, fields: ['targetResult' => 'test']),
+				'contract' => $contract,
 				'resultAction' => 'skip',
 			];
-		}//end if
+		}
 
-		// Update target and create log when not in test mode.
-		$synchronizationContract = $this->updateTarget(
-			synchronizationContract: $synchronizationContract,
-			targetObject: $object,
-			mutationType: $mutationType,
-			trace: $trace,
-			synchronization: $synchronization
+		$contract = $this->updateTarget(
+			synchronizationContract: $contract,
+			targetObject: $run->object,
+			mutationType: $run->mutationType,
+			trace: $run->trace,
+			synchronization: $run->synchronization
 		);
+		$contract = $this->persistContractBeforeAfterRules(contract: $contract, synchronization: $run->synchronization);
+		$this->runAfterRules(run: $run, contract: $contract);
 
-		// Ocon#109: persist the identity mapping BEFORE the `after` rules run.
-		//
-		// @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
-		//
-		// A contract records only that source object X maps to target object A, so
-		// that a re-run writes X's changes to A instead of creating a second A. It
-		// is NOT a record that everything downstream succeeded.
-		//
-		// The `after` rules below fetch files, and any throw there (missing
-		// filename, unresolvable object id, upstream 404/timeout, a failed save)
-		// abandons the item at the per-item `catch (\Throwable)` in
-		// synchronizeExternToIntern() — which used to happen BEFORE the only
-		// persistContract() call at the end of this method. The object was written
-		// but the mapping was not, so the next run found no contract for this
-		// originId, treated the row as new, and created a duplicate. Every re-run
-		// added another copy.
-		//
-		// Writing the mapping here makes that class of duplicate structurally
-		// impossible: a file failure now degrades to "object synced, mapping
-		// recorded, file missing" — recoverable, and re-syncable onto the same
-		// target. The persistContract() call at the end of this method still runs
-		// and updates the same row with the rule outcomes and log references.
-		// ...but ONLY when there are after-rules that could throw. processRules()
-		// returns immediately when `actions` is empty, so on a synchronization
-		// without them nothing between here and the end-of-method persist can
-		// fail, and this write protects nothing while costing a full object save
-		// on every record.
-		//
-		// Measured on a 374-record GitHub sync: 1,464 object writes for 374
-		// records — 3.9 per record at 78ms each, 114s of a 156s run. One target
-		// write plus a contract written repeatedly is where a large sync's time
-		// goes, so a write that buys no safety is worth not doing.
-		$hasAfterRules = empty($synchronization['actions'] ?? []) === false;
-
-		if (($synchronizationContract['targetId'] ?? null) !== null && $hasAfterRules === true) {
-			$this->assignContractIdentity(contract: $synchronizationContract);
-
-			try {
-				$synchronizationContract = $this->persistContract(
-					contract: $synchronizationContract,
-					ensureUuid: true
-				);
-			} catch (\Throwable $contractException) {
-				// Never let recording the mapping break a sync that would otherwise
-				// succeed — the end-of-method persist remains the fallback.
-				$this->logger->warning(
-					'Could not persist the synchronization contract before the after-rules; '
-					. 'a failure in those rules may now re-create this object on the next run.',
-					[
-						'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
-						'originId' => ($synchronizationContract['originId'] ?? null),
-						'targetId' => ($synchronizationContract['targetId'] ?? null),
-						'exception' => $contractException->getMessage(),
-					]
-				);
-			}
-		}//end if
-
-		if (($synchronization['targetType'] ?? null) === 'register/schema') {
-			[$registerId, $schemaId] = explode(separator: '/', string: (string)($synchronization['targetId'] ?? ''));
-			$this->processRules(
-				synchronization: $synchronization,
-				data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]),
-				timing: 'after',
-				objectId: ($synchronizationContract['targetId'] ?? null),
-				registerId: (int)$registerId,
-				schemaId: (int)$schemaId,
-				flowToken: $flowToken
-			);
-		} elseif (($synchronization['targetType'] ?? null) === 'api' && ($synchronization['sourceType'] ?? null) === 'register/schema') {
-			[$registerId, $schemaId] = explode(separator: '/', string: (string)($synchronization['sourceId'] ?? ''));
-			$this->processRules(
-				synchronization: $synchronization,
-				data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]),
-				timing: 'after',
-				objectId: ($synchronizationContract['sourceId'] ?? null),
-				registerId: (int)$registerId,
-				schemaId: (int)$schemaId,
-				flowToken: $flowToken
-			);
-		}//end if
-
-		// Create log entry for the synchronization.
-		if (isset($contractLog) === true) {
-			$contractLog['targetResult'] = ($synchronizationContract['targetLastAction'] ?? null);
-			$expires = $this->calculateExpires(...[$this->successRetention]);
-
-			$expiresValue = null;
-			if ($expires !== null) {
-				$expiresValue = $expires->format(DateTime::ATOM);
-			}
-
-			$contractLog['expires'] = $expiresValue;
-			if ($this->synchronizationContractLogService !== null) {
-				$contractLog = $this->synchronizationContractLogService->update(log: $contractLog);
-			}
-		}
-
-		// The source DID carry this record on this run, which is the whole
-		// meaning of reaching this point. DisappearanceApplier::markSeen()
-		// exists to answer that and had no caller: once a sweep flagged a
-		// record `absentAtSource`, or wrote it an `endedAt`, nothing ever
-		// cleared it again. A record that came back read as gone for ever, on
-		// every screen that asks RecordOwnershipService, and nothing said so.
-		$seen = (new DisappearanceApplier())->markSeen(
-			contract: $synchronizationContract,
-			runAt: gmdate('c')
+		$contractLog = $this->closeContractLog(
+			contractLog: $run->contractLog,
+			fields: ['targetResult' => ($contract['targetLastAction'] ?? null)]
 		);
-		$synchronizationContract = $seen['contract'];
-		if ($seen['cleared'] === true) {
-			$this->logger->info(
-				'synchronizeContract: the source carries this record again, so its absence flag is cleared',
-				['contractId' => ($synchronizationContract['uuid'] ?? ($synchronizationContract['id'] ?? null))]
-			);
-		}
-
-		$this->assignContractIdentity(contract: $synchronizationContract);
-
-		if ($this->lastTargetWriteBuffered === true) {
-			// The object this contract maps is still sitting in the write buffer,
-			// so the contract goes in behind it and both are written by the same
-			// flush — objects first. Persisting the mapping now would record that
-			// source object X lives at target A while A does not exist yet.
-			//
-			// The uuid was just assigned above, so callers that read
-			// `contract.uuid` off the return value (the run result's `contracts`
-			// list, and the `_embed` resolution that follows the batch loop) get
-			// the same value the flush will write under.
-			$this->contractWriteBuffer[] = $synchronizationContract;
-		} else {
-			$synchronizationContract = $this->persistContract(
-				contract: $synchronizationContract,
-				ensureUuid: true
-			);
-		}
+		$contract = $this->finalizeContract(contract: $contract);
 
 		$resultLog = [];
 		if (empty($contractLog) === false) {
@@ -5451,12 +5184,330 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		// The resultAction here represents an update/create.
-		return [
-			'log' => $resultLog,
-			'contract' => $synchronizationContract,
-			'resultAction' => 'update',
-		];
-	}//end synchronizeContract()
+		return ['log' => $resultLog, 'contract' => $contract, 'resultAction' => 'update'];
+	}//end writeChangedContract()
+
+	/**
+	 * Map the run's object to its target shape and run the `before` rules on it.
+	 *
+	 * The object is updated in place after each step, so the caller holds the latest
+	 * shape even when a later step throws.
+	 *
+	 * @param ContractRun $run The contract run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function transformContractObject(ContractRun $run): void {
+		if ($run->mapping !== null && $run->mutationType !== 'delete') {
+			$run->flowToken->setSyncOutputOriginal($run->object);
+			$run->object = $this->mappingService->executeMapping(mapping: $run->mapping, input: $run->object);
+			$run->flowToken->setSyncOutputAmended($run->object);
+		}
+
+		if ($run->contractLog !== null) {
+			$run->contractLog['target'] = $run->object;
+		}
+
+		$run->object = $this->replaceRelatedOriginIds(
+			object: $run->object,
+			config: $run->sourceConfig['idsToReplaceWithTargetIdsBeforeRules'] ?? [],
+			replaceIdWithTargetId: true
+		);
+		$run->flowToken->setSyncOutputAmended($run->object);
+		$run->object = $this->applyBeforeRules(run: $run, object: $run->object);
+	}//end transformContractObject()
+
+	/**
+	 * Create the per-contract log entry for a synchronizeContract() run.
+	 *
+	 * `logs: false` in the source config turns the per-contract log off. On a steady-state
+	 * run of an unchanged source this log is the dominant write (measured on 374 unchanged
+	 * GitHub repos: 17.2 s to decide there was nothing to do), so the flag skips it.
+	 * It defaults to on.
+	 *
+	 * @param ContractRun $run                     The contract run, before its object is amended.
+	 * @param array       $synchronizationContract The contract being synchronized.
+	 *
+	 * @return array|null The created log, or null when the contract has no id or logging is off.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function openContractLog(ContractRun $run, array $synchronizationContract): ?array {
+		$loggingEnabled = (($run->sourceConfig['logs'] ?? true) !== false);
+		if (isset($synchronizationContract['id']) === false
+			|| $this->synchronizationContractLogService === null
+			|| $loggingEnabled === false
+		) {
+			return null;
+		}
+
+		return $this->synchronizationContractLogService->createFromArray(
+			object: [
+				'synchronizationId' => ($run->synchronization['id'] ?? null),
+				'synchronizationContractId' => $synchronizationContract['id'],
+				'source' => $run->object,
+				'test' => $run->isTest,
+				'force' => $run->force,
+				'expires' => $this->calculateExpires(...[$this->errorContractRetention])?->format(DateTime::ATOM),
+			]
+		);
+	}//end openContractLog()
+
+	/**
+	 * Close a per-contract log: set its success expiry and store it.
+	 *
+	 * @param array|null $contractLog The log to close, or null when there is none.
+	 * @param array      $fields      Extra fields to set before the expiry, such as `targetResult`.
+	 *
+	 * @return array|null The stored log, or null when there was none.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function closeContractLog(?array $contractLog, array $fields = []): ?array {
+		if ($contractLog === null) {
+			return null;
+		}
+
+		$contractLog = array_merge($contractLog, $fields);
+		$contractLog['expires'] = $this->calculateExpires(...[$this->successRetention])?->format(DateTime::ATOM);
+		if ($this->synchronizationContractLogService !== null) {
+			$contractLog = $this->synchronizationContractLogService->update(log: $contractLog);
+		}
+
+		return $contractLog;
+	}//end closeContractLog()
+
+	/**
+	 * Whether the extra data of an object was already fetched before the conditions were checked.
+	 *
+	 * @param array $sourceConfig The dot-expanded source config.
+	 *
+	 * @return bool True when the source config fetches extra data before the conditions.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function extraDataFetchedBeforeConditions(array $sourceConfig): bool {
+		return in_array(
+			($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] ?? null),
+			[true, 'true'],
+			true
+		);
+	}//end extraDataFetchedBeforeConditions()
+
+	/**
+	 * Find the source-to-target mapping of a synchronization.
+	 *
+	 * @param array|null $synchronization The synchronization configuration.
+	 *
+	 * @return mixed The mapping, null when none is configured, or an Exception when it does not exist.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function findSourceTargetMapping(?array $synchronization): mixed {
+		if (empty($synchronization['sourceTargetMapping']) === true) {
+			return null;
+		}
+
+		try {
+			return $this->orObjectService->find(
+				id: (string)$synchronization['sourceTargetMapping'],
+				register: 'integriq',
+				schema: 'mapping'
+			);
+		} catch (DoesNotExistException $exception) {
+			return new Exception($exception->getMessage());
+		}
+	}//end findSourceTargetMapping()
+
+	/**
+	 * Whether a contract is current, so writing it again would change nothing.
+	 *
+	 * It is current when the origin hash matches, neither the synchronization nor the
+	 * mapping changed since the source was last checked, and the target still has an id and hash.
+	 *
+	 * @param ContractRun $run      The contract run, with its origin hash.
+	 * @param array       $contract The synchronization contract.
+	 *
+	 * @return bool True when the contract can be skipped.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function contractIsCurrent(ContractRun $run, array $contract): bool {
+		return $run->originHash === ($contract['originHash'] ?? null)
+			&& ($run->synchronization['updated'] ?? null) < ($contract['sourceLastChecked'] ?? null)
+			&& $this->mappingUnchangedSince(mapping: $run->mapping, lastChecked: ($contract['sourceLastChecked'] ?? null)) === true
+			&& ($contract['targetId'] ?? null) !== null
+			&& ($contract['targetHash'] ?? null) !== null;
+	}//end contractIsCurrent()
+
+	/**
+	 * Run the `before` rules of a synchronization on an object.
+	 *
+	 * The processRules() call returns a JSONResponse instead of an array when a rule fails. That
+	 * response must not reach the hash and the target writer, so it aborts the sync with
+	 * a message naming the synchronization.
+	 *
+	 * @param ContractRun $run    The contract run.
+	 * @param array       $object The mapped object.
+	 *
+	 * @return array The object after the rules, or the object unchanged when there are none.
+	 *
+	 * @throws Exception When a rule returns an error response.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function applyBeforeRules(ContractRun $run, array $object): array {
+		$synchronization = $run->synchronization;
+		if (($synchronization['actions'] ?? []) === []) {
+			return $object;
+		}
+
+		$ruleResult = $this->processRules(synchronization: $synchronization, data: $object, timing: 'before', flowToken: $run->flowToken);
+		if ($ruleResult instanceof JSONResponse) {
+			throw new Exception(
+				'Synchronization aborted: a "before" rule returned an error response for synchronization '
+				. ($synchronization['uuid'] ?? $synchronization['id'] ?? 'unknown')
+			);
+		}
+
+		$run->flowToken->setSyncOutputAmended($ruleResult);
+
+		return $ruleResult;
+	}//end applyBeforeRules()
+
+	/**
+	 * Record the target hash and the sync timestamps on a contract.
+	 *
+	 * @param array $contract The synchronization contract.
+	 * @param array $object   The object as it will be written to the target.
+	 *
+	 * @return array The contract with its target hash and timestamps set.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function stampTargetSynced(array $contract, array $object): array {
+		$contract['targetHash'] = md5(serialize($object));
+		$contract['targetLastChanged'] = (new DateTime())->format(DateTime::ATOM);
+		$contract['targetLastSynced'] = (new DateTime())->format(DateTime::ATOM);
+		$contract['sourceLastSynced'] = (new DateTime())->format(DateTime::ATOM);
+
+		return $contract;
+	}//end stampTargetSynced()
+
+	/**
+	 * Persist the identity mapping of a contract before its `after` rules run (Ocon#109).
+	 *
+	 * A contract records that source object X maps to target object A, so a re-run writes
+	 * X's changes to A instead of creating a second A. The `after` rules fetch files, and a
+	 * throw there abandons the item before the end-of-run persist; without this write the
+	 * next run finds no contract and creates a duplicate. The write only happens when there
+	 * are `after` rules that could throw: without them it protects nothing and costs a full
+	 * object save per record (measured: 114 s of a 156 s run of 374 records).
+	 *
+	 * @param array      $contract        The synchronization contract, after the target write.
+	 * @param array|null $synchronization The synchronization configuration.
+	 *
+	 * @return array The contract, persisted when that was needed and possible.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
+	 */
+	private function persistContractBeforeAfterRules(array $contract, ?array $synchronization): array {
+		$hasAfterRules = empty($synchronization['actions'] ?? []) === false;
+		if (($contract['targetId'] ?? null) === null || $hasAfterRules === false) {
+			return $contract;
+		}
+
+		$this->assignContractIdentity(contract: $contract);
+
+		try {
+			return $this->persistContract(contract: $contract, ensureUuid: true);
+		} catch (\Throwable $contractException) {
+			// Recording the mapping never breaks a sync; the end-of-run persist is the fallback.
+			$this->logger->warning(
+				'Could not persist the synchronization contract before the after-rules; '
+				. 'a failure in those rules may now re-create this object on the next run.',
+				[
+					'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+					'originId' => ($contract['originId'] ?? null),
+					'targetId' => ($contract['targetId'] ?? null),
+					'exception' => $contractException->getMessage(),
+				]
+			);
+		}
+
+		return $contract;
+	}//end persistContractBeforeAfterRules()
+
+	/**
+	 * Run the `after` rules of a synchronization that has a register/schema on either side.
+	 *
+	 * @param ContractRun $run      The contract run; its object and its object before mapping go to the rules.
+	 * @param array       $contract The synchronization contract.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function runAfterRules(ContractRun $run, array $contract): void {
+		$synchronization = $run->synchronization;
+		if (($synchronization['targetType'] ?? null) === 'register/schema') {
+			$registerSchema = ($synchronization['targetId'] ?? '');
+			$objectId = ($contract['targetId'] ?? null);
+		} elseif (($synchronization['targetType'] ?? null) === 'api' && ($synchronization['sourceType'] ?? null) === 'register/schema') {
+			$registerSchema = ($synchronization['sourceId'] ?? '');
+			$objectId = ($contract['sourceId'] ?? null);
+		} else {
+			return;
+		}
+
+		[$registerId, $schemaId] = explode(separator: '/', string: (string)$registerSchema);
+		$this->processRules(
+			synchronization: $synchronization,
+			data: array_merge($run->object, ['_objectBeforeMapping' => $run->objectBeforeMapping]),
+			timing: 'after',
+			objectId: $objectId,
+			registerId: (int)$registerId,
+			schemaId: (int)$schemaId,
+			flowToken: $run->flowToken
+		);
+	}//end runAfterRules()
+
+	/**
+	 * Finish a written contract: clear its absence flag, give it an identity and persist it.
+	 *
+	 * Reaching this point means the source carried the record on this run, so
+	 * DisappearanceApplier::markSeen() clears an `absentAtSource` flag or `endedAt` a sweep
+	 * wrote. When the target object is still in the write buffer, the contract joins the
+	 * contract buffer so the same flush writes both, objects first; the uuid is assigned
+	 * now so callers reading `contract.uuid` see the value the flush writes.
+	 *
+	 * @param array $contract The synchronization contract.
+	 *
+	 * @return array The contract, persisted or buffered.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+	 */
+	private function finalizeContract(array $contract): array {
+		$seen = (new DisappearanceApplier())->markSeen(contract: $contract, runAt: gmdate('c'));
+		$contract = $seen['contract'];
+		if ($seen['cleared'] === true) {
+			$this->logger->info(
+				'synchronizeContract: the source carries this record again, so its absence flag is cleared',
+				['contractId' => ($contract['uuid'] ?? ($contract['id'] ?? null))]
+			);
+		}
+
+		$this->assignContractIdentity(contract: $contract);
+
+		if ($this->lastTargetWriteBuffered === true) {
+			$this->contractWriteBuffer[] = $contract;
+			return $contract;
+		}
+
+		return $this->persistContract(contract: $contract, ensureUuid: true);
+	}//end finalizeContract()
 
 	/**
 	 * Updates or deletes a target object in the Open Register system.
