@@ -5130,13 +5130,10 @@ class SynchronizationService {
 		$run->isTest = $isTest;
 		$run->mutationType = $mutationType;
 		$run->trace = $trace;
+		$run->force = $force;
+		$run->object = &$object;
 		$run->sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-		$run->contractLog = $this->openContractLog(
-			synchronizationContract: $synchronizationContract,
-			synchronization: $synchronization,
-			sourceConfig: $run->sourceConfig,
-			entry: ['source' => $object, 'test' => $isTest, 'force' => $force]
-		);
+		$run->contractLog = $this->openContractLog(run: $run, synchronizationContract: $synchronizationContract);
 		if ($run->contractLog !== null) {
 			$run->contractLog['synchronizationLogId'] = $log->getId();
 		}
@@ -5150,14 +5147,14 @@ class SynchronizationService {
 
 		// Some fields can make the object look changed when it is not, so the hash is taken over the mapped hash object.
 		$hashObject = $this->mapHashObject(synchronization: $synchronization, object: $object);
-		$originHash = $this->hashObject(object: $hashObject);
+		$run->originHash = $this->hashObject(object: $hashObject);
 
 		$run->mapping = $this->findSourceTargetMapping(synchronization: $synchronization);
 		if ($run->mapping instanceof Exception) {
 			return $run->mapping;
 		}
 
-		if ($force === false && $this->contractIsCurrent(run: $run, contract: $synchronizationContract, originHash: $originHash) === true) {
+		if ($force === false && $this->contractIsCurrent(run: $run, contract: $synchronizationContract) === true) {
 			$synchronizationContract['sourceLastChecked'] = (new DateTime())->format(DateTime::ATOM);
 
 			return [
@@ -5167,11 +5164,11 @@ class SynchronizationService {
 			];
 		}
 
-		$synchronizationContract['originHash'] = $originHash;
+		$synchronizationContract['originHash'] = $run->originHash;
 		$synchronizationContract['sourceLastChanged'] = (new DateTime())->format(DateTime::ATOM);
 		$synchronizationContract['sourceLastChecked'] = (new DateTime())->format(DateTime::ATOM);
 
-		return $this->writeChangedContract(run: $run, contract: $synchronizationContract, object: $object);
+		return $this->writeChangedContract(run: $run, contract: $synchronizationContract);
 	}//end synchronizeContract()
 
 	/**
@@ -5179,18 +5176,17 @@ class SynchronizationService {
 	 *
 	 * A test run stops after the mapping and the `before` rules, and writes nothing.
 	 *
-	 * @param ContractRun $run      The contract run.
+	 * @param ContractRun $run      The contract run; its object is updated in place as it is mapped.
 	 * @param array       $contract The synchronization contract, marked as changed.
-	 * @param array       $object   The source object; updated in place as it is mapped.
 	 *
 	 * @return array The contract log, the contract and the result action.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function writeChangedContract(ContractRun $run, array $contract, array &$object): array {
-		$objectBeforeMapping = $object;
-		$this->transformContractObject(run: $run, object: $object);
-		$contract = $this->stampTargetSynced(contract: $contract, object: $object);
+	private function writeChangedContract(ContractRun $run, array $contract): array {
+		$run->objectBeforeMapping = $run->object;
+		$this->transformContractObject(run: $run);
+		$contract = $this->stampTargetSynced(contract: $contract, object: $run->object);
 
 		if ($run->isTest === true) {
 			return [
@@ -5202,17 +5198,13 @@ class SynchronizationService {
 
 		$contract = $this->updateTarget(
 			synchronizationContract: $contract,
-			targetObject: $object,
+			targetObject: $run->object,
 			mutationType: $run->mutationType,
 			trace: $run->trace,
 			synchronization: $run->synchronization
 		);
 		$contract = $this->persistContractBeforeAfterRules(contract: $contract, synchronization: $run->synchronization);
-		$this->runAfterRules(
-			run: $run,
-			contract: $contract,
-			data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping])
-		);
+		$this->runAfterRules(run: $run, contract: $contract);
 
 		$contractLog = $this->closeContractLog(
 			contractLog: $run->contractLog,
@@ -5230,36 +5222,35 @@ class SynchronizationService {
 	}//end writeChangedContract()
 
 	/**
-	 * Map an object to its target shape and run the `before` rules on it.
+	 * Map the run's object to its target shape and run the `before` rules on it.
 	 *
 	 * The object is updated in place after each step, so the caller holds the latest
 	 * shape even when a later step throws.
 	 *
-	 * @param ContractRun $run    The contract run.
-	 * @param array       $object The object; updated in place.
+	 * @param ContractRun $run The contract run.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function transformContractObject(ContractRun $run, array &$object): void {
+	private function transformContractObject(ContractRun $run): void {
 		if ($run->mapping !== null && $run->mutationType !== 'delete') {
-			$run->flowToken->setSyncOutputOriginal($object);
-			$object = $this->mappingService->executeMapping(mapping: $run->mapping, input: $object);
-			$run->flowToken->setSyncOutputAmended($object);
+			$run->flowToken->setSyncOutputOriginal($run->object);
+			$run->object = $this->mappingService->executeMapping(mapping: $run->mapping, input: $run->object);
+			$run->flowToken->setSyncOutputAmended($run->object);
 		}
 
 		if ($run->contractLog !== null) {
-			$run->contractLog['target'] = $object;
+			$run->contractLog['target'] = $run->object;
 		}
 
-		$object = $this->replaceRelatedOriginIds(
-			object: $object,
+		$run->object = $this->replaceRelatedOriginIds(
+			object: $run->object,
 			config: $run->sourceConfig['idsToReplaceWithTargetIdsBeforeRules'] ?? [],
 			replaceIdWithTargetId: true
 		);
-		$run->flowToken->setSyncOutputAmended($object);
-		$object = $this->applyBeforeRules(synchronization: $run->synchronization, object: $object, flowToken: $run->flowToken);
+		$run->flowToken->setSyncOutputAmended($run->object);
+		$run->object = $this->applyBeforeRules(run: $run, object: $run->object);
 	}//end transformContractObject()
 
 	/**
@@ -5270,22 +5261,15 @@ class SynchronizationService {
 	 * GitHub repos: 17.2 s to decide there was nothing to do), so the flag skips it.
 	 * It defaults to on.
 	 *
-	 * @param array      $synchronizationContract The contract being synchronized.
-	 * @param array|null $synchronization         The synchronization configuration.
-	 * @param array      $sourceConfig            The dot-expanded source config.
-	 * @param array      $entry                   The `source`, `test` and `force` fields of the log.
+	 * @param ContractRun $run                     The contract run, before its object is amended.
+	 * @param array       $synchronizationContract The contract being synchronized.
 	 *
 	 * @return array|null The created log, or null when the contract has no id or logging is off.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function openContractLog(
-		array $synchronizationContract,
-		?array $synchronization,
-		array $sourceConfig,
-		array $entry
-	): ?array {
-		$loggingEnabled = (($sourceConfig['logs'] ?? true) !== false);
+	private function openContractLog(ContractRun $run, array $synchronizationContract): ?array {
+		$loggingEnabled = (($run->sourceConfig['logs'] ?? true) !== false);
 		if (isset($synchronizationContract['id']) === false
 			|| $this->synchronizationContractLogService === null
 			|| $loggingEnabled === false
@@ -5294,14 +5278,14 @@ class SynchronizationService {
 		}
 
 		return $this->synchronizationContractLogService->createFromArray(
-			object: array_merge(
-				[
-					'synchronizationId' => ($synchronization['id'] ?? null),
-					'synchronizationContractId' => $synchronizationContract['id'],
-				],
-				$entry,
-				['expires' => $this->calculateExpires(...[$this->errorContractRetention])?->format(DateTime::ATOM)]
-			)
+			object: [
+				'synchronizationId' => ($run->synchronization['id'] ?? null),
+				'synchronizationContractId' => $synchronizationContract['id'],
+				'source' => $run->object,
+				'test' => $run->isTest,
+				'force' => $run->force,
+				'expires' => $this->calculateExpires(...[$this->errorContractRetention])?->format(DateTime::ATOM),
+			]
 		);
 	}//end openContractLog()
 
@@ -5377,16 +5361,15 @@ class SynchronizationService {
 	 * It is current when the origin hash matches, neither the synchronization nor the
 	 * mapping changed since the source was last checked, and the target still has an id and hash.
 	 *
-	 * @param ContractRun $run        The contract run.
-	 * @param array       $contract   The synchronization contract.
-	 * @param string      $originHash The hash of the source object.
+	 * @param ContractRun $run      The contract run, with its origin hash.
+	 * @param array       $contract The synchronization contract.
 	 *
 	 * @return bool True when the contract can be skipped.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function contractIsCurrent(ContractRun $run, array $contract, string $originHash): bool {
-		return $originHash === ($contract['originHash'] ?? null)
+	private function contractIsCurrent(ContractRun $run, array $contract): bool {
+		return $run->originHash === ($contract['originHash'] ?? null)
 			&& ($run->synchronization['updated'] ?? null) < ($contract['sourceLastChecked'] ?? null)
 			&& $this->mappingUnchangedSince(mapping: $run->mapping, lastChecked: ($contract['sourceLastChecked'] ?? null)) === true
 			&& ($contract['targetId'] ?? null) !== null
@@ -5400,9 +5383,8 @@ class SynchronizationService {
 	 * response must not reach the hash and the target writer, so it aborts the sync with
 	 * a message naming the synchronization.
 	 *
-	 * @param array|null $synchronization The synchronization configuration.
-	 * @param array      $object          The mapped object.
-	 * @param FlowToken  $flowToken       The flow token shared across the run.
+	 * @param ContractRun $run    The contract run.
+	 * @param array       $object The mapped object.
 	 *
 	 * @return array The object after the rules, or the object unchanged when there are none.
 	 *
@@ -5410,12 +5392,13 @@ class SynchronizationService {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function applyBeforeRules(?array $synchronization, array $object, FlowToken $flowToken): array {
+	private function applyBeforeRules(ContractRun $run, array $object): array {
+		$synchronization = $run->synchronization;
 		if (($synchronization['actions'] ?? []) === []) {
 			return $object;
 		}
 
-		$ruleResult = $this->processRules(synchronization: $synchronization, data: $object, timing: 'before', flowToken: $flowToken);
+		$ruleResult = $this->processRules(synchronization: $synchronization, data: $object, timing: 'before', flowToken: $run->flowToken);
 		if ($ruleResult instanceof JSONResponse) {
 			throw new Exception(
 				'Synchronization aborted: a "before" rule returned an error response for synchronization '
@@ -5423,7 +5406,7 @@ class SynchronizationService {
 			);
 		}
 
-		$flowToken->setSyncOutputAmended($ruleResult);
+		$run->flowToken->setSyncOutputAmended($ruleResult);
 
 		return $ruleResult;
 	}//end applyBeforeRules()
@@ -5494,15 +5477,14 @@ class SynchronizationService {
 	/**
 	 * Run the `after` rules of a synchronization that has a register/schema on either side.
 	 *
-	 * @param ContractRun $run      The contract run.
+	 * @param ContractRun $run      The contract run; its object and its object before mapping go to the rules.
 	 * @param array       $contract The synchronization contract.
-	 * @param array       $data     The written object plus its `_objectBeforeMapping`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
 	 */
-	private function runAfterRules(ContractRun $run, array $contract, array $data): void {
+	private function runAfterRules(ContractRun $run, array $contract): void {
 		$synchronization = $run->synchronization;
 		if (($synchronization['targetType'] ?? null) === 'register/schema') {
 			$registerSchema = ($synchronization['targetId'] ?? '');
@@ -5517,7 +5499,7 @@ class SynchronizationService {
 		[$registerId, $schemaId] = explode(separator: '/', string: (string)$registerSchema);
 		$this->processRules(
 			synchronization: $synchronization,
-			data: $data,
+			data: array_merge($run->object, ['_objectBeforeMapping' => $run->objectBeforeMapping]),
 			timing: 'after',
 			objectId: $objectId,
 			registerId: (int)$registerId,

@@ -86,4 +86,31 @@ class ContractRun {
 	 * @var array|null
 	 */
 	public ?array $contractLog = null;
+	/**
+	 * The source object, held by reference so the caller sees every change.
+	 *
+	 * @var array
+	 */
+	public array $object = [];
+
+	/**
+	 * The object as it was before the source-to-target mapping.
+	 *
+	 * @var array
+	 */
+	public array $objectBeforeMapping = [];
+
+	/**
+	 * Whether the contract is written even when it is current.
+	 *
+	 * @var boolean|null
+	 */
+	public ?bool $force = false;
+
+	/**
+	 * The hash of the source object.
+	 *
+	 * @var string
+	 */
+	public string $originHash = '';
 }//end class

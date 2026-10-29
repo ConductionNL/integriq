@@ -68,6 +68,16 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 	private array $ruleLookups = [];
 
 	/**
+	 * @var array<int, string> Every info message logged.
+	 */
+	private array $infoLogs = [];
+
+	/**
+	 * @var array The caller's object after the last run.
+	 */
+	private array $lastObject = [];
+
+	/**
 	 * Set up the mocks that record what a contract run writes.
 	 *
 	 * @return void
@@ -92,16 +102,27 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 					$this->ruleLookups[] = $id;
 					$timing = 'never';
 					$type = 'mapping';
+					$conditions = [];
 					if ($id === 'error-before') {
 						$timing = 'before';
 						$type = 'error';
 					}
 
+					if ($id === 'after-sees-original') {
+						$timing = 'after';
+						$type = 'error';
+						$conditions = ['==' => [['var' => '_objectBeforeMapping.a'], 2]];
+					}
+
 					return ObjectServiceMockBuilder::objectEntity(
 						$this,
-						['name' => $id, 'type' => $type, 'timing' => $timing, 'configuration' => ['error' => ['code' => 400, 'name' => 'Rule failed', 'message' => 'A before rule failed']]],
+						['name' => $id, 'type' => $type, 'timing' => $timing, 'conditions' => $conditions, 'configuration' => ['error' => ['code' => 400, 'name' => 'Rule failed', 'message' => 'A before rule failed']]],
 						$id
 					);
+				}
+
+				if ($schema === 'mapping' && $id === 'm-1') {
+					return ObjectServiceMockBuilder::objectEntity($this, ['name' => 'm-1'], 'm-1');
 				}
 
 				throw new DoesNotExistException('no ' . $schema . ' ' . $id);
@@ -148,11 +169,11 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$callService,
-					$this->createMock(MappingService::class),
+					$this->mappingService(),
 					$container,
 					$this->orObjectService,
 					$this->createMock(ObjectService::class),
-					$this->createMock(LoggerInterface::class),
+					$this->logger(),
 					$this->createMock(SynchronizationLogService::class),
 					$appConfig,
 					$this->createMock(SynchronizationApprovalGate::class),
@@ -198,7 +219,7 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 			($options['sourceConfig'] ?? [])
 		);
 
-		return $service->synchronizeContract(
+		$result = $service->synchronizeContract(
 			synchronizationContract: $contract,
 			flowToken: $flowToken,
 			synchronization: $synchronization,
@@ -207,7 +228,40 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 			force: ($options['force'] ?? false),
 			log: $this->runLog()
 		);
+		$this->lastObject = $object;
+
+		return $result;
 	}//end runContract()
+
+	/**
+	 * A mapping service that maps every object to `['mapped' => <its keys>]`.
+	 *
+	 * @return MappingService
+	 */
+	private function mappingService(): MappingService {
+		$mapping = $this->createMock(MappingService::class);
+		$mapping->method('executeMapping')->willReturnCallback(
+			static fn (...$args): array => ['mapped' => array_keys(($args['input'] ?? $args[1]))]
+		);
+
+		return $mapping;
+	}//end mappingService()
+
+	/**
+	 * A logger that records its info messages.
+	 *
+	 * @return LoggerInterface
+	 */
+	private function logger(): LoggerInterface {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('info')->willReturnCallback(
+			function (...$args): void {
+				$this->infoLogs[] = (string)$args[0];
+			}
+		);
+
+		return $logger;
+	}//end logger()
 
 	/**
 	 * The origin hash synchronizeContract() computes for an object without hash mapping.
@@ -473,4 +527,21 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 		$this->assertSame($result['contract'], $buffer[0]);
 		$this->assertNotEmpty($buffer[0]['uuid']);
 	}//end testABufferedTargetWriteBuffersTheContract()
+
+	/**
+	 * The caller's object ends up mapped, and the `after` rules see the object before mapping.
+	 *
+	 * @return void
+	 */
+	public function testTheCallerSeesTheMappedObjectAndAfterRulesSeeTheOriginal(): void {
+		$this->runContract(
+			$this->service(),
+			['id' => 'c-1'],
+			['id' => 's-1', 'sourceTargetMapping' => 'm-1', 'actions' => ['after-sees-original'], 'targetType' => 'register/schema', 'targetId' => '1/2']
+		);
+
+		$this->assertSame(['mapped' => ['b', 'a']], $this->lastObject);
+		$applied = array_filter($this->infoLogs, static fn (string $line): bool => str_starts_with($line, 'Applying rule'));
+		$this->assertCount(1, $applied);
+	}//end testTheCallerSeesTheMappedObjectAndAfterRulesSeeTheOriginal()
 }//end class
