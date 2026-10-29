@@ -190,6 +190,10 @@ class LtiController extends Controller {
 	 * @return RedirectResponse|JSONResponse 302 to `launchTargetUrl` on success; 400/401 on any validation failure.
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
+	 * @no-admin-idor-exempt LTI 1.3 launch POST from the tool platform, which has no Nextcloud session.
+	 *                       LtiLaunchService::validateLaunch() authenticates it: state cookie match, the
+	 *                       platform's signed id_token, a single-use nonce, and a deployment_id claim that
+	 *                       must belong to the {deployment} in the route.
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
