@@ -35,7 +35,7 @@ IntegrIQ runs inside a Nextcloud server, in PHP on the server and Vue in the bro
 
 ## Functional components
 
-We group the code by what it does, not by technical layer. The class name or its directory decides the component; `sigrid.yaml` holds the exact patterns.
+We group the code by what it does, not by technical layer. The class name or its directory decides the component.
 
 | Component | What it covers | PHP lines |
 |---|---|---|
@@ -49,11 +49,11 @@ We group the code by what it does, not by technical layer. The class name or its
 
 Counts exclude `lib/Migration/`, which SIG leaves out by default.
 
-### Boundaries and known coupling
+### Boundaries
 
 The protocol adapters build on the gateway, flows and synchronisation. Every component also uses **Application wiring** for shared exceptions and helpers. Those dependencies are intended.
 
-Measured on `lib/` in October 2026, about 43% of the PHP code is called from another component, and every pair of components calls each other both ways. The main work ahead is to let the core components reach adapters only through registries and interfaces, so a new protocol never needs a change in the core.
+Decoupling between components is in progress. The aim is that the core components reach protocol adapters only through registries and interfaces, so a new protocol needs no change in the core.
 
 ## How a request flows
 
@@ -74,7 +74,7 @@ SIG's Sigrid excludes `vendor/`, `node_modules/`, `docs/`, `examples/`, migratio
 - `l10n/*.js`: generated translation catalogues that would count as JavaScript.
 - `scripts/`: developer tooling that would count as production code.
 
-`sigrid.yaml` handles both. It also pins the model version and maps the components above.
+`sigrid.yaml` excludes both and pins the model version. Components are left to Sigrid's automatic detection.
 
 ## Licence
 
