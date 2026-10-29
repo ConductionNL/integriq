@@ -346,30 +346,9 @@
     },
     "string-body": {
         "outcome": {
-            "throws": "TypeError",
-            "message": "Mock::synchronize(): Argument #7 ($data) must be of type ?array, string given"
+            "return": {}
         },
-        "log": [
-            [
-                "logger.debug",
-                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
-            ],
-            [
-                "sync.getSynchronization",
-                null,
-                {
-                    "reference": "s"
-                }
-            ],
-            [
-                "logger.debug",
-                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
-            ],
-            [
-                "logger.debug",
-                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest='cfg-test' force=false mutationType=NULL"
-            ]
-        ]
+        "log": []
     },
     "no-body": {
         "outcome": {

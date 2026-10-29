@@ -4040,7 +4040,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *                        test/force flags — the target synchronization already knows
 	 *                        how to no-op safely.
 	 *
-	 * @return array The data after synchronization processing.
+	 * @return array|JSONResponse The data after synchronization processing, or a 400 when the body is not an object.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-dry-run-mode-suppresses-write-shaped-rule-dispatch-req-rule-011
@@ -4051,11 +4051,16 @@ class EndpointService implements EndpointServiceInterface {
 		FlowToken $flowToken,
 		?ExecutionTraceContext $trace = null,
 		bool $dryRun = false,
-	): array {
+	): array|JSONResponse {
 		$config = $rule->getObject()['configuration'] ?? [];
 
 		// Check if base requirement is in config.
 		if (isset($config['synchronization']) === false) {
+			return $data;
+		}
+
+		$data = $this->syncRuleObjectBody(data: $data);
+		if ($data instanceof JSONResponse) {
 			return $data;
 		}
 
@@ -4113,6 +4118,37 @@ class EndpointService implements EndpointServiceInterface {
 			result: ['data' => $data, 'sent' => $sendObject, 'returned' => $object, 'log' => $log]
 		);
 	}//end processSyncRule()
+
+	/**
+	 * The request data with its body as an object.
+	 *
+	 * An earlier rule can leave the body as a string. A string holding a JSON
+	 * object is read as that object; anything else that is not an object (or
+	 * absent) cannot be synchronized and is a bad request.
+	 *
+	 * @param array $data The request data.
+	 *
+	 * @return array|JSONResponse The data, or a 400 response.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleObjectBody(array $data): array|JSONResponse {
+		if (isset($data['body']) === false || is_array($data['body']) === true) {
+			return $data;
+		}
+
+		$body = null;
+		if (is_string($data['body']) === true) {
+			$body = json_decode($data['body'], true);
+		}
+
+		if (is_array($body) === false) {
+			return new JSONResponse(['error' => 'A synchronization rule needs the request body to be an object'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$data['body'] = $body;
+		return $data;
+	}//end syncRuleObjectBody()
 
 	/**
 	 * The synchronization a synchronization rule names: by numeric id, else by reference.
