@@ -81,7 +81,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\EntityNotMigratableException;
 use OCA\Integriq\Flow\SynchronizationRunNodeInterface;
 use OCP\IAppConfig;
@@ -186,7 +186,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	private function runAsUid(): string {
 		return trim(
 			$this->appConfig->getValueString(
-				app: Application::APP_ID,
+				app: AppIdentity::APP_ID,
 				key: self::RUN_AS_CONFIG_KEY,
 				default: ''
 			)

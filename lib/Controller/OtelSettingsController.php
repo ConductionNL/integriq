@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Observability\Otel\OtelSettings;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
@@ -50,7 +50,7 @@ class OtelSettingsController extends Controller {
 		IRequest $request,
 		private readonly OtelSettings $settings,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\App\Events\AppDisableEvent;
 use OCP\App\Events\AppEnableEvent;
@@ -74,7 +74,7 @@ class ConnectionAppLifecycleListener implements IEventListener {
 		if ($event instanceof AppEnableEvent) {
 			$appId = $event->getAppId();
 			$this->run(appId: $appId, operation: static function (ConnectionRegistryServiceInterface $registry) use ($appId): void {
-				if ($appId === Application::APP_ID) {
+				if ($appId === AppIdentity::APP_ID) {
 					$registry->sync();
 					return;
 				}

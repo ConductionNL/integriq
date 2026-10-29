@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\WorkflowEngine;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
@@ -107,7 +107,7 @@ class FireCloudEventOperation implements ISpecificOperation {
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath(Application::APP_ID, 'app.svg');
+		return $this->urlGenerator->imagePath(AppIdentity::APP_ID, 'app.svg');
 	}//end getIcon()
 
 	/**

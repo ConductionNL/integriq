@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Expression\EnvironmentAllowlist;
 use OCA\Integriq\Expression\ExpressionValueSourceRegistry;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -73,7 +73,7 @@ class ExpressionSourceController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

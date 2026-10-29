@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSettingsRefusal;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettingsInterface;
@@ -69,7 +69,7 @@ class BerichtenboxSettingsController extends Controller {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

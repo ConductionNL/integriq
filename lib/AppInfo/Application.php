@@ -51,6 +51,7 @@ use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClientMock;
 use OCA\Integriq\Capabilities;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
@@ -252,7 +253,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @var string
 	 */
-	public const APP_ID = 'integriq';
+	public const APP_ID = AppIdentity::APP_ID;
 
 	/**
 	 * Constructor.

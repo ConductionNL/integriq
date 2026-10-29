@@ -23,7 +23,7 @@ namespace OCA\Integriq\Service\DigitalPost;
 use OCA\Integriq\Exception\MtlsConfigurationException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
@@ -117,7 +117,7 @@ class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface 
 	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-live-binding-speaks-the-interface-logius-publishes-req-dpa-008
 	 */
 	public function live(): bool {
-		$raw = $this->appConfig->getValueString(Application::APP_ID, 'logius.berichtenbox.feature_flag', '0');
+		$raw = $this->appConfig->getValueString(AppIdentity::APP_ID, 'logius.berichtenbox.feature_flag', '0');
 
 		return ($raw === '1' || strtolower($raw) === 'true');
 	}//end live()

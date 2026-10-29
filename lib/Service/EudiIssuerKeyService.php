@@ -30,7 +30,7 @@ use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
@@ -128,7 +128,7 @@ class EudiIssuerKeyService implements EudiIssuerKeyServiceInterface {
 	 * @return array{active: array|null, archived: array[]}
 	 */
 	private function loadKeySet(?string $organisationId): array {
-		$raw = $this->appConfig->getValueString(Application::APP_ID, $this->configKey(organisationId: $organisationId), '');
+		$raw = $this->appConfig->getValueString(AppIdentity::APP_ID, $this->configKey(organisationId: $organisationId), '');
 		if ($raw === '') {
 			return ['active' => null, 'archived' => []];
 		}
@@ -155,7 +155,7 @@ class EudiIssuerKeyService implements EudiIssuerKeyServiceInterface {
 	 */
 	private function saveKeySet(?string $organisationId, array $keySet): void {
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			$this->configKey(organisationId: $organisationId),
 			json_encode($keySet),
 			sensitive: true
