@@ -21,8 +21,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Gateway;
 
+use OCA\Integriq\Gateway\Adapter\PropertyRestrictionGatewayInterface;
 use OCA\Integriq\Gateway\Adapter\PublicationGateway;
 use OCA\Integriq\Gateway\Adapter\PublicationGatewayInterface;
+use OCA\Integriq\Gateway\Adapter\WkpbGateway;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -30,6 +32,11 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * does not name the classes behind them.
  *
  * @spec exclude container wiring only, the registrar has no behaviour of its own
+ *
+ * Naming every class it wires is what a registrar is for, so the coupling
+ * between objects is high by design.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 final class GatewayRegistrar {
 	/**
@@ -46,6 +53,7 @@ final class GatewayRegistrar {
 		$context->registerServiceAlias(ZgwRegistryBindingInterface::class, ZgwRegistryBinding::class);
 		$context->registerServiceAlias(GatewayRegistryInterface::class, GatewayRegistry::class);
 		$context->registerServiceAlias(PublicationGatewayInterface::class, PublicationGateway::class);
+		$context->registerServiceAlias(PropertyRestrictionGatewayInterface::class, WkpbGateway::class);
 		$this->registerGateways(context: $context);
 	}//end register()
 

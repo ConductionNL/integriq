@@ -38,7 +38,7 @@ namespace OCA\Integriq\Service\Oso;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolverInterface;
-use OCA\Integriq\Adapters\Digikoppeling\WusProfileService;
+use OCA\Integriq\Adapters\Digikoppeling\SignedSoapProfileInterface;
 use OCA\Integriq\Exception\DigikoppelingException;
 use OCA\Integriq\Exception\OsoProviderException;
 use OCP\IL10N;
@@ -56,14 +56,14 @@ class OsoKennisnetClient implements OsoProviderInterface {
 	 *
 	 * @param Client $httpClient Guzzle client (test seam: inject one with a MockHandler stack).
 	 * @param PkiOverheidCredentialResolverInterface $credentialResolver Resolves `certificateRef` into signing material.
-	 * @param WusProfileService $wusProfileService Signs the envelope for the WUS transport profile.
+	 * @param SignedSoapProfileInterface $wusProfileService Signs the envelope for the WUS transport profile.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for secret-free failure diagnostics.
 	 */
 	public function __construct(
 		private readonly Client $httpClient,
 		private readonly PkiOverheidCredentialResolverInterface $credentialResolver,
-		private readonly WusProfileService $wusProfileService,
+		private readonly SignedSoapProfileInterface $wusProfileService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {

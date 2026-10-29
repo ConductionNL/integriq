@@ -28,6 +28,8 @@ use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientHttp;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
 use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolver;
 use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolverInterface;
+use OCA\Integriq\Adapters\Digikoppeling\SignedSoapProfileInterface;
+use OCA\Integriq\Adapters\Digikoppeling\WusProfileService;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
@@ -74,6 +76,7 @@ final class AdaptersRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
+		$context->registerServiceAlias(SignedSoapProfileInterface::class, WusProfileService::class);
 		$context->registerServiceAlias(SloCurriculumTreeWalkerInterface::class, SloCurriculumTreeWalker::class);
 		$context->registerServiceAlias(SloCurriculumPresetRegistryInterface::class, SloCurriculumPresetRegistry::class);
 		$context->registerServiceAlias(SloCurriculumMapperInterface::class, SloCurriculumMapper::class);

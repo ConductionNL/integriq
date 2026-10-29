@@ -45,7 +45,7 @@ use OCA\Integriq\Exception\DigikoppelingException;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class WusProfileService {
+class WusProfileService implements SignedSoapProfileInterface {
 	/**
 	 * Constructor.
 	 *

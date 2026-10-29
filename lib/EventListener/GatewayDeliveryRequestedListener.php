@@ -28,7 +28,7 @@ use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
 use OCA\Integriq\Gateway\Adapter\CorvGateway;
 use OCA\Integriq\Gateway\Adapter\GgkGateway;
 use OCA\Integriq\Gateway\Adapter\PublicationGatewayInterface;
-use OCA\Integriq\Gateway\Adapter\WkpbGateway;
+use OCA\Integriq\Gateway\Adapter\PropertyRestrictionGatewayInterface;
 use OCA\Integriq\Gateway\GatewayDelivery;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -51,13 +51,13 @@ class GatewayDeliveryRequestedListener implements IEventListener {
 	 *
 	 * @param CorvGateway $corv CORV.
 	 * @param GgkGateway $ggk GGK.
-	 * @param WkpbGateway $wkpb WKPB.
+	 * @param PropertyRestrictionGatewayInterface $wkpb WKPB.
 	 * @param PublicationGatewayInterface $publication Official publication.
 	 */
 	public function __construct(
 		private readonly CorvGateway $corv,
 		private readonly GgkGateway $ggk,
-		private readonly WkpbGateway $wkpb,
+		private readonly PropertyRestrictionGatewayInterface $wkpb,
 		private readonly PublicationGatewayInterface $publication,
 	) {
 
@@ -82,7 +82,7 @@ class GatewayDeliveryRequestedListener implements IEventListener {
 		$delivery = match ($event->getGatewayId()) {
 			'corv' => $this->message(event: $event, gateway: $this->corv),
 			'ggk' => $this->message(event: $event, gateway: $this->ggk),
-			WkpbGateway::ID => $this->wkpb->register(
+			PropertyRestrictionGatewayInterface::ID => $this->wkpb->register(
 				propertyReference: (string)($request['propertyReference'] ?? ''),
 				restriction: (array)($request['restriction'] ?? []),
 				config: $config
