@@ -43,7 +43,7 @@ namespace OCA\Integriq\Directory;
 use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
 use OCA\Integriq\Service\SynchronizationLogService;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
@@ -344,13 +344,13 @@ class DirectorySyncService {
 		}
 
 		$total = (int)$plan['currentTotal'];
-		if ($total < SynchronizationService::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD) {
+		if ($total < SynchronizationServiceInterface::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD) {
 			// A percentage computed from a handful of memberships is not a
 			// signal, which is the engine's own reasoning for this floor.
 			return null;
 		}
 
-		$threshold = (float)($configuration['deletionRatioThreshold'] ?? SynchronizationService::DEFAULT_DELETION_RATIO_THRESHOLD);
+		$threshold = (float)($configuration['deletionRatioThreshold'] ?? SynchronizationServiceInterface::DEFAULT_DELETION_RATIO_THRESHOLD);
 		$ratio = (count($plan['removals']) / $total);
 
 		if ($ratio <= $threshold) {

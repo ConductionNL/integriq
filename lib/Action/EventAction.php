@@ -27,7 +27,7 @@
 
 namespace OCA\Integriq\Action;
 
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use Throwable;
 
 /**
@@ -37,10 +37,10 @@ class EventAction {
 	/**
 	 * Constructor.
 	 *
-	 * @param EventService $eventService Emits the event onto the bus.
+	 * @param EventServiceInterface $eventService Emits the event onto the bus.
 	 */
 	public function __construct(
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 	) {
 
 	}//end __construct()

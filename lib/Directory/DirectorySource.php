@@ -37,7 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Directory;
 
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
@@ -91,7 +91,7 @@ class DirectorySource {
 	 * Constructor.
 	 *
 	 * @param OrObjectService $orObjectService OpenRegister object service, for finding connections.
-	 * @param CallService $callService The shared outbound call engine (credentials via the broker).
+	 * @param CallServiceInterface $callService The shared outbound call engine (credentials via the broker).
 	 * @param IL10N $l10n Translations, so a refusal reads as a sentence.
 	 * @param LoggerInterface $logger Logger for secret-free diagnostics.
 	 *
@@ -99,7 +99,7 @@ class DirectorySource {
 	 */
 	public function __construct(
 		private readonly OrObjectService $orObjectService,
-		private readonly CallService $callService,
+		private readonly CallServiceInterface $callService,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
 	) {

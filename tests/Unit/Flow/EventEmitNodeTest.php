@@ -23,7 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Flow;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Flow\EventEmitNode;
 use OCA\Integriq\Flow\FlowNodeSupport;
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -42,7 +42,7 @@ class EventEmitNodeTest extends TestCase {
 	/**
 	 * The event pipeline double.
 	 *
-	 * @var EventService&MockObject
+	 * @var EventServiceInterface&MockObject
 	 */
 	private $eventService;
 
@@ -61,10 +61,10 @@ class EventEmitNodeTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->eventService = $this->createMock(EventService::class);
+		$this->eventService = $this->createMock(EventServiceInterface::class);
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(EventService::class)->willReturn($this->eventService);
+		$container->method('get')->with(EventServiceInterface::class)->willReturn($this->eventService);
 
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(

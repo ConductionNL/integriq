@@ -60,7 +60,7 @@
     "@vueuse/core": "^14.3.0",
     "css-loader": "~7.1.1",
     "dexie": "^4.4.6",
-    "dompurify": "^3.4.15",
+    "dompurify": "^3.4.17",
     "gridstack": "^14.0.0",
     "lodash": "^4.17.21",
     "marked": "^18.0.14",
@@ -129,7 +129,8 @@
     "@nextcloud/axios": "$@nextcloud/axios",
     "postcss": "^8.4.49",
     "vue3-apexcharts": "<1.9.0",
-    "vue-apexcharts": "<1.9.0"
+    "vue-apexcharts": "<1.9.0",
+    "dompurify": "$dompurify"
   },
   "prettier": "@nextcloud/prettier-config"
 }
