@@ -34,7 +34,7 @@ use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
-use OCA\Integriq\Service\Dso\DsoConnectionAlertsInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\OpenFormulierenIntakeServiceInterface;
@@ -73,7 +73,7 @@ class OpenFormulierenController extends Controller {
 	 * @param IRequest $request Current request.
 	 * @param OpenFormulierenIntakeServiceInterface $intakeService Ingest / mapping / handoff orchestration.
 	 * @param OpenFormulierenConnection $connection The consumer that authenticates the webhook and its account.
-	 * @param DsoConnectionAlertsInterface $alerts Admin alerts when a submission is refused (shared with DSO).
+	 * @param PortalConnectionAlertsInterface $alerts Admin alerts when a submission is refused (shared with DSO).
 	 * @param IUserSession $userSession The user session (status/handoff endpoints).
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
@@ -84,7 +84,7 @@ class OpenFormulierenController extends Controller {
 		IRequest $request,
 		private readonly OpenFormulierenIntakeServiceInterface $intakeService,
 		private readonly OpenFormulierenConnection $connection,
-		private readonly DsoConnectionAlertsInterface $alerts,
+		private readonly PortalConnectionAlertsInterface $alerts,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
@@ -225,13 +225,13 @@ class OpenFormulierenController extends Controller {
 			['submissionUuid' => (string)($submissionMeta['uuid'] ?? ''), 'exception' => $reason]
 		);
 		$this->alerts->notify(
-			reason: DsoConnectionAlertsInterface::REASON_SUBMISSION_NOT_STORED,
+			reason: PortalConnectionAlertsInterface::REASON_SUBMISSION_NOT_STORED,
 			channel: DsoConnectionUnavailableException::CHANNEL_OPEN_FORMULIEREN
 		);
 
 		return new JSONResponse(
 			[
-				'error' => DsoConnectionAlertsInterface::REASON_SUBMISSION_NOT_STORED,
+				'error' => PortalConnectionAlertsInterface::REASON_SUBMISSION_NOT_STORED,
 				'message' => $this->l->t('The submission could not be stored. Try again later.'),
 			],
 			Http::STATUS_SERVICE_UNAVAILABLE

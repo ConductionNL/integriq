@@ -22,7 +22,7 @@ namespace OCA\Integriq\Service;
 /**
  * Public operations of {@see DSOSignatureVerifierService} that other components call.
  */
-interface DSOSignatureVerifierServiceInterface {
+interface SignedPayloadVerifierInterface {
 	/**
 	 * Legacy app-config key selecting the signing mode (`hmac` or `rsa`).
 	 * Read only by the MigrateDsoStamConnection repair step.
