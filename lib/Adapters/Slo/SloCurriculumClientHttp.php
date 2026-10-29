@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Adapters\Slo;
 
 use OCA\Integriq\Exception\SloCurriculumException;
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Throwable;
@@ -54,11 +54,11 @@ final class SloCurriculumClientHttp extends SloCurriculumClient {
 	/**
 	 * Constructor.
 	 *
-	 * @param CallService $callService Integriq's outbound HTTP surface.
+	 * @param CallServiceInterface $callService Integriq's outbound HTTP surface.
 	 * @param OrObjectService $orObjectService OpenRegister object service, to resolve the seeded source.
 	 */
 	public function __construct(
-		private readonly CallService $callService,
+		private readonly CallServiceInterface $callService,
 		private readonly OrObjectService $orObjectService,
 	) {
 	}//end __construct()

@@ -63,7 +63,7 @@ namespace OCA\Integriq\Flow;
 use GuzzleHttp\Promise\PromiseInterface;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Exception\ResponseDecodeException;
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\ResponseDecoder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
@@ -127,7 +127,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Constructor.
 	 *
-	 * @param CallService $callService The governed outbound call engine.
+	 * @param CallServiceInterface $callService The governed outbound call engine.
 	 * @param FlowConcurrency $concurrency Bounded, ordered per-item dispatch.
 	 * @param OpenRegisterObjectService $objectService Resolves the Source object.
 	 * @param FlowOwner $flowOwner Fail-closed run-owner resolution.
@@ -137,7 +137,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @param ResponseDecoder $decoder Reads the response body in the step's `decode` mode.
 	 */
 	public function __construct(
-		private readonly CallService $callService,
+		private readonly CallServiceInterface $callService,
 		private readonly FlowConcurrency $concurrency,
 		private readonly OpenRegisterObjectService $objectService,
 		private readonly FlowOwner $flowOwner,
