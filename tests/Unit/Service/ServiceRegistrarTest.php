@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
+use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
 use OCA\Integriq\Service\ApprovalDecisionService;
 use OCA\Integriq\Service\ApprovalDecisionServiceInterface;
 use OCA\Integriq\Service\ApprovalService;
@@ -223,10 +225,31 @@ class ServiceRegistrarTest extends TestCase {
 		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
 		ConnectionMonitorServiceInterface::class => ConnectionMonitorService::class,
 		TablesSyncAdapterInterface::class => TablesSyncAdapter::class,
+		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 
 	/**
-	 * Each contract is aliased to its implementation, and nothing else is registered.
+	 * The services the registrar builds with a factory, in registration order.
+	 */
+	private const FACTORIES = [
+		'OCA\\Integriq\\Service\\SettingsService',
+		'OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry',
+		'OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry',
+		'OCA\\Integriq\\Service\\Rod\\RodProviderRegistry',
+		'OCA\\Integriq\\Service\\Verzuimloket\\VerzuimloketProviderRegistry',
+		'OCA\\Integriq\\Service\\Oso\\OsoProviderRegistry',
+		'OCA\\Integriq\\Service\\UwlrEduV\\UwlrEduVProviderRegistry',
+		'OCA\\Integriq\\Service\\Objecten\\ObjecttypeRegistry',
+		'OCA\\Integriq\\Service\\Objecten\\ObjectenTokenService',
+		'OCA\\Integriq\\Service\\Objecten\\ObjecttypeEndpointHandler',
+		'OCA\\Integriq\\Service\\Objecten\\ObjectEndpointHandler',
+		'OCA\\Integriq\\Service\\Objecten\\ObjectWriteHandler',
+		'OCA\\Integriq\\Service\\Tables\\TablesClientInterface',
+		'OCA\\Integriq\\Service\\Forms\\FormsClientInterface',
+	];
+
+	/**
+	 * Each contract is aliased to its implementation, and the only other registrations are the factories.
 	 *
 	 * @return void
 	 *
@@ -240,11 +263,17 @@ class ServiceRegistrarTest extends TestCase {
 				$aliases[$alias] = $target;
 			}
 		);
-		$context->expects($this->never())->method('registerService');
+		$factories = [];
+		$context->method('registerService')->willReturnCallback(
+			function (string $name) use (&$factories): void {
+				$factories[] = $name;
+			}
+		);
 
 		(new ServiceRegistrar())->register(context: $context);
 
 		$this->assertSame(self::EXPECTED, $aliases);
+		$this->assertSame(self::FACTORIES, $factories);
 	}
 
 	/**

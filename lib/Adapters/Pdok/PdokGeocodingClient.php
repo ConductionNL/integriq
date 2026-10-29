@@ -6,7 +6,7 @@
  * Defines the polymorphic surface — `suggest()`, `lookup()`, `reverse()`,
  * `flavour()` — that the {@see PdokGeocodingClientMock} (deterministic, no
  * network) and {@see PdokGeocodingClientHttp} (real outbound calls) flavours
- * implement. DI in {@see \OCA\Integriq\AppInfo\Application::register()}
+ * implement. DI in {@see \OCA\Integriq\Adapters\AdaptersRegistrar}
  * resolves the abstract to one of those concrete implementations, gated on the
  * `pdok.feature_flag` app-config flag.
  *

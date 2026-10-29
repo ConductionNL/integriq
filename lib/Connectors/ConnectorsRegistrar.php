@@ -27,6 +27,8 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 /**
  * Binds each Connectors contract to the class that implements it, so callers
  * outside the Connectors component depend on the contract only.
+ *
+ * @spec exclude container wiring only, the registrar has no behaviour of its own
  */
 final class ConnectorsRegistrar {
 	/**

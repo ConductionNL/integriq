@@ -156,12 +156,12 @@ class ObjectenWiringTest extends TestCase {
 	}//end testEveryFacadeServiceIsRegistered()
 
 	/**
-	 * The app's register() calls the wiring; without the call the factories exist and nothing uses them.
+	 * The Service registrar calls the wiring; without the call the factories exist and nothing uses them.
 	 *
 	 * @return void
 	 */
 	public function testTheApplicationRegistersTheWiring(): void {
-		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/AppInfo/Application.php');
+		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/Service/ServiceRegistrar.php');
 
 		$this->assertStringContainsString('ObjectenWiring::register(context: $context)', $source);
 	}//end testTheApplicationRegistersTheWiring()

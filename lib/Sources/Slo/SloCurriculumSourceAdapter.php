@@ -59,7 +59,7 @@ final class SloCurriculumSourceAdapter {
 	/**
 	 * App-config key of the dormant flag.
 	 */
-	public const FLAG_KEY = 'slo.curriculum.feature_flag';
+	public const FLAG_KEY = SloCurriculumClient::FLAG_KEY;
 
 	/**
 	 * Base URL of SLO's REST API, for an aggregate framework's sourceRef.

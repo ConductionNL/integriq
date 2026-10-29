@@ -223,9 +223,8 @@ class MessageSchemaDocumentListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testApplicationRegistersTheListenerOnCreateAndUpdate(): void {
-		$source = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/AppInfo/Application.php');
+		$source = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/EventListener/EventListenerRegistrar.php');
 
-		$this->assertStringContainsString('use OCA\Integriq\EventListener\MessageSchemaDocumentListener;', $source);
 		foreach (['ObjectCreatingEvent', 'ObjectUpdatingEvent'] as $event) {
 			$this->assertStringContainsString(
 				'$dispatcher->addServiceListener(eventName: ' . $event . '::class, className: MessageSchemaDocumentListener::class);',
