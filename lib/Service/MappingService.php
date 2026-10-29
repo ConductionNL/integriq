@@ -308,79 +308,126 @@ class MappingService implements MappingServiceInterface {
 	public function executeMapping(OrMapping|ObjectEntity|array|string|int $mapping, array $input, bool $list = false): array {
 		$mapping = $this->normaliseMapping(mapping: $mapping);
 
-		// Check for list.
 		if ($list === true) {
-			$list = [];
-			$extraValues = [];
-
-			// Allow extra(input)values to be passed down for mapping while dealing with a list.
-			if (array_key_exists('listInput', $input) === true) {
-				$extraValues = $input;
-				$input = $input['listInput'];
-				unset($extraValues['listInput'], $extraValues['value']);
-			}
-
-			foreach ($input as $key => $value) {
-				// Mapping function expects an array for $input, make sure we always pass an array to this function.
-				if (is_array($value) === false || empty($extraValues) === false) {
-					// Todo: we want to remove ['value' => $value] from this at some point, for now required for DOWR to work.
-					$value = array_merge((array)$value, ['value' => $value], $extraValues);
-				}
-
-				$list[$key] = $this->executeMapping(mapping: $mapping, input: $value);
-			}
-
-			return $list;
-		}//end if
-
-		$originalInput = $input;
-		$input = $this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;');
-
-		// Determine pass through.
-		// Let's get the dot array based on https://github.com/adbario/php-dot-notation.
-		if ($mapping->getPassThrough() === true) {
-			$dotArray = new Dot($input);
-		} else {
-			$dotArray = new Dot();
+			return $this->executeListMapping(mapping: $mapping, input: $input);
 		}
 
-		$dotInput = new Dot($input);
+		$dotArray = $this->mapToDot(mapping: $mapping, input: $input);
+		$this->applyUnsetsAndCasts(mapping: $mapping, dotArray: $dotArray);
 
-		// Let's do the actual mapping.
+		// Back to array.
+		$output = $this->encodeArrayKeys(array: $dotArray->all(), toReplace: '&#46;', replacement: '.');
+
+		return $this->rootLevelOutput(output: $output);
+	}//end executeMapping()
+
+	/**
+	 * Map every item of a list.
+	 *
+	 * A `listInput` key carries the list; the other input keys (but `value`)
+	 * are extra values merged into every item. An item that is not an array,
+	 * or any item when there are extra values, is mapped as the item's own
+	 * keys plus `value` (the item itself) plus the extra values.
+	 *
+	 * @param OrMapping $mapping The mapping recipe.
+	 * @param array     $input   The list, or `listInput` with extra values.
+	 *
+	 * @return array The mapped items, keyed as in the input list.
+	 *
+	 * @throws LoaderError|SyntaxError Twig Exceptions.
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 */
+	private function executeListMapping(OrMapping $mapping, array $input): array {
+		$list = [];
+		$extraValues = [];
+
+		if (array_key_exists('listInput', $input) === true) {
+			$extraValues = $input;
+			$input = $input['listInput'];
+			unset($extraValues['listInput'], $extraValues['value']);
+		}
+
+		foreach ($input as $key => $value) {
+			// Mapping function expects an array for $input, make sure we always pass an array to this function.
+			if (is_array($value) === false || empty($extraValues) === false) {
+				// Todo: we want to remove ['value' => $value] from this at some point, for now required for DOWR to work.
+				$value = array_merge((array)$value, ['value' => $value], $extraValues);
+			}
+
+			$list[$key] = $this->executeMapping(mapping: $mapping, input: $value);
+		}
+
+		return $list;
+	}//end executeListMapping()
+
+	/**
+	 * Apply a mapping's key => value pairs to one input.
+	 *
+	 * Input keys containing a dot are encoded first, so Dot does not read them
+	 * as paths. A value that is a path in the input is copied from there, an
+	 * array value is set as is, and any other value is rendered as a Twig
+	 * template against the original input. With `passThrough` the result
+	 * starts from the input instead of empty.
+	 *
+	 * @param OrMapping $mapping The mapping recipe.
+	 * @param array     $input   The input.
+	 *
+	 * @return Dot The mapped values, keys still encoded.
+	 *
+	 * @throws Exception When a template fails to render.
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 */
+	private function mapToDot(OrMapping $mapping, array $input): Dot {
+		$encodedInput = $this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;');
+		$dotInput = new Dot($encodedInput);
+		$dotArray = new Dot();
+		if ($mapping->getPassThrough() === true) {
+			$dotArray = new Dot($encodedInput);
+		}
+
 		foreach ($mapping->getMapping() as $key => $value) {
-			// If the value exists in the input dot take it from there.
 			if ($dotInput->has($value) === true) {
 				$dotArray->set($key, $dotInput->get($value));
 				continue;
 			}
 
-			// Render the value from twig.
 			if (is_array($value) === true) {
 				$dotArray->set($key, $value);
 				continue;
 			}
 
 			try {
-				$dotArray->set($key, $this->renderTemplateString(template: $value, context: $originalInput));
+				$dotArray->set($key, $this->renderTemplateString(template: $value, context: $input));
 			} catch (Throwable $e) {
 				throw new Exception("Error for mapping: {$mapping->getName()}, key: $key, value: $value and with message thrown: {$e->getMessage()}");
 			}
 		}
 
-		// Unset unwanted key's.
-		$unsets = ($mapping->getUnset() ?? []);
-		foreach ($unsets as $unset) {
-			if ($dotArray->has($unset) === false) {
-				continue;
-			}
+		return $dotArray;
+	}//end mapToDot()
 
-			$dotArray->delete($unset);
+	/**
+	 * Remove a mapping's `unset` keys, then apply its casts to the keys that exist.
+	 *
+	 * A cast is a list or a comma-separated string of casts, applied in order.
+	 *
+	 * @param OrMapping $mapping  The mapping recipe.
+	 * @param Dot       $dotArray The mapped values; changed in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 */
+	private function applyUnsetsAndCasts(OrMapping $mapping, Dot $dotArray): void {
+		foreach (($mapping->getUnset() ?? []) as $unset) {
+			if ($dotArray->has($unset) === true) {
+				$dotArray->delete($unset);
+			}
 		}
 
-		// Cast values to a specific type.
-		$casts = ($mapping->getCast() ?? []);
-
-		foreach ($casts as $key => $cast) {
+		foreach (($mapping->getCast() ?? []) as $key => $cast) {
 			if ($dotArray->has($key) === false) {
 				continue;
 			}
@@ -393,34 +440,36 @@ class MappingService implements MappingServiceInterface {
 				$this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);
 			}
 		}
+	}//end applyUnsetsAndCasts()
 
-		// Back to array.
-		$output = $dotArray->all();
-		$output = $this->encodeArrayKeys(array: $output, toReplace: '&#46;', replacement: '.');
-
-		// If something has been defined to work on root level (i.e. the object lives on root level), we can use # to define writing the root object.
-		$keys = array_keys($output);
-		if (count($keys) === 1 && $keys[0] === '#') {
-			// Ensure we always return an array, even if the value is null.
-			$rootValue = $output['#'];
-			if ($rootValue === null) {
-				$output = [];
-			} elseif (is_array($rootValue) === true) {
-				$output = $rootValue;
-			} else {
-				$output = [$rootValue];
-			}
+	/**
+	 * Unwrap an output whose only key is `#`: the mapping wrote the object at root level.
+	 *
+	 * The root value is returned when it is an array, as an empty array when it
+	 * is null, and wrapped in a list otherwise.
+	 *
+	 * @param array $output The mapped output.
+	 *
+	 * @return array The output.
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 */
+	private function rootLevelOutput(array $output): array {
+		if (array_keys($output) !== ['#']) {
+			return $output;
 		}
 
-		// Defensive coercion: prior branches set $output from $dotArray->all() (always array)
-		// or from the # root-level extraction (always array). The is_array() guard is dead
-		// per static analysis but kept for safety against future refactors.
-		if (is_array($output) === false) {
-			$output = [];
+		$rootValue = $output['#'];
+		if ($rootValue === null) {
+			return [];
 		}
 
-		return $output;
-	}//end executeMapping()
+		if (is_array($rootValue) === true) {
+			return $rootValue;
+		}
+
+		return [$rootValue];
+	}//end rootLevelOutput()
 
 	/**
 	 * Handles a single cast.
