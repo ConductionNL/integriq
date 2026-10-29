@@ -11586,86 +11586,103 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$endpoint = $dataDot->get($config['subObjectFilepath']);
 		}
 
-		if (is_array($endpoint) === true) {
-			// Handle labels/tags with support for multiple property names.
-			$extractedTags = [];
+		if (is_array($endpoint) === false) {
+			return $endpoint;
+		}
 
-			// Check for various tag/label property names and extract values.
-			$tagProperties = ['label', 'labels', 'tag', 'tags'];
-			foreach ($tagProperties as $property) {
-				if (isset($endpoint[$property]) === true && empty($endpoint[$property]) === false) {
-					$value = $endpoint[$property];
+		$labels = $this->fileLabels(file: $endpoint);
+		foreach ($this->labelsKeptAsTags(config: $config, labels: $labels) as $tagValue) {
+			$tags[] = $tagValue;
+		}
 
-					// Handle both single values and arrays.
-					if (is_array($value) === true) {
-						$extractedTags = array_merge(
-							$extractedTags,
-							array_filter(
-								$value,
-								function ($item) {
-									return empty($item) === false && is_string($item) === true;
-								}
-							)
-						);
-					} elseif (is_string($value) === true && empty($value) === false) {
-						$extractedTags[] = $value;
-					}
-				}
-			}
+		if (isset($endpoint['filename']) === true && empty($endpoint['filename']) === false) {
+			$filename = $endpoint['filename'];
+		}
 
-			// Remove duplicates and apply tag filtering logic.
-			$extractedTags = array_unique($extractedTags);
+		if (isset($endpoint['published']) === true) {
+			$published = $endpoint['published'];
+		}
 
-			// Check if we have meaningful tag configuration.
-			$hasUseLabelsAsTags = (isset($config['useLabelsAsTags']) === true && $config['useLabelsAsTags'] === true);
-			$hasAllowedLabels = (isset($config['allowedLabels']) === true
-				&& is_array($config['allowedLabels']) === true
-				&& empty($config['allowedLabels']) === false);
-			$hasLegacyTags = (isset($config['tags']) === true && is_array($config['tags']) === true && empty($config['tags']) === false);
-			$hasMeaningfulTagConfig = ($hasUseLabelsAsTags === true || $hasAllowedLabels === true || $hasLegacyTags === true);
+		if (isset($endpoint['registerId']) === true) {
+			$registerId = $endpoint['registerId'];
+		}
 
-			foreach ($extractedTags as $tagValue) {
-				// If useLabelsAsTags is explicitly enabled, always use the tag.
-				if ($hasUseLabelsAsTags === true) {
-					$tags[] = $tagValue;
-				} elseif ($hasAllowedLabels === true && in_array($tagValue, $config['allowedLabels'], true) === true) {
-					// If config has specific allowed labels, check if this tag is allowed.
-					$tags[] = $tagValue;
-				} elseif ($hasLegacyTags === true && in_array($tagValue, $config['tags'], true) === true) {
-					// Legacy behavior - if config has non-empty tags array and tag is in it.
-					$tags[] = $tagValue;
-				} elseif ($hasMeaningfulTagConfig === false) {
-					// If no meaningful tag configuration is provided, use all tags (default behavior).
-					$tags[] = $tagValue;
-				}
-			}
-
-			// Extract filename if available.
-			if (isset($endpoint['filename']) === true && empty($endpoint['filename']) === false) {
-				$filename = $endpoint['filename'];
-			}
-
-			// Extract published status if available.
-			if (isset($endpoint['published']) === true) {
-				$published = $endpoint['published'];
-			}
-
-			// Extract register id if available.
-			if (isset($endpoint['registerId']) === true) {
-				$registerId = $endpoint['registerId'];
-			}
-
-			// Check if endpoint exists before returning it.
-			if (isset($endpoint['endpoint']) === true) {
-				return $endpoint['endpoint'];
-			}
-
-			// If no endpoint is found, return null.
-			return null;
-		}//end if
-
-		return $endpoint;
+		return ($endpoint['endpoint'] ?? null);
 	}//end getFileContext()
+
+	/**
+	 * The distinct non-empty string labels of a file, read from its `label`, `labels`, `tag` and `tags`.
+	 *
+	 * Each property may hold one label or a list of them.
+	 *
+	 * @param array $file The file's data.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md
+	 */
+	private function fileLabels(array $file): array {
+		$labels = [];
+		foreach (['label', 'labels', 'tag', 'tags'] as $property) {
+			if (isset($file[$property]) === false || empty($file[$property]) === true) {
+				continue;
+			}
+
+			$value = $file[$property];
+			if (is_array($value) === true) {
+				$labels = array_merge(
+					$labels,
+					array_filter(
+						$value,
+						function ($item) {
+							return empty($item) === false && is_string($item) === true;
+						}
+					)
+				);
+			} elseif (is_string($value) === true) {
+				$labels[] = $value;
+			}
+		}
+
+		return array_unique($labels);
+	}//end fileLabels()
+
+	/**
+	 * The labels kept as tags.
+	 *
+	 * With `useLabelsAsTags: true` every label is kept; otherwise those in
+	 * `allowedLabels` or the legacy `tags` list are. Without any of the three
+	 * configured, every label is kept.
+	 *
+	 * @param array $config The file action configuration.
+	 * @param array $labels The file's labels.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md
+	 */
+	private function labelsKeptAsTags(array $config, array $labels): array {
+		$allowed = [];
+		if (isset($config['allowedLabels']) === true && is_array($config['allowedLabels']) === true) {
+			$allowed = $config['allowedLabels'];
+		}
+
+		$legacy = [];
+		if (isset($config['tags']) === true && is_array($config['tags']) === true) {
+			$legacy = $config['tags'];
+		}
+
+		if ((isset($config['useLabelsAsTags']) === true && $config['useLabelsAsTags'] === true)
+			|| (empty($allowed) === true && empty($legacy) === true)
+		) {
+			return $labels;
+		}
+
+		return array_filter(
+			$labels,
+			fn ($label) => in_array($label, $allowed, true) === true || in_array($label, $legacy, true) === true
+		);
+	}//end labelsKeptAsTags()
 
 	/**
 	 * Determines the type of a given array.
