@@ -50,7 +50,7 @@ use OCA\Integriq\Service\Synchronization\ContractRun;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\FetchedFile;
 use OCA\Integriq\Service\Synchronization\SourcePage;
-use OCA\Integriq\Service\Synchronization\TargetWrite;
+use OCA\Integriq\Service\Synchronization\OpenRegisterTargetWrite;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
@@ -5627,7 +5627,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return $synchronizationContract;
 		}
 
-		$write = new TargetWrite(contract: $synchronizationContract, synchronization: $synchronization);
+		$write = new OpenRegisterTargetWrite(contract: $synchronizationContract, synchronization: $synchronization);
 		[$write->register, $write->schema] = explode('/', $targetId);
 		$write->sourceConfig = $sourceConfig;
 		$write->hadTargetId = $hadTargetId;
@@ -5660,7 +5660,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * - no `actions`: the `after` rules in synchronizeContract() run against
 	 *   `targetId` and may fetch the object.
 	 *
-	 * @param TargetWrite $write        The write.
+	 * @param OpenRegisterTargetWrite $write        The write.
 	 * @param array|null  $targetObject The mapped object to write; rewritten in place.
 	 *
 	 * @param-out array $targetObject
@@ -5671,7 +5671,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	private function saveTargetObject(TargetWrite $write, ?array &$targetObject): array {
+	private function saveTargetObject(OpenRegisterTargetWrite $write, ?array &$targetObject): array {
 		$sourceConfig = $write->sourceConfig;
 		if (isset($targetObject['id']) === true && ($write->contract['targetId'] ?? null) === null) {
 			$write->contract['targetId'] = $targetObject['id'];
@@ -5723,13 +5723,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * set per synchronization, because only its author knows whether a write
 	 * is a bulk backfill of already validated rows or a user-facing write.
 	 *
-	 * @param TargetWrite $write The write.
+	 * @param OpenRegisterTargetWrite $write The write.
 	 *
 	 * @return mixed The saved object entity.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	private function writeTargetObject(TargetWrite $write): mixed {
+	private function writeTargetObject(OpenRegisterTargetWrite $write): mixed {
 		$objectService = $this->orObjectService;
 		$writeTarget = fn (): mixed => $objectService->saveObject(
 			register: $write->register,
@@ -5755,14 +5755,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * object's files with it; a refusal (another object restricts it)
 	 * propagates unchanged, with no fallback to a soft delete.
 	 *
-	 * @param TargetWrite $write  The write.
+	 * @param OpenRegisterTargetWrite $write  The write.
 	 * @param string      $action `delete` or `purge`.
 	 *
 	 * @return array The contract, pointing at no target, with `targetLastAction` set to the action.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	private function deleteTargetObject(TargetWrite $write, string $action): array {
+	private function deleteTargetObject(OpenRegisterTargetWrite $write, string $action): array {
 		if (empty($write->contract['targetId'] ?? null) === false) {
 			$objectService = $this->orObjectService;
 			$targetId = (string)$write->contract['targetId'];
@@ -6067,12 +6067,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * before the row lands so the contract can be built against it. OpenRegister
 	 * honours a client-supplied id on both the single and the bulk path.
 	 *
-	 * @param TargetWrite $write The write: contract, synchronization, mapped object,
+	 * @param OpenRegisterTargetWrite $write The write: contract, synchronization, mapped object,
 	 *                           source config, target register and schema.
 	 *
 	 * @return array The contract, with `targetId` and `targetLastAction` set.
 	 */
-	private function bufferTargetSave(TargetWrite $write): array {
+	private function bufferTargetSave(OpenRegisterTargetWrite $write): array {
 		$synchronizationContract = $write->contract;
 		$targetObject = $write->targetObject;
 		$targetUuid = ($synchronizationContract['targetId'] ?? null);

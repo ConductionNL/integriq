@@ -1,7 +1,7 @@
 <?php
 
 /**
- * One write of a synchronised object into an OpenRegister target.
+ * One write of a synchronised object into an OpenRegister register and schema.
  *
  * @category Service
  * @package  OCA\Integriq\Service\Synchronization
@@ -28,7 +28,7 @@ namespace OCA\Integriq\Service\Synchronization;
  *
  * @spec openspec/specs/synchronization-engine/spec.md
  */
-class TargetWrite {
+class OpenRegisterTargetWrite {
 
 	/**
 	 * The dot-expanded source config.
