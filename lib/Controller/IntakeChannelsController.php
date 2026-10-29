@@ -38,7 +38,7 @@ use OCA\Integriq\Intake\IntakeReplyServiceInterface;
 use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -124,7 +124,7 @@ class IntakeChannelsController extends Controller {
 	public function inbound(string $channel): JSONResponse {
 		$rawBody = $this->getRawContent();
 		$identity = $this->gate->identify(
-			profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . $channel,
+			profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . $channel,
 			rawBody: $rawBody,
 			request: $this->request
 		);
@@ -147,7 +147,7 @@ class IntakeChannelsController extends Controller {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the channel delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . $channel, reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . $channel, reason: $exception->getMessage());
 		}
 
 		$object = $stored->getObject();

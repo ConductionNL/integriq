@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\NotificatiesSubscriberServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -64,7 +64,7 @@ class NotificatiesSubscriberController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param NotificatiesSubscriberServiceInterface $subscriberService Abonnement lifecycle + notification normalization.
-	 * @param OpenRegisterCredentialBridge $authorizationService Reused REQ-CON-001/REQ-CON-002 consumer apiKey auth path.
+	 * @param OpenRegisterCredentialBridgeInterface $authorizationService Reused REQ-CON-001/REQ-CON-002 consumer apiKey auth path.
 	 * @param OrObjectService $orObjectService Direct OR access for abonnement listing.
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service (ADR-023).
 	 * @param IUserSession $userSession The user session (CRUD endpoints only).
@@ -75,7 +75,7 @@ class NotificatiesSubscriberController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly NotificatiesSubscriberServiceInterface $subscriberService,
-		private readonly OpenRegisterCredentialBridge $authorizationService,
+		private readonly OpenRegisterCredentialBridgeInterface $authorizationService,
 		private readonly OrObjectService $orObjectService,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,

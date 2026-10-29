@@ -34,13 +34,14 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Integration;
 
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\Integriq\Service\AuthenticationService;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -116,6 +117,7 @@ class ExecutionTraceIntegrationTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 
 		// Intercept the real Guzzle client — mirrors CallServiceTest's own

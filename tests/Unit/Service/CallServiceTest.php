@@ -17,6 +17,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
@@ -81,6 +82,7 @@ class CallServiceTest extends TestCase {
 			$logger,
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 	}//end setUp()
 
@@ -130,6 +132,7 @@ class CallServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 	}//end buildBrokeredCallService()
 
@@ -711,6 +714,7 @@ class CallServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 
 		$mockClient = $this->createMock(\GuzzleHttp\Client::class);

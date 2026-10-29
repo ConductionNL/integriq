@@ -45,7 +45,7 @@ use Throwable;
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
  */
-class BodyCapturePolicy {
+class BodyCapturePolicy implements BodyCapturePolicyInterface {
 
 	/**
 	 * App setting: the longest window an administrator may open, in hours.

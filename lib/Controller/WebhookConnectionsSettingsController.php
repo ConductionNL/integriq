@@ -35,7 +35,7 @@ use OCA\Integriq\Service\Dso\DsoConnectionInterface;
 use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Service\Intake\WebhookConnectionInterface;
 use OCA\Integriq\Service\Intake\WebhookProfile;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -79,6 +79,7 @@ class WebhookConnectionsSettingsController extends Controller {
 	 * @param IntakeGroupsInterface      $groups        Puts a webhook's account in the intake group its schema grants.
 	 * @param IL10N             $l             Field errors and warnings.
 	 * @param LoggerInterface   $logger        Diagnostics.
+	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
 	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
 	 */
@@ -90,6 +91,7 @@ class WebhookConnectionsSettingsController extends Controller {
 		private readonly IntakeGroupsInterface $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private readonly WebhookProfilesInterface $webhookProfiles,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
@@ -105,7 +107,7 @@ class WebhookConnectionsSettingsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getConfig(): JSONResponse {
 		$connections = [];
-		foreach (WebhookProfiles::all() as $profile) {
+		foreach ($this->webhookProfiles->profiles() as $profile) {
 			$connections[] = $this->describe(profile: $profile);
 		}
 
@@ -129,7 +131,7 @@ class WebhookConnectionsSettingsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(string $authorizationType): JSONResponse {
-		$profile = WebhookProfiles::byAuthorizationType(authorizationType: $authorizationType);
+		$profile = $this->webhookProfiles->forAuthorizationType(authorizationType: $authorizationType);
 		if ($profile === null) {
 			return new JSONResponse(['errors' => [$this->l->t('Unknown webhook %s.', [$authorizationType])]], Http::STATUS_NOT_FOUND);
 		}
@@ -290,7 +292,7 @@ class WebhookConnectionsSettingsController extends Controller {
 	 * @return bool
 	 */
 	private function usedElsewhere(WebhookProfile $profile, string $userId): bool {
-		foreach (WebhookProfiles::all() as $other) {
+		foreach ($this->webhookProfiles->profiles() as $other) {
 			if ($other->authorizationType === $profile->authorizationType || $other->intakeGroup !== $profile->intakeGroup) {
 				continue;
 			}

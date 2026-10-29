@@ -32,7 +32,7 @@ use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -257,7 +257,7 @@ class NotifyNlController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::NOTIFYNL, rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfilesInterface::NOTIFYNL, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -292,7 +292,7 @@ class NotifyNlController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so NotifyNL delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::NOTIFYNL, reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfilesInterface::NOTIFYNL, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

@@ -34,7 +34,7 @@ namespace OCA\Integriq\Controller;
 use InvalidArgumentException;
 use OCA\Integriq\Outbound\Call\VerdictServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -102,7 +102,7 @@ class VerdictController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 		$identity = $this->gate->identify(
-			profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
+			profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
 			rawBody: $rawBody,
 			request: $this->request
 		);
@@ -133,7 +133,7 @@ class VerdictController extends Controller {
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the checker delivers again.
 			return $this->gate->notStored(
-				profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
+				profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
 				reason: $exception->getMessage()
 			);
 		}

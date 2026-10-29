@@ -25,7 +25,7 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use OCA\Integriq\Http\XMLResponse;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicyInterface;
 use OCA\Integriq\Service\EndpointServiceInterface;
@@ -91,7 +91,7 @@ class EndpointsController extends Controller {
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param EndpointServiceInterface $endpointService Service for handling endpoint operations.
-	 * @param OpenRegisterCredentialBridge $authorizationService Service for handling authorization.
+	 * @param OpenRegisterCredentialBridgeInterface $authorizationService Service for handling authorization.
 	 * @param ObjectService $objectService Service for direct ObjectService operations.
 	 * @param EndpointCacheServiceInterface $endpointCacheService Service for cached endpoint lookups.
 	 * @param LoggerInterface $logger Service for logging.
@@ -105,7 +105,7 @@ class EndpointsController extends Controller {
 		$appName,
 		IRequest $request,
 		private EndpointServiceInterface $endpointService,
-		private OpenRegisterCredentialBridge $authorizationService,
+		private OpenRegisterCredentialBridgeInterface $authorizationService,
 		private ObjectService $objectService,
 		private EndpointCacheServiceInterface $endpointCacheService,
 		private LoggerInterface $logger,

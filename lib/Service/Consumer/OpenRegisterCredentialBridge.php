@@ -52,7 +52,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  */
-class OpenRegisterCredentialBridge {
+class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterface {
 
 	/**
 	 * The longest lifetime (exp - iat) integriq accepts on a token, in seconds.
@@ -62,15 +62,7 @@ class OpenRegisterCredentialBridge {
 	/**
 	 * The entry points integriq needs; an OpenRegister lacking one is refused.
 	 */
-	public const REQUIRED_ENTRY_POINTS = [
-		'authorizeJwt',
-		'authorizeApiKey',
-		'authorizeBasic',
-		'authorizeOAuth',
-		'authorizeNcSession',
-		'validatePayload',
-		'getResolvedConsumer',
-	];
+	public const REQUIRED_ENTRY_POINTS = OpenRegisterEntryPoints::REQUIRED;
 
 	/**
 	 * The shortest HMAC secret a consumer may verify with, in bytes (RFC 7518 §3.2).
@@ -409,14 +401,11 @@ class OpenRegisterCredentialBridge {
 	 * @return bool True when every required entry point is callable and the ConsumerSource interface exists.
 	 *
 	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) delegates to the one shared rule set
 	 */
 	public static function entryPointsAvailable(object $authorization): bool {
-		$available = interface_exists(ConsumerSource::class);
-		foreach (self::REQUIRED_ENTRY_POINTS as $method) {
-			$available = ($available === true && is_callable([$authorization, $method]) === true);
-		}
-
-		return $available;
+		return OpenRegisterEntryPoints::available(authorization: $authorization);
 	}//end entryPointsAvailable()
 
 
