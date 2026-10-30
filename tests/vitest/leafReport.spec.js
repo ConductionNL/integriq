@@ -72,6 +72,7 @@ describe('leafReportMixin', () => {
 	})
 })
 
+// A supplement: syncedFromTabLeafReport.spec.js mounts SyncedFromTab and checks what it reports and draws.
 describe('sync leaf wiring', () => {
 	it('asks for the library card and reports through the mixin', async () => {
 		const { readFileSync } = await import('node:fs')
