@@ -568,7 +568,8 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 			} else {
 				$rule = ($case['rule'] ?? ['id' => 5, 'configuration' => ['fetch_file' => $case['config']]]);
 				$method = new ReflectionMethod(SynchronizationService::class, 'processFetchFileRule');
-				$outcome = ['return' => $method->invoke($service, $rule, ($case['data'] ?? ['id' => 'item']), $objectId)];
+				// As JSON text: an unset file path writes the file under an empty key, which a JSON fixture cannot hold.
+				$outcome = ['return' => json_encode($method->invoke($service, $rule, ($case['data'] ?? ['id' => 'item']), $objectId), JSON_UNESCAPED_SLASHES)];
 			}
 		} catch (\TypeError $error) {
 			$outcome = ['throws' => \TypeError::class];

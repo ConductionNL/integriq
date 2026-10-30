@@ -81,9 +81,7 @@
     },
     "endpoint-null-from-path": {
         "outcome": {
-            "return": {
-                "id": "item"
-            }
+            "return": "{\"id\":\"item\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -122,9 +120,7 @@
     },
     "source-missing": {
         "outcome": {
-            "return": {
-                "id": "item"
-            }
+            "return": "{\"id\":\"item\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -172,10 +168,7 @@
     },
     "async-mode-queues": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -242,10 +235,7 @@
     },
     "async-mode-object-id-null": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -312,10 +302,7 @@
     },
     "async-queue-fails": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -386,10 +373,7 @@
     },
     "single-endpoint": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -470,11 +454,7 @@
     },
     "single-from-file-path": {
         "outcome": {
-            "return": {
-                "doc": {
-                    "url": "file://fetching-async"
-                }
-            }
+            "return": "{\"doc\":{\"url\":\"file://fetching-async\"}}"
         },
         "tally": {
             "succeeded": 1,
@@ -555,11 +535,7 @@
     },
     "single-no-placeholder": {
         "outcome": {
-            "return": {
-                "doc": {
-                    "url": "/docs/b.pdf"
-                }
-            }
+            "return": "{\"doc\":{\"url\":\"/docs/b.pdf\"}}"
         },
         "tally": {
             "succeeded": 1,
@@ -640,10 +616,7 @@
     },
     "single-call-fails": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -708,10 +681,7 @@
     },
     "single-save-fails": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -840,10 +810,7 @@
     },
     "single-object-id-path": {
         "outcome": {
-            "return": {
-                "id": "c8b5d4e3-2222-4333-8444-a55566667777",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"c8b5d4e3-2222-4333-8444-a55566667777\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -924,10 +891,7 @@
     },
     "single-origin-id": {
         "outcome": {
-            "return": {
-                "origin": "o-77",
-                "": "file://fetching-async"
-            }
+            "return": "{\"origin\":\"o-77\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1008,10 +972,7 @@
     },
     "single-post-body": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1090,10 +1051,7 @@
     },
     "single-json-envelope": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1174,10 +1132,7 @@
     },
     "single-write-false": {
         "outcome": {
-            "return": {
-                "id": "item",
-                "": "file://fetching-async"
-            }
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1238,9 +1193,7 @@
     },
     "single-non-string-endpoint": {
         "outcome": {
-            "return": {
-                "n": "file://fetching-async"
-            }
+            "return": "{\"n\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1321,9 +1274,7 @@
     },
     "assoc-file-object": {
         "outcome": {
-            "return": {
-                "doc": "file://fetching-async"
-            }
+            "return": "{\"doc\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1411,9 +1362,7 @@
     },
     "assoc-context-object-id": {
         "outcome": {
-            "return": {
-                "doc": "file://fetching-async"
-            }
+            "return": "{\"doc\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1494,9 +1443,7 @@
     },
     "assoc-no-endpoint": {
         "outcome": {
-            "return": {
-                "doc": "file://fetching-async"
-            }
+            "return": "{\"doc\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -1540,9 +1487,7 @@
     },
     "assoc-sub-object-path": {
         "outcome": {
-            "return": {
-                "doc": "file://fetching-async"
-            }
+            "return": "{\"doc\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1623,9 +1568,7 @@
     },
     "assoc-published-int": {
         "outcome": {
-            "return": {
-                "doc": "file://fetching-async"
-            }
+            "return": "{\"doc\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -1711,12 +1654,7 @@
     },
     "indexed-endpoints": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 2,
@@ -1850,12 +1788,7 @@
     },
     "indexed-query-endpoint": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 2,
@@ -1994,14 +1927,7 @@
     },
     "indexed-reject-and-throw": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async",
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\",\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 1,
@@ -2156,11 +2082,7 @@
     },
     "indexed-save-fails": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 0,
@@ -2336,13 +2258,7 @@
     },
     "indexed-limits": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 3,
@@ -2513,11 +2429,7 @@
     },
     "indexed-limits-clamped": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 1,
@@ -2632,12 +2544,7 @@
     },
     "indexed-too-large": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 0,
@@ -2752,13 +2659,7 @@
     },
     "multi-file-objects": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 2,
@@ -2899,12 +2800,7 @@
     },
     "multi-labels-as-tags": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 2,
@@ -3048,11 +2944,7 @@
     },
     "indexed-renamed-by-header": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 1,
@@ -3154,13 +3046,7 @@
     },
     "indexed-lazy-count-cap": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 3,
@@ -3331,13 +3217,7 @@
     },
     "indexed-lazy-byte-budget": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 3,
@@ -3512,12 +3392,7 @@
     },
     "indexed-lazy-under-budget": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 2,
@@ -3656,9 +3531,7 @@
     },
     "assoc-object-missing-adds": {
         "outcome": {
-            "return": {
-                "doc": "file://fetching-async"
-            }
+            "return": "{\"doc\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 1,
@@ -3742,12 +3615,7 @@
     },
     "multi-object-missing": {
         "outcome": {
-            "return": {
-                "files": [
-                    "file://fetching-async",
-                    "file://fetching-async"
-                ]
-            }
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\"]}"
         },
         "tally": {
             "succeeded": 2,
@@ -3868,9 +3736,7 @@
     },
     "empty-with-object": {
         "outcome": {
-            "return": {
-                "files": "file://fetching-async"
-            }
+            "return": "{\"files\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 0,
@@ -3940,9 +3806,7 @@
     },
     "empty-without-object": {
         "outcome": {
-            "return": {
-                "files": "file://fetching-async"
-            }
+            "return": "{\"files\":\"file://fetching-async\"}"
         },
         "tally": {
             "succeeded": 0,
