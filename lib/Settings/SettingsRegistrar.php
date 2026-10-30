@@ -21,16 +21,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Settings;
 
-use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use Psr\Container\ContainerInterface;
 
 /**
- * Registers the services the Settings component builds itself, so Application
- * does not name the classes behind them.
+ * Entry point of this component's container wiring for Application.
  *
- * @spec exclude container wiring only, the registrar has no behaviour of its own
+ * The bindings themselves live in {@see SettingsBindings}, inside the component.
+ *
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class SettingsRegistrar {
 	/**
@@ -43,46 +41,6 @@ final class SettingsRegistrar {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$this->registerAdminSettings(context: $context);
+		(new SettingsBindings())->register(context: $context);
 	}//end register()
-
-	/**
-	 * Registers the admin settings form, pinned to the pre-adoption metadata.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerAdminSettings(IRegistrationContext $context): void {
-		// Admin settings form + section: pinned to the pre-adoption metadata
-		// (section id `integriq`, priority 10 / 97, icon `app-dark.svg`).
-		$context->registerService(
-			IntegriqAdminSettings::class,
-			/**
-			 * Build the leaf IntegriqAdmin settings form.
-			 *
-			 * IntegriqAdminSettings extends OpenRegister's
-			 * GenericAdminSettings (peer app, not in vendor — see psalm.xml's
-			 * UndefinedClass allowlist for the same class); Psalm cannot
-			 * resolve the inherited constructor and treats the subclass as
-			 * argument-less.
-			 *
-			 * @param ContainerInterface $c App-scoped DI container.
-			 *
-			 * @return IntegriqAdminSettings
-			 *
-			 * @psalm-suppress TooManyArguments
-			 */
-			static function (ContainerInterface $c) {
-				return new IntegriqAdminSettings(
-					appId: AppIdentity::APP_ID,
-					sectionId: 'integriq',
-					priority: 10,
-					appManager: $c->get(\OCP\App\IAppManager::class),
-					initialState: $c->get(\OCP\AppFramework\Services\IInitialState::class),
-					appConfig: $c->get(\OCP\IAppConfig::class)
-				);
-			}
-		);
-	}//end registerAdminSettings()
-}
+}//end class

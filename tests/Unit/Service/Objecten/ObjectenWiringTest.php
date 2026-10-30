@@ -161,7 +161,7 @@ class ObjectenWiringTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheApplicationRegistersTheWiring(): void {
-		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/Service/ServiceRegistrar.php');
+		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/Service/ServiceBindings.php');
 
 		$this->assertStringContainsString('ObjectenWiring::register(context: $context)', $source);
 	}//end testTheApplicationRegistersTheWiring()

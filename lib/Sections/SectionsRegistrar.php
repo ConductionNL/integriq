@@ -21,16 +21,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Sections;
 
-use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use Psr\Container\ContainerInterface;
 
 /**
- * Registers the services the Sections component builds itself, so Application
- * does not name the classes behind them.
+ * Entry point of this component's container wiring for Application.
  *
- * @spec exclude container wiring only, the registrar has no behaviour of its own
+ * The bindings themselves live in {@see SectionsBindings}, inside the component.
+ *
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class SectionsRegistrar {
 	/**
@@ -43,44 +41,6 @@ final class SectionsRegistrar {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$this->registerAdminSection(context: $context);
+		(new SectionsBindings())->register(context: $context);
 	}//end register()
-
-	/**
-	 * Registers the admin settings section.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerAdminSection(IRegistrationContext $context): void {
-		$context->registerService(
-			IntegriqAdminSection::class,
-			/**
-			 * Build the leaf IntegriqAdmin settings section.
-			 *
-			 * Resolves integriq's own scoped IL10N and translates the
-			 * section name BEFORE constructing the generic section, which has
-			 * no l10n hook of its own (see class docblock).
-			 *
-			 * @param ContainerInterface $c App-scoped DI container.
-			 *
-			 * @return IntegriqAdminSection
-			 *
-			 * @psalm-suppress TooManyArguments see IntegriqAdminSettings above.
-			 */
-			static function (ContainerInterface $c) {
-				$name = $c->get(\OCP\IL10N::class)->t('Integriq');
-
-				return new IntegriqAdminSection(
-					sectionId: 'integriq',
-					name: $name,
-					appId: AppIdentity::APP_ID,
-					iconFile: 'app-dark.svg',
-					priority: 97,
-					urlGenerator: $c->get(\OCP\IURLGenerator::class)
-				);
-			}
-		);
-	}//end registerAdminSection()
-}
+}//end class

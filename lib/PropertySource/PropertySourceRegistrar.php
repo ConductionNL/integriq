@@ -21,16 +21,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\PropertySource;
 
-use OCA\Integriq\PropertySource\Provider\BagPropertySource;
-use OCA\Integriq\PropertySource\Provider\BrpPropertySource;
-use OCA\Integriq\PropertySource\Provider\KvkPropertySource;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Registers the services the PropertySource component builds itself, so Application
- * does not name the classes behind them.
+ * Entry point of this component's container wiring for Application.
  *
- * @spec exclude container wiring only, the registrar has no behaviour of its own
+ * The bindings themselves live in {@see PropertySourceBindings}, inside the component.
+ *
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class PropertySourceRegistrar {
 	/**
@@ -43,37 +41,6 @@ final class PropertySourceRegistrar {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$context->registerServiceAlias(ListResyncServiceInterface::class, ListResyncService::class);
-		$context->registerServiceAlias(PropertySourceResolverInterface::class, PropertySourceResolver::class);
-		$context->registerServiceAlias(PropertySourceRegistryInterface::class, PropertySourceRegistry::class);
-		$this->registerPropertySourceRegistry(context: $context);
+		(new PropertySourceBindings())->register(context: $context);
 	}//end register()
-
-	/**
-	 * Registers the property-source registry.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private function registerPropertySourceRegistry(IRegistrationContext $context): void {
-		// The property-source registry: one keyed list of the registry
-		// bindings a schema property can name through
-		// `x-openregister-property-source`. Registered explicitly rather than
-		// autowired so the order, and therefore the first-wins collision
-		// policy, is readable in one place.
-		$context->registerService(
-			PropertySourceRegistry::class,
-			static function ($c): PropertySourceRegistry {
-				return new PropertySourceRegistry(
-					providers: [
-						$c->get(BagPropertySource::class),
-						$c->get(BrpPropertySource::class),
-						$c->get(KvkPropertySource::class),
-					],
-					logger: $c->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-	}//end registerPropertySourceRegistry()
-}
+}//end class
