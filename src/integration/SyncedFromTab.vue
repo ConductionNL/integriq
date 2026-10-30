@@ -138,9 +138,16 @@ export default {
 		leafReport() {
 			return {
 				count: this.rows.length,
-				emptyLabel: t('integriq', 'This object was not created by a synchronization.'),
+				emptyLabel: t(
+					'integriq',
+					'This object was not created by a synchronization.',
+				),
 				noun: t('integriq', 'synchronizations'),
-				rows: this.rows.map((row) => ({ label: row.title || t('integriq', 'Synchronization'), href: row.url || '', icon: 'SyncOutline' })),
+				rows: this.rows.map((row) => ({
+					label: row.title || t('integriq', 'Synchronization'),
+					href: row.url || '',
+					icon: 'SyncOutline',
+				})),
 			}
 		},
 
