@@ -21,10 +21,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\Registry\MapsSourceFieldsInterface;
-use OCA\Integriq\Service\Registry\RegistryUpdateClient;
-use OCA\Integriq\Service\Registry\SubscriptionChange;
+use OCA\Integriq\Service\Registry\RegistryUpdateClientInterface;
+use OCA\Integriq\Service\Registry\SubscriptionChangeInterface;
 use OCA\Integriq\Service\Registry\SubscriptionProviderInterface;
-use OCA\Integriq\Service\Registry\SubscriptionRegistry;
+use OCA\Integriq\Service\Registry\SubscriptionRegistryInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRosterInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -54,16 +54,16 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param SubscriptionRegistry $registry The bindings.
+	 * @param SubscriptionRegistryInterface $registry The bindings.
 	 * @param SubscriptionRosterInterface $roster Which identities are followed.
-	 * @param RegistryUpdateClient $updateClient The inbound update endpoint.
+	 * @param RegistryUpdateClientInterface $updateClient The inbound update endpoint.
 	 * @param LoggerInterface $logger Structured logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SubscriptionRegistry $registry,
+		private readonly SubscriptionRegistryInterface $registry,
 		private readonly SubscriptionRosterInterface $roster,
-		private readonly RegistryUpdateClient $updateClient,
+		private readonly RegistryUpdateClientInterface $updateClient,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -110,7 +110,7 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 * Post every non-empty change for one registry.
 	 *
 	 * @param string $registryId Registry id.
-	 * @param iterable<SubscriptionChange> $changes The polled changes.
+	 * @param iterable<SubscriptionChangeInterface> $changes The polled changes.
 	 * @param SubscriptionProviderInterface|null $provider The binding that polled them, for its field maps.
 	 *
 	 * @return int How many updates were posted.
@@ -138,14 +138,14 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 * without maps, gives the change unchanged.
 	 *
 	 * @param string $registryId Registry id.
-	 * @param SubscriptionChange $change The polled change, in the source's names.
+	 * @param SubscriptionChangeInterface $change The polled change, in the source's names.
 	 * @param SubscriptionProviderInterface|null $provider The binding.
 	 *
-	 * @return array<int,SubscriptionChange> The changes to post.
+	 * @return array<int,SubscriptionChangeInterface> The changes to post.
 	 *
 	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
-	private function perTarget(string $registryId, SubscriptionChange $change, ?SubscriptionProviderInterface $provider): array {
+	private function perTarget(string $registryId, SubscriptionChangeInterface $change, ?SubscriptionProviderInterface $provider): array {
 		if (($provider instanceof MapsSourceFieldsInterface) === false) {
 			return [$change];
 		}
@@ -174,11 +174,11 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 * retried; any other failure is left for the next run.
 	 *
 	 * @param string $registryId Registry id.
-	 * @param SubscriptionChange $change The change.
+	 * @param SubscriptionChangeInterface $change The change.
 	 *
 	 * @return bool True when OpenRegister accepted it.
 	 */
-	private function post(string $registryId, SubscriptionChange $change): bool {
+	private function post(string $registryId, SubscriptionChangeInterface $change): bool {
 		if ($change->isEmpty() === true) {
 			// An unchanged payload posts nothing.
 			return false;

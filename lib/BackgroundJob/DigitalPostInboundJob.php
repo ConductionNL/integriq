@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
+use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistryInterface;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -62,14 +62,14 @@ class DigitalPostInboundJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param DigitalPostProviderRegistry $providers The bindings.
+	 * @param DigitalPostProviderRegistryInterface $providers The bindings.
 	 * @param IntakeDocumentDispatcherInterface $intake The document intake inbox seam.
 	 * @param OrObjectService $objectService OpenRegister's object-service facade.
 	 * @param LoggerInterface $logger Structured logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly DigitalPostProviderRegistry $providers,
+		private readonly DigitalPostProviderRegistryInterface $providers,
 		private readonly IntakeDocumentDispatcherInterface $intake,
 		private readonly OrObjectService $objectService,
 		private readonly LoggerInterface $logger,

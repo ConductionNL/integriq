@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
-use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
+use OCA\Integriq\Service\DigitalPost\DigitalPostResultInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -156,7 +156,7 @@ class DigitalPostStatusJob extends TimedJob {
 			// rather than in the query so a backend that ignores an unknown
 			// filter cannot hand back every message and have it look like a
 			// deliberate answer.
-			if ((string)($data['status'] ?? '') !== DigitalPostResult::STATUS_SENT) {
+			if ((string)($data['status'] ?? '') !== DigitalPostResultInterface::STATUS_SENT) {
 				continue;
 			}
 

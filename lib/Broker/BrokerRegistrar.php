@@ -25,6 +25,7 @@ use OCA\Integriq\Broker\Transport\CloudEventsHttpTransport;
 use OCA\Integriq\Broker\Transport\KafkaRestTransport;
 use OCA\Integriq\Broker\Transport\LogBrokerTransport;
 use OCA\Integriq\Broker\Transport\RabbitMqHttpTransport;
+use OCA\Integriq\Broker\Transport\RabbitMqHttpTransportInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -45,6 +46,8 @@ final class BrokerRegistrar {
 	 */
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(CloudEventHttpBindingInterface::class, CloudEventHttpBinding::class);
+		$context->registerServiceAlias(RabbitMqHttpTransportInterface::class, RabbitMqHttpTransport::class);
+		$context->registerServiceAlias(BrokerTransportRegistryInterface::class, BrokerTransportRegistry::class);
 		$this->registerTransportRegistry(context: $context);
 	}//end register()
 

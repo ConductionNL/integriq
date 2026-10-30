@@ -34,9 +34,9 @@ namespace OCA\Integriq\Mcp;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
-use OCA\Integriq\Service\AgentTools\AgentActionStore;
+use OCA\Integriq\Service\AgentTools\AgentActionStoreInterface;
 use OCA\Integriq\Service\AgentTools\AgentBatchGateInterface;
-use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
+use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\Integriq\Service\SourceTestServiceInterface;
 use OCA\Integriq\Service\SyncItemDeadLetterServiceInterface;
@@ -113,9 +113,9 @@ class IntegriqAgentTools {
 	 * @param SourceTestServiceInterface         $sourceTest      The source test path.
 	 * @param SyncItemDeadLetterServiceInterface $syncDeadLetters The audited sync replay and discard.
 	 * @param EventServiceInterface              $events          The audited event replay and discard.
-	 * @param AgentActionStore          $store           Invocation records.
+	 * @param AgentActionStoreInterface          $store           Invocation records.
 	 * @param AgentBatchGateInterface            $gate            Stages and admits gated batches.
-	 * @param DeadLetterProjection      $projection      The payload-free dead-letter row.
+	 * @param DeadLetterProjectionInterface      $projection      The payload-free dead-letter row.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -125,9 +125,9 @@ class IntegriqAgentTools {
 		private readonly SourceTestServiceInterface $sourceTest,
 		private readonly SyncItemDeadLetterServiceInterface $syncDeadLetters,
 		private readonly EventServiceInterface $events,
-		private readonly AgentActionStore $store,
+		private readonly AgentActionStoreInterface $store,
 		private readonly AgentBatchGateInterface $gate,
-		private readonly DeadLetterProjection $projection,
+		private readonly DeadLetterProjectionInterface $projection,
 	) {
 	}//end __construct()
 

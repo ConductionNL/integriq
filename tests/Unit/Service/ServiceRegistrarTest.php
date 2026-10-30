@@ -21,10 +21,16 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
+use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
+use OCA\Integriq\Service\AgentTools\AgentActionStore;
+use OCA\Integriq\Service\AgentTools\AgentActionStoreInterface;
 use OCA\Integriq\Service\AgentTools\AgentBatchGate;
 use OCA\Integriq\Service\AgentTools\AgentBatchGateInterface;
+use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
+use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
 use OCA\Integriq\Service\ApprovalDecisionService;
@@ -72,10 +78,14 @@ use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettings;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettingsInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
+use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
+use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistryInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
+use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
+use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DsoIngestServiceInterface;
 use OCA\Integriq\Service\Dso\DsoActivityOverview;
@@ -108,6 +118,8 @@ use OCA\Integriq\Service\Exchange\ExchangeReadModel;
 use OCA\Integriq\Service\Exchange\ExchangeReadModelInterface;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface;
+use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogue;
+use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogueInterface;
 use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\Integriq\Service\ExecutionTraceServiceInterface;
 use OCA\Integriq\Service\FlowGraphMigrationService;
@@ -152,18 +164,26 @@ use OCA\Integriq\Service\Lti\LtiNrpsService;
 use OCA\Integriq\Service\Lti\LtiNrpsServiceInterface;
 use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
 use OCA\Integriq\Service\Lti\LtiPlatformLoginServiceInterface;
+use OCA\Integriq\Service\Mail\CaseReferenceDetector;
+use OCA\Integriq\Service\Mail\CaseReferenceDetectorInterface;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcher;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcherInterface;
 use OCA\Integriq\Service\Mail\MailIntakeService;
 use OCA\Integriq\Service\Mail\MailIntakeServiceInterface;
 use OCA\Integriq\Service\Mail\MailboxSourceHandler;
 use OCA\Integriq\Service\Mail\MailboxSourceHandlerInterface;
+use OCA\Integriq\Service\Mail\MessageParser;
+use OCA\Integriq\Service\Mail\MessageParserInterface;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\MappingServiceInterface;
+use OCA\Integriq\Service\MessageValidationService;
+use OCA\Integriq\Service\MessageValidationServiceInterface;
 use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
 use OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolverInterface;
+use OCA\Integriq\Service\Mtls\MtlsTransportService;
+use OCA\Integriq\Service\Mtls\MtlsTransportServiceInterface;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\NotificatiesSubscriberServiceInterface;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
@@ -178,6 +198,8 @@ use OCA\Integriq\Service\OpenFormulierenIntakeService;
 use OCA\Integriq\Service\OpenFormulierenIntakeServiceInterface;
 use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\OsoServiceInterface;
+use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
+use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
 use OCA\Integriq\Service\PaymentIntentService;
@@ -192,6 +214,10 @@ use OCA\Integriq\Service\PromotionService;
 use OCA\Integriq\Service\PromotionServiceInterface;
 use OCA\Integriq\Service\RecordProvenanceService;
 use OCA\Integriq\Service\RecordProvenanceServiceInterface;
+use OCA\Integriq\Service\Registry\RegistryUpdateClient;
+use OCA\Integriq\Service\Registry\RegistryUpdateClientInterface;
+use OCA\Integriq\Service\Registry\SubscriptionRegistry;
+use OCA\Integriq\Service\Registry\SubscriptionRegistryInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRequestHandler;
 use OCA\Integriq\Service\Registry\SubscriptionRequestHandlerInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRoster;
@@ -402,6 +428,19 @@ class ServiceRegistrarTest extends TestCase {
 		InlineSecretMigrationPlannerInterface::class => InlineSecretMigrationPlanner::class,
 		InlineSecretMigrationExecutorInterface::class => InlineSecretMigrationExecutor::class,
 		InlineSecretMigrationFactoryInterface::class => InlineSecretMigrationFactory::class,
+		RegistryUpdateClientInterface::class => RegistryUpdateClient::class,
+		AgentActionStoreInterface::class => AgentActionStore::class,
+		CaseReferenceDetectorInterface::class => CaseReferenceDetector::class,
+		LocalDeleteGuardInterface::class => LocalDeleteGuard::class,
+		MessageParserInterface::class => MessageParser::class,
+		DeadLetterProjectionInterface::class => DeadLetterProjection::class,
+		MtlsTransportServiceInterface::class => MtlsTransportService::class,
+		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
+		MessageValidationServiceInterface::class => MessageValidationService::class,
+		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
+		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
+		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
+		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 

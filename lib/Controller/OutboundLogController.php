@@ -30,7 +30,7 @@ namespace OCA\Integriq\Controller;
 use InvalidArgumentException;
 use OCA\Integriq\Outbound\ForwardServiceInterface;
 use OCA\Integriq\Outbound\LastContactQueryInterface;
-use OCA\Integriq\Outbound\MessageBodyReader;
+use OCA\Integriq\Outbound\MessageBodyReaderInterface;
 use OCA\Integriq\Outbound\OutboundRetryServiceInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
@@ -72,7 +72,7 @@ class OutboundLogController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal.
 	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
-	 * @param MessageBodyReader $bodyReader Reads a stored body, for those allowed to.
+	 * @param MessageBodyReaderInterface $bodyReader Reads a stored body, for those allowed to.
 	 * @param OutboundRetryServiceInterface $retryService Retries through the delivery pipeline.
 	 * @param ForwardServiceInterface $forwardService Forwards as a new linked record.
 	 * @param LastContactQueryInterface $lastContactQuery Answers when a recipient was last told anything.
@@ -83,7 +83,7 @@ class OutboundLogController extends Controller {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
-		private readonly MessageBodyReader $bodyReader,
+		private readonly MessageBodyReaderInterface $bodyReader,
 		private readonly OutboundRetryServiceInterface $retryService,
 		private readonly ForwardServiceInterface $forwardService,
 		private readonly LastContactQueryInterface $lastContactQuery,

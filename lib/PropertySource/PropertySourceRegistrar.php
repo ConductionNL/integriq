@@ -45,6 +45,7 @@ final class PropertySourceRegistrar {
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(ListResyncServiceInterface::class, ListResyncService::class);
 		$context->registerServiceAlias(PropertySourceResolverInterface::class, PropertySourceResolver::class);
+		$context->registerServiceAlias(PropertySourceRegistryInterface::class, PropertySourceRegistry::class);
 		$this->registerPropertySourceRegistry(context: $context);
 	}//end register()
 

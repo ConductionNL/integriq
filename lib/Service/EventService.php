@@ -25,7 +25,7 @@ use JWadhams\JsonLogic;
 use OCA\Integriq\BackgroundJob\ProcessEventJob;
 use OCA\Integriq\Service\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
-use OCA\Integriq\Broker\BrokerTransportRegistry;
+use OCA\Integriq\Broker\BrokerTransportRegistryInterface;
 use OCA\Integriq\Broker\CloudEventHttpBindingInterface;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Event\DeliveryConcludedEvent;
@@ -160,7 +160,7 @@ class EventService implements EventServiceInterface {
 	 *                                               provenance-carrying delivery reaches a terminal
 	 *                                               state (ADR-041 seam). Nullable + defaulted for
 	 *                                               the same test-compatibility reason as above.
-	 * @param BrokerTransportRegistry|null $brokerRegistry The broker transports this instance has, for
+	 * @param BrokerTransportRegistryInterface|null $brokerRegistry The broker transports this instance has, for
 	 *                                                     `action.kind = 'broker'` (REQ-013). Nullable +
 	 *                                                     defaulted for the same test-compatibility reason
 	 *                                                     as above; null means no broker is wired, which
@@ -199,7 +199,7 @@ class EventService implements EventServiceInterface {
 		private readonly ?FormsSyncAdapter $formsSyncAdapter = null,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
-		private readonly ?BrokerTransportRegistry $brokerRegistry = null,
+		private readonly ?BrokerTransportRegistryInterface $brokerRegistry = null,
 		?EgressGuard $egressGuard = null,
 		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
 		private readonly ?IJobList $jobList = null,

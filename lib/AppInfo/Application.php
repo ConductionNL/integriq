@@ -50,6 +50,7 @@ use OCA\Integriq\Sections\SectionsRegistrar;
 use OCA\Integriq\Settings\SettingsRegistrar;
 use OCA\Integriq\SetupCheck\SetupCheckRegistrar;
 use OCA\Integriq\Sources\SourcesRegistrar;
+use OCA\Integriq\Db\DbRegistrar;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
@@ -148,6 +149,7 @@ class Application extends App implements IBootstrap {
 		(new NotificationRegistrar())->register(context: $context);
 		(new BridgeRegistrar())->register(context: $context);
 		(new ExpressionRegistrar())->register(context: $context);
+		(new DbRegistrar())->register(context: $context);
 
 		/*
 		 * Event dispatcher registration.

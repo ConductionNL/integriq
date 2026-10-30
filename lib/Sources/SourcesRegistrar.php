@@ -27,6 +27,10 @@ use OCA\Integriq\Adapters\Pdok\PdokWmsClient;
 use OCA\Integriq\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\Integriq\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\Integriq\Sources\Pdok\PdokWmsSourceAdapter;
+use OCA\Integriq\Sources\Roster\RosterDeliveryService;
+use OCA\Integriq\Sources\Roster\RosterDeliveryServiceInterface;
+use OCA\Integriq\Sources\Roster\RosterTargetConfiguration;
+use OCA\Integriq\Sources\Roster\RosterTargetConfigurationInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -46,6 +50,8 @@ final class SourcesRegistrar {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
+		$context->registerServiceAlias(RosterTargetConfigurationInterface::class, RosterTargetConfiguration::class);
+		$context->registerServiceAlias(RosterDeliveryServiceInterface::class, RosterDeliveryService::class);
 		$this->registerPdokSourceAdapters(context: $context);
 		$this->registerPdokGeocodingSourceAdapter(context: $context);
 	}//end register()

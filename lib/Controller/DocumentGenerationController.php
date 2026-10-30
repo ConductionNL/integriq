@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\DocumentGenerationException;
-use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
+use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -54,14 +54,14 @@ class DocumentGenerationController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Request object.
 	 * @param ORObjectService $objectService Reads and writes the source objects.
-	 * @param DocumentGenerationProviderRegistry $registry Resolves the source's binding.
+	 * @param DocumentProviderRegistryInterface $registry Resolves the source's binding.
 	 * @param LoggerInterface $logger Logger for credential-free diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ORObjectService $objectService,
-		private readonly DocumentGenerationProviderRegistry $registry,
+		private readonly DocumentProviderRegistryInterface $registry,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

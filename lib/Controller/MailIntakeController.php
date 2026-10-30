@@ -31,7 +31,7 @@ use OCA\Integriq\Exception\MailboxTransportException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Mail\MailboxSourceHandlerInterface;
 use OCA\Integriq\Service\Mail\MailIntakeServiceInterface;
-use OCA\Integriq\Service\Mail\MessageParser;
+use OCA\Integriq\Service\Mail\MessageParserInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -74,7 +74,7 @@ class MailIntakeController extends Controller {
 	 * @param IUserSession $userSession Names the principal making the write.
 	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 * @param OrObjectService $orObjectService Reads the mailbox source.
-	 * @param MessageParser $messageParser Parses the uploaded file.
+	 * @param MessageParserInterface $messageParser Parses the uploaded file.
 	 * @param MailIntakeServiceInterface $intakeService Takes the message in.
 	 * @param MailboxSourceHandlerInterface $mailboxHandler Runs an on-demand poll.
 	 * @param IL10N $l Translations.
@@ -85,7 +85,7 @@ class MailIntakeController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly OrObjectService $orObjectService,
-		private readonly MessageParser $messageParser,
+		private readonly MessageParserInterface $messageParser,
 		private readonly MailIntakeServiceInterface $intakeService,
 		private readonly MailboxSourceHandlerInterface $mailboxHandler,
 		private readonly IL10N $l,

@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-never-fails-open-to-plaintext-or-token-auth-req-003
  */
-class MtlsTransportService {
+class MtlsTransportService implements MtlsTransportServiceInterface {
 	/**
 	 * Constructor.
 	 *

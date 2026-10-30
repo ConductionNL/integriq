@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Broker;
 
-use OCA\Integriq\Broker\Transport\RabbitMqHttpTransport;
+use OCA\Integriq\Broker\Transport\RabbitMqHttpTransportInterface;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallServiceInterface;
 
@@ -76,7 +76,7 @@ class BrokerCredentialResolver {
 		$secret = $this->brokeredCalls->resolveCredentialRef(ref: $ref);
 
 		$username = trim((string)($settings['username'] ?? ''));
-		if ($brokerId === RabbitMqHttpTransport::BROKER_ID || $username !== '') {
+		if ($brokerId === RabbitMqHttpTransportInterface::BROKER_ID || $username !== '') {
 			$settings['password'] = $secret;
 			return $settings;
 		}
