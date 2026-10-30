@@ -699,3 +699,21 @@ operator just created.
 - **AND** a hard document reload of the same URL resolves to the same flow rather than the
   dashboard
 - @e2e flow-orchestration::flow-detail-renders-the-shared-canvas
+
+### Requirement: A flow reads and writes a register schema as a reference table (REQ-018)
+
+A small table of reference data (code lists, lookup values, per-partner settings) SHALL be a register schema in OpenRegister, and a flow SHALL read and update it through OpenRegister's object read and object write nodes (`openregister.object-read`, `openregister.object-write` with create, update and upsert). Integriq SHALL NOT keep a table store of its own for this.
+
+#### Scenario: A flow looks up a value in a reference table
+
+- **GIVEN** a register schema `codes` with an object `{code: "A1", label: "Aanvraag"}`
+- **WHEN** a flow runs an object read node on that schema filtered on `code = A1`
+- **THEN** the next node receives the object with `label = "Aanvraag"`
+- @e2e exclude the read runs inside OpenRegister's flow engine; covered by OpenRegister's node tests, not by an integriq page
+
+#### Scenario: A flow updates a reference table
+
+- **GIVEN** the same schema
+- **WHEN** a flow runs an object write node in upsert mode with `{code: "A1", label: "Aanvraag omgevingsvergunning"}`
+- **THEN** the existing object is updated in place and no second object with code `A1` is created
+- @e2e exclude the write runs inside OpenRegister's flow engine; covered by OpenRegister's node tests, not by an integriq page

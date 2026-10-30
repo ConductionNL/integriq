@@ -224,3 +224,14 @@ be re-implemented.
 - **THEN** the field SHALL return the Dutch translation per OR's negotiation spec.
 - @e2e exclude no test sends an Accept-Language header and asserts the response language. The l10n suite covers the catalogues, not this negotiation
 
+
+### Requirement: Detail pages show the record's OpenRegister audit trail (REQ-ORA-001)
+
+The detail pages for sources, endpoints, consumers and CloudEvents SHALL show the record's audit trail as a sidebar tab declared in the manifest (`type: audit`), read from OpenRegister's per-object audit log. Integriq SHALL NOT keep a general audit log of its own; it SHALL only add records for its own domain actions (promotions, approvals, dead-letter replays).
+
+#### Scenario: An administrator changes a source
+
+- **GIVEN** a source whose location an administrator changed
+- **WHEN** the administrator opens the source's detail page and its audit trail tab
+- **THEN** the tab lists the change with who made it and when, read from OpenRegister
+- @e2e exclude the audit tab is OpenRegister's shared sidebar component; covered by OpenRegister's audit trail tests
