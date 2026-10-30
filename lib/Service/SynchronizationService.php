@@ -3077,11 +3077,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$processResult = $this->processSynchronizationObject(
 				request: new SourceItemRequest(
 					synchronization: $run->synchronization,
+					flowToken: $run->flowToken,
 					result: $run->result,
 					isTest: $run->isTest,
 					force: $run->force,
 					log: $run->log,
-					flowToken: $run->flowToken,
 					trace: $run->trace,
 					contractIndex: $contractIndex
 				),
