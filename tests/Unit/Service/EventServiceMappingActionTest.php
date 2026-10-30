@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Event\ActionDelivery;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
@@ -226,7 +227,7 @@ class EventServiceMappingActionTest extends TestCase {
 			$this->log = [];
 			$message = ObjectServiceMockBuilder::objectEntity($this, ($case['message'] ?? ['event' => 'e-1', 'status' => 'pending']), 'msg-1');
 			try {
-				$outcome = ['return' => $method->invoke($service, $message, ($case['subscription'] ?? []), $case['action'])];
+				$outcome = ['return' => $method->invoke($service, new ActionDelivery(message: $message, subscriptionData: ($case['subscription'] ?? []), action: $case['action']))];
 			} catch (\Throwable $exception) {
 				$outcome = ['throws' => get_class($exception), 'message' => $exception->getMessage()];
 			}

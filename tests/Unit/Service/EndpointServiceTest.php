@@ -20,6 +20,7 @@ use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EndpointRuleDispatch;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\MappingService;
@@ -297,6 +298,33 @@ class EndpointServiceTest extends TestCase {
 	}//end testGenerateEndpointUrlReturnsString()
 
 	/**
+	 * A rule pipeline run over the given rule, as dispatchEndpointRule() hands it to a rule processor.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity           $rule      The rule.
+	 * @param string|null                                $objectId  The object id.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity|null      $endpoint  The endpoint.
+	 * @param \OCA\Integriq\Service\Helper\FlowToken|null $flowToken The flow token.
+	 * @param string                                     $timing    The timing.
+	 *
+	 * @return EndpointRuleDispatch
+	 */
+	private function ruleRun(
+		\OCA\OpenRegister\Db\ObjectEntity $rule,
+		?string $objectId = null,
+		?\OCA\OpenRegister\Db\ObjectEntity $endpoint = null,
+		?\OCA\Integriq\Service\Helper\FlowToken $flowToken = null,
+		string $timing = 'before',
+	): EndpointRuleDispatch {
+		$run = new EndpointRuleDispatch();
+		$run->rule = $rule;
+		$run->objectId = $objectId;
+		$run->endpoint = ($endpoint ?? ObjectServiceMockBuilder::objectEntity($this, [], 'endpoint-1'));
+		$run->flowToken = $flowToken;
+		$run->timing = $timing;
+		return $run;
+	}//end ruleRun()
+
+	/**
 	 * Test that locking rules keep the OpenRegister lock payload shape.
 	 *
 	 * @return void
@@ -315,7 +343,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processLockingRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, ['body' => []], 'object-uuid');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, objectId: 'object-uuid'), ['body' => []]);
 
 		$this->assertSame(['locked' => true, 'process' => 'test-process'], $result['body']);
 	}//end testProcessLockingRuleReturnsLockPayloadArray()
@@ -339,7 +367,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processLockingRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, ['body' => []], 'object-uuid');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, objectId: 'object-uuid'), ['body' => []]);
 
 		$this->assertSame(['unlocked' => true], $result['body']);
 	}//end testProcessLockingRuleNormalisesUnlockBoolean()
@@ -363,7 +391,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processApprovalRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, $endpoint, $flowToken, 'before');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: 'before'));
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
 		$this->assertSame(202, $result->getStatus());
@@ -390,7 +418,7 @@ class EndpointServiceTest extends TestCase {
 		$method->setAccessible(true);
 
 		$this->expectException(\Exception::class);
-		$method->invoke($this->service, $rule, $endpoint, $flowToken, 'after');
+		$method->invoke($this->service, $this->ruleRun(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: 'after'));
 	}//end testProcessApprovalRuleAfterThrows()
 
 	/**
