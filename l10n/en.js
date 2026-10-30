@@ -3523,7 +3523,10 @@ OC.L10N.register(
         "The source. Fields that come from the source cannot be changed here.": "The source. Fields that come from the source cannot be changed here.",
         "%1$d of %2$d · full log in Integriq": "%1$d of %2$d · full log in Integriq",
         "Name the register, the schema and the record.": "Name the register, the schema and the record.",
-        "There is no such record.": "There is no such record."
+        "There is no such record.": "There is no such record.",
+        "The route (variant) of this case type a case from this activity takes. Empty means the case type's default route": "The route (variant) of this case type a case from this activity takes. Empty means the case type's default route",
+        "The route (variant) of this case type the case takes, as the matched mapping row gives it": "The route (variant) of this case type the case takes, as the matched mapping row gives it",
+        "Variant": "Variant"
     },
     "nplurals=2; plural=(n != 1);"
 )
