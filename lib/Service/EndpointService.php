@@ -3178,8 +3178,6 @@ class EndpointService implements EndpointServiceInterface {
 	private function dispatchEndpointRule(EndpointRuleDispatch $context, mixed $data): mixed {
 		$rule = $context->rule;
 		$ruleType = ($rule->getObject()['type'] ?? '');
-		$endpoint = $context->endpoint;
-		$objectId = $context->objectId;
 		$flowToken = $context->flowToken;
 		$handlers = [
 			'save_object' => fn () => $this->processSaveObjectRule(rule: $rule, data: $data),
@@ -3194,28 +3192,22 @@ class EndpointService implements EndpointServiceInterface {
 				dryRun: $context->dryRun
 			),
 			'javascript' => fn () => $this->processJavaScriptRule(rule: $rule, data: $data),
-			'fileparts_create' => fn () => $this->processFilePartRule(rule: $rule, data: $data, endpoint: $endpoint, objectId: $objectId),
-			'filepart_upload' => fn () => $this->processFilePartUploadRule(rule: $rule, data: $data, request: $context->request, objectId: $objectId),
-			'download' => fn () => $this->processDownloadRule(rule: $rule, data: $data, objectId: $objectId),
+			'fileparts_create' => fn () => $this->processFilePartRule(context: $context, data: $data),
+			'filepart_upload' => fn () => $this->processFilePartUploadRule(context: $context, data: $data),
+			'download' => fn () => $this->processDownloadRule(context: $context, data: $data),
 			'extend_input' => fn () => $this->processExtendInputRule(rule: $rule, data: $data),
 			'extend_external_input' => fn () => $this->ruleService->extendExternalUrl(rule: $rule, data: $data),
-			'audit_trail' => fn () => $this->processAuditTrailRule(rule: $rule, endpoint: $endpoint, data: $data, objectId: $objectId),
-			'write_file' => fn () => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
-			'locking' => fn () => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
-			'override' => fn () => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
-			'webhook_signature' => fn () => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $context->request),
+			'audit_trail' => fn () => $this->processAuditTrailRule(context: $context, data: $data),
+			'write_file' => fn () => $this->processWriteFileRule(context: $context, data: $data),
+			'locking' => fn () => $this->processLockingRule(context: $context, data: $data),
+			'override' => fn () => $this->processOverrideRule(context: $context, data: $data),
+			'webhook_signature' => fn () => $this->processWebhookSignatureRule(context: $context, data: $data),
 			'custom' => fn () => $this->processCustomRule(rule: $rule, data: $data),
 			'composite_fanout' => fn () => $this->processCompositeFanoutRule(rule: $rule, data: $data),
 			'referentienummer' => fn () => $this->processReferenceNumberRule(rule: $rule, data: $data),
-			'avg_bsn_policy' => fn () => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $context->timing),
-			'selfurl_hal' => fn () => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
-			'approval' => fn () => $this->processApprovalRule(
-				rule: $rule,
-				endpoint: $endpoint,
-				flowToken: $flowToken,
-				timing: $context->timing,
-				trace: $context->trace
-			),
+			'avg_bsn_policy' => fn () => $this->processAvgBsnPolicyRule(context: $context, data: $data),
+			'selfurl_hal' => fn () => $this->processSelfUrlHalRule(context: $context, data: $data),
+			'approval' => fn () => $this->processApprovalRule(context: $context),
 			'flow' => fn () => $this->processFlowRule(rule: $rule, data: $data),
 		];
 
@@ -3229,9 +3221,8 @@ class EndpointService implements EndpointServiceInterface {
 	/**
 	 * This rule, that only can be run on timing 'after' overrides the content of a written object by the updated contents in the flow token.
 	 *
-	 * @param ObjectEntity $rule The rule to process.
-	 * @param array $data The data from the flow token.
-	 * @param string $objectId The object to override.
+	 * @param EndpointRuleDispatch $context The pipeline run, with the object to override.
+	 * @param array                $data    The data from the flow token.
 	 *
 	 * @return array The updated object.
 	 *
@@ -3240,10 +3231,12 @@ class EndpointService implements EndpointServiceInterface {
 	 * @throws MultipleObjectsReturnedException
 	 * @throws NotFoundExceptionInterface
 	 * @throws \OCP\DB\Exception
+	 * @throws \TypeError When the run has no object id.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processOverrideRule(ObjectEntity $rule, array $data, string $objectId): array {
+	private function processOverrideRule(EndpointRuleDispatch $context, array $data): array {
+		$objectId = $context->requiredObjectId();
 
 		$this->objectService->getOpenRegisters()->clearCurrents();
 		$object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($objectId);
@@ -3269,38 +3262,37 @@ class EndpointService implements EndpointServiceInterface {
 	 * `after`-configured rules during a `before` run; an `approval` rule
 	 * mis-configured `timing: after` still reaches this method during an
 	 * `after` run (its own timing matches the loop's phase there), so the
-	 * explicit `$timing !== 'before'` guard below is what actually rejects
+	 * explicit `timing !== 'before'` guard below is what actually rejects
 	 * that misconfiguration (design.md Decision 1).
 	 *
-	 * @param ObjectEntity $rule The `approval` rule whose conditions passed.
-	 * @param ObjectEntity $endpoint The endpoint whose pipeline is suspending.
-	 * @param FlowToken $flowToken The in-flight FlowToken at suspension time.
-	 * @param string $timing The phase `processRules()` is currently running.
-	 * @param ExecutionTraceContext|null $trace The active execution trace context, carried into the persisted
-	 *                                          `approval_request.snapshot` so resume appends to the SAME
-	 *                                          trace (execution-trace REQ-004's approval-resume
-	 *                                          continuation).
+	 * @param EndpointRuleDispatch $context The pipeline run: the `approval` rule whose conditions passed,
+	 *                                      the endpoint whose pipeline is suspending, the in-flight
+	 *                                      flow token, the phase being run and the trace, which is
+	 *                                      carried into the persisted `approval_request.snapshot` so
+	 *                                      resume appends to the SAME trace (execution-trace REQ-004's
+	 *                                      approval-resume continuation).
 	 *
 	 * @return JSONResponse HTTP 202 with the approval_request id and a status-polling URL.
 	 *
 	 * @throws Exception When configured with `timing: after` (invalid configuration).
+	 * @throws \TypeError When the run has no flow token.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-approval-rule-action-type-suspends-the-pipeline-req-rule-008
 	 * @spec openspec/specs/approval-workflow/spec.md#requirement-endpoint-rule-pipeline-suspension-on-approval-action-req-001
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
 	 */
-	private function processApprovalRule(
-		ObjectEntity $rule,
-		ObjectEntity $endpoint,
-		FlowToken $flowToken,
-		string $timing,
-		?ExecutionTraceContext $trace = null,
-	): JSONResponse {
-		if ($timing !== 'before') {
+	private function processApprovalRule(EndpointRuleDispatch $context): JSONResponse {
+		$flowToken = $context->requiredFlowToken();
+		if ($context->timing !== 'before') {
 			throw new Exception('approval rule type only supports timing: before (pre-write gating)');
 		}
 
-		$approvalRequest = $this->approvalService->suspend(endpoint: $endpoint, rule: $rule, flowToken: $flowToken, trace: $trace);
+		$approvalRequest = $this->approvalService->suspend(
+			endpoint: $context->endpoint,
+			rule: $context->rule,
+			flowToken: $flowToken,
+			trace: $context->trace
+		);
 
 		return new JSONResponse(
 			data: [
@@ -3431,16 +3423,15 @@ class EndpointService implements EndpointServiceInterface {
 	 * Operators MUST order this rule ahead of any body-transforming or
 	 * side-effecting rule (lowest `order`); it never mutates $data.
 	 *
-	 * @param ObjectEntity $rule The webhook_signature rule.
-	 * @param array $data The request data of the pipeline.
-	 * @param IRequest $request The inbound request (for raw body access).
+	 * @param EndpointRuleDispatch $context The pipeline run, with the webhook_signature rule and the inbound request.
+	 * @param array                $data    The request data of the pipeline.
 	 *
 	 * @return array|JSONResponse The unchanged $data on pass, or a 401 JSONResponse.
 	 *
 	 * @spec openspec/specs/webhook-signing/spec.md
 	 */
-	private function processWebhookSignatureRule(ObjectEntity $rule, array $data, IRequest $request): array|JSONResponse {
-		$configuration = ($rule->getObject()['configuration'] ?? []);
+	private function processWebhookSignatureRule(EndpointRuleDispatch $context, array $data): array|JSONResponse {
+		$configuration = ($context->rule->getObject()['configuration'] ?? []);
 		// Config lives in the type slot (configuration.webhook_signature), with
 		// a root-level fallback for hand-authored rules.
 		$config = ($configuration['webhook_signature'] ?? $configuration);
@@ -3454,7 +3445,7 @@ class EndpointService implements EndpointServiceInterface {
 		$rawBody = $this->getRawContent();
 
 		// Case-insensitive header lookup.
-		$headerValue = (string)$request->getHeader($headerName);
+		$headerValue = (string)$context->request->getHeader($headerName);
 
 		$verified = $this->webhookSignatureService->verify(
 			rawBody: $rawBody,
@@ -3743,20 +3734,20 @@ class EndpointService implements EndpointServiceInterface {
 	/**
 	 * Fetches the audit trail for an object, returns a specific audit rule if the path parameter audittrail-id is specified.
 	 *
-	 * @param ObjectEntity $rule The rule to execute
-	 * @param ObjectEntity $endpoint The endpoint on which the rule is executed
-	 * @param array $data The data from the request.
-	 * @param string $objectId The object id for which the request was done.
+	 * @param EndpointRuleDispatch $context The pipeline run, with the endpoint and the object id the request was done for.
+	 * @param array                $data    The data from the request.
 	 *
 	 * @return array|Response The updated data array, or a json response with a not found error.
 	 *
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
+	 * @throws \TypeError When the run has no object id.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processAuditTrailRule(ObjectEntity $rule, ObjectEntity $endpoint, array $data, string $objectId): array|Response {
-		$endpointData = $endpoint->getObject();
+	private function processAuditTrailRule(EndpointRuleDispatch $context, array $data): array|Response {
+		$objectId = $context->requiredObjectId();
+		$endpointData = $context->endpoint->getObject();
 		$pathParameters = $this->getPathParameters(endpointArray: ($endpointData['endpointArray'] ?? []), path: $data['path']);
 
 		if (isset($pathParameters['audittrail-id']) === true) {
@@ -3783,20 +3774,21 @@ class EndpointService implements EndpointServiceInterface {
 	/**
 	 * Process a locking rule, either locking or unlocking a resource.
 	 *
-	 * @param ObjectEntity $rule Rule containing configuration for the execution of the rule.
-	 * @param array $data The data to update.
-	 * @param string $objectId The object id of the object to lock or unlock.
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule configuration and the object to lock or unlock.
+	 * @param array                $data    The data to update.
 	 *
 	 * @return array The updated data array.
 	 *
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
 	 * @throws \OCP\Files\NotFoundException
+	 * @throws \TypeError When the run has no object id.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processLockingRule(ObjectEntity $rule, array $data, string $objectId): array {
-		$config = $rule->getObject()['configuration'] ?? [];
+	private function processLockingRule(EndpointRuleDispatch $context, array $data): array {
+		$objectId = $context->requiredObjectId();
+		$config = $context->rule->getObject()['configuration'] ?? [];
 
 		if ($config['locking']['action'] === 'lock') {
 			$process = (Uuid::v4())->jsonSerialize();
@@ -3881,16 +3873,15 @@ class EndpointService implements EndpointServiceInterface {
 	 * ("before" timing) or strips any raw BSN that survived to the outbound
 	 * representation ("after" timing).
 	 *
-	 * @param ObjectEntity $rule The AVG BSN policy rule to apply.
-	 * @param array $data The data to process.
-	 * @param string $timing The current pipeline timing ("before"/"after").
+	 * @param EndpointRuleDispatch $context The pipeline run, with the AVG BSN policy rule and the timing it runs in.
+	 * @param array                $data    The data to process.
 	 *
 	 * @return array The updated data array.
 	 *
 	 * @spec openspec/specs/vng-klantinteracties-adapter/spec.md
 	 */
-	private function processAvgBsnPolicyRule(ObjectEntity $rule, array $data, string $timing): array {
-		return $this->avgBsnPolicyRule->apply(rule: $rule, data: $data, timing: $timing);
+	private function processAvgBsnPolicyRule(EndpointRuleDispatch $context, array $data): array {
+		return $this->avgBsnPolicyRule->apply(rule: $context->rule, data: $data, timing: $context->timing);
 	}//end processAvgBsnPolicyRule()
 
 	/**
@@ -3899,18 +3890,17 @@ class EndpointService implements EndpointServiceInterface {
 	 * Dialect-agnostic gateway mechanic: renders an absolute `url` self-link
 	 * and HAL `_links` on the response body via {@see renderSelfUrlAndHal()}.
 	 *
-	 * @param ObjectEntity $rule The selfurl_hal rule (carries no configuration; presence is the opt-in).
-	 * @param ObjectEntity $endpoint The endpoint being processed, used to resolve the public path.
-	 * @param array $data The data to process.
+	 * @param EndpointRuleDispatch $context The pipeline run, with the endpoint that resolves the public path
+	 *                                      (the selfurl_hal rule carries no configuration; presence is the opt-in).
+	 * @param array                $data    The data to process.
 	 *
 	 * @return array The updated data array with `url` and `_links` stamped on the body.
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
-	private function processSelfUrlHalRule(ObjectEntity $rule, ObjectEntity $endpoint, array $data): array {
-		unset($rule);
+	private function processSelfUrlHalRule(EndpointRuleDispatch $context, array $data): array {
 		if (is_array($data['body'] ?? null) === true) {
-			$data['body'] = $this->renderSelfUrlAndHal(resource: $data['body'], endpoint: $endpoint);
+			$data['body'] = $this->renderSelfUrlAndHal(resource: $data['body'], endpoint: $context->endpoint);
 		}
 
 		return $data;
@@ -3964,28 +3954,29 @@ class EndpointService implements EndpointServiceInterface {
 	/**
 	 * Process a rule to write files.
 	 *
-	 * @param ObjectEntity $rule The rule ObjectEntity containing configuration.
-	 * @param array $data The data to write.
-	 * @param string $objectId The object to write the data to.
-	 * @param FlowToken $flowToken The flow token carrying the request/response state.
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule configuration, the object to write
+	 *                                      the data to and the flow token carrying the request/response state.
+	 * @param array                $data    The data to write.
 	 *
 	 * @return array
 	 *
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
 	 * @throws Exception
+	 * @throws \TypeError When the run has no object id or no flow token.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processWriteFileRule(ObjectEntity $rule, array $data, string $objectId, FlowToken $flowToken): array {
-		$ruleConfig = $rule->getObject()['configuration'] ?? [];
+	private function processWriteFileRule(EndpointRuleDispatch $context, array $data): array {
+		$objectId = $context->requiredObjectId();
+		$flowTokenArray = $context->requiredFlowToken()->getRequestOriginal();
+		$ruleConfig = $context->rule->getObject()['configuration'] ?? [];
 		if (isset($ruleConfig['write_file']) === false) {
 			throw new Exception('No configuration found for write_file');
 		}
 
 		$config = $ruleConfig['write_file'];
 		$dataDot = new Dot($data);
-		$flowTokenArray = $flowToken->getRequestOriginal();
 		$flowTokenArray['body'] = $flowTokenArray['parameters'];
 		$flowTokenDot = new Dot($flowTokenArray);
 
@@ -4310,10 +4301,9 @@ class EndpointService implements EndpointServiceInterface {
 	/**
 	 * Processes a file part creation rule.
 	 *
-	 * @param ObjectEntity $rule The rule to process.
-	 * @param array $data The created object in array form.
-	 * @param ObjectEntity $endpoint The endpoint the file part rule is bound to.
-	 * @param string|null $objectId The id of the resulting object.
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule configuration, the endpoint the file part
+	 *                                      rule is bound to and the id of the resulting object.
+	 * @param array                $data    The created object in array form.
 	 *
 	 * @return array The updated object data.
 	 *
@@ -4330,18 +4320,19 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processFilePartRule(ObjectEntity $rule, array $data, ObjectEntity $endpoint, ?string $objectId = null): array|JSONResponse {
+	private function processFilePartRule(EndpointRuleDispatch $context, array $data): array|JSONResponse {
+		$objectId = $context->objectId;
 		if ($objectId === null) {
 			throw new Exception('Filepart rules can only be applied after the object has been created');
 		}
 
-		$ruleConfig = $rule->getObject()['configuration'] ?? [];
+		$ruleConfig = $context->rule->getObject()['configuration'] ?? [];
 		if (isset($ruleConfig['fileparts_create']) === false) {
 			throw new Exception('No configuration found for fileparts_create');
 		}
 
 		$config = $ruleConfig['fileparts_create'];
-		$endpointData = $endpoint->getObject();
+		$endpointData = $context->endpoint->getObject();
 		$targetId = explode('/', $endpointData['targetId'] ?? '');
 
 		$registerId = $targetId[0];
@@ -4430,10 +4421,8 @@ class EndpointService implements EndpointServiceInterface {
 	/**
 	 * Processes the upload of a file part.
 	 *
-	 * @param ObjectEntity $rule The rule to process.
-	 * @param array $data The data from the object in array form.
-	 * @param IRequest $request The current request used to read the uploaded part body.
-	 * @param string|null $objectId The id of the object.
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule configuration and the id of the object.
+	 * @param array                $data    The data from the object in array form.
 	 *
 	 * @return array The updated object data.
 	 *
@@ -4446,8 +4435,8 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processFilePartUploadRule(ObjectEntity $rule, array $data, IRequest $request, ?string $objectId = null): array {
-		$ruleConfig = $rule->getObject()['configuration'] ?? [];
+	private function processFilePartUploadRule(EndpointRuleDispatch $context, array $data): array {
+		$ruleConfig = $context->rule->getObject()['configuration'] ?? [];
 		if (isset($ruleConfig['filepart_upload']) === false) {
 			throw new Exception('No configuration found for filepart_upload');
 		}
@@ -4476,7 +4465,7 @@ class EndpointService implements EndpointServiceInterface {
 			);
 		}
 
-		$object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($objectId);
+		$object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($context->objectId);
 		$object->setObject($mappedData);
 		$this->objectService->getOpenRegisters()->getMapper('objectEntity')->update($object);
 
@@ -4514,9 +4503,8 @@ class EndpointService implements EndpointServiceInterface {
 	/**
 	 * Downloads a file based upon configuration
 	 *
-	 * @param ObjectEntity $rule The rule to execute.
-	 * @param array $data The data to perform the rule on.
-	 * @param string $objectId The id of the requested object.
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule configuration and the id of the requested object.
+	 * @param array                $data    The data to perform the rule on.
 	 *
 	 * @return Response A response containing the file requested.
 	 *
@@ -4524,11 +4512,13 @@ class EndpointService implements EndpointServiceInterface {
 	 * @throws DoesNotExistException
 	 * @throws NotFoundExceptionInterface
 	 * @throws \OCP\Files\NotFoundException
+	 * @throws \TypeError When the run has no object id.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processDownloadRule(ObjectEntity $rule, array $data, string $objectId): Response {
-		$config = $rule->getObject()['configuration'] ?? [];
+	private function processDownloadRule(EndpointRuleDispatch $context, array $data): Response {
+		$objectId = $context->requiredObjectId();
+		$config = $context->rule->getObject()['configuration'] ?? [];
 
 		/*
 		 * @var ObjectEntity $object
