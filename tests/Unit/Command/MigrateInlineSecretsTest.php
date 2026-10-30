@@ -29,6 +29,7 @@ namespace OCA\Integriq\Tests\Unit\Command;
 use OCA\Integriq\Command\MigrateInlineSecrets;
 use OCA\Integriq\Repair\RecordInlineSecretMigrationStatus;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
+use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -338,7 +339,7 @@ class MigrateInlineSecretsTest extends TestCase {
 		);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('no OpenRegister in this test'));
-		(new RecordInlineSecretMigrationStatus($container, $stepConfig, new NullLogger()))->run($this->createMock(IOutput::class));
+		(new RecordInlineSecretMigrationStatus($container, $stepConfig, new NullLogger(), new InlineSecretMigrationFactory(new NullLogger(), $container)))->run($this->createMock(IOutput::class));
 
 		$key = RecordInlineSecretMigrationStatus::KEY_CLEAN;
 		$this->assertSame(self::installedAppId(), $stepApps[$key], 'The repair step writes under the installed app id.');

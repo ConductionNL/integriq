@@ -62,7 +62,6 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\DSOParserServiceInterface;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
-use OCA\Integriq\Service\SignedPayloadVerifierInterface;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceServiceInterface;
 use OCA\Integriq\Service\DemoDataService;
@@ -80,15 +79,11 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DsoIngestServiceInterface;
 use OCA\Integriq\Service\Dso\DsoActivityOverview;
-use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
-use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
-use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
-use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
 use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicy;
@@ -189,6 +184,10 @@ use OCA\Integriq\Service\PaymentIntentService;
 use OCA\Integriq\Service\PaymentIntentServiceInterface;
 use OCA\Integriq\Service\PeppolTransmissionService;
 use OCA\Integriq\Service\PeppolTransmissionServiceInterface;
+use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
 use OCA\Integriq\Service\PromotionService;
 use OCA\Integriq\Service\PromotionServiceInterface;
 use OCA\Integriq\Service\RecordProvenanceService;
@@ -215,9 +214,16 @@ use OCA\Integriq\Service\Security\AuthenticationConfigRemover;
 use OCA\Integriq\Service\Security\AuthenticationConfigRemoverInterface;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutorInterface;
+use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
+use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\SettingsServiceInterface;
+use OCA\Integriq\Service\SignedPayloadVerifierInterface;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
 use OCA\Integriq\Service\SoftwareCatalogueService;
@@ -393,6 +399,9 @@ class ServiceRegistrarTest extends TestCase {
 		ResponseDecoderInterface::class => ResponseDecoder::class,
 		OpenRegisterCredentialBridgeInterface::class => OpenRegisterCredentialBridge::class,
 		WebhookProfilesInterface::class => WebhookProfiles::class,
+		InlineSecretMigrationPlannerInterface::class => InlineSecretMigrationPlanner::class,
+		InlineSecretMigrationExecutorInterface::class => InlineSecretMigrationExecutor::class,
+		InlineSecretMigrationFactoryInterface::class => InlineSecretMigrationFactory::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 
