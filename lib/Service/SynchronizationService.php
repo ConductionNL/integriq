@@ -2597,24 +2597,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * If a rate limit error occurs during the external request, a `TooManyRequestsHttpException` is thrown.
 	 *
-	 * @param array $synchronization The synchronization configuration and state.
-	 * @param SynchronizationRunLog $log The log object to record details and results.
-	 * @param FlowToken $flowToken The flow token shared across the run.
-	 * @param bool|null $isTest Optional flag to run in test mode (no deletions/persist).
-	 * @param bool|null $force Optional flag to bypass change checks and force all.
-	 * @param string|null $source The source to synchronize; defaults to the sync source.
-	 * @param array|null $data The data to synchronize; defaults to the sync data.
-	 * @param string|null $mutationType The current mutation type from this::VALID_MUTATION_TYPES.
-	 * @param bool|null $forceDeletion Explicit override for the deletion-ratio guard
-	 *                                 (REQ-010); ignored when `$isTest === true`.
-	 * @param string|null $approvalRequestId Bypass token: the id of a specific approved
-	 *                                       `approval_request` to consume when
-	 *                                       `sourceConfig.requiresApproval` gates this
-	 *                                       run (synchronization-engine REQ-015).
-	 *                                       Optional — when omitted, any
-	 *                                       approved+unconsumed request for this
-	 *                                       synchronization satisfies the gate.
-	 * @param ExecutionTraceContext|null $trace The active execution trace context (execution-trace REQ-001).
+	 * @param ExternSyncRun $run    The run, holding the synchronization, its run log, the flow token
+	 *                              (by reference), the test and force flags, the data and mutation type
+	 *                              of a single-object run, the deletion-ratio override (REQ-010; ignored
+	 *                              for a test run), the approval request that bypasses the approval gate
+	 *                              (REQ-015; when absent, any approved and unconsumed request satisfies
+	 *                              the gate) and the trace (execution-trace REQ-001).
+	 * @param string|null   $source The source to synchronize; defaults to the sync source.
 	 *
 	 * @return SynchronizationRunLog Returns the updated synchronization log with processing results.
 	 *
@@ -2629,43 +2618,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
-	 * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) $approvalRequestId is an additive,
-	 * backward-compatible optional bypass token (hitl-approval-rule-action design.md
-	 * Decision 6); all 9 preceding parameters pre-exist this change.
 	 */
-	private function synchronizeExternToIntern(
-		array $synchronization,
-		SynchronizationRunLog $log,
-		FlowToken &$flowToken,
-		?bool $isTest = false,
-		?bool $force = false,
-		?string $source = null,
-		?array $data = null,
-		?string $mutationType = null,
-		?bool $forceDeletion = false,
-		?string $approvalRequestId = null,
-		?ExecutionTraceContext $trace = null,
-	): SynchronizationRunLog {
+	private function synchronizeExternToIntern(ExternSyncRun $run, ?string $source): SynchronizationRunLog {
 		$overallStartTime = microtime(true);
-
-		$run = new ExternSyncRun();
-		$run->synchronization = $synchronization;
-		$run->log = $log;
-		$run->flowToken = &$flowToken;
-		$run->isTest = $isTest;
-		$run->force = $force;
-		$run->data = $data;
-		$run->mutationType = $mutationType;
-		$run->forceDeletion = $forceDeletion;
-		$run->approvalRequestId = $approvalRequestId;
-		$run->trace = $trace;
 
 		$this->validateExternRun(run: $run, source: $source);
 
-		if ($data !== null && $mutationType === 'delete') {
+		if ($run->data !== null && $run->mutationType === 'delete') {
 			$this->processExternDelete(run: $run);
 		} elseif ($this->runExternBatch(run: $run) === false) {
 			return $run->log;
@@ -3997,19 +3956,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		);
 
 		// Handle full extern-to-intern sync.
-		$log = $this->synchronizeExternToIntern(
-			synchronization: $synchronization,
-			log: $log,
-			flowToken: $flowToken,
-			isTest: $isTest,
-			force: $force,
-			source: $source,
-			data: $data,
-			mutationType: $mutationType,
-			forceDeletion: $forceDeletion,
-			approvalRequestId: $approvalRequestId,
-			trace: $trace
-		);
+		$run = new ExternSyncRun();
+		$run->synchronization = $synchronization;
+		$run->log = $log;
+		$run->flowToken = &$flowToken;
+		$run->isTest = $isTest;
+		$run->force = $force;
+		$run->data = $data;
+		$run->mutationType = $mutationType;
+		$run->forceDeletion = $forceDeletion;
+		$run->approvalRequestId = $approvalRequestId;
+		$run->trace = $trace;
+		$log = $this->synchronizeExternToIntern(run: $run, source: $source);
 
 		// A gated, not-yet-approved run already finalized its own log with a
 		// `pending_approval` message and made no writes — do not overwrite it
