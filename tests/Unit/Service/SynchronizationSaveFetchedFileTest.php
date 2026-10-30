@@ -383,10 +383,19 @@ class SynchronizationSaveFetchedFileTest extends TestCase {
 		$service = $this->service();
 		$this->log = [];
 		$method = new ReflectionMethod(SynchronizationService::class, 'saveFetchedFile');
+		if (($case['sinkMissing'] ?? false) === true) {
+			// The case reopens a sink that no longer exists; the service raises the fopen warning before it throws.
+			set_error_handler(static fn (): bool => true, E_WARNING);
+		}
+
 		try {
 			$outcome = ['return' => $method->invokeArgs($service, $args)];
 		} catch (\Throwable $exception) {
 			$outcome = ['throws' => get_class($exception), 'message' => $exception->getMessage()];
+		}
+
+		if (($case['sinkMissing'] ?? false) === true) {
+			restore_error_handler();
 		}
 
 		return ['outcome' => $outcome, 'filename' => $filename, 'log' => $this->log];

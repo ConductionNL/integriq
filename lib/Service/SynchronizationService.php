@@ -13269,7 +13269,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				'synchronization' => ($item->synchronization['name'] ?? ($item->synchronization['uuid'] ?? null)),
 				'resultAction' => $item->resultAction,
 				'contractResultKeys' => array_keys(($contractResult ?? [])),
-				'contractError' => (($contractResult['error'] ?? $contractResult['message']) ?? null),
+				'contractError' => ($contractResult['error'] ?? $contractResult['message'] ?? null),
 				'contractUuid' => ($contractResult['contract']['uuid'] ?? null),
 				'targetId' => ($contractResult['contract']['targetId'] ?? null),
 				'originId' => ($contractResult['contract']['originId'] ?? null),
