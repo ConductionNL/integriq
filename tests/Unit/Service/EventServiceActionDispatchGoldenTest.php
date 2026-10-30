@@ -45,6 +45,7 @@ use RuntimeException;
  * EVENT_ACTION_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\EventService
+ * @uses   \OCA\Integriq\Service\Event\ActionDelivery
  */
 class EventServiceActionDispatchGoldenTest extends TestCase {
 
@@ -145,7 +146,8 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 		$sync = $this->createMock(SynchronizationService::class);
 		$sync->method('synchronize')->willReturnCallback(
 			function ($synchronization, ...$rest) {
-				$this->log[] = ['sync.synchronize', $synchronization->getUuid(), count($rest) > 0];
+				$traced = array_filter($rest, static fn ($argument): bool => $argument instanceof ExecutionTraceContext);
+				$this->log[] = ['sync.synchronize', $synchronization->getUuid(), count($traced) > 0];
 				if ($this->answer('synchronize') === 'throws') {
 					throw new RuntimeException('sync broke');
 				}

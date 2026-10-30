@@ -39,6 +39,7 @@ use OCA\Integriq\Service\Event\PushDelivery;
 use OCA\Integriq\Service\Event\MappingActionDispatch;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Service\Event\ActionDelivery;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
@@ -1275,54 +1276,30 @@ class EventService implements EventServiceInterface {
 			$actionArray = $action;
 		}
 
+		$delivery = new ActionDelivery(message: $message, subscriptionData: $subscriptionData, action: $actionArray, trace: $trace);
+
 		switch ($kind) {
 			case 'webhook':
 				// Unchanged REQ-002 behaviour: deliverMessage resolves the
 				// subscription itself (accepted minor redundant find()).
 				return $this->deliverMessage(message: $message, trace: $trace);
 			case 'synchronization':
-				return $this->dispatchSynchronizationAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray,
-					trace: $trace
-				);
+				return $this->dispatchSynchronizationAction(delivery: $delivery);
 
 			case 'job':
-				return $this->dispatchJobAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray,
-					trace: $trace
-				);
+				return $this->dispatchJobAction(delivery: $delivery);
 
 			case 'notificaties':
-				return $this->dispatchNotificationsAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray
-				);
+				return $this->dispatchNotificationsAction(delivery: $delivery);
 
 			case 'flow':
-				return $this->dispatchFlowAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray
-				);
+				return $this->dispatchFlowAction(delivery: $delivery);
 
 			case 'mapping':
-				return $this->dispatchMappingAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray
-				);
+				return $this->dispatchMappingAction(delivery: $delivery);
 
 			case 'broker':
-				return $this->dispatchBrokerAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray
-				);
+				return $this->dispatchBrokerAction(delivery: $delivery);
 
 			default:
 				// Unrecognised action.kind: a configuration error, not a
@@ -1377,29 +1354,20 @@ class EventService implements EventServiceInterface {
 	 * so the message is subject to the same retry/backoff/dead-letter/replay
 	 * machinery as a webhook delivery.
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block (`{kind, synchronizationId}`).
-	 * @param ExecutionTraceContext|null $trace The active execution trace context, forwarded into
-	 *                                          `SynchronizationService::synchronize()`
-	 *                                          (execution-trace REQ-001/REQ-002).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block (`{kind, synchronizationId}`) and the active trace.
 	 *
 	 * @return boolean True when the synchronization ran successfully.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 */
-	private function dispatchSynchronizationAction(
-		ObjectEntity $message,
-		array $subscriptionData,
-		array $action,
-		?ExecutionTraceContext $trace = null,
-	): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$synchronizationId = (string)($action['synchronizationId'] ?? '');
+	private function dispatchSynchronizationAction(ActionDelivery $delivery): bool {
+		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData);
+		$synchronizationId = (string)($delivery->action['synchronizationId'] ?? '');
 
 		if ($synchronizationId === '') {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'synchronization not found',
 				statusCode: null,
 				retryAfter: null,
@@ -1420,7 +1388,7 @@ class EventService implements EventServiceInterface {
 
 		if ($synchronization === null) {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'synchronization not found',
 				statusCode: null,
 				retryAfter: null,
@@ -1430,7 +1398,7 @@ class EventService implements EventServiceInterface {
 		}
 
 		try {
-			$this->synchronizationService->synchronize(synchronization: $synchronization, trace: $trace);
+			$this->synchronizationService->synchronize(synchronization: $synchronization, trace: $delivery->trace);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Failed to run synchronization action for event message: ' . $e->getMessage(),
@@ -1441,11 +1409,11 @@ class EventService implements EventServiceInterface {
 					// array here makes OC\Log::getLogLevel() receive an
 					// array and throw — the error handler fatals, turning a
 					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
+					'eventMessage' => $delivery->message->jsonSerialize(),
 				]
 			);
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: $e->getMessage(),
 				statusCode: null,
 				retryAfter: null,
@@ -1454,7 +1422,7 @@ class EventService implements EventServiceInterface {
 			return false;
 		}//end try
 
-		$this->recordDeliverySuccess(message: $message);
+		$this->recordDeliverySuccess(message: $delivery->message);
 		return true;
 	}//end dispatchSynchronizationAction()
 
@@ -1465,24 +1433,20 @@ class EventService implements EventServiceInterface {
 	 * and returns it, so success/failure here is read from that log entry's
 	 * `level` field (`SUCCESS` vs anything else).
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block (`{kind, jobId}`).
-	 * @param ExecutionTraceContext|null $trace The active execution trace context, forwarded into
-	 *                                          `JobService::executeJob()` (execution-trace
-	 *                                          REQ-001/REQ-002).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block (`{kind, jobId}`) and the active trace.
 	 *
 	 * @return boolean True when the job ran successfully.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 */
-	private function dispatchJobAction(ObjectEntity $message, array $subscriptionData, array $action, ?ExecutionTraceContext $trace = null): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$jobId = (string)($action['jobId'] ?? '');
+	private function dispatchJobAction(ActionDelivery $delivery): bool {
+		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData);
+		$jobId = (string)($delivery->action['jobId'] ?? '');
 
 		if ($jobId === '') {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'job not found',
 				statusCode: null,
 				retryAfter: null,
@@ -1499,7 +1463,7 @@ class EventService implements EventServiceInterface {
 
 		if ($job === null) {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'job not found',
 				statusCode: null,
 				retryAfter: null,
@@ -1509,7 +1473,7 @@ class EventService implements EventServiceInterface {
 		}
 
 		try {
-			$log = $this->jobService->executeJob(job: $job, forceRun: true, trace: $trace);
+			$log = $this->jobService->executeJob(job: $job, forceRun: true, trace: $delivery->trace);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Failed to run job action for event message: ' . $e->getMessage(),
@@ -1520,11 +1484,11 @@ class EventService implements EventServiceInterface {
 					// array here makes OC\Log::getLogLevel() receive an
 					// array and throw — the error handler fatals, turning a
 					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
+					'eventMessage' => $delivery->message->jsonSerialize(),
 				]
 			);
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: $e->getMessage(),
 				statusCode: null,
 				retryAfter: null,
@@ -1540,7 +1504,7 @@ class EventService implements EventServiceInterface {
 
 		if ($level !== 'SUCCESS') {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'job execution reported level ' . $level,
 				statusCode: null,
 				retryAfter: null,
@@ -1549,7 +1513,7 @@ class EventService implements EventServiceInterface {
 			return false;
 		}
 
-		$this->recordDeliverySuccess(message: $message);
+		$this->recordDeliverySuccess(message: $delivery->message);
 		return true;
 	}//end dispatchJobAction()
 
@@ -1570,21 +1534,20 @@ class EventService implements EventServiceInterface {
 	 * matching in {@see doesEventMatchSubscription}; `action.flowId`
 	 * selects which flow runs once matched.
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block (`{kind, flowId}`).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block (`{kind, flowId}`) and the active trace.
 	 *
 	 * @return boolean True when the flow run ended in a non-error terminal status.
 	 *
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-runs-via-cron-endpoint-rule-event-or-manual-trigger-req-007
 	 */
-	private function dispatchFlowAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$flowId = (string)($action['flowId'] ?? '');
+	private function dispatchFlowAction(ActionDelivery $delivery): bool {
+		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData);
+		$flowId = (string)($delivery->action['flowId'] ?? '');
 
 		if ($flowId === '') {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'flow not found',
 				statusCode: null,
 				retryAfter: null,
@@ -1601,7 +1564,7 @@ class EventService implements EventServiceInterface {
 
 		if ($flow === null) {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'flow not found',
 				statusCode: null,
 				retryAfter: null,
@@ -1613,7 +1576,7 @@ class EventService implements EventServiceInterface {
 		try {
 			$flowRun = $this->flowRunnerService->run(
 				flow: $flow,
-				input: ($message->getObject()['payload'] ?? []),
+				input: ($delivery->message->getObject()['payload'] ?? []),
 				triggerSource: 'event'
 			);
 		} catch (\Throwable $e) {
@@ -1626,11 +1589,11 @@ class EventService implements EventServiceInterface {
 					// array here makes OC\Log::getLogLevel() receive an
 					// array and throw — the error handler fatals, turning a
 					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
+					'eventMessage' => $delivery->message->jsonSerialize(),
 				]
 			);
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: $e->getMessage(),
 				statusCode: null,
 				retryAfter: null,
@@ -1642,7 +1605,7 @@ class EventService implements EventServiceInterface {
 		$status = (string)($flowRun->getObject()['status'] ?? '');
 		if ($status === 'failed' || $status === 'stopped') {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'flow run ended with status ' . $status,
 				statusCode: null,
 				retryAfter: null,
@@ -1651,7 +1614,7 @@ class EventService implements EventServiceInterface {
 			return false;
 		}
 
-		$this->recordDeliverySuccess(message: $message);
+		$this->recordDeliverySuccess(message: $delivery->message);
 		return true;
 	}//end dispatchFlowAction()
 
@@ -1666,38 +1629,38 @@ class EventService implements EventServiceInterface {
 	 * invoked for this kind (no direct webhook POST — the notification body
 	 * IS the request).
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block (`{kind, sourceId, kanaal,
-	 *                      hoofdObjectField?, resourceField?, actieMap?, kenmerken?}`).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block
+	 *                                 (`{kind, sourceId, kanaal, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}`)
+	 *                                 and the active trace.
 	 *
 	 * @return boolean True when the notification was published successfully.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-a-publish-action-missing-kanaal-is-a-configuration-error-not-a-transient-failure-req-006
 	 */
-	private function dispatchNotificationsAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$channel = (string)($action['channel'] ?? '');
+	private function dispatchNotificationsAction(ActionDelivery $delivery): bool {
+		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData);
+		$channel = (string)($delivery->action['channel'] ?? '');
 
 		if ($channel === '') {
 			// Configuration error (REQ-006), NOT a transient failure — fails
 			// once without entering the retry loop, mirroring the
 			// "unrecognised action.kind" treatment above.
 			$this->recordConfigurationError(
-				message: $message,
+				message: $delivery->message,
 				error: "action.kanaal is required for action.kind='notificaties'"
 			);
 			return false;
 		}
 
-		$source = $this->findNotificationsSource(sourceId: (string)($action['sourceId'] ?? ''));
+		$source = $this->findNotificationsSource(sourceId: (string)($delivery->action['sourceId'] ?? ''));
 		if ($source === null) {
 			// Unresolvable sourceId is retryable (the Source may be created
 			// or corrected later) — same treatment as an unresolvable
 			// synchronizationId/jobId above.
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'source not found',
 				statusCode: null,
 				retryAfter: null,
@@ -1706,7 +1669,7 @@ class EventService implements EventServiceInterface {
 			return false;
 		}
 
-		$messageData = $message->getObject();
+		$messageData = $delivery->message->getObject();
 		// Read the UUID FK `event`; `eventId` is the legacy integer column and is
 		// no longer written (see createEventMessage()). Falls back to it so any
 		// pre-existing row still resolves.
@@ -1715,7 +1678,7 @@ class EventService implements EventServiceInterface {
 		);
 		if ($event === null) {
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: 'event not found',
 				statusCode: null,
 				retryAfter: null,
@@ -1724,7 +1687,7 @@ class EventService implements EventServiceInterface {
 			return false;
 		}
 
-		$body = NotificatiesSubscriberService::buildNotificationBody(event: $event, action: $action);
+		$body = NotificatiesSubscriberService::buildNotificationBody(event: $event, action: $delivery->action);
 
 		try {
 			$callLog = $this->callService->call(
@@ -1743,11 +1706,11 @@ class EventService implements EventServiceInterface {
 					// array here makes OC\Log::getLogLevel() receive an
 					// array and throw — the error handler fatals, turning a
 					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
+					'eventMessage' => $delivery->message->jsonSerialize(),
 				]
 			);
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: $e->getMessage(),
 				statusCode: null,
 				retryAfter: null,
@@ -1760,12 +1723,12 @@ class EventService implements EventServiceInterface {
 		$statusCode = (int)($callLogData['statusCode'] ?? 0);
 
 		if ($statusCode >= 200 && $statusCode < 300) {
-			$this->recordDeliverySuccess(message: $message);
+			$this->recordDeliverySuccess(message: $delivery->message);
 			return true;
 		}
 
 		$this->recordFailure(
-			message: $message,
+			message: $delivery->message,
 			error: 'Notificaties publish failed with status code: ' . $statusCode,
 			statusCode: $statusCode,
 			retryAfter: null,
@@ -1844,22 +1807,20 @@ class EventService implements EventServiceInterface {
 	 * `notificaties` branches, so retry/backoff/dead-letter/replay all apply
 	 * unchanged. Never invokes `deliverMessage`/webhook-signing.
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block
-	 *                      (`{kind, mappingId, sourceId, endpoint, method?}`).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block (`{kind, mappingId, sourceId, endpoint, method?}`) and the active trace.
 	 *
 	 * @return boolean True when the mapped call succeeded.
 	 *
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
 	 */
-	private function dispatchMappingAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$run = new MappingActionDispatch(message: $message, action: $action);
-		$run->retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
+	private function dispatchMappingAction(ActionDelivery $delivery): bool {
+		$run = new MappingActionDispatch(message: $delivery->message, action: $delivery->action);
+		$run->retryPolicy = $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData);
 
 		if ($this->resolveMappingTargets(run: $run) === false
-			|| $this->mappingDispatchAvailable(message: $message) === false
+			|| $this->mappingDispatchAvailable(message: $delivery->message) === false
 			|| $this->resolveMappingSubmission(run: $run) === false
 		) {
 			return false;
@@ -1872,12 +1833,12 @@ class EventService implements EventServiceInterface {
 
 		$statusCode = (int)($callLog->getObject()['statusCode'] ?? 0);
 		if ($statusCode >= 200 && $statusCode < 300) {
-			$this->recordDeliverySuccess(message: $message);
+			$this->recordDeliverySuccess(message: $delivery->message);
 			return true;
 		}
 
 		$this->recordFailure(
-			message: $message,
+			message: $delivery->message,
 			error: 'Mapping action call failed with status code: ' . $statusCode,
 			statusCode: $statusCode,
 			retryAfter: null,
@@ -2070,22 +2031,21 @@ class EventService implements EventServiceInterface {
 	 * from every rendered read. A broker password on the action would be
 	 * returned by the subscriptions API to anyone who can list them.
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block.
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block and the active trace.
 	 *
 	 * @return boolean True when the broker took the message and routed it.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
 	 */
-	private function dispatchBrokerAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
+	private function dispatchBrokerAction(ActionDelivery $delivery): bool {
+		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData);
 
-		$brokerId = trim((string)($action['brokerId'] ?? ''));
+		$brokerId = trim((string)($delivery->action['brokerId'] ?? ''));
 		if ($brokerId === '') {
 			$this->recordConfigurationError(
-				message: $message,
+				message: $delivery->message,
 				error: "action.brokerId is required for action.kind='broker'"
 			);
 			return false;
@@ -2095,7 +2055,7 @@ class EventService implements EventServiceInterface {
 			// No registry wired at all: this dispatch kind cannot run in this
 			// deployment. A configuration problem, not a transient one.
 			$this->recordConfigurationError(
-				message: $message,
+				message: $delivery->message,
 				error: "No broker transport registry is available for action.kind='broker' dispatch."
 			);
 			return false;
@@ -2107,20 +2067,20 @@ class EventService implements EventServiceInterface {
 			// A brokerId nothing answers to will not start answering on a
 			// retry, so it fails once outside the retry loop, the same
 			// treatment an unrecognised action.kind gets.
-			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
+			$this->recordConfigurationError(message: $delivery->message, error: $exception->getMessage());
 			return false;
 		}
 
 		try {
-			$configuration = $this->brokerSettings(brokerId: $brokerId, subscriptionData: $subscriptionData);
+			$configuration = $this->brokerSettings(brokerId: $brokerId, subscriptionData: $delivery->subscriptionData);
 		} catch (BrokeredCallConfigurationException $exception) {
 			// A credential reference that does not resolve will not resolve on a
 			// retry either (REQ-EBSC-003): it fails once, like an unknown broker id.
-			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
+			$this->recordConfigurationError(message: $delivery->message, error: $exception->getMessage());
 			return false;
 		}
 
-		$messageData = $message->getObject();
+		$messageData = $delivery->message->getObject();
 		$cloudEvent = ($messageData['payload'] ?? []);
 		if (is_array($cloudEvent) === false) {
 			$cloudEvent = [];
@@ -2130,8 +2090,8 @@ class EventService implements EventServiceInterface {
 			$result = $transport->publish(
 				publication: $this->brokerPublication(
 					cloudEvent: $cloudEvent,
-					subscriptionData: $subscriptionData,
-					action: $action
+					subscriptionData: $delivery->subscriptionData,
+					action: $delivery->action
 				),
 				configuration: $configuration
 			);
@@ -2142,11 +2102,11 @@ class EventService implements EventServiceInterface {
 					'exception' => $exception,
 					// NOT 'message': Nextcloud's logger treats a `message` key
 					// in the CONTEXT as the log message itself.
-					'eventMessage' => $message->jsonSerialize(),
+					'eventMessage' => $delivery->message->jsonSerialize(),
 				]
 			);
 			$this->recordFailure(
-				message: $message,
+				message: $delivery->message,
 				error: $exception->getMessage(),
 				statusCode: null,
 				retryAfter: null,
@@ -2156,7 +2116,7 @@ class EventService implements EventServiceInterface {
 		}//end try
 
 		if ($result->isPublished() === true) {
-			$this->recordDeliverySuccess(message: $message);
+			$this->recordDeliverySuccess(message: $delivery->message);
 			return true;
 		}
 
@@ -2164,7 +2124,7 @@ class EventService implements EventServiceInterface {
 		// success: RabbitMQ routing to no queue under a 200, and a Kafka
 		// per-record error_code under a 200. Both retry.
 		$this->recordFailure(
-			message: $message,
+			message: $delivery->message,
 			error: 'Broker publish refused: ' . (string)$result->getDetail(),
 			statusCode: $result->getStatusCode(),
 			retryAfter: null,
