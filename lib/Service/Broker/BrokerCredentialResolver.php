@@ -9,8 +9,8 @@
  * inject-only broker lookup a source uses, and puts the secret where the
  * chosen transport reads it.
  *
- * @category Broker
- * @package  OCA\Integriq\Broker
+ * @category Service
+ * @package  OCA\Integriq\Service\Broker
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Broker;
+namespace OCA\Integriq\Service\Broker;
 
 use OCA\Integriq\Broker\Transport\RabbitMqHttpTransport;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;

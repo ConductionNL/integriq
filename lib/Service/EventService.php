@@ -23,7 +23,7 @@ use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
 use OCA\Integriq\BackgroundJob\ProcessEventJob;
-use OCA\Integriq\Broker\BrokerCredentialResolver;
+use OCA\Integriq\Service\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerTransportRegistry;
 use OCA\Integriq\Broker\CloudEventHttpBindingInterface;

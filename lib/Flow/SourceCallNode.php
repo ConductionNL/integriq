@@ -63,6 +63,7 @@ namespace OCA\Integriq\Flow;
 use GuzzleHttp\Promise\PromiseInterface;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Exception\ResponseDecodeException;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -96,7 +97,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.source-call';
+	public const NODE_ID = FlowNodeIds::SOURCE_CALL;
 
 	/**
 	 * The OpenRegister register Sources live in.

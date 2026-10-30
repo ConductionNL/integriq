@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use UnexpectedValueException;
 
 /**
@@ -36,7 +37,7 @@ interface ContractSweepNodeInterface {
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.contract-sweep';
+	public const NODE_ID = FlowNodeIds::CONTRACT_SWEEP;
 
 	/**
 	 * The step type.
