@@ -328,8 +328,6 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="updateTargetOpenRegister"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="updateTargetOpenRegister"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="replaceRelatedOriginIds"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="updateContractsForSubObjects"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="updateContractsForSubObjects"/>
