@@ -8299,7 +8299,8 @@
 				"state": "built",
 				"owner": "nextcloud/server",
 				"evidence": "Integriq's own routes (e.g. appinfo/routes.php:584-585 user#login/logout) and its admin settings page (src/main.js:178 registers /settings/admin/integriq) sit entirely behind Nextcloud's own session/auth middleware; no integriq-specific login bypass or custom auth guard was found anywhere in lib/Controller/ or lib/AppInfo/Application.php.",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "REQ-PLTP-003"
 			},
 			"reachedOn": "the standard Nextcloud login page/SSO redirect (user_oidc/user_saml, if enabled), then Beheer > Integriq at /settings/admin/integriq",
 			"note": "This is platform behaviour inherited from Nextcloud, not integriq-specific code; not independently verified beyond confirming no custom bypass exists.",
@@ -9475,7 +9476,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/info.xml:4 id integriq, :90 nextcloud min 32 max 35, :42 php 8.3; licence EUPL-1.2 (info.xml:23); hard dependency on openregister recorded in the comment at info.xml:34-41",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "REQ-PLTP-001"
 			},
 			"reachedOn": "Nextcloud app install (apps page / occ app:enable integriq)",
 			"note": "Runs inside any self-hosted Nextcloud 32 to 35 with OpenRegister installed; the openregister dependency is not enforced by info.xml, so installing without it leaves every entity without storage.",
@@ -9512,7 +9514,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/info.xml:43 pgsql min 10, :44 sqlite, :45 mysql min 8.0; storage is OpenRegister objects (single migration lib/Migration/Version2Date20260908000000.php); lib/Service/SettingsService.php:80 branches PostgreSQL vs DATE_ADD for the rebase SQL",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "REQ-PLTP-002"
 			},
 			"reachedOn": "Nextcloud install on any of the three databases",
 			"note": "All three are declared and data lives in OpenRegister tables. The one raw-SQL path, SettingsService rebase, emits DATE_ADD for every non-Postgres platform (SQLite has no DATE_ADD) and targets legacy openconnector_* tables, but no page calls it.",
