@@ -97,7 +97,7 @@ final class RecordProvenanceServiceTest extends TestCase {
 		];
 		$logs = [];
 		for ($i = 0; $i < 14; $i++) {
-			$logs[] = ObjectServiceMockBuilder::objectEntity($this, ['synchronization_contract' => 'contract-1', 'targetResult' => 'updated', 'created' => '2026-10-' . sprintf('%02d', 23 - $i) . 'T10:30:00+02:00'], 'log-' . $i);
+			$logs[] = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'sync-1', 'synchronizationContractId' => 'contract-1', 'targetResult' => 'updated', 'created' => '2026-10-' . sprintf('%02d', 23 - $i) . 'T10:30:00+02:00'], 'log-' . $i);
 		}
 
 		$this->store['synchronization_contract_log'] = $logs;
@@ -114,6 +114,46 @@ final class RecordProvenanceServiceTest extends TestCase {
 		$this->assertSame(14, $answer['logTotal']);
 		$this->assertSame('5 of 14 · full log in Integriq', $answer['logSummary']);
 	}//end testASynchronizedRecordNamesItsSource()
+
+	/**
+	 * A contract log written the way synchronizeContract() opens it (openContractLog(): the
+	 * contract's serialised id under synchronizationContractId) shows up in recent.
+	 *
+	 * @return void
+	 */
+	public function testAContractLogWrittenByTheEngineIsRecent(): void {
+		$this->store['source'] = [ObjectServiceMockBuilder::objectEntity($this, ['name' => 'BRP'], 'src-1')];
+		$this->store['synchronization'] = [ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Personen', 'sourceId' => 'src-1'], 'sync-1')];
+		$contract = ObjectServiceMockBuilder::objectEntity($this, ['targetId' => 'person-7', 'originId' => '999990019', 'synchronizationId' => 'sync-1'], 'contract-7');
+		$this->store['synchronization_contract'] = [$contract];
+
+		// SynchronizationService::openContractLog() writes these keys. Its contract array is the entity's
+		// jsonSerialize(), where OpenRegister's ObjectEntity sets `id` to the uuid (the test stub does not).
+		$serialisedContract = ['id' => $contract->getUuid()] + $contract->getObject();
+		$this->store['synchronization_contract_log'] = [
+			ObjectServiceMockBuilder::objectEntity(
+				$this,
+				[
+					'synchronizationId' => 'sync-1',
+					'synchronizationContractId' => $serialisedContract['id'],
+					'source' => ['bsn' => '999990019'],
+					'test' => false,
+					'force' => false,
+					'targetResult' => 'created',
+					'created' => '2026-10-23T10:30:00+02:00',
+				],
+				'log-7'
+			),
+		];
+
+		$answer = $this->makeService()->provenance(recordId: 'person-7');
+
+		$this->assertSame(['id' => 'sync-1', 'name' => 'Personen'], $answer['synchronization']);
+		$this->assertCount(1, $answer['recent']);
+		$this->assertSame('log-7', $answer['recent'][0]['id']);
+		$this->assertSame('created', $answer['recent'][0]['result']);
+		$this->assertSame(1, $answer['logTotal']);
+	}//end testAContractLogWrittenByTheEngineIsRecent()
 
 	/**
 	 * A record no contract targets says so.
