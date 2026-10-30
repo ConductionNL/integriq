@@ -2837,11 +2837,11 @@
             ],
             [
                 "or.find",
-                "c8b5d4e3-2222-4333-8444-a55566667777"
+                "e1d7f6a5-4444-4555-8666-c77788889999"
             ],
             [
                 "file.saveFile",
-                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "e1d7f6a5-4444-4555-8666-c77788889999",
                 "x.pdf",
                 "BYTES:/x.pdf",
                 false,
@@ -2894,6 +2894,849 @@
                 "file.deleteFile",
                 "old.pdf",
                 "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "multi-labels-as-tags": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 2,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/x.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/y.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "x.pdf",
+                "BYTES:/x.pdf",
+                false,
+                [
+                    "L1"
+                ]
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "y.pdf",
+                "BYTES:/y.pdf",
+                false,
+                [
+                    "a",
+                    "b"
+                ]
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-renamed-by-header": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/get?id=1",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "renamed.pdf",
+                "BYTES:/get?id=1",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-lazy-count-cap": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 3,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a.pdf",
+                false,
+                []
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/b.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "b.pdf",
+                "BYTES:/b.pdf",
+                false,
+                []
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/c.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "c.pdf",
+                "BYTES:/c.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-lazy-byte-budget": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 3,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/b.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/c.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "b.pdf",
+                "BYTES:/b.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "c.pdf",
+                "BYTES:/c.pdf",
+                false,
+                []
+            ],
+            [
+                "logger.info",
+                "File fetches for this object were throttled: concurrency cap 5, in-flight byte budget 10 bytes."
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-lazy-under-budget": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 2,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/b.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "b.pdf",
+                "BYTES:/b.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "assoc-object-missing-adds": {
+        "outcome": {
+            "return": {
+                "doc": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/c.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.addFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "c.pdf",
+                "BYTES:/c.pdf",
+                false,
+                [],
+                "s",
+                "r",
+                3
             ]
         ]
     },
