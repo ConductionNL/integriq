@@ -58,7 +58,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/openconnector-storage-migration/spec.md
  */
-class LegacyToRegisterMigrator {
+class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 
 	public const REGISTER_SLUG = 'integriq';
 

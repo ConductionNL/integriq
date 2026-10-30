@@ -53,7 +53,7 @@ use Throwable;
  *
  * @spec openspec/specs/lti-platform/spec.md
  */
-class LtiLaunchService {
+class LtiLaunchService implements LtiLaunchServiceInterface {
 
 	/**
 	 * LTI 1.3 claim URIs.

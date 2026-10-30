@@ -34,8 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\ConnectionProbeService;
-use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\ConnectionProbeServiceInterface;
+use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Container\ContainerInterface;
@@ -87,15 +87,15 @@ class ConnectionHealthJob extends TimedJob {
 	protected function run($argument): void {
 		$this->phase(
 			name: 'declaration sync',
-			operation: fn () => $this->container->get(ConnectionRegistryService::class)->syncChangedDeclarations()
+			operation: fn () => $this->container->get(ConnectionRegistryServiceInterface::class)->syncChangedDeclarations()
 		);
 		$this->phase(
 			name: 'source probes',
-			operation: fn () => $this->container->get(ConnectionProbeService::class)->probeDue(limit: ConnectionProbeService::PROBE_LIMIT)
+			operation: fn () => $this->container->get(ConnectionProbeServiceInterface::class)->probeDue(limit: ConnectionProbeServiceInterface::PROBE_LIMIT)
 		);
 		$this->phase(
 			name: 'status refresh',
-			operation: fn () => $this->container->get(ConnectionRegistryService::class)->refresh()
+			operation: fn () => $this->container->get(ConnectionRegistryServiceInterface::class)->refresh()
 		);
 	}//end run()
 

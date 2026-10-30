@@ -20,9 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\SourceDestructionService;
-use OCA\Integriq\Service\SynchronizationService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\SourceDestructionServiceInterface;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -45,15 +45,15 @@ class SourceDestroyedController extends Controller {
 	 *
 	 * @param string                   $appName           App identifier ("integriq").
 	 * @param IRequest                 $request           The request.
-	 * @param SourceDestructionService $sourceDestruction The destruction notice path (REQ-SDP-002).
-	 * @param WebhookSignatureService  $signatureService  The signature check.
+	 * @param SourceDestructionServiceInterface $sourceDestruction The destruction notice path (REQ-SDP-002).
+	 * @param WebhookSignatureServiceInterface  $signatureService  The signature check.
 	 * @param IL10N                    $l                 The localization service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SourceDestructionService $sourceDestruction,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly SourceDestructionServiceInterface $sourceDestruction,
+		private readonly WebhookSignatureServiceInterface $signatureService,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -114,7 +114,7 @@ class SourceDestroyedController extends Controller {
 		}
 
 		$outcome = $this->sourceDestruction->handleDestroyed(synchronizationId: $id, originId: $originId, reference: $reference);
-		if ($outcome['outcome'] === SynchronizationService::DESTRUCTION_NO_CONTRACT) {
+		if ($outcome['outcome'] === SynchronizationServiceInterface::DESTRUCTION_NO_CONTRACT) {
 			return new JSONResponse($outcome, Http::STATUS_NOT_FOUND);
 		}
 

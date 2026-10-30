@@ -21,7 +21,7 @@
 namespace OCA\Integriq\Action;
 
 use Exception;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
@@ -37,17 +37,17 @@ class SynchronizationAction {
 	/**
 	 * The synchronization service that runs the synchronization.
 	 *
-	 * @var SynchronizationService
+	 * @var SynchronizationServiceInterface
 	 */
-	private SynchronizationService $synchronizationService;
+	private SynchronizationServiceInterface $synchronizationService;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizationService The synchronization service.
+	 * @param SynchronizationServiceInterface $synchronizationService The synchronization service.
 	 */
 	public function __construct(
-		SynchronizationService $synchronizationService,
+		SynchronizationServiceInterface $synchronizationService,
 	) {
 		$this->synchronizationService = $synchronizationService;
 
@@ -143,6 +143,28 @@ class SynchronizationAction {
 		$response['stackTrace'][] = $response['message'] = 'Synchronized ' . $objectCount . ' successfully';
 
 		// Report back about what we have just done.
-		return $response;
+		return $this->withResume(response: $response, objects: $objects);
 	}//end run()
+
+	/**
+	 * Ask the scheduler to run this job again on the next cron tick when the
+	 * synchronization run left batches to read.
+	 *
+	 * @param array $response The action response so far.
+	 * @param mixed $objects What the synchronization run returned.
+	 *
+	 * @return array The response, with `resumeSoon` when batches remain.
+	 *
+	 * @spec openspec/changes/bounded-jsonl-sync/specs/job-scheduling/spec.md#requirement-a-job-with-work-left-runs-again-on-the-next-tick
+	 */
+	private function withResume(array $response, mixed $objects): array {
+		if (is_array($objects) === false || isset($objects['result']['resume']) === false) {
+			return $response;
+		}
+
+		$response['resumeSoon'] = true;
+		$response['stackTrace'][] = 'More batches remain; resuming at batch ' . ($objects['result']['resume']['page'] ?? '?') . ' on the next run';
+
+		return $response;
+	}//end withResume()
 }//end class

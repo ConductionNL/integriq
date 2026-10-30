@@ -34,8 +34,9 @@ namespace OCA\Integriq\Outbound\Call;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\Integriq\Service\RetentionDefaults;
+use OCA\Integriq\Service\RetentionDefaultsInterface;
 use OCP\IAppConfig;
+use OCP\IUserSession;
 use Psr\Clock\ClockInterface;
 use Throwable;
 
@@ -44,7 +45,7 @@ use Throwable;
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
  */
-class BodyCapturePolicy {
+class BodyCapturePolicy implements BodyCapturePolicyInterface {
 
 	/**
 	 * App setting: the longest window an administrator may open, in hours.
@@ -82,14 +83,23 @@ class BodyCapturePolicy {
 	public const REQUEST_BODY_KEYS = ['body', 'json', 'form_params', 'multipart'];
 
 	/**
+	 * What a record that withholds its bodies keeps of the response.
+	 *
+	 * @var array<int,string>
+	 */
+	public const WITHHELD_RESPONSE_KEYS = ['statusCode', 'statusMessage', 'responseTime', 'size', 'encoding'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Reads the window maximum and the body retention.
 	 * @param ClockInterface|null $clock The clock; the system clock when absent.
+	 * @param IUserSession|null $userSession Names the asking user on a record that withholds its bodies.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly ?ClockInterface $clock = null,
+		private readonly ?IUserSession $userSession = null,
 	) {
 
 	}//end __construct()
@@ -168,7 +178,13 @@ class BodyCapturePolicy {
 	 * @param array<string,mixed> $sourceData The source.
 	 * @param DateTimeInterface $now The moment of the call.
 	 *
-	 * @return bool True only for a readable window that ends after now.
+	 * A window that ends further away than the instance maximum counts as
+	 * closed. BodyCaptureController::open() refuses such a window, but a
+	 * `bodyCaptureUntil` written another way (the generic source API, a
+	 * source update, an import) skips that check, and would otherwise open a
+	 * window of any length without a reason.
+	 *
+	 * @return bool True only for a readable window that ends after now and within the maximum.
 	 *
 	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
 	 */
@@ -178,7 +194,9 @@ class BodyCapturePolicy {
 			return false;
 		}
 
-		return $end > $now;
+		$latest = DateTimeImmutable::createFromInterface($now)->modify('+' . $this->maxHours() . ' hours');
+
+		return $end > $now && $end <= $latest;
 
 	}//end isOpen()
 
@@ -202,6 +220,64 @@ class BodyCapturePolicy {
 		return ['request' => $request, 'response' => $response];
 
 	}//end strip()
+
+	/**
+	 * The record of a call whose caller withholds its bodies: no body, no
+	 * replay request, and the asking user by name. Run it after {@see apply()},
+	 * so neither a window nor `logBody` puts a body back.
+	 *
+	 * @param array<string,mixed> $record The call record.
+	 *
+	 * @return array<string,mixed> The record to write.
+	 *
+	 * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
+	 */
+	public function withheldRecord(array $record): array {
+		$record = $this->withhold(record: $record);
+		$record['bodyCaptured'] = false;
+
+		$userId = $this->userSession?->getUser()?->getUID();
+		if ($userId !== null && $userId !== '') {
+			$record['userId'] = $userId;
+		}
+
+		return $record;
+
+	}//end withheldRecord()
+
+	/**
+	 * Reduce a record to what may be kept of a call whose caller withholds its bodies.
+	 *
+	 * The request keeps its method and its URL without the query string. The
+	 * response keeps its status, timing and size. Everything else goes: both
+	 * bodies, the headers, the query, the replay request and the body expiry.
+	 * An identifier in the URL path stays, so a caller that withholds bodies
+	 * must send its identifiers in the body.
+	 *
+	 * @param array<string,mixed> $record The call record, or its request and response only.
+	 *
+	 * @return array<string,mixed> The record without bodies.
+	 *
+	 * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
+	 */
+	public function withhold(array $record): array {
+		$request = $this->asArray(value: ($record['request'] ?? []));
+		$response = $this->asArray(value: ($record['response'] ?? []));
+
+		$url = (string)($request['url'] ?? '');
+		$record['request'] = [
+			'url' => (string)preg_replace('/[?#].*$/s', '', $url),
+			'method' => (string)($request['method'] ?? ''),
+		];
+		$record['response'] = array_intersect_key($response, array_flip(self::WITHHELD_RESPONSE_KEYS));
+		unset($record['replayRequest'], $record['bodyExpiresAt']);
+		if (array_key_exists('bodyCaptured', $record) === true) {
+			$record['bodyCaptured'] = false;
+		}
+
+		return $record;
+
+	}//end withhold()
 
 	/**
 	 * Apply the policy to a call record before it is written.
@@ -253,6 +329,25 @@ class BodyCapturePolicy {
 	}//end apply()
 
 	/**
+	 * Whether a call's bodies may be kept at all: inside the source's open window, or because the caller asked.
+	 *
+	 * The same decision {@see apply()} makes for the call record, for a
+	 * consumer that stores the request and response elsewhere, such as the
+	 * execution trace step of the call.
+	 *
+	 * @param array<string,mixed> $sourceData The source the call went to.
+	 * @param bool $logBody Whether the calling code asked for the bodies.
+	 *
+	 * @return bool True when the bodies may be stored.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+	 */
+	public function captures(array $sourceData, bool $logBody): bool {
+		return ($this->decide(sourceData: $sourceData, logBody: $logBody)['capture'] === true);
+
+	}//end captures()
+
+	/**
 	 * Whether bodies are captured, and until when.
 	 *
 	 * @param array<string,mixed> $sourceData The source.
@@ -296,7 +391,7 @@ class BodyCapturePolicy {
 
 		// A record kept for ever still lets its replay request go after the
 		// instance's default error retention.
-		$seconds = intdiv(RetentionDefaults::CALL_LOG, 1000);
+		$seconds = intdiv(RetentionDefaultsInterface::CALL_LOG, 1000);
 
 		return $this->now()->add(new DateInterval('PT' . $seconds . 'S'))->format('c');
 

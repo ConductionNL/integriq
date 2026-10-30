@@ -61,6 +61,96 @@
                   }
                 },
                 "type": "hoofdvestiging"
+              },
+              {
+                "kvkNummer": "00001008",
+                "naam": "Bakkerij De Molen",
+                "rechtsvorm": "Eenmanszaak",
+                "adres": {
+                  "binnenlandsAdres": {
+                    "type": "bezoekadres",
+                    "straatnaam": "Molenweg",
+                    "huisnummer": 2,
+                    "postcode": "2999BD",
+                    "plaats": "Zuiddrecht"
+                  }
+                },
+                "type": "hoofdvestiging",
+                "sbiActiviteiten": [
+                  {
+                    "sbiCode": "10710",
+                    "sbiOmschrijving": "Vervaardiging van brood en vers banketbakkerswerk",
+                    "indHoofdactiviteit": "Ja"
+                  }
+                ]
+              },
+              {
+                "kvkNummer": "00001007",
+                "naam": "Buurtvereniging Oost",
+                "rechtsvorm": "Vereniging",
+                "adres": {
+                  "binnenlandsAdres": {
+                    "type": "bezoekadres",
+                    "straatnaam": "Oosthavenweg",
+                    "huisnummer": 12,
+                    "postcode": "2999AJ",
+                    "plaats": "Zuiddrecht"
+                  }
+                },
+                "type": "hoofdvestiging",
+                "sbiActiviteiten": [
+                  {
+                    "sbiCode": "94993",
+                    "sbiOmschrijving": "Bewonersverenigingen en buurtcomités",
+                    "indHoofdactiviteit": "Ja"
+                  }
+                ]
+              },
+              {
+                "kvkNummer": "00001009",
+                "naam": "Dagblad Drechtsteden B.V.",
+                "rechtsvorm": "Besloten Vennootschap",
+                "adres": {
+                  "binnenlandsAdres": {
+                    "type": "bezoekadres",
+                    "straatnaam": "Stationsplein",
+                    "huisnummer": 8,
+                    "postcode": "2999BB",
+                    "plaats": "Zuiddrecht"
+                  }
+                },
+                "type": "hoofdvestiging",
+                "sbiActiviteiten": [
+                  {
+                    "sbiCode": "58130",
+                    "sbiOmschrijving": "Uitgeverijen van kranten",
+                    "indHoofdactiviteit": "Ja"
+                  }
+                ],
+                "telefoonnummer": "0180 41 99 21"
+              },
+              {
+                "kvkNummer": "00001003",
+                "naam": "Installatiebedrijf Van Dam",
+                "rechtsvorm": "Eenmanszaak",
+                "adres": {
+                  "binnenlandsAdres": {
+                    "type": "bezoekadres",
+                    "straatnaam": "Industrieweg",
+                    "huisnummer": 14,
+                    "postcode": "2999BC",
+                    "plaats": "Zuiddrecht"
+                  }
+                },
+                "type": "hoofdvestiging",
+                "sbiActiviteiten": [
+                  {
+                    "sbiCode": "43220",
+                    "sbiOmschrijving": "Loodgieters- en fitterswerk; installatie van sanitair en verwarming",
+                    "indHoofdactiviteit": "Ja"
+                  }
+                ],
+                "werkzamePersonen": "5 tot 9"
               }
             ]
           }

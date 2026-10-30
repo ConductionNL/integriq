@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/nextcloud-forms-connector/spec.md
  */
-class FormsSyncAdapter {
+class FormsSyncAdapter implements FormsSyncAdapterInterface {
 
 	/**
 	 * Forms app id, as registered in `appinfo/info.xml` of nextcloud/forms.

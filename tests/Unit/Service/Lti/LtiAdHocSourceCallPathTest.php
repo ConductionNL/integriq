@@ -19,6 +19,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use GuzzleHttp\Psr7\Response;
 use Jose\Component\KeyManagement\JWKFactory;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
@@ -170,6 +171,7 @@ class LtiAdHocSourceCallPathTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 
 		$client = $this->createMock(\GuzzleHttp\Client::class);

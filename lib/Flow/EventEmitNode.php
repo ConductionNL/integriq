@@ -38,7 +38,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -75,7 +76,7 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.event-emit';
+	public const NODE_ID = FlowNodeIds::EVENT_EMIT;
 
 	/**
 	 * Constructor.
@@ -267,7 +268,7 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
-		$eventService = $this->container->get(EventService::class);
+		$eventService = $this->container->get(EventServiceInterface::class);
 
 		$outputKey = trim((string)($config['output'] ?? ''));
 		if ($outputKey === '') {
@@ -306,7 +307,7 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * Emit one item's event; success lands under the output key, failure is
 	 * explicit — a raise, or `__error` state under `continue`.
 	 *
-	 * @param EventService $eventService The resolved event pipeline.
+	 * @param EventServiceInterface $eventService The resolved event pipeline.
 	 * @param array $json The item's record.
 	 * @param array $config The step's authored configuration.
 	 * @param string $stepId The step id, for error messages.
@@ -320,7 +321,7 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
 	 */
 	private function emitForItem(
-		EventService $eventService,
+		EventServiceInterface $eventService,
 		array $json,
 		array $config,
 		string $stepId,

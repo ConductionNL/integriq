@@ -105,7 +105,7 @@ use Throwable;
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
  */
-class InlineSecretMigrationExecutor {
+class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInterface {
 
 	/**
 	 * The app id the broker authorises against a credential's allowedApps, and
@@ -170,13 +170,13 @@ class InlineSecretMigrationExecutor {
 	 * Constructor.
 	 *
 	 * @param OrObjectService $objectService The OpenRegister object service (raw reads + source saves).
-	 * @param InlineSecretMigrationPlanner $planner The read-safe planner reused for classification + the post-run gate.
+	 * @param InlineSecretMigrationPlannerInterface $planner The read-safe planner reused for classification + the post-run gate.
 	 * @param LoggerInterface $logger Secret-free logging only.
 	 * @param ContainerInterface $container App container the OpenRegister credential broker is resolved from.
 	 */
 	public function __construct(
 		private readonly OrObjectService $objectService,
-		private readonly InlineSecretMigrationPlanner $planner,
+		private readonly InlineSecretMigrationPlannerInterface $planner,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 	) {

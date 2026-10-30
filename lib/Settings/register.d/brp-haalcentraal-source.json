@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (seed-brp-haalcentraal-source). Seeds the pre-built `brp-haalcentraal` OpenConnector source consumed by the OpenRegister BRP person-lookup integration leaf (BrpPersonProvider SOURCE_ID='brp-haalcentraal'). The RvIG HaalCentraal Personen v2.0 API authenticates with OAuth2 client_credentials AND mutual-TLS (PKIoverheid). Both are first-class on OpenConnector's CallService: the bearer is injected per-call via the `{{ oauthToken(source) }}` Twig placeholder in `configuration.headers.Authorization` (AuthenticationService::fetchOAuthTokens, grant_type=client_credentials), and the client certificate / private key flow through `configuration.cert` + `configuration.ssl_key` (CallService::getCertificate writes them to temp files for Guzzle's TLS handshake). MOCK MODE (integration-mock-mode): ships with `configuration.mock:true` + a realistic `configuration.mockResponse` (HaalCentraal `/personen` shape, a FAKE test BSN 999990019 — a RvIG test-range BSN, NOT a real person) + a `configuration.mockMeta` (status 200 / durationMs / a fake correlationId) and isEnabled:true, so the leaf is demonstrably functional end-to-end WITHOUT OAuth2 credentials or a PKIoverheid certificate — the OpenRegister ExternalIntegrationRouter short-circuits the mock-flagged source (via callWithMeta) and returns the canned body + synthesized Wet-BRP audit meta without any HTTP call. To go live against the production HaalCentraal v2 endpoint: paste your RvIG client_id/client_secret, scope, and PEM cert+key onto `configuration.authentication` + `configuration.cert`/`configuration.ssl_key`, and REMOVE `configuration.mock` (the EMPTY credential / cert fields are pre-shaped; base + token URLs are already the production endpoints). No end-user input reaches the request URL (the BSN travels in the POST body, never the path), so there is no SSRF surface — the base URL is admin-owned on the source. BSN values are PII (AVG art. 9 adjacent): the consuming app (pipelinq) masks them before logging; this source never logs the request body (logBody defaults off).",
+  "$comment": "ADR-037 register fragment (seed-brp-haalcentraal-source). Seeds the pre-built `brp-haalcentraal` OpenConnector source consumed by the OpenRegister BRP person-lookup integration leaf (BrpPersonProvider SOURCE_ID='brp-haalcentraal'). The RvIG HaalCentraal Personen v2.0 API authenticates with OAuth2 client_credentials AND mutual-TLS (PKIoverheid). Both are first-class on OpenConnector's CallService: the bearer is injected per-call via the `{{ oauthToken(source) }}` Twig placeholder in `configuration.headers.Authorization` (AuthenticationService::fetchOAuthTokens, grant_type=client_credentials), and the client certificate / private key flow through `configuration.cert` + `configuration.ssl_key` (CallService::getCertificate writes them to temp files for Guzzle's TLS handshake). MOCK MODE (integration-mock-mode): ships with `configuration.mock:true` + a realistic `configuration.mockResponse` (HaalCentraal `/personen` shape, a FAKE test BSN 999990019 — a RvIG test-range BSN, NOT a real person) + a `configuration.mockMeta` (status 200 / durationMs / a fake correlationId) and isEnabled:true, so the leaf is demonstrably functional end-to-end WITHOUT OAuth2 credentials or a PKIoverheid certificate — the OpenRegister ExternalIntegrationRouter short-circuits the mock-flagged source (via callWithMeta) and returns the canned body + synthesized Wet-BRP audit meta without any HTTP call. To go live against the production HaalCentraal v2 endpoint: paste your RvIG client_id/client_secret, scope, and PEM cert+key onto `configuration.authentication` + `configuration.cert`/`configuration.ssl_key`, and REMOVE `configuration.mock` (the EMPTY credential / cert fields are pre-shaped; base + token URLs are already the production endpoints). No end-user input reaches the request URL (the BSN travels in the POST body, never the path), so there is no SSRF surface — the base URL is admin-owned on the source. BSN values are PII (AVG art. 9 adjacent): the consuming app (pipelinq) masks them before logging; this source never logs the request body (logBody defaults off). The mock also knows the eight residents of the OpenRegister example-set cast (Zuiddrecht, test-range BSNs 999994001 to 999994153, as the cast holds them), after Jan Pieter de Tester, so a consumer that reads the person whose BSN it asked for finds them.",
   "components": {
     "objects": [
       {
@@ -59,6 +59,259 @@
                   "postcode": "3511ED",
                   "woonplaats": "Utrecht",
                   "land": { "code": "6030", "omschrijving": "Nederland" }
+                },
+                "partners": [{ "burgerservicenummer": "999993653" }],
+                "ouders": [{ "burgerservicenummer": "999991723" }, { "burgerservicenummer": "999992077" }],
+                "kinderen": [{ "burgerservicenummer": "999994669" }]
+              },
+              {
+                "burgerservicenummer": "999994001",
+                "naam": {
+                  "voornamen": "Sanne",
+                  "voorletters": "S.",
+                  "voorvoegsel": "de",
+                  "geslachtsnaam": "Vries",
+                  "volledigeNaam": "Sanne de Vries"
+                },
+                "geboorte": {
+                  "datum": {
+                    "type": "Datum",
+                    "datum": "1988-03-14",
+                    "langFormaat": "14 maart 1988"
+                  }
+                },
+                "geslacht": {
+                  "code": "V",
+                  "omschrijving": "vrouw"
+                },
+                "verblijfplaats": {
+                  "type": "Adres",
+                  "straat": "Lindelaan",
+                  "huisnummer": 14,
+                  "postcode": "2999AA",
+                  "woonplaats": "Zuiddrecht",
+                  "land": {
+                    "code": "6030",
+                    "omschrijving": "Nederland"
+                  }
+                }
+              },
+              {
+                "burgerservicenummer": "999994013",
+                "naam": {
+                  "voornamen": "Henk",
+                  "voorletters": "H.",
+                  "geslachtsnaam": "Bakker",
+                  "volledigeNaam": "Henk Bakker"
+                },
+                "geboorte": {
+                  "datum": {
+                    "type": "Datum",
+                    "datum": "1941-06-02",
+                    "langFormaat": "2 juni 1941"
+                  }
+                },
+                "geslacht": {
+                  "code": "M",
+                  "omschrijving": "man"
+                },
+                "verblijfplaats": {
+                  "type": "Adres",
+                  "straat": "Kerkplein",
+                  "huisnummer": 3,
+                  "postcode": "2999AB",
+                  "woonplaats": "Zuiddrecht",
+                  "land": {
+                    "code": "6030",
+                    "omschrijving": "Nederland"
+                  }
+                }
+              },
+              {
+                "burgerservicenummer": "999994037",
+                "naam": {
+                  "voornamen": "Linda",
+                  "voorletters": "L.",
+                  "geslachtsnaam": "Bakker",
+                  "volledigeNaam": "Linda Bakker"
+                },
+                "geboorte": {
+                  "datum": {
+                    "type": "Datum",
+                    "datum": "1970-09-21",
+                    "langFormaat": "21 september 1970"
+                  }
+                },
+                "geslacht": {
+                  "code": "V",
+                  "omschrijving": "vrouw"
+                },
+                "verblijfplaats": {
+                  "type": "Adres",
+                  "straat": "Molenweg",
+                  "huisnummer": 27,
+                  "postcode": "2999AC",
+                  "woonplaats": "Zuiddrecht",
+                  "land": {
+                    "code": "6030",
+                    "omschrijving": "Nederland"
+                  }
+                }
+              },
+              {
+                "burgerservicenummer": "999994049",
+                "naam": {
+                  "voornamen": "Fatima",
+                  "voorletters": "F.",
+                  "geslachtsnaam": "El-Amrani",
+                  "volledigeNaam": "Fatima El-Amrani"
+                },
+                "geboorte": {
+                  "datum": {
+                    "type": "Datum",
+                    "datum": "1992-01-30",
+                    "langFormaat": "30 januari 1992"
+                  }
+                },
+                "geslacht": {
+                  "code": "V",
+                  "omschrijving": "vrouw"
+                },
+                "verblijfplaats": {
+                  "type": "Adres",
+                  "straat": "Havenstraat",
+                  "huisnummer": 8,
+                  "postcode": "2999AD",
+                  "woonplaats": "Zuiddrecht",
+                  "land": {
+                    "code": "6030",
+                    "omschrijving": "Nederland"
+                  }
+                }
+              },
+              {
+                "burgerservicenummer": "999994104",
+                "naam": {
+                  "voornamen": "Pieter",
+                  "voorletters": "P.",
+                  "geslachtsnaam": "Bos",
+                  "volledigeNaam": "Pieter Bos"
+                },
+                "geboorte": {
+                  "datum": {
+                    "type": "Datum",
+                    "datum": "1979-08-21",
+                    "langFormaat": "21 augustus 1979"
+                  }
+                },
+                "geslacht": {
+                  "code": "M",
+                  "omschrijving": "man"
+                },
+                "verblijfplaats": {
+                  "type": "Adres",
+                  "straat": "Havenstraat",
+                  "huisnummer": 22,
+                  "postcode": "2999AF",
+                  "woonplaats": "Zuiddrecht",
+                  "land": {
+                    "code": "6030",
+                    "omschrijving": "Nederland"
+                  }
+                }
+              },
+              {
+                "burgerservicenummer": "999994116",
+                "naam": {
+                  "voornamen": "Henk",
+                  "voorletters": "H.",
+                  "geslachtsnaam": "Visser",
+                  "volledigeNaam": "Henk Visser"
+                },
+                "geboorte": {
+                  "datum": {
+                    "type": "Datum",
+                    "datum": "1968-02-11",
+                    "langFormaat": "11 februari 1968"
+                  }
+                },
+                "geslacht": {
+                  "code": "M",
+                  "omschrijving": "man"
+                },
+                "verblijfplaats": {
+                  "type": "Adres",
+                  "straat": "Beukenlaan",
+                  "huisnummer": 3,
+                  "postcode": "2999AG",
+                  "woonplaats": "Zuiddrecht",
+                  "land": {
+                    "code": "6030",
+                    "omschrijving": "Nederland"
+                  }
+                }
+              },
+              {
+                "burgerservicenummer": "999994141",
+                "naam": {
+                  "voornamen": "Johan",
+                  "voorletters": "J.",
+                  "voorvoegsel": "van",
+                  "geslachtsnaam": "Wijk",
+                  "volledigeNaam": "Johan van Wijk"
+                },
+                "geboorte": {
+                  "datum": {
+                    "type": "Datum",
+                    "datum": "1971-04-09",
+                    "langFormaat": "9 april 1971"
+                  }
+                },
+                "geslacht": {
+                  "code": "M",
+                  "omschrijving": "man"
+                },
+                "verblijfplaats": {
+                  "type": "Adres",
+                  "straat": "Molenweg",
+                  "huisnummer": 30,
+                  "postcode": "2999BD",
+                  "woonplaats": "Zuiddrecht",
+                  "land": {
+                    "code": "6030",
+                    "omschrijving": "Nederland"
+                  }
+                }
+              },
+              {
+                "burgerservicenummer": "999994153",
+                "naam": {
+                  "voornamen": "Marja",
+                  "voorletters": "M.",
+                  "geslachtsnaam": "Verbeek",
+                  "volledigeNaam": "Marja Verbeek"
+                },
+                "geboorte": {
+                  "datum": {
+                    "type": "Datum",
+                    "datum": "1963-11-30",
+                    "langFormaat": "30 november 1963"
+                  }
+                },
+                "geslacht": {
+                  "code": "V",
+                  "omschrijving": "vrouw"
+                },
+                "verblijfplaats": {
+                  "type": "Adres",
+                  "straat": "Oosthavenweg",
+                  "huisnummer": 14,
+                  "postcode": "2999AJ",
+                  "woonplaats": "Zuiddrecht",
+                  "land": {
+                    "code": "6030",
+                    "omschrijving": "Nederland"
+                  }
                 }
               }
             ]

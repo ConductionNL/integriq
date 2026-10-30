@@ -22,7 +22,8 @@
     "scripts": {
         "post-install-cmd": [
             "@composer bin all install --ansi",
-            "git config core.hooksPath .githooks || true"
+            "git config core.hooksPath .githooks || true",
+            "@prune-core-provided"
         ],
         "post-update-cmd": [
             "@composer bin all update --ansi"
@@ -60,7 +61,8 @@
             "@quality:phpmd-score",
             "@quality:psalm-score",
             "@quality:phpstan-score"
-        ]
+        ],
+        "prune-core-provided": "php scripts/prune-core-provided-vendor.php"
     },
     "require": {
         "php": "^8.3",
@@ -120,5 +122,39 @@
         "platform": {
             "php": "8.3"
         }
+    },
+    "extra": {
+        "nextcloud-core-provided": [
+            "brick/math",
+            "guzzlehttp/guzzle",
+            "guzzlehttp/promises",
+            "guzzlehttp/psr7",
+            "masterminds/html5",
+            "php-http/httplug",
+            "php-http/promise",
+            "psr/cache",
+            "psr/clock",
+            "psr/container",
+            "psr/event-dispatcher",
+            "psr/http-client",
+            "psr/http-factory",
+            "psr/http-message",
+            "psr/log",
+            "ralouphie/getallheaders",
+            "spomky-labs/pki-framework",
+            "symfony/console",
+            "symfony/css-selector",
+            "symfony/deprecation-contracts",
+            "symfony/dom-crawler",
+            "symfony/event-dispatcher",
+            "symfony/event-dispatcher-contracts",
+            "symfony/http-foundation",
+            "symfony/polyfill-intl-grapheme",
+            "symfony/polyfill-intl-normalizer",
+            "symfony/polyfill-uuid",
+            "symfony/service-contracts",
+            "symfony/string",
+            "symfony/uid"
+        ]
     }
 }

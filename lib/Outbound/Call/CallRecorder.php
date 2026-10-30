@@ -50,7 +50,7 @@ use Throwable;
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-call-records-are-readable-only-by-admins-and-through-integriqs-own-endpoints-req-ocd-012
  */
-class CallRecorder {
+class CallRecorder implements CallRecorderInterface {
 
 	/**
 	 * The schema one call record is stored under.

@@ -29,9 +29,9 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Exception\PaymentProviderException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\PaymentIntentService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\PaymentIntentServiceInterface;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -59,20 +59,20 @@ class PaymentsController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param PaymentIntentService $paymentIntentService Create + webhook business logic.
-	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.
+	 * @param PaymentIntentServiceInterface $paymentIntentService Create + webhook business logic.
+	 * @param WebhookSignatureServiceInterface $signatureService HMAC verification for the inbound webhook.
 	 * @param IUserSession $userSession The user session (create endpoint).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PaymentIntentService $paymentIntentService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly PaymentIntentServiceInterface $paymentIntentService,
+		private readonly WebhookSignatureServiceInterface $signatureService,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -152,7 +152,7 @@ class PaymentsController extends Controller {
 		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
 		$secret = (string)($webhookConfig['secret'] ?? '');
 		$headerName = ($webhookConfig['header'] ?? 'X-OpenConnector-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
+		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS);
 
 		$headerValue = (string)$this->request->getHeader($headerName);
 

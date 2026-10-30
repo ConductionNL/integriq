@@ -32,14 +32,7 @@ namespace OCA\Integriq\Broker;
  *
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
  */
-class CloudEventHttpBinding {
-
-	/**
-	 * The whole event in the body.
-	 *
-	 * @var string
-	 */
-	public const MODE_STRUCTURED = 'structured';
+class CloudEventHttpBinding implements CloudEventHttpBindingInterface {
 
 	/**
 	 * The data in the body, the attributes in headers.

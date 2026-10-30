@@ -87,10 +87,10 @@
           "synchronizationId": "greece-diavgeia-to-spectr-tender"
         },
         "interval": 604800,
-        "isEnabled": true,
+        "isEnabled": false,
         "singleRun": false,
         "allowParallelRuns": false,
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     ]
   }

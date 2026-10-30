@@ -23,7 +23,7 @@ namespace OCA\Integriq\Gateway\Adapter;
 use OCA\Integriq\Gateway\GatewayDelivery;
 use OCA\Integriq\Gateway\GatewayTransport;
 use OCA\Integriq\PropertySource\Exception\PropertySourceException;
-use OCA\Integriq\PropertySource\PropertySourceResolver;
+use OCA\Integriq\PropertySource\PropertySourceResolverInterface;
 
 /**
  * A restriction is registered against a property, so the property reference
@@ -32,21 +32,17 @@ use OCA\Integriq\PropertySource\PropertySourceResolver;
  *
  * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-wkpb-restriction-is-registered-through-a-gateway-req-sg-009
  */
-class WkpbGateway {
-	/**
-	 * The gateway id.
-	 */
-	public const ID = 'wkpb';
+class WkpbGateway implements PropertyRestrictionGatewayInterface {
 
 	/**
 	 * Constructor.
 	 *
 	 * @param GatewayTransport $transport The shared delivery machinery.
-	 * @param PropertySourceResolver $propertySource The resolver that checks a property reference.
+	 * @param PropertySourceResolverInterface $propertySource The resolver that checks a property reference.
 	 */
 	public function __construct(
 		private readonly GatewayTransport $transport,
-		private readonly PropertySourceResolver $propertySource,
+		private readonly PropertySourceResolverInterface $propertySource,
 	) {
 	}//end __construct()
 

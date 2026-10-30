@@ -21,6 +21,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\MigrateFlowStepsToGraph;
 use OCA\Integriq\Service\FlowGraphMigrationService;
+use OCA\Integriq\Service\FlowGraphMigrationServiceInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -66,7 +67,7 @@ class MigrateFlowStepsToGraphTest extends TestCase {
 			);
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(FlowGraphMigrationService::class)->willReturn($migration);
+		$container->method('get')->with(FlowGraphMigrationServiceInterface::class)->willReturn($migration);
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning')

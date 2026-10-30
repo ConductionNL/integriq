@@ -35,9 +35,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Expression\EnvironmentAllowlist;
-use OCA\Integriq\Expression\ExpressionValueSourceRegistry;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Expression\EnvironmentAllowlistInterface;
+use OCA\Integriq\Expression\ExpressionValueSourceRegistryInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -59,21 +59,21 @@ class ExpressionSourceController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest                       $request      The request.
-	 * @param EnvironmentAllowlist           $allowlist    The list.
-	 * @param ExpressionValueSourceRegistry  $registry     The registered sources.
+	 * @param EnvironmentAllowlistInterface           $allowlist    The list.
+	 * @param ExpressionValueSourceRegistryInterface  $registry     The registered sources.
 	 * @param IUserSession                   $userSession  Who is asking.
 	 * @param IGroupManager                  $groupManager Whether they administer this instance.
 	 * @param LoggerInterface                $logger       Where a change is recorded.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly EnvironmentAllowlist $allowlist,
-		private readonly ExpressionValueSourceRegistry $registry,
+		private readonly EnvironmentAllowlistInterface $allowlist,
+		private readonly ExpressionValueSourceRegistryInterface $registry,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

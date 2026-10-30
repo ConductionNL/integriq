@@ -38,7 +38,7 @@ use DOMElement;
  *
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-letter-is-built-to-the-official-schema-and-its-limits-req-dpa-010
  */
-class BerichtenboxLetterBuilder {
+class BerichtenboxLetterBuilder implements LetterBuilderInterface {
 	public const NS_BATCH = 'http://schemas.rdw.nl/GEB/BerichtVerwerkService/Types/2009/01';
 
 	public const NS_LETTER = 'http://schemas.rdw.nl/GEB/BerichtenProsessor/Bericht/Types/2009/01';

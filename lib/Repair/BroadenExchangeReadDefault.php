@@ -29,8 +29,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use JsonException;
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -63,12 +63,12 @@ class BroadenExchangeReadDefault implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ActionAuthService $actionAuth The action matrix store.
+	 * @param ActionAuthServiceInterface $actionAuth The action matrix store.
 	 * @param IAppConfig        $appConfig  Holds the run-once marker.
 	 * @param LoggerInterface   $logger     PSR logger.
 	 */
 	public function __construct(
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -95,7 +95,7 @@ class BroadenExchangeReadDefault implements IRepairStep {
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-req-002-an-upgrade-broadens-only-the-untouched-default
 	 */
 	public function run(IOutput $output): void {
-		if ($this->appConfig->getValueBool(Application::APP_ID, self::MARKER_KEY, false) === true) {
+		if ($this->appConfig->getValueBool(AppIdentity::APP_ID, self::MARKER_KEY, false) === true) {
 			return;
 		}
 
@@ -132,6 +132,6 @@ class BroadenExchangeReadDefault implements IRepairStep {
 	 * @return void
 	 */
 	private function markDone(): void {
-		$this->appConfig->setValueBool(Application::APP_ID, self::MARKER_KEY, true);
+		$this->appConfig->setValueBool(AppIdentity::APP_ID, self::MARKER_KEY, true);
 	}//end markDone()
 }//end class

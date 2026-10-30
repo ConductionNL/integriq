@@ -45,7 +45,7 @@ use Throwable;
  *
  * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
  */
-class ObjectEndpointHandler {
+class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 
 	/**
 	 * The default page size.

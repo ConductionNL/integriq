@@ -89,6 +89,13 @@ class StufZknClient implements StufZknProviderInterface {
 	private const DEFAULT_AUTH_SCHEME = 'Bearer';
 
 	/**
+	 * Read timeout of one StUF-ZDS case message, in seconds.
+	 *
+	 * @var int
+	 */
+	public const ZDS_TIMEOUT_SECONDS = 30;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Client $httpClient Guzzle client (test seam: inject one with a MockHandler stack).
@@ -143,12 +150,29 @@ class StufZknClient implements StufZknProviderInterface {
 					'properties' => [
 						'mode' => [
 							'type' => 'string',
-							'enum' => ['token', 'mtls'],
+							'enum' => ['token', 'mtls', 'wsse'],
 							'default' => 'token',
 							'description' => '`token` (default, pre-production fallback) sends a Bearer '
 								. 'Authorization header from `encryptedToken`. `mtls` (the expected production '
 								. 'mode for a real StUF/PKIoverheid-secured consumer) dispatches over a real '
-								. 'mutual-TLS connection using `mtls.*`.',
+								. 'mutual-TLS connection using `mtls.*`. `wsse` sends no Authorization header: '
+								. 'the ZDS case client puts a WS-Security UsernameToken from `wsse.*` in the envelope.',
+						],
+						'wsse' => [
+							'type' => 'object',
+							'description' => 'Optional WS-Security UsernameToken for StUF-ZDS case messages, '
+								. 'used by the ZDS case client in any mode. The password is encrypted at rest via '
+								. 'OCP\\Security\\ICrypto.',
+							'properties' => [
+								'username' => ['type' => 'string', 'description' => 'The UsernameToken user name.'],
+								'encryptedPassword' => ['type' => 'string', 'description' => 'The UsernameToken password, encrypted.'],
+								'requireNonce' => [
+									'type' => 'boolean',
+									'default' => false,
+									'description' => 'Inbound only (provider requests and confirmations): refuse a UsernameToken that carries no Nonce and Created. '
+										. 'A token that does carry them is always checked: Created within five minutes of now, and a Nonce not seen before.',
+								],
+							],
 						],
 						'encryptedToken' => [
 							'type' => 'string',
@@ -285,18 +309,125 @@ class StufZknClient implements StufZknProviderInterface {
 	}//end firstText()
 
 	/**
+	 * Send one StUF-ZDS envelope and report what happened, without throwing.
+	 *
+	 * Ported from dossiq's StufHttpClient: the ZDS case client needs the raw
+	 * status, body and round-trip time of every attempt to classify it
+	 * (bevestiging, fout, transient, permanent) and to drive its circuit
+	 * breaker. A plain-HTTP address is refused before anything is sent; a
+	 * transport failure comes back as status 0 with a TIMEOUT or NETWORK fout.
+	 *
+	 * @param array  $sourceConfiguration The `stuf-zkn` source's `configuration` object.
+	 * @param string $soapAction          The SOAPAction header value.
+	 * @param string $envelopeXml         The rendered envelope.
+	 * @param string $url                 The address; '' for `configuration.baseUrl`.
+	 * @param int    $timeoutSeconds      The read timeout.
+	 *
+	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:array<string,string>|null}
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-secure-transport
+	 */
+	public function transmit(
+		array $sourceConfiguration,
+		string $soapAction,
+		string $envelopeXml,
+		string $url='',
+		int $timeoutSeconds=self::ZDS_TIMEOUT_SECONDS,
+	): array {
+		$address = trim($url);
+		if ($address === '') {
+			$address = trim((string)($sourceConfiguration['baseUrl'] ?? ''));
+		}
+
+		if (str_starts_with($address, 'https://') === false) {
+			return $this->transmitFailure(
+				code: 'TRANSPORT_NON_HTTPS',
+				omschrijving: 'Endpoint URL is not HTTPS',
+				details: '',
+				kind: 'permanent',
+				durationMs: 0
+			);
+		}
+
+		$started = microtime(true);
+		try {
+			$response = $this->post(
+				sourceConfiguration: $sourceConfiguration,
+				soapAction: $soapAction,
+				envelopeXml: $envelopeXml,
+				url: $address,
+				timeoutSeconds: $timeoutSeconds
+			);
+		} catch (StufZknProviderException $exception) {
+			$message  = $exception->getMessage();
+			$previous = $exception->getPrevious();
+			if ($previous === null) {
+				// Refused before sending: no address or no usable credential.
+				return $this->transmitFailure(
+					code: 'TRANSPORT_CONFIGURATION',
+					omschrijving: 'The source cannot send',
+					details: $message,
+					kind: 'permanent',
+					durationMs: 0
+				);
+			}
+
+			$code = 'NETWORK';
+			if (str_contains(strtolower($message), 'timed out') === true || str_contains(strtolower($message), 'timeout') === true) {
+				$code = 'TIMEOUT';
+			}
+
+			return $this->transmitFailure(
+				code: $code,
+				omschrijving: 'Transport error',
+				details: $message,
+				kind: 'transient',
+				durationMs: (int)round((microtime(true) - $started) * 1000)
+			);
+		}//end try
+
+		return [
+			'httpStatus' => $response->getStatusCode(),
+			'responseXml' => (string)$response->getBody(),
+			'durationMs' => (int)round((microtime(true) - $started) * 1000),
+			'fout' => null,
+		];
+	}//end transmit()
+
+	/**
+	 * The result of an attempt that got no answer from the case system.
+	 *
+	 * @param string $code         The fout code.
+	 * @param string $omschrijving The short reason.
+	 * @param string $details      The detail text.
+	 * @param string $kind         `transient` or `permanent`.
+	 * @param int    $durationMs   How long the attempt took.
+	 *
+	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:array<string,string>}
+	 */
+	private function transmitFailure(string $code, string $omschrijving, string $details, string $kind, int $durationMs): array {
+		return [
+			'httpStatus' => 0,
+			'responseXml' => '',
+			'durationMs' => $durationMs,
+			'fout' => ['code' => $code, 'omschrijving' => $omschrijving, 'details' => $details, 'kind' => $kind],
+		];
+	}//end transmitFailure()
+
+	/**
 	 * POST an envelope with the SOAP headers, over mTLS when configured.
 	 *
 	 * @param array  $sourceConfiguration The `stuf-zkn` source's `configuration` object.
 	 * @param string $soapAction          The SOAPAction header value.
 	 * @param string $envelopeXml         The rendered envelope.
 	 * @param string $url                 The address; '' for `configuration.baseUrl`.
+	 * @param int    $timeoutSeconds      The read timeout; 0 for the client default.
 	 *
 	 * @return ResponseInterface The answer, whatever its status.
 	 *
 	 * @throws StufZknProviderException When no address is configured or the transport fails.
 	 */
-	private function post(array $sourceConfiguration, string $soapAction, string $envelopeXml, string $url): ResponseInterface {
+	private function post(array $sourceConfiguration, string $soapAction, string $envelopeXml, string $url, int $timeoutSeconds=0): ResponseInterface {
 		$baseUrl = trim((string)($sourceConfiguration['baseUrl'] ?? ''));
 		if ($baseUrl === '') {
 			throw new StufZknProviderException(
@@ -316,7 +447,7 @@ class StufZknClient implements StufZknProviderInterface {
 			'SOAPAction' => $soapAction,
 			'Accept' => 'text/xml, application/soap+xml',
 		];
-		if ($useMtls === false) {
+		if ($useMtls === false && ($authConfig['mode'] ?? 'token') !== 'wsse') {
 			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
 		}
 
@@ -325,6 +456,9 @@ class StufZknClient implements StufZknProviderInterface {
 			'body' => $envelopeXml,
 			'http_errors' => false,
 		];
+		if ($timeoutSeconds > 0) {
+			$requestOptions['timeout'] = $timeoutSeconds;
+		}
 
 		try {
 			$response = $this->dispatch(

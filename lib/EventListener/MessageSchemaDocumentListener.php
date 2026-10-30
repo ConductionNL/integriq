@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\MessageValidationService;
+use OCA\Integriq\Service\MessageValidationServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -65,14 +65,14 @@ class MessageSchemaDocumentListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param MessageValidationService $validator      Knows how each kind parses.
+	 * @param MessageValidationServiceInterface $validator      Knows how each kind parses.
 	 * @param RegisterMapper           $registerMapper Resolves the object's register.
 	 * @param SchemaMapper             $schemaMapper   Resolves the object's schema.
 	 * @param IL10N                    $l10n           Translates the refusal.
 	 * @param LoggerInterface          $logger         Logs an unresolvable object.
 	 */
 	public function __construct(
-		private readonly MessageValidationService $validator,
+		private readonly MessageValidationServiceInterface $validator,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IL10N $l10n,

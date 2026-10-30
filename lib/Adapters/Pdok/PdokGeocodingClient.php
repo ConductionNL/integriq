@@ -6,7 +6,7 @@
  * Defines the polymorphic surface — `suggest()`, `lookup()`, `reverse()`,
  * `flavour()` — that the {@see PdokGeocodingClientMock} (deterministic, no
  * network) and {@see PdokGeocodingClientHttp} (real outbound calls) flavours
- * implement. DI in {@see \OCA\Integriq\AppInfo\Application::register()}
+ * implement. DI in {@see \OCA\Integriq\Adapters\AdaptersRegistrar}
  * resolves the abstract to one of those concrete implementations, gated on the
  * `pdok.feature_flag` app-config flag.
  *
@@ -48,6 +48,24 @@ abstract class PdokGeocodingClient {
 	 * @return array<int,array<string,mixed>> Normalised PostalAddress entries.
 	 */
 	abstract public function suggest(string $query, int $rows = 10): array;
+
+	/**
+	 * A search that says when the Locatieserver gave no answer.
+	 *
+	 * `suggest()` answers an empty list both when nothing matched and when
+	 * the Locatieserver could not be reached. A check that decides on the
+	 * answer cannot use that, so this call answers null for "no answer" and
+	 * an empty list for "answered, nothing matched". The query may use the
+	 * Locatieserver's field syntax, such as `nummeraanduiding_id:<id>`.
+	 *
+	 * @param string $query The query.
+	 * @param int $rows Maximum rows to return.
+	 *
+	 * @return array<int,array<string,mixed>>|null Normalised PostalAddress entries, or null without an answer.
+	 *
+	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 */
+	abstract public function find(string $query, int $rows = 10): ?array;
 
 	/**
 	 * Lookup a specific PDOK identifier.

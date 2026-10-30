@@ -21,6 +21,7 @@ use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
@@ -107,7 +108,6 @@ class CallServiceBodyCaptureTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
-			null,
 			new BodyCapturePolicy($appConfig, $clock),
 		);
 
@@ -253,6 +253,42 @@ class CallServiceBodyCaptureTest extends TestCase {
 	}//end testACallAfterTheWindowEndsStoresNoBody()
 
 	/**
+	 * A window that ends further away than the instance maximum (72 h by default) counts as closed:
+	 * only BodyCaptureController::open() checks the maximum, and a value written another way skips it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testAWindowBeyondTheMaximumStoresNoBody(): void {
+		$service = $this->service(new Response(200, [], '{"uuid":"z1"}'));
+
+		$service->call(source: $this->source('2026-10-30T12:00:00+00:00'), endpoint: '/zaken', method: 'POST');
+
+		$logs = $this->callLogs();
+		$this->assertCount(1, $logs);
+		$this->assertNoBody($logs[0]);
+	}//end testAWindowBeyondTheMaximumStoresNoBody()
+
+	/**
+	 * A window that ends exactly at the maximum is open; a minute beyond it is closed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testTheMaximumItselfIsStillInsideTheWindow(): void {
+		$service = $this->service(new Response(200, [], '{"uuid":"z1"}'));
+		$service->call(source: $this->source('2026-10-12T12:00:00+00:00'), endpoint: '/zaken', method: 'POST');
+		$service->call(source: $this->source('2026-10-12T12:01:00+00:00'), endpoint: '/zaken', method: 'POST');
+
+		$logs = $this->callLogs();
+		$this->assertCount(2, $logs);
+		$this->assertTrue($logs[0]['bodyCaptured'], 'NOW + 72 h is within the maximum');
+		$this->assertNoBody($logs[1]);
+	}//end testTheMaximumItselfIsStillInsideTheWindow()
+
+	/**
 	 * A window that cannot be read stores nothing.
 	 *
 	 * @return void
@@ -338,4 +374,55 @@ class CallServiceBodyCaptureTest extends TestCase {
 		$this->assertTrue($log['bodyCaptured']);
 		$this->assertSame('{"public":"curriculum"}', $log['response']['body']);
 	}//end testLogBodyKeepsTheBodies()
+	/**
+	 * A traced call outside an investigation window leaves no body in the trace step either (iq-f6).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+	 */
+	public function testATracedCallOutsideAWindowLeavesNoBodyInTheTrace(): void {
+		$service = $this->service(new Response(200, [], '{"uuid":"z1","bsn":"999993653"}'));
+		$trace = new ExecutionTraceContext('test');
+
+		$service->call(source: $this->source(null), endpoint: '/zaken', method: 'POST', trace: $trace);
+
+		$step = $trace->getSteps()[0];
+		foreach (BodyCapturePolicy::REQUEST_BODY_KEYS as $key) {
+			$this->assertArrayNotHasKey($key, $step['input'], 'input.' . $key);
+		}
+
+		$this->assertArrayNotHasKey('body', $step['output']);
+		$this->assertStringNotContainsString('999993653', (string)json_encode($step));
+		$this->assertSame(200, $step['output']['statusCode'], 'the rest of the step stays');
+	}//end testATracedCallOutsideAWindowLeavesNoBodyInTheTrace()
+
+	/**
+	 * Inside a window, and with logBody, the trace step keeps both bodies.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testATracedCallInsideAWindowOrWithLogBodyKeepsTheBodiesInTheTrace(): void {
+		$windowTrace = new ExecutionTraceContext('window');
+		$this->service(new Response(200, [], '{"uuid":"z1"}'))->call(
+			source: $this->source('2026-10-10T12:00:00+00:00'),
+			endpoint: '/zaken',
+			method: 'POST',
+			trace: $windowTrace
+		);
+		$step = $windowTrace->getSteps()[0];
+		$this->assertSame('999993653', $step['input']['json']['bsn']);
+		$this->assertSame('{"uuid":"z1"}', $step['output']['body']);
+
+		$logBodyTrace = new ExecutionTraceContext('logbody');
+		$this->service(new Response(200, [], '{"public":"curriculum"}'))->call(
+			source: $this->source(null),
+			endpoint: '/zaken',
+			config: ['logBody' => true],
+			trace: $logBodyTrace
+		);
+		$this->assertSame('{"public":"curriculum"}', $logBodyTrace->getSteps()[0]['output']['body']);
+	}//end testATracedCallInsideAWindowOrWithLogBodyKeepsTheBodiesInTheTrace()
 }//end class

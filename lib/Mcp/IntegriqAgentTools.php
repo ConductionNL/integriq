@@ -33,14 +33,14 @@ namespace OCA\Integriq\Mcp;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\AgentTools\AgentActionStore;
-use OCA\Integriq\Service\AgentTools\AgentBatchGate;
-use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
-use OCA\Integriq\Service\EventService;
-use OCA\Integriq\Service\SourceTestService;
-use OCA\Integriq\Service\SyncItemDeadLetterService;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\AgentTools\AgentActionStoreInterface;
+use OCA\Integriq\Service\AgentTools\AgentBatchGateInterface;
+use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
+use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\SourceTestServiceInterface;
+use OCA\Integriq\Service\SyncItemDeadLetterServiceInterface;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\OCS\OCSForbiddenException;
@@ -107,27 +107,27 @@ class IntegriqAgentTools {
 	 * Build the tools.
 	 *
 	 * @param IUserSession              $userSession     The user the agent acts for.
-	 * @param ActionAuthService         $actionAuth      The ADR-023 matrix.
+	 * @param ActionAuthServiceInterface         $actionAuth      The ADR-023 matrix.
 	 * @param OrObjectService           $objectService   Reads synchronizations, sources, dead letters.
-	 * @param SynchronizationService    $synchronization The run and test path.
-	 * @param SourceTestService         $sourceTest      The source test path.
-	 * @param SyncItemDeadLetterService $syncDeadLetters The audited sync replay and discard.
-	 * @param EventService              $events          The audited event replay and discard.
-	 * @param AgentActionStore          $store           Invocation records.
-	 * @param AgentBatchGate            $gate            Stages and admits gated batches.
-	 * @param DeadLetterProjection      $projection      The payload-free dead-letter row.
+	 * @param SynchronizationServiceInterface    $synchronization The run and test path.
+	 * @param SourceTestServiceInterface         $sourceTest      The source test path.
+	 * @param SyncItemDeadLetterServiceInterface $syncDeadLetters The audited sync replay and discard.
+	 * @param EventServiceInterface              $events          The audited event replay and discard.
+	 * @param AgentActionStoreInterface          $store           Invocation records.
+	 * @param AgentBatchGateInterface            $gate            Stages and admits gated batches.
+	 * @param DeadLetterProjectionInterface      $projection      The payload-free dead-letter row.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly OrObjectService $objectService,
-		private readonly SynchronizationService $synchronization,
-		private readonly SourceTestService $sourceTest,
-		private readonly SyncItemDeadLetterService $syncDeadLetters,
-		private readonly EventService $events,
-		private readonly AgentActionStore $store,
-		private readonly AgentBatchGate $gate,
-		private readonly DeadLetterProjection $projection,
+		private readonly SynchronizationServiceInterface $synchronization,
+		private readonly SourceTestServiceInterface $sourceTest,
+		private readonly SyncItemDeadLetterServiceInterface $syncDeadLetters,
+		private readonly EventServiceInterface $events,
+		private readonly AgentActionStoreInterface $store,
+		private readonly AgentBatchGateInterface $gate,
+		private readonly DeadLetterProjectionInterface $projection,
 	) {
 	}//end __construct()
 

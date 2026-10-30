@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/specs/fsc-connectivity/spec.md
  */
-class FscCallService {
+class FscCallService implements FscCallServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding FSC sources, service cache, and call log records.

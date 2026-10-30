@@ -3,7 +3,7 @@
 /**
  * Integriq environment CRUD controller.
  *
- * Thin, routed wrapper over {@see \OCA\Integriq\Service\EnvironmentService}
+ * Thin, routed wrapper over {@see EnvironmentServiceInterface}
  * (environments-and-promotion REQ-001/REQ-005). Environment CRUD is gated by
  * the ADR-023 `environment.manage` action key, distinct from the
  * `environment.promote` key that gates the promotion endpoints on
@@ -29,8 +29,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\EnvironmentService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\EnvironmentServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -51,20 +51,20 @@ class EnvironmentController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param EnvironmentService $environmentService The environment CRUD service.
+	 * @param EnvironmentServiceInterface $environmentService The environment CRUD service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly EnvironmentService $environmentService,
+		private readonly EnvironmentServiceInterface $environmentService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

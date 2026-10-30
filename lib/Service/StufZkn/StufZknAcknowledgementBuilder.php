@@ -63,6 +63,10 @@ class StufZknAcknowledgementBuilder {
 			'code' => 'StUF063',
 			'omschrijving' => 'Het bericht kon niet worden verwerkt: het bericht is onvolledig of onjuist.',
 		],
+		'body_too_large' => [
+			'code' => 'StUF001',
+			'omschrijving' => 'Het bericht is te groot.',
+		],
 		'not_configured' => [
 			'code' => 'StUF055',
 			'omschrijving' => 'De ontvangende applicatie is momenteel niet beschikbaar.',

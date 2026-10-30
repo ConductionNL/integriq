@@ -32,7 +32,7 @@ use Throwable;
  *
  * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-the-zgw-registry-is-a-deployment-binding-req-sg-006
  */
-class ZgwRegistryBinding {
+class ZgwRegistryBinding implements ZgwRegistryBindingInterface {
 	/**
 	 * App id for app-config reads and writes.
 	 */

@@ -42,10 +42,11 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\StufZknSyncService;
-use OCA\Integriq\Service\Intake\WebhookGate;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\StufZknSyncServiceInterface;
+use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -84,22 +85,24 @@ class StufZknController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param StufZknSyncService $syncService Inbound/outbound orchestration logic.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param StufZknSyncServiceInterface $syncService Inbound/outbound orchestration logic.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param StufZknRequestBody $requestBody Reads the request body up to the ceiling.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly StufZknSyncService $syncService,
-		private readonly WebhookGate $gate,
+		private readonly StufZknSyncServiceInterface $syncService,
+		private readonly WebhookGateInterface $gate,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private readonly StufZknRequestBody $requestBody = new StufZknRequestBody(),
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -119,8 +122,11 @@ class StufZknController extends Controller {
 	 * upsert and the `stuf_message` run as that consumer's account. A missing
 	 * connection, account or right answers 503 so the sender retries.
 	 *
+	 * A body over {@see StufZknRequestBody::MAX_BYTES} is answered 413 before the
+	 * signature is checked, and only that much plus one byte is ever read.
+	 *
 	 * @return DataDisplayResponse|JSONResponse A `Bv03`/`Fo03` StUF reply body (200), a
-	 *                                          401 JSON error on signature failure, or 503.
+	 *                                          401 JSON error on signature failure, 413, or 503.
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
 	 * @spec openspec/changes/stuf-zkn-inbound-on-the-consumer-model/specs/stuf-zkn-bridge/spec.md#requirement-the-inbound-endpoint-acts-as-the-stuf-zkn-connections-account-req-020
@@ -129,9 +135,12 @@ class StufZknController extends Controller {
 	#[PublicPage]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function inbound(): DataDisplayResponse|JSONResponse {
-		$rawBody = $this->getRawContent();
+		$rawBody = $this->requestBody->read();
+		if (strlen($rawBody) > StufZknRequestBody::MAX_BYTES) {
+			return new JSONResponse(['error' => 'payload_too_large'], Http::STATUS_REQUEST_ENTITY_TOO_LARGE);
+		}
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::STUF_ZKN, rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfilesInterface::STUF_ZKN, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -148,7 +157,7 @@ class StufZknController extends Controller {
 				operation: fn (): string => $this->syncService->receiveInbound(soapXml: $rawBody)
 			);
 		} catch (Throwable $exception) {
-			return $this->gate->notStored(profile: WebhookProfiles::STUF_ZKN, reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfilesInterface::STUF_ZKN, reason: $exception->getMessage());
 		}
 
 		return new DataDisplayResponse($replyXml, Http::STATUS_OK, ['Content-Type' => self::XML_CONTENT_TYPE]);
@@ -209,22 +218,4 @@ class StufZknController extends Controller {
 		}//end try
 
 	}//end outbound()
-
-	/**
-	 * Read the raw request body bytes for signature verification.
-	 *
-	 * Signature verification MUST run over the exact bytes the sender
-	 * signed, not `$this->request->getParams()` (decoded/normalized, would
-	 * desync) — mirrors `IwmoIjwController::getRawContent()`.
-	 *
-	 * @return string The raw request body.
-	 */
-	private function getRawContent(): string {
-		$content = file_get_contents(filename: 'php://input');
-		if ($content === false) {
-			return '';
-		}
-
-		return $content;
-	}//end getRawContent()
 }//end class

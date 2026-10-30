@@ -28,8 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -56,20 +56,22 @@ class DsoStamConsumerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param DsoConnection   $connection     Lists the existing dso-stam consumers.
+	 * @param PortalConnectionInterface   $connection     Lists the existing dso-stam consumers.
 	 * @param RegisterMapper  $registerMapper Resolves the object's register slug.
 	 * @param SchemaMapper    $schemaMapper   Resolves the object's schema slug.
 	 * @param IL10N           $l10n           Translates the refusal.
 	 * @param LoggerInterface $logger         Diagnostics.
+	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly DsoConnection $connection,
+		private readonly PortalConnectionInterface $connection,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
+		private readonly WebhookProfilesInterface $webhookProfiles,
 	) {
 
 	}//end __construct()
@@ -91,8 +93,9 @@ class DsoStamConsumerListener implements IEventListener {
 
 		$entity = $this->savedObject(event: $event);
 		$type = strtolower((string)($entity->getObject()['authorizationType'] ?? ''));
-		$webhook = WebhookProfiles::byAuthorizationType(authorizationType: $type);
-		if ((in_array($type, [DsoConnection::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE], true) === false && $webhook === null)
+		$webhook = $this->webhookProfiles->forAuthorizationType(authorizationType: $type);
+		$known = [PortalConnectionInterface::AUTHORIZATION_TYPE, OpenFormulierenConnection::AUTHORIZATION_TYPE];
+		if ((in_array($type, $known, true) === false && $webhook === null)
 			|| $this->isIntegriqConsumer(object: $entity) === false
 		) {
 			return;
@@ -179,7 +182,7 @@ class DsoStamConsumerListener implements IEventListener {
 			return false;
 		}
 
-		return $registerSlug === DsoConnection::REGISTER && $schemaSlug === DsoConnection::SCHEMA_CONSUMER;
+		return $registerSlug === PortalConnectionInterface::REGISTER && $schemaSlug === PortalConnectionInterface::SCHEMA_CONSUMER;
 
 	}//end isIntegriqConsumer()
 }//end class

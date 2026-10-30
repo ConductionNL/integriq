@@ -81,9 +81,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Exception\EntityNotMigratableException;
-use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUserManager;
@@ -93,7 +93,7 @@ use OCP\IUserManager;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#3-migration--deprecation
  */
-class JobToFlowGenerator {
+class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 
 	/**
 	 * The item key the synchronization result is written under.
@@ -186,7 +186,7 @@ class JobToFlowGenerator {
 	private function runAsUid(): string {
 		return trim(
 			$this->appConfig->getValueString(
-				app: Application::APP_ID,
+				app: AppIdentity::APP_ID,
 				key: self::RUN_AS_CONFIG_KEY,
 				default: ''
 			)
@@ -601,7 +601,7 @@ class JobToFlowGenerator {
 
 		return [
 			'id' => 'run',
-			'type' => SynchronizationRunNode::NODE_ID,
+			'type' => FlowNodeIds::SYNCHRONIZATION_RUN,
 			'config' => $config,
 		];
 

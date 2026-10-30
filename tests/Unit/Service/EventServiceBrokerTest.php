@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\Integriq\Broker\BrokerCredentialResolver;
+use OCA\Integriq\Service\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerResult;
 use OCA\Integriq\Broker\BrokerTransportInterface;

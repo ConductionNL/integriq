@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  */
-class SecurityService {
+class SecurityService implements SecurityServiceInterface {
 
 	/**
 	 * Cache instance for storing rate limit data

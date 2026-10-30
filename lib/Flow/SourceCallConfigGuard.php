@@ -50,7 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
-use OCA\Integriq\Service\ResponseDecoder;
+use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCP\IL10N;
 use UnexpectedValueException;
 
@@ -259,7 +259,7 @@ final class SourceCallConfigGuard {
 	 *
 	 * @throws UnexpectedValueException When the mode is unknown.
 	 *
-	 * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
 	 */
 	public static function assertDecode(array $config, IL10N $l10n): void {
 		if (array_key_exists('decode', $config) === false) {
@@ -267,11 +267,11 @@ final class SourceCallConfigGuard {
 		}
 
 		$mode = strtolower(trim((string)$config['decode']));
-		if (in_array($mode, ResponseDecoder::MODES, true) === false) {
+		if (in_array($mode, ResponseDecoderInterface::MODES, true) === false) {
 			throw new UnexpectedValueException(
 				$l10n->t(
 					'The "decode" field must be one of %1$s.',
-					[implode(', ', ResponseDecoder::MODES)]
+					[implode(', ', ResponseDecoderInterface::MODES)]
 				)
 			);
 		}

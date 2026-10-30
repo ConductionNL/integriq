@@ -1,0 +1,120 @@
+{
+  "$comment": "ADR-037 manifest fragment (brp-connection-monitor-from-pipelinq, board integriq/IqBrpMonitor). One page per source at /connection-monitor/:id, the id a source uuid or slug: calls, slowest and average response time and errors over the last 24 hours from integriq's own call log, the client certificate's expiry (from keepiq when the certificate is a keepiq reference) and the reporting period. Every widget reads GET /api/connection-monitor?source=:id, administrators only. Which connections get a menu entry is configuration: the BRP monitor is an entry routing here with id brp-haalcentraal.",
+  "pages": [
+    {
+      "id": "ConnectionMonitor",
+      "route": "/connection-monitor/:id",
+      "type": "dashboard",
+      "title": "Connection monitor",
+      "permission": "admin",
+      "config": {
+        "description": "Calls to this connection over the last 24 hours, administrators only",
+        "allowEdit": false,
+        "showActionsMenu": false,
+        "showWidgetActions": false,
+        "headerActions": [
+          { "id": "refresh", "label": "Refresh", "icon": "Refresh", "type": "refresh" }
+        ],
+        "widgets": [
+          {
+            "id": "monitor-calls",
+            "title": "Calls",
+            "type": "stat",
+            "content": {
+              "label": "Calls",
+              "layout": "stacked",
+              "endpointSource": { "url": "/apps/integriq/api/connection-monitor", "params": { "source": "@route.id" } },
+              "valueField": "performance.calls",
+              "format": { "style": "decimal", "decimals": 0 }
+            }
+          },
+          {
+            "id": "monitor-slowest",
+            "title": "Slowest response",
+            "type": "stat",
+            "content": {
+              "label": "Slowest response",
+              "layout": "stacked",
+              "endpointSource": { "url": "/apps/integriq/api/connection-monitor", "params": { "source": "@route.id" } },
+              "valueField": "performance.slowestSeconds",
+              "format": { "style": "decimal", "decimals": 1, "suffix": " s" },
+              "caption": "{performance.slowSummary}"
+            }
+          },
+          {
+            "id": "monitor-errors",
+            "title": "Errors",
+            "type": "stat",
+            "content": {
+              "label": "Errors",
+              "layout": "stacked",
+              "endpointSource": { "url": "/apps/integriq/api/connection-monitor", "params": { "source": "@route.id" } },
+              "valueField": "performance.errors",
+              "format": { "style": "decimal", "decimals": 0 },
+              "variantWhen": [{ "op": "gt", "value": 0, "variant": "warning" }],
+              "caption": "{performance.errorSummary}"
+            }
+          },
+          {
+            "id": "monitor-average",
+            "title": "Average response time",
+            "type": "stat",
+            "content": {
+              "label": "Average response time",
+              "layout": "stacked",
+              "endpointSource": { "url": "/apps/integriq/api/connection-monitor", "params": { "source": "@route.id" } },
+              "valueField": "performance.averageMs",
+              "format": { "style": "decimal", "decimals": 0, "suffix": " ms" }
+            }
+          },
+          {
+            "id": "monitor-certificate",
+            "title": "mTLS certificate",
+            "type": "facts",
+            "content": {
+              "endpointSource": { "url": "/apps/integriq/api/connection-monitor", "params": { "source": "@route.id" }, "responsePath": "certificate" },
+              "emptyWhen": "none",
+              "emptyText": "This connection uses no client certificate",
+              "fields": [
+                { "label": "Status", "as": "pill", "path": "statusLabel", "key": "status" },
+                { "label": "Expires on", "path": "expiresAt", "format": "date-long" },
+                { "label": "Days left", "path": "daysLeft" },
+                { "as": "text", "path": "notice" }
+              ],
+              "link": { "label": "Renew in keepiq", "href": "{renewUrl}" }
+            }
+          },
+          {
+            "id": "monitor-period",
+            "title": "Reporting period",
+            "type": "facts",
+            "content": {
+              "endpointSource": { "url": "/apps/integriq/api/connection-monitor", "params": { "source": "@route.id" }, "responsePath": "period" },
+              "fields": [
+                { "label": "From", "path": "from", "format": "date-long" },
+                { "label": "To", "path": "to", "format": "date-long" },
+                { "label": "Generated on", "path": "generatedAt", "format": "date-long" }
+              ]
+            }
+          }
+        ],
+        "kpiRow": ["monitor-calls", "monitor-slowest", "monitor-errors", "monitor-average"],
+        "layout": [
+          { "id": "cm-1", "widgetId": "monitor-certificate", "gridX": 0, "gridY": 0, "gridWidth": 6, "gridHeight": 4 },
+          { "id": "cm-2", "widgetId": "monitor-period", "gridX": 6, "gridY": 0, "gridWidth": 6, "gridHeight": 3 }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "BrpMonitor",
+      "label": "BRP monitor",
+      "icon": "HeartPulse",
+      "route": "ConnectionMonitor",
+      "params": { "id": "brp-haalcentraal" },
+      "permission": "admin",
+      "order": 15
+    }
+  ]
+}

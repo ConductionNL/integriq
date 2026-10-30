@@ -314,7 +314,8 @@ class CallReplayServiceTest extends TestCase {
 	 */
 	public function testARecordInsideAWindowKeepsBothBodies(): void {
 		$source = '4b1c1c1e-1111-4111-8111-111111111111';
-		$this->records[$source] = ['name' => 'stuf-partner', 'bodyCaptureUntil' => '2099-01-01T00:00:00+00:00'];
+		// An hour ahead: a window beyond the instance maximum (72 h) counts as closed.
+		$this->records[$source] = ['name' => 'stuf-partner', 'bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format(\DATE_ATOM)];
 
 		$uuid = $this->failedCall([], ['target' => $source]);
 		$record = $this->records[$uuid];
@@ -391,6 +392,74 @@ class CallReplayServiceTest extends TestCase {
 		$this->assertSame($before, $this->records, 'a dry run writes no record and no attempt');
 
 	}//end testADryRunChangesNothing()
+
+	/**
+	 * A record whose bodies were stripped has no request left to replay: nothing is sent and nothing is recorded (iq-f4).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testARecordWhoseBodiesWereStrippedIsNotReplayed(): void {
+		$uuid = $this->failedCall();
+		unset($this->records[$uuid]['replayRequest'], $this->records[$uuid]['bodyExpiresAt']);
+		$this->records[$uuid]['bodyCaptured'] = false;
+		$this->records[$uuid]['bodyExpiredAt'] = '2026-10-10T12:00:00+00:00';
+		$before = $this->records;
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertFalse($result['sent']);
+		$this->assertFalse($result['succeeded']);
+		$this->assertStringContainsString('no longer kept', $result['detail']);
+		$this->assertSame([], $dispatcher->sent, 'the dispatcher is never called');
+		$this->assertSame($before, $this->records, 'no attempt is recorded');
+	}//end testARecordWhoseBodiesWereStrippedIsNotReplayed()
+
+	/**
+	 * A call recorded without bodies (a withheld record: url and method only) is not replayed either, singly or in bulk.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testAWithheldRecordIsNotReplayedInBulkEither(): void {
+		$withheld = $this->failedCall();
+		unset($this->records[$withheld]['replayRequest']);
+		$this->records[$withheld]['request'] = ['url' => 'https://partner.example/stuf', 'method' => 'POST'];
+		$this->records[$withheld]['bodyCaptured'] = false;
+		$kept = $this->failedCall();
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replayAll([$withheld, $kept], 'beheerder');
+
+		$this->assertFalse($result['items'][0]['sent']);
+		$this->assertFalse($result['items'][0]['succeeded']);
+		$this->assertTrue($result['items'][1]['sent'], 'a call that kept its replay request still goes out');
+		$this->assertCount(1, $dispatcher->sent);
+		$this->assertSame('<Lk01/>', $dispatcher->sent[0]['request']['body']);
+		$this->assertSame(1, $result['succeeded']);
+		$this->assertSame(1, $result['failed']);
+	}//end testAWithheldRecordIsNotReplayedInBulkEither()
+
+	/**
+	 * A GET with no kept request body is still replayed: there was no body to lose.
+	 *
+	 * @return void
+	 */
+	public function testAGetWithoutAKeptBodyIsStillReplayed(): void {
+		$uuid = $this->failedCall();
+		unset($this->records[$uuid]['replayRequest']);
+		$this->records[$uuid]['request'] = ['method' => 'GET', 'endpoint' => '/zaken'];
+		$this->records[$uuid]['bodyCaptured'] = false;
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertTrue($result['sent']);
+		$this->assertCount(1, $dispatcher->sent);
+	}//end testAGetWithoutAKeptBodyIsStillReplayed()
 
 	/**
 	 * A bulk replay reports each item, and skips none.
@@ -485,8 +554,9 @@ class CallReplayServiceTest extends TestCase {
 			'snapshot' => ['slug' => 'zaak-naar-stuf', 'version' => '3', 'rules' => ['then']],
 		];
 
-		$uuid = $this->failedCall([], ['mapping' => 'zaak-naar-stuf', 'mappingVersion' => '3']);
-		$service = $this->service(new RecordingDispatcher(200));
+		// The replays fail again, so the record keeps the request the next replay sends.
+		$uuid = $this->failedCall(['maxAttempts' => 5], ['mapping' => 'zaak-naar-stuf', 'mappingVersion' => '3']);
+		$service = $this->service(new RecordingDispatcher(503));
 
 		$preview = $service->preview($uuid);
 		$this->assertSame('3', $preview['versions']['recorded']);

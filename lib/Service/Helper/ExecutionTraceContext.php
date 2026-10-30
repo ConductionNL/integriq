@@ -35,7 +35,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
  */
-class ExecutionTraceContext {
+class ExecutionTraceContext implements ExecutionTraceContextInterface {
 
 	/**
 	 * UUIDv4 minted once for this execution, shared by every step and the
