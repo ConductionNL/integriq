@@ -2245,6 +2245,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return array|null The fetched parent object as array, or null when it cannot be resolved.
 	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function resolveParentObjectForRelatedObjectTrigger(
@@ -2264,53 +2266,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		$triggerSourceId = "$triggerRegister/$triggerSchema";
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-		$triggerConfig = $sourceConfig['triggerFromRelatedObjects'];
-
-		$relationKeys = [];
-		if (isset($triggerConfig[$triggerSourceId]) === true && is_array($triggerConfig[$triggerSourceId]) === true) {
-			$relationConfig = $triggerConfig[$triggerSourceId];
-			$firstRelationKey = array_key_first($relationConfig);
-			if (is_string($firstRelationKey) === true && trim($firstRelationKey) !== '') {
-				$relationKeys[] = trim($firstRelationKey);
-			}
-		}
-
-		if ($relationKeys === []) {
+		$relationKey = $this->relatedObjectRelationKey(synchronization: $synchronization, triggerSourceId: $triggerSourceId);
+		if ($relationKey === null) {
 			return null;
 		}
 
-		$triggerObjectDot = new Dot($triggerObject);
-		$relationReference = null;
-		foreach ($relationKeys as $relationKey) {
-			$candidateReference = $triggerObjectDot->get($relationKey);
-			if (is_string($candidateReference) === true && trim($candidateReference) !== '') {
-				$relationReference = trim($candidateReference);
-				break;
-			}
-		}
-
-		if ($relationReference === null) {
+		$relationReference = (new Dot($triggerObject))->get($relationKey);
+		if (is_string($relationReference) === false || trim($relationReference) === '') {
 			return null;
 		}
 
-		$parentObjectId = null;
-		if (Uuid::isValid($relationReference) === true) {
-			$parentObjectId = $relationReference;
-		} elseif (filter_var($relationReference, FILTER_VALIDATE_URL) !== false) {
-			$path = trim((string)parse_url($relationReference, PHP_URL_PATH), '/');
-			$segments = array_values(array_filter(explode('/', $path), static fn ($segment) => $segment !== ''));
-
-			$lastSegment = end($segments);
-			if ($lastSegment === false) {
-				$lastSegment = null;
-			}
-
-			if (is_string($lastSegment) === true && Uuid::isValid($lastSegment) === true) {
-				$parentObjectId = $lastSegment;
-			}
-		}
-
+		$relationReference = trim($relationReference);
+		$parentObjectId = $this->parentObjectIdFromReference(reference: $relationReference);
 		if ($parentObjectId === null) {
 			return null;
 		}
@@ -2336,7 +2303,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 					'synchronizationId' => ($synchronization['id'] ?? null),
 					'sourceId' => $sourceId,
 					'triggerSourceId' => $triggerSourceId,
-					'relationKeys' => $relationKeys,
+					'relationKeys' => [$relationKey],
 					'relationReference' => $relationReference,
 					'parentObjectId' => $parentObjectId,
 					'error' => $e->getMessage(),
@@ -2346,6 +2313,63 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return null;
 		}//end try
 	}//end resolveParentObjectForRelatedObjectTrigger()
+
+	/**
+	 * The relation key a synchronization configures for objects of a related source.
+	 *
+	 * The key is the first key of `sourceConfig.triggerFromRelatedObjects.<register>/<schema>`,
+	 * trimmed; it is the dot path in the related object that references the parent.
+	 *
+	 * @param array  $synchronization The synchronization that should run.
+	 * @param string $triggerSourceId The related object's source, as `<register>/<schema>`.
+	 *
+	 * @return string|null The relation key, or null when none is configured.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function relatedObjectRelationKey(array $synchronization, string $triggerSourceId): ?string {
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		$relationConfig = ($sourceConfig['triggerFromRelatedObjects'][$triggerSourceId] ?? null);
+		if (is_array($relationConfig) === false) {
+			return null;
+		}
+
+		$relationKey = array_key_first($relationConfig);
+		if (is_string($relationKey) === false || trim($relationKey) === '') {
+			return null;
+		}
+
+		return trim($relationKey);
+	}//end relatedObjectRelationKey()
+
+	/**
+	 * The parent object id a relation reference names: the reference itself when it is
+	 * a UUID, or the last path segment of a URL when that segment is a UUID.
+	 *
+	 * @param string $reference The trimmed relation reference.
+	 *
+	 * @return string|null The parent object id, or null when the reference names none.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function parentObjectIdFromReference(string $reference): ?string {
+		if (Uuid::isValid($reference) === true) {
+			return $reference;
+		}
+
+		if (filter_var($reference, FILTER_VALIDATE_URL) === false) {
+			return null;
+		}
+
+		$path = trim((string)parse_url($reference, PHP_URL_PATH), '/');
+		$segments = array_values(array_filter(explode('/', $path), static fn ($segment) => $segment !== ''));
+		$lastSegment = end($segments);
+		if (is_string($lastSegment) === true && Uuid::isValid($lastSegment) === true) {
+			return $lastSegment;
+		}
+
+		return null;
+	}//end parentObjectIdFromReference()
 
 	/**
 	 * Synchronizes internal data to external sources based on synchronization rules.
