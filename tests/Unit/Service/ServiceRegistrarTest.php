@@ -275,6 +275,8 @@ use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver;
 use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
 use OCA\Integriq\Service\StufZkn\StufZdsOutboundInterface;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\Integriq\Service\SyncItemDeadLetterService;
 use OCA\Integriq\Service\SyncItemDeadLetterServiceInterface;
 use OCA\Integriq\Service\SynchronizationContractService;
@@ -450,6 +452,7 @@ class ServiceRegistrarTest extends TestCase {
 		ToolPlatformDetailsInterface::class => LtiPlatformDetailsService::class,
 		ActivityMappingTableInterface::class => DsoActivityTable::class,
 		ApiVersionNegotiationInterface::class => ZgwVersionNegotiationService::class,
+		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 

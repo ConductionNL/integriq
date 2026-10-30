@@ -24,6 +24,7 @@ use OCA\Integriq\Controller\EventsController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -113,7 +114,7 @@ class EventsControllerBrokerSecretRedactionTest extends TestCase {
 			$l10n,
 			$userSession,
 			$this->createMock(ActionAuthService::class),
-			$this->createMock(WebhookSignatureService::class),
+			new SubscriptionSigningPolicy(signatures: $this->createMock(WebhookSignatureService::class)),
 			new EgressGuard(),
 		);
 	}//end setUp()

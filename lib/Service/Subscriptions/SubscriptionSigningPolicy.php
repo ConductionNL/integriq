@@ -52,35 +52,7 @@ use OCA\Integriq\Service\WebhookSignatureServiceInterface;
  *
  * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
  */
-class SubscriptionSigningPolicy {
-
-	/**
-	 * The subscription style this policy applies to.
-	 *
-	 * @var string
-	 */
-	public const STYLE_PUSH = 'push';
-
-	/**
-	 * What a read of a stored secret shows instead of the secret.
-	 *
-	 * @var string
-	 */
-	public const REDACTED = '__redacted__';
-
-	/**
-	 * An attempt that carried a signature.
-	 *
-	 * @var string
-	 */
-	public const ATTEMPT_SIGNED = 'signed';
-
-	/**
-	 * An attempt that did not.
-	 *
-	 * @var string
-	 */
-	public const ATTEMPT_UNSIGNED = 'unsigned';
+class SubscriptionSigningPolicy implements SubscriptionSigningPolicyInterface {
 
 	/**
 	 * Wire the policy.
@@ -356,4 +328,15 @@ class SubscriptionSigningPolicy {
 			'graceSeconds' => WebhookSignatureService::ROTATION_GRACE_SECONDS,
 		];
 	}//end verificationRecipe()
+
+	/**
+	 * A fresh signing secret, for a first generate or a rotation.
+	 *
+	 * @return string The new secret.
+	 *
+	 * @spec openspec/specs/webhook-signing/spec.md
+	 */
+	public function generateSecret(): string {
+		return $this->signatures->generateSecret();
+	}//end generateSecret()
 }//end class

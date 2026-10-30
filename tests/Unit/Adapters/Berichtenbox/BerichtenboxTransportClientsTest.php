@@ -27,6 +27,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxBatch;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientHttp;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxException;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxValidatieClient;
@@ -288,4 +289,16 @@ class BerichtenboxTransportClientsTest extends TestCase {
 		$this->assertSame('Bearer s3cret', $this->history[0]['request']->getHeaderLine('Authorization'));
 		$this->assertStringContainsString('eventTypes=DELIVERED&eventTypes=FAILED&eventTypes=EXPIRED', (string)$this->history[0]['request']->getUri());
 	}//end testTheAdapterTokenIsDecryptedForTheCall()
+
+	/**
+	 * A client names a letter's transport message the way the ebMS adapter does.
+	 *
+	 * @return void
+	 */
+	public function testTheTransportMessageIdIsTheAdaptersMessageId(): void {
+		$client = new BerichtenboxClientMock();
+
+		$this->assertSame('b-1@integriq.berichtenbox', $client->transportMessageIdFor(berichtId: 'b-1'));
+		$this->assertSame(EbmsAdapterClient::messageIdFor(berichtId: 'b-1'), $client->transportMessageIdFor(berichtId: 'b-1'));
+	}//end testTheTransportMessageIdIsTheAdaptersMessageId()
 }//end class

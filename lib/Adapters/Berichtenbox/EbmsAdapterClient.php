@@ -70,7 +70,7 @@ class EbmsAdapterClient {
 	 * @return string The ebMS MessageId.
 	 */
 	public static function messageIdFor(string $berichtId): string {
-		return $berichtId . '@integriq.berichtenbox';
+		return $berichtId . BerichtenboxClient::TRANSPORT_MESSAGE_ID_SUFFIX;
 	}//end messageIdFor()
 
 	/**

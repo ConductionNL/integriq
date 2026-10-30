@@ -26,6 +26,8 @@ use GuzzleHttp\Client as GuzzleHttpClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientHttp;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxLetterBuilder;
+use OCA\Integriq\Adapters\Berichtenbox\LetterBuilderInterface;
 use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolver;
 use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolverInterface;
 use OCA\Integriq\Adapters\Digikoppeling\SignedSoapProfileInterface;
@@ -76,6 +78,7 @@ final class AdaptersRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
+		$context->registerServiceAlias(LetterBuilderInterface::class, BerichtenboxLetterBuilder::class);
 		$context->registerServiceAlias(SignedSoapProfileInterface::class, WusProfileService::class);
 		$context->registerServiceAlias(SloCurriculumTreeWalkerInterface::class, SloCurriculumTreeWalker::class);
 		$context->registerServiceAlias(SloCurriculumPresetRegistryInterface::class, SloCurriculumPresetRegistry::class);

@@ -25,6 +25,7 @@ use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -105,7 +106,7 @@ class EventsControllerTest extends TestCase {
 			$l,
 			$this->userSession,
 			$this->actionAuth,
-			$signatureService,
+			new SubscriptionSigningPolicy(signatures: $signatureService),
 			new EgressGuard(),
 		);
 	}//end setUp()
