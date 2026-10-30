@@ -221,7 +221,7 @@ class SourceRequestedListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheListenerIsRegisteredForTheEvent(): void {
-		$source = (string)file_get_contents(__DIR__ . '/../../../lib/EventListener/EventListenerRegistrar.php');
+		$source = (string)file_get_contents(__DIR__ . '/../../../lib/EventListener/EventListenerBindings.php');
 
 		$this->assertStringContainsString(
 			'addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class)',

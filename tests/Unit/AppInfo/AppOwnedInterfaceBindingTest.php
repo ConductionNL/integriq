@@ -167,7 +167,7 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 
 		$application = '';
 		foreach ($files as $file) {
-			if (basename($file) === 'Application.php' || str_ends_with($file, 'Registrar.php') === true) {
+			if (basename($file) === 'Application.php' || str_ends_with($file, 'Registrar.php') === true || str_ends_with($file, 'Bindings.php') === true) {
 				$application .= (string)file_get_contents($file);
 			}
 		}

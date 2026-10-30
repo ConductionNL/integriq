@@ -286,7 +286,7 @@ class ExchangeAcknowledgementListenerTest extends TestCase {
 	 */
 	public function testTheListenerIsRegisteredForEveryAdaptersAcknowledgement(): void {
 		$lib = dirname(__DIR__, 3) . '/lib';
-		$application = (string)file_get_contents($lib . '/EventListener/EventListenerRegistrar.php');
+		$application = (string)file_get_contents($lib . '/EventListener/EventListenerBindings.php');
 		$this->assertMatchesRegularExpression(
 			'/foreach \(array_keys\(ExchangeAcknowledgementListener::ADAPTER_OF\) as \$acknowledgement\) \{\s*'
 			. '\$context->registerEventListener\(\$acknowledgement, ExchangeAcknowledgementListener::class\);/',

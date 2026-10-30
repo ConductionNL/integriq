@@ -47,7 +47,7 @@ parameters:
         # reference OCA\OpenRegister\Service\Flow\* (IFlowNode,
         # RegisterFlowNodesEvent), which exists only at runtime and only on an
         # OpenRegister that ships the flow engine — that is precisely what the
-        # class_exists() guard in FlowRegistrar::registerListeners() is for.
+        # class_exists() guard in FlowBindings::registerListeners() is for.
         # "implements unknown interface" cannot be baselined, so exclusion is
         # required (same pattern as SynchronizationContractProvider above). The
         # flow helpers that do NOT touch OpenRegister types (FlowConfigGuard,

@@ -223,7 +223,7 @@ class MessageSchemaDocumentListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testApplicationRegistersTheListenerOnCreateAndUpdate(): void {
-		$source = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/EventListener/EventListenerRegistrar.php');
+		$source = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/EventListener/EventListenerBindings.php');
 
 		foreach (['ObjectCreatingEvent', 'ObjectUpdatingEvent'] as $event) {
 			$this->assertStringContainsString(
