@@ -119,4 +119,24 @@ describe('SyncedFromTab in a linked card (onSummary)', () => {
 			actions: [],
 		})
 	})
+
+	it('replaces the earlier summary when the re-read for another record fails', async () => {
+		const onSummary = vi.fn()
+		const wrapper = await mountWith([row], { onSummary })
+		expect(onSummary).toHaveBeenLastCalledWith(
+			expect.objectContaining({ count: 1 }),
+		)
+
+		axios.get.mockRejectedValueOnce(new Error('503'))
+		await wrapper.setProps({ objectId: 'object-8' })
+		await flushPromises()
+
+		expect(onSummary).toHaveBeenLastCalledWith({
+			count: 0,
+			noun: '',
+			rows: [],
+			actions: [],
+			unavailable: true,
+		})
+	})
 })
