@@ -6265,10 +6265,11 @@
 			"source": "competitor-derived",
 			"integriq": "no",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "`grep -rln 'opentelemetry|OTel|otlp' lib/ --include=*.php -i` returns only lib/Service/NotificatiesSubscriberService.php, a false positive on the substring 'rem-OTEL-y' inside `notFoundRemotely`. No OpenTelemetry exporter, collector client, or trace-context propagation exists anywhere in the app. Specified in openspec/changes/observability-opentelemetry-export/ (OpenSpec pass 2026-09-27).",
-				"change": "observability-opentelemetry-export"
+				"evidence": "lib/Observability/Otel/OtlpTraceExporter.php sends OTLP/HTTP traces mapped by lib/Observability/Otel/SpanMapper.php (root span plus one child per step, no BSN, name or header in the payload); ExecutionTraceService::persist() queues and lib/BackgroundJob/OtelExportJob.php exports one trace per job behind lib/Observability/Otel/OtelExportBreaker.php; lib/Observability/Otel/TraceParent.php reads an inbound traceparent and CallService passes it on outbound (EndpointService, CallService); settings in OtelSettings, admin routes appinfo/routes.php:726-727 otelSettings#getConfig/#setConfig (/api/admin/otel). Change observability-opentelemetry-export: every implement and PHPUnit task ticked, only a Newman and a Playwright run open.",
+				"change": "observability-opentelemetry-export",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -6536,10 +6537,11 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"change": "zgw-connectors-for-dossiq",
-				"evidence": "lib/Settings/configurations/zgw-zaken.json (source.isEnabled=false, target.register/schema empty, chosenBy operator); openspec/changes/zgw-connectors-for-dossiq/tasks.md Task 1 'Implement' unchecked and Task 2 names lib/Service/ConfigurationSetInstaller.php, which does not exist anywhere in lib/. Generic import (lib/Service/ConfigurationService.php:1037 importConfiguration()) requires an OAS-shaped {components:{sources,mappings,...}} payload, a different shape than this descriptor, so it cannot even be imported through the existing generic pipeline."
+				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-zaken.json (source ships disabled until an administrator installs the set).",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Only a package descriptor and an openspec proposal exist; the installer that would bind it to an operator-chosen register/schema was never built. Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/zgw-connectors-for-dossiq (open; its scope lists the zgw-zaken configuration set).",
@@ -6573,10 +6575,11 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"change": "zgw-connectors-for-dossiq",
-				"evidence": "lib/Settings/configurations/zgw-documenten.json (source.isEnabled=false); same missing lib/Service/ConfigurationSetInstaller.php as zgw-zaken (openspec/changes/zgw-connectors-for-dossiq/tasks.md)."
+				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-documenten.json (source ships disabled until an administrator installs the set).",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Same unbuilt packaged-connector pattern as nl-zgw-zaken. Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/zgw-connectors-for-dossiq (open; its scope lists the zgw-documenten configuration set).",
@@ -6610,10 +6613,11 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/configurations/zgw-catalogi.json (source.isEnabled=false); no ConfigurationSetInstaller exists (see nl-zgw-zaken). Covered by openspec/changes/zgw-connectors-for-dossiq/ (0 of 8 tasks ticked; OpenSpec pass 2026-09-27): The zgw-catalogi set is in this change; the row cited no change directory, corrected.",
-				"change": "zgw-connectors-for-dossiq"
+				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-catalogi.json (source ships disabled until an administrator installs the set).",
+				"change": "zgw-connectors-for-dossiq",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Sibling row names opencatalogi:svc-import as provider; integriq's own package for consuming an outside ZGW Catalogi API is an unbuilt descriptor only, so if this is delivered anywhere it is not here.",
@@ -6690,10 +6694,11 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/configurations/zgw-besluiten.json (source.isEnabled=false); no ConfigurationSetInstaller exists (see nl-zgw-zaken). Covered by openspec/changes/zgw-connectors-for-dossiq/ (0 of 8 tasks ticked; OpenSpec pass 2026-09-27): The zgw-besluiten set is in this change; the row cited no change directory, corrected.",
-				"change": "zgw-connectors-for-dossiq"
+				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-besluiten.json (source ships disabled until an administrator installs the set).",
+				"change": "zgw-connectors-for-dossiq",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Same unbuilt packaged-connector pattern as nl-zgw-zaken.",
@@ -8762,8 +8767,9 @@
 			"built": {
 				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:117 senderIdentity#index and :118 #checkAlignment -> lib/Controller/SenderIdentityController.php:113 index(), :152 checkAlignment() -> lib/Outbound/Identity/DomainAlignmentChecker.php:77 check() over lib/Outbound/Identity/SystemDnsResolver.php. SenderIdentities page (/outbound/identities, logs) lists sender_identity rows (seeded at lib/Settings/integriq_seed_data.json:578-601). NO frontend caller for /api/outbound/identities or /alignment (not in frontend-api-paths.txt). The send path lib/Outbound/Identity/MessageComposer.php and OutboundSecurityService.php have zero callers (grep -rlw MessageComposer lib = 0 outside its own file). Covered by openspec/changes/outbound-sender-identity-and-deliverability/ (35 of 38 tasks ticked; OpenSpec pass 2026-09-27): Its spec requires the SPF, DKIM and DMARC alignment check.",
-				"change": "outbound-sender-identity-and-deliverability"
+				"evidence": "Identities and the alignment check are built: appinfo/routes.php senderIdentity#index and #checkAlignment -> lib/Controller/SenderIdentityController.php -> lib/Outbound/Identity/DomainAlignmentChecker.php; lib/Outbound/Identity/MessageComposer.php composes a message under an identity (signature, unsubscribe). Not yet sending under it: lib/Outbound/Identity/OutboundSecurityService.php, which takes the identity's DKIM signing material (SenderIdentityService::signingMaterial()), has no caller outside OutboundBindings on development (2026-10-30), and the per-team identity on the case type is dossiq's half (task 10.1). Stays building.",
+				"change": "outbound-sender-identity-and-deliverability",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "SenderIdentities page (/outbound/identities), read-only; the alignment check is reached by nothing",
 			"note": "Staff can see the identities but cannot run the SPF, DKIM and DMARC check from any page, and integriq has no code path that sends mail from an identity. Sending is Nextcloud Mail's job by design.",
@@ -8798,10 +8804,11 @@
 			"source": "own-code",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Public route appinfo/routes.php:120 senderIdentity#unsubscribe -> lib/Controller/SenderIdentityController.php:225 unsubscribe() verifies the token (lib/Outbound/Identity/UnsubscribeTokenService.php:92) and writes an opt-out via lib/Outbound/Identity/OptOutRegistry.php add() (:137); RecipientOptOuts page (/outbound/opt-outs, logs) lists them. BUT OptOutRegistry::decide() (:104) has no caller (grep '->decide(' lib = only an unrelated CloudEventListener guard), and UnsubscribeTokenService::linkFor() (:125) is only called from MessageComposer.php:81, which itself has zero callers. Covered by openspec/changes/outbound-sender-identity-and-deliverability/ (35 of 38 tasks ticked; OpenSpec pass 2026-09-27): Its spec requires the unsubscribe link and the opt-out check on send.",
-				"change": "outbound-sender-identity-and-deliverability"
+				"evidence": "Public route senderIdentity#unsubscribe -> lib/Controller/SenderIdentityController.php unsubscribe() verifies the token (lib/Outbound/Identity/UnsubscribeTokenService.php) and writes the opt-out to integriq's own table integriq_opt_outs through lib/Outbound/Identity/OptOutRegistry.php. Every integriq sender asks it before a send: lib/Outbound/OutboundSendGate.php:90 calls OptOutRegistry::decideForSend() (fails closed) and composes the body with the unsubscribe link through lib/Outbound/Identity/MessageComposer.php; the gate is used by SmsDispatchService, EventService, DigitalPostService, IntakeReplyService and OutboundRetryService.",
+				"change": "outbound-sender-identity-and-deliverability",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "public route GET /unsubscribe/{token}; RecipientOptOuts page (/outbound/opt-outs)",
 			"note": "The unsubscribe landing works and opt-outs are visible, but no integriq send path consults the registry or mints the link, so no message actually carries an unsubscribe link from integriq.",
@@ -8878,10 +8885,11 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "OutboundMessages page (/messages/outbound, logs, schema outbound_message) in src/manifest.d/outbound-message-log.json lists status/channel/retryCount. appinfo/routes.php:103-106 outboundLog#body/#retry/#forward -> lib/Controller/OutboundLogController.php:109,137,179, none in frontend-api-paths.txt and the page declares no row actions although its $comment promises the body 'behind its own action'. Writer: lib/Outbound/MessageRecorder.php:134 start() is only called by lib/Outbound/ForwardService.php:86, so integriq never records an original outgoing message itself. Covered by openspec/changes/outbound-communication-log/ (16 of 19 tasks ticked; OpenSpec pass 2026-09-27): The change specifies the per-recipient log and its writers.",
-				"change": "outbound-communication-log"
+				"evidence": "lib/Outbound/MessageRecorder.php records one outbound_message per send with a recipients list (buildRecipients() :505-530: address, accountId, external, status, deliveryState) and stepFailed() (:214) stores the transport's reason per address; every integriq sender goes through lib/Outbound/OutboundSendGate.php (SmsDispatchService, EventService, DigitalPostService, IntakeReplyService, OutboundRetryService). OutboundMessages page (src/manifest.d/outbound-message-log.json, /messages/outbound, type logs, rowDetail true) lists status, channel and retryCount and opens the full record with each recipient's outcome. appinfo/routes.php outboundLog#body/#retry/#forward -> lib/Controller/OutboundLogController.php. The send history on the case is dossiq's half (open hand-off task in outbound-communication-log).",
+				"change": "outbound-communication-log",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "OutboundMessages page (/messages/outbound), read-only",
 			"note": "The per-recipient log page exists, but inside integriq only a forward ever creates a row, so the page is empty unless a sibling app writes outbound_message objects. Body, retry and forward have no buttons.",
@@ -8918,10 +8926,11 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "building",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:107 outboundLog#lastContact -> lib/Controller/OutboundLogController.php:229 lastContact() -> lib/Outbound/LastContactQuery.php lastContact() scans outbound_message recipients with status sent. Not in frontend-api-paths.txt; no page shows it. lastContact() checks only for a session user, no ActionAuthService call and no per-subject check. Covered by openspec/changes/outbound-communication-log/ (16 of 19 tasks ticked; OpenSpec pass 2026-09-27): The change specifies the last-contact read over the outbound log.",
-				"change": "outbound-communication-log"
+				"evidence": "appinfo/routes.php outboundLog#lastContact -> lib/Controller/OutboundLogController.php:234 lastContact() (session required, subjectRef and recipient required) -> lib/Outbound/LastContactQuery.php, which reads outbound_message through OpenRegister's findAll() under the default RBAC and multitenancy, so a caller only sees messages they may read. The lastTold field on the case is dossiq's half (open hand-off task in outbound-communication-log).",
+				"change": "outbound-communication-log",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "machine route: GET /api/outbound/last-contact (session, meant for a sibling app such as dossiq); no integriq page",
 			"note": "The query is real but reads outbound_message, which integriq itself only writes on a forward, so it will answer 'not contacted' unless a sibling app writes the log. Live-defect candidate: any logged-in user can ask about any subject and recipient.",
@@ -8960,8 +8969,9 @@
 			"built": {
 				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/Identity/HoldQueue.php hold() :91, isWithdrawable() :120, withdraw() :146, release() :182. hold() has zero callers (grep '->hold(' lib = 0), so nothing is ever held. withdraw() is reached only from appinfo/routes.php:119 senderIdentity#withdraw -> SenderIdentityController.php:186, which has no frontend caller (not in frontend-api-paths.txt). No page lists held messages. Covered by openspec/changes/outbound-sender-identity-and-deliverability/ (35 of 38 tasks ticked; OpenSpec pass 2026-09-27): Its spec requires the hold window; the tick does not hold up, hold() has no caller.",
-				"change": "outbound-sender-identity-and-deliverability"
+				"evidence": "lib/Outbound/Identity/HoldQueue.php hold(), isWithdrawable(), withdraw(), release() exist, but on development (2026-10-30) only lib/Controller/SenderIdentityController.php (withdraw) and lib/Outbound/OutboundBindings.php reference HoldQueue: no sender calls hold(), so nothing is ever held. lib/Outbound/OutboundSendGate.php does not reference it. Stays building in outbound-sender-identity-and-deliverability.",
+				"change": "outbound-sender-identity-and-deliverability",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The hold window can be withdrawn by route, but no send path ever puts a message on hold, and there is no screen for a held message.",
@@ -8997,8 +9007,9 @@
 			"built": {
 				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/Identity/NoReplyHandler.php handle() :79 exists. Zero callers: grep -rlw NoReplyHandler lib = 0 files outside its own; no route, no listener, no job. Covered by openspec/changes/outbound-sender-identity-and-deliverability/ (35 of 38 tasks ticked; OpenSpec pass 2026-09-27): Its spec requires no-reply handling; NoReplyHandler has no caller.",
-				"change": "outbound-sender-identity-and-deliverability"
+				"evidence": "lib/Outbound/Identity/NoReplyHandler.php handle() exists; on development (2026-10-30) no file in lib/ or appinfo/ references NoReplyHandler: no route, listener or job calls it. Stays building in outbound-sender-identity-and-deliverability.",
+				"change": "outbound-sender-identity-and-deliverability",
+				"readOn": "2026-10-30"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Dead code: a no-reply identity is seeded (integriq_seed_data.json:601) but nothing hands an incoming reply to the handler.",
