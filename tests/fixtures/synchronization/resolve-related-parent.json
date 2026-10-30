@@ -30,14 +30,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -48,11 +41,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": "zaak"
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":\"zaak\"}}"
             ]
         ]
     },
@@ -63,11 +52,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": []
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":[]}}"
             ]
         ]
     },
@@ -78,13 +63,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": [
-                            "zaak"
-                        ]
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":[\"zaak\"]}}"
             ]
         ]
     },
@@ -95,13 +74,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": [
-                            "zaak"
-                        ]
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":[\"zaak\"]}}"
             ]
         ]
     },
@@ -112,14 +85,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -130,13 +96,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "  ": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"  \":true}}}"
             ]
         ]
     },
@@ -150,13 +110,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            " zaak ": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\" zaak \":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -176,14 +130,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -197,13 +144,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "meta.zaak": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"meta.zaak\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -223,14 +164,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -241,14 +175,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -259,14 +186,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -280,14 +200,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -310,14 +223,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -340,14 +246,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -370,14 +269,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -397,14 +289,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -415,14 +300,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -433,14 +311,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ]
         ]
     },
@@ -451,14 +322,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -472,14 +336,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -499,14 +356,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -544,14 +394,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true,
-                            "other": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"
@@ -574,13 +417,7 @@
         "log": [
             [
                 "callService.applyConfigDot",
-                {
-                    "triggerFromRelatedObjects": {
-                        "3/7": {
-                            "zaak": true
-                        }
-                    }
-                }
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true}}}"
             ],
             [
                 "objectService.getOpenRegisters"

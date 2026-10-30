@@ -71,7 +71,7 @@ class SynchronizationRelatedParentTest extends TestCase {
 		$callService = $this->createMock(CallService::class);
 		$callService->method('applyConfigDot')->willReturnCallback(
 			function (array $config) {
-				$this->log[] = ['callService.applyConfigDot', $config];
+				$this->log[] = ['callService.applyConfigDot', json_encode($config)];
 				return $config;
 			}
 		);
