@@ -337,6 +337,13 @@ class SourcePaginateNodeTest extends TestCase {
 	 * scattered across the emitted items (`page.count`, `page.pages`) with no
 	 * single run-level total, so a flow run's log carried no way to know how
 	 * many objects or pages this hop fetched overall.
+	 *
+	 * `pages` and `sourcePages` are deliberately different numbers here (3 vs
+	 * 2): `pages` is this node's OWN re-chunking of the fetched objects for
+	 * downstream item emission (`pageSize` 2 over 5 objects is 3 chunks),
+	 * while `sourcePages` is the engine's own count of pages it actually
+	 * fetched from the source. Conflating them previously made the Logboek
+	 * report a page count the source never saw.
 	 */
 	public function testItReportsTheTotalObjectsAndPagesFetched(): void {
 		$this->givenOwner();
@@ -356,7 +363,14 @@ class SourcePaginateNodeTest extends TestCase {
 		);
 
 		$this->assertSame(
-			['fetch' => ['objects' => ['count' => 5], 'pages' => ['count' => 3], 'errors' => ['count' => 0]]],
+			[
+				'fetch' => [
+					'objects' => ['count' => 5],
+					'pages' => ['count' => 3],
+					'sourcePages' => ['count' => 2],
+					'errors' => ['count' => 0],
+				],
+			],
 			$report->take()
 		);
 
@@ -580,7 +594,14 @@ class SourcePaginateNodeTest extends TestCase {
 
 		$this->assertCount(expectedCount: 2, haystack: $out);
 		$this->assertSame(
-			expected: ['fetch' => ['objects' => ['count' => 0], 'pages' => ['count' => 0], 'errors' => ['count' => 2]]],
+			expected: [
+				'fetch' => [
+					'objects' => ['count' => 0],
+					'pages' => ['count' => 0],
+					'sourcePages' => ['count' => 0],
+					'errors' => ['count' => 2],
+				],
+			],
 			actual: $report->take()
 		);
 

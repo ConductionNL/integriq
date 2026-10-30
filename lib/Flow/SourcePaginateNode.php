@@ -385,6 +385,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		$emitted = [];
 		$totalObjects = 0;
 		$totalPages = 0;
+		$totalSourcePages = 0;
 		$totalErrors = 0;
 		foreach (array_values($items) as $index => $item) {
 			try {
@@ -400,6 +401,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 				$totalObjects += count($objects);
 				$totalPages += count($pages);
+				$totalSourcePages += (int)($fetchInfo['pagesFetched'] ?? 0);
 
 				$emitted = array_merge(
 					$emitted,
@@ -449,7 +451,11 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 			context: $context,
 			report: [
 				'objects' => ['count' => $totalObjects],
+				// This node's own re-chunking of the fetched objects for
+				// downstream item emission -- NOT how many pages the source
+				// was actually asked for. See `sourcePages` for that.
 				'pages' => ['count' => $totalPages],
+				'sourcePages' => ['count' => $totalSourcePages],
 				'errors' => ['count' => $totalErrors],
 			]
 		);
