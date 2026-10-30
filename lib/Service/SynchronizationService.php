@@ -49,6 +49,7 @@ use OCA\Integriq\Service\Synchronization\ApiFetch;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Service\Synchronization\ContractRun;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
+use OCA\Integriq\Service\Synchronization\ExtraDataFetch;
 use OCA\Integriq\Service\Synchronization\FetchedFile;
 use OCA\Integriq\Service\Synchronization\SourcePage;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
@@ -4342,72 +4343,15 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return $object;
 		}
 
-		// Get endpoint from earlier fetched object.
-		if (isset($extraDataConfig[$this::EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION]) === true) {
-			$dotObject = new Dot($object);
-			$endpoint = $dotObject->get($extraDataConfig[$this::EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION] ?? null);
-		}
+		$fetch = new ExtraDataFetch(synchronization: $synchronization, config: $extraDataConfig, object: $object);
+		$fetch->originId = $originId;
+		$this->resolveExtraDataEndpoint(fetch: $fetch);
 
-		// Get endpoint static defined in config.
-		if (isset($extraDataConfig[$this::EXTRA_DATA_STATIC_ENDPOINT_LOCATION]) === true) {
-			if ($originId === null) {
-				$originId = $this->getOriginId(synchronization: $synchronization, object: $object);
-			}
-
-			if (isset($extraDataConfig['endpointIdLocation']) === true) {
-				$dotObject = new Dot($object);
-				$originId = $dotObject->get($extraDataConfig['endpointIdLocation']);
-			}
-
-			$endpoint = $extraDataConfig[$this::EXTRA_DATA_STATIC_ENDPOINT_LOCATION];
-
-			if ($originId === null) {
-				$originId = $this->getOriginId(synchronization: $synchronization, object: $object);
-			}
-
-			$endpoint = str_replace(search: '{{ originId }}', replace: $originId, subject: $endpoint);
-			$endpoint = str_replace(search: '{{originId}}', replace: $originId, subject: $endpoint);
-
-			if (isset($extraDataConfig['subObjectId']) === true) {
-				$objectDot = new Dot($object);
-				$subObjectId = $objectDot->get($extraDataConfig['subObjectId']);
-				if ($subObjectId !== null) {
-					$endpoint = str_replace(search: '{{ subObjectId }}', replace: $subObjectId, subject: $endpoint);
-					$endpoint = str_replace(search: '{{subObjectId}}', replace: $subObjectId, subject: $endpoint);
-				}
-			}
-		}//end if
-
-		if (isset($extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION]) === true
-			&& is_string($extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION]) === true
-			&& $extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION] !== ''
-		) {
-			$endpoint = $this->mappingService->renderTemplateString(
-				template: $extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION],
-				context: [
-					'endpoint' => $endpoint ?? null,
-					'object' => $object,
-					'originId' => $originId,
-					'extraDataConfig' => $extraDataConfig,
-				]
-			);
-		}
-
-		if (empty($endpoint) === true) {
-			throw new Exception(
-				sprintf(
-					'Could not get static or dynamic endpoint, object: %s',
-					json_encode($object)
-				)
-			);
-		}
-
-		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
-		if (isset($extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION]) === true
-			&& isset($sourceConfig[$extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION]]) === true
-		) {
-			unset($sourceConfig[$extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION]]);
-			$synchronization['sourceConfig'] = $sourceConfig;
+		$sourceConfig = ($fetch->synchronization['sourceConfig'] ?? []);
+		$unsetKey     = ($extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION] ?? null);
+		if ($unsetKey !== null && isset($sourceConfig[$unsetKey]) === true) {
+			unset($sourceConfig[$unsetKey]);
+			$fetch->synchronization['sourceConfig'] = $sourceConfig;
 		}
 
 		$source = null;
@@ -4415,43 +4359,142 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$source = $extraDataConfig['source'];
 		}
 
-		$extraData = $this->getObjectFromSource(synchronization: $synchronization, endpoint: $endpoint, source: $source);
-
-		// Temporary fix.
-		if (isset($extraDataConfig['extraDataConfigPerResult']) === true) {
-			$results = $extraData;
-			if (isset($extraDataConfig['resultsLocation']) === true) {
-				$dotObject = new Dot($extraData);
-				$results = $dotObject->get($extraDataConfig['resultsLocation']);
-			}
-
-			foreach ($results as $key => $result) {
-				$results[$key] = $this->fetchExtraDataForObject(
-					synchronization: $synchronization,
-					extraDataConfig: $extraDataConfig['extraDataConfigPerResult'],
-					object: $result,
-					originId: $originId
-				);
-			}
-
-			$extraData = $results;
-		}
+		$extraData = $this->getObjectFromSource(synchronization: $fetch->synchronization, endpoint: $fetch->endpoint, source: $source);
+		$extraData = $this->fetchExtraDataPerResult(fetch: $fetch, extraData: $extraData);
 
 		// Set new key if configured.
 		if (isset($extraDataConfig[$this::KEY_FOR_EXTRA_DATA_LOCATION]) === true) {
 			$extraData = [$extraDataConfig[$this::KEY_FOR_EXTRA_DATA_LOCATION] => $extraData];
 		}
 
-		// Merge with earlier fetchde object if configured.
-		if (isset($extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION]) === true
-			&& ($extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION] === true
-			|| $extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION] === 'true')
-		) {
+		// Merge with the earlier fetched object if configured.
+		$merge = ($extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION] ?? null);
+		if ($merge === true || $merge === 'true') {
 			return array_merge($object, $extraData);
 		}
 
 		return $extraData;
 	}//end fetchExtraDataForObject()
+
+	/**
+	 * Resolve the endpoint of an extra-data fetch: dynamic (read from the
+	 * object), static (from the configuration, origin and sub-object ids filled
+	 * in, winning over dynamic), then the optional endpoint template.
+	 *
+	 * @param ExtraDataFetch $fetch The fetch being resolved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When no endpoint can be determined.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function resolveExtraDataEndpoint(ExtraDataFetch $fetch): void {
+		$config = $fetch->config;
+		if (isset($config[$this::EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION]) === true) {
+			$fetch->endpoint = (new Dot($fetch->object))->get($config[$this::EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION] ?? null);
+		}
+
+		if (isset($config[$this::EXTRA_DATA_STATIC_ENDPOINT_LOCATION]) === true) {
+			$this->staticExtraDataEndpoint(fetch: $fetch);
+		}
+
+		$template = ($config[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION] ?? null);
+		if (is_string($template) === true && $template !== '') {
+			$fetch->endpoint = $this->mappingService->renderTemplateString(
+				template: $template,
+				context: [
+					'endpoint' => $fetch->endpoint,
+					'object' => $fetch->object,
+					'originId' => $fetch->originId,
+					'extraDataConfig' => $config,
+				]
+			);
+		}
+
+		if (empty($fetch->endpoint) === true) {
+			throw new Exception(
+				sprintf(
+					'Could not get static or dynamic endpoint, object: %s',
+					json_encode($fetch->object)
+				)
+			);
+		}
+	}//end resolveExtraDataEndpoint()
+
+	/**
+	 * The static endpoint with `{{ originId }}` and `{{ subObjectId }}` filled in.
+	 *
+	 * The origin id is the one passed in, else the one at `endpointIdLocation`,
+	 * else the synchronization's origin id of the object.
+	 *
+	 * @param ExtraDataFetch $fetch The fetch being resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function staticExtraDataEndpoint(ExtraDataFetch $fetch): void {
+		$config = $fetch->config;
+		if ($fetch->originId === null) {
+			$fetch->originId = $this->getOriginId(synchronization: $fetch->synchronization, object: $fetch->object);
+		}
+
+		if (isset($config['endpointIdLocation']) === true) {
+			$fetch->originId = (new Dot($fetch->object))->get($config['endpointIdLocation']);
+		}
+
+		if ($fetch->originId === null) {
+			$fetch->originId = $this->getOriginId(synchronization: $fetch->synchronization, object: $fetch->object);
+		}
+
+		$endpoint = str_replace(search: '{{ originId }}', replace: $fetch->originId, subject: $config[$this::EXTRA_DATA_STATIC_ENDPOINT_LOCATION]);
+		$endpoint = str_replace(search: '{{originId}}', replace: $fetch->originId, subject: $endpoint);
+
+		$subObjectId = null;
+		if (isset($config['subObjectId']) === true) {
+			$subObjectId = (new Dot($fetch->object))->get($config['subObjectId']);
+		}
+
+		if ($subObjectId !== null) {
+			$endpoint = str_replace(search: '{{ subObjectId }}', replace: $subObjectId, subject: $endpoint);
+			$endpoint = str_replace(search: '{{subObjectId}}', replace: $subObjectId, subject: $endpoint);
+		}
+
+		$fetch->endpoint = $endpoint;
+	}//end staticExtraDataEndpoint()
+
+	/**
+	 * Fetch extra data for each result of the extra data, when `extraDataConfigPerResult` asks for it.
+	 *
+	 * @param ExtraDataFetch $fetch     The fetch that ran.
+	 * @param array          $extraData The extra data fetched.
+	 *
+	 * @return mixed The extra data, or its results each with their own extra data.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function fetchExtraDataPerResult(ExtraDataFetch $fetch, array $extraData): mixed {
+		if (isset($fetch->config['extraDataConfigPerResult']) === false) {
+			return $extraData;
+		}
+
+		$results = $extraData;
+		if (isset($fetch->config['resultsLocation']) === true) {
+			$results = (new Dot($extraData))->get($fetch->config['resultsLocation']);
+		}
+
+		foreach ($results as $key => $result) {
+			$results[$key] = $this->fetchExtraDataForObject(
+				synchronization: $fetch->synchronization,
+				extraDataConfig: $fetch->config['extraDataConfigPerResult'],
+				object: $result,
+				originId: $fetch->originId
+			);
+		}
+
+		return $results;
+	}//end fetchExtraDataPerResult()
 
 	/**
 	 * Fetches multiple extra data entries for an object based on the source configuration.
