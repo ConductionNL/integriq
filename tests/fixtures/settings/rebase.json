@@ -1,0 +1,1056 @@
+{
+    "defaults-mysql": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 2,
+                "eventMessagesUpdated": "Column expires not found - skipped",
+                "jobLogsUpdated": 4,
+                "syncContractLogsUpdated": 5,
+                "syncLogsUpdated": 6
+            },
+            "errors": [],
+            "success": true
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    3600000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'"
+            ],
+            [
+                "stmt.execute",
+                null
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": true,
+                    "results": {
+                        "callLogsUpdated": 2,
+                        "eventMessagesUpdated": "Column expires not found - skipped",
+                        "jobLogsUpdated": 4,
+                        "syncContractLogsUpdated": 5,
+                        "syncLogsUpdated": 6
+                    },
+                    "errors": []
+                }
+            ]
+        ]
+    },
+    "all-set-mysql-with-expires-column": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 2,
+                "eventMessagesUpdated": 4,
+                "jobLogsUpdated": 5,
+                "syncContractLogsUpdated": 6,
+                "syncLogsUpdated": 7
+            },
+            "errors": [],
+            "success": true
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    1000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'"
+            ],
+            [
+                "stmt.execute",
+                null
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_event_messages` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    3000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    4000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    5000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    6000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": true,
+                    "results": {
+                        "callLogsUpdated": 2,
+                        "eventMessagesUpdated": 4,
+                        "jobLogsUpdated": 5,
+                        "syncContractLogsUpdated": 6,
+                        "syncLogsUpdated": 7
+                    },
+                    "errors": []
+                }
+            ]
+        ]
+    },
+    "all-set-postgres-with-expires-column": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 2,
+                "eventMessagesUpdated": 4,
+                "jobLogsUpdated": 5,
+                "syncContractLogsUpdated": 6,
+                "syncLogsUpdated": 7
+            },
+            "errors": [],
+            "success": true
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = created + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    1000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = created + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SELECT 1 FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1"
+            ],
+            [
+                "stmt.execute",
+                [
+                    "oc_openconnector_event_messages",
+                    "expires"
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_event_messages` SET expires = created + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    3000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = created + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    4000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = COALESCE(created, NOW()) + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    5000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = COALESCE(created, NOW()) + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    6000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": true,
+                    "results": {
+                        "callLogsUpdated": 2,
+                        "eventMessagesUpdated": 4,
+                        "jobLogsUpdated": 5,
+                        "syncContractLogsUpdated": 6,
+                        "syncLogsUpdated": 7
+                    },
+                    "errors": []
+                }
+            ]
+        ]
+    },
+    "all-set-postgres-without-column": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 2,
+                "eventMessagesUpdated": "Column expires not found - skipped",
+                "jobLogsUpdated": 4,
+                "syncContractLogsUpdated": 5,
+                "syncLogsUpdated": 6
+            },
+            "errors": [],
+            "success": true
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = created + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    1000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = created + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SELECT 1 FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1"
+            ],
+            [
+                "stmt.execute",
+                [
+                    "oc_openconnector_event_messages",
+                    "expires"
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = created + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    4000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = COALESCE(created, NOW()) + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    5000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = COALESCE(created, NOW()) + (? || ' microseconds')::interval WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    6000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": true,
+                    "results": {
+                        "callLogsUpdated": 2,
+                        "eventMessagesUpdated": "Column expires not found - skipped",
+                        "jobLogsUpdated": 4,
+                        "syncContractLogsUpdated": 5,
+                        "syncLogsUpdated": 6
+                    },
+                    "errors": []
+                }
+            ]
+        ]
+    },
+    "all-zero": {
+        "result": {
+            "retentionResults": [],
+            "errors": [],
+            "success": true
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": true,
+                    "results": [],
+                    "errors": []
+                }
+            ]
+        ]
+    },
+    "some-negative-or-missing": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 1,
+                "eventMessagesUpdated": "Column expires not found - skipped",
+                "jobLogsUpdated": 3,
+                "syncContractLogsUpdated": 4,
+                "syncLogsUpdated": 5
+            },
+            "errors": [],
+            "success": true
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    3600000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'"
+            ],
+            [
+                "stmt.execute",
+                null
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": true,
+                    "results": {
+                        "callLogsUpdated": 1,
+                        "eventMessagesUpdated": "Column expires not found - skipped",
+                        "jobLogsUpdated": 3,
+                        "syncContractLogsUpdated": 4,
+                        "syncLogsUpdated": 5
+                    },
+                    "errors": []
+                }
+            ]
+        ]
+    },
+    "not-json": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 2,
+                "eventMessagesUpdated": "Column expires not found - skipped",
+                "jobLogsUpdated": 4,
+                "syncContractLogsUpdated": 5,
+                "syncLogsUpdated": 6
+            },
+            "errors": [],
+            "success": true
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    3600000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'"
+            ],
+            [
+                "stmt.execute",
+                null
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2592000000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": true,
+                    "results": {
+                        "callLogsUpdated": 2,
+                        "eventMessagesUpdated": "Column expires not found - skipped",
+                        "jobLogsUpdated": 4,
+                        "syncContractLogsUpdated": 5,
+                        "syncLogsUpdated": 6
+                    },
+                    "errors": []
+                }
+            ]
+        ]
+    },
+    "call-log-update-fails": {
+        "result": {
+            "retentionResults": {
+                "eventMessagesUpdated": 2,
+                "jobLogsUpdated": 3,
+                "syncContractLogsUpdated": 4,
+                "syncLogsUpdated": 5
+            },
+            "errors": [
+                "Failed to set call logs expiry dates: prepare failed on openconnector_call_logs",
+                "Failed to set call logs expiry dates: prepare failed on openconnector_call_logs"
+            ],
+            "success": false
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "logger.error",
+                "Failed to set call logs expiry dates: prepare failed on openconnector_call_logs",
+                []
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "logger.error",
+                "Failed to set call logs expiry dates: prepare failed on openconnector_call_logs",
+                []
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'"
+            ],
+            [
+                "stmt.execute",
+                null
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_event_messages` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    3000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    4000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    5000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    6000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": false,
+                    "results": {
+                        "eventMessagesUpdated": 2,
+                        "jobLogsUpdated": 3,
+                        "syncContractLogsUpdated": 4,
+                        "syncLogsUpdated": 5
+                    },
+                    "errors": [
+                        "Failed to set call logs expiry dates: prepare failed on openconnector_call_logs",
+                        "Failed to set call logs expiry dates: prepare failed on openconnector_call_logs"
+                    ]
+                }
+            ]
+        ]
+    },
+    "event-update-fails": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 2,
+                "eventMessagesUpdated": "Column expires not found - skipped",
+                "jobLogsUpdated": 4,
+                "syncContractLogsUpdated": 5,
+                "syncLogsUpdated": 6
+            },
+            "errors": [
+                "Failed to set event messages expiry dates: prepare failed on UPDATE `*PREFIX*openconnector_event_messages`"
+            ],
+            "success": false
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    1000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'"
+            ],
+            [
+                "stmt.execute",
+                null
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_event_messages` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "logger.error",
+                "Failed to set event messages expiry dates: prepare failed on UPDATE `*PREFIX*openconnector_event_messages`",
+                []
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    4000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    5000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    6000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": false,
+                    "results": {
+                        "callLogsUpdated": 2,
+                        "eventMessagesUpdated": "Column expires not found - skipped",
+                        "jobLogsUpdated": 4,
+                        "syncContractLogsUpdated": 5,
+                        "syncLogsUpdated": 6
+                    },
+                    "errors": [
+                        "Failed to set event messages expiry dates: prepare failed on UPDATE `*PREFIX*openconnector_event_messages`"
+                    ]
+                }
+            ]
+        ]
+    },
+    "column-check-fails": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 2,
+                "eventMessagesUpdated": "Column expires not found - skipped",
+                "jobLogsUpdated": 3,
+                "syncContractLogsUpdated": 4,
+                "syncLogsUpdated": 5
+            },
+            "errors": [],
+            "success": true
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    1000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    4000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    5000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    6000000
+                ]
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": true,
+                    "results": {
+                        "callLogsUpdated": 2,
+                        "eventMessagesUpdated": "Column expires not found - skipped",
+                        "jobLogsUpdated": 3,
+                        "syncContractLogsUpdated": 4,
+                        "syncLogsUpdated": 5
+                    },
+                    "errors": []
+                }
+            ]
+        ]
+    },
+    "sync-logs-fail": {
+        "result": {
+            "retentionResults": {
+                "callLogsUpdated": 2,
+                "eventMessagesUpdated": "Column expires not found - skipped",
+                "jobLogsUpdated": 4,
+                "syncContractLogsUpdated": 5
+            },
+            "errors": [
+                "Failed to set sync logs expiry dates: prepare failed on synchronization_logs"
+            ],
+            "success": false
+        },
+        "log": [
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    1000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_call_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    2000000
+                ]
+            ],
+            [
+                "db.getDatabaseProvider"
+            ],
+            [
+                "db.prepare",
+                "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'"
+            ],
+            [
+                "stmt.execute",
+                null
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_job_logs` SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = ''"
+            ],
+            [
+                "stmt.execute",
+                [
+                    4000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_contract_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "stmt.execute",
+                [
+                    5000000
+                ]
+            ],
+            [
+                "db.prepare",
+                "UPDATE `*PREFIX*openconnector_synchronization_logs` SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND) WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL"
+            ],
+            [
+                "logger.error",
+                "Failed to set sync logs expiry dates: prepare failed on synchronization_logs",
+                []
+            ],
+            [
+                "logger.info",
+                "Rebase operation completed",
+                {
+                    "success": false,
+                    "results": {
+                        "callLogsUpdated": 2,
+                        "eventMessagesUpdated": "Column expires not found - skipped",
+                        "jobLogsUpdated": 4,
+                        "syncContractLogsUpdated": 5
+                    },
+                    "errors": [
+                        "Failed to set sync logs expiry dates: prepare failed on synchronization_logs"
+                    ]
+                }
+            ]
+        ]
+    },
+    "settings-unreadable": {
+        "exception": [
+            "RuntimeException",
+            "Rebase operation failed: Failed to retrieve settings: config store down"
+        ],
+        "log": [
+            [
+                "logger.error",
+                "Failed to retrieve settings",
+                {
+                    "exception": "config store down"
+                }
+            ],
+            [
+                "logger.error",
+                "Rebase operation failed",
+                {
+                    "exception": "Failed to retrieve settings: config store down"
+                }
+            ]
+        ]
+    }
+}

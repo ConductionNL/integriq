@@ -49,6 +49,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command;
 
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutorInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCP\IAppConfig;
@@ -327,9 +328,9 @@ class MigrateInlineSecrets extends Command {
 			$cleanFlag = '1';
 		}
 
-		// Reuse the planner's public app id (the repair step's APP_ID is private);
-		// both resolve to 'integriq', keeping the appconfig target identical.
-		$app = InlineSecretMigrationPlannerInterface::APP_ID;
+		// The planner's APP_ID is the broker's allowedApps id, not the appconfig
+		// namespace; the gate lives under the installed app id, as in the repair step.
+		$app = AppIdentity::APP_ID;
 		$this->appConfig->setValueString(app: $app, key: InlineSecretMigrationPlannerInterface::KEY_CLEAN, value: $cleanFlag);
 		$this->appConfig->setValueString(app: $app, key: InlineSecretMigrationPlannerInterface::KEY_PENDING, value: (string)$pending);
 		$this->appConfig->setValueString(app: $app, key: InlineSecretMigrationPlannerInterface::KEY_MANUAL, value: (string)$manual);

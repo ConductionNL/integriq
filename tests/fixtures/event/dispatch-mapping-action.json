@@ -1,0 +1,1555 @@
+{
+    "no-ids": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "mapping or source not found",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "mapping or source not found"
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "mapping-missing": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "mapping or source not found",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "mapping or source not found"
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "source-throws": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "mapping or source not found",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "mapping or source not found"
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "not-wired": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "error": "The Nextcloud Forms adapter is not available for action.kind='mapping' dispatch.",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "The Nextcloud Forms adapter is not available for action.kind='mapping' dispatch."
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "forms-disabled": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "error": "Forms is off",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "Forms is off"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "no-event-id": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "event not found",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "event not found"
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "legacy-event-id": {
+        "outcome": {
+            "return": true
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-old",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "eventId": "e-old",
+                    "status": "delivered",
+                    "deliveredAt": "DATE",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "event-missing": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "event not found",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "event not found"
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "event-throws": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "event not found",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "event not found"
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "no-form-id": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "error": "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "no-submission-id": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "error": "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "event-without-data": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "error": "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "success": {
+        "outcome": {
+            "return": true
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "delivered",
+                    "deliveredAt": "DATE",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "success-299-put": {
+        "outcome": {
+            "return": true
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "PUT",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "delivered",
+                    "deliveredAt": "DATE",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "no-endpoint": {
+        "outcome": {
+            "return": true
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "delivered",
+                    "deliveredAt": "DATE",
+                    "lastAttempt": "DATE",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "DATE"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "status-300": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "Mapping action call failed with status code: 300",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "statusCode": 300
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "status-199": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "Mapping action call failed with status code: 199",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "statusCode": 199
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "status-zero": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "Mapping action call failed with status code: 0",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "statusCode": 0
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "call-throws": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "logger.error",
+                "Failed to dispatch mapping action for event message: call failed",
+                [
+                    "exception",
+                    "eventMessage"
+                ]
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "call failed",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "call failed"
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "fetch-throws": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "logger.error",
+                "Failed to dispatch mapping action for event message: forms down",
+                [
+                    "exception",
+                    "eventMessage"
+                ]
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "failed",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "forms down",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "forms down"
+                        }
+                    ],
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "retry-policy-abandons": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "abandoned",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "mapping or source not found",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "error": "mapping or source not found"
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "status-500-abandons": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "status": "abandoned",
+                    "retryCount": 1,
+                    "lastAttempt": "DATE",
+                    "error": "Mapping action call failed with status code: 500",
+                    "attempts": [
+                        {
+                            "at": "DATE",
+                            "statusCode": 500
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "retry-policy-not-array": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "m-1",
+                "mapping"
+            ],
+            [
+                "or.find",
+                "s-1",
+                "source"
+            ],
+            [
+                "forms.assertEnabled"
+            ],
+            [
+                "or.find",
+                "e-1",
+                "event"
+            ],
+            [
+                "forms.fetchSubmission",
+                "source-s-1",
+                4,
+                8
+            ],
+            [
+                "forms.fetchForm",
+                "source-s-1",
+                4
+            ],
+            [
+                "resolver.resolve",
+                1
+            ],
+            [
+                "resolver.resolve",
+                2
+            ],
+            [
+                "resolver.resolve",
+                3
+            ],
+            [
+                "resolver.resolve",
+                "Naam"
+            ],
+            [
+                "resolver.resolve",
+                "Zero"
+            ],
+            [
+                "mapping.executeMapping",
+                "mapping-m-1",
+                {
+                    "1": "answer-1",
+                    "2": "answer-2",
+                    "3": "answer-3",
+                    "Naam": "answer-Naam",
+                    "Zero": "answer-Zero"
+                }
+            ],
+            [
+                "call.call",
+                "source-s-1",
+                "/zaken",
+                "POST",
+                {
+                    "json": {
+                        "mapped": {
+                            "1": "answer-1",
+                            "2": "answer-2",
+                            "3": "answer-3",
+                            "Naam": "answer-Naam",
+                            "Zero": "answer-Zero"
+                        }
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "event": "e-1",
+                    "retryCount": 3,
+                    "attempts": [
+                        {
+                            "at": "before"
+                        },
+                        {
+                            "at": "DATE",
+                            "statusCode": 500
+                        }
+                    ],
+                    "lastAttempt": "DATE",
+                    "error": "Mapping action call failed with status code: 500",
+                    "status": "failed",
+                    "nextAttempt": "DATE"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    }
+}
