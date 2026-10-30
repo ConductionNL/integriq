@@ -33,6 +33,7 @@ use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
+use OCA\Integriq\Service\ApiVersionNegotiationInterface;
 use OCA\Integriq\Service\ApprovalDecisionService;
 use OCA\Integriq\Service\ApprovalDecisionServiceInterface;
 use OCA\Integriq\Service\ApprovalService;
@@ -89,6 +90,7 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DsoIngestServiceInterface;
 use OCA\Integriq\Service\Dso\DsoActivityOverview;
+use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
@@ -162,8 +164,10 @@ use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
 use OCA\Integriq\Service\Lti\LtiNrpsService;
 use OCA\Integriq\Service\Lti\LtiNrpsServiceInterface;
+use OCA\Integriq\Service\Lti\LtiPlatformDetailsService;
 use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
 use OCA\Integriq\Service\Lti\LtiPlatformLoginServiceInterface;
+use OCA\Integriq\Service\Lti\ToolPlatformDetailsInterface;
 use OCA\Integriq\Service\Mail\CaseReferenceDetector;
 use OCA\Integriq\Service\Mail\CaseReferenceDetectorInterface;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcher;
@@ -206,6 +210,7 @@ use OCA\Integriq\Service\PaymentIntentService;
 use OCA\Integriq\Service\PaymentIntentServiceInterface;
 use OCA\Integriq\Service\PeppolTransmissionService;
 use OCA\Integriq\Service\PeppolTransmissionServiceInterface;
+use OCA\Integriq\Service\Portal\ActivityMappingTableInterface;
 use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
@@ -292,6 +297,7 @@ use OCA\Integriq\Service\VerzuimloketService;
 use OCA\Integriq\Service\VerzuimloketServiceInterface;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Service\WebhookSignatureServiceInterface;
+use OCA\Integriq\Service\ZgwVersionNegotiationService;
 use OCA\Integriq\Service\ZgwVersionTranslationService;
 use OCA\Integriq\Service\ZgwVersionTranslationServiceInterface;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
@@ -441,6 +447,9 @@ class ServiceRegistrarTest extends TestCase {
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
 		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
 		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
+		ToolPlatformDetailsInterface::class => LtiPlatformDetailsService::class,
+		ActivityMappingTableInterface::class => DsoActivityTable::class,
+		ApiVersionNegotiationInterface::class => ZgwVersionNegotiationService::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 

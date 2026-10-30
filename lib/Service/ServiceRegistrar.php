@@ -59,6 +59,7 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\Dso\DsoActivityOverview;
+use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
@@ -101,8 +102,10 @@ use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
 use OCA\Integriq\Service\Lti\LtiNrpsService;
 use OCA\Integriq\Service\Lti\LtiNrpsServiceInterface;
+use OCA\Integriq\Service\Lti\LtiPlatformDetailsService;
 use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
 use OCA\Integriq\Service\Lti\LtiPlatformLoginServiceInterface;
+use OCA\Integriq\Service\Lti\ToolPlatformDetailsInterface;
 use OCA\Integriq\Service\Mail\CaseReferenceDetector;
 use OCA\Integriq\Service\Mail\CaseReferenceDetectorInterface;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcher;
@@ -135,6 +138,7 @@ use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
+use OCA\Integriq\Service\Portal\ActivityMappingTableInterface;
 use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
@@ -658,5 +662,8 @@ final class ServiceRegistrar {
 		$context->registerServiceAlias(DocumentConnectionGuardInterface::class, DocumentConnectionGuard::class);
 		$context->registerServiceAlias(SubscriptionRegistryInterface::class, SubscriptionRegistry::class);
 		$context->registerServiceAlias(DocumentProviderRegistryInterface::class, DocumentGenerationProviderRegistry::class);
+		$context->registerServiceAlias(ToolPlatformDetailsInterface::class, LtiPlatformDetailsService::class);
+		$context->registerServiceAlias(ActivityMappingTableInterface::class, DsoActivityTable::class);
+		$context->registerServiceAlias(ApiVersionNegotiationInterface::class, ZgwVersionNegotiationService::class);
 	}//end registerInjectedHelpers()
 }

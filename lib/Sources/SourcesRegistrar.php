@@ -31,6 +31,8 @@ use OCA\Integriq\Sources\Roster\RosterDeliveryService;
 use OCA\Integriq\Sources\Roster\RosterDeliveryServiceInterface;
 use OCA\Integriq\Sources\Roster\RosterTargetConfiguration;
 use OCA\Integriq\Sources\Roster\RosterTargetConfigurationInterface;
+use OCA\Integriq\Sources\Swv\DossierHandoffAdapterInterface;
+use OCA\Integriq\Sources\Swv\SwvHandoffSourceAdapter;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -38,6 +40,11 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * does not name the classes behind them.
  *
  * @spec exclude container wiring only, the registrar has no behaviour of its own
+ *
+ * Naming every class it wires is what a registrar is for, so the coupling
+ * between objects is high by design.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 final class SourcesRegistrar {
 	/**
@@ -52,6 +59,7 @@ final class SourcesRegistrar {
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(RosterTargetConfigurationInterface::class, RosterTargetConfiguration::class);
 		$context->registerServiceAlias(RosterDeliveryServiceInterface::class, RosterDeliveryService::class);
+		$context->registerServiceAlias(DossierHandoffAdapterInterface::class, SwvHandoffSourceAdapter::class);
 		$this->registerPdokSourceAdapters(context: $context);
 		$this->registerPdokGeocodingSourceAdapter(context: $context);
 	}//end register()

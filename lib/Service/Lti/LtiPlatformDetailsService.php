@@ -40,7 +40,7 @@ use OCP\IURLGenerator;
  *
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-an-administrator-can-give-a-tool-the-platform-details-it-needs-req-ltil-004
  */
-class LtiPlatformDetailsService {
+class LtiPlatformDetailsService implements ToolPlatformDetailsInterface {
 
 	/**
 	 * Constructor.

@@ -32,11 +32,7 @@ use OCA\Integriq\PropertySource\PropertySourceResolverInterface;
  *
  * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-wkpb-restriction-is-registered-through-a-gateway-req-sg-009
  */
-class WkpbGateway {
-	/**
-	 * The gateway id.
-	 */
-	public const ID = 'wkpb';
+class WkpbGateway implements PropertyRestrictionGatewayInterface {
 
 	/**
 	 * Constructor.

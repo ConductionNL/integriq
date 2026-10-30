@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Service\Lti\LtiPlatformDetailsService;
+use OCA\Integriq\Service\Lti\ToolPlatformDetailsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -45,11 +45,11 @@ class LtiPlatformDetailsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest                  $request The request.
-	 * @param LtiPlatformDetailsService $details Builds the six values.
+	 * @param ToolPlatformDetailsInterface $details Builds the six values.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly LtiPlatformDetailsService $details,
+		private readonly ToolPlatformDetailsInterface $details,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
