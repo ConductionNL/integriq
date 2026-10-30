@@ -363,7 +363,7 @@ class StUFXMLBuilder {
 	 *
 	 * @return string The complete SOAP fault XML string.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-an-unanswered-query-is-a-fault-never-an-empty-answer
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-an-unanswered-query-is-a-fault-never-an-empty-answer
 	 */
 	public function buildFo02(string $code, string $omschrijving, array $stuurgegevens, string $plek='server'): string {
 		return $this->buildFoutbericht(berichtcode: 'Fo02', code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);

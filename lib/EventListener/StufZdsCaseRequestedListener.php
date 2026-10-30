@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
  */
 class StufZdsCaseRequestedListener implements IEventListener {
 
@@ -64,7 +64,7 @@ class StufZdsCaseRequestedListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof StufZdsCaseRequestedEvent) === false) {

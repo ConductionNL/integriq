@@ -23,7 +23,14 @@
  *
  * @return {{actions: Array, note: string, count?: number, empty?: {name: string}}} The header.
  */
-export function leafHeader({ loading, error, count, emptyLabel, note = '', actions = [] }) {
+export function leafHeader({
+	loading,
+	error,
+	count,
+	emptyLabel,
+	note = '',
+	actions = [],
+}) {
 	const header = { actions, note }
 	if (loading === true || error !== '') {
 		return header
@@ -53,7 +60,14 @@ export function leafHeader({ loading, error, count, emptyLabel, note = '', actio
  *
  * @return {{count: number, noun: string, rows: Array, actions: Array, unavailable?: boolean}|null} The summary, or null while loading.
  */
-export function leafSummary({ loading, error, count, noun, rows = [], actions = [] }) {
+export function leafSummary({
+	loading,
+	error,
+	count,
+	noun,
+	rows = [],
+	actions = [],
+}) {
 	if (loading === true) {
 		return null
 	}
@@ -100,13 +114,27 @@ export const leafReportMixin = {
 		/** @return {object} The header for a carding host. */
 		hostHeader() {
 			const report = this.leafReport
-			return leafHeader({ loading: this.loading, error: this.error || '', count: report.count, emptyLabel: report.emptyLabel, note: report.note || '', actions: report.actions || [] })
+			return leafHeader({
+				loading: this.loading,
+				error: this.error || '',
+				count: report.count,
+				emptyLabel: report.emptyLabel,
+				note: report.note || '',
+				actions: report.actions || [],
+			})
 		},
 
 		/** @return {object|null} The summary for a "linked" card. */
 		hostSummary() {
 			const report = this.leafReport
-			return leafSummary({ loading: this.loading, error: this.error || '', count: report.count, noun: report.noun, rows: report.rows || [], actions: report.actions || [] })
+			return leafSummary({
+				loading: this.loading,
+				error: this.error || '',
+				count: report.count,
+				noun: report.noun,
+				rows: report.rows || [],
+				actions: report.actions || [],
+			})
 		},
 	},
 

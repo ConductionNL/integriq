@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
  *     circuit breaker, audit log, retry job, conclusion event and, since the credentials moved out of the persisted
  *     envelope, the message builder and credential resolver that add the UsernameToken at send time.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 class StufZdsOutbound implements StufZdsOutboundInterface {
 
@@ -108,7 +108,7 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 *
 	 * @return array The result (ZdsResult).
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function kennisgeving(array $source, string $operation, array $message, array $context): array {
 		$row      = $this->openRow(source: $source, operation: $operation, message: $message, context: $context, keepEnvelope: true);
@@ -129,7 +129,7 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 *
 	 * @return array The result (ZdsResult) plus `answer`, the answer XML.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function question(array $source, string $operation, array $message, array $context): array {
 		$row      = $this->openRow(source: $source, operation: $operation, message: $message, context: $context, keepEnvelope: false);
@@ -163,7 +163,7 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function retry(string $messageId): void {
 		$row = $this->log->find(messageId: $messageId);

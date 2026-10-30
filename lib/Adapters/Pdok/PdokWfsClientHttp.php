@@ -130,7 +130,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	 *
 	 * @return array<string,mixed> Parsed GeoJSON FeatureCollection.
 	 *
-	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
 	 */
 	public function getFeature(
 		string $dataset,

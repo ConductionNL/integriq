@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCP\EventDispatcher\Event;
 /**
  * A confirmation envelope a sibling app received, for integriq to conclude.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
 class StufZdsConfirmationReceivedEvent extends Event {
 
@@ -69,7 +69,7 @@ class StufZdsConfirmationReceivedEvent extends Event {
 	 *
 	 * @return string The app id.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function getSourceApp(): string {
 		return $this->sourceApp;
@@ -80,7 +80,7 @@ class StufZdsConfirmationReceivedEvent extends Event {
 	 *
 	 * @return string The envelope.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function getRawXml(): string {
 		return $this->rawXml;
@@ -94,7 +94,7 @@ class StufZdsConfirmationReceivedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function answer(int $statusCode, string $body): void {
 		$this->statusCode = $statusCode;
@@ -106,7 +106,7 @@ class StufZdsConfirmationReceivedEvent extends Event {
 	 *
 	 * @return bool True once answered.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function isHandled(): bool {
 		return $this->statusCode !== null;
@@ -117,7 +117,7 @@ class StufZdsConfirmationReceivedEvent extends Event {
 	 *
 	 * @return int|null The status, null while unhandled.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function getStatusCode(): ?int {
 		return $this->statusCode;
@@ -128,7 +128,7 @@ class StufZdsConfirmationReceivedEvent extends Event {
 	 *
 	 * @return string The SOAP body, '' while unhandled.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function getBody(): string {
 		return $this->body;
