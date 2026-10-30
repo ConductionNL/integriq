@@ -15,7 +15,7 @@ This is integriq's share. The counterpart changes are:
 
 ## What changes
 
-- **A source shows how it performs.** For the last 24 hours: calls, errors by kind, average and slowest response time, from integriq's own call log. Shown on the source page and on a connection monitor page reached from Operational health.
+- **A source shows how it performs.** For the last 24 hours: calls, errors by kind, average and slowest response time, from integriq's own call log. Shown on a connection monitor page, reached from the source page's Monitor action and from the BRP monitor menu entry.
 - **A source shows when its certificate expires.** When the source's mTLS material is a keepiq reference, integriq asks keepiq for the expiry date and shows it with days left and a link to the secret in keepiq to renew it. integriq never sees or stores the expiry by parsing the certificate itself once the reference is in place.
 - **Expiry alerts are integriq's.** The hourly connection health job opens an alert at 30, 14 and 7 days, using the existing threshold and alert machinery (REQ-CRUN-004, REQ-CRUN-005).
 - **mTLS material can be a keepiq reference.** `MtlsConfigResolver` accepts `{credentialRef}` for the certificate, key, passphrase and CA bundle, resolved through the credential broker at call time. Inline encrypted material keeps working.
