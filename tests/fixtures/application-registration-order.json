@@ -85,7 +85,6 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Mtls\\MtlsConfigResolverInterface, OCA\\Integriq\\Service\\Mtls\\MtlsConfigResolver)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Ownership\\RecordOwnershipServiceInterface, OCA\\Integriq\\Service\\Ownership\\RecordOwnershipService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Datasource\\DashboardDatasourceServiceInterface, OCA\\Integriq\\Service\\Datasource\\DashboardDatasourceService)",
-	"context.registerServiceAlias(OCA\\Integriq\\Service\\Helper\\ExecutionTraceContextInterface, OCA\\Integriq\\Service\\Helper\\ExecutionTraceContext)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\SourceMappingServiceInterface, OCA\\Integriq\\Service\\SourceMappingService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Mail\\MailIntakeServiceInterface, OCA\\Integriq\\Service\\Mail\\MailIntakeService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\FlowGraphMigrationServiceInterface, OCA\\Integriq\\Service\\FlowGraphMigrationService)",

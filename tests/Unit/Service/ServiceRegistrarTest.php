@@ -132,8 +132,6 @@ use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Forms\FormsSyncAdapterInterface;
 use OCA\Integriq\Service\FscCallService;
 use OCA\Integriq\Service\FscCallServiceInterface;
-use OCA\Integriq\Service\Helper\ExecutionTraceContext;
-use OCA\Integriq\Service\Helper\ExecutionTraceContextInterface;
 use OCA\Integriq\Service\IBabsConnectorService;
 use OCA\Integriq\Service\IBabsConnectorServiceInterface;
 use OCA\Integriq\Service\Intake\IntakeGroups;
@@ -398,7 +396,6 @@ class ServiceRegistrarTest extends TestCase {
 		MtlsConfigResolverInterface::class => MtlsConfigResolver::class,
 		RecordOwnershipServiceInterface::class => RecordOwnershipService::class,
 		DashboardDatasourceServiceInterface::class => DashboardDatasourceService::class,
-		ExecutionTraceContextInterface::class => ExecutionTraceContext::class,
 		SourceMappingServiceInterface::class => SourceMappingService::class,
 		MailIntakeServiceInterface::class => MailIntakeService::class,
 		FlowGraphMigrationServiceInterface::class => FlowGraphMigrationService::class,
