@@ -26,15 +26,11 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
- * Binds each Flow contract to the class that implements it, so callers
- * outside the Flow component depend on the contract only.
+ * Entry point of this component's container wiring for Application.
  *
- * Naming every contract and its class is this class's whole job, so its
- * coupling grows with the number of contracts by design.
+ * The bindings themselves live in {@see FlowBindings}, inside the component.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- *
- * @spec exclude container wiring only, the registrar has no behaviour of its own
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class FlowRegistrar {
 	/**
@@ -47,14 +43,8 @@ final class FlowRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$context->registerServiceAlias(SynchronizationRunNodeInterface::class, SynchronizationRunNode::class);
-		$context->registerServiceAlias(ContractCommitNodeInterface::class, ContractCommitNode::class);
-		$context->registerServiceAlias(SourcePaginateNodeInterface::class, SourcePaginateNode::class);
-		$context->registerServiceAlias(ContractSweepNodeInterface::class, ContractSweepNode::class);
-		$context->registerServiceAlias(ContractMatchNodeInterface::class, ContractMatchNode::class);
-		$context->registerServiceAlias(FetchFileNodeInterface::class, FetchFileNode::class);
-		$context->registerServiceAlias(ApplyMappingNodeInterface::class, ApplyMappingNode::class);
-	}
+		(new FlowBindings())->register(context: $context);
+	}//end register()
 
 	/**
 	 * Register the flow nodes this app contributes to OpenRegister's flow engine.
@@ -70,28 +60,6 @@ final class FlowRegistrar {
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function registerListeners(IEventDispatcher $dispatcher): void {
-		// Deliberately NOT guarded on the OR event class existing.
-		//
-		// The guard that used to stand here ran during register(), and at that
-		// point OpenRegister's classes are not autoloadable yet — apps are
-		// registered in an order that puts `integriq` before
-		// `openregister`. So `class_exists()` answered FALSE on a perfectly
-		// healthy instance and this returned early: the nodes never registered,
-		// `source-call` and `synchronization-run` were absent from the palette,
-		// and a flow naming either failed only when it RAN. Verified on a clean
-		// install — the guard logged `class_exists at register(): false`, and
-		// removing it took the registry from 10 nodes to 12.
-		//
-		// Dropping it is safe, which is why the guard was never buying anything:
-		// `::class` resolves to a string and does not autoload, and
-		// addServiceListener() is lazy — FlowNodeListener is only constructed if
-		// the event actually fires, which can only happen when OpenRegister is
-		// present and dispatching it. On an instance whose OpenRegister predates
-		// the flow engine, nothing dispatches and this stays inert, which is
-		// exactly the resilience the guard was reaching for.
-		$dispatcher->addServiceListener(
-			eventName: \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
-			className: \OCA\Integriq\Flow\FlowNodeListener::class
-		);
+		(new FlowBindings())->registerListeners(dispatcher: $dispatcher);
 	}//end registerListeners()
-}
+}//end class
