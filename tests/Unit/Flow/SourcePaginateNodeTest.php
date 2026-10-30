@@ -36,6 +36,7 @@ use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SourcePaginateNode;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -332,6 +333,50 @@ class SourcePaginateNodeTest extends TestCase {
 	}//end testEmitsOneItemPerPageWithTruthfulCounts()
 
 	/**
+	 * Regression coverage: the per-page object/page counts used to be
+	 * scattered across the emitted items (`page.count`, `page.pages`) with no
+	 * single run-level total, so a flow run's log carried no way to know how
+	 * many objects or pages this hop fetched overall.
+	 *
+	 * `pages` and `sourcePages` are deliberately different numbers here (3 vs
+	 * 2): `pages` is this node's OWN re-chunking of the fetched objects for
+	 * downstream item emission (`pageSize` 2 over 5 objects is 3 chunks),
+	 * while `sourcePages` is the engine's own count of pages it actually
+	 * fetched from the source. Conflating them previously made the Logboek
+	 * report a page count the source never saw.
+	 */
+	public function testItReportsTheTotalObjectsAndPagesFetched(): void {
+		$this->givenOwner();
+		$this->synchronizationService->objects = $this->objects(5);
+		$this->synchronizationService->fetchInfoToWrite = [
+			'complete' => true,
+			'pagesFetched' => 2,
+			'failureReason' => null,
+		];
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			[['json' => ['trigger' => 'manual']]],
+			['synchronization' => 'demo-sync', 'pageSize' => 2, 'output' => 'page'],
+			$this->context() + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			[
+				'fetch' => [
+					'objects' => ['count' => 5],
+					'pages' => ['count' => 3],
+					'sourcePages' => ['count' => 2],
+					'errors' => ['count' => 0],
+				],
+			],
+			$report->take()
+		);
+
+	}//end testItReportsTheTotalObjectsAndPagesFetched()
+
+	/**
 	 * The engine's own completeness verdict rides on every page.
 	 *
 	 * This is what the stale sweep downstream refuses to delete without: a
@@ -526,6 +571,41 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->assertStringContainsString('gateway timeout', $error['message']);
 
 	}//end testAFailedFetchContinuesWithAnErrorItem()
+
+	/**
+	 * Under `continue` every failed fetch is counted in the hop report.
+	 *
+	 * Without the `errors` bucket a run whose every fetch failed reported
+	 * `objects 0 / pages 0`, the same summary as a source that is empty.
+	 *
+	 * @return void
+	 */
+	public function testItReportsEachFailedFetchUnderContinue(): void {
+		$this->givenOwner();
+		$this->synchronizationService->throwOnFetch = new RuntimeException('gateway timeout');
+
+		$report = new FlowStepReport();
+
+		$out = $this->node->execute(
+			[['json' => ['n' => 1]], ['json' => ['n' => 2]]],
+			['synchronization' => 'demo-sync', 'onError' => 'continue'],
+			$this->context() + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertCount(expectedCount: 2, haystack: $out);
+		$this->assertSame(
+			expected: [
+				'fetch' => [
+					'objects' => ['count' => 0],
+					'pages' => ['count' => 0],
+					'sourcePages' => ['count' => 0],
+					'errors' => ['count' => 2],
+				],
+			],
+			actual: $report->take()
+		);
+
+	}//end testItReportsEachFailedFetchUnderContinue()
 
 	/**
 	 * `dead_letter` is absorbed like `continue`: the item carries explicit

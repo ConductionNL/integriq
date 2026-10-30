@@ -91,6 +91,7 @@ namespace OCA\Integriq\Flow;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -382,6 +383,10 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 
 		$emitted = [];
+		$totalObjects = 0;
+		$totalPages = 0;
+		$totalSourcePages = 0;
+		$totalErrors = 0;
 		foreach (array_values($items) as $index => $item) {
 			try {
 				[$objects, $fetchInfo] = $this->fetch(reference: $reference);
@@ -393,6 +398,10 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 					stepId: $stepId,
 					reference: $reference
 				);
+
+				$totalObjects += count($objects);
+				$totalPages += count($pages);
+				$totalSourcePages += (int)($fetchInfo['pagesFetched'] ?? 0);
 
 				$emitted = array_merge(
 					$emitted,
@@ -424,6 +433,10 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 					throw $exception;
 				}
 
+				// Counted so a run whose every fetch failed does not report
+				// the same `objects 0 / pages 0` as an empty source.
+				$totalErrors++;
+
 				$emitted[] = $this->errorItem(
 					item: $item,
 					index: $index,
@@ -434,8 +447,41 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 			}//end try
 		}//end foreach
 
+		$this->writeReport(
+			context: $context,
+			report: [
+				'objects' => ['count' => $totalObjects],
+				// This node's own re-chunking of the fetched objects for
+				// downstream item emission -- NOT how many pages the source
+				// was actually asked for. See `sourcePages` for that.
+				'pages' => ['count' => $totalPages],
+				'sourcePages' => ['count' => $totalSourcePages],
+				'errors' => ['count' => $totalErrors],
+			]
+		);
+
 		return $emitted;
 	}//end paginateForEachItem()
+
+	/**
+	 * Write this hop's summary onto the run log, via the context's report handle.
+	 *
+	 * Silently a no-op when the handle is absent — a run from before this
+	 * handle existed, or a caller that never wired one.
+	 *
+	 * @param array $context The run context.
+	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
+	 *
+	 * @return void
+	 */
+	private function writeReport(array $context, array $report): void {
+		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($handle instanceof FlowStepReport) === false) {
+			return;
+		}
+
+		$handle->put(key: 'fetch', value: $report);
+	}//end writeReport()
 
 	/**
 	 * Fetch every object the source holds, through the existing engine.
