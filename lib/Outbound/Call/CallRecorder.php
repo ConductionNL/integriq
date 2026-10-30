@@ -137,7 +137,8 @@ class CallRecorder implements CallRecorderInterface {
 			'target' => (string)($call['target'] ?? ''),
 			'traceId' => (string)($call['traceId'] ?? ''),
 			'direction' => 'outbound',
-			'request' => $this->redactExchange(exchange: $this->asArray(value: ($call['request'] ?? []))),
+			// The stored request is what a replay sends, so it keeps BodyRedactor's rules only.
+			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? []))),
 			'response' => $this->redactExchange(exchange: $this->asArray(value: ($call['response'] ?? []))),
 			'statusCode' => $statusCode,
 			'statusMessage' => (string)($call['statusMessage'] ?? ''),
@@ -365,12 +366,14 @@ class CallRecorder implements CallRecorderInterface {
 	}//end isSuccess()
 
 	/**
-	 * Redact a request or response before it is stored: the BodyRedactor's
-	 * rules, plus the rules CallService's call log applies (a session-, token-
-	 * or cookie-named header, and the tokens an upstream issued in a JSON body).
-	 * Only the stored copy is redacted; the caller keeps what it sent and got.
+	 * Redact a response before it is stored: the BodyRedactor's rules, plus the
+	 * rules CallService's call log applies (a session-, token- or cookie-named
+	 * header, and the tokens an upstream issued in a JSON body). Never used for
+	 * the stored request: a replay sends that request, and a masked session
+	 * header or token would go out as the placeholder. Only the stored copy is
+	 * redacted; the caller keeps what it got.
 	 *
-	 * @param array<string,mixed> $exchange The request or response.
+	 * @param array<string,mixed> $exchange The response.
 	 *
 	 * @return array<string,mixed> The redacted copy.
 	 *

@@ -267,7 +267,8 @@ class CallReplayServiceTest extends TestCase {
 
 	/**
 	 * A session header, a Set-Cookie and the tokens an upstream issued never
-	 * reach the record, on the first call and on a replayed attempt.
+	 * reach the stored response, while the stored request a replay sends keeps
+	 * its session header and body intact.
 	 *
 	 * @return void
 	 */
@@ -282,7 +283,7 @@ class CallReplayServiceTest extends TestCase {
 				'request' => [
 					'method' => 'POST',
 					'headers' => ['X-Session' => 's1', 'Content-Type' => 'application/json'],
-					'body' => '{"grant_type":"client_credentials"}',
+					'body' => '{"access_token":"t"}',
 				],
 				'response' => [
 					'headers' => ['Set-Cookie' => ['sid=1'], 'X-Session-Id' => 'live-session-42'],
@@ -292,16 +293,24 @@ class CallReplayServiceTest extends TestCase {
 			]
 		);
 
-		$record = $this->records[(string)$entity->getUuid()];
+		$uuid = (string)$entity->getUuid();
+		$record = $this->records[$uuid];
 
-		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['request']['headers']['X-Session']);
-		$this->assertSame('application/json', $record['request']['headers']['Content-Type']);
+		// The stored response masks them.
 		$this->assertSame([BodyRedactor::PLACEHOLDER], $record['response']['headers']['Set-Cookie']);
 		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['response']['headers']['X-Session-Id']);
 		$this->assertStringContainsString('"meta":{}', $record['response']['body']);
-		foreach (['s1', 'sid=1', 'live-session-42', 'abc123xyz', 'eyJ.a.b', 'r-1'] as $secret) {
-			$this->assertStringNotContainsString($secret, json_encode($record), $secret);
+		foreach (['sid=1', 'live-session-42', 'abc123xyz', 'eyJ.a.b', 'r-1'] as $secret) {
+			$this->assertStringNotContainsString($secret, json_encode($record['response']), $secret);
 		}
+
+		// The stored request is what a replay sends, so its session header and body go out intact.
+		$dispatcher = new RecordingDispatcher(200);
+		$this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertCount(1, $dispatcher->sent);
+		$this->assertSame('s1', $dispatcher->sent[0]['request']['headers']['X-Session']);
+		$this->assertSame('{"access_token":"t"}', $dispatcher->sent[0]['request']['body']);
 
 	}//end testSessionHeadersAndIssuedTokensAreRedactedBeforeTheWrite()
 
