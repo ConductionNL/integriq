@@ -18,6 +18,8 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\Synchronization\FileFetchItem;
+use OCA\Integriq\Service\Synchronization\FileFetchRequest;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
@@ -1983,14 +1985,15 @@ HTML;
 			}
 		);
 
-		$filename = null;
 		$args = [
-			['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
-			'/attachment/1',
-			['write' => false, 'sourceConfiguration' => []],
-			'object-1',
-			[],
-			&$filename,
+			new FileFetchRequest(
+				source: ['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
+				config: ['write' => false, 'sourceConfiguration' => []],
+				endpoint: '/attachment/1',
+				objectId: 'object-1',
+				ruleId: 0
+			),
+			new FileFetchItem(endpoint: '/attachment/1', objectId: 'object-1'),
 		];
 
 		$method = new \ReflectionMethod(SynchronizationService::class, 'fetchFile');
@@ -2041,18 +2044,19 @@ HTML;
 			}
 		);
 
-		$filename = null;
 		$args = [
-			['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
-			'/attachment/1',
-			[
-				'write' => false,
-				'contentPath' => 'content',
-				'sourceConfiguration' => [],
-			],
-			'object-1',
-			[],
-			&$filename,
+			new FileFetchRequest(
+				source: ['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
+				config: [
+					'write' => false,
+					'contentPath' => 'content',
+					'sourceConfiguration' => [],
+				],
+				endpoint: '/attachment/1',
+				objectId: 'object-1',
+				ruleId: 0
+			),
+			new FileFetchItem(endpoint: '/attachment/1', objectId: 'object-1'),
 		];
 
 		$method = new \ReflectionMethod(SynchronizationService::class, 'fetchFile');
@@ -2262,10 +2266,13 @@ HTML;
 		$method->setAccessible(true);
 		$method->invoke(
 			$this->service,
-			$source,
-			['sourceConfiguration' => []],
-			$endpoints,
-			'11111111-2222-3333-4444-555555555555'
+			new FileFetchRequest(
+				source: $source,
+				config: ['sourceConfiguration' => []],
+				endpoint: $endpoints,
+				objectId: '11111111-2222-3333-4444-555555555555',
+				ruleId: 0
+			)
 		);
 	}//end runMultiFileFetch()
 

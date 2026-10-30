@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use Exception;
 use GuzzleHttp\Promise\FulfilledPromise;
+use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\RejectedPromise;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
@@ -50,6 +51,9 @@ use ReflectionMethod;
  * FETCH_FILE_RULE_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\SynchronizationService
+ * @uses   \OCA\Integriq\Service\Synchronization\FileFetchItem
+ * @uses   \OCA\Integriq\Service\Synchronization\FileFetchRequest
+ * @uses   \OCA\Integriq\Service\Synchronization\FileFetchRun
  */
 class SynchronizationFetchFileRuleTest extends TestCase {
 
@@ -101,6 +105,15 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 	}//end answer()
 
 	/**
+	 * The names of the files the object already has.
+	 *
+	 * @return list<string>
+	 */
+	public function attached(): array {
+		return ($this->case['attached'] ?? ['keep.pdf', 'old.pdf']);
+	}//end attached()
+
+	/**
 	 * The call log a source call answers with.
 	 *
 	 * @param string $endpoint The called endpoint.
@@ -118,7 +131,7 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 		$callLog->setObject(
 			[
 				'request' => ['url' => 'https://files.invalid/' . ltrim($endpoint, '/')],
-				'response' => ['statusCode' => 200, 'headers' => ['Content-Type' => 'application/pdf'], 'body' => $body],
+				'response' => ['statusCode' => 200, 'headers' => ($this->case['headers'] ?? ['Content-Type' => 'application/pdf']), 'body' => $body],
 			]
 		);
 
@@ -164,6 +177,29 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 			}
 
 			/**
+			 * Records an add.
+			 *
+			 * @param mixed $objectEntity The object id.
+			 * @param string $fileName The name.
+			 * @param mixed $content The content.
+			 * @param bool $share Share flag.
+			 * @param array|null $tags Tags.
+			 * @param mixed $_schema Schema.
+			 * @param mixed $_register Register.
+			 * @param mixed $registerId Register id.
+			 *
+			 * @return mixed
+			 */
+			public function addFile($objectEntity, $fileName, $content, $share = false, $tags = [], $_schema = null, $_register = null, $registerId = null) {
+				if (is_resource($content) === true) {
+					$content = stream_get_contents($content);
+				}
+
+				$this->test->record('file.addFile', [$objectEntity, $fileName, $content, $share, $tags, $_schema, $_register, $registerId]);
+				return 'file-node';
+			}
+
+			/**
 			 * Records a publish.
 			 *
 			 * @param mixed $object The object.
@@ -186,7 +222,7 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 			public function getFiles($object) {
 				$this->test->record('file.getFiles', [$object->getUuid()]);
 				$files = [];
-				foreach (['keep.pdf', 'old.pdf'] as $name) {
+				foreach ($this->test->attached() as $name) {
 					$files[] = new class($name) {
 						/**
 						 * @param string $name The file name.
@@ -383,7 +419,18 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 					}
 				}
 
-				return new FulfilledPromise($this->callLog(endpoint: $endpoint, sink: $sink));
+				$callLog = $this->callLog(endpoint: $endpoint, sink: $sink);
+				if (($this->case['lazy'] ?? false) === true) {
+					// Stays pending until the pool waits on it, so the admission gate sees it in flight.
+					$promise = new Promise(
+						function () use (&$promise, $callLog): void {
+							$promise->resolve($callLog);
+						}
+					);
+					return $promise;
+				}
+
+				return new FulfilledPromise($callLog);
 			}
 		);
 
@@ -480,7 +527,13 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 			'indexed-limits' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => ['/a.pdf', '/b.pdf', '/c.pdf']], 'sourceConfiguration' => ['maxConcurrentFetches' => 1, 'maxInFlightFetchBytes' => 10], 'contentLength' => '20'],
 			'indexed-limits-clamped' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => ['/a.pdf']], 'sourceConfiguration' => ['maxConcurrentFetches' => 999, 'maxInFlightFetchBytes' => -1, 'maxFileSize' => -5]],
 			'indexed-too-large' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => ['/a.pdf', '/b.pdf']], 'sourceConfiguration' => ['maxFileSize' => 5], 'contentLength' => '20'],
-			'multi-file-objects' => ['config' => $file(['filePath' => 'files', 'objectIdPath' => 'owner']), 'data' => ['files' => [['endpoint' => '/x.pdf', 'filename' => 'x.pdf', 'owner' => self::UUID, 'tags' => ['t']], ['filename' => 'skip.pdf'], ['endpoint' => '/y.pdf', 'published' => 'false', 'registerId' => 'r2']]]],
+			'multi-file-objects' => ['config' => $file(['filePath' => 'files', 'objectIdPath' => 'owner']), 'data' => ['files' => [['endpoint' => '/x.pdf', 'filename' => 'x.pdf', 'owner' => 'e1d7f6a5-4444-4555-8666-c77788889999', 'tags' => ['t']], ['filename' => 'skip.pdf'], ['endpoint' => '/y.pdf', 'published' => 'false', 'registerId' => 'r2']]]],
+			'multi-labels-as-tags' => ['config' => $file(['filePath' => 'files', 'useLabelsAsTags' => true]), 'data' => ['files' => [['endpoint' => '/x.pdf', 'label' => 'L1'], ['endpoint' => '/y.pdf', 'tags' => ['a', 'b']]]]],
+			'indexed-renamed-by-header' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => ['/get?id=1']], 'headers' => ['Content-Disposition' => 'attachment; filename="renamed.pdf"'], 'attached' => ['renamed.pdf', 'old.pdf']],
+			'indexed-lazy-count-cap' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => ['/a.pdf', '/b.pdf', '/c.pdf']], 'lazy' => true, 'sourceConfiguration' => ['maxConcurrentFetches' => 1]],
+			'indexed-lazy-byte-budget' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => ['/a.pdf', '/b.pdf', '/c.pdf']], 'lazy' => true, 'sourceConfiguration' => ['maxConcurrentFetches' => 5, 'maxInFlightFetchBytes' => 10], 'contentLength' => '20'],
+			'indexed-lazy-under-budget' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => ['/a.pdf', '/b.pdf']], 'lazy' => true, 'sourceConfiguration' => ['maxConcurrentFetches' => 5, 'maxInFlightFetchBytes' => 100], 'contentLength' => '20'],
+			'assoc-object-missing-adds' => ['config' => $file(['filePath' => 'doc', 'register' => 'r', 'schema' => 's']), 'data' => ['doc' => ['endpoint' => '/c.pdf', 'filename' => 'c.pdf', 'registerId' => 3]], 'answers' => ['or.find' => ['missing']]],
 			'multi-object-missing' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => [['endpoint' => '/x.pdf'], ['endpoint' => '/y.pdf']]], 'answers' => ['or.find' => ['ok', 'ok', 'missing']]],
 			'empty-with-object' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => []]],
 			'empty-without-object' => ['config' => $file(['filePath' => 'files']), 'objectId' => null, 'data' => ['files' => []]],
