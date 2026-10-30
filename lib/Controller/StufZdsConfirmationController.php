@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCP\IRequest;
 /**
  * Receives asynchronous StUF-ZDS confirmations.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
 class StufZdsConfirmationController extends Controller {
 
@@ -69,7 +69,7 @@ class StufZdsConfirmationController extends Controller {
 	 *
 	 * @return DataDisplayResponse A Bv03 (200) or a Fo03 (400, 422 or 503).
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -85,7 +85,7 @@ class StufZdsConfirmationController extends Controller {
 	 *
 	 * @return string The raw body, at most one byte past the ceiling (the receiver answers 413); '' when there is none.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	protected function readRawBody(): string {
 		return $this->requestBody->read();

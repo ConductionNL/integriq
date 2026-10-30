@@ -23,7 +23,14 @@
  *
  * @return {{actions: Array, note: string, count?: number, empty?: {name: string}}} The header.
  */
-export function leafHeader({ loading, error, count, emptyLabel, note = '', actions = [] }) {
+export function leafHeader({
+	loading,
+	error,
+	count,
+	emptyLabel,
+	note = '',
+	actions = [],
+}) {
 	const header = { actions, note }
 	if (loading === true || error !== '') {
 		return header
@@ -38,8 +45,10 @@ export function leafHeader({ loading, error, count, emptyLabel, note = '', actio
 /**
  * The summary for a "linked" card: the count, the plural noun for its
  * "nothing linked" line, a row per item and the actions. Nothing while the
- * read runs or after it failed, so the card never says "nothing linked" when
- * it could not tell.
+ * read runs. After a failed read it reports `{ unavailable: true }` with no
+ * count, noun or rows: the card replaces an earlier read's entry (a re-read
+ * after the record changed) and, with no noun, never lists the leaf as
+ * "nothing linked" when it could not tell.
  *
  * @param {object} state The leaf's state.
  * @param {boolean} state.loading Whether the read is still running.
@@ -49,11 +58,21 @@ export function leafHeader({ loading, error, count, emptyLabel, note = '', actio
  * @param {Array<{label: string, href?: string, icon?: string}>} [state.rows] A row per item.
  * @param {Array<{label: string, run: () => void}>} [state.actions] The actions.
  *
- * @return {{count: number, noun: string, rows: Array, actions: Array}|null} The summary, or null.
+ * @return {{count: number, noun: string, rows: Array, actions: Array, unavailable?: boolean}|null} The summary, or null while loading.
  */
-export function leafSummary({ loading, error, count, noun, rows = [], actions = [] }) {
-	if (loading === true || error !== '') {
+export function leafSummary({
+	loading,
+	error,
+	count,
+	noun,
+	rows = [],
+	actions = [],
+}) {
+	if (loading === true) {
 		return null
+	}
+	if (error !== '') {
+		return { count: 0, noun: '', rows: [], actions: [], unavailable: true }
 	}
 	return { count, noun, rows: count > 0 ? rows : [], actions }
 }
@@ -95,13 +114,27 @@ export const leafReportMixin = {
 		/** @return {object} The header for a carding host. */
 		hostHeader() {
 			const report = this.leafReport
-			return leafHeader({ loading: this.loading, error: this.error || '', count: report.count, emptyLabel: report.emptyLabel, note: report.note || '', actions: report.actions || [] })
+			return leafHeader({
+				loading: this.loading,
+				error: this.error || '',
+				count: report.count,
+				emptyLabel: report.emptyLabel,
+				note: report.note || '',
+				actions: report.actions || [],
+			})
 		},
 
 		/** @return {object|null} The summary for a "linked" card. */
 		hostSummary() {
 			const report = this.leafReport
-			return leafSummary({ loading: this.loading, error: this.error || '', count: report.count, noun: report.noun, rows: report.rows || [], actions: report.actions || [] })
+			return leafSummary({
+				loading: this.loading,
+				error: this.error || '',
+				count: report.count,
+				noun: report.noun,
+				rows: report.rows || [],
+				actions: report.actions || [],
+			})
 		},
 	},
 

@@ -34,21 +34,43 @@ describe('connection monitor manifest fragment', () => {
 
 	it('reads every widget from the monitor endpoint for the source in the route', () => {
 		for (const widget of page.config.widgets) {
-			expect(widget.content.endpointSource).toMatchObject({ url: '/apps/integriq/api/connection-monitor', params: { source: '@route.id' } })
+			expect(widget.content.endpointSource).toMatchObject({
+				url: '/apps/integriq/api/connection-monitor',
+				params: { source: '@route.id' },
+			})
 		}
-		expect(page.config.kpiRow).toEqual(['monitor-calls', 'monitor-slowest', 'monitor-errors', 'monitor-average'])
+		expect(page.config.kpiRow).toEqual([
+			'monitor-calls',
+			'monitor-slowest',
+			'monitor-errors',
+			'monitor-average',
+		])
 	})
 
 	it('makes the BRP monitor a menu entry naming its source', () => {
 		const entry = merged.menu.find((m) => m.id === 'BrpMonitor')
-		expect(entry).toMatchObject({ route: 'ConnectionMonitor', params: { id: 'brp-haalcentraal' }, permission: 'admin' })
+		expect(entry).toMatchObject({
+			route: 'ConnectionMonitor',
+			params: { id: 'brp-haalcentraal' },
+			permission: 'admin',
+		})
 	})
 
 	it('translates what the page shows into Dutch', () => {
-		const strings = [page.title, page.config.description, entryLabel(), ...page.config.headerActions.map((a) => a.label)]
+		const strings = [
+			page.title,
+			page.config.description,
+			entryLabel(),
+			...page.config.headerActions.map((a) => a.label),
+		]
 		for (const widget of page.config.widgets) {
-			strings.push(widget.title, widget.content.label, widget.content.emptyText, widget.content.link?.label)
-			for (const field of (widget.content.fields || [])) {
+			strings.push(
+				widget.title,
+				widget.content.label,
+				widget.content.emptyText,
+				widget.content.link?.label,
+			)
+			for (const field of widget.content.fields || []) {
 				strings.push(field.label)
 			}
 		}

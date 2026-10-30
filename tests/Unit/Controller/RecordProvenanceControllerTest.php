@@ -21,11 +21,14 @@ use OCA\Integriq\Controller\RecordProvenanceController;
 use OCA\Integriq\Service\RecordProvenanceService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * 400 without the three parameters, 404 for a record outside the caller's rights, the provenance otherwise.
@@ -40,15 +43,23 @@ final class RecordProvenanceControllerTest extends TestCase {
 	 * @param array<string, string> $params     The request parameters.
 	 * @param ObjectEntity|null      $record     What the rights-checked read returns.
 	 * @param RecordProvenanceService $provenance The service.
+	 * @param LoggerInterface|null    $logger     The logger, a stub when null.
+	 * @param Throwable|null          $failure    What the read throws when there is no record.
 	 *
 	 * @return RecordProvenanceController
 	 */
-	private function controller(array $params, ?ObjectEntity $record, RecordProvenanceService $provenance): RecordProvenanceController {
+	private function controller(
+		array $params,
+		?ObjectEntity $record,
+		RecordProvenanceService $provenance,
+		?LoggerInterface $logger = null,
+		?Throwable $failure = null
+	): RecordProvenanceController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(fn (string $key, $default = null) => ($params[$key] ?? $default));
 		$objects = $this->createMock(OrObjectService::class);
 		if ($record === null) {
-			$objects->method('find')->willThrowException(new RuntimeException('not found'));
+			$objects->method('find')->willThrowException($failure ?? new DoesNotExistException('not found'));
 		} else {
 			$objects->expects($this->once())->method('find')
 				->with('case-82', 'dossiq', 'case', true, true)
@@ -58,7 +69,7 @@ final class RecordProvenanceControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		return new RecordProvenanceController('integriq', $request, $provenance, $objects, $l10n);
+		return new RecordProvenanceController('integriq', $request, $provenance, $objects, $l10n, $logger ?? $this->createMock(LoggerInterface::class));
 	}//end controller()
 
 	/**
@@ -91,6 +102,43 @@ final class RecordProvenanceControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 	}//end testARecordTheCallerCannotReadIsA404()
+
+	/**
+	 * A plain miss is a 404 and logs nothing.
+	 *
+	 * @return void
+	 */
+	public function testAMissingRecordIsA404WithoutALogLine(): void {
+		$provenance = $this->createMock(RecordProvenanceService::class);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('error');
+
+		$response = $this->controller(['register' => 'dossiq', 'schema' => 'case', 'id' => 'case-82'], null, $provenance, $logger)->show();
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testAMissingRecordIsA404WithoutALogLine()
+
+	/**
+	 * A read that fails for another reason (database, OpenRegister) still fails closed, but is logged.
+	 *
+	 * @return void
+	 */
+	public function testAFailedReadIsLogged(): void {
+		$provenance = $this->createMock(RecordProvenanceService::class);
+		$provenance->expects($this->never())->method('provenance');
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error');
+
+		$response = $this->controller(
+			['register' => 'dossiq', 'schema' => 'case', 'id' => 'case-82'],
+			null,
+			$provenance,
+			$logger,
+			new RuntimeException('database is gone')
+		)->show();
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testAFailedReadIsLogged()
 
 	/**
 	 * Without register, schema and id the answer is 400.

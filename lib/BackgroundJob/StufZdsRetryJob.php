@@ -22,7 +22,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 class StufZdsRetryJob extends QueuedJob {
 
@@ -66,7 +66,7 @@ class StufZdsRetryJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	protected function run(mixed $argument): void {
 		$messageId = '';

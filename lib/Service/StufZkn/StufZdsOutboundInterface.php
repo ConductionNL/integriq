@@ -33,7 +33,7 @@ interface StufZdsOutboundInterface {
 	 *
 	 * @return array The result (ZdsResult).
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function kennisgeving(array $source, string $operation, array $message, array $context): array;
 
@@ -49,7 +49,7 @@ interface StufZdsOutboundInterface {
 	 *
 	 * @return array The result (ZdsResult) plus `answer`, the answer XML.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function question(array $source, string $operation, array $message, array $context): array;
 
@@ -60,7 +60,7 @@ interface StufZdsOutboundInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function retry(string $messageId): void;
 }

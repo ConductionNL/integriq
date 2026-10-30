@@ -238,7 +238,14 @@ class ConnectionCertificateReader {
 			return $block;
 		}
 
-		$expires = new DateTimeImmutable($notAfter);
+		try {
+			$expires = new DateTimeImmutable($notAfter);
+		} catch (\Exception) {
+			// An unparseable expiry from keepiq is an unknown expiry, not a failed report.
+			$block['expiresAt'] = null;
+			return $block;
+		}
+
 		$days = (int)floor(($expires->getTimestamp() - $now->getTimestamp()) / 86400);
 		$block['daysLeft'] = max(0, $days);
 

@@ -2271,7 +2271,9 @@
         "The source. Fields that come from the source cannot be changed here.": "De bron. Velden uit de bron kunt u hier niet wijzigen.",
         "%1$d of %2$d · full log in Integriq": "%1$d van %2$d · volledig logboek in Integriq",
         "Name the register, the schema and the record.": "Noem het register, het schema en het record.",
-        "There is no such record.": "Dit record bestaat niet."
+        "There is no such record.": "Dit record bestaat niet.",
+        "The route (variant) of this case type a case from this activity takes. Empty means the case type's default route": "De route (variant) van dit zaaktype die een zaak uit deze activiteit volgt. Leeg betekent de standaardroute van het zaaktype",
+        "The route (variant) of this case type the case takes, as the matched mapping row gives it": "De route (variant) van dit zaaktype die de zaak volgt, zoals de gematchte koppelregel die aangeeft"
     },
     "plurals": {}
 }

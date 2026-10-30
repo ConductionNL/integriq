@@ -636,6 +636,57 @@ class CallServiceTest extends TestCase {
 	}//end testGuzzlePathScrubsSecretEchoedInResponseBody()
 
 	/**
+	 * A session header under its own name and the tokens an upstream issues in
+	 * a JSON body (an OAuth token answer) are masked in the stored CallLog,
+	 * while the entity the caller gets back keeps the real response.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+	 */
+	public function testGuzzlePathMasksSessionHeaderAndIssuedTokensInStoredCallLog(): void {
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(false);
+
+		$service = $this->buildBrokeredCallService($brokered);
+
+		$mockClient = $this->createMock(\GuzzleHttp\Client::class);
+		$mockClient->method('request')->willReturn(
+			new Response(
+				200,
+				['X-Session' => 'live-session-42', 'Content-Type' => 'application/json'],
+				'{"access_token":"issued-access-1","refresh_token":"issued-refresh-1","nested":{"id_token":"issued-id-1"},"expires_in":3600}'
+			)
+		);
+
+		$clientProperty = new \ReflectionProperty(CallService::class, 'client');
+		$clientProperty->setAccessible(true);
+		$clientProperty->setValue($service, $mockClient);
+
+		$callLog = $service->call(
+			source: $this->makeBrokeredSource(configuration: []),
+			endpoint: '/oauth/token',
+			config: ['logBody' => true],
+		);
+
+		$logs = $this->savedCallLogs();
+		$this->assertCount(1, $logs);
+		$log = $logs[0]['object'];
+		$this->assertSame(['***REDACTED***'], $log['response']['headers']['X-Session']);
+		$this->assertSame(['application/json'], $log['response']['headers']['Content-Type']);
+		$body = json_decode($log['response']['body'], true);
+		$this->assertSame('***REDACTED***', $body['access_token']);
+		$this->assertSame('***REDACTED***', $body['refresh_token']);
+		$this->assertSame('***REDACTED***', $body['nested']['id_token']);
+		$this->assertSame(3600, $body['expires_in']);
+		$this->assertStringNotContainsString('issued-', json_encode($log));
+		$this->assertStringNotContainsString('live-session-42', json_encode($log));
+
+		// The caller still reads the real answer.
+		$this->assertStringContainsString('issued-access-1', $callLog->getObject()['response']['body']);
+	}//end testGuzzlePathMasksSessionHeaderAndIssuedTokensInStoredCallLog()
+
+	/**
 	 * REQ-006 scenario "a secret-bearing query-string parameter is redacted
 	 * from the persisted URL": `api_key` in the request URL is masked in
 	 * `call_log.request.url` while the non-secret `page` parameter is

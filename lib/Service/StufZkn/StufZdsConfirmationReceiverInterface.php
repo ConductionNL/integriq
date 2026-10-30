@@ -35,7 +35,7 @@ interface StufZdsConfirmationReceiverInterface {
 	 *
 	 * @return array The answer (ConfirmationAnswer).
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function receive(string $rawXml): array;
 }

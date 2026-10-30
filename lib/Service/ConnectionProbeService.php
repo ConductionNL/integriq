@@ -114,7 +114,7 @@ class ConnectionProbeService implements ConnectionProbeServiceInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/health-probe-skips-switched-off-sources/specs/connection-registry/spec.md#requirement-the-health-job-skips-a-switched-off-source
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-skips-a-switched-off-source
 	 */
 	private function isSwitchedOff(string $sourceId): bool {
 		$source = $this->store->findSource(uuid: $sourceId);
