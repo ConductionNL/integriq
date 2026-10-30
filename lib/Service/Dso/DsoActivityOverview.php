@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Dso;
 
+use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
@@ -36,7 +37,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/changes/dso-activity-overview/specs/dso-omgevingsloket/spec.md#requirement-administrators-read-the-activities-with-when-each-last-arrived-req-dso-014
  */
-class DsoActivityOverview {
+class DsoActivityOverview implements ActivityOverviewInterface {
 
 	/**
 	 * How many of the latest verzoeken are read for the last arrivals.

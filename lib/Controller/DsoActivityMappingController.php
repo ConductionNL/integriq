@@ -28,9 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\Dso\DsoActivityOverview;
-use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
+use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -48,15 +48,15 @@ class DsoActivityMappingController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest              $request   The request.
-	 * @param DsoUnmappedActivities $unmapped  Groups the unmapped activities.
-	 * @param DsoActivityOverview   $overview  Reads the rows with their last arrival.
+	 * @param UnmappedActivitiesInterface $unmapped  Groups the unmapped activities.
+	 * @param ActivityOverviewInterface   $overview  Reads the rows with their last arrival.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly DsoUnmappedActivities $unmapped,
-		private readonly DsoActivityOverview $overview,
+		private readonly UnmappedActivitiesInterface $unmapped,
+		private readonly ActivityOverviewInterface $overview,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

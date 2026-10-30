@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\LtiValidationException;
-use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
+use OCA\Integriq\Service\Lti\LtiPlatformLoginServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -55,7 +55,7 @@ class LtiPlatformController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param LtiPlatformLoginService $loginService Runs the authorization checks and signs the id_token.
+	 * @param LtiPlatformLoginServiceInterface $loginService Runs the authorization checks and signs the id_token.
 	 * @param IUserSession $userSession The signed-in user.
 	 * @param IL10N $l10n Translator for the error page.
 	 * @param LoggerInterface $logger Logger for refused authorizations (never logs tokens).
@@ -63,7 +63,7 @@ class LtiPlatformController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly LtiPlatformLoginService $loginService,
+		private readonly LtiPlatformLoginServiceInterface $loginService,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,

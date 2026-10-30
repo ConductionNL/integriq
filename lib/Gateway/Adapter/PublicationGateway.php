@@ -31,11 +31,7 @@ use OCA\Integriq\Gateway\GatewayTransport;
  *
  * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-official-publication-is-a-gateway-and-the-document-is-published-by-reference-req-sg-005
  */
-class PublicationGateway {
-	/**
-	 * The gateway id.
-	 */
-	public const ID = 'publicatie';
+class PublicationGateway implements PublicationGatewayInterface {
 
 	/**
 	 * Constructor.

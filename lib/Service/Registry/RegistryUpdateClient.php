@@ -32,7 +32,7 @@ use Throwable;
  *
  * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
-class RegistryUpdateClient {
+class RegistryUpdateClient implements RegistryUpdateClientInterface {
 	/**
 	 * App id for app-config reads.
 	 */

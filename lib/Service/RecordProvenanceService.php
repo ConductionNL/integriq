@@ -32,7 +32,7 @@ use OCP\IL10N;
  *
  * @spec openspec/specs/synchronization/spec.md
  */
-class RecordProvenanceService {
+class RecordProvenanceService implements RecordProvenanceServiceInterface {
 
 	/**
 	 * The register integriq keeps its synchronizations in.

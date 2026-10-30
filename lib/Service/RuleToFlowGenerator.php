@@ -83,7 +83,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\EntityNotMigratableException;
-use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCP\IL10N;
 
 /**
@@ -623,7 +623,7 @@ class RuleToFlowGenerator implements RuleToFlowGeneratorInterface {
 
 		return [
 			'id' => 'act',
-			'type' => SynchronizationRunNode::NODE_ID,
+			'type' => FlowNodeIds::SYNCHRONIZATION_RUN,
 			'config' => $config,
 		];
 

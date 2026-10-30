@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Integration\Berichtenbox;
 use GuzzleHttp\Client;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientHttp;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxException;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxLetterBuilder;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxValidatieClient;
 use OCA\Integriq\Adapters\Berichtenbox\EbmsAdapterClient;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
@@ -161,7 +162,7 @@ class BerichtenboxFakeIntegrationTest extends TestCase {
 			$logger
 		);
 
-		return new BerichtenboxProvider($client, $logger);
+		return new BerichtenboxProvider($client, $logger, new BerichtenboxLetterBuilder());
 	}//end provider()
 
 	/**

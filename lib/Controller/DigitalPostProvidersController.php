@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
+use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistryInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -54,7 +54,7 @@ class DigitalPostProvidersController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param DigitalPostProviderRegistry $registry The bindings this instance carries.
+	 * @param DigitalPostProviderRegistryInterface $registry The bindings this instance carries.
 	 * @param IUserSession $userSession The session, for the authentication check.
 	 * @param IL10N $l Translations.
 	 *
@@ -63,7 +63,7 @@ class DigitalPostProvidersController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly DigitalPostProviderRegistry $registry,
+		private readonly DigitalPostProviderRegistryInterface $registry,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 	) {

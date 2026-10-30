@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\Integriq\Observability\Otel\TraceExportQueue;
+use OCA\Integriq\Service\Otel\TraceExportQueue;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/execution-trace/spec.md
  */
-class ExecutionTraceService {
+class ExecutionTraceService implements ExecutionTraceServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding execution traces.

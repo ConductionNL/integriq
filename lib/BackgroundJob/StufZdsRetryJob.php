@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
+use OCA\Integriq\Service\StufZkn\StufZdsOutboundInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -48,12 +48,12 @@ class StufZdsRetryJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory      $time   The time factory.
-	 * @param StufZdsOutbound $outbound The ZDS case client.
+	 * @param StufZdsOutboundInterface $outbound The ZDS case client.
 	 * @param LoggerInterface   $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly StufZdsOutbound $outbound,
+		private readonly StufZdsOutboundInterface $outbound,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

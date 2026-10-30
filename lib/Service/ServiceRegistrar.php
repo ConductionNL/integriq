@@ -22,20 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\Service\Lti\LtiLaunchService;
-use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
-use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
-use OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface;
+use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds each Service contract to the class that implements it, so callers
- * outside the Service component depend on the contract only.
+ * Entry point of this component's container wiring for Application.
  *
- * Naming every contract and its class is this class's whole job, so its
- * coupling grows with the number of contracts by design.
+ * The bindings themselves live in {@see ServiceBindings}, inside the component.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class ServiceRegistrar {
 	/**
@@ -48,29 +43,37 @@ final class ServiceRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$context->registerServiceAlias(CallServiceInterface::class, CallService::class);
-		$context->registerServiceAlias(EndpointServiceInterface::class, EndpointService::class);
-		$context->registerServiceAlias(EventServiceInterface::class, EventService::class);
-		$context->registerServiceAlias(SynchronizationServiceInterface::class, SynchronizationService::class);
-		$context->registerServiceAlias(ConfigurationServiceInterface::class, ConfigurationService::class);
-		$context->registerServiceAlias(BrokeredCallServiceInterface::class, BrokeredCallService::class);
-		$context->registerServiceAlias(LegacyToRegisterMigratorInterface::class, LegacyToRegisterMigrator::class);
-		$context->registerServiceAlias(EudiCredentialOfferServiceInterface::class, EudiCredentialOfferService::class);
-		$context->registerServiceAlias(MappingServiceInterface::class, MappingService::class);
-		$context->registerServiceAlias(ApprovalServiceInterface::class, ApprovalService::class);
-		$context->registerServiceAlias(BankfeedSyncServiceInterface::class, BankfeedSyncService::class);
-		$context->registerServiceAlias(LtiLaunchServiceInterface::class, LtiLaunchService::class);
-		$context->registerServiceAlias(IBabsConnectorServiceInterface::class, IBabsConnectorService::class);
-		$context->registerServiceAlias(JobServiceInterface::class, JobService::class);
-		$context->registerServiceAlias(CatalogRegistryServiceInterface::class, CatalogRegistryService::class);
-		$context->registerServiceAlias(UserServiceInterface::class, UserService::class);
-		$context->registerServiceAlias(NotificatiesSubscriberServiceInterface::class, NotificatiesSubscriberService::class);
-		$context->registerServiceAlias(SynchronizationFlowGeneratorInterface::class, SynchronizationFlowGenerator::class);
-		$context->registerServiceAlias(PromotionServiceInterface::class, PromotionService::class);
-		$context->registerServiceAlias(StufZknSyncServiceInterface::class, StufZknSyncService::class);
-		$context->registerServiceAlias(RuleToFlowGeneratorInterface::class, RuleToFlowGenerator::class);
-		$context->registerServiceAlias(FlowRunnerServiceInterface::class, FlowRunnerService::class);
-		$context->registerServiceAlias(KissSyncServiceInterface::class, KissSyncService::class);
-		$context->registerServiceAlias(JobToFlowGeneratorInterface::class, JobToFlowGenerator::class);
-	}
-}
+		(new ServiceBindings())->register(context: $context);
+	}//end register()
+
+	/**
+	 * Register integriq-side IntegrationProviders with OR's IntegrationRegistry.
+	 *
+	 * Per OR's pluggable-integration-registry spec (AD-1), apps register their
+	 * providers at boot — OR's registry is a shared per-request service so all
+	 * apps see the same instance.
+	 *
+	 * Currently registered:
+	 *   - SynchronizationContractProvider — surfaces SyncContract leaves on the
+	 *     OR objects they synchronise (GH #824).
+	 *   - AzureVirtualDesktopAdapter, SharePointOnlineAdapter, Microsoft365Adapter,
+	 *     S3Adapter — one reference adapter per connector-category spec
+	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
+	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
+	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
+	 *
+	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
+	 * integriq is loaded but openregister isn't enabled yet) so boot
+	 * doesn't crash on a stale install.
+	 *
+	 * @param IBootContext $context The app's boot context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-integrationprovider-boot-time-registration-with-or-integrationregistry-req-002
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
+	 */
+	public function boot(IBootContext $context): void {
+		(new ServiceBindings())->boot(context: $context);
+	}//end boot()
+}//end class

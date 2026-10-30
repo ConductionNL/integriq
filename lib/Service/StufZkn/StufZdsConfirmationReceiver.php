@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
-class StufZdsConfirmationReceiver {
+class StufZdsConfirmationReceiver implements StufZdsConfirmationReceiverInterface {
 
 	/**
 	 * The berichtcodes this receiver accepts.

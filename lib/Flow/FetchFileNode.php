@@ -88,21 +88,9 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
-class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, FetchFileNodeInterface {
 
 	use SynchronizationLogActions;
-
-	/**
-	 * The step type.
-	 *
-	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
-	 * rename: this value is written into stored flow documents (OpenRegister
-	 * objects). Renaming it makes every existing flow reference a node type
-	 * nothing answers to.
-	 *
-	 * @var string
-	 */
-	public const NODE_ID = 'openconnector.fetch-file';
 
 	/**
 	 * Where the written object's id sits when the step does not say otherwise.

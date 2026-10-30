@@ -20,10 +20,10 @@
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\CallServiceInterface;
-use OCA\Integriq\Service\SearchService;
-use OCA\Integriq\Service\SourceTestService;
+use OCA\Integriq\Service\SearchServiceInterface;
+use OCA\Integriq\Service\SourceTestServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -58,7 +58,7 @@ class SourcesController extends Controller {
 	 * @param OrObjectService $orObjectService The OR object service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 *
 	 * @return void
 	 */
@@ -68,7 +68,7 @@ class SourcesController extends Controller {
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -78,142 +78,40 @@ class SourcesController extends Controller {
 	 *
 	 * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
 	 *
-	 * @param SearchService $searchService Service used to strip special query parameters.
+	 * @param SearchServiceInterface $searchService Service used to strip special query parameters.
 	 *
 	 * @return JSONResponse A JSON response containing the filtered call logs and pagination.
 	 *
 	 * @spec openspec/specs/logs-and-statistics/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function logs(SearchService $searchService): JSONResponse {
+	public function logs(SearchServiceInterface $searchService): JSONResponse {
 		try {
-			// Get filters from request.
 			$filters = $this->request->getParams();
-			$specialFilters = [];
+			$limit   = (int)($filters['_limit'] ?? 20);
+			$page    = (int)($filters['_page'] ?? 1);
+			$offset  = (($page - 1) * $limit);
 
-			// Pagination using _page and _limit.
-			if (isset($filters['_limit']) === true) {
-				$limit = (int)$filters['_limit'];
-			} else {
-				$limit = 20;
-			}
+			// Underscore keys (_limit, _page, _sort) are dropped with the other special query params.
+			$filters = $searchService->unsetSpecialQueryParams(filters: $this->withoutCallLogSearchFilters(filters: $filters));
 
-			if (isset($filters['_page']) === true) {
-				$page = (int)$filters['_page'];
-			} else {
-				$page = 1;
-			}
-
-			$offset = (($page - 1) * $limit);
-			unset($filters['_limit'], $filters['_page']);
-
-			// Handle special filters.
-			if (empty($filters['date_from']) === false) {
-				$specialFilters['date_from'] = $filters['date_from'];
-				unset($filters['date_from']);
-			}
-
-			if (empty($filters['date_to']) === false) {
-				$specialFilters['date_to'] = $filters['date_to'];
-				unset($filters['date_to']);
-			}
-
-			if (empty($filters['endpoint']) === false) {
-				$specialFilters['endpoint_like'] = '%' . $filters['endpoint'] . '%';
-				unset($filters['endpoint']);
-			}
-
-			if (empty($filters['status_code']) === false) {
-				$statusCodes = explode(',', $filters['status_code']);
-				if (count($statusCodes) === 2) {
-					$specialFilters['status_code_range'] = $statusCodes;
-				}
-
-				unset($filters['status_code']);
-			}
-
-			if (empty($filters['slow_requests']) === false) {
-				$specialFilters['slow_requests'] = 5000;
-				// 5 seconds in milliseconds.
-				unset($filters['slow_requests']);
-			}
-
-			// Build search conditions and parameters.
-			$searchConditions = [];
-			$searchParams = [];
-
-			if (empty($specialFilters['date_from']) === false) {
-				$searchConditions[] = 'created >= ?';
-				$searchParams[] = $specialFilters['date_from'];
-			}
-
-			if (empty($specialFilters['date_to']) === false) {
-				$searchConditions[] = 'created <= ?';
-				$searchParams[] = $specialFilters['date_to'];
-			}
-
-			if (empty($specialFilters['endpoint_like']) === false) {
-				$searchConditions[] = 'endpoint LIKE ?';
-				$searchParams[] = $specialFilters['endpoint_like'];
-			}
-
-			if (empty($specialFilters['status_code_range']) === false) {
-				$searchConditions[] = 'status_code >= ? AND status_code <= ?';
-				$searchParams = array_merge($searchParams, $specialFilters['status_code_range']);
-			}
-
-			if (empty($specialFilters['slow_requests']) === false) {
-				$searchConditions[] = "JSON_EXTRACT(response, '$.responseTime') > ?";
-				$searchParams[] = $specialFilters['slow_requests'];
-			}
-
-			$sortFields = [];
-			if (empty($filters['_sort']) === false && is_array($filters['_sort']) === true) {
-				// Have some control of what to be sortable.
-				$allowedSortFields = ['created', 'status_code', 'endpoint'];
-				foreach ($filters['_sort'] as $field => $direction) {
-					if (in_array($field, $allowedSortFields, true) === true) {
-						if (strtoupper($direction) === 'DESC') {
-							$dir = 'DESC';
-						} else {
-							$dir = 'ASC';
-						}
-
-						$sortFields[$field] = $dir;
-					}
-				}
-
-				unset($filters['_sort']);
-			}
-
-			// Remove special query params from filters.
-			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-			// Get call logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'call_log'], $filters);
 			$matches = $this->orObjectService->findAll(
 				config: [
-					'filters' => $orFilters,
+					'filters' => array_merge(['register' => 'integriq', 'schema' => 'call_log'], $filters),
 					'limit' => $limit,
 					'offset' => $offset,
 				]
 			);
 			$callLogs = ($matches['results'] ?? $matches);
-			$total = ($matches['total'] ?? count($callLogs));
+			$total    = ($matches['total'] ?? count($callLogs));
 
+			$pages       = 1;
+			$currentPage = 1;
 			if ($limit > 0) {
-				$pages = ceil($total / $limit);
-			} else {
-				$pages = 1;
-			}
-
-			if ($limit > 0) {
+				$pages       = ceil($total / $limit);
 				$currentPage = (floor($offset / $limit) + 1);
-			} else {
-				$currentPage = 1;
 			}
 
-			// Return flattened paginated response.
 			return new JSONResponse(
 				[
 					'results' => $callLogs,
@@ -229,11 +127,33 @@ class SourcesController extends Controller {
 	}//end logs()
 
 	/**
+	 * The request filters without the call log search filters that are set.
+	 *
+	 * The date range, endpoint, status code range and slow request filters are
+	 * not passed on to OpenRegister's call log query.
+	 *
+	 * @param array $filters The request parameters.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function withoutCallLogSearchFilters(array $filters): array {
+		foreach (['date_from', 'date_to', 'endpoint', 'status_code', 'slow_requests'] as $key) {
+			if (empty($filters[$key]) === false) {
+				unset($filters[$key]);
+			}
+		}
+
+		return $filters;
+	}//end withoutCallLogSearchFilters()
+
+	/**
 	 * Test a source.
 	 *
 	 * This method fires a test call to the source and returns the response.
 	 *
-	 * @param SourceTestService $sourceTestService Fires the outbound test call (shared with the connection health job).
+	 * @param SourceTestServiceInterface $sourceTestService Fires the outbound test call (shared with the connection health job).
 	 * @param string $id The UUID of the source to test.
 	 *
 	 * @return JSONResponse A JSON response containing the test results.
@@ -246,7 +166,7 @@ class SourcesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function test(SourceTestService $sourceTestService, string $id): JSONResponse {
+	public function test(SourceTestServiceInterface $sourceTestService, string $id): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
@@ -310,14 +230,14 @@ class SourcesController extends Controller {
 		// Test-connection modal always gets a readable result.
 		$test = $sourceTestService->run(source: $source, endpoint: $endpoint, method: $method, config: $config);
 
-		if ($test['outcome'] === SourceTestService::OUTCOME_FAILED) {
+		if ($test['outcome'] === SourceTestServiceInterface::OUTCOME_FAILED) {
 			return new JSONResponse(
 				data: ['error' => $this->l->t('The source test could not be completed: %s', [$test['error']])],
 				statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
 			);
 		}
 
-		if ($test['outcome'] === SourceTestService::OUTCOME_NO_RESPONSE) {
+		if ($test['outcome'] === SourceTestServiceInterface::OUTCOME_NO_RESPONSE) {
 			// The engine returned without a usable response (e.g. an early-exit CallLog).
 			// Give the UI an explicit error rather than an empty/opaque body.
 			return new JSONResponse(

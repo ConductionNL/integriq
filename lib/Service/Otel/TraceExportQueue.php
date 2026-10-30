@@ -7,8 +7,8 @@
  * trace id to the job list for {@see \OCA\Integriq\BackgroundJob\OtelExportJob},
  * so a slow or absent collector cannot change the traced work.
  *
- * @category Observability
- * @package  OCA\Integriq\Observability\Otel
+ * @category Service
+ * @package  OCA\Integriq\Service\Otel
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,10 +24,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Observability\Otel;
+namespace OCA\Integriq\Service\Otel;
 
 use OCA\Integriq\BackgroundJob\OtelExportJob;
-use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Observability\Otel\OtelExportBreakerInterface;
+use OCA\Integriq\Observability\Otel\OtelSettingsInterface;
+use OCA\Integriq\Service\Helper\ExecutionTraceContextInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
@@ -43,17 +45,17 @@ class TraceExportQueue {
 	/**
 	 * Constructor.
 	 *
-	 * @param OtelSettings $settings The export settings.
+	 * @param OtelSettingsInterface $settings The export settings.
 	 * @param IJobList $jobList The background job list.
 	 * @param LoggerInterface $logger Logs a trace that could not be queued.
-	 * @param OtelExportBreaker|null $breaker Pauses queuing during a collector outage; absent, never paused.
+	 * @param OtelExportBreakerInterface|null $breaker Pauses queuing during a collector outage; absent, never paused.
 	 * @param ITimeFactory|null $time The clock the breaker is read against; the system clock when absent.
 	 */
 	public function __construct(
-		private readonly OtelSettings $settings,
+		private readonly OtelSettingsInterface $settings,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
-		private readonly ?OtelExportBreaker $breaker = null,
+		private readonly ?OtelExportBreakerInterface $breaker = null,
 		private readonly ?ITimeFactory $time = null,
 	) {
 
@@ -67,14 +69,14 @@ class TraceExportQueue {
 	 * then is counted, and the first one in a pause is logged. A failure to
 	 * queue is logged and never reaches the traced work.
 	 *
-	 * @param ExecutionTraceContext $trace The persisted context.
+	 * @param ExecutionTraceContextInterface $trace The persisted context.
 	 * @param string $status The persisted status.
 	 *
 	 * @return bool True when the trace was queued.
 	 *
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
 	 */
-	public function queue(ExecutionTraceContext $trace, string $status): bool {
+	public function queue(ExecutionTraceContextInterface $trace, string $status): bool {
 		if ($status === 'running' || $trace->isDryRun() === true) {
 			return false;
 		}
@@ -110,12 +112,12 @@ class TraceExportQueue {
 	 * warning, with the running total of skipped traces, for the first one
 	 * in each pause.
 	 *
-	 * @param OtelExportBreaker $breaker The open breaker.
+	 * @param OtelExportBreakerInterface $breaker The open breaker.
 	 * @param string $traceId The skipped trace.
 	 *
 	 * @return void
 	 */
-	private function skipWhilePaused(OtelExportBreaker $breaker, string $traceId): void {
+	private function skipWhilePaused(OtelExportBreakerInterface $breaker, string $traceId): void {
 		$skipped = $breaker->recordSkipped();
 		if ($skipped === null) {
 			return;

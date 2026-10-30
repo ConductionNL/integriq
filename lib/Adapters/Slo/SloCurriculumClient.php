@@ -45,6 +45,11 @@ use OCA\Integriq\Exception\SloCurriculumException;
  */
 abstract class SloCurriculumClient {
 	/**
+	 * App-config key of the flag that switches the binding to the live client.
+	 */
+	public const FLAG_KEY = 'slo.curriculum.feature_flag';
+
+	/**
 	 * Which binding handles calls: `mock` or `https`.
 	 *
 	 * @return string The flavour.

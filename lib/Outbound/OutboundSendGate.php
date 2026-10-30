@@ -42,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
  */
-class OutboundSendGate {
+class OutboundSendGate implements OutboundSendGateInterface {
 
 	/**
 	 * The step a refused recipient fails in.
@@ -50,13 +50,6 @@ class OutboundSendGate {
 	 * @var string
 	 */
 	public const STEP_OPT_OUT = 'opt-out';
-
-	/**
-	 * The step a provider send fails in.
-	 *
-	 * @var string
-	 */
-	public const STEP_SEND = 'send';
 
 	/**
 	 * Constructor.

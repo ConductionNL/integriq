@@ -57,6 +57,7 @@ namespace OCA\Integriq\Flow;
 
 use DateTime;
 use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
@@ -95,7 +96,7 @@ class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.approval-request';
+	public const NODE_ID = FlowNodeIds::APPROVAL_REQUEST;
 
 	/**
 	 * The context key the engine delivers a signal payload under.

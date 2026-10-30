@@ -8,7 +8,7 @@
  * the canonical PostalAddress shape documented in
  * `hydra/openspec/changes/shared-pdok-via-openconnector/design.md`.
  *
- * DI in {@see \OCA\Integriq\AppInfo\Application::register()} binds this
+ * DI in {@see \OCA\Integriq\Adapters\AdaptersRegistrar} binds this
  * class behind the `pdok.feature_flag === '1'` (or `'true'`) app-config flag;
  * while the flag is dormant the abstract resolves to
  * {@see PdokGeocodingClientMock} instead.

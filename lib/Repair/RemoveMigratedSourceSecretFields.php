@@ -22,7 +22,7 @@
  *     NEVER remove a field while ANY source still holds an inline value for it.
  *
  * The gate that enforces it is {@see isAutoMigratableClean()} — computed from RAW
- * `_render: false` reads via {@see InlineSecretMigrationPlanner} (the ONLY read
+ * `_render: false` reads via {@see \OCA\Integriq\Service\Security\InlineSecretMigrationPlanner} (the ONLY read
  * that survives the writeOnly render boundary). If the gate is not clean, this
  * step does NOTHING.
  *
@@ -65,7 +65,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -103,13 +104,6 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	private const SCHEMA_SLUG = 'source';
 
 	/**
-	 * Appconfig app id.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'integriq';
-
-	/**
 	 * Appconfig key: '1' when the live source schema no longer declares ANY of the
 	 * four auto-migratable secret fields; '0' when removal is still blocked (a
 	 * source holds an inline value) or the schema could not be read.
@@ -121,7 +115,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	/**
 	 * The four AUTO-MIGRATABLE inline secret fields removed by this step.
 	 *
-	 * These are exactly {@see InlineSecretMigrationPlanner::PROVIDER_MAP}'s keys —
+	 * These are exactly {@see \OCA\Integriq\Service\Security\InlineSecretMigrationPlanner::PROVIDER_MAP}'s keys —
 	 * `authenticationConfig` is NOT here on purpose (it is unmappable / manual
 	 * review and must never be removed by this automatic step).
 	 *
@@ -135,11 +129,13 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 * @param ContainerInterface $container The DI container (to resolve OR lazily).
 	 * @param IAppConfig $appConfig The appconfig store for the done marker.
 	 * @param LoggerInterface $logger Secret-free logging only.
+	 * @param InlineSecretMigrationFactoryInterface $migrations Builds the planner and executor once OpenRegister is resolved.
 	 */
 	public function __construct(
 		private ContainerInterface $container,
 		private IAppConfig $appConfig,
 		private LoggerInterface $logger,
+		private InlineSecretMigrationFactoryInterface $migrations,
 	) {
 
 	}//end __construct()
@@ -187,7 +183,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 			// THE GATE. Never remove a field while any source still holds an inline
 			// value for one of the four — computed from RAW `_render: false` reads.
 			if ($this->isAutoMigratableClean() === false) {
-				$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
+				$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
 				$output->info(
 					'Integriq: at least one source still holds an inline apikey/secret/password/jwt — '
 					. 'NOT removing the schema fields. Run `occ integriq:migrate-inline-secrets --dry-run` for the breakdown.'
@@ -199,7 +195,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 		} catch (Throwable $e) {
 			// Never fatal: leaving the fields on the schema is the safe pre-existing
 			// state. But record the gate closed so observability reflects the failure.
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
 			$output->warning('Integriq: could not remove migrated source-secret fields: ' . $e->getMessage());
 			$this->logger->error(
 				'[integriq] RemoveMigratedSourceSecretFields failed; source schema left untouched',
@@ -211,7 +207,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	/**
 	 * The safety gate: are ALL four auto-migratable fields clean across the fleet?
 	 *
-	 * Uses {@see InlineSecretMigrationPlanner::planAll()}, whose `wouldMigrate`
+	 * Uses {@see \OCA\Integriq\Service\Security\InlineSecretMigrationPlanner::planAll()}, whose `wouldMigrate`
 	 * counter counts EXACTLY the four provider-mapped fields (an inline, non-ref,
 	 * non-empty value in `apikey`/`secret`/`password`/`jwt`). `authenticationConfig`
 	 * is counted separately in `needsReview` and is intentionally IGNORED here, so
@@ -223,10 +219,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 	 */
 	private function isAutoMigratableClean(): bool {
 		$objectService = $this->container->get(self::OR_OBJECT_SERVICE);
-		$planner = new InlineSecretMigrationPlanner(
-			objectService: $objectService,
-			logger: $this->logger
-		);
+		$planner = $this->migrations->planner(objectService: $objectService);
 
 		$plan = $planner->planAll();
 
@@ -255,7 +248,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 		$schema = $schemaMapper->find(self::SCHEMA_SLUG);
 		$properties = $schema->getProperties();
 		if (is_array($properties) === false) {
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '0');
 			return;
 		}
 
@@ -269,7 +262,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 
 		if ($removed === []) {
 			// Already removed on a previous run (or never present) — idempotent no-op.
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '1');
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '1');
 			$output->info('Integriq: source-secret fields already removed from the schema; nothing to do.');
 			return;
 		}
@@ -278,7 +271,7 @@ class RemoveMigratedSourceSecretFields implements IRepairStep {
 		$schema->setVersion($this->bumpPatchVersion(version: (string)$schema->getVersion()));
 		$schemaMapper->update($schema);
 
-		$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '1');
+		$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_FIELDS_REMOVED, value: '1');
 		$output->info(
 			'Integriq: removed migrated source-secret fields (' . implode('/', $removed) . ') from the live source schema. '
 			. 'authenticationConfig is retained (manual review).'

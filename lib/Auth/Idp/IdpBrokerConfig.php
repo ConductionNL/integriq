@@ -37,7 +37,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-configuration-placement-follows-adr-017-rules-1-3-7
  */
-class IdpBrokerConfig {
+class IdpBrokerConfig implements IdpBrokerConfigInterface {
 
 	/**
 	 * The app id these settings live under.

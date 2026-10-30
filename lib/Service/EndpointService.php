@@ -29,9 +29,9 @@ use JWadhams\JsonLogic;
 use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
-use OCA\Integriq\Rule\AvgBsnPolicyRule;
-use OCA\Integriq\Rule\CompositeFanoutRule;
-use OCA\Integriq\Rule\ReferenceNumberRule;
+use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
+use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
+use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -150,9 +150,9 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param RuleService $ruleService Service used to load and resolve endpoint rules.
 	 * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
 	 * @param InboundRateLimitService $rateLimitService Service enforcing inbound per-consumer rate limits + quotas.
-	 * @param CompositeFanoutRule $compositeFanoutRule Dialect-agnostic composite transactional fan-out rule.
-	 * @param ReferenceNumberRule $referenceNumberRule Dialect-agnostic referentienummer generation rule.
-	 * @param AvgBsnPolicyRule $avgBsnPolicyRule Dialect-agnostic AVG BSN hash/guard rule.
+	 * @param CompositeFanoutRuleInterface $compositeFanoutRule Dialect-agnostic composite transactional fan-out rule.
+	 * @param ReferenceNumberRuleInterface $referenceNumberRule Dialect-agnostic referentienummer generation rule.
+	 * @param AvgBsnPolicyRuleInterface $avgBsnPolicyRule Dialect-agnostic AVG BSN hash/guard rule.
 	 * @param ApprovalService $approvalService Suspends the pipeline on a HITL `approval` rule.
 	 * @param IRequestId $requestId Nextcloud request-id service, used to synthesize
 	 *                              an `IRequest` for `triggerFromFlow()`.
@@ -195,9 +195,9 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly RuleService $ruleService,
 		private readonly WebhookSignatureService $webhookSignatureService,
 		private readonly InboundRateLimitService $rateLimitService,
-		private readonly CompositeFanoutRule $compositeFanoutRule,
-		private readonly ReferenceNumberRule $referenceNumberRule,
-		private readonly AvgBsnPolicyRule $avgBsnPolicyRule,
+		private readonly CompositeFanoutRuleInterface $compositeFanoutRule,
+		private readonly ReferenceNumberRuleInterface $referenceNumberRule,
+		private readonly AvgBsnPolicyRuleInterface $avgBsnPolicyRule,
 		private readonly ApprovalService $approvalService,
 		private readonly IRequestId $requestId,
 		private readonly FlowRunnerService $flowRunnerService,
@@ -719,111 +719,39 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		if ($enforceRateLimit === true) {
-			// Inbound consumer source-scope (REQ-CON-SCOPE-001). Runs AFTER
-			// authentication resolved a consumer and BEFORE the rate limit, so a
-			// caller outside the allowlist gets 403 rather than consuming (and
-			// being told about) the consumer's rate-limit budget. Skipped on the
-			// resume-from-approval path for the same reason the rate limit is:
-			// the original request already passed this check before suspending.
-			$scopeResponse = $this->enforceConsumerScope(request: $request);
-			if ($scopeResponse !== null) {
-				return $scopeResponse;
+			$refusal = $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
+			if ($refusal !== null) {
+				return $refusal;
 			}
-
-			// Inbound per-consumer rate limiting + quota (consumer-rate-limiting).
-			// Runs AFTER authentication has passed (the 'before' rule pipeline,
-			// which includes the authentication rule, completed without a 401/403)
-			// and BEFORE the endpoint target/schema dispatch (REQ-CON-RL-002). An
-			// over-limit request short-circuits with 429 here; an under-limit
-			// request records its RateLimit-* headers for the response wrapper.
-			$rateLimitResponse = $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
-			if ($rateLimitResponse !== null) {
-				return $rateLimitResponse;
-			}
-		}//end if
+		}
 
 		// Update request data with rule processing results.
 		$flowToken = $this->updateRequestWithRuleData(flowToken: $flowToken, ruleData: $ruleResult);
+		$targetType = ($endpointData['targetType'] ?? '');
 
 		// A register schema target makes no call log: record mode's findings
 		// go to the server log (REQ-MSV-002).
-		if ($validationFindings !== [] && ($endpointData['targetType'] ?? '') !== 'api') {
+		if ($validationFindings !== [] && $targetType !== 'api') {
 			$this->messageGate?->record(callLog: null, findings: $validationFindings, endpoint: (string)$endpoint->getUuid());
 		}
 
-		// Check if endpoint connects to a schema.
-		if (($endpointData['targetType'] ?? '') === 'register/schema') {
+		if ($targetType === 'register/schema') {
 			// Handle CRUD operations via ObjectService.
 			$result = $this->handleSchemaRequest(endpoint: $endpoint, flowToken: $flowToken, path: $path);
 
-			// Process initial data.
-			$data = [
-				'utility' => [
-					'currentDate' => (new DateTime())->format('c'),
-				],
-				'parameters' => $flowToken->getRequestAmended()['parameters'],
-				'requestHeaders' => $flowToken->getRequestAmended()['headers'],
-				'headers' => $flowToken->getResponseAmended()['headers'],
-				'path' => $flowToken->getRequestAmended()['path'],
-				'method' => $flowToken->getRequestAmended()['method'],
-				'body' => $flowToken->getResponseOriginal()['data'],
-			];
+			$run = new EndpointRuleDispatch();
+			$run->endpoint = $endpoint;
+			$run->endpointData = $endpointData;
+			$run->request = $request;
+			$run->timing = 'after';
+			$run->flowToken = $flowToken;
+			$run->trace = $trace;
+			$run->dryRun = $dryRun;
 
-			$ruleResult = $this->processRules(
-				endpoint: $endpoint,
-				request: $request,
-				data: $data,
-				timing: 'after',
-				objectId: $result->getData()['id'] ?? null,
-				flowToken: $flowToken,
-				trace: $trace,
-				dryRun: $dryRun
-			);
+			return $this->answerSchemaRequest(run: $run, result: $result);
+		}
 
-			if ($ruleResult instanceof Response === true && $ruleResult->getStatus() >= 200 && $ruleResult->getStatus() < 300) {
-				return $ruleResult;
-			}
-
-			if ($ruleResult instanceof JSONResponse === true) {
-				return $this->transformError(result: $ruleResult, request: $request);
-			}
-
-			if ($result->getStatus() !== 200 && $result->getStatus() !== 201) {
-				return $this->transformError(result: $result, request: $request);
-			}
-
-			// Set the proper status code for the method.
-			// @TODO: we might want an override from rule processing.
-			switch ($flowToken->getRequestAmended()['method']) {
-				case 'POST':
-					$statusCode = Http::STATUS_CREATED;
-					break;
-				case 'DELETE':
-					$statusCode = Http::STATUS_NO_CONTENT;
-					break;
-				case 'GET':
-				case 'PUT':
-				case 'PATCH':
-				default:
-					$statusCode = Http::STATUS_OK;
-					break;
-			}
-
-			$configurations = $endpointData['configurations'] ?? [];
-			if (isset($configurations['defaultStatusCode']) === true) {
-				$statusCode = $configurations['defaultStatusCode'];
-			}
-
-			// The endpoint's output mapping reshapes the answer last, so every
-			// `after` rule sees the register's own shape and the consumer sees
-			// the mapped one (gateway-endpoint-transform-and-plugins D1).
-			$answerBody = $this->applyOutputMapping(endpointData: $endpointData, body: $ruleResult['body']);
-
-			return new JSONResponse(data: $answerBody, statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
-		}//end if
-
-		// Check if endpoint connects to a source.
-		if (($endpointData['targetType'] ?? '') === 'api') {
+		if ($targetType === 'api') {
 			// Proxy request to source via CallService.
 			return $this->handleSourceRequest(
 				endpoint: $endpoint,
@@ -837,6 +765,119 @@ class EndpointService implements EndpointServiceInterface {
 		// Invalid endpoint configuration.
 		throw new Exception('Endpoint must specify either a schema or source connection');
 	}//end dispatchAfterBeforeRules()
+
+	/**
+	 * Apply the inbound consumer source scope and then the inbound rate limit.
+	 *
+	 * Runs after authentication resolved a consumer (the `before` rules passed)
+	 * and before the endpoint target is dispatched. The scope check comes first,
+	 * so a caller outside the allowlist gets 403 rather than spending (and
+	 * being told about) the consumer's rate-limit budget.
+	 *
+	 * @param IRequest     $request  The incoming request.
+	 * @param ObjectEntity $endpoint The dispatched endpoint.
+	 *
+	 * @return JSONResponse|null The 403 or 429 refusal, or null when the request may proceed.
+	 *
+	 * @spec openspec/specs/consumer-management/spec.md#requirement-consumer-source-scope-enforcement-req-con-scope-001
+	 * @spec openspec/specs/consumer-management/spec.md — Requirement: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)
+	 */
+	private function enforceConsumerLimits(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
+		return ($this->enforceConsumerScope(request: $request) ?? $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint));
+	}//end enforceConsumerLimits()
+
+	/**
+	 * Run the `after` rules on a schema target's answer and build the response.
+	 *
+	 * A 2xx response from the `after` rules is the answer; any other rule
+	 * response, or a write that did not answer 200 or 201, is turned into an
+	 * error. Otherwise the endpoint's output mapping reshapes the body last, so
+	 * every `after` rule sees the register's own shape and the consumer sees
+	 * the mapped one (gateway-endpoint-transform-and-plugins D1).
+	 *
+	 * @param EndpointRuleDispatch $run    The `after` rule run: endpoint, request, flow token, trace and dry-run flag.
+	 * @param JSONResponse         $result The schema target's answer.
+	 *
+	 * @return Response
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-an-endpoints-output-mapping-reshapes-its-answer-req-gtp-001
+	 */
+	private function answerSchemaRequest(EndpointRuleDispatch $run, JSONResponse $result): Response {
+		$ruleResult = $this->processRules(
+			endpoint: $run->endpoint,
+			request: $run->request,
+			data: $this->afterRuleData(flowToken: $run->flowToken),
+			timing: 'after',
+			objectId: $result->getData()['id'] ?? null,
+			flowToken: $run->flowToken,
+			trace: $run->trace,
+			dryRun: $run->dryRun
+		);
+
+		if ($ruleResult instanceof Response === true && $ruleResult->getStatus() >= 200 && $ruleResult->getStatus() < 300) {
+			return $ruleResult;
+		}
+
+		if ($ruleResult instanceof JSONResponse === true) {
+			return $this->transformError(result: $ruleResult, request: $run->request);
+		}
+
+		if ($result->getStatus() !== 200 && $result->getStatus() !== 201) {
+			return $this->transformError(result: $result, request: $run->request);
+		}
+
+		$statusCode = $this->schemaAnswerStatus(run: $run);
+		$answerBody = $this->applyOutputMapping(endpointData: $run->endpointData, body: $ruleResult['body']);
+
+		return new JSONResponse(data: $answerBody, statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
+	}//end answerSchemaRequest()
+
+	/**
+	 * The data the `after` rules of a schema target start from.
+	 *
+	 * @param FlowToken $flowToken The flow token, holding the amended request and the target's answer.
+	 *
+	 * @return array The utility values, the request's parameters, headers, path and method, and the answer's headers and body.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function afterRuleData(FlowToken $flowToken): array {
+		return [
+			'utility' => [
+				'currentDate' => (new DateTime())->format('c'),
+			],
+			'parameters' => $flowToken->getRequestAmended()['parameters'],
+			'requestHeaders' => $flowToken->getRequestAmended()['headers'],
+			'headers' => $flowToken->getResponseAmended()['headers'],
+			'path' => $flowToken->getRequestAmended()['path'],
+			'method' => $flowToken->getRequestAmended()['method'],
+			'body' => $flowToken->getResponseOriginal()['data'],
+		];
+	}//end afterRuleData()
+
+	/**
+	 * The status code of a schema target's answer: 201 for POST, 204 for DELETE,
+	 * 200 otherwise, unless the endpoint configures a `defaultStatusCode`.
+	 *
+	 * @param EndpointRuleDispatch $run The `after` rule run, with the endpoint data and the flow token.
+	 *
+	 * @return mixed The status code.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function schemaAnswerStatus(EndpointRuleDispatch $run): mixed {
+		$configurations = ($run->endpointData['configurations'] ?? []);
+		if (isset($configurations['defaultStatusCode']) === true) {
+			return $configurations['defaultStatusCode'];
+		}
+
+		return match ($run->flowToken->getRequestAmended()['method']) {
+			'POST' => Http::STATUS_CREATED,
+			'DELETE' => Http::STATUS_NO_CONTENT,
+			default => Http::STATUS_OK,
+		};
+	}//end schemaAnswerStatus()
 
 	/**
 	 * Apply an endpoint's `outputMapping` to the answer body.
@@ -2596,7 +2637,7 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		return new JSONResponse(
-			$callLogData['response'] ?? [],
+			(new EndpointProxiedAnswer())->forCaller(response: (array)($callLogData['response'] ?? [])),
 			$callLogData['statusCode'] ?? 200
 		);
 	}//end handleSourceRequest()

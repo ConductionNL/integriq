@@ -52,8 +52,8 @@ use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
-use OCA\Integriq\Flow\FlowConfigGuard;
-use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Kernel\EndpointContainment;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -176,13 +176,6 @@ class CallService implements CallServiceInterface {
 	private CookieJar $cookieJar;
 
 	/**
-	 * Decides whether a call's bodies are stored (Woo row 13.23, decision D5).
-	 *
-	 * @var BodyCapturePolicy
-	 */
-	private BodyCapturePolicy $bodyCapturePolicy;
-
-	/**
 	 * Retention (ms) applied to error CallLogs.
 	 *
 	 * @var integer
@@ -206,8 +199,8 @@ class CallService implements CallServiceInterface {
 	 * @param LoggerInterface $logger Nextcloud logger used for security-policy warnings (#1011).
 	 * @param BrokeredCallService $brokeredCallService Brokered (credentialRef) dispatch through the OpenRegister credential broker.
 	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
+	 * @param BodyCapturePolicyInterface $bodyCapturePolicy Decides whether call bodies are stored (outbound-call-log-investigation-window).
 	 * @param CaseSystemOperations|null $caseSystemOperations Answers case-system sources in-process (case-system-operations-for-decidiq).
-	 * @param BodyCapturePolicy|null $bodyCapturePolicy Decides whether call bodies are stored (outbound-call-log-investigation-window).
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
 	 */
@@ -219,10 +212,9 @@ class CallService implements CallServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly BrokeredCallService $brokeredCallService,
 		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
+		private readonly BodyCapturePolicyInterface $bodyCapturePolicy,
 		private readonly ?CaseSystemOperations $caseSystemOperations = null,
-		?BodyCapturePolicy $bodyCapturePolicy = null,
 	) {
-		$this->bodyCapturePolicy = ($bodyCapturePolicy ?? new BodyCapturePolicy(appConfig: $appConfig));
 		$this->client = new Client([]);
 		// NO AUTOESCAPE: this environment renders headers/query/body values for
 		// an HTTP call, never HTML. Left at Twig's default (HTML) for a long
@@ -416,7 +408,7 @@ class CallService implements CallServiceInterface {
 	 *     inbound value cannot contribute a `/`, `?`, `#` or a control
 	 *     character to the path — only the authored literal can.
 	 *  2. The FINAL rendered value is put through
-	 *     {@see FlowConfigGuard::endpointEscapeCode()} — the app's single
+	 *     {@see EndpointContainment::escapeCode()} — the app's single
 	 *     containment predicate, the same rules `SourceCallNode` applies to a
 	 *     rendered flow endpoint — plus an empty-segment check. An absolute
 	 *     URL, a scheme-relative `//host`, a `../` traversal or a control
@@ -456,7 +448,7 @@ class CallService implements CallServiceInterface {
 			);
 		}
 
-		$escapeCode = FlowConfigGuard::endpointEscapeCode(endpoint: $rendered);
+		$escapeCode = EndpointContainment::escapeCode(endpoint: $rendered);
 		if ($escapeCode !== null) {
 			throw new UnexpectedValueException(
 				'The rendered endpoint path "' . $rendered . '" is refused before any request is made: '
@@ -1546,6 +1538,25 @@ class CallService implements CallServiceInterface {
 	}//end redactSecretsFromConfig()
 
 	/**
+	 * Masks the secret-bearing headers of a response (Set-Cookie, Authorization,
+	 * any token- or key-named header) in the copy that is stored in a CallLog or
+	 * a trace step. The caller keeps the real headers on the returned entity.
+	 *
+	 * @param array $response The structured response from buildResponseData().
+	 *
+	 * @return array The response with its headers redacted.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+	 */
+	private function redactResponseHeaders(array $response): array {
+		if (is_array($response['headers'] ?? null) === true) {
+			$response['headers'] = $this->sensitiveFieldRegistry->redactArray(data: $response['headers']);
+		}
+
+		return $response;
+	}//end redactResponseHeaders()
+
+	/**
 	 * Returns true when a header/query/form key name looks like it carries a secret.
 	 *
 	 * Delegates to the shared {@see SensitiveFieldRegistry} (secret-hygiene) — a pure
@@ -1796,7 +1807,7 @@ class CallService implements CallServiceInterface {
 			'statusCode' => $statusCode,
 			'statusMessage' => $data['response']['statusMessage'],
 			'request' => $data['request'],
-			'response' => $data['response'],
+			'response' => $this->redactResponseHeaders(response: $data['response']),
 			'created' => (new DateTime())->format('c'),
 		];
 
@@ -3035,7 +3046,7 @@ class CallService implements CallServiceInterface {
 		// an investigation window, and without logBody, the step holds no body
 		// (outbound-call-log REQ-OCD-001), and a call that withholds its bodies
 		// hands the trace the same stripped request and response the call log gets.
-		$traced = ['request' => $data['request'], 'response' => $data['response']];
+		$traced = ['request' => $data['request'], 'response' => $this->redactResponseHeaders(response: $data['response'])];
 		if ($this->bodyCapturePolicy->captures(sourceData: $sourceData, logBody: (bool)$prepared['logBody']) === false) {
 			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
 		}

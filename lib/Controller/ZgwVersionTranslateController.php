@@ -34,9 +34,9 @@ use OCA\Integriq\Exception\ZgwUnknownResourceException;
 use OCA\Integriq\Exception\ZgwUnknownVersionException;
 use OCA\Integriq\Exception\ZgwVersionNotImplementedException;
 use OCA\Integriq\Exception\ZgwVersionTranslationException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\ZgwVersionNegotiationService;
-use OCA\Integriq\Service\ZgwVersionTranslationService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ApiVersionNegotiationInterface;
+use OCA\Integriq\Service\ZgwVersionTranslationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -61,20 +61,20 @@ class ZgwVersionTranslateController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param ZgwVersionTranslationService $translationService Translator dispatch + persistence.
-	 * @param ZgwVersionNegotiationService $negotiationService Version resolution from headers.
+	 * @param ZgwVersionTranslationServiceInterface $translationService Translator dispatch + persistence.
+	 * @param ApiVersionNegotiationInterface $negotiationService Version resolution from headers.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ZgwVersionTranslationService $translationService,
-		private readonly ZgwVersionNegotiationService $negotiationService,
+		private readonly ZgwVersionTranslationServiceInterface $translationService,
+		private readonly ApiVersionNegotiationInterface $negotiationService,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {

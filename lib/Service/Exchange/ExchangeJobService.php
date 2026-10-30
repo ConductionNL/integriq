@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ExchangeJobService {
+class ExchangeJobService implements ExchangeJobServiceInterface {
 
 	public const REGISTER = 'integriq';
 

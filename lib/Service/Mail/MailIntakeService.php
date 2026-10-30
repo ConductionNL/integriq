@@ -41,14 +41,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/mail-intake/spec.md#requirement-a-received-message-is-offered-to-the-owning-app-as-a-typed-event-req-mail-003
  */
-class MailIntakeService {
-
-	/**
-	 * The OpenRegister register holding integriq's objects.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'integriq';
+class MailIntakeService implements MailIntakeServiceInterface {
 
 	/**
 	 * The schema one received mail message is stored under.
@@ -56,13 +49,6 @@ class MailIntakeService {
 	 * @var string
 	 */
 	public const SCHEMA_MESSAGE = 'mail_message';
-
-	/**
-	 * The `source.type` a mailbox is.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_TYPE = 'mailbox';
 
 	/**
 	 * A message has been read in and is waiting for an owner.

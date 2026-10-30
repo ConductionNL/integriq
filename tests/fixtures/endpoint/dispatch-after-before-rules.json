@@ -1,0 +1,1265 @@
+{
+    "before-error-response": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 401,
+            "data": {
+                "type": "m",
+                "code": 401,
+                "title": "m",
+                "status": 401,
+                "instance": "req-1",
+                "detail": "e"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "GET",
+            "parameters": {
+                "q": 1
+            },
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": []
+    },
+    "before-2xx-response": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 202,
+            "data": {
+                "ok": true
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "GET",
+            "parameters": {
+                "q": 1
+            },
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": []
+    },
+    "scope-refused": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 403,
+            "data": {
+                "error": "source_not_allowed",
+                "message": "Request source is not in this consumer's allowed domains or IP addresses"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "GET",
+            "parameters": {
+                "q": 1
+            },
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "scope.isAllowed"
+            ]
+        ]
+    },
+    "scope-refused-not-enforced": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "consumer-allowed-unlimited": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "scope.isAllowed"
+            ],
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "anonymous-rate-limited": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 429,
+            "data": {
+                "error": "rate_limited",
+                "message": "Too Many Requests",
+                "reason": "rate_limit"
+            },
+            "headers": {
+                "RateLimit-Limit": "5",
+                "RateLimit-Remaining": "0",
+                "RateLimit-Reset": "60",
+                "Retry-After": "60",
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "GET",
+            "parameters": {
+                "q": 1
+            },
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "rateLimit.enforce",
+                "endpoint:endpoint-1:ip:203.0.113.9",
+                {
+                    "requestsPerWindow": 5,
+                    "windowSeconds": 60
+                },
+                null
+            ]
+        ]
+    },
+    "anonymous-rate-allowed": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "rateLimit.enforce",
+                "endpoint:endpoint-1:ip:203.0.113.9",
+                {
+                    "requestsPerWindow": 5,
+                    "windowSeconds": 60
+                },
+                null
+            ],
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "post-201": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "post-200": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "post-202-refused": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 202,
+            "data": {
+                "id": "o-1"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "post-400": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 400,
+            "data": {
+                "type": "bad",
+                "code": 400,
+                "title": "bad",
+                "status": 400,
+                "instance": "req-1",
+                "detail": "invalid"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "post-500": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 500,
+            "data": {
+                "type": "boom",
+                "code": 500,
+                "title": "boom",
+                "status": 500,
+                "instance": "req-1",
+                "detail": null
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "delete": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 204,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "DELETE",
+            "parameters": {
+                "id": "o-9"
+            },
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.delete",
+                {
+                    "id": "o-9"
+                }
+            ]
+        ]
+    },
+    "patch": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "PATCH",
+            "parameters": {
+                "id": "o-9",
+                "naam": "y"
+            },
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.updateFromArray",
+                "o-9",
+                {
+                    "id": "o-9",
+                    "naam": "y"
+                },
+                true
+            ]
+        ]
+    },
+    "put": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "PUT",
+            "parameters": {
+                "id": "o-9",
+                "naam": "y"
+            },
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.updateFromArray",
+                "o-9",
+                {
+                    "id": "o-9",
+                    "naam": "y"
+                },
+                false
+            ]
+        ]
+    },
+    "head-unsupported": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Unsupported HTTP method"
+        },
+        "request": {
+            "method": "HEAD",
+            "parameters": [],
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ]
+        ]
+    },
+    "method-from-flow-token": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 204,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "DELETE",
+            "parameters": {
+                "id": "o-2"
+            },
+            "headers": {
+                "accept": [
+                    "json"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.delete",
+                {
+                    "id": "o-2"
+                }
+            ]
+        ]
+    },
+    "default-status-code": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 299,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "default-status-code-string": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 207,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "default-status-code-null": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "answer-headers": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "X-Total": "3",
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "output-mapping-object": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "mapped": {
+                    "id": "o-1",
+                    "naam": "x"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ],
+            [
+                "mapping.getMapping",
+                "map-1"
+            ],
+            [
+                "mapping.executeMapping",
+                {
+                    "id": "o-1",
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "output-mapping-list": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "count": 2,
+                "results": [
+                    {
+                        "mapped": {
+                            "a": 1
+                        }
+                    },
+                    "skip",
+                    {
+                        "mapped": {
+                            "b": 2
+                        }
+                    }
+                ]
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ],
+            [
+                "mapping.getMapping",
+                "map-1"
+            ],
+            [
+                "mapping.executeMapping",
+                {
+                    "a": 1
+                }
+            ],
+            [
+                "mapping.executeMapping",
+                {
+                    "b": 2
+                }
+            ]
+        ]
+    },
+    "after-error-rule": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 418,
+            "data": {
+                "type": "not allowed",
+                "code": 418,
+                "title": "not allowed",
+                "status": 418,
+                "instance": "req-1",
+                "detail": "Nope"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "after-2xx-rule": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "error": "Nope",
+                "message": "not allowed"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "after-2xx-rule-on-failed-write": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "error": "Nope",
+                "message": "not allowed"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "before-rule-skipped-after": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "findings-schema": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 201,
+            "data": {
+                "id": "o-1",
+                "naam": "x"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "gate.record",
+                null,
+                [
+                    {
+                        "path": "naam",
+                        "message": "required"
+                    }
+                ],
+                "endpoint-1"
+            ],
+            [
+                "objectService.getMapper",
+                null,
+                7,
+                3
+            ],
+            [
+                "mapper.createFromArray",
+                {
+                    "naam": "x"
+                }
+            ]
+        ]
+    },
+    "findings-api": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 400,
+            "data": {
+                "error": "The upstream path for this endpoint could not be resolved to a contained path"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "callService.renderEndpointPath",
+                "/x/{id}"
+            ]
+        ]
+    },
+    "findings-no-target": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Endpoint must specify either a schema or source connection"
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "gate.record",
+                null,
+                [
+                    {
+                        "path": "naam"
+                    }
+                ],
+                "endpoint-1"
+            ]
+        ]
+    },
+    "api": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 400,
+            "data": {
+                "error": "The upstream path for this endpoint could not be resolved to a contained path"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": [
+            [
+                "callService.renderEndpointPath",
+                "/x"
+            ]
+        ]
+    },
+    "no-target": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Endpoint must specify either a schema or source connection"
+        },
+        "request": {
+            "method": "POST",
+            "parameters": {
+                "naam": "x",
+                "_route": "r"
+            },
+            "headers": {
+                "h": [
+                    "1"
+                ]
+            },
+            "path": "/zaken"
+        },
+        "log": []
+    }
+}

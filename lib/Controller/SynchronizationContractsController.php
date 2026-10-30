@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -77,9 +77,9 @@ class SynchronizationContractsController extends Controller {
 	/**
 	 * The action authorization service
 	 *
-	 * @var ActionAuthService
+	 * @var ActionAuthServiceInterface
 	 */
-	private ActionAuthService $actionAuth;
+	private ActionAuthServiceInterface $actionAuth;
 
 	/**
 	 * Constructor for the SynchronizationContractsController
@@ -89,7 +89,7 @@ class SynchronizationContractsController extends Controller {
 	 * @param OrObjectService $orObjectService The OR object service
 	 * @param IL10N $l The localization service
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 */
 	public function __construct(
 		string $appName,
@@ -97,7 +97,7 @@ class SynchronizationContractsController extends Controller {
 		OrObjectService $orObjectService,
 		IL10N $l,
 		IUserSession $userSession,
-		ActionAuthService $actionAuth,
+		ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

@@ -63,8 +63,9 @@ namespace OCA\Integriq\Flow;
 use GuzzleHttp\Promise\PromiseInterface;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Exception\ResponseDecodeException;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\CallServiceInterface;
-use OCA\Integriq\Service\ResponseDecoder;
+use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -96,7 +97,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.source-call';
+	public const NODE_ID = FlowNodeIds::SOURCE_CALL;
 
 	/**
 	 * The OpenRegister register Sources live in.
@@ -134,7 +135,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
-	 * @param ResponseDecoder $decoder Reads the response body in the step's `decode` mode.
+	 * @param ResponseDecoderInterface $decoder Reads the response body in the step's `decode` mode.
 	 */
 	public function __construct(
 		private readonly CallServiceInterface $callService,
@@ -144,7 +145,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
-		private readonly ResponseDecoder $decoder,
+		private readonly ResponseDecoderInterface $decoder,
 	) {
 
 	}//end __construct()
@@ -481,7 +482,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 		$accepted = $this->acceptedStatuses(config: $config);
-		$decode = strtolower(trim((string)($config['decode'] ?? ResponseDecoder::MODE_AUTO)));
+		$decode = strtolower(trim((string)($config['decode'] ?? ResponseDecoderInterface::MODE_AUTO)));
 		$outputList = [];
 		$indexed = array_values($items);
 
@@ -667,7 +668,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		array $accepted,
 		string $reference,
 		ObjectEntity $source,
-		string $decode=ResponseDecoder::MODE_AUTO,
+		string $decode=ResponseDecoderInterface::MODE_AUTO,
 	): array {
 		if ($settled['ok'] === false) {
 			// A transport-level failure (DNS, TLS, timeout, connection
@@ -842,7 +843,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$body = ($response['body'] ?? null);
 		$transportBase64 = ((string)($response['encoding'] ?? 'UTF-8') !== 'UTF-8');
 
-		if ($decode === ResponseDecoder::MODE_AUTO || $decode === ResponseDecoder::MODE_TEXT) {
+		if ($decode === ResponseDecoderInterface::MODE_AUTO || $decode === ResponseDecoderInterface::MODE_TEXT) {
 			// `CallService` base64-encodes a body that is not valid UTF-8;
 			// handing that to a parser would only produce noise.
 			if (is_string($body) === false || $transportBase64 === true) {
@@ -861,10 +862,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			}
 		}
 
-		$contentType = ResponseDecoder::headerValue(
-			headers: (array)($response['headers'] ?? []),
-			name: 'Content-Type'
-		);
+		$contentType = $this->decoder->contentType(headers: (array)($response['headers'] ?? []));
 
 		[$reference, $endpoint, $method, $statusCode] = array_pad($context, 4, null);
 
