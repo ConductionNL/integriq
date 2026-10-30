@@ -2621,7 +2621,7 @@ class EventService implements EventServiceInterface {
 		return [
 			'url' => $sink,
 			'method' => 'POST',
-			'headers' => $sensitiveFieldRegistry->redactArray(data: $headers),
+			'headers' => $sensitiveFieldRegistry->redactHeaders(headers: $headers),
 		];
 
 	}//end previewWebhookDelivery()
