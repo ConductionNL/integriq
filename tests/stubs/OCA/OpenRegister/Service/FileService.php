@@ -109,6 +109,28 @@ class FileService {
 	}
 
 	/**
+	 * The folder of an object (signature as OpenRegister FileService::getObjectFolder()).
+	 *
+	 * @param ObjectEntity|string $objectEntity The object.
+	 * @param int|string|null $registerId The register id.
+	 * @return \OCP\Files\Folder|null
+	 */
+	public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): ?\OCP\Files\Folder {
+		return null;
+	}
+
+	/**
+	 * One file of an object (signature as OpenRegister FileService::getFile()).
+	 *
+	 * @param ObjectEntity|string|null $object The object.
+	 * @param string|int $file The file name or id.
+	 * @return File|null
+	 */
+	public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File {
+		return null;
+	}
+
+	/**
 	 * Delete a file.
 	 *
 	 * @param mixed $file
