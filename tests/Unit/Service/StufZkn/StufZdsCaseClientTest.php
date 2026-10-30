@@ -557,6 +557,39 @@ class StufZdsCaseClientTest extends TestCase {
 	}//end testALogModeSourceIsRefused()
 
 	/**
+	 * A source that names its app in `configuration.owningApp` sends no case command from another app.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
+	 */
+	public function testACommandFromAnotherAppIsRefusedWhenTheSourceNamesItsOwner(): void {
+		$this->sources['zsh']['configuration']['owningApp'] = 'pipelinq';
+		try {
+			$this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding', ['sourceApp' => 'dossiq']);
+			$this->fail('A command from another app than the owning app must be refused');
+		} catch (StufZknProviderException $exception) {
+			$this->assertStringContainsString('pipelinq', $exception->getMessage());
+			$this->assertSame([], $this->rows);
+			$this->assertSame([], $this->history, 'nothing is sent');
+		}
+	}//end testACommandFromAnotherAppIsRefusedWhenTheSourceNamesItsOwner()
+
+	/**
+	 * The owning app's own command is sent as before.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
+	 */
+	public function testTheOwningAppsCommandIsSent(): void {
+		$this->sources['zsh']['configuration']['owningApp'] = 'dossiq';
+		$result = $this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding', ['sourceApp' => 'dossiq']);
+
+		$this->assertTrue($result['success']);
+	}//end testTheOwningAppsCommandIsSent()
+
+	/**
 	 * An unregistered vrij bericht is refused.
 	 *
 	 * @return void

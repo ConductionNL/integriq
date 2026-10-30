@@ -1,0 +1,952 @@
+{
+    "no-target-id": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "target-id-without-slash": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "t-1"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "save-create": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "new-uuid",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "zaak": "origin-z"
+                },
+                "4",
+                "9",
+                null,
+                false,
+                true
+            ]
+        ]
+    },
+    "save-update": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "t-1",
+                "targetLastAction": "update"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "zaak": "origin-z",
+                    "id": "t-1"
+                },
+                "4",
+                "9",
+                "t-1",
+                false,
+                true
+            ]
+        ]
+    },
+    "save-object-id-adopted": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "given",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "id": "given",
+            "naam": "x"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "id": "given",
+                    "naam": "x"
+                },
+                "4",
+                "9",
+                "given",
+                false,
+                true
+            ]
+        ]
+    },
+    "save-contract-id-wins": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "t-1",
+                "targetLastAction": "update"
+            }
+        },
+        "targetObject": {
+            "id": "t-1",
+            "naam": "x"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "id": "t-1",
+                    "naam": "x"
+                },
+                "4",
+                "9",
+                "t-1",
+                false,
+                true
+            ]
+        ]
+    },
+    "save-null-target-id": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "new-uuid",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "zaak": "origin-z"
+                },
+                "4",
+                "9",
+                null,
+                false,
+                true
+            ]
+        ]
+    },
+    "save-logs-off": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "new-uuid",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                {
+                    "logs": false,
+                    "validation": false
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "zaak": "origin-z"
+                },
+                "4",
+                "9",
+                null,
+                true,
+                false
+            ]
+        ]
+    },
+    "save-logs-truthy": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "new-uuid",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                {
+                    "logs": 0,
+                    "validation": 0,
+                    "events": true
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "zaak": "origin-z"
+                },
+                "4",
+                "9",
+                null,
+                false,
+                true
+            ]
+        ]
+    },
+    "save-replace-origin-ids": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "new-uuid",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                {
+                    "originIdsToReplace": {
+                        "zaak": true
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "zaak": "origin-z"
+                },
+                "4",
+                "9",
+                null,
+                false,
+                true
+            ]
+        ]
+    },
+    "save-throws": {
+        "outcome": {
+            "throws": "RuntimeException",
+            "message": "save failed"
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "zaak": "origin-z"
+                },
+                "4",
+                "9",
+                null,
+                false,
+                true
+            ]
+        ]
+    },
+    "save-sub-objects": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "t-1",
+                "targetLastAction": "update"
+            }
+        },
+        "targetObject": {
+            "rendered": "t-1",
+            "sub": {
+                "naam": "kind"
+            }
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                {
+                    "subObjects": {
+                        "sub": []
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "sub": {
+                        "naam": "k"
+                    },
+                    "id": "t-1"
+                },
+                "4",
+                "9",
+                "t-1",
+                false,
+                true
+            ],
+            [
+                "or.renderEntity",
+                "t-1",
+                [
+                    "all"
+                ]
+            ]
+        ]
+    },
+    "save-sub-objects-list": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "new-uuid",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "rendered": "new-uuid",
+            "sub": {
+                "naam": "kind"
+            }
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                {
+                    "subObjects": {
+                        "sub": []
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x"
+                },
+                "4",
+                "9",
+                null,
+                false,
+                true
+            ],
+            [
+                "or.renderEntity",
+                "new-uuid",
+                [
+                    "all"
+                ]
+            ]
+        ]
+    },
+    "buffer-create": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "d40ee5b8-28b7-54e4-842c-740969735d20",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": true,
+        "buffer": {
+            "4/9": {
+                "register": "4",
+                "schema": "9",
+                "validation": true,
+                "events": true,
+                "audit": true,
+                "rows": {
+                    "d40ee5b8-28b7-54e4-842c-740969735d20": {
+                        "naam": "x",
+                        "zaak": "origin-z",
+                        "id": "d40ee5b8-28b7-54e4-842c-740969735d20"
+                    }
+                }
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "buffer-update": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "t-1",
+                "targetLastAction": "update"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": true,
+        "buffer": {
+            "4/9": {
+                "register": "4",
+                "schema": "9",
+                "validation": false,
+                "events": false,
+                "audit": false,
+                "rows": {
+                    "t-1": {
+                        "naam": "x",
+                        "zaak": "origin-z",
+                        "id": "t-1"
+                    }
+                }
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                {
+                    "validation": false,
+                    "events": false,
+                    "logs": false
+                }
+            ]
+        ]
+    },
+    "buffer-empty-target-id": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "d40ee5b8-28b7-54e4-842c-740969735d20",
+                "targetLastAction": "update"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": ""
+        },
+        "buffered": true,
+        "buffer": {
+            "4/9": {
+                "register": "4",
+                "schema": "9",
+                "validation": true,
+                "events": true,
+                "audit": true,
+                "rows": {
+                    "d40ee5b8-28b7-54e4-842c-740969735d20": {
+                        "naam": "x",
+                        "zaak": "origin-z",
+                        "id": "d40ee5b8-28b7-54e4-842c-740969735d20"
+                    }
+                }
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "buffer-blocked-by-actions": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "new-uuid",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x",
+                    "zaak": "origin-z"
+                },
+                "4",
+                "9",
+                null,
+                false,
+                true
+            ]
+        ]
+    },
+    "buffer-empty-actions": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "d40ee5b8-28b7-54e4-842c-740969735d20",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": true,
+        "buffer": {
+            "4/9": {
+                "register": "4",
+                "schema": "9",
+                "validation": true,
+                "events": true,
+                "audit": true,
+                "rows": {
+                    "d40ee5b8-28b7-54e4-842c-740969735d20": {
+                        "naam": "x",
+                        "zaak": "origin-z",
+                        "id": "d40ee5b8-28b7-54e4-842c-740969735d20"
+                    }
+                }
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "buffer-blocked-by-sub-objects": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "new-uuid",
+                "targetLastAction": "create"
+            }
+        },
+        "targetObject": {
+            "rendered": "new-uuid",
+            "sub": {
+                "naam": "kind"
+            }
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                {
+                    "subObjects": {
+                        "sub": []
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "x"
+                },
+                "4",
+                "9",
+                null,
+                false,
+                true
+            ],
+            [
+                "or.renderEntity",
+                "new-uuid",
+                [
+                    "all"
+                ]
+            ]
+        ]
+    },
+    "delete": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": null,
+                "targetLastAction": "delete"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.deleteObject",
+                "t-1",
+                false
+            ]
+        ]
+    },
+    "delete-without-target": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": null,
+                "targetLastAction": "delete"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "delete-empty-target": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": null,
+                "targetLastAction": "delete"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": ""
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "delete-numeric-target": {
+        "outcome": {
+            "return": {
+                "targetId": null,
+                "targetLastAction": "delete"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": 77
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.deleteObject",
+                "77",
+                false
+            ]
+        ]
+    },
+    "delete-throws": {
+        "outcome": {
+            "throws": "RuntimeException",
+            "message": "delete refused"
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.deleteObject",
+                "t-1",
+                false
+            ]
+        ]
+    },
+    "delete-without-register": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "t-1"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "purge": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": null,
+                "targetLastAction": "purge"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.deleteObject",
+                "t-1",
+                true
+            ]
+        ]
+    },
+    "purge-without-target": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": null,
+                "targetLastAction": "purge"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "purge-throws": {
+        "outcome": {
+            "throws": "RuntimeException",
+            "message": "delete refused"
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ],
+            [
+                "or.deleteObject",
+                "t-1",
+                true
+            ]
+        ]
+    },
+    "unknown-action": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "t-1"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "null-action": {
+        "outcome": {
+            "return": {
+                "id": 11,
+                "originId": "o-1",
+                "targetId": "t-1"
+            }
+        },
+        "targetObject": {
+            "naam": "x",
+            "zaak": "origin-z",
+            "id": "t-1"
+        },
+        "buffered": false,
+        "buffer": [],
+        "log": [
+            [
+                "callService.applyConfigDot",
+                []
+            ]
+        ]
+    }
+}

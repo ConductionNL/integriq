@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Service\Lti\LtiKeyServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -56,12 +56,12 @@ class LtiKeyRetirementJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param LtiKeyService $keyService The LTI key lifecycle service.
+	 * @param LtiKeyServiceInterface $keyService The LTI key lifecycle service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly LtiKeyService $keyService,
+		private readonly LtiKeyServiceInterface $keyService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

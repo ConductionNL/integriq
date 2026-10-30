@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
@@ -67,7 +67,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 	 * @param IUserManager $userManager Resolver for the captured user id.
 	 * @param OrganisationService $organisation Active-organisation resolver (drift logging).
 	 * @param LoggerInterface $logger The logger.
-	 * @param SourceMappingService $objectService Service providing access to the OR object layer.
+	 * @param SourceMappingServiceInterface $objectService Service providing access to the OR object layer.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -75,7 +75,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 		IUserManager $userManager,
 		OrganisationService $organisation,
 		LoggerInterface $logger,
-		private readonly SourceMappingService $objectService,
+		private readonly SourceMappingServiceInterface $objectService,
 	) {
 		parent::__construct(
 			time: $time,

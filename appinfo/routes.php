@@ -130,6 +130,8 @@ return [
 		// Replaying and hand-firing share one action (`call-log.replay`),
 		// because they are the same act to the receiver. The verdict leg is
 		// public and signature-gated like every other inbound endpoint here.
+		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
+		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 		['name' => 'callLog#show', 'url' => '/api/calls/{id}', 'verb' => 'GET'],
 		['name' => 'callLog#preview', 'url' => '/api/calls/{id}/preview', 'verb' => 'GET'],
 		['name' => 'callLog#replay', 'url' => '/api/calls/{id}/replay', 'verb' => 'POST'],
@@ -725,6 +727,8 @@ return [
 		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],
 		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoActivityMapping#unmapped', 'url' => '/api/admin/dso-activities/unmapped', 'verb' => 'GET'],
+		// Every DSO activity row with its last arrival, then the unmapped ones (admin only)
+		['name' => 'dsoActivityMapping#overview', 'url' => '/api/admin/dso-activities', 'verb' => 'GET'],
 		// Packaged ZGW consumer sets (zgw-connectors-for-dossiq): list, and install against a register/schema.
 		['name' => 'zgwSets#index',   'url' => '/api/zgw-sets', 'verb' => 'GET'],
 		['name' => 'zgwSets#install', 'url' => '/api/zgw-sets/{slug}/install', 'verb' => 'POST', 'requirements' => ['slug' => 'zgw-[a-z]+']],

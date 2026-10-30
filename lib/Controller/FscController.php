@@ -33,8 +33,8 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\FscConnectivityException;
 use OCA\Integriq\Exception\FscDirectoryException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\FscCallService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\FscCallServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -58,18 +58,18 @@ class FscController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param FscCallService $callService Directory-resolve + call orchestration logic.
+	 * @param FscCallServiceInterface $callService Directory-resolve + call orchestration logic.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FscCallService $callService,
+		private readonly FscCallServiceInterface $callService,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {

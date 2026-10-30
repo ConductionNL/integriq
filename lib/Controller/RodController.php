@@ -30,10 +30,10 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\RodService;
-use OCA\Integriq\Service\Intake\WebhookGate;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\RodServiceInterface;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -63,20 +63,20 @@ class RodController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param RodService $rodService Send/retour orchestration logic.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param RodServiceInterface $rodService Send/retour orchestration logic.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RodService $rodService,
-		private readonly WebhookGate $gate,
+		private readonly RodServiceInterface $rodService,
+		private readonly WebhookGateInterface $gate,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -171,7 +171,7 @@ class RodController extends Controller {
 	public function retour(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::ROD, rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfilesInterface::ROD, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -187,7 +187,7 @@ class RodController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so ROD delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::ROD, reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfilesInterface::ROD, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

@@ -28,7 +28,10 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\RecordInlineSecretMigrationStatus;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutorInterface;
+use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
@@ -281,11 +284,11 @@ class TestableRecordStep extends RecordInlineSecretMigrationStatus {
 	 * Return the spy instead of a real executor.
 	 *
 	 * @param OrObjectService $objectService The object service.
-	 * @param InlineSecretMigrationPlanner $planner The planner.
+	 * @param InlineSecretMigrationPlannerInterface $planner The planner.
 	 *
-	 * @return InlineSecretMigrationExecutor
+	 * @return InlineSecretMigrationExecutorInterface
 	 */
-	protected function makeExecutor(OrObjectService $objectService, InlineSecretMigrationPlanner $planner): InlineSecretMigrationExecutor {
+	protected function makeExecutor(OrObjectService $objectService, InlineSecretMigrationPlannerInterface $planner): InlineSecretMigrationExecutorInterface {
 		if ($this->spy === null) {
 			$this->spy = new SpyMigrationExecutor($objectService, $planner, new NullLogger(), new EmptyContainer());
 		}
@@ -322,7 +325,7 @@ class RecordInlineSecretMigrationStatusTest extends TestCase {
 			}
 		);
 
-		return new RecordInlineSecretMigrationStatus($container, $appConfig, new NullLogger());
+		return new RecordInlineSecretMigrationStatus($container, $appConfig, new NullLogger(), new InlineSecretMigrationFactory(new NullLogger(), $container));
 	}//end makeStep()
 
 	/**
@@ -407,7 +410,7 @@ class RecordInlineSecretMigrationStatusTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('boom'));
 
-		$step = new RecordInlineSecretMigrationStatus($container, $appConfig, new NullLogger());
+		$step = new RecordInlineSecretMigrationStatus($container, $appConfig, new NullLogger(), new InlineSecretMigrationFactory(new NullLogger(), $container));
 		$step->run($this->createMock(IOutput::class));
 
 		$this->assertSame(
@@ -457,7 +460,7 @@ class RecordInlineSecretMigrationStatusTest extends TestCase {
 			}
 		);
 
-		$step = new TestableRecordStep($container, $appConfig, new NullLogger());
+		$step = new TestableRecordStep($container, $appConfig, new NullLogger(), new InlineSecretMigrationFactory(new NullLogger(), $container));
 		$step->run($this->createMock(IOutput::class));
 
 		$this->assertNotNull($step->spy);
@@ -488,7 +491,7 @@ class RecordInlineSecretMigrationStatusTest extends TestCase {
 			}
 		);
 
-		$step = new TestableRecordStep($container, $appConfig, new NullLogger());
+		$step = new TestableRecordStep($container, $appConfig, new NullLogger(), new InlineSecretMigrationFactory(new NullLogger(), $container));
 		$step->spy = new SpyMigrationExecutor(
 			$objectService,
 			new InlineSecretMigrationPlanner($objectService, new NullLogger()),

@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
-use OCA\Integriq\Service\SynchronizationRunProgressService;
+use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -113,8 +113,8 @@ class StaleRunSweepJob extends TimedJob {
 			$result = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => SynchronizationRunProgressService::REGISTER,
-						'schema' => SynchronizationRunProgressService::SCHEMA,
+						'register' => SynchronizationRunProgressServiceInterface::REGISTER,
+						'schema' => SynchronizationRunProgressServiceInterface::SCHEMA,
 						'status' => 'running',
 					],
 				],
@@ -174,8 +174,8 @@ class StaleRunSweepJob extends TimedJob {
 			try {
 				$this->objectService->saveObject(
 					object: $object,
-					register: SynchronizationRunProgressService::REGISTER,
-					schema: SynchronizationRunProgressService::SCHEMA,
+					register: SynchronizationRunProgressServiceInterface::REGISTER,
+					schema: SynchronizationRunProgressServiceInterface::SCHEMA,
 					uuid: $entity->getUuid(),
 					_rbac: false,
 					_multitenancy: false,

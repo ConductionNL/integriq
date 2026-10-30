@@ -33,7 +33,7 @@ namespace OCA\Integriq\Controller;
 
 use DateTime;
 use OCA\Integriq\Exception\ApprovalStateException;
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -79,7 +79,7 @@ class ProductSubscriptionsController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param ApprovalService $approvalService The approval state-machine service (subscription approval gate).
+	 * @param ApprovalServiceInterface $approvalService The approval state-machine service (subscription approval gate).
 	 * @param OrObjectService $orObjectService OpenRegister object service (product/subscription/call_log persistence).
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
@@ -88,7 +88,7 @@ class ProductSubscriptionsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ApprovalService $approvalService,
+		private readonly ApprovalServiceInterface $approvalService,
 		private readonly OrObjectService $orObjectService,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
@@ -177,7 +177,7 @@ class ProductSubscriptionsController extends Controller {
 			subscriptionId: (string)$subscription->getUuid(),
 			approverGroup: $approverGroup,
 			onReject: 'error',
-			ttlSeconds: ApprovalService::DEFAULT_TTL_SECONDS
+			ttlSeconds: ApprovalServiceInterface::DEFAULT_TTL_SECONDS
 		);
 
 		$subscriptionData = $subscription->getObject();

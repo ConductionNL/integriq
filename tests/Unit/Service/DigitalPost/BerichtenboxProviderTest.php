@@ -25,6 +25,7 @@ use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientHttp;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxException;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxLetterBuilder;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxValidatieClient;
 use OCA\Integriq\Adapters\Berichtenbox\EbmsAdapterClient;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
@@ -171,7 +172,7 @@ class BerichtenboxProviderTest extends TestCase {
 	 * @return BerichtenboxProvider
 	 */
 	private function provider(RecordingBerichtenboxClient $client): BerichtenboxProvider {
-		return new BerichtenboxProvider($client, $this->createMock(LoggerInterface::class));
+		return new BerichtenboxProvider($client, $this->createMock(LoggerInterface::class), new BerichtenboxLetterBuilder());
 	}//end provider()
 
 	/**
@@ -272,7 +273,7 @@ class BerichtenboxProviderTest extends TestCase {
 		$config = $this->config();
 		unset($config['adapterUrl'], $config['cpaId']);
 
-		$result = (new BerichtenboxProvider($live, $this->createMock(LoggerInterface::class)))->send($this->letter(), $config);
+		$result = (new BerichtenboxProvider($live, $this->createMock(LoggerInterface::class), new BerichtenboxLetterBuilder()))->send($this->letter(), $config);
 
 		$this->assertTrue($result->isRefused());
 		$this->assertFalse($result->isSimulated());
@@ -303,7 +304,7 @@ class BerichtenboxProviderTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMockBackedSendSaysSimulated(): void {
-		$result = (new BerichtenboxProvider(new BerichtenboxClientMock(), $this->createMock(LoggerInterface::class)))
+		$result = (new BerichtenboxProvider(new BerichtenboxClientMock(), $this->createMock(LoggerInterface::class), new BerichtenboxLetterBuilder()))
 			->send($this->letter(), ['certificateRef' => 'x', 'senderOin' => '00000001234567890000']);
 
 		$this->assertSame(DigitalPostResult::STATUS_SENT, $result->getStatus());
@@ -431,6 +432,6 @@ class BerichtenboxProviderTest extends TestCase {
 		$config = $this->config() + ['inboundFixture' => [['sender' => 'x', 'subject' => 'y']]];
 
 		$this->assertSame([], $this->provider(new RecordingBerichtenboxClient())->pollInbound($config));
-		$this->assertCount(1, (new BerichtenboxProvider(new BerichtenboxClientMock(), $this->createMock(LoggerInterface::class)))->pollInbound($config));
+		$this->assertCount(1, (new BerichtenboxProvider(new BerichtenboxClientMock(), $this->createMock(LoggerInterface::class), new BerichtenboxLetterBuilder()))->pollInbound($config));
 	}//end testALiveSourceHasNoInboundPost()
 }//end class

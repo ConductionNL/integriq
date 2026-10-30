@@ -70,7 +70,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -88,21 +88,9 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
-class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, FetchFileNodeInterface {
 
 	use SynchronizationLogActions;
-
-	/**
-	 * The step type.
-	 *
-	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
-	 * rename: this value is written into stored flow documents (OpenRegister
-	 * objects). Renaming it makes every existing flow reference a node type
-	 * nothing answers to.
-	 *
-	 * @var string
-	 */
-	public const NODE_ID = 'openconnector.fetch-file';
 
 	/**
 	 * Where the written object's id sits when the step does not say otherwise.
@@ -117,14 +105,14 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizations The engine that owns the fetch.
+	 * @param SynchronizationServiceInterface $synchronizations The engine that owns the fetch.
 	 * @param FlowOwner $flowOwner Resolves whose permissions the step runs with.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon and log links.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizations,
+		private readonly SynchronizationServiceInterface $synchronizations,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,

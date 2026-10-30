@@ -37,21 +37,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
  */
-class SourceTestService {
-
-	/**
-	 * The call failed before a response came back.
-	 *
-	 * @var string
-	 */
-	public const OUTCOME_FAILED = 'failed';
-
-	/**
-	 * The call returned without response data.
-	 *
-	 * @var string
-	 */
-	public const OUTCOME_NO_RESPONSE = 'no-response';
+class SourceTestService implements SourceTestServiceInterface {
 
 	/**
 	 * The call returned a response.

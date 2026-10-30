@@ -1,0 +1,1432 @@
+{
+    "override": {
+        "outcome": {
+            "body": {
+                "uuid": "saved-1",
+                "saved": {
+                    "naam": "x"
+                }
+            },
+            "parameters": [],
+            "path": "zaken/o-1"
+        },
+        "log": [
+            [
+                "or.clearCurrents",
+                []
+            ],
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                "o-1"
+            ],
+            [
+                "or.saveObject",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "naam": "x"
+                        }
+                    },
+                    "3",
+                    "7",
+                    "stored-1",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            ],
+            [
+                "or.clearCurrents",
+                []
+            ]
+        ]
+    },
+    "override-no-object-id": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": []
+    },
+    "locking-lock": {
+        "outcome": {
+            "body": {
+                "locked": "o-1",
+                "processIsUuid": true,
+                "duration": 60
+            },
+            "parameters": [],
+            "path": "zaken/o-1"
+        },
+        "log": [
+            [
+                "or.lockObject",
+                [
+                    "o-1",
+                    "a fresh uuid",
+                    60
+                ]
+            ]
+        ]
+    },
+    "locking-lock-default-duration": {
+        "outcome": {
+            "body": {
+                "locked": "o-1",
+                "processIsUuid": true,
+                "duration": 3600
+            },
+            "parameters": [],
+            "path": "zaken/o-1"
+        },
+        "log": [
+            [
+                "or.lockObject",
+                [
+                    "o-1",
+                    "a fresh uuid",
+                    3600
+                ]
+            ]
+        ]
+    },
+    "locking-unlock": {
+        "outcome": {
+            "body": {
+                "unlocked": true
+            },
+            "parameters": [],
+            "path": "zaken/o-1"
+        },
+        "log": [
+            [
+                "or.unlockObject",
+                [
+                    "o-1"
+                ]
+            ]
+        ]
+    },
+    "locking-unknown-action": {
+        "outcome": {
+            "body": {
+                "naam": "x"
+            },
+            "parameters": [],
+            "path": "zaken/o-1"
+        },
+        "log": []
+    },
+    "locking-no-object-id": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": []
+    },
+    "avg-before": {
+        "outcome": {
+            "body": {
+                "naam": "x"
+            },
+            "parameters": [],
+            "path": "zaken/o-1",
+            "avg": "before"
+        },
+        "log": [
+            [
+                "avgBsn.apply",
+                [
+                    {
+                        "entity": "rule-1",
+                        "object": {
+                            "type": "avg_bsn_policy"
+                        }
+                    },
+                    {
+                        "body": {
+                            "naam": "x"
+                        },
+                        "parameters": [],
+                        "path": "zaken/o-1"
+                    },
+                    "before"
+                ]
+            ]
+        ]
+    },
+    "avg-after": {
+        "outcome": {
+            "body": {
+                "naam": "x"
+            },
+            "parameters": [],
+            "path": "zaken/o-1",
+            "avg": "after"
+        },
+        "log": [
+            [
+                "avgBsn.apply",
+                [
+                    {
+                        "entity": "rule-1",
+                        "object": {
+                            "type": "avg_bsn_policy"
+                        }
+                    },
+                    {
+                        "body": {
+                            "naam": "x"
+                        },
+                        "parameters": [],
+                        "path": "zaken/o-1"
+                    },
+                    "after"
+                ]
+            ]
+        ]
+    },
+    "selfurl": {
+        "outcome": {
+            "body": {
+                "id": "o-1",
+                "zaak": {
+                    "uuid": "z-1"
+                },
+                "url": "https://example.org/apps/integriq/api/endpoint/zaken/o-1",
+                "_links": {
+                    "self": {
+                        "href": "https://example.org/apps/integriq/api/endpoint/zaken/o-1"
+                    },
+                    "zaak": {
+                        "href": "https://example.org/apps/integriq/api/endpoint/zaken/z-1"
+                    }
+                }
+            }
+        },
+        "log": [
+            [
+                "url.getBaseUrl",
+                []
+            ]
+        ]
+    },
+    "selfurl-no-array-body": {
+        "outcome": {
+            "body": "text"
+        },
+        "log": []
+    },
+    "webhook-pass": {
+        "outcome": {
+            "body": {
+                "naam": "x"
+            },
+            "parameters": [],
+            "path": "zaken/o-1"
+        },
+        "log": [
+            [
+                "request.getHeader",
+                [
+                    "X-Sig"
+                ]
+            ],
+            [
+                "signature.verify",
+                [
+                    "",
+                    "sig-of-X-Sig",
+                    {
+                        "scheme": "github",
+                        "secret": "s",
+                        "toleranceSeconds": 30
+                    }
+                ]
+            ]
+        ]
+    },
+    "webhook-root-config-fail": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 401,
+            "data": {
+                "error": "invalid signature"
+            }
+        },
+        "log": [
+            [
+                "request.getHeader",
+                [
+                    "X-OpenConnector-Signature"
+                ]
+            ],
+            [
+                "signature.verify",
+                [
+                    "",
+                    "sig-of-X-OpenConnector-Signature",
+                    {
+                        "scheme": "openconnector",
+                        "secret": "s2",
+                        "toleranceSeconds": 300
+                    }
+                ]
+            ]
+        ]
+    },
+    "audit-one": {
+        "outcome": {
+            "path": "zaken/o-1/audittrail/a-1",
+            "body": {
+                "uuid": "a-1"
+            }
+        },
+        "log": [
+            [
+                "or.getLogs",
+                [
+                    "o-1",
+                    {
+                        "uuid": "a-1"
+                    },
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "audit-one-missing": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 404,
+            "data": {
+                "error": "Not found",
+                "reason": "The resource you are looking for does not exist"
+            }
+        },
+        "log": [
+            [
+                "or.getLogs",
+                [
+                    "o-1",
+                    {
+                        "uuid": "a-2"
+                    },
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "audit-all": {
+        "outcome": {
+            "path": "zaken/o-1",
+            "body": [
+                {
+                    "log": "o-1",
+                    "filters": []
+                }
+            ]
+        },
+        "log": [
+            [
+                "or.getLogs",
+                [
+                    "o-1",
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "audit-no-object-id": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": []
+    },
+    "download-filename-parameter": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\DataDownloadResponse",
+            "status": 200,
+            "content": "content of a.txt",
+            "headers": {
+                "Content-Disposition": "attachment; filename=a.txt",
+                "Content-Type": "text/plain"
+            }
+        },
+        "log": [
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                "o-1"
+            ],
+            [
+                "files.getFiles",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    false
+                ]
+            ],
+            [
+                "files.getFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "a.txt"
+                ]
+            ]
+        ]
+    },
+    "download-filename-position": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\DataDownloadResponse",
+            "status": 200,
+            "content": "content of b.txt",
+            "headers": {
+                "Content-Disposition": "attachment; filename=b.txt",
+                "Content-Type": "text/plain"
+            }
+        },
+        "log": [
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                "o-1"
+            ],
+            [
+                "files.getFiles",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "b.txt"
+                        }
+                    },
+                    false
+                ]
+            ],
+            [
+                "files.getFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "b.txt"
+                        }
+                    },
+                    "b.txt"
+                ]
+            ]
+        ]
+    },
+    "download-object-file": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\DataDownloadResponse",
+            "status": 200,
+            "content": "content of c.txt",
+            "headers": {
+                "Content-Disposition": "attachment; filename=c.txt",
+                "Content-Type": "text/plain"
+            }
+        },
+        "log": [
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                "o-1"
+            ],
+            [
+                "files.getFiles",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    false
+                ]
+            ],
+            [
+                "files.getFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "c.txt"
+                ]
+            ]
+        ]
+    },
+    "download-service-file": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\DataDownloadResponse",
+            "status": 200,
+            "content": "content of d.txt",
+            "headers": {
+                "Content-Disposition": "attachment; filename=d.txt",
+                "Content-Type": "text/plain"
+            }
+        },
+        "log": [
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                "o-1"
+            ],
+            [
+                "files.getFiles",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    false
+                ]
+            ],
+            [
+                "files.getFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "d.txt"
+                ]
+            ]
+        ]
+    },
+    "download-undetermined": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "File could not be determined"
+        },
+        "log": [
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                "o-1"
+            ],
+            [
+                "files.getFiles",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    false
+                ]
+            ]
+        ]
+    },
+    "download-no-object-id": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": []
+    },
+    "approval-before": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 202,
+            "data": {
+                "status": "pending_approval",
+                "approvalRequestId": "approval-1",
+                "statusUrl": "https://example.org/integriq.approvals.show/approval-1"
+            }
+        },
+        "log": [
+            [
+                "approval.suspend",
+                [
+                    {
+                        "entity": "endpoint-1",
+                        "object": {
+                            "name": "Zaken"
+                        }
+                    },
+                    {
+                        "entity": "rule-1",
+                        "object": {
+                            "type": "approval"
+                        }
+                    },
+                    {
+                        "flowToken": {
+                            "method": "POST",
+                            "parameters": {
+                                "p": 1
+                            },
+                            "path": "/zaken"
+                        }
+                    },
+                    "case-trace"
+                ]
+            ],
+            [
+                "url.linkToRouteAbsolute",
+                [
+                    "integriq.approvals.show",
+                    {
+                        "id": "approval-1"
+                    }
+                ]
+            ]
+        ]
+    },
+    "approval-before-untraced": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 202,
+            "data": {
+                "status": "pending_approval",
+                "approvalRequestId": "approval-1",
+                "statusUrl": "https://example.org/integriq.approvals.show/approval-1"
+            }
+        },
+        "log": [
+            [
+                "approval.suspend",
+                [
+                    {
+                        "entity": "endpoint-1",
+                        "object": {
+                            "name": "Zaken"
+                        }
+                    },
+                    {
+                        "entity": "rule-1",
+                        "object": {
+                            "type": "approval"
+                        }
+                    },
+                    {
+                        "flowToken": {
+                            "method": "POST",
+                            "parameters": {
+                                "p": 1
+                            },
+                            "path": "/zaken"
+                        }
+                    },
+                    null
+                ]
+            ],
+            [
+                "url.linkToRouteAbsolute",
+                [
+                    "integriq.approvals.show",
+                    {
+                        "id": "approval-1"
+                    }
+                ]
+            ]
+        ]
+    },
+    "approval-after": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "approval rule type only supports timing: before (pre-write gating)"
+        },
+        "log": []
+    },
+    "approval-no-flow-token": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": []
+    },
+    "write-file-no-config": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "No configuration found for write_file"
+        },
+        "log": []
+    },
+    "write-file-nothing": {
+        "outcome": {
+            "body": {
+                "naam": "x"
+            },
+            "parameters": [],
+            "path": "zaken/o-1"
+        },
+        "log": []
+    },
+    "write-file-single": {
+        "outcome": {
+            "body": {
+                "file": "/objects/h.txt",
+                "name": "dir/h.txt"
+            }
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "files.addFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "h.txt",
+                    "hello",
+                    false,
+                    [],
+                    null,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "write-file-single-from-flow-token": {
+        "outcome": {
+            "body": {
+                "file": "/objects/f.txt"
+            }
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "files.addFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "f.txt",
+                    "hi",
+                    false,
+                    [],
+                    null,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "write-file-single-fails": {
+        "outcome": {
+            "body": {
+                "file": "ZmFpbA==",
+                "name": "h.txt"
+            }
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "files.addFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "h.txt",
+                    "fail",
+                    false,
+                    [],
+                    null,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "write-file-list": {
+        "outcome": {
+            "body": {
+                "file": [
+                    "/objects/one.txt",
+                    "/objects/two.txt"
+                ]
+            }
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "files.addFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "one.txt",
+                    "one",
+                    false,
+                    [],
+                    null,
+                    null,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "files.addFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "two.txt",
+                    "two",
+                    false,
+                    [],
+                    null,
+                    null,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "files.addFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "f.txt",
+                    "fail",
+                    false,
+                    [],
+                    null,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "write-file-list-unnamed": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ]
+        ]
+    },
+    "write-file-no-object-id": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": []
+    },
+    "write-file-no-flow-token": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": []
+    },
+    "fileparts-no-object-id": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Filepart rules can only be applied after the object has been created"
+        },
+        "log": []
+    },
+    "fileparts-no-config": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "No configuration found for fileparts_create"
+        },
+        "log": []
+    },
+    "fileparts-saved": {
+        "outcome": {
+            "throws": "RuntimeException",
+            "message": "schema lookup"
+        },
+        "log": [
+            [
+                "or.setRegister",
+                [
+                    "3"
+                ]
+            ],
+            [
+                "or.setSchema",
+                [
+                    "7"
+                ]
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "files.getObjectFolder",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    null
+                ]
+            ],
+            [
+                "storage.createUpload",
+                [
+                    "/objects/stored-1",
+                    "big.bin",
+                    10,
+                    "o-1"
+                ]
+            ],
+            [
+                "or.saveObject",
+                [
+                    {
+                        "id": "part-1",
+                        "order": 1
+                    },
+                    "3",
+                    "9",
+                    "part-1",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    "9",
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "fileparts-mapped-invalid": {
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 400,
+            "data": {
+                "invalid": "invalid part"
+            }
+        },
+        "log": [
+            [
+                "mapping.getMapping",
+                [
+                    "m-1"
+                ]
+            ],
+            [
+                "or.setRegister",
+                [
+                    "3"
+                ]
+            ],
+            [
+                "or.setSchema",
+                [
+                    "7"
+                ]
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "files.getObjectFolder",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    null
+                ]
+            ],
+            [
+                "storage.createUpload",
+                [
+                    "/objects/stored-1",
+                    "big.bin",
+                    10,
+                    "o-1"
+                ]
+            ],
+            [
+                "mapping.executeMapping",
+                [
+                    {
+                        "object": "OCA\\OpenRegister\\Db\\Mapping"
+                    },
+                    {
+                        "id": "part-1",
+                        "order": 1
+                    },
+                    false
+                ]
+            ],
+            [
+                "or.saveObject",
+                [
+                    {
+                        "id": "part-1",
+                        "order": 1,
+                        "mapped": 1
+                    },
+                    "3",
+                    "9",
+                    "part-1",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            ],
+            [
+                "or.handleValidationException",
+                [
+                    {
+                        "object": "OCA\\OpenRegister\\Exception\\ValidationException"
+                    }
+                ]
+            ]
+        ]
+    },
+    "filepart-upload-no-config": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "No configuration found for filepart_upload"
+        },
+        "log": []
+    },
+    "filepart-upload": {
+        "outcome": {
+            "order": 1,
+            "id": "p-1",
+            "body": {
+                "order": 1,
+                "id": "p-1",
+                "data": "abc",
+                "successful": true
+            }
+        },
+        "log": [
+            [
+                "storage.writePart",
+                [
+                    1,
+                    "p-1",
+                    "abc"
+                ]
+            ],
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                "o-1"
+            ],
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.update",
+                "stored-1",
+                {
+                    "order": 1,
+                    "id": "p-1",
+                    "data": "abc",
+                    "successful": true
+                }
+            ]
+        ]
+    },
+    "filepart-upload-mapped": {
+        "outcome": {
+            "order": 2,
+            "id": "p-2",
+            "body": {
+                "order": 2,
+                "id": "p-2",
+                "data": "def",
+                "mapped": 2,
+                "successful": true
+            }
+        },
+        "log": [
+            [
+                "mapping.getMapping",
+                [
+                    "m-in"
+                ]
+            ],
+            [
+                "mapping.executeMapping",
+                [
+                    {
+                        "object": "OCA\\OpenRegister\\Db\\Mapping"
+                    },
+                    {
+                        "order": 2,
+                        "id": "p-2",
+                        "data": "def"
+                    },
+                    false
+                ]
+            ],
+            [
+                "storage.writePart",
+                [
+                    2,
+                    "p-2",
+                    "def"
+                ]
+            ],
+            [
+                "mapping.getMapping",
+                [
+                    "m-out"
+                ]
+            ],
+            [
+                "mapping.executeMapping",
+                [
+                    {
+                        "object": "OCA\\OpenRegister\\Db\\Mapping"
+                    },
+                    {
+                        "order": 2,
+                        "id": "p-2",
+                        "data": "def",
+                        "mapped": 1,
+                        "successful": true
+                    },
+                    false
+                ]
+            ],
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                "o-1"
+            ],
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.update",
+                "stored-1",
+                {
+                    "order": 2,
+                    "id": "p-2",
+                    "data": "def",
+                    "mapped": 2,
+                    "successful": true
+                }
+            ]
+        ]
+    },
+    "filepart-upload-no-object-id": {
+        "outcome": {
+            "order": 1,
+            "id": "p-1",
+            "body": {
+                "order": 1,
+                "id": "p-1",
+                "data": "abc",
+                "successful": true
+            }
+        },
+        "log": [
+            [
+                "storage.writePart",
+                [
+                    1,
+                    "p-1",
+                    "abc"
+                ]
+            ],
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.find",
+                null
+            ],
+            [
+                "or.getMapper",
+                [
+                    "objectEntity",
+                    null
+                ]
+            ],
+            [
+                "mapper.update",
+                "stored-1",
+                {
+                    "order": 1,
+                    "id": "p-1",
+                    "data": "abc",
+                    "successful": true
+                }
+            ]
+        ]
+    }
+}

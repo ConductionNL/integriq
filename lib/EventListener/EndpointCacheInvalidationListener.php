@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\EndpointCacheService;
+use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -60,13 +60,13 @@ class EndpointCacheInvalidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param EndpointCacheService $endpointCacheService Cache to invalidate.
+	 * @param EndpointCacheServiceInterface $endpointCacheService Cache to invalidate.
 	 * @param RegisterMapper $registerMapper Resolves an object's register slug.
 	 * @param SchemaMapper $schemaMapper Resolves an object's schema slug.
 	 * @param LoggerInterface $logger Logger for resolution failures.
 	 */
 	public function __construct(
-		private readonly EndpointCacheService $endpointCacheService,
+		private readonly EndpointCacheServiceInterface $endpointCacheService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,

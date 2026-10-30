@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
-use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
+use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -41,10 +41,10 @@ class StufProviderRequestReceivedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param StufProviderReceiver $receiver The receiver.
+	 * @param StufProviderReceiverInterface $receiver The receiver.
 	 */
 	public function __construct(
-		private readonly StufProviderReceiver $receiver,
+		private readonly StufProviderReceiverInterface $receiver,
 	) {
 
 	}//end __construct()

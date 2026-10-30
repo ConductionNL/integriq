@@ -55,21 +55,7 @@ use Throwable;
  *
  * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
  */
-class StufProviderReceiver {
-
-	/**
-	 * The cases route.
-	 *
-	 * @var string
-	 */
-	public const SERVICE_CASES = 'cases';
-
-	/**
-	 * The persons route.
-	 *
-	 * @var string
-	 */
-	public const SERVICE_PERSONS = 'persons';
+class StufProviderReceiver implements StufProviderReceiverInterface {
 
 	/**
 	 * The berichttypes each route takes.
@@ -245,6 +231,7 @@ class StufProviderReceiver {
 		}
 
 		$event = $this->reader->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
+		$event->restrictToApp(appId: (string)($source['configuration']['owningApp'] ?? ''));
 		$unfit = ($this->unfitQuery(event: $event) ?? $this->unfitWrite(event: $event, origin: $origin));
 		if ($unfit !== null) {
 			$this->logger->warning('StUF provider {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);

@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
+use OCA\Integriq\Service\Datasource\DashboardDatasourceServiceInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -71,7 +71,7 @@ class DatasourceController extends Controller {
 	 * 403, never a fetch. Any `url`/`host` in `params` is ignored — egress is
 	 * always derived from the stored source, never the caller.
 	 *
-	 * @param DashboardDatasourceService $service The resolve façade service.
+	 * @param DashboardDatasourceServiceInterface $service The resolve façade service.
 	 * @param string $sourceId UUID of the source to resolve against.
 	 *
 	 * @return JSONResponse `{value, fetchedAt, stale}` on success; 400/403/404/500 with an `error` key otherwise.
@@ -81,7 +81,7 @@ class DatasourceController extends Controller {
 	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-caller-authorization-honours-the-sources-read-access
 	 */
 	#[NoAdminRequired]
-	public function resolve(DashboardDatasourceService $service, string $sourceId): JSONResponse {
+	public function resolve(DashboardDatasourceServiceInterface $service, string $sourceId): JSONResponse {
 		$body = $this->request->getParams();
 		$valueExpr = (string)($body['valueExpr'] ?? '');
 
