@@ -1,0 +1,3397 @@
+{
+    "openregister-disabled": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "OpenRegister app is required for the fetch file rule and not installed"
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ]
+        ]
+    },
+    "no-fetch-file-config": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "No configuration found for fetch_file"
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ]
+        ]
+    },
+    "endpoint-null-from-path": {
+        "outcome": {
+            "return": {
+                "id": "item"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ]
+        ]
+    },
+    "source-missing": {
+        "outcome": {
+            "return": {
+                "id": "item"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "logger.error",
+                "Failed to find source for fetch file rule: no source"
+            ]
+        ]
+    },
+    "async-mode-queues": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "container.get",
+                "OCP\\BackgroundJob\\IJobList"
+            ],
+            [
+                "jobs.add",
+                "OCA\\Integriq\\BackgroundJob\\FetchFilesJob",
+                {
+                    "config": {
+                        "source": "src-1",
+                        "filePath": "",
+                        "sourceConfiguration": {
+                            "headers": {
+                                "X": "1"
+                            }
+                        },
+                        "endpoint": "/a"
+                    },
+                    "endpoint": "/a",
+                    "objectId": "c8b5d4e3-2222-4333-8444-a55566667777",
+                    "ruleId": 5
+                }
+            ]
+        ]
+    },
+    "async-mode-object-id-null": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "container.get",
+                "OCP\\BackgroundJob\\IJobList"
+            ],
+            [
+                "jobs.add",
+                "OCA\\Integriq\\BackgroundJob\\FetchFilesJob",
+                {
+                    "config": {
+                        "source": "src-1",
+                        "filePath": "",
+                        "sourceConfiguration": {
+                            "headers": {
+                                "X": "1"
+                            }
+                        },
+                        "endpoint": "/a"
+                    },
+                    "endpoint": "/a",
+                    "objectId": "",
+                    "ruleId": 5
+                }
+            ]
+        ]
+    },
+    "async-queue-fails": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "container.get",
+                "OCP\\BackgroundJob\\IJobList"
+            ],
+            [
+                "jobs.add",
+                "OCA\\Integriq\\BackgroundJob\\FetchFilesJob",
+                {
+                    "config": {
+                        "source": "src-1",
+                        "filePath": "",
+                        "sourceConfiguration": {
+                            "headers": {
+                                "X": "1"
+                            }
+                        },
+                        "endpoint": "/a"
+                    },
+                    "endpoint": "/a",
+                    "objectId": "c8b5d4e3-2222-4333-8444-a55566667777",
+                    "ruleId": 5
+                }
+            ],
+            [
+                "logger.error",
+                "[SynchronizationService] could not queue deferred file fetch for object c8b5d4e3-2222-4333-8444-a55566667777; its files will NOT be fetched: queue broke"
+            ]
+        ]
+    },
+    "single-endpoint": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/docs/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/docs/a.pdf",
+                false,
+                []
+            ]
+        ]
+    },
+    "single-from-file-path": {
+        "outcome": {
+            "return": {
+                "doc": {
+                    "url": "file://fetching-async"
+                }
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/docs/b.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "b.pdf",
+                "BYTES:/docs/b.pdf",
+                false,
+                []
+            ]
+        ]
+    },
+    "single-no-placeholder": {
+        "outcome": {
+            "return": {
+                "doc": {
+                    "url": "/docs/b.pdf"
+                }
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/docs/b.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "b.pdf",
+                "BYTES:/docs/b.pdf",
+                false,
+                []
+            ]
+        ]
+    },
+    "single-call-fails": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 1
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/a",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "logger.error",
+                "File fetch failed for endpoint /a, objectId c8b5d4e3-2222-4333-8444-a55566667777: call broke"
+            ]
+        ]
+    },
+    "single-save-fails": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 1
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/a",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a",
+                false,
+                []
+            ],
+            [
+                "logger.error",
+                "File fetch failed for endpoint /a, objectId c8b5d4e3-2222-4333-8444-a55566667777: Failed to save file a.pdf for object c8b5d4e3-2222-4333-8444-a55566667777: save broke"
+            ]
+        ]
+    },
+    "single-object-id-null": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ]
+        ]
+    },
+    "single-object-id-path": {
+        "outcome": {
+            "return": {
+                "id": "c8b5d4e3-2222-4333-8444-a55566667777",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/a",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a",
+                false,
+                []
+            ]
+        ]
+    },
+    "single-origin-id": {
+        "outcome": {
+            "return": {
+                "origin": "o-77",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/a",
+                "GET",
+                {
+                    "query": {
+                        "id": "o-77"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a",
+                false,
+                []
+            ]
+        ]
+    },
+    "single-post-body": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/a",
+                "POST",
+                {
+                    "body": "{\"q\":1}"
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a",
+                false,
+                []
+            ]
+        ]
+    },
+    "single-json-envelope": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/a",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                false
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "env.pdf",
+                "PDF",
+                false,
+                []
+            ]
+        ]
+    },
+    "single-write-false": {
+        "outcome": {
+            "return": {
+                "id": "item",
+                "": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/a",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ]
+        ]
+    },
+    "single-non-string-endpoint": {
+        "outcome": {
+            "return": {
+                "n": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "42",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "42.pdf",
+                "BYTES:42",
+                false,
+                []
+            ]
+        ]
+    },
+    "assoc-file-object": {
+        "outcome": {
+            "return": {
+                "doc": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/c.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "c.pdf",
+                "BYTES:/c.pdf",
+                false,
+                [
+                    "L1"
+                ]
+            ],
+            [
+                "file.publishFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "c.pdf"
+            ]
+        ]
+    },
+    "assoc-context-object-id": {
+        "outcome": {
+            "return": {
+                "doc": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/c.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "d9c6e5f4-3333-4444-8555-b66677778888"
+            ],
+            [
+                "file.saveFile",
+                "d9c6e5f4-3333-4444-8555-b66677778888",
+                "c.pdf",
+                "BYTES:/c.pdf",
+                false,
+                []
+            ]
+        ]
+    },
+    "assoc-no-endpoint": {
+        "outcome": {
+            "return": {
+                "doc": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ]
+        ]
+    },
+    "assoc-sub-object-path": {
+        "outcome": {
+            "return": {
+                "doc": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/deep.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "deep.pdf",
+                "BYTES:/deep.pdf",
+                false,
+                []
+            ]
+        ]
+    },
+    "assoc-published-int": {
+        "outcome": {
+            "return": {
+                "doc": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/c.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "c.pdf",
+                "BYTES:/c.pdf",
+                false,
+                []
+            ],
+            [
+                "file.publishFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "c.pdf"
+            ]
+        ]
+    },
+    "indexed-endpoints": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 2,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/keep.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/new.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "keep.pdf",
+                "BYTES:/keep.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "new.pdf",
+                "BYTES:/new.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-query-endpoint": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 2,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/get?id=1",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "get.pdf",
+                "BYTES:/get?id=1",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                ".pdf",
+                "BYTES:/",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-reject-and-throw": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async",
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 2
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/b.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "logger.error",
+                "Failed to dispatch file fetch for endpoint /b.pdf: dispatch broke"
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/c.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/d.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "logger.error",
+                "Failed to fetch file from endpoint /a.pdf: fetch broke"
+            ],
+            [
+                "logger.error",
+                "Failed to fetch file from endpoint /c.pdf: plain reason"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "d.pdf",
+                "BYTES:/d.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-save-fails": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 1
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a.pdf",
+                false,
+                []
+            ],
+            [
+                "logger.error",
+                "Failed to save file from endpoint /a.pdf: Failed to save file a.pdf for object c8b5d4e3-2222-4333-8444-a55566667777: save broke"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-object-id-null": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 1
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "logger.error",
+                "Failed to save file from endpoint /a.pdf: OCA\\Integriq\\Service\\SynchronizationService::saveFetchedFile(): Argument #3 ($objectId) must be of type string, null given"
+            ]
+        ]
+    },
+    "indexed-limits": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 3,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a.pdf",
+                false,
+                []
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/b.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "b.pdf",
+                "BYTES:/b.pdf",
+                false,
+                []
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/c.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "c.pdf",
+                "BYTES:/c.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-limits-clamped": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "logger.warning",
+                "Source requested a file-fetch concurrency of 999, which exceeds the hard maximum of 20; clamping."
+            ],
+            [
+                "logger.warning",
+                "Source requested a file-fetch concurrency of 999, which exceeds the hard maximum of 20; clamping."
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES:/a.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "indexed-too-large": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 2
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "logger.warning",
+                "[SynchronizationService] file refused before download: declares 20 bytes, exceeding the per-file ceiling of 5 bytes (source configuration.maxFileSize)."
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/b.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "logger.warning",
+                "[SynchronizationService] file refused before download: declares 20 bytes, exceeding the per-file ceiling of 5 bytes (source configuration.maxFileSize)."
+            ],
+            [
+                "logger.error",
+                "Failed to fetch file from endpoint /a.pdf: File declares 20 bytes, which exceeds the per-file ceiling of 5 bytes (source configuration.maxFileSize); refused before download."
+            ],
+            [
+                "logger.error",
+                "Failed to fetch file from endpoint /b.pdf: File declares 20 bytes, which exceeds the per-file ceiling of 5 bytes (source configuration.maxFileSize); refused before download."
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "multi-file-objects": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 2,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/x.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/y.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "x.pdf",
+                "BYTES:/x.pdf",
+                false,
+                [
+                    "t"
+                ]
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "y.pdf",
+                "BYTES:/y.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "multi-object-missing": {
+        "outcome": {
+            "return": {
+                "files": [
+                    "file://fetching-async",
+                    "file://fetching-async"
+                ]
+            }
+        },
+        "tally": {
+            "succeeded": 2,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/x.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/y.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "x.pdf",
+                "BYTES:/x.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "y.pdf",
+                "BYTES:/y.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "empty-with-object": {
+        "outcome": {
+            "return": {
+                "files": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "empty-without-object": {
+        "outcome": {
+            "return": {
+                "files": "file://fetching-async"
+            }
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ]
+        ]
+    },
+    "job-entry-single": {
+        "outcome": {
+            "return": null
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/job.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "job.pdf",
+                "BYTES:/job.pdf",
+                false,
+                []
+            ]
+        ]
+    },
+    "job-entry-indexed": {
+        "outcome": {
+            "return": null
+        },
+        "tally": {
+            "succeeded": 2,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/j1.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/j2.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "j1.pdf",
+                "BYTES:/j1.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "j2.pdf",
+                "BYTES:/j2.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "keep.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "job-entry-source-missing": {
+        "outcome": {
+            "throws": "OCP\\AppFramework\\Db\\DoesNotExistException",
+            "message": "no source"
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ]
+        ]
+    }
+}
