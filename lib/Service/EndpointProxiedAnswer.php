@@ -40,6 +40,7 @@ class EndpointProxiedAnswer {
 	 */
 	private const ALLOWED_HEADERS = [
 		'content-type',
+		'retry-after',
 		'content-disposition',
 		'content-language',
 		'content-length',

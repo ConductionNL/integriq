@@ -49,7 +49,6 @@ final class GatewayBindings {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$context->registerServiceAlias(GatewayDescriptorInterface::class, GatewayDescriptor::class);
 		$context->registerServiceAlias(ZgwRegistryBindingInterface::class, ZgwRegistryBinding::class);
 		$context->registerServiceAlias(GatewayRegistryInterface::class, GatewayRegistry::class);
 		$context->registerServiceAlias(PublicationGatewayInterface::class, PublicationGateway::class);

@@ -79,8 +79,6 @@ use OCA\Integriq\Service\Forms\FormsClientInterface;
 use OCA\Integriq\Service\Forms\FormsOcsClient;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Forms\FormsSyncAdapterInterface;
-use OCA\Integriq\Service\Helper\ExecutionTraceContext;
-use OCA\Integriq\Service\Helper\ExecutionTraceContextInterface;
 use OCA\Integriq\Service\Intake\IntakeGroups;
 use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Service\Intake\WebhookConnection;
@@ -602,7 +600,6 @@ final class ServiceBindings {
 		$context->registerServiceAlias(MtlsConfigResolverInterface::class, MtlsConfigResolver::class);
 		$context->registerServiceAlias(RecordOwnershipServiceInterface::class, RecordOwnershipService::class);
 		$context->registerServiceAlias(DashboardDatasourceServiceInterface::class, DashboardDatasourceService::class);
-		$context->registerServiceAlias(ExecutionTraceContextInterface::class, ExecutionTraceContext::class);
 		$context->registerServiceAlias(SourceMappingServiceInterface::class, SourceMappingService::class);
 		$context->registerServiceAlias(MailIntakeServiceInterface::class, MailIntakeService::class);
 		$context->registerServiceAlias(FlowGraphMigrationServiceInterface::class, FlowGraphMigrationService::class);

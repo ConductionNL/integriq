@@ -1505,8 +1505,8 @@ class CallService implements CallServiceInterface {
 				}
 
 				// Also redact any header whose name matches the secret-key pattern
-				// (covers X-Api-Key, X-Auth-Token, Api-Key, etc.).
-				if ($this->isSecretKeyName(name: (string)$headerName) === true) {
+				// (covers X-Api-Key, X-Auth-Token, Api-Key, etc.) or names a session.
+				if ($this->sensitiveFieldRegistry->isSensitiveHeaderName(name: (string)$headerName) === true) {
 					$config['headers'][$headerName] = $placeholder;
 				}
 			}
@@ -1540,18 +1540,25 @@ class CallService implements CallServiceInterface {
 
 	/**
 	 * Masks the secret-bearing headers of a response (Set-Cookie, Authorization,
-	 * any token- or key-named header) in the copy that is stored in a CallLog or
-	 * a trace step. The caller keeps the real headers on the returned entity.
+	 * any token-, key- or session-named header) and the tokens an upstream issued
+	 * in a JSON body (access_token, refresh_token, id_token) in the copy that is
+	 * stored in a CallLog or a trace step. The caller keeps the real response on
+	 * the returned entity.
 	 *
 	 * @param array $response The structured response from buildResponseData().
 	 *
-	 * @return array The response with its headers redacted.
+	 * @return array The response with its headers and issued tokens redacted.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
 	 */
 	private function redactResponseHeaders(array $response): array {
 		if (is_array($response['headers'] ?? null) === true) {
-			$response['headers'] = $this->sensitiveFieldRegistry->redactArray(data: $response['headers']);
+			$response['headers'] = $this->sensitiveFieldRegistry->redactHeaders(headers: $response['headers']);
+		}
+
+		// Tokens the upstream issued (an OAuth token answer) never reach the stored log.
+		if (is_string($response['body'] ?? null) === true && ($response['encoding'] ?? 'UTF-8') === 'UTF-8') {
+			$response['body'] = $this->sensitiveFieldRegistry->redactIssuedTokensInJson(body: $response['body']);
 		}
 
 		return $response;

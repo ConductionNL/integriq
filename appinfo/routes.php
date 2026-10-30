@@ -130,8 +130,6 @@ return [
 		// Replaying and hand-firing share one action (`call-log.replay`),
 		// because they are the same act to the receiver. The verdict leg is
 		// public and signature-gated like every other inbound endpoint here.
-		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
-		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 		['name' => 'callLog#show', 'url' => '/api/calls/{id}', 'verb' => 'GET'],
 		['name' => 'callLog#preview', 'url' => '/api/calls/{id}/preview', 'verb' => 'GET'],
 		['name' => 'callLog#replay', 'url' => '/api/calls/{id}/replay', 'verb' => 'POST'],
@@ -139,6 +137,11 @@ return [
 		['name' => 'callLog#fire', 'url' => '/api/calls/fire', 'verb' => 'POST'],
 		['name' => 'verdict#inbound', 'url' => '/api/verdicts/inbound', 'verb' => 'POST'],
 		['name' => 'verdict#index', 'url' => '/api/verdicts', 'verb' => 'GET'],
+
+		// A source's 24-hour performance and certificate expiry. Administrators only.
+		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
+		// Where a record was synchronized from, answered after a read check under OpenRegister's rights.
+		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a

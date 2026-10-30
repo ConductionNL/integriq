@@ -283,4 +283,40 @@ class SensitiveFieldRegistryTest extends TestCase {
 
 		$this->assertSame(['Pin' => ['***REDACTED***'], 'name' => 'n'], $result);
 	}//end testRedactArrayMasksTheCallsExtraExactNames()
+
+	/**
+	 * A session header is a credential; a `sessionId` payload field is not.
+	 *
+	 * @return void
+	 */
+	public function testASessionHeaderIsSensitiveButASessionFieldIsNot(): void {
+		$this->assertTrue($this->registry->isSensitiveHeaderName(name: 'X-Session'));
+		$this->assertTrue($this->registry->isSensitiveHeaderName(name: 'x-session-id'));
+		$this->assertTrue($this->registry->isSensitiveHeaderName(name: 'Authorization'));
+		$this->assertFalse($this->registry->isSensitiveHeaderName(name: 'Content-Type'));
+		$this->assertFalse($this->registry->isSensitiveName(name: 'sessionId'));
+
+		$this->assertSame(
+			['X-Session' => ['***REDACTED***'], 'Content-Type' => ['text/plain']],
+			$this->registry->redactHeaders(headers: ['X-Session' => ['s-1'], 'Content-Type' => ['text/plain']])
+		);
+	}//end testASessionHeaderIsSensitiveButASessionFieldIsNot()
+
+	/**
+	 * Issued tokens are masked in a JSON body at any depth; any other body is left alone.
+	 *
+	 * @return void
+	 */
+	public function testIssuedTokensAreMaskedInAJsonBody(): void {
+		$masked = $this->registry->redactIssuedTokensInJson(body: '[{"Access_Token":"a","data":{"refresh_token":"r"}}]');
+		$this->assertSame('[{"Access_Token":"***REDACTED***","data":{"refresh_token":"***REDACTED***"}}]', $masked);
+
+		$this->assertSame(
+			'{"access_token":"***REDACTED***","meta":{},"list":[],"url":"https://idp.example/ü","n":1.0}',
+			$this->registry->redactIssuedTokensInJson(body: '{"access_token":"x","meta":{},"list":[],"url":"https://idp.example/ü","n":1.0}')
+		);
+
+		$this->assertSame('access_token=a&x=1', $this->registry->redactIssuedTokensInJson(body: 'access_token=a&x=1'));
+		$this->assertSame('{"name": "x"}', $this->registry->redactIssuedTokensInJson(body: '{"name": "x"}'));
+	}//end testIssuedTokensAreMaskedInAJsonBody()
 }//end class

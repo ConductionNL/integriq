@@ -34,10 +34,14 @@ describe('leafSummary', () => {
 		expect(leafSummary({ loading: false, error: '', count: 1, noun: 'things', rows })).toEqual({ count: 1, noun: 'things', rows, actions: [] })
 	})
 
-	it('drops rows at zero and reports nothing while loading or after a failed read', () => {
+	it('drops rows at zero and reports nothing while loading', () => {
 		expect(leafSummary({ loading: false, error: '', count: 0, noun: 'things', rows: [{ label: 'x' }] }).rows).toEqual([])
 		expect(leafSummary({ loading: true, error: '', count: 0, noun: 'things' })).toBeNull()
-		expect(leafSummary({ loading: false, error: 'failed', count: 0, noun: 'things' })).toBeNull()
+	})
+
+	it('flags a failed read as unavailable, without a noun the card would list as "nothing linked"', () => {
+		expect(leafSummary({ loading: false, error: 'failed', count: 3, noun: 'things', rows: [{ label: 'x' }] }))
+			.toEqual({ count: 0, noun: '', rows: [], actions: [], unavailable: true })
 	})
 })
 
@@ -72,6 +76,7 @@ describe('leafReportMixin', () => {
 	})
 })
 
+// A supplement: syncedFromTabLeafReport.spec.js mounts SyncedFromTab and checks what it reports and draws.
 describe('sync leaf wiring', () => {
 	it('asks for the library card and reports through the mixin', async () => {
 		const { readFileSync } = await import('node:fs')

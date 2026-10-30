@@ -46,6 +46,12 @@ permissions:
 # BELOW what the app already published as `openconnector`, and the store accepts
 # that with a 200 and then never offers it to anyone. Drop the input once
 # the `openconnector` entry is retired.
+#
+# `extra-rsync-excludes` keeps repo tooling the shared exclude list does not
+# know out of the app package: `.mailmap` (contributors' private addresses),
+# `sigrid.yaml` and `ARCHITECTURE.md`. One line, space-separated: the shared
+# workflow pastes the value into a backslash-continued rsync command, so a
+# newline would end that command early.
 jobs:
   unstable:
     # Enabled 2026-08-21 to complete the convergence. It was `if: false` while
@@ -67,6 +73,7 @@ jobs:
       previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
+      extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
     secrets: inherit
 
   beta:
@@ -78,6 +85,7 @@ jobs:
       previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
+      extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
     secrets: inherit
 
   stable:
@@ -89,4 +97,5 @@ jobs:
       previous-app-id: openconnector
       verify-vendor-deps: false
       vendor-check-paths: ''
+      extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
     secrets: inherit

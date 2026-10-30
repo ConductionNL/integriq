@@ -23,13 +23,16 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\RecordProvenanceServiceInterface;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -47,6 +50,7 @@ class RecordProvenanceController extends Controller {
 	 * @param RecordProvenanceServiceInterface $provenance    Reads the provenance.
 	 * @param OrObjectService         $objectService Checks the caller may read the record.
 	 * @param IL10N                   $l             Translations.
+	 * @param LoggerInterface         $logger        Records a failed read that is not a plain miss.
 	 */
 	public function __construct(
 		$appName,
@@ -54,6 +58,7 @@ class RecordProvenanceController extends Controller {
 		private readonly RecordProvenanceServiceInterface $provenance,
 		private readonly OrObjectService $objectService,
 		private readonly IL10N $l,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -76,7 +81,15 @@ class RecordProvenanceController extends Controller {
 
 		try {
 			$record = $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true, _multitenancy: true);
-		} catch (Throwable) {
+		} catch (DoesNotExistException | NotAuthorizedException) {
+			// A miss and a refused read look the same to the caller: the record does not exist for them.
+			$record = null;
+		} catch (Throwable $exception) {
+			// Fail closed, but leave a trace: a database or OpenRegister error is not a missing record.
+			$this->logger->error(
+				'RecordProvenanceController: reading the record failed: ' . $exception->getMessage(),
+				['exception' => $exception, 'register' => $register, 'schema' => $schema, 'id' => $id]
+			);
 			$record = null;
 		}
 
