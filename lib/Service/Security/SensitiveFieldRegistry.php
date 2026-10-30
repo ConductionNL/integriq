@@ -112,7 +112,9 @@ class SensitiveFieldRegistry {
 
 	/**
 	 * Recursively walks an array and replaces the value of any key that
-	 * matches {@see isSensitiveName()} with the irreversible placeholder.
+	 * matches {@see isSensitiveName()} with the irreversible placeholder. A
+	 * list under such a key has every value masked; a map is walked by its own
+	 * keys (see maskValue()).
 	 *
 	 * For a dotted key (e.g. a flat `headers.Authorization` key, as used by
 	 * Source's dot-notation `configuration` storage), only the last
@@ -130,29 +132,90 @@ class SensitiveFieldRegistry {
 	 */
 	public function redactArray(array $data, ?array $extraExactNames = null): array {
 		foreach ($data as $key => $value) {
-			if (is_array($value) === true) {
-				$data[$key] = $this->redactArray(data: $value, extraExactNames: $extraExactNames);
+			if ($this->isSensitiveKey(key: (string)$key, extraExactNames: $extraExactNames) === true) {
+				$data[$key] = $this->maskValue(value: $value, extraExactNames: $extraExactNames);
 				continue;
 			}
 
-			$segments = explode('.', (string)$key);
-			$leafName = (string)end($segments);
-
-			$isSensitive = $this->isSensitiveName(name: $leafName);
-			if ($isSensitive === false && $extraExactNames !== null) {
-				foreach ($extraExactNames as $extraExactName) {
-					if (strtolower($leafName) === strtolower($extraExactName)) {
-						$isSensitive = true;
-						break;
-					}
-				}
+			if (is_array($value) === true) {
+				$data[$key] = $this->redactArray(data: $value, extraExactNames: $extraExactNames);
 			}
-
-			if ($isSensitive === true) {
-				$data[$key] = self::PLACEHOLDER;
-			}
-		}//end foreach
+		}
 
 		return $data;
 	}//end redactArray()
+
+	/**
+	 * Whether a key names a secret: the last dot-segment of the key is matched
+	 * against the sensitive-name rules and the call's extra exact names.
+	 *
+	 * @param string                  $key             The array key.
+	 * @param array<int, string>|null $extraExactNames Additional exact-match names for this call.
+	 *
+	 * @return boolean Whether the key's value must be masked.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	private function isSensitiveKey(string $key, ?array $extraExactNames): bool {
+		$segments = explode('.', $key);
+		$leafName = (string)end($segments);
+
+		if ($this->isSensitiveName(name: $leafName) === true) {
+			return true;
+		}
+
+		foreach (($extraExactNames ?? []) as $extraExactName) {
+			if (strtolower($leafName) === strtolower($extraExactName)) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isSensitiveKey()
+
+	/**
+	 * Masks a value held under a sensitive key.
+	 *
+	 * A scalar becomes the placeholder. A list (a PSR-7 header's values, a
+	 * basic-auth pair) keeps its length and has every value masked at any
+	 * depth: its integer keys say nothing, so it inherits its key's
+	 * sensitivity. A map is walked like any other array, because its keys name
+	 * their values: `authentication.credentialRef.credentialId` is a pointer
+	 * that export must keep (REQ-010), `authentication.password` is not.
+	 *
+	 * @param mixed                   $value           The value under a sensitive key.
+	 * @param array<int, string>|null $extraExactNames Additional exact-match names for this call.
+	 *
+	 * @return mixed The masked value.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	private function maskValue(mixed $value, ?array $extraExactNames): mixed {
+		if (is_array($value) === false) {
+			return self::PLACEHOLDER;
+		}
+
+		if (array_is_list($value) === false) {
+			return $this->redactArray(data: $value, extraExactNames: $extraExactNames);
+		}
+
+		return array_map(fn (mixed $item): mixed => $this->maskListItem(item: $item), $value);
+	}//end maskValue()
+
+	/**
+	 * Masks one item of a list held under a sensitive key, at any depth.
+	 *
+	 * @param mixed $item The list item.
+	 *
+	 * @return mixed The placeholder, or the item's array with every value masked.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	private function maskListItem(mixed $item): mixed {
+		if (is_array($item) === false) {
+			return self::PLACEHOLDER;
+		}
+
+		return array_map(fn (mixed $inner): mixed => $this->maskListItem(item: $inner), $item);
+	}//end maskListItem()
 }//end class

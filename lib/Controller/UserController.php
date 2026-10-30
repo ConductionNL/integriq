@@ -34,6 +34,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -54,6 +55,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The 13th type is IUser, the user
+ *   IUserManager::checkPassword() already hands login(); naming it in the login
+ *   helpers' signatures adds no dependency the class did not have.
  */
 class UserController extends Controller {
 
@@ -460,10 +464,7 @@ class UserController extends Controller {
 		try {
 			// MEMORY MONITORING: Check initial memory usage to prevent OOM.
 			$initialMemoryUsage = memory_get_usage(true);
-			$memoryLimit = ini_get('memory_limit');
-
-			// Convert memory limit to bytes for comparison.
-			$memoryLimitBytes = $this->convertToBytes(memoryLimit: $memoryLimit);
+			$memoryLimitBytes = $this->convertToBytes(memoryLimit: ini_get('memory_limit'));
 
 			// If we're already using more than 80% of memory limit, return error.
 			if ($memoryLimitBytes > 0 && $initialMemoryUsage > ($memoryLimitBytes * 0.8)) {
@@ -478,11 +479,8 @@ class UserController extends Controller {
 			// Get client IP address for rate limiting.
 			$clientIp = $this->securityService->getClientIpAddress($this->request);
 
-			// Get and sanitize login credentials from request.
-			$data = $this->request->getParams();
-
 			// Validate and sanitize credentials to prevent XSS attacks.
-			$credentialValidation = $this->securityService->validateLoginCredentials($data);
+			$credentialValidation = $this->securityService->validateLoginCredentials($this->request->getParams());
 			if ($credentialValidation['valid'] === false) {
 				$response = new JSONResponse(
 					data: ['error' => $credentialValidation['error']],
@@ -492,129 +490,20 @@ class UserController extends Controller {
 			}
 
 			$credentials = $credentialValidation['credentials'];
-			$username = $credentials['username'];
-			$password = $credentials['password'];
-
-			// Check rate limiting before attempting authentication.
-			$rateLimitCheck = $this->securityService->checkLoginRateLimit($username, $clientIp);
-			if ($rateLimitCheck['allowed'] === false) {
-				// Apply progressive delay if specified.
-				if (isset($rateLimitCheck['delay']) === true) {
-					sleep($rateLimitCheck['delay']);
-				}
-
-				$response = new JSONResponse(
-					// Too Many Requests.
-					data: [
-						'error' => $rateLimitCheck['reason'],
-						'retry_after' => $rateLimitCheck['delay'] ?? null,
-						'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
-					],
-					statusCode: 429
-				);
-				return $this->securityService->addSecurityHeaders($response);
-			}
-
-			// Attempt to authenticate the user.
-			$user = $this->userManager->checkPassword($username, $password);
-
-			// Check if authentication was successful.
-			if ($user === false) {
-				// Record failed login attempt for rate limiting.
-				$this->securityService->recordFailedLoginAttempt($username, $clientIp, 'invalid_credentials');
-
-				// Return generic error message to prevent username enumeration.
-				//
-				// HTTP 401 Unauthorized, not 400: the request itself is well
-				// formed, it is the *authentication* that failed. The spec
-				// (openspec/specs/user-management-and-login/spec.md, "Failed
-				// login is rate-limited and anti-enumeration") mandates 401
-				// here and reserves 400 for validateLoginCredentials() — a
-				// missing, too-short or illegal username, or an over-long
-				// password. Collapsing the two made a malformed request and a
-				// wrong password indistinguishable to a client.
-				$response = new JSONResponse(
-					data: ['error' => $this->l->t('Invalid username or password')],
-					statusCode: Http::STATUS_UNAUTHORIZED
-				);
-				return $this->securityService->addSecurityHeaders($response);
-			}
-
-			// Check if user account is enabled.
-			if ($user->isEnabled() === false) {
-				// Record failed login attempt for disabled account.
-				$this->securityService->recordFailedLoginAttempt($username, $clientIp, 'account_disabled');
-
-				$response = new JSONResponse(
-					data: ['error' => $this->l->t('Account is disabled')],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-				return $this->securityService->addSecurityHeaders($response);
+			$user = $this->authenticateLogin(credentials: $credentials, clientIp: $clientIp);
+			if ($user instanceof JSONResponse === true) {
+				return $user;
 			}
 
 			// Authentication successful - record success and clear rate limits.
-			$this->securityService->recordSuccessfulLogin($username, $clientIp);
+			$this->securityService->recordSuccessfulLogin($credentials['username'], $clientIp);
 
-			// Set the user in the session using Nextcloud's session management.
-			$this->userSession->setUser($user);
-
-			// Create a complete login using Nextcloud's session-token flow so subsequent
-			// requests with the returned cookies are recognised as authenticated.
-			$this->userSession->createSessionToken($this->request, $user->getUID(), $user->getUID(), $password);
-
-			// Verify the session was actually established.
-			$sessionUser = $this->userSession->getUser();
-			if ($sessionUser === null || $sessionUser->getUID() !== $user->getUID()) {
-				$response = new JSONResponse(
-					data: ['error' => $this->l->t('Failed to establish persistent session')],
-					statusCode: 500
-				);
-				$response = $this->securityService->addSecurityHeaders($response);
-				return $this->addCorsHeaders(response: $response);
+			$sessionFailure = $this->establishLoginSession(user: $user, password: $credentials['password']);
+			if ($sessionFailure !== null) {
+				return $sessionFailure;
 			}
 
-			// Build user data array for response (sanitized).
-			$userData = $this->userService->buildUserDataArray($user);
-
-			// MEMORY MONITORING: Check memory usage after building user data.
-			$finalMemoryUsage = memory_get_usage(true);
-			$memoryIncreaseBytes = ($finalMemoryUsage - $initialMemoryUsage);
-
-			// Log memory usage for monitoring.
-			if ($memoryIncreaseBytes > (10 * 1024 * 1024)) {
-				// 10MB threshold.
-				$this->logger->warning(
-					'High memory usage during login',
-					[
-						'user' => $user->getUID(),
-						'initial_memory' => $initialMemoryUsage,
-						'final_memory' => $finalMemoryUsage,
-						'increase_bytes' => $memoryIncreaseBytes,
-						'increase_mb' => round($memoryIncreaseBytes / (1024 * 1024), 2),
-					]
-				);
-			}
-
-			// Surface the session id/name so browser clients can persist the cookie.
-			$sessionId = session_id();
-			$sessionName = session_name();
-
-			// Create successful response with security headers, CORS, and session info.
-			$response = new JSONResponse(
-				[
-					'message' => $this->l->t('Login successful'),
-					'user' => $userData,
-					'session_created' => true,
-					'session' => [
-						'id' => $sessionId,
-						'name' => $sessionName,
-						'cookie_instructions' => 'Use the returned session cookies for subsequent authenticated requests',
-					],
-				]
-			);
-
-			$response = $this->securityService->addSecurityHeaders($response);
-			return $this->addCorsHeaders(response: $response);
+			return $this->loginSuccessResponse(user: $user, initialMemoryUsage: $initialMemoryUsage);
 		} catch (\Exception $e) {
 			// Log the actual error for debugging (sensitive info is in the trace, not the user response).
 			$this->logger->error(
@@ -636,6 +525,146 @@ class UserController extends Controller {
 		}//end try
 
 	}//end login()
+
+	/**
+	 * Check the login rate limit and the credentials, and that the account is enabled.
+	 *
+	 * Both failures are recorded for the rate limit. A wrong password answers 401,
+	 * not 400: the request is well formed, the authentication failed. The spec
+	 * ("Failed login is rate-limited and anti-enumeration") reserves 400 for
+	 * validateLoginCredentials() and for a disabled account. The message is
+	 * generic, so it does not reveal whether the username exists.
+	 *
+	 * @param array  $credentials The sanitized `username` and `password`.
+	 * @param string $clientIp    The client IP address.
+	 *
+	 * @return IUser|JSONResponse The user, or the 429, 401 or 400 response.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function authenticateLogin(array $credentials, string $clientIp): IUser|JSONResponse {
+		$username = $credentials['username'];
+
+		// Check rate limiting before attempting authentication.
+		$rateLimitCheck = $this->securityService->checkLoginRateLimit($username, $clientIp);
+		if ($rateLimitCheck['allowed'] === false) {
+			// Apply progressive delay if specified.
+			if (isset($rateLimitCheck['delay']) === true) {
+				sleep($rateLimitCheck['delay']);
+			}
+
+			$response = new JSONResponse(
+				// Too Many Requests.
+				data: [
+					'error' => $rateLimitCheck['reason'],
+					'retry_after' => $rateLimitCheck['delay'] ?? null,
+					'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
+				],
+				statusCode: 429
+			);
+			return $this->securityService->addSecurityHeaders($response);
+		}
+
+		$user = $this->userManager->checkPassword($username, $credentials['password']);
+		if ($user === false) {
+			$this->securityService->recordFailedLoginAttempt($username, $clientIp, 'invalid_credentials');
+
+			$response = new JSONResponse(
+				data: ['error' => $this->l->t('Invalid username or password')],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+			return $this->securityService->addSecurityHeaders($response);
+		}
+
+		if ($user->isEnabled() === false) {
+			$this->securityService->recordFailedLoginAttempt($username, $clientIp, 'account_disabled');
+
+			$response = new JSONResponse(
+				data: ['error' => $this->l->t('Account is disabled')],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+			return $this->securityService->addSecurityHeaders($response);
+		}
+
+		return $user;
+	}//end authenticateLogin()
+
+	/**
+	 * Put the user in the session and create a session token, so later requests
+	 * with the returned cookies are recognised as authenticated.
+	 *
+	 * @param IUser  $user     The authenticated user.
+	 * @param string $password The password the user logged in with.
+	 *
+	 * @return JSONResponse|null The 500 response when the session did not take, null otherwise.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function establishLoginSession(IUser $user, string $password): ?JSONResponse {
+		$this->userSession->setUser($user);
+		$this->userSession->createSessionToken($this->request, $user->getUID(), $user->getUID(), $password);
+
+		// Verify the session was actually established.
+		$sessionUser = $this->userSession->getUser();
+		if ($sessionUser !== null && $sessionUser->getUID() === $user->getUID()) {
+			return null;
+		}
+
+		$response = new JSONResponse(
+			data: ['error' => $this->l->t('Failed to establish persistent session')],
+			statusCode: 500
+		);
+		$response = $this->securityService->addSecurityHeaders($response);
+		return $this->addCorsHeaders(response: $response);
+	}//end establishLoginSession()
+
+	/**
+	 * The 200 answer to a login: the sanitized user data, and the session id and
+	 * name so browser clients can persist the cookie, with security and CORS headers.
+	 *
+	 * A warning is logged when building the user data took more than 10 MB of memory.
+	 *
+	 * @param IUser $user               The logged-in user.
+	 * @param int         $initialMemoryUsage The memory in use when the login started, in bytes.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function loginSuccessResponse(IUser $user, int $initialMemoryUsage): JSONResponse {
+		$userData = $this->userService->buildUserDataArray($user);
+
+		$finalMemoryUsage = memory_get_usage(true);
+		$memoryIncreaseBytes = ($finalMemoryUsage - $initialMemoryUsage);
+		if ($memoryIncreaseBytes > (10 * 1024 * 1024)) {
+			$this->logger->warning(
+				'High memory usage during login',
+				[
+					'user' => $user->getUID(),
+					'initial_memory' => $initialMemoryUsage,
+					'final_memory' => $finalMemoryUsage,
+					'increase_bytes' => $memoryIncreaseBytes,
+					'increase_mb' => round($memoryIncreaseBytes / (1024 * 1024), 2),
+				]
+			);
+		}
+
+		$response = new JSONResponse(
+			[
+				'message' => $this->l->t('Login successful'),
+				'user' => $userData,
+				'session_created' => true,
+				'session' => [
+					'id' => session_id(),
+					'name' => session_name(),
+					'cookie_instructions' => 'Use the returned session cookies for subsequent authenticated requests',
+				],
+			]
+		);
+
+		$response = $this->securityService->addSecurityHeaders($response);
+		return $this->addCorsHeaders(response: $response);
+	}//end loginSuccessResponse()
 
 	/**
 	 * Convert PHP memory limit string to bytes.
