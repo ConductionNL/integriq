@@ -30,7 +30,7 @@ namespace OCA\Integriq\Repair;
 
 use JsonException;
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -63,12 +63,12 @@ class BroadenExchangeReadDefault implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ActionAuthService $actionAuth The action matrix store.
+	 * @param ActionAuthServiceInterface $actionAuth The action matrix store.
 	 * @param IAppConfig        $appConfig  Holds the run-once marker.
 	 * @param LoggerInterface   $logger     PSR logger.
 	 */
 	public function __construct(
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

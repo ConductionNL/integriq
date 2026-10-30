@@ -30,9 +30,9 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\UwlrEduVProviderException;
 use OCA\Integriq\Exception\UwlrEduVTranslationException;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\UwlrEduVServiceInterface;
-use OCA\Integriq\Service\Intake\WebhookGate;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -64,9 +64,9 @@ class UwlrEduVController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param UwlrEduVServiceInterface $uwlrEduVService Send/sync/retour orchestration logic.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push/sync endpoints).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
@@ -74,9 +74,9 @@ class UwlrEduVController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly UwlrEduVServiceInterface $uwlrEduVService,
-		private readonly WebhookGate $gate,
+		private readonly WebhookGateInterface $gate,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {

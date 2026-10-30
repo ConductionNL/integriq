@@ -31,12 +31,12 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Intake\IntakeGroups;
-use OCA\Integriq\Service\Intake\WebhookConnection;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
+use OCA\Integriq\Service\Intake\WebhookConnectionInterface;
 use OCA\Integriq\Service\Intake\WebhookProfile;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -73,10 +73,10 @@ class WebhookConnectionsSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest          $request       The request.
-	 * @param WebhookConnection $webhooks      Finds and checks each webhook's consumer and account.
+	 * @param WebhookConnectionInterface $webhooks      Finds and checks each webhook's consumer and account.
 	 * @param ORObjectService   $objectService Saves a consumer as the administrator, under RBAC.
 	 * @param IGroupManager     $groupManager  Tells an administrator account apart.
-	 * @param IntakeGroups      $groups        Puts a webhook's account in the intake group its schema grants.
+	 * @param IntakeGroupsInterface      $groups        Puts a webhook's account in the intake group its schema grants.
 	 * @param IL10N             $l             Field errors and warnings.
 	 * @param LoggerInterface   $logger        Diagnostics.
 	 *
@@ -84,10 +84,10 @@ class WebhookConnectionsSettingsController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly WebhookConnection $webhooks,
+		private readonly WebhookConnectionInterface $webhooks,
 		private readonly ORObjectService $objectService,
 		private readonly IGroupManager $groupManager,
-		private readonly IntakeGroups $groups,
+		private readonly IntakeGroupsInterface $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -167,14 +167,14 @@ class WebhookConnectionsSettingsController extends Controller {
 			'scheme' => $scheme,
 			'secret' => (string)$this->request->getParam('secret', ''),
 			'header' => $header,
-			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS)),
+			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS)),
 		];
 
 		try {
 			$this->objectService->saveObject(
 				object: $this->consumerData(profile: $profile, consumer: $consumer, trust: $trust, userId: $userId),
-				register: DsoConnection::REGISTER,
-				schema: DsoConnection::SCHEMA_CONSUMER,
+				register: PortalConnectionInterface::REGISTER,
+				schema: PortalConnectionInterface::SCHEMA_CONSUMER,
 				uuid: $consumer?->getUuid()
 			);
 		} catch (Throwable $exception) {
@@ -227,7 +227,7 @@ class WebhookConnectionsSettingsController extends Controller {
 			'scheme' => (string)($trust['scheme'] ?? $profile->defaultScheme),
 			'secretConfigured' => ((string)($trust['secret'] ?? '') !== ''),
 			'header' => (string)($trust['header'] ?? $profile->defaultHeader),
-			'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
+			'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS),
 			'userId' => $userId,
 			'account' => $this->describeAccount(profile: $profile, userId: $userId),
 			'handlerGroup' => $this->describeHandlerGroup(profile: $profile),

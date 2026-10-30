@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\RecordProvenanceService;
+use OCA\Integriq\Service\RecordProvenanceServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -44,14 +44,14 @@ class RecordProvenanceController extends Controller {
 	 *
 	 * @param string                  $appName       The app id.
 	 * @param IRequest                $request       The request.
-	 * @param RecordProvenanceService $provenance    Reads the provenance.
+	 * @param RecordProvenanceServiceInterface $provenance    Reads the provenance.
 	 * @param OrObjectService         $objectService Checks the caller may read the record.
 	 * @param IL10N                   $l             Translations.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly RecordProvenanceService $provenance,
+		private readonly RecordProvenanceServiceInterface $provenance,
 		private readonly OrObjectService $objectService,
 		private readonly IL10N $l,
 	) {

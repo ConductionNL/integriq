@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\SetupCheck;
 
-use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;
@@ -98,7 +98,7 @@ class DigitalPostAccountCheck implements ISetupCheck {
 	 */
 	public function run(): SetupResult {
 		try {
-			$state = $this->container->get(DigitalPostAccount::class)->describe();
+			$state = $this->container->get(DigitalPostAccountInterface::class)->describe();
 		} catch (Throwable) {
 			return SetupResult::success($this->l10n->t('Digital post needs OpenRegister, which is not available.'));
 		}

@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Outbound;
 
 use DateTimeImmutable;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
 
@@ -56,12 +56,12 @@ class MessageBodyReader {
 	 *
 	 * @param MessageRecorder $recorder Reads the record.
 	 * @param ORObjectService $objectService Records the read.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 */
 	public function __construct(
 		private readonly MessageRecorder $recorder,
 		private readonly ORObjectService $objectService,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 
 	}//end __construct()

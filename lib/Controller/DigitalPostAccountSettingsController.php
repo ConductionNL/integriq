@@ -30,9 +30,9 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Intake\IntakeGroups;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -55,9 +55,9 @@ class DigitalPostAccountSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest           $request      The request.
-	 * @param DigitalPostAccount $account      Finds and checks the account.
-	 * @param DsoConnection      $consumers    Writes the consumer.
-	 * @param IntakeGroups       $groups       Enrols the account in the digital post group.
+	 * @param DigitalPostAccountInterface $account      Finds and checks the account.
+	 * @param PortalConnectionInterface      $consumers    Writes the consumer.
+	 * @param IntakeGroupsInterface       $groups       Enrols the account in the digital post group.
 	 * @param IGroupManager      $groupManager Says whether the account is an administrator.
 	 * @param IL10N              $l            Field errors and warnings.
 	 * @param LoggerInterface    $logger       Diagnostics.
@@ -66,9 +66,9 @@ class DigitalPostAccountSettingsController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly DigitalPostAccount $account,
-		private readonly DsoConnection $consumers,
-		private readonly IntakeGroups $groups,
+		private readonly DigitalPostAccountInterface $account,
+		private readonly PortalConnectionInterface $consumers,
+		private readonly IntakeGroupsInterface $groups,
 		private readonly IGroupManager $groupManager,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
@@ -127,7 +127,7 @@ class DigitalPostAccountSettingsController extends Controller {
 			'description' => 'The account every digital post letter is stored as.',
 		]);
 		$previous = (string)($data['userId'] ?? '');
-		$data['authorizationType'] = DigitalPostAccount::AUTHORIZATION_TYPE;
+		$data['authorizationType'] = DigitalPostAccountInterface::AUTHORIZATION_TYPE;
 		$data['userId'] = $userId;
 
 		try {
@@ -144,7 +144,7 @@ class DigitalPostAccountSettingsController extends Controller {
 		}
 
 		if ($previous !== '' && $previous !== $userId) {
-			$this->groups->withdraw(groupId: IntakeGroups::DIGITAL_POST_SENDERS, userId: $previous);
+			$this->groups->withdraw(groupId: IntakeGroupsInterface::DIGITAL_POST_SENDERS, userId: $previous);
 		}
 
 		return new JSONResponse(['account' => $this->describe(), 'warnings' => $warnings]);
@@ -157,7 +157,7 @@ class DigitalPostAccountSettingsController extends Controller {
 	 * @return array<string, mixed>
 	 */
 	private function describe(): array {
-		return $this->account->describe() + ['group' => IntakeGroups::DIGITAL_POST_SENDERS];
+		return $this->account->describe() + ['group' => IntakeGroupsInterface::DIGITAL_POST_SENDERS];
 
 	}//end describe()
 
@@ -184,12 +184,12 @@ class DigitalPostAccountSettingsController extends Controller {
 			return $this->l->t('Account %s does not exist.', [$userId]);
 		}
 
-		$wasMember = $this->groups->isMember(groupId: IntakeGroups::DIGITAL_POST_SENDERS, userId: $userId);
-		$this->groups->enrol(groupId: IntakeGroups::DIGITAL_POST_SENDERS, userId: $userId);
+		$wasMember = $this->groups->isMember(groupId: IntakeGroupsInterface::DIGITAL_POST_SENDERS, userId: $userId);
+		$this->groups->enrol(groupId: IntakeGroupsInterface::DIGITAL_POST_SENDERS, userId: $userId);
 		$missing = $this->account->missingRights(userId: $userId);
 		if ($missing !== null && $missing !== []) {
 			if ($wasMember === false) {
-				$this->groups->withdraw(groupId: IntakeGroups::DIGITAL_POST_SENDERS, userId: $userId);
+				$this->groups->withdraw(groupId: IntakeGroupsInterface::DIGITAL_POST_SENDERS, userId: $userId);
 			}
 
 			return $this->l->t('Account %1$s lacks the %2$s right on %3$s.', [$userId, implode(', ', $missing), 'digitalPostMessage']);

@@ -31,11 +31,11 @@ use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Exception\DsoTranslationException;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\DsoIngestServiceInterface;
 use OCA\Integriq\Service\DSOParserServiceInterface;
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -75,10 +75,10 @@ class DSOController extends Controller {
 	 * @param IRequest $request Request object.
 	 * @param DSOParserServiceInterface $parser The DSO payload parser service.
 	 * @param LoggerInterface $logger Logger for error handling.
-	 * @param DsoConnection $connection The dso-stam consumer: signature, account, rights, runAs().
-	 * @param DsoConnectionAlerts $alerts Admin notifications when a push is refused with 503.
+	 * @param PortalConnectionInterface $connection The dso-stam consumer: signature, account, rights, runAs().
+	 * @param PortalConnectionAlertsInterface $alerts Admin notifications when a push is refused with 503.
 	 * @param DsoIngestServiceInterface $ingestService dso_verzoek persistence, mapping, outbound.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IUserSession $userSession The user session (status/list/outbound
 	 *                                  endpoints).
 	 * @param IL10N $l The localization service.
@@ -91,10 +91,10 @@ class DSOController extends Controller {
 		IRequest $request,
 		private readonly DSOParserServiceInterface $parser,
 		private readonly LoggerInterface $logger,
-		private readonly DsoConnection $connection,
-		private readonly DsoConnectionAlerts $alerts,
+		private readonly PortalConnectionInterface $connection,
+		private readonly PortalConnectionAlertsInterface $alerts,
 		private readonly DsoIngestServiceInterface $ingestService,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 	) {
@@ -285,7 +285,7 @@ class DSOController extends Controller {
 			'DSO STAM: verzoek not stored, answering 503 so the sender retries',
 			['verzoekId' => $requestId, 'exception' => $reason]
 		);
-		$this->alerts->notify(reason: DsoConnectionAlerts::REASON_NOT_STORED);
+		$this->alerts->notify(reason: PortalConnectionAlertsInterface::REASON_NOT_STORED);
 
 		return new JSONResponse(
 			data: [

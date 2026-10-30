@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Observability\Otel;
 
 use OCA\Integriq\BackgroundJob\OtelExportJob;
-use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\ExecutionTraceContextInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
@@ -67,14 +67,14 @@ class TraceExportQueue {
 	 * then is counted, and the first one in a pause is logged. A failure to
 	 * queue is logged and never reaches the traced work.
 	 *
-	 * @param ExecutionTraceContext $trace The persisted context.
+	 * @param ExecutionTraceContextInterface $trace The persisted context.
 	 * @param string $status The persisted status.
 	 *
 	 * @return bool True when the trace was queued.
 	 *
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
 	 */
-	public function queue(ExecutionTraceContext $trace, string $status): bool {
+	public function queue(ExecutionTraceContextInterface $trace, string $status): bool {
 		if ($status === 'running' || $trace->isDryRun() === true) {
 			return false;
 		}

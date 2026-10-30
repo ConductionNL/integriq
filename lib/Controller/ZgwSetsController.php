@@ -26,7 +26,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Zgw\ZgwSetCatalogue;
-use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
+use OCA\Integriq\Service\Zgw\ZgwSetInstallerInterface;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallRefusedException;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
@@ -46,13 +46,13 @@ class ZgwSetsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest        $request   The request.
-	 * @param ZgwSetInstaller $installer Installs a set and reads the bindings.
+	 * @param ZgwSetInstallerInterface $installer Installs a set and reads the bindings.
 	 *
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly ZgwSetInstaller $installer,
+		private readonly ZgwSetInstallerInterface $installer,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()

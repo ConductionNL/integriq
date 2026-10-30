@@ -21,8 +21,8 @@ namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCP\IUser;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -55,15 +55,15 @@ class FetchDsoAttachmentsJob extends QueuedJob {
 	 *
 	 * @param ITimeFactory $time The time factory.
 	 * @param DsoAttachmentFetcherInterface $fetcher Downloads and stores the bijlagen.
-	 * @param DsoConnection $connection Resolves the acting account and runs as it.
-	 * @param DsoConnectionAlerts $alerts Tells the admins when no account is usable.
+	 * @param PortalConnectionInterface $connection Resolves the acting account and runs as it.
+	 * @param PortalConnectionAlertsInterface $alerts Tells the admins when no account is usable.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly DsoAttachmentFetcherInterface $fetcher,
-		private readonly DsoConnection $connection,
-		private readonly DsoConnectionAlerts $alerts,
+		private readonly PortalConnectionInterface $connection,
+		private readonly PortalConnectionAlertsInterface $alerts,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -140,7 +140,7 @@ class FetchDsoAttachmentsJob extends QueuedJob {
 				. $actingUserId . '" is not usable (' . $exception->getReason() . '); the entries stay pending',
 				['verzoek' => $requestUuid, 'account' => $actingUserId, 'reason' => $exception->getReason()]
 			);
-			$this->alerts->notify(reason: DsoConnectionAlerts::REASON_JOB_ACCOUNT);
+			$this->alerts->notify(reason: PortalConnectionAlertsInterface::REASON_JOB_ACCOUNT);
 
 			return null;
 		}

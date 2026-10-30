@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -56,14 +56,14 @@ class DigitalPostStatusJob extends TimedJob {
 	 * @param DigitalPostServiceInterface $service The digital post service.
 	 * @param OrObjectService $objectService OpenRegister's object-service facade.
 	 * @param LoggerInterface $logger Structured logger.
-	 * @param DigitalPostAccount $account The service account the poll reads and writes as.
+	 * @param DigitalPostAccountInterface $account The service account the poll reads and writes as.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly DigitalPostServiceInterface $service,
 		private readonly OrObjectService $objectService,
 		private readonly LoggerInterface $logger,
-		private readonly DigitalPostAccount $account,
+		private readonly DigitalPostAccountInterface $account,
 	) {
 		parent::__construct(time: $time);
 

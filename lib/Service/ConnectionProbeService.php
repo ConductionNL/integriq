@@ -37,14 +37,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
  */
-class ConnectionProbeService {
-
-	/**
-	 * The most probes one health job run makes (D7).
-	 *
-	 * @var int
-	 */
-	public const PROBE_LIMIT = 25;
+class ConnectionProbeService implements ConnectionProbeServiceInterface {
 
 	/**
 	 * The longest message stored on a probe.

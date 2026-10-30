@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\AuthenticationException;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\NotificatiesSubscriberServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -66,7 +66,7 @@ class NotificatiesSubscriberController extends Controller {
 	 * @param NotificatiesSubscriberServiceInterface $subscriberService Abonnement lifecycle + notification normalization.
 	 * @param OpenRegisterCredentialBridge $authorizationService Reused REQ-CON-001/REQ-CON-002 consumer apiKey auth path.
 	 * @param OrObjectService $orObjectService Direct OR access for abonnement listing.
-	 * @param ActionAuthService $actionAuth The action authorization service (ADR-023).
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service (ADR-023).
 	 * @param IUserSession $userSession The user session (CRUD endpoints only).
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
@@ -77,7 +77,7 @@ class NotificatiesSubscriberController extends Controller {
 		private readonly NotificatiesSubscriberServiceInterface $subscriberService,
 		private readonly OpenRegisterCredentialBridge $authorizationService,
 		private readonly OrObjectService $orObjectService,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,

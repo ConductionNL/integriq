@@ -21,9 +21,9 @@
 namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\MappingServiceInterface;
-use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Contract\RegisterSlugResolution;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
@@ -75,10 +75,10 @@ class MappingsController extends Controller {
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param MappingServiceInterface $mappingService The mapping service.
-	 * @param SourceMappingService $objectService The object service (OC).
+	 * @param SourceMappingServiceInterface $objectService The object service (OC).
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param ContainerInterface $container App container OpenRegister's mappers are resolved from.
 	 */
@@ -86,10 +86,10 @@ class MappingsController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly MappingServiceInterface $mappingService,
-		private readonly SourceMappingService $objectService,
+		private readonly SourceMappingServiceInterface $objectService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 	) {
@@ -102,7 +102,7 @@ class MappingsController extends Controller {
 	 *
 	 * This method tests a mapping with provided input data and optional schema validation.
 	 *
-	 * @param SourceMappingService $objectService Source mapping service used to access OpenRegister.
+	 * @param SourceMappingServiceInterface $objectService Source mapping service used to access OpenRegister.
 	 *
 	 * @return JSONResponse A JSON response containing the test results.
 	 *
@@ -142,7 +142,7 @@ class MappingsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function test(SourceMappingService $objectService): JSONResponse {
+	public function test(SourceMappingServiceInterface $objectService): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);

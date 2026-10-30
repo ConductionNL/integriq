@@ -24,7 +24,7 @@ use OCA\Integriq\Bridge\BridgeRegistry;
 use OCA\Integriq\Gateway\GatewayDescriptor;
 use OCA\Integriq\Gateway\GatewayRegistry;
 use OCA\Integriq\Gateway\ZgwRegistryBinding;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -55,7 +55,7 @@ class GatewaysController extends Controller {
 	 * @param GatewayRegistry $registry The gateway entries.
 	 * @param ZgwRegistryBinding $binding The ZGW registry binding.
 	 * @param BridgeRegistry $bridges The on-premise bridges.
-	 * @param ActionAuthService $actionAuth ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth ADR-023 action gate.
 	 * @param IUserSession $userSession The current session.
 	 */
 	public function __construct(
@@ -64,7 +64,7 @@ class GatewaysController extends Controller {
 		private readonly GatewayRegistry $registry,
 		private readonly ZgwRegistryBinding $binding,
 		private readonly BridgeRegistry $bridges,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);

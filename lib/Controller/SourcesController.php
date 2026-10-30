@@ -20,10 +20,10 @@
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\SearchServiceInterface;
-use OCA\Integriq\Service\SourceTestService;
+use OCA\Integriq\Service\SourceTestServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -58,7 +58,7 @@ class SourcesController extends Controller {
 	 * @param OrObjectService $orObjectService The OR object service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 *
 	 * @return void
 	 */
@@ -68,7 +68,7 @@ class SourcesController extends Controller {
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -153,7 +153,7 @@ class SourcesController extends Controller {
 	 *
 	 * This method fires a test call to the source and returns the response.
 	 *
-	 * @param SourceTestService $sourceTestService Fires the outbound test call (shared with the connection health job).
+	 * @param SourceTestServiceInterface $sourceTestService Fires the outbound test call (shared with the connection health job).
 	 * @param string $id The UUID of the source to test.
 	 *
 	 * @return JSONResponse A JSON response containing the test results.
@@ -166,7 +166,7 @@ class SourcesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function test(SourceTestService $sourceTestService, string $id): JSONResponse {
+	public function test(SourceTestServiceInterface $sourceTestService, string $id): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
@@ -230,14 +230,14 @@ class SourcesController extends Controller {
 		// Test-connection modal always gets a readable result.
 		$test = $sourceTestService->run(source: $source, endpoint: $endpoint, method: $method, config: $config);
 
-		if ($test['outcome'] === SourceTestService::OUTCOME_FAILED) {
+		if ($test['outcome'] === SourceTestServiceInterface::OUTCOME_FAILED) {
 			return new JSONResponse(
 				data: ['error' => $this->l->t('The source test could not be completed: %s', [$test['error']])],
 				statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
 			);
 		}
 
-		if ($test['outcome'] === SourceTestService::OUTCOME_NO_RESPONSE) {
+		if ($test['outcome'] === SourceTestServiceInterface::OUTCOME_NO_RESPONSE) {
 			// The engine returned without a usable response (e.g. an early-exit CallLog).
 			// Give the UI an explicit error rather than an empty/opaque body.
 			return new JSONResponse(

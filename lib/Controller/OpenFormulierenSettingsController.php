@@ -32,8 +32,8 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
-use OCA\Integriq\Service\WebhookSignatureService;
-use OCA\Integriq\Service\Intake\IntakeGroups;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
+use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -70,7 +70,7 @@ class OpenFormulierenSettingsController extends Controller {
 	 * @param IRequest                  $request      The request.
 	 * @param OpenFormulierenConnection $connection   Finds, checks and saves the consumer.
 	 * @param IGroupManager             $groupManager Tells an administrator account apart.
-	 * @param IntakeGroups              $groups       Puts the chosen account in the openformulieren-intake group.
+	 * @param IntakeGroupsInterface              $groups       Puts the chosen account in the openformulieren-intake group.
 	 * @param IL10N                     $l            Field errors and warnings.
 	 * @param LoggerInterface           $logger       Diagnostics.
 	 *
@@ -80,7 +80,7 @@ class OpenFormulierenSettingsController extends Controller {
 		IRequest $request,
 		private readonly OpenFormulierenConnection $connection,
 		private readonly IGroupManager $groupManager,
-		private readonly IntakeGroups $groups,
+		private readonly IntakeGroupsInterface $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -121,10 +121,10 @@ class OpenFormulierenSettingsController extends Controller {
 				'scheme' => (string)($trust['scheme'] ?? OpenFormulierenConnection::DEFAULT_SCHEME),
 				'secretConfigured' => ((string)($trust['secret'] ?? '') !== ''),
 				'header' => (string)($trust['header'] ?? OpenFormulierenConnection::DEFAULT_HEADER),
-				'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
+				'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS),
 				'userId' => $userId,
 				'account' => $this->describeAccount(userId: $userId),
-				'handlerGroup' => $this->groups->describe(groupId: IntakeGroups::OPEN_FORMULIEREN_HANDLERS),
+				'handlerGroup' => $this->groups->describe(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_HANDLERS),
 			]
 		);
 
@@ -162,7 +162,7 @@ class OpenFormulierenSettingsController extends Controller {
 			'scheme' => $scheme,
 			'secret' => (string)$this->request->getParam('secret', ''),
 			'header' => $header,
-			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS)),
+			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS)),
 		];
 		$userId = trim((string)$this->request->getParam('userId', ''));
 
@@ -268,7 +268,7 @@ class OpenFormulierenSettingsController extends Controller {
 	private function withdrawPrevious(?ObjectEntity $consumer, string $userId): void {
 		$previous = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
 		if ($previous !== '' && $previous !== $userId) {
-			$this->groups->withdraw(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $previous);
+			$this->groups->withdraw(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE, userId: $previous);
 		}
 
 	}//end withdrawPrevious()
@@ -295,12 +295,12 @@ class OpenFormulierenSettingsController extends Controller {
 		// The authorization block grants the intake group, so the chosen
 		// account joins it before its rights are checked. It leaves again when
 		// the check still refuses it and it was not a member before.
-		$wasMember = $this->groups->isMember(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
-		$this->groups->enrol(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
+		$wasMember = $this->groups->isMember(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE, userId: $userId);
+		$this->groups->enrol(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE, userId: $userId);
 
 		$missing = $this->connection->missingRights(userId: $userId);
 		if ($missing !== null && $missing !== [] && $wasMember === false) {
-			$this->groups->withdraw(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
+			$this->groups->withdraw(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE, userId: $userId);
 		}
 
 		if ($missing === null) {
