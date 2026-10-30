@@ -64,7 +64,7 @@ class BerichtenboxHealthTest extends TestCase {
 		openssl_x509_export($x509, $pem);
 		openssl_pkey_export($key, $keyPem);
 
-		// openssl_csr_sign() dates the certificate from the real clock, so the test measures from it too.
+		// The certificate is dated by openssl_csr_sign() from the real clock, so the test measures from it too.
 		$now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 		$at = static fn (string $offset): string => $now->modify($offset)->format('c');
 		$source = $this->entity([
