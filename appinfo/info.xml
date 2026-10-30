@@ -160,6 +160,10 @@
 		<job>OCA\Integriq\BackgroundJob\DigitalPostStatusJob</job>
 		<job>OCA\Integriq\BackgroundJob\DigitalPostInboundJob</job>
 		<job>OCA\Integriq\BackgroundJob\UwlrEduVRetryJob</job>
+		<!-- sources-ecb-exchange-rates: stores the ECB euro reference rates as
+		     exchange_rate objects, four runs a day so the 16:00 CET file lands
+		     the same day. -->
+		<job>OCA\Integriq\BackgroundJob\ExchangeRateSyncJob</job>
 	</background-jobs>
 
 	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order
