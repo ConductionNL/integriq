@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-failed-send-is-retried-from-the-screen-and-the-retry-is-recorded-req-ocl-003
  */
-class OutboundRetryService {
+class OutboundRetryService implements OutboundRetryServiceInterface {
 
 	/**
 	 * The delivery kind a retried message is re-dispatched as.

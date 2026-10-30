@@ -52,6 +52,7 @@ final class FlowRegistrar {
 		$context->registerServiceAlias(SourcePaginateNodeInterface::class, SourcePaginateNode::class);
 		$context->registerServiceAlias(ContractSweepNodeInterface::class, ContractSweepNode::class);
 		$context->registerServiceAlias(ContractMatchNodeInterface::class, ContractMatchNode::class);
+		$context->registerServiceAlias(FetchFileNodeInterface::class, FetchFileNode::class);
 		$context->registerServiceAlias(ApplyMappingNodeInterface::class, ApplyMappingNode::class);
 	}
 

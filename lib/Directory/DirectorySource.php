@@ -49,7 +49,7 @@ use Throwable;
  *
  * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md
  */
-class DirectorySource {
+class DirectorySource implements DirectorySourceInterface {
 
 	/**
 	 * The OpenRegister register every integriq configuration object lives in.

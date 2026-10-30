@@ -22,7 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Auth;
 
+use OCA\Integriq\Auth\Idp\EnvelopeExchangeService;
+use OCA\Integriq\Auth\Idp\EnvelopeExchangeServiceInterface;
 use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
+use OCA\Integriq\Auth\Idp\IdpBrokerConfig;
+use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpLoginService;
 use OCA\Integriq\Auth\Idp\IdpLoginServiceInterface;
 use OCA\Integriq\Auth\Idp\LogGovernmentIdpAdapter;
@@ -46,6 +50,8 @@ final class AuthRegistrar {
 	 */
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(IdpLoginServiceInterface::class, IdpLoginService::class);
+		$context->registerServiceAlias(IdpBrokerConfigInterface::class, IdpBrokerConfig::class);
+		$context->registerServiceAlias(EnvelopeExchangeServiceInterface::class, EnvelopeExchangeService::class);
 		$this->registerGovernmentIdpAdapter(context: $context);
 	}
 	/**

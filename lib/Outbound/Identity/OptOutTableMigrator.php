@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
  */
-class OptOutTableMigrator {
+class OptOutTableMigrator implements OptOutTableMigratorInterface {
 
 	/**
 	 * How many objects one read fetches.

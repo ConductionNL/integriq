@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Outbound\Identity\OptOutTableMigrator;
+use OCA\Integriq\Outbound\Identity\OptOutTableMigratorInterface;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -95,7 +95,7 @@ class MigrateOptOutsToTable implements IRepairStep {
 		}
 
 		try {
-			$migrator = $this->container->get(OptOutTableMigrator::class);
+			$migrator = $this->container->get(OptOutTableMigratorInterface::class);
 			$result = $migrator->migrate();
 		} catch (Throwable $exception) {
 			$output->warning(

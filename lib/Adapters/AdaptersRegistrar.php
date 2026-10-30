@@ -26,6 +26,8 @@ use GuzzleHttp\Client as GuzzleHttpClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientHttp;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolver;
+use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolverInterface;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
@@ -40,6 +42,10 @@ use OCA\Integriq\Adapters\Roster\RosterImportClientMock;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
+use OCA\Integriq\Adapters\Slo\SloCurriculumMapper;
+use OCA\Integriq\Adapters\Slo\SloCurriculumMapperInterface;
+use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
+use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistryInterface;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalkerInterface;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
@@ -69,6 +75,9 @@ final class AdaptersRegistrar {
 	 */
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(SloCurriculumTreeWalkerInterface::class, SloCurriculumTreeWalker::class);
+		$context->registerServiceAlias(SloCurriculumPresetRegistryInterface::class, SloCurriculumPresetRegistry::class);
+		$context->registerServiceAlias(SloCurriculumMapperInterface::class, SloCurriculumMapper::class);
+		$context->registerServiceAlias(PkiOverheidCredentialResolverInterface::class, PkiOverheidCredentialResolver::class);
 		$this->registerPdokClients(context: $context);
 		$this->registerDormantSourceClients(context: $context);
 		$this->registerSwvHandoffClient(context: $context);

@@ -34,7 +34,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
-use OCA\Integriq\Intake\IntakeReplyService;
+use OCA\Integriq\Intake\IntakeReplyServiceInterface;
 use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
@@ -85,7 +85,7 @@ class IntakeChannelsController extends Controller {
 	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 * @param IntakeChannelRegistry $registry The channels this instance has.
 	 * @param IntakeRoutingServiceInterface $routingService Routes and validates.
-	 * @param IntakeReplyService $replyService Replies on the arriving channel.
+	 * @param IntakeReplyServiceInterface $replyService Replies on the arriving channel.
 	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param OrObjectService $orObjectService Stores routing rules and rejections.
 	 * @param IL10N $l Translations.
@@ -97,7 +97,7 @@ class IntakeChannelsController extends Controller {
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IntakeChannelRegistry $registry,
 		private readonly IntakeRoutingServiceInterface $routingService,
-		private readonly IntakeReplyService $replyService,
+		private readonly IntakeReplyServiceInterface $replyService,
 		private readonly WebhookGateInterface $gate,
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,

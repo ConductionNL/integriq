@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Auth\Idp\EnvelopeExchangeService;
+use OCA\Integriq\Auth\Idp\EnvelopeExchangeServiceInterface;
 use OCA\Integriq\Auth\Idp\IdpLoginServiceInterface;
 use OCA\Integriq\Exception\IdpAssertionException;
 use OCP\AppFramework\Controller;
@@ -54,7 +54,7 @@ class IdpBrokerController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param EnvelopeExchangeService $exchangeService Redeems the code.
+	 * @param EnvelopeExchangeServiceInterface $exchangeService Redeems the code.
 	 * @param IdpLoginServiceInterface $loginService Starts and finishes the browser login.
 	 * @param IL10N $l10n Translates the error page.
 	 * @param LoggerInterface $logger Records why a start or a callback was refused.
@@ -62,7 +62,7 @@ class IdpBrokerController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EnvelopeExchangeService $exchangeService,
+		private readonly EnvelopeExchangeServiceInterface $exchangeService,
 		private readonly IdpLoginServiceInterface $loginService,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,

@@ -22,7 +22,7 @@ namespace OCA\Integriq\Service\DigitalPost;
 
 use OCA\Integriq\Event\DigitalPostDeliveredEvent;
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
-use OCA\Integriq\Outbound\OutboundSendGate;
+use OCA\Integriq\Outbound\OutboundSendGateInterface;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -54,7 +54,7 @@ class DigitalPostService implements DigitalPostServiceInterface {
 	 * @param OrObjectService $objectService OpenRegister's object-service facade.
 	 * @param IEventDispatcher $eventDispatcher The Nextcloud event dispatcher.
 	 * @param LoggerInterface $logger Structured logger.
-	 * @param OutboundSendGate $gate Asks the opt-out list, adds the link, keeps the outbound log row.
+	 * @param OutboundSendGateInterface $gate Asks the opt-out list, adds the link, keeps the outbound log row.
 	 * @param DigitalPostAccount $account The service account every digital post write runs as.
 	 */
 	public function __construct(
@@ -63,7 +63,7 @@ class DigitalPostService implements DigitalPostServiceInterface {
 		private readonly OrObjectService $objectService,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
-		private readonly OutboundSendGate $gate,
+		private readonly OutboundSendGateInterface $gate,
 		private readonly DigitalPostAccount $account,
 	) {
 	}//end __construct()
@@ -252,7 +252,7 @@ class DigitalPostService implements DigitalPostServiceInterface {
 	 */
 	private function recordOutcome(?string $logRow, string $address, DigitalPostResult $result): void {
 		if ($result->isRefused() === true) {
-			$this->gate->failed(uuid: $logRow, address: $address, step: OutboundSendGate::STEP_SEND, reason: $result->getError());
+			$this->gate->failed(uuid: $logRow, address: $address, step: OutboundSendGateInterface::STEP_SEND, reason: $result->getError());
 			return;
 		}
 
