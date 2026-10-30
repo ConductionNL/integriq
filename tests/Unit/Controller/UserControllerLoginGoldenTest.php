@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\UserController;
+use OCA\Integriq\Service\SecurityService;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\ICache;
@@ -167,7 +168,7 @@ class UserControllerLoginGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		return new UserController('integriq', $request, $userManager, $session, $cacheFactory, $logger, $userService, $l10n);
+		return new UserController('integriq', $request, $userManager, $session, new SecurityService($cacheFactory, $logger), $logger, $userService, $l10n);
 	}//end controller()
 
 	/**

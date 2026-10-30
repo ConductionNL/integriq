@@ -124,7 +124,6 @@ class CallServiceResponseHeaderRedactionTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
-			null,
 			new BodyCapturePolicy($appConfig, $clock),
 		);
 
