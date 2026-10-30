@@ -54,6 +54,7 @@ use Twig\Loader\ArrayLoader;
  * CALL_DISPATCH_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\CallService
+ * @uses   \OCA\Integriq\Service\Call\CallRequest
  */
 class CallServiceDispatchGoldenTest extends TestCase {
 
