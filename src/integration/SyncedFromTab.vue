@@ -142,6 +142,7 @@ export default {
 					'integriq',
 					'This object was not created by a synchronization.',
 				),
+
 				noun: t('integriq', 'synchronizations'),
 				rows: this.rows.map((row) => ({
 					label: row.title || t('integriq', 'Synchronization'),
