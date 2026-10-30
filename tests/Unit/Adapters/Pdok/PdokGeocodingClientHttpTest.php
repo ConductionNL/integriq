@@ -254,7 +254,7 @@ class PdokGeocodingClientHttpTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
 	 */
 	public function testFindNormalisesDocsAndClampsRows(): void {
 		$payload = ['response' => ['docs' => [$this->lauriergrachtDoc('adr-1', 'Lauriergracht 37, 1016 RG Amsterdam'), 'not-a-doc']]];
@@ -276,7 +276,7 @@ class PdokGeocodingClientHttpTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
 	 */
 	public function testFindWithNoDocsAnswersAnEmptyList(): void {
 		$client = $this->buildClient([new Response(200, [], json_encode(['response' => ['docs' => []]]))]);
@@ -289,7 +289,7 @@ class PdokGeocodingClientHttpTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
 	 */
 	public function testFindWithoutAnAnswerIsNull(): void {
 		$client = $this->buildClient(
