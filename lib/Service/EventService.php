@@ -36,6 +36,7 @@ use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\Event\PushDelivery;
+use OCA\Integriq\Service\Event\MappingActionDispatch;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -1854,138 +1855,22 @@ class EventService implements EventServiceInterface {
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
 	 */
 	private function dispatchMappingAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
+		$run = new MappingActionDispatch(message: $message, action: $action);
+		$run->retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
 
-		$mappingId = (string)($action['mappingId'] ?? '');
-		$sourceId = (string)($action['sourceId'] ?? '');
-
-		$mapping = null;
-		if ($mappingId !== '') {
-			$mapping = $this->findMappingActionObject(id: $mappingId, schema: 'mapping');
-		}
-
-		$source = null;
-		if ($sourceId !== '') {
-			$source = $this->findMappingActionObject(id: $sourceId, schema: 'source');
-		}
-
-		if ($mapping === null || $source === null) {
-			// Unresolvable mappingId/sourceId is retryable — the Mapping or
-			// Source may be created/corrected later — same treatment as an
-			// unresolvable synchronizationId/jobId/notificaties sourceId
-			// above (design.md Decision 4).
-			$this->recordFailure(
-				message: $message,
-				error: 'mapping or source not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
+		if ($this->resolveMappingTargets(run: $run) === false
+			|| $this->mappingDispatchAvailable(message: $message) === false
+			|| $this->resolveMappingSubmission(run: $run) === false
+		) {
 			return false;
 		}
 
-		if ($this->formsSyncAdapter === null || $this->formsAnswerResolver === null || $this->mappingService === null) {
-			// No Forms adapter/answer-resolver/mapping-service wired at all —
-			// this dispatch kind cannot run in this deployment. A
-			// configuration problem, not a transient one.
-			$this->recordConfigurationError(
-				message: $message,
-				error: "The Nextcloud Forms adapter is not available for action.kind='mapping' dispatch."
-			);
+		$callLog = $this->callMappedSubmission(run: $run);
+		if ($callLog === null) {
 			return false;
 		}
 
-		try {
-			$this->formsSyncAdapter->assertEnabled();
-		} catch (FormsFeatureDisabledException $exception) {
-			// REQ-001 scenario 3: Forms disabled is a config error (retryCount
-			// stays 0), never attempting a Forms HTTP call.
-			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
-			return false;
-		}
-
-		$messageData = $message->getObject();
-		// Read the UUID FK `event`; `eventId` is the legacy integer column and is
-		// no longer written (see createEventMessage()). Falls back to it so any
-		// pre-existing row still resolves.
-		$event = $this->findNotificationsEvent(
-			eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
-		);
-		if ($event === null) {
-			$this->recordFailure(
-				message: $message,
-				error: 'event not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}
-
-		$eventData = (array)(($event->getObject()['data'] ?? []));
-		$formId = (int)($eventData['formId'] ?? 0);
-		$submissionId = (int)($eventData['submission']['id'] ?? 0);
-
-		if ($formId <= 0 || $submissionId <= 0) {
-			// Design.md Decision 4's constraint: a subscription with
-			// action.kind='mapping' matching a non-Forms event type has no
-			// formId/submission.id — a configuration error naming the gap,
-			// not a crash and not retryable (this subscription will never
-			// succeed against this event type without being reconfigured).
-			$this->recordConfigurationError(
-				message: $message,
-				error: "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)"
-			);
-			return false;
-		}
-
-		try {
-			$submission = $this->formsSyncAdapter->fetchSubmission(source: $source, formId: $formId, submissionId: $submissionId);
-			$form = $this->formsSyncAdapter->fetchForm(source: $source, formId: $formId);
-
-			$resolvedAnswers = $this->resolveMappingAnswers(
-				questions: $form['questions'],
-				answers: $submission['answers']
-			);
-
-			$mappedResult = $this->mappingService->executeMapping(mapping: $mapping, input: $resolvedAnswers);
-
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: (string)($action['endpoint'] ?? ''),
-				method: (string)($action['method'] ?? 'POST'),
-				config: ['json' => $mappedResult]
-			);
-		} catch (\Throwable $exception) {
-			// Any resolution/mapping/call failure (including an ambiguous
-			// question-text FormsConfigException — REQ-004 scenario 2) is a
-			// standard retryable failure: a data-shape problem in a specific
-			// submission does not permanently misconfigure the subscription.
-			$this->logger->error(
-				'Failed to dispatch mapping action for event message: ' . $exception->getMessage(),
-				[
-					'exception' => $exception,
-					// NOT 'message': Nextcloud's logger treats a `message`
-					// key in the CONTEXT as the log message itself, so an
-					// array here makes OC\Log::getLogLevel() receive an
-					// array and throw — the error handler fatals, turning a
-					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
-				]
-			);
-			$this->recordFailure(
-				message: $message,
-				error: $exception->getMessage(),
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}//end try
-
-		$callLogData = $callLog->getObject();
-		$statusCode = (int)($callLogData['statusCode'] ?? 0);
-
+		$statusCode = (int)($callLog->getObject()['statusCode'] ?? 0);
 		if ($statusCode >= 200 && $statusCode < 300) {
 			$this->recordDeliverySuccess(message: $message);
 			return true;
@@ -1996,10 +1881,181 @@ class EventService implements EventServiceInterface {
 			error: 'Mapping action call failed with status code: ' . $statusCode,
 			statusCode: $statusCode,
 			retryAfter: null,
-			retryPolicy: $retryPolicy
+			retryPolicy: $run->retryPolicy
 		);
 		return false;
 	}//end dispatchMappingAction()
+
+	/**
+	 * Resolve the mapping and the source a mapping action names.
+	 *
+	 * An unresolvable mappingId or sourceId is retryable: the Mapping or Source
+	 * may be created or corrected later, the same treatment as an unresolvable
+	 * synchronizationId, jobId or notificaties sourceId (design.md Decision 4).
+	 *
+	 * @param MappingActionDispatch $run The dispatch; its mapping and source are set.
+	 *
+	 * @return bool True when both resolved, false after recording a failure.
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+	 */
+	private function resolveMappingTargets(MappingActionDispatch $run): bool {
+		$mappingId = (string)($run->action['mappingId'] ?? '');
+		$sourceId = (string)($run->action['sourceId'] ?? '');
+
+		if ($mappingId !== '') {
+			$run->mapping = $this->findMappingActionObject(id: $mappingId, schema: 'mapping');
+		}
+
+		if ($sourceId !== '') {
+			$run->source = $this->findMappingActionObject(id: $sourceId, schema: 'source');
+		}
+
+		if ($run->mapping !== null && $run->source !== null) {
+			return true;
+		}
+
+		$this->recordFailure(
+			message: $run->message,
+			error: 'mapping or source not found',
+			statusCode: null,
+			retryAfter: null,
+			retryPolicy: $run->retryPolicy
+		);
+		return false;
+	}//end resolveMappingTargets()
+
+	/**
+	 * Whether a mapping action can run in this deployment.
+	 *
+	 * Without the Forms adapter, the answer resolver or the mapping service, or
+	 * with Forms disabled (REQ-001 scenario 3), this is a configuration error
+	 * (retryCount stays 0), never a Forms HTTP call.
+	 *
+	 * @param ObjectEntity $message The message being dispatched.
+	 *
+	 * @return bool True when it can run, false after recording a configuration error.
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+	 */
+	private function mappingDispatchAvailable(ObjectEntity $message): bool {
+		if ($this->formsSyncAdapter === null || $this->formsAnswerResolver === null || $this->mappingService === null) {
+			$this->recordConfigurationError(
+				message: $message,
+				error: "The Nextcloud Forms adapter is not available for action.kind='mapping' dispatch."
+			);
+			return false;
+		}
+
+		try {
+			$this->formsSyncAdapter->assertEnabled();
+		} catch (FormsFeatureDisabledException $exception) {
+			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
+			return false;
+		}
+
+		return true;
+	}//end mappingDispatchAvailable()
+
+	/**
+	 * Read the Forms form and submission ids from the message's event.
+	 *
+	 * The UUID FK `event` is read, falling back to the legacy integer `eventId`
+	 * column so a pre-existing row still resolves. A missing event is retryable;
+	 * an event without a formId or submission id (a non-Forms event type, design.md
+	 * Decision 4) is a configuration error, since it will never succeed.
+	 *
+	 * @param MappingActionDispatch $run The dispatch; its form and submission ids are set.
+	 *
+	 * @return bool True when both ids are known, false after recording the failure.
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+	 */
+	private function resolveMappingSubmission(MappingActionDispatch $run): bool {
+		$messageData = $run->message->getObject();
+		$event = $this->findNotificationsEvent(
+			eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
+		);
+		if ($event === null) {
+			$this->recordFailure(
+				message: $run->message,
+				error: 'event not found',
+				statusCode: null,
+				retryAfter: null,
+				retryPolicy: $run->retryPolicy
+			);
+			return false;
+		}
+
+		$eventData = (array)(($event->getObject()['data'] ?? []));
+		$run->formId = (int)($eventData['formId'] ?? 0);
+		$run->submissionId = (int)($eventData['submission']['id'] ?? 0);
+
+		if ($run->formId <= 0 || $run->submissionId <= 0) {
+			$this->recordConfigurationError(
+				message: $run->message,
+				error: "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)"
+			);
+			return false;
+		}
+
+		return true;
+	}//end resolveMappingSubmission()
+
+	/**
+	 * Fetch the submission and its form, resolve the answers, map them and send the result.
+	 *
+	 * Any resolution, mapping or call failure (including an ambiguous question-text
+	 * FormsConfigException, REQ-004 scenario 2) is a standard retryable failure: a
+	 * data-shape problem in one submission does not misconfigure the subscription.
+	 *
+	 * @param MappingActionDispatch $run The resolved dispatch.
+	 *
+	 * @return ObjectEntity|null The call log, or null after recording a failure.
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+	 */
+	private function callMappedSubmission(MappingActionDispatch $run): ?ObjectEntity {
+		try {
+			$submission = $this->formsSyncAdapter->fetchSubmission(source: $run->source, formId: $run->formId, submissionId: $run->submissionId);
+			$form = $this->formsSyncAdapter->fetchForm(source: $run->source, formId: $run->formId);
+
+			$resolvedAnswers = $this->resolveMappingAnswers(
+				questions: $form['questions'],
+				answers: $submission['answers']
+			);
+
+			$mappedResult = $this->mappingService->executeMapping(mapping: $run->mapping, input: $resolvedAnswers);
+
+			return $this->callService->call(
+				source: $run->source,
+				endpoint: (string)($run->action['endpoint'] ?? ''),
+				method: (string)($run->action['method'] ?? 'POST'),
+				config: ['json' => $mappedResult]
+			);
+		} catch (\Throwable $exception) {
+			$this->logger->error(
+				'Failed to dispatch mapping action for event message: ' . $exception->getMessage(),
+				[
+					'exception' => $exception,
+					// NOT 'message': Nextcloud's logger treats a `message`
+					// key in the CONTEXT as the log message itself, so an
+					// array here makes OC\Log::getLogLevel() receive an
+					// array and throw — the error handler fatals, turning a
+					// handled delivery failure into an uncaught TypeError.
+					'eventMessage' => $run->message->jsonSerialize(),
+				]
+			);
+			$this->recordFailure(
+				message: $run->message,
+				error: $exception->getMessage(),
+				statusCode: null,
+				retryAfter: null,
+				retryPolicy: $run->retryPolicy
+			);
+			return null;
+		}//end try
+	}//end callMappedSubmission()
 
 	/**
 	 * Dispatch an `action.kind = 'broker'` message: hand the CloudEvent to
