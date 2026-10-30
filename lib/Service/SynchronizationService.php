@@ -58,6 +58,7 @@ use OCA\Integriq\Service\Synchronization\PagedFetch;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
+use OCA\Integriq\Service\Synchronization\SourceItemRequest;
 use OCA\Integriq\Service\Synchronization\TargetWrite;
 use OCA\Integriq\Service\Synchronization\DeletionRun;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
@@ -2753,15 +2754,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private function processExternDelete(ExternSyncRun $run): void {
 		$this->processSynchronizationObject(
-			synchronization: $run->synchronization,
-			object: $run->data,
-			result: $run->result,
-			isTest: $run->isTest,
-			force: $run->force,
-			log: $run->log,
-			flowToken: $run->flowToken,
-			mutationType: $run->mutationType,
-			trace: $run->trace
+			request: new SourceItemRequest(
+				synchronization: $run->synchronization,
+				result: $run->result,
+				isTest: $run->isTest,
+				force: $run->force,
+				log: $run->log,
+				flowToken: $run->flowToken,
+				mutationType: $run->mutationType,
+				trace: $run->trace
+			),
+			object: $run->data
 		);
 	}//end processExternDelete()
 
@@ -3072,15 +3075,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$objectStartTime = microtime(true);
 		try {
 			$processResult = $this->processSynchronizationObject(
-				synchronization: $run->synchronization,
-				flowToken: $run->flowToken,
-				object: $object,
-				result: $run->result,
-				isTest: $run->isTest,
-				force: $run->force,
-				log: $run->log,
-				trace: $run->trace,
-				contractIndex: $contractIndex
+				request: new SourceItemRequest(
+					synchronization: $run->synchronization,
+					result: $run->result,
+					isTest: $run->isTest,
+					force: $run->force,
+					log: $run->log,
+					flowToken: $run->flowToken,
+					trace: $run->trace,
+					contractIndex: $contractIndex
+				),
+				object: $object
 			);
 		} catch (\Throwable $itemException) {
 			$this->recordExternItemFailure(run: $run, object: $object, exception: $itemException);
@@ -3784,14 +3789,16 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		];
 
 		return $this->processSynchronizationObject(
-			synchronization: $synchronization,
-			object: $payload,
-			result: $result,
-			isTest: $isTest,
-			force: true,
-			log: $log,
-			flowToken: $flowToken,
-			trace: $trace,
+			request: new SourceItemRequest(
+				synchronization: $synchronization,
+				result: $result,
+				isTest: $isTest,
+				force: true,
+				log: $log,
+				flowToken: $flowToken,
+				trace: $trace
+			),
+			object: $payload
 		);
 
 	}//end replaySynchronizationItem()
@@ -12947,51 +12954,27 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	/**
 	 * Process a single object during synchronization.
 	 *
-	 * @param array $synchronization The synchronization being processed.
-	 * @param array $object The object to synchronize.
-	 * @param array $result The current result tracking data.
-	 * @param bool $isTest Whether this is a test run.
-	 * @param bool $force Whether to force synchronization regardless of changes.
-	 * @param SynchronizationRunLog $log The synchronization log.
-	 * @param FlowToken $flowToken The flow token shared across the synchronization run.
-	 * @param string|null $mutationType The type of object mutation.
-	 * @param ExecutionTraceContext|null $trace The active execution trace context, when this item is processed
-	 *                                          from within a traced execution (execution-trace
-	 *                                          REQ-001/REQ-002).
-	 * @param array|null $contractIndex Contracts pre-read for the whole page, keyed by origin id.
-	 *                                  When supplied, a missing key is a MISS rather than a reason
-	 *                                  to fall back to a per-item query.
+	 * @param SourceItemRequest $request The run options: synchronization, result so far, flags, run log,
+	 *                                   flow token, mutation type, trace (execution-trace REQ-001/REQ-002)
+	 *                                   and the page's contract index.
+	 * @param array             $object  The object to synchronize.
 	 *
 	 * @return array Contains updated result data and the targetId ['result' => array, 'targetId' => string|null].
 	 *
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) 10 parameters, threshold 10.
-	 *   This is the engine's per-object inner loop and every parameter is state the
-	 *   loop carries rather than re-derives per object — bundling them into a context
-	 *   object is the obvious cleanup, but it is a signature change across the engine
-	 *   and its tests, so it belongs in its own change where it can be verified.
 	 */
-	private function processSynchronizationObject(
-		array $synchronization,
-		array $object,
-		array $result,
-		bool $isTest,
-		bool $force,
-		SynchronizationRunLog $log,
-		FlowToken &$flowToken,
-		?string $mutationType = null,
-		?ExecutionTraceContext $trace = null,
-		?array $contractIndex = null,
-	): array {
+	private function processSynchronizationObject(SourceItemRequest $request, array $object): array {
+		$synchronization = $request->synchronization;
+		$flowToken = $request->flowToken;
+
 		// Execution-trace REQ-002: one ordered `synchronization` step per item processed.
 		$item = new ItemRun();
 		$item->stepStart = microtime(true);
 		$item->synchronization = $synchronization;
 		$item->flowToken = $flowToken;
-		$item->trace = $trace;
-		$item->contractIndex = $contractIndex;
-		$item->result = $result;
+		$item->trace = $request->trace;
+		$item->contractIndex = $request->contractIndex;
+		$item->result = $request->result;
 		$item->sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		$rejection = $this->screenItem(item: $item, object: $object);
@@ -13023,11 +13006,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			synchronization: $synchronization,
 			flowToken: $flowToken,
 			object: $object,
-			isTest: $isTest,
-			force: $force,
-			log: match ($item->isNewContract) { true => null, false => $log },
-			mutationType: $mutationType,
-			trace: $trace
+			isTest: $request->isTest,
+			force: $request->force,
+			log: match ($item->isNewContract) { true => null, false => $request->log },
+			mutationType: $request->mutationType,
+			trace: $request->trace
 		);
 
 		$contract = $contractResult['contract'];

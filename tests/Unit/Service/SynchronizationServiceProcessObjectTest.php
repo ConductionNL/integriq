@@ -23,6 +23,7 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\Synchronization\SourceItemRequest;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationRunLog;
@@ -36,6 +37,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * The routing of one source item.
+ *
+ * @uses \OCA\Integriq\Service\Synchronization\SourceItemRequest
  */
 class SynchronizationServiceProcessObjectTest extends TestCase {
 
@@ -135,9 +138,9 @@ class SynchronizationServiceProcessObjectTest extends TestCase {
 		$result = ['objects' => ['found' => 0, 'skipped' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'invalid' => 0], 'contracts' => [], 'logs' => []];
 		$flowToken = new FlowToken();
 		$method = new \ReflectionMethod(SynchronizationService::class, 'processSynchronizationObject');
-		$args = [$synchronization, $object, $result, false, false, $this->runLog(), &$flowToken, null, $trace, $contractIndex];
+		$request = new SourceItemRequest($synchronization, $result, false, false, $this->runLog(), $flowToken, null, $trace, $contractIndex);
 
-		return $method->invokeArgs($service, $args);
+		return $method->invoke($service, $request, $object);
 	}//end process()
 
 	/**

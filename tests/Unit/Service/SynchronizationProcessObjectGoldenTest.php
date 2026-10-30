@@ -48,6 +48,7 @@ use ReflectionMethod;
  * SYNC_PROCESS_OBJECT_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\SynchronizationService
+ * @uses   \OCA\Integriq\Service\Synchronization\SourceItemRequest
  */
 class SynchronizationProcessObjectGoldenTest extends TestCase {
 
