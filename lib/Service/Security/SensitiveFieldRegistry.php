@@ -187,8 +187,9 @@ class SensitiveFieldRegistry {
 			return $body;
 		}
 
-		$decoded = json_decode($body, true);
-		if (is_array($decoded) === false) {
+		// Decoded without assoc so an empty object stays `{}` when the body is written back.
+		$decoded = json_decode($body);
+		if (is_array($decoded) === false && is_object($decoded) === false) {
 			return $body;
 		}
 
@@ -299,24 +300,35 @@ class SensitiveFieldRegistry {
 	}//end maskValue()
 
 	/**
-	 * Masks the value of every issued-token key in a decoded JSON body.
+	 * Masks the value of every issued-token key in a decoded JSON body. Objects
+	 * stay objects and lists stay lists, so the body re-encodes as it came.
 	 *
-	 * @param array   $data    The decoded body.
-	 * @param boolean $changed Set to true when a value was masked.
+	 * @param array|object $data    The decoded body (json_decode without assoc).
+	 * @param boolean      $changed Set to true when a value was masked.
 	 *
-	 * @return array The body with issued tokens masked.
+	 * @return array|object The body with issued tokens masked.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
 	 */
-	private function maskIssuedTokens(array $data, bool &$changed): array {
-		foreach ($data as $key => $value) {
-			if (is_string($key) === true && in_array(strtolower($key), self::ISSUED_TOKEN_KEYS, true) === true) {
-				$data[$key] = self::PLACEHOLDER;
-				$changed = true;
-				continue;
+	private function maskIssuedTokens(array|object $data, bool &$changed): array|object {
+		if (is_object($data) === true) {
+			foreach (get_object_vars($data) as $key => $value) {
+				if (in_array(strtolower((string)$key), self::ISSUED_TOKEN_KEYS, true) === true) {
+					$data->{$key} = self::PLACEHOLDER;
+					$changed = true;
+					continue;
+				}
+
+				if (is_array($value) === true || is_object($value) === true) {
+					$data->{$key} = $this->maskIssuedTokens(data: $value, changed: $changed);
+				}
 			}
 
-			if (is_array($value) === true) {
+			return $data;
+		}
+
+		foreach ($data as $key => $value) {
+			if (is_array($value) === true || is_object($value) === true) {
 				$data[$key] = $this->maskIssuedTokens(data: $value, changed: $changed);
 			}
 		}
