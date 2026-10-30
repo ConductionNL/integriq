@@ -369,6 +369,10 @@ class UserController extends Controller {
 	 * @psalm-return   JSONResponse
 	 * @phpstan-return JSONResponse
 	 *
+	 * @no-admin-idor-exempt Acts on the session's own account only: the user comes from
+	 *   UserService::getCurrentUser() and no account or object id is read from the request.
+	 *   SecurityService only sanitises input and adds headers.
+	 *
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	#[NoAdminRequired]

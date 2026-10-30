@@ -153,6 +153,11 @@ class VerdictController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
+	 * @no-admin-idor-exempt Reads through VerdictService::forObject(), which lists verdicts with
+	 *   OpenRegister's ObjectService::findAll() under the default RBAC and multitenancy, so the
+	 *   caller only sees verdicts they may read. The controller takes the interface, which this
+	 *   checker cannot follow to the class.
+	 *
 	 * @spec openspec/specs/outbound-call-log/spec.md
 	 */
 	#[NoAdminRequired]

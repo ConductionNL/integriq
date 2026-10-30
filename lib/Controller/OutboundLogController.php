@@ -223,6 +223,11 @@ class OutboundLogController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
+	 * @no-admin-idor-exempt Reads through LastContactQuery::lastContact(), which lists messages with
+	 *   OpenRegister's ObjectService::findAll() under the default RBAC and multitenancy, so the
+	 *   caller only sees messages they may read. The controller takes the interface, which this
+	 *   checker cannot follow to the class.
+	 *
 	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-log-answers-when-a-recipient-was-last-told-anything-req-ocl-006
 	 */
 	#[NoAdminRequired]
