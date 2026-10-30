@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use SimpleXMLElement;
 /**
  * Turns a provider message into its typed event.
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
  */
 class StufProviderRequestReader {
 
@@ -59,7 +59,7 @@ class StufProviderRequestReader {
 	 *
 	 * @return StufProviderQueryEvent The event.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function event(SimpleXMLElement $message, string $sourceId, string $referentienummer): StufProviderQueryEvent {
 		$type = $message->getName();
@@ -114,7 +114,7 @@ class StufProviderRequestReader {
 	 *
 	 * @return SimpleXMLElement|null The StUF message element.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function messageElement(SimpleXMLElement $root): ?SimpleXMLElement {
 		return $this->first(xml: $root, path: '//*[local-name()="Body"]/*[1]');
@@ -210,7 +210,7 @@ class StufProviderRequestReader {
 	 *
 	 * @return string The text, '' when none.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function text(SimpleXMLElement $xml, string $path): string {
 		$found = $this->first(xml: $xml, path: $path);

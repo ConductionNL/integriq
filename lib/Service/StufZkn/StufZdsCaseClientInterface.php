@@ -39,7 +39,7 @@ interface StufZdsCaseClientInterface {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When the case cannot be expressed.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function creeerZaak(string $sourceId, array $case, string $zaaktypeOmschrijving, array $context=[]): array;
 
@@ -56,7 +56,7 @@ interface StufZdsCaseClientInterface {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When no zaak identificatie is given.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function actualiseerZaak(string $sourceId, string $caseIdentification, array $changes, array $context=[]): array;
 
@@ -73,7 +73,7 @@ interface StufZdsCaseClientInterface {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When the template is not registered or a required field is missing.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function vrijBericht(string $sourceId, string $name, array $payload, array $context=[]): array;
 
@@ -89,7 +89,7 @@ interface StufZdsCaseClientInterface {
 	 *
 	 * @throws StufZknProviderException When the source cannot send.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function geefZaakdetails(string $sourceId, string $caseIdentification, array $wantedElements=[], array $context=[]): array;
 
@@ -103,7 +103,7 @@ interface StufZdsCaseClientInterface {
 	 *
 	 * @throws StufZknProviderException When the source cannot send.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function genereerZaakIdentificatie(string $sourceId, array $context=[]): array;
 }

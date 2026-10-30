@@ -20,7 +20,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\Integriq\Service\StufZkn;
 /**
  * Bounded read of a public StUF request body.
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
  */
 final class StufZknRequestBody {
 
@@ -52,7 +52,7 @@ final class StufZknRequestBody {
 	 *
 	 * @return string The body, at most MAX_BYTES + 1 bytes; '' when there is none.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	public function read(string $stream = 'php://input'): string {
 		// A missing stream is answered with '' below; keep fopen()'s warning out of the log.
