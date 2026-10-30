@@ -115,8 +115,10 @@ class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 		$durations = [];
 		$errors = ['timeout' => 0, 'client' => 0, 'server' => 0, 'tls' => 0];
 		foreach ($calls as $call) {
-			if (is_numeric(($call['durationMs'] ?? null)) === true) {
-				$durations[] = (int)$call['durationMs'];
+			// CallRecorder and the dispatchers write durationMs; CallService keeps it in response.responseTime.
+			$duration = ($call['durationMs'] ?? ($call['response']['responseTime'] ?? null));
+			if (is_numeric($duration) === true) {
+				$durations[] = (int)round((float)$duration);
 			}
 
 			$kind = $this->errorKind(call: $call);

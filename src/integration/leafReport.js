@@ -45,8 +45,10 @@ export function leafHeader({
 /**
  * The summary for a "linked" card: the count, the plural noun for its
  * "nothing linked" line, a row per item and the actions. Nothing while the
- * read runs or after it failed, so the card never says "nothing linked" when
- * it could not tell.
+ * read runs. After a failed read it reports `{ unavailable: true }` with no
+ * count, noun or rows: the card replaces an earlier read's entry (a re-read
+ * after the record changed) and, with no noun, never lists the leaf as
+ * "nothing linked" when it could not tell.
  *
  * @param {object} state The leaf's state.
  * @param {boolean} state.loading Whether the read is still running.
@@ -56,7 +58,7 @@ export function leafHeader({
  * @param {Array<{label: string, href?: string, icon?: string}>} [state.rows] A row per item.
  * @param {Array<{label: string, run: () => void}>} [state.actions] The actions.
  *
- * @return {{count: number, noun: string, rows: Array, actions: Array}|null} The summary, or null.
+ * @return {{count: number, noun: string, rows: Array, actions: Array, unavailable?: boolean}|null} The summary, or null while loading.
  */
 export function leafSummary({
 	loading,
@@ -66,8 +68,11 @@ export function leafSummary({
 	rows = [],
 	actions = [],
 }) {
-	if (loading === true || error !== '') {
+	if (loading === true) {
 		return null
+	}
+	if (error !== '') {
+		return { count: 0, noun: '', rows: [], actions: [], unavailable: true }
 	}
 	return { count, noun, rows: count > 0 ? rows : [], actions }
 }

@@ -1,0 +1,557 @@
+{
+    "delete-plain": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern"
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "size": 4096
+        },
+        "flowTokenKept": null,
+        "steps": [],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-9"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    [],
+                    false,
+                    false,
+                    true,
+                    "delete",
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\ExecutionTraceContext"
+                    }
+                ]
+            ]
+        ]
+    },
+    "delete-test-force-traced": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern"
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": true,
+            "force": true,
+            "size": 4096
+        },
+        "flowTokenKept": null,
+        "steps": [
+            "synchronization:success"
+        ],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-9"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    [],
+                    true,
+                    true,
+                    true,
+                    "delete",
+                    {
+                        "object": "trace"
+                    }
+                ]
+            ]
+        ]
+    },
+    "delete-force-only": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern"
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": true,
+            "size": 4096
+        },
+        "flowTokenKept": null,
+        "steps": [],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-9"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    [],
+                    false,
+                    true,
+                    true,
+                    "delete",
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\ExecutionTraceContext"
+                    }
+                ]
+            ]
+        ]
+    },
+    "batch-plain": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "deletionGuard": null,
+                    "purged": 0,
+                    "purgeRefusals": []
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ],
+                "type": "externToIntern",
+                "_embed": {
+                    "contracts": [
+                        null
+                    ]
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "size": 4096
+        },
+        "flowTokenKept": null,
+        "steps": [],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-1"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    [],
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\ExecutionTraceContext"
+                    }
+                ]
+            ],
+            [
+                "deleteInvalidObjects",
+                [
+                    [
+                        "t-1"
+                    ],
+                    false,
+                    [],
+                    true,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "batch-force-deletion": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "deletionGuard": null,
+                    "purged": 0,
+                    "purgeRefusals": []
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ],
+                "type": "externToIntern",
+                "_embed": {
+                    "contracts": [
+                        null
+                    ]
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "size": 4096
+        },
+        "flowTokenKept": null,
+        "steps": [],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-1"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    [],
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\ExecutionTraceContext"
+                    }
+                ]
+            ],
+            [
+                "deleteInvalidObjects",
+                [
+                    [
+                        "t-1"
+                    ],
+                    false,
+                    [],
+                    true,
+                    true,
+                    null
+                ]
+            ]
+        ]
+    },
+    "batch-force-traced": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "deletionGuard": null,
+                    "purged": 0,
+                    "purgeRefusals": []
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ],
+                "type": "externToIntern",
+                "_embed": {
+                    "contracts": [
+                        null
+                    ]
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": true,
+            "size": 4096
+        },
+        "flowTokenKept": null,
+        "steps": [
+            "synchronization:success"
+        ],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-1"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    [],
+                    false,
+                    true,
+                    true,
+                    null,
+                    {
+                        "object": "trace"
+                    }
+                ]
+            ],
+            [
+                "deleteInvalidObjects",
+                [
+                    [
+                        "t-1"
+                    ],
+                    false,
+                    [],
+                    true,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "batch-test": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "deletionGuard": null,
+                    "purged": 0,
+                    "purgeRefusals": []
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ],
+                "type": "externToIntern",
+                "_embed": {
+                    "contracts": [
+                        null
+                    ]
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": true,
+            "force": false,
+            "size": 4096
+        },
+        "flowTokenKept": null,
+        "steps": [],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-1"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    [],
+                    true,
+                    false,
+                    true,
+                    null,
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\ExecutionTraceContext"
+                    }
+                ]
+            ]
+        ]
+    },
+    "batch-update-mutation": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "deletionGuard": null,
+                    "purged": 0,
+                    "purgeRefusals": []
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ],
+                "type": "externToIntern",
+                "_embed": {
+                    "contracts": [
+                        null
+                    ]
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "size": 4096
+        },
+        "flowTokenKept": null,
+        "steps": [],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-1"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    [],
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\ExecutionTraceContext"
+                    }
+                ]
+            ],
+            [
+                "deleteInvalidObjects",
+                [
+                    [
+                        "t-1"
+                    ],
+                    false,
+                    [],
+                    true,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "batch-own-flow-token": {
+        "outcome": {
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "deletionGuard": null,
+                    "purged": 0,
+                    "purgeRefusals": []
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ],
+                "type": "externToIntern",
+                "_embed": {
+                    "contracts": [
+                        null
+                    ]
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "size": 4096
+        },
+        "flowTokenKept": true,
+        "steps": [],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "sync-1",
+                        "originId": "origin-1"
+                    },
+                    {
+                        "object": "callerFlowToken"
+                    },
+                    [],
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\ExecutionTraceContext"
+                    }
+                ]
+            ],
+            [
+                "deleteInvalidObjects",
+                [
+                    [
+                        "t-1"
+                    ],
+                    false,
+                    [],
+                    true,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    }
+}

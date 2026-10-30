@@ -123,18 +123,7 @@ class EudiWalletController extends Controller {
 		// the #[BruteForceProtection] attribute on the endpoints, without which
 		// BruteForceMiddleware never calls sleepDelayOrThrowOnMax() and this
 		// counter is written but never read. Both are required. See ADR-082.
-		try {
-			$this->throttler->registerAttempt(
-				action: self::THROTTLE_ACTION,
-				ip: $this->request->getRemoteAddress()
-			);
-		} catch (\Throwable $throttlerFailure) {
-			// Throttler bookkeeping must never change the protocol response --
-			// a wallet gets its RFC-shaped error, not a 500.
-			$this->logger->warning(
-				'EudiWalletController: registerAttempt failed: ' . $throttlerFailure->getMessage()
-			);
-		}
+		$this->registerFailedAttempt();
 
 		$this->logger->info(
 			'EudiWalletController: request rejected',
@@ -154,6 +143,31 @@ class EudiWalletController extends Controller {
 		);
 
 	}//end renderRejection()
+
+	/**
+	 * Count one failed attempt against this controller's brute-force action.
+	 *
+	 * Used by renderRejection() and by every failure path that answers without
+	 * an exception (the unknown-offer 404), so the #[BruteForceProtection]
+	 * attribute on those endpoints has attempts to enforce.
+	 *
+	 * @return void
+	 */
+	private function registerFailedAttempt(): void {
+		try {
+			$this->throttler->registerAttempt(
+				action: self::THROTTLE_ACTION,
+				ip: $this->request->getRemoteAddress()
+			);
+		} catch (\Throwable $throttlerFailure) {
+			// Throttler bookkeeping must never change the protocol response --
+			// a wallet gets its RFC-shaped error, not a 500.
+			$this->logger->warning(
+				'EudiWalletController: registerAttempt failed: ' . $throttlerFailure->getMessage()
+			);
+		}
+
+	}//end registerFailedAttempt()
 
 	/**
 	 * Build this instance's base URL (protocol + host, no path).
@@ -371,6 +385,8 @@ class EudiWalletController extends Controller {
 	public function resolveOffer(string $id): JSONResponse {
 		$offer = $this->offerService->resolveOfferForWallet($id);
 		if ($offer === null) {
+			// An unknown, expired or consumed offer uuid is a failed guess at the bearer capability.
+			$this->registerFailedAttempt();
 			return new JSONResponse(
 				data: ['error' => 'not_found', 'message' => 'Credential offer not found or expired'],
 				statusCode: Http::STATUS_NOT_FOUND

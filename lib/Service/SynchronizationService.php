@@ -51,6 +51,9 @@ use OCA\Integriq\Service\Synchronization\ContractRun;
 use OCA\Integriq\Service\Synchronization\ExternSyncRun;
 use OCA\Integriq\Service\Synchronization\ExtraDataFetch;
 use OCA\Integriq\Service\Synchronization\FetchedFile;
+use OCA\Integriq\Service\Synchronization\FileFetchItem;
+use OCA\Integriq\Service\Synchronization\FileFetchRequest;
+use OCA\Integriq\Service\Synchronization\FileFetchRun;
 use OCA\Integriq\Service\Synchronization\SourcePage;
 use OCA\Integriq\Service\Synchronization\OpenRegisterTargetWrite;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
@@ -58,6 +61,7 @@ use OCA\Integriq\Service\Synchronization\PagedFetch;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
+use OCA\Integriq\Service\Synchronization\SourceItemRequest;
 use OCA\Integriq\Service\Synchronization\TargetWrite;
 use OCA\Integriq\Service\Synchronization\DeletionRun;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
@@ -2244,6 +2248,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return array|null The fetched parent object as array, or null when it cannot be resolved.
 	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function resolveParentObjectForRelatedObjectTrigger(
@@ -2263,53 +2269,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		$triggerSourceId = "$triggerRegister/$triggerSchema";
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-		$triggerConfig = $sourceConfig['triggerFromRelatedObjects'];
-
-		$relationKeys = [];
-		if (isset($triggerConfig[$triggerSourceId]) === true && is_array($triggerConfig[$triggerSourceId]) === true) {
-			$relationConfig = $triggerConfig[$triggerSourceId];
-			$firstRelationKey = array_key_first($relationConfig);
-			if (is_string($firstRelationKey) === true && trim($firstRelationKey) !== '') {
-				$relationKeys[] = trim($firstRelationKey);
-			}
-		}
-
-		if ($relationKeys === []) {
+		$relationKey = $this->relatedObjectRelationKey(synchronization: $synchronization, triggerSourceId: $triggerSourceId);
+		if ($relationKey === null) {
 			return null;
 		}
 
-		$triggerObjectDot = new Dot($triggerObject);
-		$relationReference = null;
-		foreach ($relationKeys as $relationKey) {
-			$candidateReference = $triggerObjectDot->get($relationKey);
-			if (is_string($candidateReference) === true && trim($candidateReference) !== '') {
-				$relationReference = trim($candidateReference);
-				break;
-			}
-		}
-
-		if ($relationReference === null) {
+		$relationReference = (new Dot($triggerObject))->get($relationKey);
+		if (is_string($relationReference) === false || trim($relationReference) === '') {
 			return null;
 		}
 
-		$parentObjectId = null;
-		if (Uuid::isValid($relationReference) === true) {
-			$parentObjectId = $relationReference;
-		} elseif (filter_var($relationReference, FILTER_VALIDATE_URL) !== false) {
-			$path = trim((string)parse_url($relationReference, PHP_URL_PATH), '/');
-			$segments = array_values(array_filter(explode('/', $path), static fn ($segment) => $segment !== ''));
-
-			$lastSegment = end($segments);
-			if ($lastSegment === false) {
-				$lastSegment = null;
-			}
-
-			if (is_string($lastSegment) === true && Uuid::isValid($lastSegment) === true) {
-				$parentObjectId = $lastSegment;
-			}
-		}
-
+		$relationReference = trim($relationReference);
+		$parentObjectId = $this->parentObjectIdFromReference(reference: $relationReference);
 		if ($parentObjectId === null) {
 			return null;
 		}
@@ -2335,7 +2306,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 					'synchronizationId' => ($synchronization['id'] ?? null),
 					'sourceId' => $sourceId,
 					'triggerSourceId' => $triggerSourceId,
-					'relationKeys' => $relationKeys,
+					'relationKeys' => [$relationKey],
 					'relationReference' => $relationReference,
 					'parentObjectId' => $parentObjectId,
 					'error' => $e->getMessage(),
@@ -2345,6 +2316,63 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return null;
 		}//end try
 	}//end resolveParentObjectForRelatedObjectTrigger()
+
+	/**
+	 * The relation key a synchronization configures for objects of a related source.
+	 *
+	 * The key is the first key of `sourceConfig.triggerFromRelatedObjects.<register>/<schema>`,
+	 * trimmed; it is the dot path in the related object that references the parent.
+	 *
+	 * @param array  $synchronization The synchronization that should run.
+	 * @param string $triggerSourceId The related object's source, as `<register>/<schema>`.
+	 *
+	 * @return string|null The relation key, or null when none is configured.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function relatedObjectRelationKey(array $synchronization, string $triggerSourceId): ?string {
+		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		$relationConfig = ($sourceConfig['triggerFromRelatedObjects'][$triggerSourceId] ?? null);
+		if (is_array($relationConfig) === false) {
+			return null;
+		}
+
+		$relationKey = array_key_first($relationConfig);
+		if (is_string($relationKey) === false || trim($relationKey) === '') {
+			return null;
+		}
+
+		return trim($relationKey);
+	}//end relatedObjectRelationKey()
+
+	/**
+	 * The parent object id a relation reference names: the reference itself when it is
+	 * a UUID, or the last path segment of a URL when that segment is a UUID.
+	 *
+	 * @param string $reference The trimmed relation reference.
+	 *
+	 * @return string|null The parent object id, or null when the reference names none.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function parentObjectIdFromReference(string $reference): ?string {
+		if (Uuid::isValid($reference) === true) {
+			return $reference;
+		}
+
+		if (filter_var($reference, FILTER_VALIDATE_URL) === false) {
+			return null;
+		}
+
+		$path = trim((string)parse_url($reference, PHP_URL_PATH), '/');
+		$segments = array_values(array_filter(explode('/', $path), static fn ($segment) => $segment !== ''));
+		$lastSegment = end($segments);
+		if (is_string($lastSegment) === true && Uuid::isValid($lastSegment) === true) {
+			return $lastSegment;
+		}
+
+		return null;
+	}//end parentObjectIdFromReference()
 
 	/**
 	 * Synchronizes internal data to external sources based on synchronization rules.
@@ -2597,24 +2625,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * If a rate limit error occurs during the external request, a `TooManyRequestsHttpException` is thrown.
 	 *
-	 * @param array $synchronization The synchronization configuration and state.
-	 * @param SynchronizationRunLog $log The log object to record details and results.
-	 * @param FlowToken $flowToken The flow token shared across the run.
-	 * @param bool|null $isTest Optional flag to run in test mode (no deletions/persist).
-	 * @param bool|null $force Optional flag to bypass change checks and force all.
-	 * @param string|null $source The source to synchronize; defaults to the sync source.
-	 * @param array|null $data The data to synchronize; defaults to the sync data.
-	 * @param string|null $mutationType The current mutation type from this::VALID_MUTATION_TYPES.
-	 * @param bool|null $forceDeletion Explicit override for the deletion-ratio guard
-	 *                                 (REQ-010); ignored when `$isTest === true`.
-	 * @param string|null $approvalRequestId Bypass token: the id of a specific approved
-	 *                                       `approval_request` to consume when
-	 *                                       `sourceConfig.requiresApproval` gates this
-	 *                                       run (synchronization-engine REQ-015).
-	 *                                       Optional — when omitted, any
-	 *                                       approved+unconsumed request for this
-	 *                                       synchronization satisfies the gate.
-	 * @param ExecutionTraceContext|null $trace The active execution trace context (execution-trace REQ-001).
+	 * @param ExternSyncRun $run    The run, holding the synchronization, its run log, the flow token
+	 *                              (by reference), the test and force flags, the data and mutation type
+	 *                              of a single-object run, the deletion-ratio override (REQ-010; ignored
+	 *                              for a test run), the approval request that bypasses the approval gate
+	 *                              (REQ-015; when absent, any approved and unconsumed request satisfies
+	 *                              the gate) and the trace (execution-trace REQ-001).
+	 * @param string|null   $source The source to synchronize; defaults to the sync source.
 	 *
 	 * @return SynchronizationRunLog Returns the updated synchronization log with processing results.
 	 *
@@ -2629,43 +2646,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
-	 * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) $approvalRequestId is an additive,
-	 * backward-compatible optional bypass token (hitl-approval-rule-action design.md
-	 * Decision 6); all 9 preceding parameters pre-exist this change.
 	 */
-	private function synchronizeExternToIntern(
-		array $synchronization,
-		SynchronizationRunLog $log,
-		FlowToken &$flowToken,
-		?bool $isTest = false,
-		?bool $force = false,
-		?string $source = null,
-		?array $data = null,
-		?string $mutationType = null,
-		?bool $forceDeletion = false,
-		?string $approvalRequestId = null,
-		?ExecutionTraceContext $trace = null,
-	): SynchronizationRunLog {
+	private function synchronizeExternToIntern(ExternSyncRun $run, ?string $source): SynchronizationRunLog {
 		$overallStartTime = microtime(true);
-
-		$run = new ExternSyncRun();
-		$run->synchronization = $synchronization;
-		$run->log = $log;
-		$run->flowToken = &$flowToken;
-		$run->isTest = $isTest;
-		$run->force = $force;
-		$run->data = $data;
-		$run->mutationType = $mutationType;
-		$run->forceDeletion = $forceDeletion;
-		$run->approvalRequestId = $approvalRequestId;
-		$run->trace = $trace;
 
 		$this->validateExternRun(run: $run, source: $source);
 
-		if ($data !== null && $mutationType === 'delete') {
+		if ($run->data !== null && $run->mutationType === 'delete') {
 			$this->processExternDelete(run: $run);
 		} elseif ($this->runExternBatch(run: $run) === false) {
 			return $run->log;
@@ -2753,15 +2740,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private function processExternDelete(ExternSyncRun $run): void {
 		$this->processSynchronizationObject(
-			synchronization: $run->synchronization,
-			object: $run->data,
-			result: $run->result,
-			isTest: $run->isTest,
-			force: $run->force,
-			log: $run->log,
-			flowToken: $run->flowToken,
-			mutationType: $run->mutationType,
-			trace: $run->trace
+			request: new SourceItemRequest(
+				synchronization: $run->synchronization,
+				result: $run->result,
+				isTest: $run->isTest,
+				force: $run->force,
+				log: $run->log,
+				flowToken: $run->flowToken,
+				mutationType: $run->mutationType,
+				trace: $run->trace
+			),
+			object: $run->data
 		);
 	}//end processExternDelete()
 
@@ -3072,15 +3061,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$objectStartTime = microtime(true);
 		try {
 			$processResult = $this->processSynchronizationObject(
-				synchronization: $run->synchronization,
-				flowToken: $run->flowToken,
-				object: $object,
-				result: $run->result,
-				isTest: $run->isTest,
-				force: $run->force,
-				log: $run->log,
-				trace: $run->trace,
-				contractIndex: $contractIndex
+				request: new SourceItemRequest(
+					synchronization: $run->synchronization,
+					flowToken: $run->flowToken,
+					result: $run->result,
+					isTest: $run->isTest,
+					force: $run->force,
+					log: $run->log,
+					trace: $run->trace,
+					contractIndex: $contractIndex
+				),
+				object: $object
 			);
 		} catch (\Throwable $itemException) {
 			$this->recordExternItemFailure(run: $run, object: $object, exception: $itemException);
@@ -3784,14 +3775,16 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		];
 
 		return $this->processSynchronizationObject(
-			synchronization: $synchronization,
-			object: $payload,
-			result: $result,
-			isTest: $isTest,
-			force: true,
-			log: $log,
-			flowToken: $flowToken,
-			trace: $trace,
+			request: new SourceItemRequest(
+				synchronization: $synchronization,
+				result: $result,
+				isTest: $isTest,
+				force: true,
+				log: $log,
+				flowToken: $flowToken,
+				trace: $trace
+			),
+			object: $payload
 		);
 
 	}//end replaySynchronizationItem()
@@ -3997,19 +3990,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		);
 
 		// Handle full extern-to-intern sync.
-		$log = $this->synchronizeExternToIntern(
-			synchronization: $synchronization,
-			log: $log,
-			flowToken: $flowToken,
-			isTest: $isTest,
-			force: $force,
-			source: $source,
-			data: $data,
-			mutationType: $mutationType,
-			forceDeletion: $forceDeletion,
-			approvalRequestId: $approvalRequestId,
-			trace: $trace
-		);
+		$run = new ExternSyncRun();
+		$run->synchronization = $synchronization;
+		$run->log = $log;
+		$run->flowToken = &$flowToken;
+		$run->isTest = $isTest;
+		$run->force = $force;
+		$run->data = $data;
+		$run->mutationType = $mutationType;
+		$run->forceDeletion = $forceDeletion;
+		$run->approvalRequestId = $approvalRequestId;
+		$run->trace = $trace;
+		$log = $this->synchronizeExternToIntern(run: $run, source: $source);
 
 		// A gated, not-yet-approved run already finalized its own log with a
 		// `pending_approval` message and made no writes — do not overwrite it
@@ -11146,14 +11138,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	/**
 	 * Fetch a file from a source.
 	 *
-	 * @param array $source The source to fetch the file from.
-	 * @param string $endpoint The endpoint for the file.
-	 * @param array $config The configuration of the action.
-	 * @param string $objectId The id of the object the file belongs to.
-	 * @param array|null $tags Tags to assign to the file.
-	 * @param string|null $filename Filename to assign to the file.
-	 * @param string|null $published The published status to determine if the file should be published.
-	 * @param int|string|null $registerId The id of the register the object belongs to.
+	 * @param FileFetchRequest $request The fetch_file request: source and rule configuration.
+	 * @param FileFetchItem $item The file to fetch and the object it is stored on.
 	 *
 	 * @return string If write is enabled: the url of the file, if write is disabled: the base64 encoded file.
 	 * @throws ContainerExceptionInterface
@@ -11165,21 +11151,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @throws SyntaxError
 	 * @throws \OCP\DB\Exception
 	 */
-	private function fetchFile(
-		array $source,
-		string $endpoint,
-		array $config,
-		string $objectId,
-		?array $tags = [],
-		?string &$filename = null,
-		?string $published = null,
-		int|string|null $registerId = null,
-	): string {
-		$prepared = $this->prepareFileFetch(source: $source, endpoint: $endpoint, config: $config);
+	private function fetchFile(FileFetchRequest $request, FileFetchItem $item): string {
+		$prepared = $this->prepareFileFetch(request: $request, endpoint: $item->endpoint);
+		$filename = $item->filename;
 
 		try {
 			$callLog = $this->callSourceObject(
-				source: $source,
+				source: $request->source,
 				endpoint: $prepared['endpoint'],
 				method: $prepared['config']['method'] ?? 'GET',
 				config: $prepared['config']['sourceConfiguration'] ?? [],
@@ -11189,11 +11167,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return $this->saveFetchedFile(
 				prepared: $prepared,
 				callLog: $callLog,
-				objectId: $objectId,
-				tags: $tags,
+				objectId: $item->objectId,
+				tags: $item->tags,
 				filename: $filename,
-				published: $published,
-				registerId: $registerId
+				published: $item->published,
+				registerId: $item->registerId
 			);
 		} finally {
 			$this->releaseFileFetch(prepared: $prepared);
@@ -11211,17 +11189,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * across the promise boundary — including the temp path whose release
 	 * {@see releaseFileFetch()} owns.
 	 *
-	 * @param array $source The source to fetch the file from.
+	 * @param FileFetchRequest $request The fetch_file request: source and rule configuration.
 	 * @param string $endpoint The endpoint for the file.
-	 * @param array $config The configuration of the action.
 	 *
 	 * @return array{originalEndpoint: string, endpoint: string, config: array, useSink: boolean, sinkPath: string|null}
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 */
-	private function prepareFileFetch(array $source, string $endpoint, array $config): array {
+	private function prepareFileFetch(FileFetchRequest $request, string $endpoint): array {
+		$config = $request->config;
 		$originalEndpoint = $endpoint;
-		$sourceLocation = (string)($source['location'] ?? '');
+		$sourceLocation = (string)($request->source['location'] ?? '');
 		if (str_contains(haystack: $endpoint, needle: $sourceLocation) === true) {
 			$endpoint = substr(string: $endpoint, offset: strlen(string: $sourceLocation));
 		}
@@ -12289,14 +12267,25 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$fetchMode = (string)(($source['configuration']['fileFetchMode'] ?? 'sync'));
 		if ($fetchMode === 'async') {
 			$this->enqueueFileFetch(
-				config: $config,
-				endpoint: $endpoint,
-				objectId: (string)$objectId,
-				ruleId: (int)($rule['id'] ?? 0)
+				request: new FileFetchRequest(
+					source: $source,
+					config: $config,
+					endpoint: $endpoint,
+					objectId: (string)$objectId,
+					ruleId: (int)($rule['id'] ?? 0)
+				)
 			);
 		} else {
 			// Start fire-and-forget file fetching based on endpoint type.
-			$this->startAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: (int)($rule['id'] ?? 0), objectId: $objectId);
+			$this->startAsyncFileFetching(
+				request: new FileFetchRequest(
+					source: $source,
+					config: $config,
+					endpoint: $endpoint,
+					objectId: $objectId,
+					ruleId: (int)($rule['id'] ?? 0)
+				)
+			);
 		}
 
 		// Return data immediately with placeholder values.
@@ -12333,22 +12322,19 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * so a rotated credential is picked up at run time rather than frozen at
 	 * queue time.
 	 *
-	 * @param array $config The fetch_file rule configuration.
-	 * @param mixed $endpoint The endpoint(s) to fetch.
-	 * @param string $objectId The object the files belong to.
-	 * @param int $ruleId The rule id, for error attribution.
+	 * @param FileFetchRequest $request The fetch_file request; its source is not queued.
 	 *
 	 * @return void
 	 */
-	private function enqueueFileFetch(array $config, mixed $endpoint, string $objectId, int $ruleId): void {
+	private function enqueueFileFetch(FileFetchRequest $request): void {
 		try {
 			$this->containerInterface->get(\OCP\BackgroundJob\IJobList::class)->add(
 				\OCA\Integriq\BackgroundJob\FetchFilesJob::class,
 				[
-					'config' => $config,
-					'endpoint' => $endpoint,
-					'objectId' => $objectId,
-					'ruleId' => $ruleId,
+					'config' => $request->config,
+					'endpoint' => $request->endpoint,
+					'objectId' => $request->objectId,
+					'ruleId' => $request->ruleId,
 				]
 			);
 		} catch (\Throwable $exception) {
@@ -12357,7 +12343,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// there is no later error to notice.
 			$this->logger->error(
 				'[SynchronizationService] could not queue deferred file fetch for object '
-				. $objectId . '; its files will NOT be fetched: ' . $exception->getMessage(),
+				. $request->objectId . '; its files will NOT be fetched: ' . $exception->getMessage(),
 				['exception' => $exception]
 			);
 		}//end try
@@ -12383,11 +12369,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$source = $this->findSource(id: $config['source']);
 
 		$this->executeAsyncFileFetching(
-			source: $source,
-			config: $config,
-			endpoint: $endpoint,
-			ruleId: $ruleId,
-			objectId: $objectId
+			request: new FileFetchRequest(
+				source: $source,
+				config: $config,
+				endpoint: $endpoint,
+				objectId: $objectId,
+				ruleId: $ruleId
+			)
 		);
 	}//end fetchFilesForObject()
 
@@ -12400,20 +12388,16 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * says so; this docblock exists partly so the name does not promise more
 	 * than the implementation delivers.
 	 *
-	 * @param array $source The source to fetch from.
-	 * @param array $config The fetch configuration.
-	 * @param mixed $endpoint The endpoint to fetch.
-	 * @param int $ruleId The rule that triggered the fetch.
-	 * @param string|null $objectId The object the files belong to, when known.
+	 * @param FileFetchRequest $request The fetch_file request.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
-	private function startAsyncFileFetching(array $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void {
+	private function startAsyncFileFetching(FileFetchRequest $request): void {
 		// Execute file fetching immediately but with error isolation.
 		// This provides "fire-and-forget" behavior without complex ReactPHP setup.
-		$this->executeAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: $ruleId, objectId: $objectId);
+		$this->executeAsyncFileFetching(request: $request);
 	}//end startAsyncFileFetching()
 
 	/**
@@ -12423,31 +12407,25 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * and fetches files accordingly. All operations are wrapped in try-catch blocks to prevent errors from
 	 * affecting the main synchronization process.
 	 *
-	 * @param array $source The source to fetch files from.
-	 * @param array $config The fetch_file rule configuration.
-	 * @param mixed $endpoint The endpoint(s) to fetch files from.
-	 * @param int $ruleId The ID of the rule for error logging.
-	 * @param string|null $objectId The UUID of the object to attach files to.
+	 * @param FileFetchRequest $request The fetch_file request.
 	 *
 	 * @return void
 	 *
-	 * @psalm-param array<string, mixed> $config
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
-	private function executeAsyncFileFetching(array $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void {
+	private function executeAsyncFileFetching(FileFetchRequest $request): void {
 		try {
 			$filename = null;
 			$tags = [];
 			$published = null;
 			$registerId = null;
 
-			switch ($this->getArrayType(array: $endpoint)) {
+			switch ($this->getArrayType(array: $request->endpoint)) {
 				// Single file endpoint.
 				case 'Not array':
 					$this->fetchFileSafely(
-						source: $source,
-						endpoint: $endpoint,
-						config: $config,
-						objectId: $objectId
+						request: $request,
+						item: new FileFetchItem(endpoint: $request->endpoint, objectId: $request->objectId)
 					);
 					break;
 
@@ -12456,8 +12434,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 					$contextObjectId = null;
 					// Separate variable to avoid overwriting the original.
 					$actualEndpoint = $this->getFileContext(
-						config: $config,
-						endpoint: $endpoint,
+						config: $request->config,
+						endpoint: $request->endpoint,
 						filename: $filename,
 						tags: $tags,
 						objectId: $contextObjectId,
@@ -12465,17 +12443,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 						registerId: $registerId
 					);
 					// Use context object ID if specified, otherwise fall back to the original object ID.
-					$targetObjectId = $contextObjectId ?? $objectId;
+					$targetObjectId = $contextObjectId ?? $request->objectId;
 					if ($actualEndpoint !== null) {
 						$this->fetchFileSafely(
-							source: $source,
-							endpoint: $actualEndpoint,
-							config: $config,
-							objectId: $targetObjectId,
-							filename: $filename,
-							tags: $tags,
-							published: $published,
-							registerId: $registerId
+							request: $request,
+							item: new FileFetchItem(
+								endpoint: $actualEndpoint,
+								objectId: $targetObjectId,
+								filename: $filename,
+								tags: $tags,
+								published: $published,
+								registerId: $registerId
+							)
 						);
 					}
 					break;
@@ -12486,17 +12465,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				case 'Multidimensional array':
 					// Array of just endpoints - use cleanup logic.
 				case 'Indexed array':
-					$this->processMultipleFilesWithCleanup(
-						source: $source,
-						config: $config,
-						endpoints: $endpoint,
-						objectId: $objectId
-					);
+					$this->processMultipleFilesWithCleanup(request: $request);
 					break;
 			}//end switch
 		} catch (Exception $e) {
 			// Log error but don't throw - this is fire-and-forget.
-			$this->logger->error("Async file fetching failed for rule {$ruleId}: " . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error("Async file fetching failed for rule {$request->ruleId}: " . $e->getMessage(), ['exception' => $e]);
 		}//end try
 	}//end executeAsyncFileFetching()
 
@@ -12506,42 +12480,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * This method wraps the existing fetchFile method with error isolation to enable
 	 * fire-and-forget execution. Errors are caught and logged without affecting the main process.
 	 *
-	 * @param array $source The source to fetch the file from.
-	 * @param string $endpoint The endpoint for the file.
-	 * @param array $config The configuration of the action.
-	 * @param string $objectId The UUID of the object the file belongs to.
-	 * @param string|null $filename Optional filename to assign to the file.
-	 * @param array $tags Optional tags to assign to the file.
-	 * @param string|null $published Optional published status to determine if file should be published.
-	 * @param int|string|null $registerId Optional published status to determine if file should be published.
+	 * @param FileFetchRequest $request The fetch_file request: source and rule configuration.
+	 * @param FileFetchItem $item The file to fetch and the object it is stored on.
 	 *
 	 * @return void
 	 *
-	 * @psalm-param array<string, mixed> $config
-	 * @psalm-param array<string> $tags
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
-	private function fetchFileSafely(
-		array $source,
-		string $endpoint,
-		array $config,
-		string $objectId,
-		?string $filename = null,
-		array $tags = [],
-		int|string|null $published = null,
-		int|string|null $registerId = null,
-	): void {
+	private function fetchFileSafely(FileFetchRequest $request, FileFetchItem $item): void {
 		try {
 			// Execute the file fetching operation.
-			$this->fetchFile(
-				source: $source,
-				endpoint: $endpoint,
-				config: $config,
-				objectId: $objectId,
-				tags: $tags,
-				filename: $filename,
-				published: $published,
-				registerId: $registerId
-			);
+			$this->fetchFile(request: $request, item: $item);
 			$this->fileFetchSucceeded++;
 		} catch (Exception $e) {
 			// COUNTED, not just logged. Swallowing here is deliberate — one
@@ -12551,7 +12500,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$this->fileFetchFailed++;
 
 			// Log error with detailed information but don't throw.
-			$this->logger->error("File fetch failed for endpoint {$endpoint}, objectId {$objectId}: " . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error("File fetch failed for endpoint {$item->endpoint}, objectId {$item->objectId}: " . $e->getMessage(), ['exception' => $e]);
 		}
 	}//end fetchFileSafely()
 
@@ -12947,51 +12896,27 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	/**
 	 * Process a single object during synchronization.
 	 *
-	 * @param array $synchronization The synchronization being processed.
-	 * @param array $object The object to synchronize.
-	 * @param array $result The current result tracking data.
-	 * @param bool $isTest Whether this is a test run.
-	 * @param bool $force Whether to force synchronization regardless of changes.
-	 * @param SynchronizationRunLog $log The synchronization log.
-	 * @param FlowToken $flowToken The flow token shared across the synchronization run.
-	 * @param string|null $mutationType The type of object mutation.
-	 * @param ExecutionTraceContext|null $trace The active execution trace context, when this item is processed
-	 *                                          from within a traced execution (execution-trace
-	 *                                          REQ-001/REQ-002).
-	 * @param array|null $contractIndex Contracts pre-read for the whole page, keyed by origin id.
-	 *                                  When supplied, a missing key is a MISS rather than a reason
-	 *                                  to fall back to a per-item query.
+	 * @param SourceItemRequest $request The run options: synchronization, result so far, flags, run log,
+	 *                                   flow token, mutation type, trace (execution-trace REQ-001/REQ-002)
+	 *                                   and the page's contract index.
+	 * @param array             $object  The object to synchronize.
 	 *
 	 * @return array Contains updated result data and the targetId ['result' => array, 'targetId' => string|null].
 	 *
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) 10 parameters, threshold 10.
-	 *   This is the engine's per-object inner loop and every parameter is state the
-	 *   loop carries rather than re-derives per object — bundling them into a context
-	 *   object is the obvious cleanup, but it is a signature change across the engine
-	 *   and its tests, so it belongs in its own change where it can be verified.
 	 */
-	private function processSynchronizationObject(
-		array $synchronization,
-		array $object,
-		array $result,
-		bool $isTest,
-		bool $force,
-		SynchronizationRunLog $log,
-		FlowToken &$flowToken,
-		?string $mutationType = null,
-		?ExecutionTraceContext $trace = null,
-		?array $contractIndex = null,
-	): array {
+	private function processSynchronizationObject(SourceItemRequest $request, array $object): array {
+		$synchronization = $request->synchronization;
+		$flowToken = $request->flowToken;
+
 		// Execution-trace REQ-002: one ordered `synchronization` step per item processed.
 		$item = new ItemRun();
 		$item->stepStart = microtime(true);
 		$item->synchronization = $synchronization;
 		$item->flowToken = $flowToken;
-		$item->trace = $trace;
-		$item->contractIndex = $contractIndex;
-		$item->result = $result;
+		$item->trace = $request->trace;
+		$item->contractIndex = $request->contractIndex;
+		$item->result = $request->result;
 		$item->sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		$rejection = $this->screenItem(item: $item, object: $object);
@@ -13023,11 +12948,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			synchronization: $synchronization,
 			flowToken: $flowToken,
 			object: $object,
-			isTest: $isTest,
-			force: $force,
-			log: match ($item->isNewContract) { true => null, false => $log },
-			mutationType: $mutationType,
-			trace: $trace
+			isTest: $request->isTest,
+			force: $request->force,
+			log: match ($item->isNewContract) { true => null, false => $request->log },
+			mutationType: $request->mutationType,
+			trace: $request->trace
 		);
 
 		$contract = $contractResult['contract'];
@@ -13492,14 +13417,15 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * This method fetches multiple files for an object and ensures that any files
 	 * currently attached to the object but not in the new set are removed.
 	 *
-	 * @param array $source The source to fetch files from.
-	 * @param array $config The fetch_file rule configuration.
-	 * @param array $endpoints Array of endpoints/file data to process.
-	 * @param string|null $objectId The UUID of the object to attach files to.
+	 * @param FileFetchRequest $request The fetch_file request whose endpoint is a list of endpoints or file objects.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-objects-multiple-files-shall-be-fetched-concurrently
 	 */
-	private function processMultipleFilesWithCleanup(array $source, array $config, array $endpoints, ?string $objectId = null): void {
+	private function processMultipleFilesWithCleanup(FileFetchRequest $request): void {
+		$endpoints = $request->endpoint;
+		$objectId = $request->objectId;
 		if ($endpoints === [] && $objectId !== null) {
 			$targetObjectId = $objectId;
 		} elseif ($endpoints === []) {
@@ -13512,7 +13438,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// depend on any source-side ordering: the file list is fully known
 		// before a single request is dispatched, and no internal paging splits
 		// the source load.
-		$resolved = $this->resolveMultiFileWorkItems(config: $config, endpoints: $endpoints, objectId: $objectId);
+		$resolved = $this->resolveMultiFileWorkItems(request: $request);
 		$items = $resolved['items'];
 
 		// The sequential loop this replaced assigned $targetObjectId on EVERY
@@ -13521,7 +13447,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// changing it would silently repoint file cleanup.
 		$targetObjectId = $resolved['lastObjectId'];
 
-		$newFileNames = $this->fetchFilesConcurrently(source: $source, config: $config, items: $items);
+		$newFileNames = $this->fetchFilesConcurrently(request: $request, items: $items);
 
 		// Always run cleanup, even if newFileNames is empty.
 		// This handles the case where all files should be removed from an object.
@@ -13536,20 +13462,19 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * tags, target object, register, published state) up front, before any
 	 * request is dispatched.
 	 *
-	 * @param array $config The fetch_file rule configuration.
-	 * @param array $endpoints Array of endpoints/file data to process.
-	 * @param string|null $objectId The UUID of the object to attach files to.
+	 * @param FileFetchRequest $request The fetch_file request whose endpoint is a list of endpoints or file objects.
 	 *
 	 * @return array{items: array<int, array{endpoint: string, objectId: string|null, filename: string|null,
 	 *               tags: array, published: mixed, registerId: mixed}>, lastObjectId: string|null}
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-not-depend-on-source-ordering-or-split-source-load
 	 */
-	private function resolveMultiFileWorkItems(array $config, array $endpoints, ?string $objectId = null): array {
+	private function resolveMultiFileWorkItems(FileFetchRequest $request): array {
 		$items = [];
+		$objectId = $request->objectId;
 		$lastObjectId = $objectId;
 
-		foreach ($endpoints as $endpoint) {
+		foreach ($request->endpoint as $endpoint) {
 			$filename = null;
 			$tags = [];
 			$contextObjectId = null;
@@ -13560,7 +13485,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			if (is_array($endpoint) === true) {
 				// This is an object with file metadata (multidimensional array case).
 				$actualEndpoint = $this->getFileContext(
-					config: $config,
+					config: $request->config,
 					endpoint: $endpoint,
 					filename: $filename,
 					tags: $tags,
@@ -13691,8 +13616,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * sequential path did — cleanup must not delete a file whose fetch merely
 	 * failed this run.
 	 *
-	 * @param array $source The source to fetch files from.
-	 * @param array $config The fetch_file rule configuration.
+	 * @param FileFetchRequest $request The fetch_file request: source and rule configuration.
 	 * @param array $items The work items from {@see resolveMultiFileWorkItems()}.
 	 *
 	 * @return array The tracking filenames for cleanup. Order follows settle order rather
@@ -13702,30 +13626,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
-	private function fetchFilesConcurrently(array $source, array $config, array $items): array {
+	private function fetchFilesConcurrently(FileFetchRequest $request, array $items): array {
 		if ($items === []) {
 			return [];
 		}
 
-		$limits = $this->resolveFetchConcurrency(source: $source);
-
-		// Shared mutable run state. Passed by reference into the generator and
-		// every promise callback: the byte tally has to be readable by the
-		// admission gate and writable by both settle legs.
-		$state = [
-			'fileNames' => [],
-			'inFlightBytes' => 0,
-			'inFlightSize' => [],
-			'throttled' => false,
-			'released' => [],
-			// Monotonic, never derived from count($state['released']) — slots are
-			// unset as they settle, so a count-based index would collide with a
-			// live slot the moment one file finishes before another starts.
-			'nextSlot' => 0,
-		];
+		// Shared mutable run state, handed to the generator and every promise
+		// callback: the byte tally has to be readable by the admission gate and
+		// writable by both settle legs.
+		$run = new FileFetchRun(request: $request, limits: $this->resolveFetchConcurrency(source: $request->source));
 
 		try {
-			$this->settleFileFetches(source: $source, config: $config, items: $items, limits: $limits, state: $state);
+			$this->settleFileFetches(run: $run, items: $items);
 		} catch (\Throwable $exception) {
 			// The per-file legs already isolate their own failures, so reaching
 			// here means the WINDOW itself failed (an aggregate rejection, a
@@ -13741,17 +13653,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// queue) leaves the temp files of items that never settled — and of
 			// items the pool was still holding back — on disk. Sweep every
 			// allocated path that has not already been released.
-			$this->releaseUnsettledFileFetches(state: $state);
+			$this->releaseUnsettledFileFetches(run: $run);
 		}//end try
 
-		if ($state['throttled'] === true) {
+		if ($run->throttled === true) {
 			$this->logger->info(
-				'File fetches for this object were throttled: concurrency cap ' . $limits['concurrency']
-				. ', in-flight byte budget ' . $limits['byteBudget'] . ' bytes.'
+				'File fetches for this object were throttled: concurrency cap ' . $run->limits['concurrency']
+				. ', in-flight byte budget ' . $run->limits['byteBudget'] . ' bytes.'
 			);
 		}
 
-		return $state['fileNames'];
+		return $run->fileNames;
 	}//end fetchFilesConcurrently()
 
 	/**
@@ -13762,26 +13674,23 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * rather than all at once. `ofLimit()` — not `ofLimitAll()` — because the
 	 * aggregate must NOT reject when one file fails.
 	 *
-	 * @param array $source The source to fetch files from.
-	 * @param array $config The fetch_file rule configuration.
+	 * @param FileFetchRun $run The run: request, limits and shared state.
 	 * @param array $items The per-file work items.
-	 * @param array $limits The resolved concurrency cap and byte budget.
-	 * @param array $state Shared run state, mutated in place.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
-	private function settleFileFetches(array $source, array $config, array $items, array $limits, array &$state): void {
-		$promises = (function () use ($source, $config, $items, &$state) {
+	private function settleFileFetches(FileFetchRun $run, array $items): void {
+		$promises = (function () use ($run, $items) {
 			foreach ($items as $index => $item) {
-				yield $index => $this->fetchFileAsync(source: $source, config: $config, item: $item, state: $state);
+				yield $index => $this->fetchFileAsync(run: $run, item: $item);
 			}
 		})();
 
 		Each::ofLimit(
 			$promises,
-			$this->buildFetchAdmissionGate(limits: $limits, state: $state),
+			$this->buildFetchAdmissionGate(run: $run),
 			null,
 			null
 		)->wait();
@@ -13810,21 +13719,22 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * fetched, and — worse — the pool would deadlock: with no promise pending,
 	 * nothing would ever settle to re-consult this gate.
 	 *
-	 * @param array $limits The resolved concurrency cap and byte budget.
-	 * @param array $state Shared run state, read for the byte tally and marked when throttling.
+	 * @param FileFetchRun $run The run: read for the limits and the byte tally, marked when throttling.
 	 *
 	 * @return callable The concurrency callable.
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
-	private function buildFetchAdmissionGate(array $limits, array &$state): callable {
-		return function (int $pending) use ($limits, &$state): int {
+	private function buildFetchAdmissionGate(FileFetchRun $run): callable {
+		$limits = $run->limits;
+
+		return function (int $pending) use ($limits, $run): int {
 			// Note the contract: this returns the TOTAL allowed in flight, not a
 			// number to add. EachPromise subtracts the pending count itself, so
 			// returning the cap is what fills the window — returning 1 here would
 			// silently degenerate the pool to sequential dispatch.
 			if ($pending >= $limits['concurrency']) {
-				$state['throttled'] = true;
+				$run->throttled = true;
 			}
 
 			// Byte gate. Only applied while something is already in flight: with
@@ -13834,9 +13744,9 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// whole budget permanently unfetchable.
 			if ($pending > 0
 				&& $limits['byteBudget'] > 0
-				&& $state['inFlightBytes'] >= $limits['byteBudget']
+				&& $run->inFlightBytes >= $limits['byteBudget']
 			) {
-				$state['throttled'] = true;
+				$run->throttled = true;
 
 				return $pending;
 			}
@@ -13861,10 +13771,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * shape where a missing release leaks a descriptor and a temp file per
 	 * failure.
 	 *
-	 * @param array $source The source to fetch the file from.
-	 * @param array $config The fetch_file rule configuration.
+	 * @param FileFetchRun $run The run: request, limits and shared state.
 	 * @param array $item One work item from {@see resolveMultiFileWorkItems()}.
-	 * @param array $state Shared run state, mutated in place.
 	 *
 	 * @return PromiseInterface A promise that settles once this file has been saved or isolated.
 	 *
@@ -13878,33 +13786,27 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *   them into named callbacks moves the guarantee away from the chain that
 	 *   implements it without shortening anything that matters.
 	 */
-	private function fetchFileAsync(array $source, array $config, array $item, array &$state): PromiseInterface {
+	private function fetchFileAsync(FileFetchRun $run, array $item): PromiseInterface {
 		$slot = null;
 
 		try {
-			$prepared = $this->prepareFileFetch(source: $source, endpoint: $item['endpoint'], config: $config);
+			$prepared = $this->prepareFileFetch(request: $run->request, endpoint: $item['endpoint']);
 
-			$slot = $state['nextSlot'];
-			$state['nextSlot']++;
-			$state['released'][$slot] = $prepared;
-			$state['inFlightSize'][$slot] = 0;
+			// Monotonic, never derived from count($run->released): slots are
+			// unset as they settle, so a count-based index would collide with a
+			// live slot the moment one file finishes before another starts.
+			$slot = $run->nextSlot;
+			$run->nextSlot++;
+			$run->released[$slot] = $prepared;
+			$run->inFlightSize[$slot] = 0;
 
 			$promise = $this->callSourceObjectAsync(
-				source: $source,
+				source: $run->request->source,
 				endpoint: $prepared['endpoint'],
 				method: $prepared['config']['method'] ?? 'GET',
 				config: $prepared['config']['sourceConfiguration'] ?? [],
 				sink: $prepared['sinkPath'],
-				// Resolved from the source here rather than threaded in: `$limits`
-				// belongs to settleFileFetches() and is NOT in scope in this
-				// method. Reading it as `$limits['maxFileSize']` from here is
-				// silently null — no warning, no error, cap quietly disabled —
-				// which is precisely the failure this ceiling exists to prevent.
-				onHeaders: $this->buildInFlightSizeRecorder(
-					slot: $slot,
-					state: $state,
-					maxFileSize: $this->resolveFetchConcurrency(source: $source)['maxFileSize']
-				)
+				onHeaders: $this->buildInFlightSizeRecorder(run: $run, slot: $slot)
 			);
 		} catch (\Throwable $exception) {
 			// A SYNCHRONOUS throw before dispatch — an unresolvable source, a Twig
@@ -13919,17 +13821,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				['exception' => $exception]
 			);
 
-			$this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
+			$this->trackFetchedFilename(item: $item, run: $run);
 
 			if ($slot !== null) {
-				$this->releaseFetchSlot(slot: $slot, state: $state);
+				$this->releaseFetchSlot(run: $run, slot: $slot);
 			}
 
 			return new FulfilledPromise(null);
 		}//end try
 
 		return $promise->then(
-			function ($callLog) use ($prepared, $item, $slot, &$state) {
+			function ($callLog) use ($prepared, $item, $slot, $run) {
 				try {
 					// Runs on the single-threaded promise task queue, so this
 					// OpenRegister write is serialized against every sibling
@@ -13952,7 +13854,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 					// zero is worse than none, because it reads as a finding.
 					$this->fileFetchSucceeded++;
 
-					$this->trackFetchedFilename(item: $item, filename: $filename, state: $state);
+					$item['filename'] = $filename;
+					$this->trackFetchedFilename(item: $item, run: $run);
 				} catch (\Throwable $exception) {
 					// A failed SAVE is isolated exactly like a failed fetch: the
 					// remaining files and the object continue.
@@ -13964,12 +13867,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 					// The filename is still tracked: cleanup must not delete a
 					// file whose save merely failed this run.
-					$this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
+					$this->trackFetchedFilename(item: $item, run: $run);
 				} finally {
-					$this->releaseFetchSlot(slot: $slot, state: $state);
+					$this->releaseFetchSlot(run: $run, slot: $slot);
 				}//end try
 			},
-			function ($reason) use ($item, $slot, &$state) {
+			function ($reason) use ($item, $slot, $run) {
 				$message = $reason;
 				$exception = null;
 				if ($reason instanceof \Throwable === true) {
@@ -13990,9 +13893,9 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				// Note: we still keep the filename in the tracking array even if
 				// the fetch fails. This prevents cleanup from deleting files that
 				// should exist.
-				$this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
+				$this->trackFetchedFilename(item: $item, run: $run);
 
-				$this->releaseFetchSlot(slot: $slot, state: $state);
+				$this->releaseFetchSlot(run: $run, slot: $slot);
 			}
 		);
 	}//end fetchFileAsync()
@@ -14013,16 +13916,20 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * the stack where an oversized file can be refused without first
 	 * downloading it (the schema's `maxSize` is checked at save time).
 	 *
+	 * The per-file ceiling (source `maxFileSize`, 0 disables it) is resolved
+	 * from the run's source when the callback is built.
+	 *
+	 * @param FileFetchRun $run The run whose shared state the callback updates.
 	 * @param int $slot The per-file slot index in the run state.
-	 * @param array $state Shared run state, mutated in place.
-	 * @param int $maxFileSize Per-file ceiling in bytes; 0 disables it.
 	 *
 	 * @return callable The on_headers callback.
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
 	 */
-	private function buildInFlightSizeRecorder(int $slot, array &$state, int $maxFileSize = 0): callable {
-		return function ($response) use ($slot, &$state, $maxFileSize): void {
+	private function buildInFlightSizeRecorder(FileFetchRun $run, int $slot): callable {
+		$maxFileSize = $this->resolveFetchConcurrency(source: $run->request->source)['maxFileSize'];
+
+		return function ($response) use ($slot, $run, $maxFileSize): void {
 			$declared = 0;
 			if (is_object($response) === true && method_exists($response, 'getHeaderLine') === true) {
 				$declared = (int)$response->getHeaderLine('Content-Length');
@@ -14053,8 +13960,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				);
 			}
 
-			$state['inFlightSize'][$slot] = $declared;
-			$state['inFlightBytes'] += $declared;
+			$run->inFlightSize[$slot] = $declared;
+			$run->inFlightBytes += $declared;
 		};
 	}//end buildInFlightSizeRecorder()
 
@@ -14065,29 +13972,29 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * Idempotent, because it is reachable from both promise legs and again from
 	 * {@see releaseUnsettledFileFetches()} when a run unwinds early.
 	 *
+	 * @param FileFetchRun $run The run whose shared state is updated.
 	 * @param int $slot The per-file slot index in the run state.
-	 * @param array $state Shared run state, mutated in place.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
-	private function releaseFetchSlot(int $slot, array &$state): void {
-		if (isset($state['inFlightSize'][$slot]) === true) {
-			$state['inFlightBytes'] -= $state['inFlightSize'][$slot];
-			unset($state['inFlightSize'][$slot]);
+	private function releaseFetchSlot(FileFetchRun $run, int $slot): void {
+		if (isset($run->inFlightSize[$slot]) === true) {
+			$run->inFlightBytes -= $run->inFlightSize[$slot];
+			unset($run->inFlightSize[$slot]);
 		}
 
-		if ($state['inFlightBytes'] < 0) {
-			$state['inFlightBytes'] = 0;
+		if ($run->inFlightBytes < 0) {
+			$run->inFlightBytes = 0;
 		}
 
-		if (isset($state['released'][$slot]) === false) {
+		if (isset($run->released[$slot]) === false) {
 			return;
 		}
 
-		$this->releaseFileFetch(prepared: $state['released'][$slot]);
-		unset($state['released'][$slot]);
+		$this->releaseFileFetch(prepared: $run->released[$slot]);
+		unset($run->released[$slot]);
 	}//end releaseFetchSlot()
 
 	/**
@@ -14099,15 +14006,15 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * already removed themselves, so this is a backstop rather than the primary
 	 * release path.
 	 *
-	 * @param array $state Shared run state, mutated in place.
+	 * @param FileFetchRun $run The run whose shared state is updated.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
-	private function releaseUnsettledFileFetches(array &$state): void {
-		foreach (array_keys($state['released']) as $slot) {
-			$this->releaseFetchSlot(slot: $slot, state: $state);
+	private function releaseUnsettledFileFetches(FileFetchRun $run): void {
+		foreach (array_keys($run->released) as $slot) {
+			$this->releaseFetchSlot(run: $run, slot: $slot);
 		}
 	}//end releaseUnsettledFileFetches()
 
@@ -14118,14 +14025,15 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * fetch resolved, fall back to the last endpoint path segment, and fall back
 	 * again to a hash when that segment is empty or query-string-bearing.
 	 *
-	 * @param array $item The work item.
-	 * @param string|null $filename The filename resolved by the save phase, when any.
-	 * @param array $state Shared run state, mutated in place.
+	 * @param array $item The work item; its `filename` is the one the save phase resolved, when any.
+	 * @param FileFetchRun $run The run whose tracking filenames are extended.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
-	private function trackFetchedFilename(array $item, ?string $filename, array &$state): void {
-		$trackingFilename = $filename;
+	private function trackFetchedFilename(array $item, FileFetchRun $run): void {
+		$trackingFilename = $item['filename'];
 
 		if ($trackingFilename === null) {
 			// Try to extract filename from endpoint URL.
@@ -14139,7 +14047,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		if (empty($trackingFilename) === false) {
-			$state['fileNames'][] = $trackingFilename;
+			$run->fileNames[] = $trackingFilename;
 		}
 	}//end trackFetchedFilename()
 

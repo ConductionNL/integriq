@@ -56,6 +56,7 @@ use OCA\Integriq\Kernel\EndpointContainment;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
@@ -1504,8 +1505,8 @@ class CallService implements CallServiceInterface {
 				}
 
 				// Also redact any header whose name matches the secret-key pattern
-				// (covers X-Api-Key, X-Auth-Token, Api-Key, etc.).
-				if ($this->isSecretKeyName(name: (string)$headerName) === true) {
+				// (covers X-Api-Key, X-Auth-Token, Api-Key, etc.) or names a session.
+				if ($this->sensitiveFieldRegistry->isSensitiveHeaderName(name: (string)$headerName) === true) {
 					$config['headers'][$headerName] = $placeholder;
 				}
 			}
@@ -1539,18 +1540,25 @@ class CallService implements CallServiceInterface {
 
 	/**
 	 * Masks the secret-bearing headers of a response (Set-Cookie, Authorization,
-	 * any token- or key-named header) in the copy that is stored in a CallLog or
-	 * a trace step. The caller keeps the real headers on the returned entity.
+	 * any token-, key- or session-named header) and the tokens an upstream issued
+	 * in a JSON body (access_token, refresh_token, id_token) in the copy that is
+	 * stored in a CallLog or a trace step. The caller keeps the real response on
+	 * the returned entity.
 	 *
 	 * @param array $response The structured response from buildResponseData().
 	 *
-	 * @return array The response with its headers redacted.
+	 * @return array The response with its headers and issued tokens redacted.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
 	 */
 	private function redactResponseHeaders(array $response): array {
 		if (is_array($response['headers'] ?? null) === true) {
-			$response['headers'] = $this->sensitiveFieldRegistry->redactArray(data: $response['headers']);
+			$response['headers'] = $this->sensitiveFieldRegistry->redactHeaders(headers: $response['headers']);
+		}
+
+		// Tokens the upstream issued (an OAuth token answer) never reach the stored log.
+		if (is_string($response['body'] ?? null) === true && ($response['encoding'] ?? 'UTF-8') === 'UTF-8') {
+			$response['body'] = $this->sensitiveFieldRegistry->redactIssuedTokensInJson(body: $response['body']);
 		}
 
 		return $response;
@@ -2191,16 +2199,11 @@ class CallService implements CallServiceInterface {
 	 * the entire bounded retry loop, unchanged in behaviour from its
 	 * previous inline form.
 	 *
-	 * @param ObjectEntity $source The source ObjectEntity.
-	 * @param string $method The HTTP method to use.
-	 * @param string $url The full URL to request.
-	 * @param string $endpoint The raw endpoint path (SOAPAction for SOAP sources).
-	 * @param array $config The Guzzle request configuration (passed by reference).
-	 * @param array|null $brokeredCredential Resolved brokered identity, or null for the legacy path.
-	 * @param array $sourceData The mutable source data array (breaker bookkeeping mutates it).
-	 * @param array|null $retryPolicyOverride The caller-supplied `$config['retryPolicy']` override, or null.
-	 * @param mixed $sink Optional stream resource passed through to dispatchRequest() as the
-	 *                    Guzzle `sink` option (stream-file-content #110); null = unchanged.
+	 * Reads the source, method, url, endpoint, Guzzle configuration, brokered
+	 * identity, source data and retry policy override from the prepared call,
+	 * and the optional `sink` (stream-file-content #110) from its request.
+	 *
+	 * @param array $prepared The {@see prepareCall()} result for this request.
 	 *
 	 * @return array{response: mixed, timeStart: float, timeEnd: float} The final response plus dispatch timing.
 	 *
@@ -2210,18 +2213,11 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
 	 */
-	private function dispatchWithRetry(
-		ObjectEntity $source,
-		string $method,
-		string $url,
-		string $endpoint,
-		array &$config,
-		?array $brokeredCredential,
-		array $sourceData,
-		?array $retryPolicyOverride,
-		mixed $sink = null,
-	): array {
-		$retryPolicy = $this->resolveEffectiveRetryPolicy(sourceData: $sourceData, override: $retryPolicyOverride);
+	private function dispatchWithRetry(array $prepared): array {
+		$source = $prepared['source'];
+		$config = $prepared['config'];
+		$sourceData = $prepared['sourceData'];
+		$retryPolicy = $this->resolveEffectiveRetryPolicy(sourceData: $sourceData, override: $prepared['retryPolicyOverride']);
 
 		$timeStart = microtime(true);
 		$attempt = 0;
@@ -2237,13 +2233,13 @@ class CallService implements CallServiceInterface {
 			try {
 				$response = $this->dispatchRequest(
 					source: $source,
-					method: $method,
-					url: $url,
-					endpoint: $endpoint,
+					method: $prepared['method'],
+					url: $prepared['url'],
+					endpoint: $prepared['endpoint'],
 					config: $config,
 					asynchronous: false,
-					brokeredCredential: $brokeredCredential,
-					sink: $sink,
+					brokeredCredential: $prepared['brokeredCredential'],
+					sink: $prepared['request']->sink,
 				);
 			} catch (\Throwable $exception) {
 				// Note: dispatchRequest() already converts a Guzzle
@@ -2800,20 +2796,16 @@ class CallService implements CallServiceInterface {
 	 * credential configuration error) and NO request may be dispatched. Both
 	 * siblings must return it as-is rather than dispatching.
 	 *
+	 * The request's `asynchronous` flag affects the brokered-credential guard
+	 * only; no HTTP happens here.
+	 *
 	 * @param ObjectEntity $source The source ObjectEntity to call.
-	 * @param string $endpoint The endpoint on the source to call.
-	 * @param string $method The method on which to call the source.
-	 * @param array $config The additional configuration to call the source.
-	 * @param boolean $asynchronous Whether the caller intends asynchronous dispatch (affects the
-	 *                              brokered-credential guard only; no HTTP happens here).
-	 * @param boolean $overruleAuth Whether to overrule the source authentication.
-	 * @param boolean $read Whether this is a singular read (vs list) call.
-	 * @param boolean $runningSupportRequest Internal flag set when invoked from preRequest/postRequest hooks.
+	 * @param CallRequest $request The endpoint, method, configuration and dispatch options of the call.
 	 *
 	 * @return array{shortCircuit: ObjectEntity|null, source: ObjectEntity, sourceData: array, config: array,
 	 *               method: string, url: string, endpoint: string, logBody: boolean, brokeredCredential: array|null,
 	 *               postRequest: array|null, retryPolicyOverride: array|null, successExpires: \DateTime|null,
-	 *               errorExpires: \DateTime|null}
+	 *               errorExpires: \DateTime|null, request: CallRequest}
 	 *
 	 * @throws LoaderError On Twig loader error.
 	 * @throws SyntaxError On Twig syntax error.
@@ -2822,16 +2814,9 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
-	private function prepareCall(
-		ObjectEntity $source,
-		string $endpoint,
-		string $method,
-		array $config,
-		bool $asynchronous,
-		bool $overruleAuth,
-		bool $read,
-		bool $runningSupportRequest,
-	): array {
+	private function prepareCall(ObjectEntity $source, CallRequest $request): array {
+		$endpoint = $request->endpoint;
+		$config = $request->config;
 		// Ocon#215: re-resolve the Source RAW from storage BEFORE any auth is
 		// read, so the engine's credentials are its OWN property and can never
 		// be silenced by a rendered (writeOnly-stripped) read upstream. This
@@ -2840,7 +2825,7 @@ class CallService implements CallServiceInterface {
 		// source-state writes and the CallLog — operates on secrets-intact
 		// data. See {@see resolveSourceForDispatch()} for the full rationale
 		// and the `_render: false` / overruleAuth / unpersisted fallbacks.
-		$source = $this->resolveSourceForDispatch(source: $source, overruleAuth: $overruleAuth);
+		$source = $this->resolveSourceForDispatch(source: $source, overruleAuth: $request->overruleAuth);
 		$sourceData = $source->getObject();
 
 		// Phase 1: Compute expiry values for log retention.
@@ -2853,7 +2838,7 @@ class CallService implements CallServiceInterface {
 			'source' => $source,
 			'sourceData' => $sourceData,
 			'config' => $config,
-			'method' => $method,
+			'method' => $request->method,
 			'url' => '',
 			'endpoint' => $endpoint,
 			'logBody' => false,
@@ -2862,6 +2847,7 @@ class CallService implements CallServiceInterface {
 			'retryPolicyOverride' => null,
 			'successExpires' => $successExpires,
 			'errorExpires' => $errorExpires,
+			'request' => $request,
 		];
 
 		// Phase 1b: extract the caller-supplied RetryPolicy override (REQ-007)
@@ -2918,7 +2904,7 @@ class CallService implements CallServiceInterface {
 		// merged config now, for the same reason — previously an override key
 		// declared only in source configuration was never stripped and could
 		// leak into the persisted `call_log.request` payload.
-		$method = $this->decideMethod(default: $method, configuration: $config, read: $read);
+		$method = $this->decideMethod(default: $request->method, configuration: $config, read: $request->read);
 		unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
 
 		$prepared['method'] = $method;
@@ -2936,7 +2922,7 @@ class CallService implements CallServiceInterface {
 			source: $source,
 			config: $config,
 			sourceData: $sourceData,
-			asynchronous: $asynchronous,
+			asynchronous: $request->asynchronous,
 			errorExpires: $errorExpires,
 		);
 		if ($credentials['shortCircuit'] !== null) {
@@ -2954,7 +2940,7 @@ class CallService implements CallServiceInterface {
 		$prepared['postRequest'] = $this->extractAndFirePreRequest(
 			source: $source,
 			config: $config,
-			runningSupportRequest: $runningSupportRequest,
+			runningSupportRequest: $request->runningSupportRequest,
 		);
 
 		// Phase 9: Normalise headers, pagination, render Twig, filter auth keys, write certs, extract logBody.
@@ -2985,16 +2971,14 @@ class CallService implements CallServiceInterface {
 	 * trace-step appending and the postRequest hook all live here for the same
 	 * reason.
 	 *
+	 * The prepared call's request supplies the options: `runningSupportRequest`
+	 * suppresses the postRequest hook to avoid recursion, `persistLog` false
+	 * (interactive "Test connection") returns a transient unsaved CallLog and
+	 * mutates nothing, and `withholdBodies` keeps bodies out of the CallLog and
+	 * the trace step.
+	 *
 	 * @param array $prepared The {@see prepareCall()} result for this request.
-	 * @param \Psr\Http\Message\ResponseInterface $response The received HTTP response.
-	 * @param float $timeStart Microtime captured at dispatch.
-	 * @param float $timeEnd Microtime captured once the response arrived.
-	 * @param boolean $runningSupportRequest Whether this call IS a support request (suppresses
-	 *                                       the postRequest hook to avoid recursion).
-	 * @param ExecutionTraceContext|null $trace The active execution trace context, when any.
-	 * @param boolean $persistLog When false (interactive "Test connection"), a transient
-	 *                            unsaved CallLog is returned and nothing is mutated.
-	 * @param boolean $withholdBodies When true, the CallLog and the trace step hold no body.
+	 * @param array $dispatched The received HTTP response (`response`) with the microtimes of dispatch (`timeStart`) and arrival (`timeEnd`).
 	 *
 	 * @return ObjectEntity The persisted CallLog entity.
 	 *
@@ -3006,16 +2990,12 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
 	 */
-	private function finalizeCall(
-		array $prepared,
-		\Psr\Http\Message\ResponseInterface $response,
-		float $timeStart,
-		float $timeEnd,
-		bool $runningSupportRequest,
-		?ExecutionTraceContext $trace,
-		bool $persistLog = true,
-		bool $withholdBodies = false,
-	): ObjectEntity {
+	private function finalizeCall(array $prepared, array $dispatched): ObjectEntity {
+		$response = $dispatched['response'];
+		$timeStart = (float)$dispatched['timeStart'];
+		$timeEnd = (float)$dispatched['timeEnd'];
+		$trace = $prepared['request']->trace;
+		$withholdBodies = $prepared['request']->withholdBodies;
 		$source = $prepared['source'];
 		$sourceData = $prepared['sourceData'];
 
@@ -3038,7 +3018,7 @@ class CallService implements CallServiceInterface {
 			successExpires: $prepared['successExpires'],
 			errorExpires: $prepared['errorExpires'],
 			trace: $trace,
-			persistLog: $persistLog,
+			persistLog: $prepared['request']->persistLog,
 			withholdBodies: $withholdBodies,
 		);
 
@@ -3080,7 +3060,7 @@ class CallService implements CallServiceInterface {
 		}
 
 		// Phase 13: Fire postRequest hook if present.
-		if ($prepared['postRequest'] !== null && $runningSupportRequest === false) {
+		if ($prepared['postRequest'] !== null && $prepared['request']->runningSupportRequest === false) {
 			$this->call(
 				source: $source,
 				endpoint: $prepared['postRequest']['endpoint'],
@@ -3175,49 +3155,32 @@ class CallService implements CallServiceInterface {
 
 		// Phases 1-9: shared with callAsync() so the two dispatch modes cannot
 		// fork auth, certificate, guard or hook behaviour.
-		$prepared = $this->prepareCall(
-			source: $source,
+		$request = new CallRequest(
 			endpoint: $endpoint,
 			method: $method,
 			config: $config,
-			asynchronous: false,
 			overruleAuth: $overruleAuth,
 			read: $read,
 			runningSupportRequest: $runningSupportRequest,
+			sink: $sink,
+			trace: $trace,
+			persistLog: $persistLog,
+			withholdBodies: $withholdBodies,
 		);
+		$prepared = $this->prepareCall(source: $source, request: $request);
 		if ($prepared['shortCircuit'] !== null) {
 			return $prepared['shortCircuit'];
 		}
 
 		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
-		$dispatchConfig = $prepared['config'];
 
 		// Phase 10: Dispatch the HTTP request, with the bounded retry loop
 		// (REQ-007) and circuit-breaker bookkeeping (REQ-008).
-		$dispatched = $this->dispatchWithRetry(
-			source: $prepared['source'],
-			method: $prepared['method'],
-			url: $prepared['url'],
-			endpoint: $prepared['endpoint'],
-			config: $dispatchConfig,
-			brokeredCredential: $prepared['brokeredCredential'],
-			sourceData: $prepared['sourceData'],
-			retryPolicyOverride: $prepared['retryPolicyOverride'],
-			sink: $sink,
-		);
+		$dispatched = $this->dispatchWithRetry(prepared: $prepared);
 
 		// Phases 11-13: shared with callAsync() — response decoding, CallLog
 		// persistence (ADR-003), trace step, postRequest hook.
-		return $this->finalizeCall(
-			prepared: $prepared,
-			response: $dispatched['response'],
-			timeStart: $dispatched['timeStart'],
-			timeEnd: $dispatched['timeEnd'],
-			runningSupportRequest: $runningSupportRequest,
-			trace: $trace,
-			persistLog: $persistLog,
-			withholdBodies: $withholdBodies,
-		);
+		return $this->finalizeCall(prepared: $prepared, dispatched: $dispatched);
 
 	}//end call()
 
@@ -3391,8 +3354,7 @@ class CallService implements CallServiceInterface {
 		}
 
 		// Phases 1-9: the SAME preparation the synchronous path runs.
-		$prepared = $this->prepareCall(
-			source: $source,
+		$request = new CallRequest(
 			endpoint: $endpoint,
 			method: $method,
 			config: $config,
@@ -3400,7 +3362,12 @@ class CallService implements CallServiceInterface {
 			overruleAuth: $overruleAuth,
 			read: $read,
 			runningSupportRequest: $runningSupportRequest,
+			sink: $sink,
+			trace: $trace,
+			onHeaders: $onHeaders,
+			persistLog: $persistLog,
 		);
+		$prepared = $this->prepareCall(source: $source, request: $request);
 		if ($prepared['shortCircuit'] !== null) {
 			// The guard already persisted a synthetic CallLog. Resolve with it so
 			// the caller consumes ONE shape whichever way it dispatched.
@@ -3409,14 +3376,13 @@ class CallService implements CallServiceInterface {
 
 		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
 		$dispatchConfig = $prepared['config'];
-		$sourceData = $prepared['sourceData'];
-		$timeStart = microtime(true);
+		$prepared['timeStart'] = microtime(true);
 
 		// Resolved here rather than in the callbacks so the breaker classifies an
 		// asynchronous outcome by the SAME retryable-status set the synchronous
 		// retry loop uses — see recordBreakerOutcome().
-		$retryPolicy = $this->resolveEffectiveRetryPolicy(
-			sourceData: $sourceData,
+		$prepared['retryPolicy'] = $this->resolveEffectiveRetryPolicy(
+			sourceData: $prepared['sourceData'],
 			override: $prepared['retryPolicyOverride'],
 		);
 
@@ -3436,73 +3402,77 @@ class CallService implements CallServiceInterface {
 		);
 
 		return $promise->then(
-			function ($response) use ($prepared, $sourceData, $retryPolicy, $timeStart, $runningSupportRequest, $trace, $persistLog) {
-				$this->recordBreakerOutcome(
-					source: $prepared['source'],
-					sourceData: $sourceData,
-					statusCode: $response->getStatusCode(),
-					retryPolicy: $retryPolicy,
-				);
-
-				// Phases 11-13: the SAME finalization the synchronous path runs,
-				// so an asynchronous call produces the same CallLog row (ADR-003).
-				return $this->finalizeCall(
-					prepared: $prepared,
-					response: $response,
-					timeStart: $timeStart,
-					timeEnd: microtime(true),
-					runningSupportRequest: $runningSupportRequest,
-					trace: $trace,
-					persistLog: $persistLog,
-				);
-			},
-			function ($reason) use ($prepared, $sourceData, $retryPolicy, $timeStart, $runningSupportRequest, $trace, $persistLog) {
-				// Guzzle rejects with an exception where the synchronous
-				// dispatchRequest() catches one and converts it to a Response.
-				// Perform the same conversion so a 4xx/5xx or a refused
-				// connection produces the same CallLog either way.
-				$response = null;
-				if ($reason instanceof BadResponseException === true) {
-					$response = $reason->getResponse();
-				}
-
-				if ($reason instanceof ConnectException === true) {
-					$response = new Response(status: 503, body: $reason->getMessage());
-				}
-
-				if ($response === null) {
-					// Not a transport failure this layer can turn into a log row
-					// (a cancellation, a sink that could not be written, an
-					// unexpected exception type). Record it against the breaker —
-					// the synchronous path's equivalent is the \Throwable escaping
-					// dispatchRequest() — and hand the reason on so the caller's
-					// otherwise() leg isolates this file and releases its temp
-					// file.
-					$this->recordBreakerFailure(source: $prepared['source'], sourceData: $sourceData);
-
-					return new RejectedPromise($reason);
-				}
-
-				$this->recordBreakerOutcome(
-					source: $prepared['source'],
-					sourceData: $sourceData,
-					statusCode: $response->getStatusCode(),
-					retryPolicy: $retryPolicy,
-				);
-
-				return $this->finalizeCall(
-					prepared: $prepared,
-					response: $response,
-					timeStart: $timeStart,
-					timeEnd: microtime(true),
-					runningSupportRequest: $runningSupportRequest,
-					trace: $trace,
-					persistLog: $persistLog,
-				);
-			}
+			fn ($response) => $this->settleAsyncResponse(prepared: $prepared, response: $response),
+			fn ($reason) => $this->settleAsyncRejection(prepared: $prepared, reason: $reason)
 		);
 
 	}//end callAsync()
+
+	/**
+	 * Fulfilled leg of {@see callAsync()}: record the breaker outcome and run
+	 * the SAME finalization the synchronous path runs, so an asynchronous call
+	 * produces the same CallLog row (ADR-003).
+	 *
+	 * @param array $prepared The prepared call, with the `timeStart` and `retryPolicy` of its dispatch.
+	 * @param \Psr\Http\Message\ResponseInterface $response The received HTTP response.
+	 *
+	 * @return ObjectEntity The CallLog entity.
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+	 */
+	private function settleAsyncResponse(array $prepared, \Psr\Http\Message\ResponseInterface $response): ObjectEntity {
+		$sourceData = $prepared['sourceData'];
+		$this->recordBreakerOutcome(
+			source: $prepared['source'],
+			sourceData: $sourceData,
+			statusCode: $response->getStatusCode(),
+			retryPolicy: $prepared['retryPolicy'],
+		);
+
+		return $this->finalizeCall(
+			prepared: $prepared,
+			dispatched: ['response' => $response, 'timeStart' => $prepared['timeStart'], 'timeEnd' => microtime(true)],
+		);
+	}//end settleAsyncResponse()
+
+	/**
+	 * Rejected leg of {@see callAsync()}.
+	 *
+	 * Guzzle rejects with an exception where the synchronous dispatchRequest()
+	 * catches one and converts it to a Response. The same conversion happens
+	 * here, so a 4xx/5xx or a refused connection produces the same CallLog
+	 * either way. Any other reason (a cancellation, a sink that could not be
+	 * written, an unexpected exception type) is recorded against the breaker,
+	 * the synchronous path's equivalent being the \Throwable escaping
+	 * dispatchRequest(), and handed on so the caller's otherwise() leg
+	 * isolates the call.
+	 *
+	 * @param array $prepared The prepared call, with the `timeStart` and `retryPolicy` of its dispatch.
+	 * @param mixed $reason The rejection reason.
+	 *
+	 * @return mixed The CallLog entity, or a rejected promise carrying the reason.
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 */
+	private function settleAsyncRejection(array $prepared, mixed $reason): mixed {
+		$response = null;
+		if ($reason instanceof BadResponseException === true) {
+			$response = $reason->getResponse();
+		}
+
+		if ($reason instanceof ConnectException === true) {
+			$response = new Response(status: 503, body: $reason->getMessage());
+		}
+
+		if ($response === null) {
+			$sourceData = $prepared['sourceData'];
+			$this->recordBreakerFailure(source: $prepared['source'], sourceData: $sourceData);
+
+			return new RejectedPromise($reason);
+		}
+
+		return $this->settleAsyncResponse(prepared: $prepared, response: $response);
+	}//end settleAsyncRejection()
 
 	/**
 	 * Records ONE dispatch outcome against the per-Source circuit breaker
