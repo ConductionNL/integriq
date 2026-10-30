@@ -98,6 +98,16 @@ class EndpointService implements EndpointServiceInterface {
 	];
 
 	/**
+	 * Exceptions a schema request answers through the mapper's validate handler.
+	 *
+	 * @var array<int, string>
+	 */
+	private const VALIDATION_EXCEPTIONS = [
+		'OCA\OpenRegister\Exception\ValidationException',
+		'OCA\OpenRegister\Exception\CustomValidationException',
+	];
+
+	/**
 	 * Rule types with an external or persisted side-effect — under a
 	 * dry-run replay (`dryRun: true`), these MUST NOT perform their write;
 	 * `processRules()` records a `skipped_dry_run` step instead
@@ -709,111 +719,39 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		if ($enforceRateLimit === true) {
-			// Inbound consumer source-scope (REQ-CON-SCOPE-001). Runs AFTER
-			// authentication resolved a consumer and BEFORE the rate limit, so a
-			// caller outside the allowlist gets 403 rather than consuming (and
-			// being told about) the consumer's rate-limit budget. Skipped on the
-			// resume-from-approval path for the same reason the rate limit is:
-			// the original request already passed this check before suspending.
-			$scopeResponse = $this->enforceConsumerScope(request: $request);
-			if ($scopeResponse !== null) {
-				return $scopeResponse;
+			$refusal = $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
+			if ($refusal !== null) {
+				return $refusal;
 			}
-
-			// Inbound per-consumer rate limiting + quota (consumer-rate-limiting).
-			// Runs AFTER authentication has passed (the 'before' rule pipeline,
-			// which includes the authentication rule, completed without a 401/403)
-			// and BEFORE the endpoint target/schema dispatch (REQ-CON-RL-002). An
-			// over-limit request short-circuits with 429 here; an under-limit
-			// request records its RateLimit-* headers for the response wrapper.
-			$rateLimitResponse = $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
-			if ($rateLimitResponse !== null) {
-				return $rateLimitResponse;
-			}
-		}//end if
+		}
 
 		// Update request data with rule processing results.
 		$flowToken = $this->updateRequestWithRuleData(flowToken: $flowToken, ruleData: $ruleResult);
+		$targetType = ($endpointData['targetType'] ?? '');
 
 		// A register schema target makes no call log: record mode's findings
 		// go to the server log (REQ-MSV-002).
-		if ($validationFindings !== [] && ($endpointData['targetType'] ?? '') !== 'api') {
+		if ($validationFindings !== [] && $targetType !== 'api') {
 			$this->messageGate?->record(callLog: null, findings: $validationFindings, endpoint: (string)$endpoint->getUuid());
 		}
 
-		// Check if endpoint connects to a schema.
-		if (($endpointData['targetType'] ?? '') === 'register/schema') {
+		if ($targetType === 'register/schema') {
 			// Handle CRUD operations via ObjectService.
 			$result = $this->handleSchemaRequest(endpoint: $endpoint, flowToken: $flowToken, path: $path);
 
-			// Process initial data.
-			$data = [
-				'utility' => [
-					'currentDate' => (new DateTime())->format('c'),
-				],
-				'parameters' => $flowToken->getRequestAmended()['parameters'],
-				'requestHeaders' => $flowToken->getRequestAmended()['headers'],
-				'headers' => $flowToken->getResponseAmended()['headers'],
-				'path' => $flowToken->getRequestAmended()['path'],
-				'method' => $flowToken->getRequestAmended()['method'],
-				'body' => $flowToken->getResponseOriginal()['data'],
-			];
+			$run = new EndpointRuleDispatch();
+			$run->endpoint = $endpoint;
+			$run->endpointData = $endpointData;
+			$run->request = $request;
+			$run->timing = 'after';
+			$run->flowToken = $flowToken;
+			$run->trace = $trace;
+			$run->dryRun = $dryRun;
 
-			$ruleResult = $this->processRules(
-				endpoint: $endpoint,
-				request: $request,
-				data: $data,
-				timing: 'after',
-				objectId: $result->getData()['id'] ?? null,
-				flowToken: $flowToken,
-				trace: $trace,
-				dryRun: $dryRun
-			);
+			return $this->answerSchemaRequest(run: $run, result: $result);
+		}
 
-			if ($ruleResult instanceof Response === true && $ruleResult->getStatus() >= 200 && $ruleResult->getStatus() < 300) {
-				return $ruleResult;
-			}
-
-			if ($ruleResult instanceof JSONResponse === true) {
-				return $this->transformError(result: $ruleResult, request: $request);
-			}
-
-			if ($result->getStatus() !== 200 && $result->getStatus() !== 201) {
-				return $this->transformError(result: $result, request: $request);
-			}
-
-			// Set the proper status code for the method.
-			// @TODO: we might want an override from rule processing.
-			switch ($flowToken->getRequestAmended()['method']) {
-				case 'POST':
-					$statusCode = Http::STATUS_CREATED;
-					break;
-				case 'DELETE':
-					$statusCode = Http::STATUS_NO_CONTENT;
-					break;
-				case 'GET':
-				case 'PUT':
-				case 'PATCH':
-				default:
-					$statusCode = Http::STATUS_OK;
-					break;
-			}
-
-			$configurations = $endpointData['configurations'] ?? [];
-			if (isset($configurations['defaultStatusCode']) === true) {
-				$statusCode = $configurations['defaultStatusCode'];
-			}
-
-			// The endpoint's output mapping reshapes the answer last, so every
-			// `after` rule sees the register's own shape and the consumer sees
-			// the mapped one (gateway-endpoint-transform-and-plugins D1).
-			$answerBody = $this->applyOutputMapping(endpointData: $endpointData, body: $ruleResult['body']);
-
-			return new JSONResponse(data: $answerBody, statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
-		}//end if
-
-		// Check if endpoint connects to a source.
-		if (($endpointData['targetType'] ?? '') === 'api') {
+		if ($targetType === 'api') {
 			// Proxy request to source via CallService.
 			return $this->handleSourceRequest(
 				endpoint: $endpoint,
@@ -827,6 +765,119 @@ class EndpointService implements EndpointServiceInterface {
 		// Invalid endpoint configuration.
 		throw new Exception('Endpoint must specify either a schema or source connection');
 	}//end dispatchAfterBeforeRules()
+
+	/**
+	 * Apply the inbound consumer source scope and then the inbound rate limit.
+	 *
+	 * Runs after authentication resolved a consumer (the `before` rules passed)
+	 * and before the endpoint target is dispatched. The scope check comes first,
+	 * so a caller outside the allowlist gets 403 rather than spending (and
+	 * being told about) the consumer's rate-limit budget.
+	 *
+	 * @param IRequest     $request  The incoming request.
+	 * @param ObjectEntity $endpoint The dispatched endpoint.
+	 *
+	 * @return JSONResponse|null The 403 or 429 refusal, or null when the request may proceed.
+	 *
+	 * @spec openspec/specs/consumer-management/spec.md#requirement-consumer-source-scope-enforcement-req-con-scope-001
+	 * @spec openspec/specs/consumer-management/spec.md — Requirement: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)
+	 */
+	private function enforceConsumerLimits(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
+		return ($this->enforceConsumerScope(request: $request) ?? $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint));
+	}//end enforceConsumerLimits()
+
+	/**
+	 * Run the `after` rules on a schema target's answer and build the response.
+	 *
+	 * A 2xx response from the `after` rules is the answer; any other rule
+	 * response, or a write that did not answer 200 or 201, is turned into an
+	 * error. Otherwise the endpoint's output mapping reshapes the body last, so
+	 * every `after` rule sees the register's own shape and the consumer sees
+	 * the mapped one (gateway-endpoint-transform-and-plugins D1).
+	 *
+	 * @param EndpointRuleDispatch $run    The `after` rule run: endpoint, request, flow token, trace and dry-run flag.
+	 * @param JSONResponse         $result The schema target's answer.
+	 *
+	 * @return Response
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-an-endpoints-output-mapping-reshapes-its-answer-req-gtp-001
+	 */
+	private function answerSchemaRequest(EndpointRuleDispatch $run, JSONResponse $result): Response {
+		$ruleResult = $this->processRules(
+			endpoint: $run->endpoint,
+			request: $run->request,
+			data: $this->afterRuleData(flowToken: $run->flowToken),
+			timing: 'after',
+			objectId: $result->getData()['id'] ?? null,
+			flowToken: $run->flowToken,
+			trace: $run->trace,
+			dryRun: $run->dryRun
+		);
+
+		if ($ruleResult instanceof Response === true && $ruleResult->getStatus() >= 200 && $ruleResult->getStatus() < 300) {
+			return $ruleResult;
+		}
+
+		if ($ruleResult instanceof JSONResponse === true) {
+			return $this->transformError(result: $ruleResult, request: $run->request);
+		}
+
+		if ($result->getStatus() !== 200 && $result->getStatus() !== 201) {
+			return $this->transformError(result: $result, request: $run->request);
+		}
+
+		$statusCode = $this->schemaAnswerStatus(run: $run);
+		$answerBody = $this->applyOutputMapping(endpointData: $run->endpointData, body: $ruleResult['body']);
+
+		return new JSONResponse(data: $answerBody, statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
+	}//end answerSchemaRequest()
+
+	/**
+	 * The data the `after` rules of a schema target start from.
+	 *
+	 * @param FlowToken $flowToken The flow token, holding the amended request and the target's answer.
+	 *
+	 * @return array The utility values, the request's parameters, headers, path and method, and the answer's headers and body.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function afterRuleData(FlowToken $flowToken): array {
+		return [
+			'utility' => [
+				'currentDate' => (new DateTime())->format('c'),
+			],
+			'parameters' => $flowToken->getRequestAmended()['parameters'],
+			'requestHeaders' => $flowToken->getRequestAmended()['headers'],
+			'headers' => $flowToken->getResponseAmended()['headers'],
+			'path' => $flowToken->getRequestAmended()['path'],
+			'method' => $flowToken->getRequestAmended()['method'],
+			'body' => $flowToken->getResponseOriginal()['data'],
+		];
+	}//end afterRuleData()
+
+	/**
+	 * The status code of a schema target's answer: 201 for POST, 204 for DELETE,
+	 * 200 otherwise, unless the endpoint configures a `defaultStatusCode`.
+	 *
+	 * @param EndpointRuleDispatch $run The `after` rule run, with the endpoint data and the flow token.
+	 *
+	 * @return mixed The status code.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function schemaAnswerStatus(EndpointRuleDispatch $run): mixed {
+		$configurations = ($run->endpointData['configurations'] ?? []);
+		if (isset($configurations['defaultStatusCode']) === true) {
+			return $configurations['defaultStatusCode'];
+		}
+
+		return match ($run->flowToken->getRequestAmended()['method']) {
+			'POST' => Http::STATUS_CREATED,
+			'DELETE' => Http::STATUS_NO_CONTENT,
+			default => Http::STATUS_OK,
+		};
+	}//end schemaAnswerStatus()
 
 	/**
 	 * Apply an endpoint's `outputMapping` to the answer body.
@@ -2090,177 +2141,282 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-name-its-target-register-and-schema-by-slug-req-ep-011
 	 */
 	private function handleSchemaRequest(ObjectEntity $endpoint, FlowToken &$flowToken, string $path): JSONResponse {
-		$endpointData = $endpoint->getObject();
-		// @TODO: CONVERT TO FLOWTOKENS
-		// Get request method
-		$method = $flowToken->getRequestAmended()['method'];
-		[$register, $schema] = $this->resolveTarget(targetId: (string)($endpointData['targetId'] ?? ''));
+		$context = new EndpointSchemaRequest(endpointData: $endpoint->getObject(), request: $flowToken->getRequestAmended());
+		[$register, $schema] = $this->resolveTarget(targetId: (string)($context->endpointData['targetId'] ?? ''));
+		$context->mapper = $this->objectService->getMapper(schema: $schema, register: $register);
+		$context->pathParams = $this->getPathParameters(endpointArray: ($context->endpointData['endpointArray'] ?? []), path: $path);
+		$context->parameters = $this->schemaRequestParameters(context: $context);
 
-		$mapper = $this->objectService->getMapper(schema: $schema, register: $register);
+		try {
+			$response = $this->dispatchSchemaRequest(context: $context);
+		} catch (Exception $exception) {
+			if (in_array(get_class($exception), self::VALIDATION_EXCEPTIONS) === true) {
+				return $context->mapper->getValidateHandler()->handleValidationException(exception: $exception);
+			}
 
-		$parameters = $flowToken->getRequestAmended()['parameters'];
+			throw $exception;
+		}
 
-		if (($endpointData['inputMapping'] ?? null) !== null) {
-			$inputMapping = $this->mappingService->getMapping($endpointData['inputMapping']);
+		$flowToken->setResponseOriginal($response);
+		if ($context->amendResponse === true) {
+			$flowToken->setResponseAmended($flowToken->getResponseOriginal());
+		}
+
+		return $response;
+	}//end handleSchemaRequest()
+
+	/**
+	 * The parameters a schema request works with: the request's parameters,
+	 * through the endpoint's input mapping when it has one, with the path id
+	 * added and the internal keys removed.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request, with its path parameters resolved.
+	 *
+	 * @return array The parameters.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function schemaRequestParameters(EndpointSchemaRequest $context): array {
+		$parameters = $context->request['parameters'];
+
+		if (($context->endpointData['inputMapping'] ?? null) !== null) {
+			$inputMapping = $this->mappingService->getMapping($context->endpointData['inputMapping']);
 			$parameters = $this->mappingService->executeMapping(mapping: $inputMapping, input: $parameters);
 		}
 
-		$pathParams = $this->getPathParameters(endpointArray: ($endpointData['endpointArray'] ?? []), path: $path);
-
-		if (isset($pathParams['id']) === true) {
-			$parameters['id'] = $pathParams['id'];
+		if (isset($context->pathParams['id']) === true) {
+			$parameters['id'] = $context->pathParams['id'];
 		}
 
 		foreach ($this::UNSET_PARAMETERS as $parameter) {
 			unset($parameters[$parameter]);
 		}
 
+		return $parameters;
+	}//end schemaRequestParameters()
+
+	/**
+	 * Answers a schema request with the ObjectService call its HTTP method maps to.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 *
+	 * @return JSONResponse The answer.
+	 *
+	 * @throws Exception When the HTTP method is not supported, or the mapper fails.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function dispatchSchemaRequest(EndpointSchemaRequest $context): JSONResponse {
+		switch ($context->request['method']) {
+			case 'GET':
+				return $this->getSchemaObjects(context: $context);
+			case 'POST':
+				return $this->schemaObjectResponse(
+					context: $context,
+					object: $context->mapper->createFromArray(object: $context->parameters)
+				);
+			case 'PUT':
+				return ($this->missingPutFieldsResponse(context: $context) ?? $this->updateSchemaObject(context: $context, patch: false));
+			case 'PATCH':
+				return $this->updateSchemaObject(context: $context, patch: true);
+			case 'DELETE':
+				return $this->deleteSchemaObject(context: $context);
+			default:
+				throw new Exception('Unsupported HTTP method');
+		}
+	}//end dispatchSchemaRequest()
+
+	/**
+	 * Answers a GET on a schema endpoint: one object or a page of them.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 *
+	 * @return JSONResponse The object or page, with Content-Crs echoing a requested Accept-Crs.
+	 *
+	 * @throws Exception
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoints-fixed-filters-narrow-its-collection-and-no-path-skips-them-req-ep-012
+	 */
+	private function getSchemaObjects(EndpointSchemaRequest $context): JSONResponse {
+		$expand = $this->translateVngParameters(context: $context);
 		$status = 200;
+		$objects = $this->getObjects(
+			mapper: $context->mapper,
+			parameters: $context->parameters,
+			pathParams: $context->pathParams,
+			status: $status,
+			fixedFilters: (array)($context->endpointData['fixedFilters'] ?? [])
+		);
 
 		$headers = [];
-		if (isset($flowToken->getRequestAmended()['headers']['Accept-Crs']) === true
-			&& $flowToken->getRequestAmended()['headers']['Accept-Crs'] !== ''
-		) {
-			$headers['Content-Crs'] = $flowToken->getRequestAmended()['headers']['Accept-Crs'];
+		$acceptCrs = ($context->request['headers']['Accept-Crs'] ?? null);
+		if ($acceptCrs !== null && $acceptCrs !== '') {
+			$headers['Content-Crs'] = $acceptCrs;
 		}
 
-		// Route to appropriate ObjectService method based on HTTP method.
-		try {
-			switch ($method) {
-				case 'GET':
-					$expand = [];
-					if (($endpointData['vngFilterTranslation'] ?? false) === true) {
-						$expandParam = $parameters['expand'] ?? '';
-						if ($expandParam !== '') {
-							$expand = explode(',', (string)$expandParam);
-						}
+		return new JSONResponse(
+			$this->expandSchemaObjects(objects: $objects, expand: $expand),
+			statusCode: $status,
+			headers: $headers
+		);
+	}//end getSchemaObjects()
 
-						unset($parameters['expand']);
+	/**
+	 * Translates VNG filter operators in the request parameters when the
+	 * endpoint asks for it, and takes the expand parameter off them.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request; its parameters are rewritten.
+	 *
+	 * @return array<int, string> The relations to expand (empty without VNG translation).
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function translateVngParameters(EndpointSchemaRequest $context): array {
+		if (($context->endpointData['vngFilterTranslation'] ?? false) !== true) {
+			return [];
+		}
 
-						$lookupFilters = array_filter($parameters, fn ($key) => str_starts_with($key, '_') === false, ARRAY_FILTER_USE_KEY);
-						$systemFilters = array_diff_key($parameters, $lookupFilters);
-						$parameters = array_merge($systemFilters, $this->mappingService->translateVngFilterOperators(filters: $lookupFilters));
-					}
+		$parameters = $context->parameters;
+		$expand = [];
+		$expandParam = $parameters['expand'] ?? '';
+		if ($expandParam !== '') {
+			$expand = explode(',', (string)$expandParam);
+		}
 
-					$objects = $this->getObjects(
-						mapper: $mapper,
-						parameters: $parameters,
-						pathParams: $pathParams,
-						status: $status,
-						fixedFilters: (array)($endpointData['fixedFilters'] ?? [])
-					);
-					if ($expand !== [] && isset($objects['results']) === true && is_array($objects['results']) === true) {
-						$objects['results'] = array_map(
-							fn (array $result) => $this->mappingService->expandRelations(data: $result, expand: $expand),
-							$objects['results']
-						);
-					} elseif ($expand !== [] && is_array($objects) === true && isset($objects['error']) === false) {
-						$objects = $this->mappingService->expandRelations(data: $objects, expand: $expand);
-					}
+		unset($parameters['expand']);
 
-					$response = new JSONResponse(
-						$objects,
-						statusCode: $status,
-						headers: $headers
-					);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				case 'POST':
-					$response = new JSONResponse(
-						$this->replaceInternalReferences(
-							mapper: $mapper,
-							serializedObject: $mapper->createFromArray(object: $parameters)->jsonSerialize()
-						)
-					);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				case 'PUT':
-					if (($endpointData['putPatchSemantics'] ?? false) === true) {
-						$missingFields = $this->checkPutMandatoryFields(parameters: $flowToken->getRequestAmended()['parameters'], mapper: $mapper);
-						if ($missingFields !== []) {
-							$response = new JSONResponse(
-								data: [
-									'error' => 'PUT requires all mandatory fields',
-									'fields' => $missingFields,
-								],
-								statusCode: 400
-							);
-							$flowToken->setResponseOriginal($response);
-							$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-							return $response;
-						}
-					}
+		$lookupFilters = array_filter($parameters, fn ($key) => str_starts_with($key, '_') === false, ARRAY_FILTER_USE_KEY);
+		$systemFilters = array_diff_key($parameters, $lookupFilters);
+		$context->parameters = array_merge($systemFilters, $this->mappingService->translateVngFilterOperators(filters: $lookupFilters));
 
-					$putUpdated = $mapper->updateFromArray(
-						$parameters['id'],
-						$flowToken->getRequestAmended()['parameters'],
-						true,
-						false
-					);
-					$response = new JSONResponse(
-						$this->replaceInternalReferences(
-							mapper: $mapper,
-							serializedObject: $putUpdated->jsonSerialize()
-						)
-					);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				case 'PATCH':
-					$patchUpdated = $mapper->updateFromArray(
-						$parameters['id'],
-						$flowToken->getRequestAmended()['parameters'],
-						true,
-						true
-					);
-					$response = new JSONResponse(
-						$this->replaceInternalReferences(
-							mapper: $mapper,
-							serializedObject: $patchUpdated->jsonSerialize()
-						)
-					);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				case 'DELETE':
-					if (isset($parameters['id']) === false) {
-						$response = new JSONResponse(data: ['error' => 'No id given to delete'], statusCode: 400);
-						$flowToken->setResponseOriginal($response);
-						return $response;
-					}
+		return $expand;
+	}//end translateVngParameters()
 
-					if ($mapper->delete(['id' => $parameters['id']]) !== true) {
-						$response = new JSONResponse(
-							data: ['error' => sprintf('Something went wrong deleting object: %s', $parameters['id'])],
-							statusCode: 500
-						);
-						$flowToken->setResponseOriginal($response);
-						$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-						return $response;
-					}
+	/**
+	 * Expands the named relations of a page's results, or of a single object.
+	 *
+	 * @param Entity|array $objects The page or object getObjects() answered.
+	 * @param array        $expand  The relations to expand.
+	 *
+	 * @return Entity|array The page or object, expanded; an error answer is left alone.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function expandSchemaObjects(Entity|array $objects, array $expand): Entity|array {
+		if ($expand === []) {
+			return $objects;
+		}
 
-					$response = new JSONResponse(statusCode: 204);
-					$flowToken->setResponseOriginal($response);
-					$flowToken->setResponseAmended($flowToken->getResponseOriginal());
-					return $response;
-				default:
-					throw new Exception('Unsupported HTTP method');
-			}//end switch
-		} catch (Exception $exception) {
-			$validationExceptions = [
-				'OCA\OpenRegister\Exception\ValidationException',
-				'OCA\OpenRegister\Exception\CustomValidationException',
-			];
-			if (in_array(get_class($exception), $validationExceptions) === true) {
-				return $mapper->getValidateHandler()->handleValidationException(exception: $exception);
-			}
+		if (isset($objects['results']) === true && is_array($objects['results']) === true) {
+			$objects['results'] = array_map(
+				fn (array $result) => $this->mappingService->expandRelations(data: $result, expand: $expand),
+				$objects['results']
+			);
+			return $objects;
+		}
 
-			throw $exception;
-		}//end try
+		if (is_array($objects) === true && isset($objects['error']) === false) {
+			return $this->mappingService->expandRelations(data: $objects, expand: $expand);
+		}
 
-	}//end handleSchemaRequest()
+		return $objects;
+	}//end expandSchemaObjects()
+
+	/**
+	 * The 400 answer to a PUT that misses mandatory fields, on an endpoint with PUT/PATCH semantics.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 *
+	 * @return JSONResponse|null The 400 answer, or null when the PUT may go ahead.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function missingPutFieldsResponse(EndpointSchemaRequest $context): ?JSONResponse {
+		if (($context->endpointData['putPatchSemantics'] ?? false) !== true) {
+			return null;
+		}
+
+		$missingFields = $this->checkPutMandatoryFields(parameters: $context->request['parameters'], mapper: $context->mapper);
+		if ($missingFields === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'PUT requires all mandatory fields',
+				'fields' => $missingFields,
+			],
+			statusCode: 400
+		);
+	}//end missingPutFieldsResponse()
+
+	/**
+	 * Updates the object a PUT or PATCH names with the request body.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 * @param bool                  $patch   True for a partial update (PATCH).
+	 *
+	 * @return JSONResponse The updated object.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function updateSchemaObject(EndpointSchemaRequest $context, bool $patch): JSONResponse {
+		$updated = $context->mapper->updateFromArray(
+			$context->parameters['id'],
+			$context->request['parameters'],
+			true,
+			$patch
+		);
+
+		return $this->schemaObjectResponse(context: $context, object: $updated);
+	}//end updateSchemaObject()
+
+	/**
+	 * Answers a written object with its internal references replaced by endpoint urls.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 * @param object                $object  The object the mapper wrote.
+	 *
+	 * @return JSONResponse The object.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function schemaObjectResponse(EndpointSchemaRequest $context, object $object): JSONResponse {
+		return new JSONResponse(
+			$this->replaceInternalReferences(
+				mapper: $context->mapper,
+				serializedObject: $object->jsonSerialize()
+			)
+		);
+	}//end schemaObjectResponse()
+
+	/**
+	 * Deletes the object a DELETE names.
+	 *
+	 * A DELETE without an id answers 400 and leaves the flow token's amended response alone.
+	 *
+	 * @param EndpointSchemaRequest $context The schema request.
+	 *
+	 * @return JSONResponse 204 on success, 400 without an id, 500 when the mapper does not confirm.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function deleteSchemaObject(EndpointSchemaRequest $context): JSONResponse {
+		if (isset($context->parameters['id']) === false) {
+			$context->amendResponse = false;
+			return new JSONResponse(data: ['error' => 'No id given to delete'], statusCode: 400);
+		}
+
+		if ($context->mapper->delete(['id' => $context->parameters['id']]) !== true) {
+			return new JSONResponse(
+				data: ['error' => sprintf('Something went wrong deleting object: %s', $context->parameters['id'])],
+				statusCode: 500
+			);
+		}
+
+		return new JSONResponse(statusCode: 204);
+	}//end deleteSchemaObject()
 
 	/**
 	 * Determine which of a schema's mandatory fields are missing from a PUT body.
@@ -2481,7 +2637,7 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		return new JSONResponse(
-			$callLogData['response'] ?? [],
+			(new EndpointProxiedAnswer())->forCaller(response: (array)($callLogData['response'] ?? [])),
 			$callLogData['statusCode'] ?? 200
 		);
 	}//end handleSourceRequest()
@@ -2768,6 +2924,17 @@ class EndpointService implements EndpointServiceInterface {
 			return $data;
 		}
 
+		$context = new EndpointRuleDispatch();
+		$context->endpoint = $endpoint;
+		$context->endpointData = $endpointData;
+		$context->request = $request;
+		$context->timing = $timing;
+		$context->objectId = $objectId;
+		$context->flowToken = $flowToken;
+		$context->resumeAfterOrder = $resumeAfterOrder;
+		$context->trace = $trace;
+		$context->dryRun = $dryRun;
+
 		try {
 			// Get all rules at once and sort by order.
 			$ruleEntities = array_filter(
@@ -2776,189 +2943,15 @@ class EndpointService implements EndpointServiceInterface {
 					$rules
 				)
 			);
-
-			// Sort rules by order.
 			usort($ruleEntities, fn ($a, $b) => (($a->getObject())['order'] ?? 0) - (($b->getObject())['order'] ?? 0));
 
-			// Process each rule in order.
 			foreach ($ruleEntities as $rule) {
-				// Skip if rule action doesn't match request method.
-				// if (strtolower($ruleData['action']) !== strtolower($request->getMethod())) {
-				// continue;
-				// }.
-				$ruleData = $rule->getObject();
-				$logicResult = null;
-
-				// Resume: rules at/before the suspended approval rule's order
-				// already ran before the pipeline suspended — skip them.
-				if ($resumeAfterOrder !== null && (($ruleData['order'] ?? 0) <= $resumeAfterOrder)) {
-					continue;
+				$context->rule = $rule;
+				$data = $this->applyEndpointRule(context: $context, data: $data);
+				if ($data instanceof JSONResponse === true || $data instanceof DataDownloadResponse === true) {
+					return $data;
 				}
-
-				$data['flowToken'] = $flowToken->__serialize();
-
-				$conditionsPassed = $this->checkRuleConditions(rule: $rule, data: $data, logicResult: $logicResult);
-				$timingMatches = (($ruleData['timing'] ?? 'before') === $timing);
-
-				// Check rule conditions.
-				if ($conditionsPassed === false || $timingMatches === false) {
-					$this->logger->info(
-						'Rule condition check failed for endpoint ' . ($endpointData['name'] ?? '')
-						. ' and rule ' . ($ruleData['name'] ?? '')
-						. ' of type: ' . ($ruleData['type'] ?? '')
-					);
-
-					// Execution-trace REQ-002 / rule-pipeline REQ-RULE-010: a
-					// rule skipped by its own condition/timing check still
-					// produces a step.
-					if ($trace !== null) {
-						$trace->addStep(
-							type: 'rule',
-							name: ($ruleData['name'] ?? ($ruleData['type'] ?? 'rule')),
-							timing: $timing,
-							status: 'skipped',
-						);
-					}
-
-					continue;
-				}//end if
-
-				if (is_string($logicResult) === true && json_decode(json: $logicResult, associative: true) !== null) {
-					$data['logicResult'] = json_decode($logicResult, true);
-				} else {
-					$data['logicResult'] = $logicResult;
-				}
-
-				$this->logger->info(
-					'Applying rule for endpoint ' . ($endpointData['name'] ?? '')
-					. ' with rule ' . ($ruleData['name'] ?? '')
-					. ' of type ' . ($ruleData['type'] ?? '')
-				);
-
-				// At this moment, setting flowToken in $data when processing rules will result in data contamination.
-				unset($data['flowToken']);
-
-				$ruleType = ($ruleData['type'] ?? '');
-
-				// Rule-pipeline REQ-RULE-011: under a dry-run replay, write-shaped
-				// rule types do not perform their write — record a
-				// `skipped_dry_run` step and continue against the pre-rule
-				// envelope. `synchronization` is a deliberate partial exception
-				// (handled inside processSyncRule() via its own $dryRun forward
-				// to SynchronizationService's isTest — it is NOT in this set).
-				if ($dryRun === true && in_array($ruleType, self::DRY_RUN_SUPPRESSED_RULE_TYPES, true) === true) {
-					if ($trace !== null) {
-						$trace->addStep(
-							type: 'rule',
-							name: ($ruleData['name'] ?? $ruleType),
-							timing: $timing,
-							status: 'skipped_dry_run',
-						);
-					}
-
-					continue;
-				}
-
-				$ruleStepStart = microtime(true);
-
-				// Process rule based on type.
-				try {
-					$result = match ($ruleType) {
-						'save_object' => $this->processSaveObjectRule(rule: $rule, data: $data),
-						'authentication' => $this->processAuthenticationRule(rule: $rule, data: $data),
-						'error' => $this->processErrorRule(rule: $rule, data: $data),
-						'mapping' => $this->processMappingRule(rule: $rule, data: $data),
-						'synchronization' => $this->processSyncRule(rule: $rule, data: $data, flowToken: $flowToken, trace: $trace, dryRun: $dryRun),
-						'javascript' => $this->processJavaScriptRule(rule: $rule, data: $data),
-						'fileparts_create' => $this->processFilePartRule(rule: $rule, data: $data, endpoint: $endpoint, objectId: $objectId),
-						'filepart_upload' => $this->processFilePartUploadRule(rule: $rule, data: $data, request: $request, objectId: $objectId),
-						'download' => $this->processDownloadRule(rule: $rule, data: $data, objectId: $objectId),
-						'extend_input' => $this->processExtendInputRule(rule: $rule, data: $data),
-						'extend_external_input' => $this->ruleService->extendExternalUrl(rule: $rule, data: $data),
-						'audit_trail' => $this->processAuditTrailRule(rule: $rule, endpoint: $endpoint, data: $data, objectId: $objectId),
-						'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
-						'locking' => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
-						'override' => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
-						'webhook_signature' => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $request),
-						'custom' => $this->processCustomRule(rule: $rule, data: $data),
-						'composite_fanout' => $this->processCompositeFanoutRule(rule: $rule, data: $data),
-						'referentienummer' => $this->processReferenceNumberRule(rule: $rule, data: $data),
-						'avg_bsn_policy' => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $timing),
-						'selfurl_hal' => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
-						'approval' => $this->processApprovalRule(
-							rule: $rule,
-							endpoint: $endpoint,
-							flowToken: $flowToken,
-							timing: $timing,
-							trace: $trace
-						),
-						'flow' => $this->processFlowRule(rule: $rule, data: $data),
-						default => throw new Exception('Unsupported rule type: ' . $ruleType),
-					};//end match
-				} catch (Exception $e) {
-					$message = 'Failed to apply rule for endpoint ' . ($endpointData['name'] ?? '')
-						. ' with rule ' . ($ruleData['name'] ?? '')
-						. ' of type ' . $ruleType
-						. '. With error message: ' . $e->getMessage();
-					$this->logger->error($message);
-
-					if ($trace !== null) {
-						$trace->addStep(
-							type: 'rule',
-							name: ($ruleData['name'] ?? $ruleType),
-							timing: $timing,
-							status: 'error',
-							output: [
-								'endpoint' => ($endpointData['name'] ?? null),
-								'rule' => ($ruleData['name'] ?? null),
-								'ruleType' => $ruleType,
-								'message' => $e->getMessage(),
-							],
-							startedAtMicrotime: $ruleStepStart,
-							finishedAtMicrotime: microtime(true),
-						);
-					}
-
-					return new JSONResponse(['error' => 'Rule processing failed'], 500);
-				}//end try
-
-				if ($trace !== null) {
-					$ruleStepInputData = [];
-					if (is_array($data) === true) {
-						$ruleStepInputData = $data;
-					}
-
-					$ruleStepOutputData = [];
-					if (is_array($result) === true) {
-						$ruleStepOutputData = $result;
-					}
-
-					$trace->addStep(
-						type: 'rule',
-						name: ($ruleData['name'] ?? $ruleType),
-						timing: $timing,
-						status: 'success',
-						input: (new SensitiveFieldRegistry())->redactArray(data: $ruleStepInputData),
-						output: (new SensitiveFieldRegistry())->redactArray(data: $ruleStepOutputData),
-						startedAtMicrotime: $ruleStepStart,
-						finishedAtMicrotime: microtime(true),
-					);
-				}//end if
-
-				// If result is JSONResponse, return error immediately.
-				if ($result instanceof JSONResponse === true || $result instanceof DataDownloadResponse === true) {
-					return $result;
-				}
-
-				// Update data with rule result.
-				$data = $result;
-
-				$this->logger->info(
-					'Successfully applied rule for endpoint ' . ($endpointData['name'] ?? '')
-					. ' with rule ' . ($ruleData['name'] ?? '')
-					. ' of type ' . $ruleType
-				);
-			}//end foreach
+			}
 
 			unset($data['body']['_extendedInput']);
 
@@ -2968,6 +2961,270 @@ class EndpointService implements EndpointServiceInterface {
 			return new JSONResponse(['error' => 'Rule processing failed'], 500);
 		}//end try
 	}//end processRules()
+
+	/**
+	 * Apply one rule of an endpoint's rule pipeline, unless it is skipped.
+	 *
+	 * A rule is skipped when a resumed run already ran it, when its conditions fail or
+	 * its timing does not match, and, for write-shaped types, under a dry run
+	 * (rule-pipeline REQ-RULE-011). Every skip but the resume one adds a trace step.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule to apply.
+	 * @param mixed                $data    The request data envelope.
+	 *
+	 * @return mixed The data after the rule, or the response that ends the pipeline.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-dry-run-mode-suppresses-write-shaped-rule-dispatch-req-rule-011
+	 */
+	private function applyEndpointRule(EndpointRuleDispatch $context, mixed $data): mixed {
+		$rule = $context->rule;
+		$ruleData = $rule->getObject();
+		$logicResult = null;
+
+		// Resume: rules at or before the suspended approval rule's order already ran.
+		if ($context->resumeAfterOrder !== null && (($ruleData['order'] ?? 0) <= $context->resumeAfterOrder)) {
+			return $data;
+		}
+
+		$data['flowToken'] = $context->flowToken->__serialize();
+
+		$conditionsPassed = $this->checkRuleConditions(rule: $rule, data: $data, logicResult: $logicResult);
+		$timingMatches = (($ruleData['timing'] ?? 'before') === $context->timing);
+		if ($conditionsPassed === false || $timingMatches === false) {
+			$this->logger->info(
+				'Rule condition check failed for endpoint ' . ($context->endpointData['name'] ?? '')
+				. ' and rule ' . ($ruleData['name'] ?? '')
+				. ' of type: ' . ($ruleData['type'] ?? '')
+			);
+			$this->addRuleStep(context: $context, step: ['name' => ($ruleData['name'] ?? ($ruleData['type'] ?? 'rule')), 'status' => 'skipped']);
+
+			return $data;
+		}
+
+		$data['logicResult'] = $logicResult;
+		if (is_string($logicResult) === true && json_decode(json: $logicResult, associative: true) !== null) {
+			$data['logicResult'] = json_decode($logicResult, true);
+		}
+
+		$this->logger->info(
+			'Applying rule for endpoint ' . ($context->endpointData['name'] ?? '')
+			. ' with rule ' . ($ruleData['name'] ?? '')
+			. ' of type ' . ($ruleData['type'] ?? '')
+		);
+
+		// At this moment, setting flowToken in $data when processing rules will result in data contamination.
+		unset($data['flowToken']);
+
+		$ruleType = ($ruleData['type'] ?? '');
+
+		// The `synchronization` type handles a dry run itself, so it is not in the suppressed set.
+		if ($context->dryRun === true && in_array($ruleType, self::DRY_RUN_SUPPRESSED_RULE_TYPES, true) === true) {
+			$this->addRuleStep(context: $context, step: ['name' => ($ruleData['name'] ?? $ruleType), 'status' => 'skipped_dry_run']);
+
+			return $data;
+		}
+
+		return $this->runEndpointRule(context: $context, data: $data);
+	}//end applyEndpointRule()
+
+	/**
+	 * Run one rule, trace it, and turn a failure into an error response.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule to run.
+	 * @param mixed                $data    The request data envelope.
+	 *
+	 * @return mixed The rule result, or the response that ends the pipeline.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 */
+	private function runEndpointRule(EndpointRuleDispatch $context, mixed $data): mixed {
+		$ruleData = $context->rule->getObject();
+		$ruleType = ($ruleData['type'] ?? '');
+		$ruleStepStart = microtime(true);
+
+		try {
+			$result = $this->dispatchEndpointRule(context: $context, data: $data);
+		} catch (Exception $e) {
+			return $this->failEndpointRule(context: $context, failure: ['exception' => $e, 'startedAt' => $ruleStepStart]);
+		}//end try
+
+		$this->traceRuleSuccess(context: $context, io: ['input' => $data, 'output' => $result, 'startedAt' => $ruleStepStart]);
+
+		if ($result instanceof JSONResponse === true || $result instanceof DataDownloadResponse === true) {
+			return $result;
+		}
+
+		$this->logger->info(
+			'Successfully applied rule for endpoint ' . ($context->endpointData['name'] ?? '')
+			. ' with rule ' . ($ruleData['name'] ?? '')
+			. ' of type ' . $ruleType
+		);
+
+		return $result;
+	}//end runEndpointRule()
+
+	/**
+	 * Log a failed rule, add its `error` step and end the pipeline with a 500.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the failed rule.
+	 * @param array                $failure The `exception` and the rule's `startedAt` microtime.
+	 *
+	 * @return JSONResponse The error response that ends the pipeline.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 */
+	private function failEndpointRule(EndpointRuleDispatch $context, array $failure): JSONResponse {
+		$ruleData = $context->rule->getObject();
+		$ruleType = ($ruleData['type'] ?? '');
+		$message = $failure['exception']->getMessage();
+		$this->logger->error(
+			'Failed to apply rule for endpoint ' . ($context->endpointData['name'] ?? '')
+			. ' with rule ' . ($ruleData['name'] ?? '')
+			. ' of type ' . $ruleType
+			. '. With error message: ' . $message
+		);
+		$this->addRuleStep(
+			context: $context,
+			step: [
+				'name' => ($ruleData['name'] ?? $ruleType),
+				'status' => 'error',
+				'output' => [
+					'endpoint' => ($context->endpointData['name'] ?? null),
+					'rule' => ($ruleData['name'] ?? null),
+					'ruleType' => $ruleType,
+					'message' => $message,
+				],
+				'startedAtMicrotime' => $failure['startedAt'],
+				'finishedAtMicrotime' => microtime(true),
+			]
+		);
+
+		return new JSONResponse(['error' => 'Rule processing failed'], 500);
+	}//end failEndpointRule()
+
+	/**
+	 * Add the `success` step of a rule, with its input and output redacted, when the run is traced.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule that ran.
+	 * @param array                $io      The rule's `input` and `output` (traced as empty when not an array), and its `startedAt` microtime.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 */
+	private function traceRuleSuccess(EndpointRuleDispatch $context, array $io): void {
+		if ($context->trace === null) {
+			return;
+		}
+
+		$ruleData = $context->rule->getObject();
+		$redactor = new SensitiveFieldRegistry();
+		$ruleStepInputData = [];
+		if (is_array($io['input']) === true) {
+			$ruleStepInputData = $io['input'];
+		}
+
+		$ruleStepOutputData = [];
+		if (is_array($io['output']) === true) {
+			$ruleStepOutputData = $io['output'];
+		}
+
+		$this->addRuleStep(
+			context: $context,
+			step: [
+				'name' => ($ruleData['name'] ?? ($ruleData['type'] ?? '')),
+				'status' => 'success',
+				'input' => $redactor->redactArray(data: $ruleStepInputData),
+				'output' => $redactor->redactArray(data: $ruleStepOutputData),
+				'startedAtMicrotime' => $io['startedAt'],
+				'finishedAtMicrotime' => microtime(true),
+			]
+		);
+	}//end traceRuleSuccess()
+
+	/**
+	 * Add a `rule` trace step for the pipeline run, when it is traced.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run.
+	 * @param array                $step    The step `name`, `status` and further addStep() arguments by name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+	 */
+	private function addRuleStep(EndpointRuleDispatch $context, array $step): void {
+		if ($context->trace === null) {
+			return;
+		}
+
+		$context->trace->addStep(
+			...array_merge(['type' => 'rule', 'timing' => $context->timing], $step)
+		);
+	}//end addRuleStep()
+
+	/**
+	 * Call the handler of a rule type.
+	 *
+	 * @param EndpointRuleDispatch $context The pipeline run, with the rule to dispatch.
+	 * @param mixed                $data    The request data envelope.
+	 *
+	 * @return mixed The handler's result.
+	 *
+	 * @throws Exception When the rule type is not supported, or the handler fails.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function dispatchEndpointRule(EndpointRuleDispatch $context, mixed $data): mixed {
+		$rule = $context->rule;
+		$ruleType = ($rule->getObject()['type'] ?? '');
+		$endpoint = $context->endpoint;
+		$objectId = $context->objectId;
+		$flowToken = $context->flowToken;
+		$handlers = [
+			'save_object' => fn () => $this->processSaveObjectRule(rule: $rule, data: $data),
+			'authentication' => fn () => $this->processAuthenticationRule(rule: $rule, data: $data),
+			'error' => fn () => $this->processErrorRule(rule: $rule, data: $data),
+			'mapping' => fn () => $this->processMappingRule(rule: $rule, data: $data),
+			'synchronization' => fn () => $this->processSyncRule(
+				rule: $rule,
+				data: $data,
+				flowToken: $flowToken,
+				trace: $context->trace,
+				dryRun: $context->dryRun
+			),
+			'javascript' => fn () => $this->processJavaScriptRule(rule: $rule, data: $data),
+			'fileparts_create' => fn () => $this->processFilePartRule(rule: $rule, data: $data, endpoint: $endpoint, objectId: $objectId),
+			'filepart_upload' => fn () => $this->processFilePartUploadRule(rule: $rule, data: $data, request: $context->request, objectId: $objectId),
+			'download' => fn () => $this->processDownloadRule(rule: $rule, data: $data, objectId: $objectId),
+			'extend_input' => fn () => $this->processExtendInputRule(rule: $rule, data: $data),
+			'extend_external_input' => fn () => $this->ruleService->extendExternalUrl(rule: $rule, data: $data),
+			'audit_trail' => fn () => $this->processAuditTrailRule(rule: $rule, endpoint: $endpoint, data: $data, objectId: $objectId),
+			'write_file' => fn () => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
+			'locking' => fn () => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
+			'override' => fn () => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
+			'webhook_signature' => fn () => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $context->request),
+			'custom' => fn () => $this->processCustomRule(rule: $rule, data: $data),
+			'composite_fanout' => fn () => $this->processCompositeFanoutRule(rule: $rule, data: $data),
+			'referentienummer' => fn () => $this->processReferenceNumberRule(rule: $rule, data: $data),
+			'avg_bsn_policy' => fn () => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $context->timing),
+			'selfurl_hal' => fn () => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
+			'approval' => fn () => $this->processApprovalRule(
+				rule: $rule,
+				endpoint: $endpoint,
+				flowToken: $flowToken,
+				timing: $context->timing,
+				trace: $context->trace
+			),
+			'flow' => fn () => $this->processFlowRule(rule: $rule, data: $data),
+		];
+
+		if (is_string($ruleType) === false || isset($handlers[$ruleType]) === false) {
+			throw new Exception('Unsupported rule type: ' . $ruleType);
+		}
+
+		return $handlers[$ruleType]();
+	}//end dispatchEndpointRule()
 
 	/**
 	 * This rule, that only can be run on timing 'after' overrides the content of a written object by the updated contents in the flow token.
@@ -3843,94 +4100,28 @@ class EndpointService implements EndpointServiceInterface {
 			return $data;
 		}
 
-		if (is_array($config['synchronization']) === true && isset($config['synchronization']['synchronization']) === true) {
-			$synchronizationId = $config['synchronization']['synchronization'];
-		} else {
-			$synchronizationId = $config['synchronization'];
+		$synchronization = $this->syncRuleSynchronization(rule: $rule, config: $config);
+
+		// Rule-pipeline REQ-RULE-011: a dry-run replay forwards isTest: true
+		// unconditionally, reusing synchronization-engine REQ-011's existing
+		// no-write guarantee rather than a second mechanism.
+		$test = true;
+		if ($dryRun === false) {
+			$test = $this->syncRuleFlag(sources: [($data['body'] ?? null), $config], key: 'isTest');
 		}
 
-		$this->logger->debug('[EndpointService] processSyncRule ruleId=' . $rule->getUuid() . ' synchronizationId=' . $synchronizationId);
+		$force = $this->syncRuleFlag(sources: [($data['body'] ?? null), $config], key: 'force');
 
-		// Fetch the synchronization.
-		if (is_numeric($synchronizationId) === true) {
-			$synchronization = $this->synchronizationService->getSynchronization(id: (int)$synchronizationId);
-		} else {
-			$synchronization = $this->synchronizationService->getSynchronization(filters: ['reference' => $synchronizationId]);
-		}
-
-		$this->logger->debug(
-			'[EndpointService] processSyncRule synchronization fetched id=' . $synchronization->getUuid()
-			. ' name=' . $synchronization->getName()
-		);
-
-		// Check if the synchronization should be in test mode.
-		if ($dryRun === true) {
-			// Rule-pipeline REQ-RULE-011: a dry-run replay forwards isTest:
-			// true unconditionally, reusing synchronization-engine REQ-011's
-			// existing no-write guarantee rather than a second mechanism.
-			$test = true;
-		} elseif (isset($data['body']['isTest']) === true) {
-			$test = $data['body']['isTest'];
-		} elseif (isset($config['isTest']) === true) {
-			$test = $config['isTest'];
-		} else {
-			$test = false;
-		}
-
-		// Check if the synchronization should be forced.
-		if (isset($data['body']['force']) === true) {
-			$force = $data['body']['force'];
-		} elseif (isset($config['force']) === true) {
-			$force = $config['force'];
-		} else {
-			$force = false;
-		}
-
-		$object = null;
-		if (isset($data['body']) === true) {
-			$object = $data['body'];
-		}
-
-		// Set $object to a different variable becuase we might update $object with reference and want to keep what we send to synchronize.
+		$object = ($data['body'] ?? null);
+		// Kept apart because $object might be updated by reference, and the sent object must survive.
 		$sendObject = $object;
 
-		// If we have an objectIdPath, pull the id from the body and fetch the object from the database.
-		$fetchedObject = null;
+		$this->syncRuleDelay(config: $config, key: 'preDelay');
+		$fetchedObject = $this->syncRuleFetchedObject(config: $config, data: $data);
 
-		if (isset($config['synchronization']['preDelay']) === true && is_int($config['synchronization']['preDelay']) === true) {
-			sleep($config['synchronization']['preDelay']);
-		}
-
-		if (isset($config['synchronization']['objectIdPath']) === true) {
-			$dataDot = new Dot($data['body']);
-
-			$id = $dataDot->get($config['synchronization']['objectIdPath']);
-
-			if (filter_var(value: $id, filter: FILTER_VALIDATE_URL) !== false) {
-				$idExploded = explode(separator: '/', string: $id);
-				$id = end($idExploded);
-			}
-
-			$this->objectService->getOpenRegisters()->clearCurrents();
-			$fetchedObject = $this->objectService->getOpenRegisters()->find($id);
-			$foData = $fetchedObject->jsonSerialize();
-			$foData['synchronization_trigger'] = true;
-			$fetchedObject->setObject($foData);
-		}
-
-		// Run synchronization.
+		// The sourceConfig lives in the synchronization object's BODY: it is not
+		// an Entity column, so there is no getSourceConfig().
 		$mutationType = null;
-		// `getSynchronization()` returns an OpenRegister `ObjectEntity`, whose
-		// `sourceConfig` lives in the object BODY — it is not an Entity column,
-		// and `ObjectEntity` overrides no `__call`. The previous
-		// `$synchronization->getSourceConfig()` therefore always threw
-		// `BadFunctionCallException('sourceConfig is not a valid attribute')`
-		// from `Entity::getter()`, which `processRules()`'s `catch (Exception)`
-		// swallowed into a blanket HTTP 500 — i.e. EVERY `synchronization` rule
-		// on an endpoint 500'd, with the real cause hidden. Read the body the
-		// same way every other sourceConfig consumer in this codebase does
-		// (SynchronizationService reads `$synchronization['sourceConfig']`);
-		// this was the only `getSourceConfig()` call site in the app.
 		$sourceConfig = ($synchronization->getObject()['sourceConfig'] ?? []);
 		if (isset($sourceConfig['synchronizationType']) === true && $sourceConfig['synchronizationType'] === 'delete') {
 			$mutationType = 'delete';
@@ -3956,45 +4147,165 @@ class EndpointService implements EndpointServiceInterface {
 			'[EndpointService] processSyncRule synchronize complete syncId=' . $synchronization->getUuid()
 		);
 
-		// $object got updated through reference.
-		$returnedObject = $object;
+		$this->syncRuleDelay(config: $config, key: 'postDelay');
 
+		return $this->applySyncRuleResult(
+			config: $config,
+			result: ['data' => $data, 'sent' => $sendObject, 'returned' => $object, 'log' => $log]
+		);
+	}//end processSyncRule()
+
+	/**
+	 * The synchronization a synchronization rule names: by numeric id, else by reference.
+	 *
+	 * The rule's `synchronization` is the id itself, or an object carrying it under `synchronization`.
+	 *
+	 * @param ObjectEntity $rule   The rule.
+	 * @param array        $config The rule's configuration.
+	 *
+	 * @return ObjectEntity
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleSynchronization(ObjectEntity $rule, array $config): ObjectEntity {
+		$synchronizationId = $config['synchronization'];
+		if (is_array($config['synchronization']) === true && isset($config['synchronization']['synchronization']) === true) {
+			$synchronizationId = $config['synchronization']['synchronization'];
+		}
+
+		$this->logger->debug('[EndpointService] processSyncRule ruleId=' . $rule->getUuid() . ' synchronizationId=' . $synchronizationId);
+
+		if (is_numeric($synchronizationId) === true) {
+			$synchronization = $this->synchronizationService->getSynchronization(id: (int)$synchronizationId);
+		} else {
+			$synchronization = $this->synchronizationService->getSynchronization(filters: ['reference' => $synchronizationId]);
+		}
+
+		$this->logger->debug(
+			'[EndpointService] processSyncRule synchronization fetched id=' . $synchronization->getUuid()
+			. ' name=' . $synchronization->getName()
+		);
+
+		return $synchronization;
+	}//end syncRuleSynchronization()
+
+	/**
+	 * A synchronization rule flag: the first source that sets it (the request body, then the rule's configuration), else false.
+	 *
+	 * @param array  $sources Where to look, in order.
+	 * @param string $key     The flag.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleFlag(array $sources, string $key): mixed {
+		foreach ($sources as $source) {
+			if (isset($source[$key]) === true) {
+				return $source[$key];
+			}
+		}
+
+		return false;
+	}//end syncRuleFlag()
+
+	/**
+	 * Wait the whole seconds a synchronization rule configures under `preDelay` or `postDelay`.
+	 *
+	 * @param array  $config The rule's configuration.
+	 * @param string $key    'preDelay' or 'postDelay'.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleDelay(array $config, string $key): void {
+		if (isset($config['synchronization'][$key]) === true && is_int($config['synchronization'][$key]) === true) {
+			sleep($config['synchronization'][$key]);
+		}
+	}//end syncRuleDelay()
+
+	/**
+	 * The object to synchronize, fetched from OpenRegister by the id at the rule's `objectIdPath` in the body.
+	 *
+	 * A URL id is reduced to its last path segment; the fetched object is
+	 * marked as a synchronization trigger.
+	 *
+	 * @param array $config The rule's configuration.
+	 * @param array $data   The request data.
+	 *
+	 * @return ObjectEntity|null Null when the rule has no objectIdPath.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function syncRuleFetchedObject(array $config, array $data): ?ObjectEntity {
+		if (isset($config['synchronization']['objectIdPath']) === false) {
+			return null;
+		}
+
+		$dataDot = new Dot($data['body']);
+		$id      = $dataDot->get($config['synchronization']['objectIdPath']);
+		if (filter_var(value: $id, filter: FILTER_VALIDATE_URL) !== false) {
+			$idExploded = explode(separator: '/', string: $id);
+			$id         = end($idExploded);
+		}
+
+		$this->objectService->getOpenRegisters()->clearCurrents();
+		$fetchedObject = $this->objectService->getOpenRegisters()->find($id);
+		$foData = $fetchedObject->jsonSerialize();
+		$foData['synchronization_trigger'] = true;
+		$fetchedObject->setObject($foData);
+
+		return $fetchedObject;
+	}//end syncRuleFetchedObject()
+
+	/**
+	 * The request data after a synchronization rule ran.
+	 *
+	 * Unless the rule retains the response, the body becomes the result merged
+	 * at the root (`mergeResultToKey: '#'`) or under a key, the result itself
+	 * (`overwriteObjectWithResult`), or the synchronization log.
+	 *
+	 * @param array $config The rule's configuration.
+	 * @param array $result The request data, the sent and returned objects and the log.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function applySyncRuleResult(array $config, array $result): array {
+		$data = $result['data'];
+		$retainResponse = false;
 		if (isset($config['synchronization']['retainResponse']) === true) {
 			$retainResponse = (bool)$config['synchronization']['retainResponse'];
-		} else {
-			$retainResponse = false;
 		}
 
-		if (isset($config['synchronization']['postDelay']) === true && is_int($config['synchronization']['postDelay']) === true) {
-			sleep($config['synchronization']['postDelay']);
+		if ($retainResponse === true) {
+			return $data;
 		}
 
-		if (isset($config['synchronizationConfig']['mergeResultToKey']) === true && $retainResponse === false) {
-			// Merge result to root send object.
-			if ($config['synchronizationConfig']['mergeResultToKey'] === '#') {
-				$data['body'] = array_merge($sendObject, $returnedObject);
-				// Merge result to configured key in send object.
-			} else {
-				$sendObject[$config['synchronizationConfig']['mergeResultToKey']] = $returnedObject;
-				$data['body'] = $sendObject;
+		$resultConfig = ($config['synchronizationConfig'] ?? []);
+		if (isset($resultConfig['mergeResultToKey']) === true) {
+			$sendObject = $result['sent'];
+			if ($resultConfig['mergeResultToKey'] === '#') {
+				$data['body'] = array_merge($sendObject, $result['returned']);
+				return $data;
 			}
 
-			// Overwrite body with result.
-		} elseif (isset($config['synchronizationConfig']['overwriteObjectWithResult']) === true
-			&& filter_var(
-				$config['synchronizationConfig']['overwriteObjectWithResult'],
-				FILTER_VALIDATE_BOOLEAN,
-				FILTER_NULL_ON_FAILURE
-			) === true
-			&& $retainResponse === false
+			$sendObject[$resultConfig['mergeResultToKey']] = $result['returned'];
+			$data['body'] = $sendObject;
+			return $data;
+		}
+
+		$data['body'] = $result['log'];
+		if (isset($resultConfig['overwriteObjectWithResult']) === true
+			&& filter_var($resultConfig['overwriteObjectWithResult'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
 		) {
-			$data['body'] = $returnedObject;
-		} elseif ($retainResponse === false) {
-			$data['body'] = $log;
-		}//end if
+			$data['body'] = $result['returned'];
+		}
 
 		return $data;
-	}//end processSyncRule()
+	}//end applySyncRuleResult()
 
 	/**
 	 * Processes a file part creation rule.

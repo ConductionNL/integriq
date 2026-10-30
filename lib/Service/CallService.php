@@ -1538,6 +1538,25 @@ class CallService implements CallServiceInterface {
 	}//end redactSecretsFromConfig()
 
 	/**
+	 * Masks the secret-bearing headers of a response (Set-Cookie, Authorization,
+	 * any token- or key-named header) in the copy that is stored in a CallLog or
+	 * a trace step. The caller keeps the real headers on the returned entity.
+	 *
+	 * @param array $response The structured response from buildResponseData().
+	 *
+	 * @return array The response with its headers redacted.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+	 */
+	private function redactResponseHeaders(array $response): array {
+		if (is_array($response['headers'] ?? null) === true) {
+			$response['headers'] = $this->sensitiveFieldRegistry->redactArray(data: $response['headers']);
+		}
+
+		return $response;
+	}//end redactResponseHeaders()
+
+	/**
 	 * Returns true when a header/query/form key name looks like it carries a secret.
 	 *
 	 * Delegates to the shared {@see SensitiveFieldRegistry} (secret-hygiene) — a pure
@@ -1788,7 +1807,7 @@ class CallService implements CallServiceInterface {
 			'statusCode' => $statusCode,
 			'statusMessage' => $data['response']['statusMessage'],
 			'request' => $data['request'],
-			'response' => $data['response'],
+			'response' => $this->redactResponseHeaders(response: $data['response']),
 			'created' => (new DateTime())->format('c'),
 		];
 
@@ -3027,7 +3046,7 @@ class CallService implements CallServiceInterface {
 		// an investigation window, and without logBody, the step holds no body
 		// (outbound-call-log REQ-OCD-001), and a call that withholds its bodies
 		// hands the trace the same stripped request and response the call log gets.
-		$traced = ['request' => $data['request'], 'response' => $data['response']];
+		$traced = ['request' => $data['request'], 'response' => $this->redactResponseHeaders(response: $data['response'])];
 		if ($this->bodyCapturePolicy->captures(sourceData: $sourceData, logBody: (bool)$prepared['logBody']) === false) {
 			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
 		}
