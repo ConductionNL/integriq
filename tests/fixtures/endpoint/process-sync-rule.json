@@ -1,0 +1,1254 @@
+{
+    "no-synchronization": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": []
+    },
+    "reference-id": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=sync-ref"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "sync-ref"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "numeric-id": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=42"
+            ],
+            [
+                "sync.getSynchronization",
+                42,
+                []
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "nested-reference": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=nested-ref"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "nested-ref"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "dry-run-wins": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=true force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                true,
+                false,
+                null,
+                null,
+                {
+                    "isTest": false
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "body-is-test-and-force": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest='body-test' force='body-force' mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                true,
+                true,
+                null,
+                null,
+                {
+                    "isTest": "body-test",
+                    "force": "body-force"
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "config-is-test-and-force": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest='cfg-test' force='cfg-force' mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                true,
+                true,
+                null,
+                null,
+                {
+                    "naam": "x"
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "string-body": {
+        "outcome": {
+            "throws": "TypeError",
+            "message": "Mock::synchronize(): Argument #7 ($data) must be of type ?array, string given"
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest='cfg-test' force=false mutationType=NULL"
+            ]
+        ]
+    },
+    "no-body": {
+        "outcome": {
+            "return": {
+                "headers": [],
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                null,
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "object-id-path-url": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "openRegisters.clearCurrents"
+            ],
+            [
+                "openRegisters.find",
+                "z-1"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                {
+                    "entity": "fetched-z-1",
+                    "object": {
+                        "uuid": "fetched-z-1",
+                        "id": "z-1",
+                        "title": "fetched",
+                        "synchronization_trigger": true
+                    }
+                },
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "object-id-path-plain": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "openRegisters.clearCurrents"
+            ],
+            [
+                "openRegisters.find",
+                "x"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                {
+                    "entity": "fetched-x",
+                    "object": {
+                        "uuid": "fetched-x",
+                        "id": "x",
+                        "title": "fetched",
+                        "synchronization_trigger": true
+                    }
+                },
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "delete-type": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType='delete'"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                "delete",
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "other-type": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "retain-response": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "retain-response-false": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "retain-response-only": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "merge-root-list": {
+        "outcome": {
+            "return": {
+                "body": [
+                    "a",
+                    "b",
+                    "a",
+                    "b"
+                ]
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                [
+                    "a",
+                    "b"
+                ],
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "merge-root": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "merge-key": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    },
+                    "result": {
+                        "naam": "x",
+                        "zaak": {
+                            "id": "https://x.invalid/zaken/z-1"
+                        }
+                    }
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "overwrite-yes": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "overwrite-no": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "overwrite-garbage": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "result": {
+                        "contracts": [
+                            "c-1"
+                        ]
+                    },
+                    "returned": "log"
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    },
+    "overwrite-retained": {
+        "outcome": {
+            "return": {
+                "body": {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                "headers": {
+                    "h": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule ruleId=rule-1 synchronizationId=s"
+            ],
+            [
+                "sync.getSynchronization",
+                null,
+                {
+                    "reference": "s"
+                }
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronization fetched id=sync-uuid name=Sync name"
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule calling synchronize syncId=sync-uuid isTest=false force=false mutationType=NULL"
+            ],
+            [
+                "sync.synchronize",
+                "sync-uuid",
+                false,
+                false,
+                null,
+                null,
+                {
+                    "naam": "x",
+                    "zaak": {
+                        "id": "https://x.invalid/zaken/z-1"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "logger.debug",
+                "[EndpointService] processSyncRule synchronize complete syncId=sync-uuid"
+            ]
+        ]
+    }
+}

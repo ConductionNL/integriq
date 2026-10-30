@@ -1,0 +1,481 @@
+{
+    "api-ids": {
+        "export": {
+            "sourceType": "api",
+            "sourceId": "src-five",
+            "targetType": "api",
+            "targetId": "src-six",
+            "slug": "given"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceType": "api",
+                    "sourceId": 5,
+                    "targetType": "api",
+                    "targetId": "6",
+                    "slug": "given"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "api-slugs": {
+        "export": {
+            "sourceType": "api",
+            "sourceId": "src-five",
+            "targetType": "database",
+            "targetId": "src-six",
+            "slug": "sync-nine"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceType": "api",
+                    "sourceId": 5,
+                    "targetType": "database",
+                    "targetId": 6,
+                    "slug": "sync-nine"
+                },
+                "integriq",
+                "synchronization",
+                "9"
+            ]
+        ]
+    },
+    "api-unknown": {
+        "export": {
+            "sourceType": "database",
+            "sourceId": 77,
+            "targetType": "api",
+            "targetId": "nope",
+            "slug": "entity-api-unknown"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceType": "database",
+                    "sourceId": 77,
+                    "targetType": "api",
+                    "targetId": "nope"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "register-schema-ids": {
+        "export": {
+            "sourceType": "register/schema",
+            "sourceId": "reg-one/sch-two",
+            "targetType": "register/schema",
+            "targetId": "reg-one/99",
+            "slug": "entity-register-schema-ids"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceType": "register/schema",
+                    "sourceId": "1/2",
+                    "targetType": "register/schema",
+                    "targetId": "1/99"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "register-schema-slugs": {
+        "export": {
+            "sourceType": "register/schema",
+            "sourceId": "reg-one/sch-two",
+            "targetType": "register/schema",
+            "targetId": "x/sch-two",
+            "slug": "entity-register-schema-slugs"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceType": "register/schema",
+                    "sourceId": "1/2",
+                    "targetType": "register/schema",
+                    "targetId": "x/2"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "register-schema-no-slash": {
+        "export": {
+            "sourceType": "register/schema",
+            "sourceId": "12",
+            "targetType": "register/schema",
+            "targetId": "reg-one",
+            "slug": "entity-register-schema-no-slash"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceType": "register/schema",
+                    "sourceId": "12",
+                    "targetType": "register/schema",
+                    "targetId": "reg-one"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "other-type": {
+        "export": {
+            "sourceType": "file",
+            "sourceId": 5,
+            "targetType": "zgw",
+            "targetId": 6,
+            "slug": "entity-other-type"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceType": "file",
+                    "sourceId": 5,
+                    "targetType": "zgw",
+                    "targetId": 6
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "id-without-type": {
+        "export": {
+            "sourceId": 5,
+            "targetId": 6,
+            "slug": "entity-id-without-type"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceId": 5,
+                    "targetId": 6
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "type-without-id": {
+        "export": {
+            "sourceType": "api",
+            "targetType": "api",
+            "slug": "entity-type-without-id"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceType": "api",
+                    "targetType": "api"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "mapping-ids": {
+        "export": {
+            "sourceTargetMapping": "map-seven",
+            "targetSourceMapping": "map-eight",
+            "slug": "entity-mapping-ids"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceTargetMapping": "7",
+                    "targetSourceMapping": 8
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "mapping-slugs": {
+        "export": {
+            "sourceTargetMapping": "map-seven",
+            "targetSourceMapping": "map-eight",
+            "slug": "entity-mapping-slugs"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceTargetMapping": 7,
+                    "targetSourceMapping": 8
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "mapping-id-cast": {
+        "export": {
+            "sourceTargetMapping": "map-seven",
+            "targetSourceMapping": "map-eight",
+            "slug": "entity-mapping-id-cast"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceTargetMapping": "7 seven",
+                    "targetSourceMapping": 8.9
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "mapping-unknown": {
+        "export": {
+            "sourceTargetMapping": 70,
+            "targetSourceMapping": "zz",
+            "slug": "entity-mapping-unknown"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "sourceTargetMapping": 70,
+                    "targetSourceMapping": "zz"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "id-lists": {
+        "export": {
+            "actions": [
+                "rule-three",
+                "rule-three",
+                "rule-uuid",
+                "abc",
+                "rule-three",
+                "rule-abc",
+                4,
+                [
+                    "nested"
+                ],
+                null,
+                2.5
+            ],
+            "followUps": [
+                "sync-nine",
+                "sync-nine",
+                3,
+                true
+            ],
+            "conditions": [
+                "rule-three",
+                "rule-three",
+                "zz"
+            ],
+            "slug": "entity-id-lists"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "actions": [
+                        3,
+                        "3",
+                        "0f1e2d3c-4b5a-4968-8776-655443322110",
+                        "abc",
+                        3,
+                        "abc",
+                        4,
+                        [
+                            "nested"
+                        ],
+                        null,
+                        2.5
+                    ],
+                    "followUps": [
+                        9,
+                        9,
+                        3,
+                        true
+                    ],
+                    "conditions": [
+                        3,
+                        3,
+                        "zz"
+                    ]
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "id-lists-not-arrays": {
+        "export": {
+            "actions": "a",
+            "followUps": null,
+            "conditions": 3,
+            "slug": "entity-id-lists-not-arrays"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "actions": "a",
+                    "followUps": null,
+                    "conditions": 3
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "configuration": {
+        "export": {
+            "configuration": {
+                "redacted": {
+                    "token": "s3cret"
+                }
+            },
+            "name": "n",
+            "slug": "entity-configuration"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "configuration": {
+                        "token": "s3cret"
+                    },
+                    "name": "n",
+                    "id": 4,
+                    "uuid": "u"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "configuration-not-array": {
+        "export": {
+            "configuration": "plain",
+            "slug": "entity-configuration-not-array"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "configuration": "plain",
+                    "slug": ""
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "existing-slug": {
+        "export": {
+            "slug": "sync-nine",
+            "name": "existing"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "slug": "sync-nine",
+                    "name": "existing"
+                },
+                "integriq",
+                "synchronization",
+                "9"
+            ]
+        ]
+    },
+    "new-slug": {
+        "export": {
+            "slug": "brand-new"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "slug": "brand-new"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    },
+    "no-slug": {
+        "export": {
+            "name": "anonymous",
+            "slug": "entity-no-slug"
+        },
+        "mappingIds": [],
+        "import": [
+            [
+                "or.saveObject",
+                {
+                    "name": "anonymous"
+                },
+                "integriq",
+                "synchronization",
+                null
+            ]
+        ]
+    }
+}
