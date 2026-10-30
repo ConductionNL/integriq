@@ -60,6 +60,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -84,13 +85,6 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 * @var string
 	 */
 	private const OR_OBJECT_SERVICE = 'OCA\\OpenRegister\\Service\\ObjectService';
-
-	/**
-	 * Appconfig app id.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'integriq';
 
 	/**
 	 * Appconfig key: '1' when NO source holds an unmigrated inline secret.
@@ -179,9 +173,9 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 				$cleanFlag = '1';
 			}
 
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_CLEAN, value: $cleanFlag);
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_PENDING, value: (string)$pending);
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_MANUAL, value: (string)$manual);
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_CLEAN, value: $cleanFlag);
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_PENDING, value: (string)$pending);
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_MANUAL, value: (string)$manual);
 
 			if ($clean === true) {
 				$output->info('Integriq: no source holds an inline secret — Phase D gate is CLEAN.');
@@ -201,7 +195,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 		} catch (Throwable $e) {
 			// Never fatal. A failure here must not brick an upgrade — but it MUST
 			// fail the gate closed: an unknown status is not a clean status.
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_CLEAN, value: '0');
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_CLEAN, value: '0');
 			$output->warning('Integriq: could not compute inline-secret migration status: ' . $e->getMessage());
 			$this->logger->error(
 				'[integriq] RecordInlineSecretMigrationStatus failed; Phase D gate set to NOT-clean',
