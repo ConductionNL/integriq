@@ -253,7 +253,6 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Broker\\BrokerTransportRegistryInterface, OCA\\Integriq\\Broker\\BrokerTransportRegistry)",
 	"context.registerService(OCA\\Integriq\\Broker\\BrokerTransportRegistry, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Migration\\MigrationSourceRegistry, closure, bool)",
-	"context.registerServiceAlias(OCA\\Integriq\\Gateway\\GatewayDescriptorInterface, OCA\\Integriq\\Gateway\\GatewayDescriptor)",
 	"context.registerServiceAlias(OCA\\Integriq\\Gateway\\ZgwRegistryBindingInterface, OCA\\Integriq\\Gateway\\ZgwRegistryBinding)",
 	"context.registerServiceAlias(OCA\\Integriq\\Gateway\\GatewayRegistryInterface, OCA\\Integriq\\Gateway\\GatewayRegistry)",
 	"context.registerServiceAlias(OCA\\Integriq\\Gateway\\Adapter\\PublicationGatewayInterface, OCA\\Integriq\\Gateway\\Adapter\\PublicationGateway)",
