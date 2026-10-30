@@ -22,7 +22,6 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
-use OCA\Integriq\Service\Ownership\OwnershipState;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -98,7 +97,7 @@ class OwnershipController extends Controller {
 	#[NoCSRFRequired]
 	public function show(string $id, string $register = 'integriq', string $schema = ''): JSONResponse {
 		if ($this->readObject(id: $id, register: $register, schema: $schema) === []) {
-			return new JSONResponse(OwnershipState::local()->toArray());
+			return new JSONResponse($this->ownership->localState()->toArray());
 		}
 
 		return new JSONResponse($this->ownership->forObject($id)->toArray());

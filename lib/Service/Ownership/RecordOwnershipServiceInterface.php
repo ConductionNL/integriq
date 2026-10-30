@@ -33,4 +33,13 @@ interface RecordOwnershipServiceInterface {
 	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public function forObject(string $targetId): OwnershipState;
+
+	/**
+	 * The answer for a record nobody outside maintains.
+	 *
+	 * @return OwnershipState A local ownership state.
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#scenario-an-unknown-object-answers-local-rather-than-failing
+	 */
+	public function localState(): OwnershipState;
 }
