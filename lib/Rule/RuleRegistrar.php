@@ -45,6 +45,9 @@ final class RuleRegistrar {
 	 */
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(EndpointRulePluginRegistryInterface::class, EndpointRulePluginRegistry::class);
+		$context->registerServiceAlias(CompositeFanoutRuleInterface::class, CompositeFanoutRule::class);
+		$context->registerServiceAlias(ReferenceNumberRuleInterface::class, ReferenceNumberRule::class);
+		$context->registerServiceAlias(AvgBsnPolicyRuleInterface::class, AvgBsnPolicyRule::class);
 		$this->registerEndpointRulePlugins(context: $context);
 	}//end register()
 

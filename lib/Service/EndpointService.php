@@ -29,9 +29,9 @@ use JWadhams\JsonLogic;
 use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
-use OCA\Integriq\Rule\AvgBsnPolicyRule;
-use OCA\Integriq\Rule\CompositeFanoutRule;
-use OCA\Integriq\Rule\ReferenceNumberRule;
+use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
+use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
+use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -150,9 +150,9 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param RuleService $ruleService Service used to load and resolve endpoint rules.
 	 * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
 	 * @param InboundRateLimitService $rateLimitService Service enforcing inbound per-consumer rate limits + quotas.
-	 * @param CompositeFanoutRule $compositeFanoutRule Dialect-agnostic composite transactional fan-out rule.
-	 * @param ReferenceNumberRule $referenceNumberRule Dialect-agnostic referentienummer generation rule.
-	 * @param AvgBsnPolicyRule $avgBsnPolicyRule Dialect-agnostic AVG BSN hash/guard rule.
+	 * @param CompositeFanoutRuleInterface $compositeFanoutRule Dialect-agnostic composite transactional fan-out rule.
+	 * @param ReferenceNumberRuleInterface $referenceNumberRule Dialect-agnostic referentienummer generation rule.
+	 * @param AvgBsnPolicyRuleInterface $avgBsnPolicyRule Dialect-agnostic AVG BSN hash/guard rule.
 	 * @param ApprovalService $approvalService Suspends the pipeline on a HITL `approval` rule.
 	 * @param IRequestId $requestId Nextcloud request-id service, used to synthesize
 	 *                              an `IRequest` for `triggerFromFlow()`.
@@ -195,9 +195,9 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly RuleService $ruleService,
 		private readonly WebhookSignatureService $webhookSignatureService,
 		private readonly InboundRateLimitService $rateLimitService,
-		private readonly CompositeFanoutRule $compositeFanoutRule,
-		private readonly ReferenceNumberRule $referenceNumberRule,
-		private readonly AvgBsnPolicyRule $avgBsnPolicyRule,
+		private readonly CompositeFanoutRuleInterface $compositeFanoutRule,
+		private readonly ReferenceNumberRuleInterface $referenceNumberRule,
+		private readonly AvgBsnPolicyRuleInterface $avgBsnPolicyRule,
 		private readonly ApprovalService $approvalService,
 		private readonly IRequestId $requestId,
 		private readonly FlowRunnerService $flowRunnerService,

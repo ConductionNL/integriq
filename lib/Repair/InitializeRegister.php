@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * and we additionally guard the matching legacy → OR row migration
  * via the `storage_migrated` app-config flag.
  */
-class InitializeRegister implements IRepairStep {
+class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 	/**
 	 * Constructor.
 	 *

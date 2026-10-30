@@ -43,6 +43,7 @@ final class RepairRegistrar {
 	 * @spec exclude container wiring only, it registers this component's services and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
+		$context->registerServiceAlias(InitializeRegisterInterface::class, InitializeRegister::class);
 		$this->registerInitializeActions(context: $context);
 	}//end register()
 

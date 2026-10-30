@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/rule-pipeline/spec.md
  */
-class CompositeFanoutRule {
+class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 	/**
 	 * Construct the rule handler.
 	 *
