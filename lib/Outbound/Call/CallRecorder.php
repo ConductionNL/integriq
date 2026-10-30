@@ -35,6 +35,7 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -100,11 +101,13 @@ class CallRecorder implements CallRecorderInterface {
 	 * @param ORObjectService $objectService Persists the records.
 	 * @param BodyRedactor $redactor Redacts before the write, never after.
 	 * @param BodyCapturePolicy $bodyCapturePolicy Keeps bodies only inside a source's investigation window.
+	 * @param SensitiveFieldRegistry $sensitiveFields The header-name and issued-token rules CallService's call log uses.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly BodyRedactor $redactor,
 		private readonly BodyCapturePolicy $bodyCapturePolicy,
+		private readonly SensitiveFieldRegistry $sensitiveFields = new SensitiveFieldRegistry(),
 	) {
 
 	}//end __construct()
@@ -134,8 +137,8 @@ class CallRecorder implements CallRecorderInterface {
 			'target' => (string)($call['target'] ?? ''),
 			'traceId' => (string)($call['traceId'] ?? ''),
 			'direction' => 'outbound',
-			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? []))),
-			'response' => $this->redactor->redactContext($this->asArray(value: ($call['response'] ?? []))),
+			'request' => $this->redactExchange(exchange: $this->asArray(value: ($call['request'] ?? []))),
+			'response' => $this->redactExchange(exchange: $this->asArray(value: ($call['response'] ?? []))),
 			'statusCode' => $statusCode,
 			'statusMessage' => (string)($call['statusMessage'] ?? ''),
 			'durationMs' => (int)($call['durationMs'] ?? 0),
@@ -217,7 +220,7 @@ class CallRecorder implements CallRecorderInterface {
 		];
 
 		if (isset($attempt['response']) === true) {
-			$response = $this->redactor->redactContext($this->asArray(value: $attempt['response']));
+			$response = $this->redactExchange(exchange: $this->asArray(value: $attempt['response']));
 			$sourceData = $this->sourceData(uuid: $this->sourceRef(call: $record));
 			if ($this->bodyCapturePolicy->isOpen(sourceData: $sourceData, now: $this->bodyCapturePolicy->now()) === false) {
 				unset($response['body']);
@@ -360,6 +363,43 @@ class CallRecorder implements CallRecorderInterface {
 		return ($statusCode >= 200 && $statusCode < 300);
 
 	}//end isSuccess()
+
+	/**
+	 * Redact a request or response before it is stored: the BodyRedactor's
+	 * rules, plus the rules CallService's call log applies (a session-, token-
+	 * or cookie-named header, and the tokens an upstream issued in a JSON body).
+	 * Only the stored copy is redacted; the caller keeps what it sent and got.
+	 *
+	 * @param array<string,mixed> $exchange The request or response.
+	 *
+	 * @return array<string,mixed> The redacted copy.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+	 */
+	private function redactExchange(array $exchange): array {
+		if (is_string(($exchange['body'] ?? null)) === true) {
+			$exchange['body'] = $this->sensitiveFields->redactIssuedTokensInJson(body: $exchange['body']);
+		}
+
+		$redacted = $this->redactor->redactContext($exchange);
+		if (is_array(($redacted['headers'] ?? null)) === false) {
+			return $redacted;
+		}
+
+		foreach ($redacted['headers'] as $name => $value) {
+			if (is_string($name) === false || $this->sensitiveFields->isSensitiveHeaderName(name: $name) === false) {
+				continue;
+			}
+
+			$redacted['headers'][$name] = BodyRedactor::PLACEHOLDER;
+			if (is_array($value) === true) {
+				$redacted['headers'][$name] = array_fill(0, count($value), BodyRedactor::PLACEHOLDER);
+			}
+		}
+
+		return $redacted;
+
+	}//end redactExchange()
 
 	/**
 	 * Coerce a request or response bag to an array.

@@ -266,6 +266,46 @@ class CallReplayServiceTest extends TestCase {
 	}//end testACredentialIsRedactedBeforeTheWrite()
 
 	/**
+	 * A session header, a Set-Cookie and the tokens an upstream issued never
+	 * reach the record, on the first call and on a replayed attempt.
+	 *
+	 * @return void
+	 */
+	public function testSessionHeadersAndIssuedTokensAreRedactedBeforeTheWrite(): void {
+		// An open investigation window, so the bodies are stored and can be checked.
+		$source = '4b1c1c1e-1111-4111-8111-111111111111';
+		$this->records[$source] = ['name' => 'oauth-partner', 'bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format(\DATE_ATOM)];
+
+		$entity = $this->recorder->record(
+			[
+				'target' => $source,
+				'request' => [
+					'method' => 'POST',
+					'headers' => ['X-Session' => 's1', 'Content-Type' => 'application/json'],
+					'body' => '{"grant_type":"client_credentials"}',
+				],
+				'response' => [
+					'headers' => ['Set-Cookie' => ['sid=1'], 'X-Session-Id' => 'live-session-42'],
+					'body' => '{"access_token":"abc123xyz","id_token":"eyJ.a.b","refresh_token":"r-1","meta":{}}',
+				],
+				'statusCode' => 500,
+			]
+		);
+
+		$record = $this->records[(string)$entity->getUuid()];
+
+		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['request']['headers']['X-Session']);
+		$this->assertSame('application/json', $record['request']['headers']['Content-Type']);
+		$this->assertSame([BodyRedactor::PLACEHOLDER], $record['response']['headers']['Set-Cookie']);
+		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['response']['headers']['X-Session-Id']);
+		$this->assertStringContainsString('"meta":{}', $record['response']['body']);
+		foreach (['s1', 'sid=1', 'live-session-42', 'abc123xyz', 'eyJ.a.b', 'r-1'] as $secret) {
+			$this->assertStringNotContainsString($secret, json_encode($record), $secret);
+		}
+
+	}//end testSessionHeadersAndIssuedTokensAreRedactedBeforeTheWrite()
+
+	/**
 	 * A replay appends an attempt and leaves the first one readable.
 	 *
 	 * @return void
