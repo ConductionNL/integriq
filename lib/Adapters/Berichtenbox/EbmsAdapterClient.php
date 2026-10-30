@@ -24,7 +24,7 @@ namespace OCA\Integriq\Adapters\Berichtenbox;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\EgressRefusedException;
-use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCP\Security\ICrypto;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
@@ -52,12 +52,12 @@ class EbmsAdapterClient {
 	 * Constructor.
 	 *
 	 * @param Client $httpClient The HTTP client.
-	 * @param EgressGuard $egressGuard Refuses a URL integriq may not call.
+	 * @param EgressGuardInterface $egressGuard Refuses a URL integriq may not call.
 	 * @param ICrypto $crypto Decrypts the optional adapter token.
 	 */
 	public function __construct(
 		private readonly Client $httpClient,
-		private readonly EgressGuard $egressGuard,
+		private readonly EgressGuardInterface $egressGuard,
 		private readonly ICrypto $crypto,
 	) {
 	}//end __construct()

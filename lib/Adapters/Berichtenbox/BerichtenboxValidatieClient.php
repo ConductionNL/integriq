@@ -28,7 +28,7 @@ use OCA\Integriq\Exception\MtlsConfigurationException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolverInterface;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
-use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Security\EgressGuardInterface;
 
 /**
  * Asks Logius, synchronously, which BSNs take letters of a BerichtType from this sender.
@@ -60,13 +60,13 @@ class BerichtenboxValidatieClient {
 	 * @param Client $httpClient The HTTP client.
 	 * @param MtlsConfigResolverInterface $mtlsConfigResolver Decrypts and checks the stored certificate.
 	 * @param MtlsTransportService $mtlsTransport Sends with the certificate attached.
-	 * @param EgressGuard $egressGuard Refuses a URL integriq may not call.
+	 * @param EgressGuardInterface $egressGuard Refuses a URL integriq may not call.
 	 */
 	public function __construct(
 		private readonly Client $httpClient,
 		private readonly MtlsConfigResolverInterface $mtlsConfigResolver,
 		private readonly MtlsTransportService $mtlsTransport,
-		private readonly EgressGuard $egressGuard,
+		private readonly EgressGuardInterface $egressGuard,
 	) {
 	}//end __construct()
 

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\SecurityService;
+use OCA\Integriq\Service\SecurityServiceInterface;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -32,7 +32,6 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
-use OCP\ICacheFactory;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -79,9 +78,9 @@ class UserController extends Controller {
 	/**
 	 * Security service for handling rate limiting and XSS protection
 	 *
-	 * @var SecurityService
+	 * @var SecurityServiceInterface
 	 */
-	private readonly SecurityService $securityService;
+	private readonly SecurityServiceInterface $securityService;
 
 	/**
 	 * User service for user-related business logic
@@ -135,7 +134,7 @@ class UserController extends Controller {
 	 * @param IRequest $request The request object for handling HTTP requests
 	 * @param IUserManager $userManager The user manager for user operations
 	 * @param IUserSession $userSession The user session manager
-	 * @param ICacheFactory $cacheFactory The cache factory for rate limiting
+	 * @param SecurityServiceInterface $securityService Rate limiting, input sanitising and security headers
 	 * @param LoggerInterface $logger The logger for security events
 	 * @param UserServiceInterface $userService The user service for user-related operations
 	 * @param IL10N $l The localization service
@@ -147,7 +146,7 @@ class UserController extends Controller {
 	 * @psalm-param   IRequest $request
 	 * @psalm-param   IUserManager $userManager
 	 * @psalm-param   IUserSession $userSession
-	 * @psalm-param   ICacheFactory $cacheFactory
+	 * @psalm-param   SecurityServiceInterface $securityService
 	 * @psalm-param   LoggerInterface $logger
 	 * @psalm-param   UserServiceInterface $userService
 	 * @psalm-param   IL10N $l
@@ -158,7 +157,7 @@ class UserController extends Controller {
 	 * @phpstan-param IRequest $request
 	 * @phpstan-param IUserManager $userManager
 	 * @phpstan-param IUserSession $userSession
-	 * @phpstan-param ICacheFactory $cacheFactory
+	 * @phpstan-param SecurityServiceInterface $securityService
 	 * @phpstan-param LoggerInterface $logger
 	 * @phpstan-param UserServiceInterface $userService
 	 * @phpstan-param IL10N $l
@@ -171,7 +170,7 @@ class UserController extends Controller {
 		IRequest $request,
 		IUserManager $userManager,
 		IUserSession $userSession,
-		ICacheFactory $cacheFactory,
+		SecurityServiceInterface $securityService,
 		LoggerInterface $logger,
 		UserServiceInterface $userService,
 		IL10N $l,
@@ -182,7 +181,7 @@ class UserController extends Controller {
 		parent::__construct(appName: $appName, request: $request);
 		$this->userManager = $userManager;
 		$this->userSession = $userSession;
-		$this->securityService = new SecurityService(cacheFactory: $cacheFactory, logger: $logger);
+		$this->securityService = $securityService;
 		$this->userService = $userService;
 		$this->logger = $logger;
 		$this->l = $l;

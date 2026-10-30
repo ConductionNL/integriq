@@ -44,7 +44,7 @@ namespace OCA\Integriq\Repair;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -76,12 +76,14 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 *
 	 * @param IntakeGroupsInterface       $groups    Creates the groups and enrols the accounts.
 	 * @param ContainerInterface $container Resolves the OpenRegister-backed connection lazily.
+	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
 	 * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
 	 */
 	public function __construct(
 		private readonly IntakeGroupsInterface $groups,
 		private readonly ContainerInterface $container,
+		private readonly WebhookProfilesInterface $webhookProfiles,
 	) {
 
 	}//end __construct()
@@ -149,7 +151,7 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 */
 	private function intakeGroupOf(): array {
 		$groupOf = self::INTAKE_GROUP_OF;
-		foreach (WebhookProfiles::all() as $profile) {
+		foreach ($this->webhookProfiles->profiles() as $profile) {
 			if ($profile->intakeGroup !== null) {
 				$groupOf[$profile->authorizationType] = $profile->intakeGroup;
 			}

@@ -53,7 +53,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/changes/events-async-api-products/design.md
  */
-class EgressGuard {
+class EgressGuard implements EgressGuardInterface {
 
 	/**
 	 * App config key holding the comma-separated list of allowed internal hosts.

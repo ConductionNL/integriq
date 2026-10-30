@@ -25,7 +25,7 @@ use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\EventServiceInterface;
-use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
 use OCA\Integriq\Service\WebhookSignatureServiceInterface;
@@ -73,13 +73,6 @@ class EventsController extends Controller {
 	private const NC_NATIVE_DOMAINS = ['files', 'calendar', 'tables', 'forms'];
 
 	/**
-	 * Refuses a sink that points into the instance's own network (integriq#2212).
-	 *
-	 * @var EgressGuard
-	 */
-	private readonly EgressGuard $egressGuard;
-
-	/**
 	 * Constructor for the EventsController.
 	 *
 	 * @param string $appName The name of the app.
@@ -90,7 +83,7 @@ class EventsController extends Controller {
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param WebhookSignatureServiceInterface $signatureService Generates signing secrets.
-	 * @param EgressGuard|null $egressGuard Judges a subscription's sink; a guard without an allowlist when not injected.
+	 * @param EgressGuardInterface $egressGuard Refuses a sink that points into the instance's own network (integriq#2212).
 	 */
 	public function __construct(
 		$appName,
@@ -101,10 +94,9 @@ class EventsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly WebhookSignatureServiceInterface $signatureService,
-		?EgressGuard $egressGuard = null,
+		private readonly EgressGuardInterface $egressGuard,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
 	}//end __construct()
 

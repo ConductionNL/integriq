@@ -33,7 +33,7 @@ use OCA\Integriq\Exception\OsoTranslationException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\OsoServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -200,7 +200,7 @@ class OsoController extends Controller {
 	private function handleSignedInbound(callable $handler): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::OSO, rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfilesInterface::OSO, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -214,7 +214,7 @@ class OsoController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so OSO delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::OSO, reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfilesInterface::OSO, reason: $exception->getMessage());
 		}//end try
 
 		return new JSONResponse(['received' => true]);

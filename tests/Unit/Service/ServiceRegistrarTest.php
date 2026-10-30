@@ -57,6 +57,8 @@ use OCA\Integriq\Service\ConnectionRegistryService;
 use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\ConnectionStoreInterface;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\DSOParserServiceInterface;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
@@ -131,6 +133,8 @@ use OCA\Integriq\Service\Intake\WebhookConnection;
 use OCA\Integriq\Service\Intake\WebhookConnectionInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
 use OCA\Integriq\Service\Intake\WebhookTrustMigratorInterface;
 use OCA\Integriq\Service\IwmoIjwSyncService;
@@ -193,6 +197,8 @@ use OCA\Integriq\Service\Registry\SubscriptionRequestHandler;
 use OCA\Integriq\Service\Registry\SubscriptionRequestHandlerInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRoster;
 use OCA\Integriq\Service\Registry\SubscriptionRosterInterface;
+use OCA\Integriq\Service\ResponseDecoder;
+use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCA\Integriq\Service\RodService;
 use OCA\Integriq\Service\RodServiceInterface;
 use OCA\Integriq\Service\RuleToFlowGenerator;
@@ -201,10 +207,14 @@ use OCA\Integriq\Service\RunSummaryService;
 use OCA\Integriq\Service\RunSummaryServiceInterface;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Service\SearchServiceInterface;
+use OCA\Integriq\Service\SecurityService;
+use OCA\Integriq\Service\SecurityServiceInterface;
 use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
 use OCA\Integriq\Service\Security\AuthenticationConfigAuditorInterface;
 use OCA\Integriq\Service\Security\AuthenticationConfigRemover;
 use OCA\Integriq\Service\Security\AuthenticationConfigRemoverInterface;
+use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\SettingsServiceInterface;
@@ -378,6 +388,11 @@ class ServiceRegistrarTest extends TestCase {
 		IntakeDocumentDispatcherInterface::class => IntakeDocumentDispatcher::class,
 		EndpointCorsPolicyInterface::class => EndpointCorsPolicy::class,
 		SourceTestServiceInterface::class => SourceTestService::class,
+		EgressGuardInterface::class => EgressGuard::class,
+		SecurityServiceInterface::class => SecurityService::class,
+		ResponseDecoderInterface::class => ResponseDecoder::class,
+		OpenRegisterCredentialBridgeInterface::class => OpenRegisterCredentialBridge::class,
+		WebhookProfilesInterface::class => WebhookProfiles::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 

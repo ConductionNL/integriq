@@ -30,8 +30,8 @@ namespace OCA\Integriq\Notification;
 use InvalidArgumentException;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
@@ -52,12 +52,14 @@ class DsoConnectionNotifier implements INotifier {
 	 *
 	 * @param IFactory      $l10nFactory  Localisation.
 	 * @param IURLGenerator $urlGenerator Icon and settings link.
+	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function __construct(
 		private readonly IFactory $l10nFactory,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly WebhookProfilesInterface $webhookProfiles,
 	) {
 	}//end __construct()
 
@@ -113,7 +115,7 @@ class DsoConnectionNotifier implements INotifier {
 			return $this->finish(notification: $notification, subject: $this->digitalPostSubject(l: $l, reason: $reason));
 		}
 
-		$webhook = WebhookProfiles::byChannel(channel: $channel);
+		$webhook = $this->webhookProfiles->forChannel(channel: $channel);
 		if ($webhook !== null) {
 			$subject = $this->webhookSubject(l: $l, label: $webhook->label, reason: $reason);
 			return $this->finish(notification: $notification, subject: $subject);

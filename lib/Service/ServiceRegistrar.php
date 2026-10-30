@@ -31,6 +31,8 @@ use OCA\Integriq\Service\AgentTools\AgentBatchGate;
 use OCA\Integriq\Service\AgentTools\AgentBatchGateInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceServiceInterface;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxHealth;
@@ -77,6 +79,8 @@ use OCA\Integriq\Service\Intake\WebhookConnection;
 use OCA\Integriq\Service\Intake\WebhookConnectionInterface;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
 use OCA\Integriq\Service\Intake\WebhookTrustMigratorInterface;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
@@ -131,6 +135,8 @@ use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
 use OCA\Integriq\Service\Security\AuthenticationConfigAuditorInterface;
 use OCA\Integriq\Service\Security\AuthenticationConfigRemover;
 use OCA\Integriq\Service\Security\AuthenticationConfigRemoverInterface;
+use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -179,6 +185,7 @@ final class ServiceRegistrar {
 	public function register(IRegistrationContext $context): void {
 		$this->registerContracts(context: $context);
 		$this->registerSupportingContracts(context: $context);
+		$this->registerInjectedHelpers(context: $context);
 		$this->registerSettingsService(context: $context);
 		$this->registerSubscriptionRegistry(context: $context);
 		$this->registerDigitalPostAndRodRegistries(context: $context);
@@ -592,4 +599,20 @@ final class ServiceRegistrar {
 		$context->registerServiceAlias(EndpointCorsPolicyInterface::class, EndpointCorsPolicy::class);
 		$context->registerServiceAlias(SourceTestServiceInterface::class, SourceTestService::class);
 	}//end registerSupportingContracts()
+
+	/**
+	 * Binds the helpers that callers in other components used to build with
+	 * `new` or call statically, and now receive injected.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private function registerInjectedHelpers(IRegistrationContext $context): void {
+		$context->registerServiceAlias(EgressGuardInterface::class, EgressGuard::class);
+		$context->registerServiceAlias(SecurityServiceInterface::class, SecurityService::class);
+		$context->registerServiceAlias(ResponseDecoderInterface::class, ResponseDecoder::class);
+		$context->registerServiceAlias(OpenRegisterCredentialBridgeInterface::class, OpenRegisterCredentialBridge::class);
+		$context->registerServiceAlias(WebhookProfilesInterface::class, WebhookProfiles::class);
+	}//end registerInjectedHelpers()
 }

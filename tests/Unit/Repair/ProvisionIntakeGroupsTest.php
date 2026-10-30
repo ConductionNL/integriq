@@ -60,7 +60,7 @@ class ProvisionIntakeGroupsTest extends TestCase {
 			}
 		);
 
-		return new ProvisionIntakeGroups(groups: $this->buildWorldIntakeGroups(), container: $container);
+		return new ProvisionIntakeGroups(groups: $this->buildWorldIntakeGroups(), container: $container, webhookProfiles: new WebhookProfiles());
 
 	}//end step()
 

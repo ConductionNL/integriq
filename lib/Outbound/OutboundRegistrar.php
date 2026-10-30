@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound;
 
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
 use OCA\Integriq\Outbound\Call\CallRecorder;
 use OCA\Integriq\Outbound\Call\CallRecorderInterface;
@@ -87,6 +89,7 @@ final class OutboundRegistrar {
 		$context->registerServiceAlias(VerdictServiceInterface::class, VerdictService::class);
 		$context->registerServiceAlias(ForwardServiceInterface::class, ForwardService::class);
 		$context->registerServiceAlias(LastContactQueryInterface::class, LastContactQuery::class);
+		$context->registerServiceAlias(BodyCapturePolicyInterface::class, BodyCapturePolicy::class);
 		$this->registerAppOwnedBindings(context: $context);
 	}
 	/**

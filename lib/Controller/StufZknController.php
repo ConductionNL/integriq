@@ -46,7 +46,7 @@ use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\StufZknSyncServiceInterface;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -140,7 +140,7 @@ class StufZknController extends Controller {
 			return new JSONResponse(['error' => 'payload_too_large'], Http::STATUS_REQUEST_ENTITY_TOO_LARGE);
 		}
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::STUF_ZKN, rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfilesInterface::STUF_ZKN, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -157,7 +157,7 @@ class StufZknController extends Controller {
 				operation: fn (): string => $this->syncService->receiveInbound(soapXml: $rawBody)
 			);
 		} catch (Throwable $exception) {
-			return $this->gate->notStored(profile: WebhookProfiles::STUF_ZKN, reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfilesInterface::STUF_ZKN, reason: $exception->getMessage());
 		}
 
 		return new DataDisplayResponse($replyXml, Http::STATUS_OK, ['Content-Type' => self::XML_CONTENT_TYPE]);
