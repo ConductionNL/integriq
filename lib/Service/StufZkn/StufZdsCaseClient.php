@@ -24,7 +24,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\Integriq\Exception\StufZknTranslationException;
 /**
  * Builds StUF-ZDS case messages and hands them to the outbound side.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
  */
 class StufZdsCaseClient implements StufZdsCaseClientInterface {
 
@@ -75,7 +75,7 @@ class StufZdsCaseClient implements StufZdsCaseClientInterface {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When the case cannot be expressed.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function creeerZaak(string $sourceId, array $case, string $zaaktypeOmschrijving, array $context=[]): array {
 		$source = $this->restSource(sourceId: $sourceId, context: $context);
@@ -122,7 +122,7 @@ class StufZdsCaseClient implements StufZdsCaseClientInterface {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When no zaak identificatie is given.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function actualiseerZaak(string $sourceId, string $caseIdentification, array $changes, array $context=[]): array {
 		if (trim($caseIdentification) === '') {
@@ -153,7 +153,7 @@ class StufZdsCaseClient implements StufZdsCaseClientInterface {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When the template is not registered or a required field is missing.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function vrijBericht(string $sourceId, string $name, array $payload, array $context=[]): array {
 		$source   = $this->restSource(sourceId: $sourceId, context: $context);
@@ -191,7 +191,7 @@ class StufZdsCaseClient implements StufZdsCaseClientInterface {
 	 *
 	 * @throws StufZknProviderException When the source cannot send.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function geefZaakdetails(string $sourceId, string $caseIdentification, array $wantedElements=[], array $context=[]): array {
 		$source = $this->restSource(sourceId: $sourceId, context: $context);
@@ -226,7 +226,7 @@ class StufZdsCaseClient implements StufZdsCaseClientInterface {
 	 *
 	 * @throws StufZknProviderException When the source cannot send.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function genereerZaakIdentificatie(string $sourceId, array $context=[]): array {
 		$source = $this->restSource(sourceId: $sourceId, context: $context);
@@ -264,7 +264,7 @@ class StufZdsCaseClient implements StufZdsCaseClientInterface {
 	 *
 	 * @throws StufZknProviderException When the source is missing, in log mode, or owned by another app.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
 	 */
 	private function restSource(string $sourceId, array $context=[]): array {
 		$source = $this->log->source(sourceId: $sourceId);

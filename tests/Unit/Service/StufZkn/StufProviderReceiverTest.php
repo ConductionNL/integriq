@@ -227,7 +227,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	public function testAReplayedNonceIsRefused(): void {
 		$receiver = $this->receiver();
@@ -312,7 +312,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function testAQueryWithoutACriterionIsRefusedWithoutAsking(): void {
 		$receiver = $this->receiver();
@@ -374,7 +374,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function testAnotherAppsAnswerDoesNotCountWhenTheSourceNamesItsOwner(): void {
 		$this->sources['zsh']['configuration']['owningApp'] = 'pipelinq';
@@ -390,7 +390,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function testTheOwningAppsAnswerCountsAndTheOwnerCannotBeMoved(): void {
 		$this->sources['zsh']['configuration']['owningApp'] = 'dossiq';

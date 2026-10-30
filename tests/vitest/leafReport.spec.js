@@ -8,7 +8,7 @@ import { leafHeader, leafReportMixin, leafSummary } from '../../src/integration/
  * What the leaves report to a carding host (`onHeader`) and to a "linked"
  * card (`onSummary`).
  *
- * @spec openspec/changes/leaves-library-card/specs/leaves-library-card/spec.md#requirement-the-sync-leaf-reports-to-the-library-card-and-the-linked-card
+ * @spec openspec/specs/leaves-library-card/spec.md#requirement-the-sync-leaf-reports-to-the-library-card-and-the-linked-card
  */
 describe('leafHeader', () => {
 	const actions = [{ label: 'Open', run: () => {} }]

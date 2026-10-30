@@ -22,7 +22,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCP\IRequest;
 /**
  * Receives StUF provider requests.
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
  */
 class StufProviderController extends Controller {
 
@@ -72,7 +72,7 @@ class StufProviderController extends Controller {
 	 *
 	 * @return DataDisplayResponse A zakLa01 or Bv01 (200), or a Fo01/Fo02.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -88,7 +88,7 @@ class StufProviderController extends Controller {
 	 *
 	 * @return DataDisplayResponse An npsLa01 (200), or a Fo02.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -116,7 +116,7 @@ class StufProviderController extends Controller {
 	 *
 	 * @return string The raw body, at most one byte past the ceiling (the receiver answers 413); '' when there is none.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	protected function readRawBody(): string {
 		return $this->requestBody->read();

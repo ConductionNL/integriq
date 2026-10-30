@@ -26,7 +26,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
  */
 class StufProviderReceiver implements StufProviderReceiverInterface {
 
@@ -153,7 +153,7 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 	 *
 	 * @return array The answer (ProviderAnswer).
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	public function receive(string $rawXml, string $sourceId, string $service): array {
 		return $this->process(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_ROUTE);
@@ -280,7 +280,7 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 	 *
 	 * @return array The answer (ProviderAnswer).
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-an-unanswered-query-is-a-fault-never-an-empty-answer
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-an-unanswered-query-is-a-fault-never-an-empty-answer
 	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-refused-write-is-a-stuf-fault-with-a-refusing-status
 	 */
 	private function answer(StufProviderQueryEvent $event, string $faultCode, array $reply): array {
@@ -349,7 +349,7 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 	 *
 	 * @return array{statusCode:int,reason:string}|null The refusal, its reason safe to return; null for anything but an unfit query.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	private function unfitQuery(StufProviderQueryEvent $event): ?array {
 		if ($event instanceof StufCaseQueryEvent) {
@@ -416,7 +416,7 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 	 *
 	 * @return array|null The source, `id` set; null when refused.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	private function authenticatedSource(SimpleXMLElement $root, string $sourceId): ?array {
 		try {

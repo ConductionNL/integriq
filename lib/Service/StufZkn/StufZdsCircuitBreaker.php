@@ -25,7 +25,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Per-source circuit breaker for StUF-ZDS case messages.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 class StufZdsCircuitBreaker {
 
@@ -77,7 +77,7 @@ class StufZdsCircuitBreaker {
 	 *
 	 * @return bool True when the circuit is closed (or its cooldown has passed).
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function allows(string $sourceId): bool {
 		if ($sourceId === '') {
@@ -105,7 +105,7 @@ class StufZdsCircuitBreaker {
 	 *
 	 * @return bool True when this failure opened the circuit.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function recordFailure(string $sourceId): bool {
 		if ($sourceId === '') {
@@ -130,7 +130,7 @@ class StufZdsCircuitBreaker {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function reset(string $sourceId): void {
 		if ($sourceId === '') {
@@ -148,7 +148,7 @@ class StufZdsCircuitBreaker {
 	 *
 	 * @return array{state:string,failureCount:int,openedAt:int}
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function snapshot(string $sourceId): array {
 		$count    = $this->failureCount(sourceId: $sourceId);
