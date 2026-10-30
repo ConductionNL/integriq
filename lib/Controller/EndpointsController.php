@@ -25,9 +25,9 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use OCA\Integriq\Http\XMLResponse;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
-use OCA\Integriq\Service\EndpointCorsPolicy;
+use OCA\Integriq\Service\EndpointCorsPolicyInterface;
 use OCA\Integriq\Service\EndpointServiceInterface;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SearchServiceInterface;
@@ -91,12 +91,12 @@ class EndpointsController extends Controller {
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param EndpointServiceInterface $endpointService Service for handling endpoint operations.
-	 * @param OpenRegisterCredentialBridge $authorizationService Service for handling authorization.
+	 * @param OpenRegisterCredentialBridgeInterface $authorizationService Service for handling authorization.
 	 * @param ObjectService $objectService Service for direct ObjectService operations.
 	 * @param EndpointCacheServiceInterface $endpointCacheService Service for cached endpoint lookups.
 	 * @param LoggerInterface $logger Service for logging.
 	 * @param IL10N $l The localization service.
-	 * @param EndpointCorsPolicy $corsPolicy An endpoint's own CORS policy (REQ-EP-014).
+	 * @param EndpointCorsPolicyInterface $corsPolicy An endpoint's own CORS policy (REQ-EP-014).
 	 * @param string $corsMethods Allowed CORS methods.
 	 * @param string $corsAllowedHeaders Allowed CORS headers.
 	 * @param integer $corsMaxAge CORS max age in seconds.
@@ -105,12 +105,12 @@ class EndpointsController extends Controller {
 		$appName,
 		IRequest $request,
 		private EndpointServiceInterface $endpointService,
-		private OpenRegisterCredentialBridge $authorizationService,
+		private OpenRegisterCredentialBridgeInterface $authorizationService,
 		private ObjectService $objectService,
 		private EndpointCacheServiceInterface $endpointCacheService,
 		private LoggerInterface $logger,
 		private IL10N $l,
-		private EndpointCorsPolicy $corsPolicy,
+		private EndpointCorsPolicyInterface $corsPolicy,
 		$corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		$corsAllowedHeaders = 'Authorization, Content-Type, Accept',
 		$corsMaxAge = 1728000,

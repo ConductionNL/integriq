@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -75,7 +76,7 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.event-emit';
+	public const NODE_ID = FlowNodeIds::EVENT_EMIT;
 
 	/**
 	 * Constructor.

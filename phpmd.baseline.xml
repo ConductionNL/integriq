@@ -44,7 +44,6 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/SynchronizationsController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/TablesBridgeController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/UserController.php"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/UserController.php" method="login"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Directory/DirectoryEntry.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Directory/DirectorySnapshot.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Directory/DirectorySource.php"/>
@@ -65,7 +64,6 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Flow/ContractSweepNode.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Flow/FetchFileNode.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Flow/FlowConfigGuard.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Flow/FlowConfigGuard.php" method="endpointEscapeCode"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Flow/FlowNodeListener.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Flow/SourceCallNode.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Flow/SourceCallNode.php"/>
@@ -329,8 +327,6 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="updateTargetOpenRegister"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="updateTargetOpenRegister"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="replaceRelatedOriginIds"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="updateContractsForSubObjects"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="updateContractsForSubObjects"/>

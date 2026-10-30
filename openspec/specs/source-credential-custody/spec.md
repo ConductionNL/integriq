@@ -90,7 +90,7 @@ and SHALL NOT downgrade the scope to make the run "work".
 
 ### Requirement: Phase D Gate Signal
 
-The `openconnector / inline_secrets_clean` appconfig flag SHALL be `'1'` only when
+The `integriq / inline_secrets_clean` appconfig flag SHALL be `'1'` only when
 no source holds an unmigrated inline secret (zero would-migrate AND zero
 needs-manual-review), and SHALL fail closed to `'0'` on any error or unknown
 status. A real run SHALL re-report the true post-run gate from fresh raw reads.
@@ -105,7 +105,7 @@ status. A real run SHALL re-report the true post-run gate from fresh raw reads.
 Once the gate above is clean, the `RemoveMigratedSourceSecretFields` repair step
 SHALL remove the four auto-migratable properties — `apikey`, `secret`,
 `password`, `jwt` — from the live `source` schema, and SHALL record the outcome
-in the `openconnector / inline_secret_fields_removed` appconfig flag.
+in the `integriq / inline_secret_fields_removed` appconfig flag.
 
 The removal SHALL be gated on a fresh computation from RAW (`_render: false`)
 reads, not on a cached or previously-reported gate value: a field is removed

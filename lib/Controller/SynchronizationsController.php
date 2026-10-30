@@ -22,9 +22,9 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\SearchServiceInterface;
-use OCA\Integriq\Service\SynchronizationRunProgressService;
+use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -69,8 +69,8 @@ class SynchronizationsController extends Controller {
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
-	 * @param SynchronizationRunProgressService|null $runProgress The run progress service, for the id of the run just started.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
+	 * @param SynchronizationRunProgressServiceInterface|null $runProgress The run progress service, for the id of the run just started.
 	 */
 	public function __construct(
 		$appName,
@@ -80,8 +80,8 @@ class SynchronizationsController extends Controller {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
-		private readonly ?SynchronizationRunProgressService $runProgress = null,
+		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly ?SynchronizationRunProgressServiceInterface $runProgress = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -381,8 +381,8 @@ class SynchronizationsController extends Controller {
 		// Only Run again may name the trigger. Anything else is left to the
 		// engine, which reads it from the trace: a browser cannot claim `cron`.
 		$triggeredBy = null;
-		if (($parameters['triggeredBy'] ?? null) === SynchronizationRunProgressService::TRIGGER_RERUN) {
-			$triggeredBy = SynchronizationRunProgressService::TRIGGER_RERUN;
+		if (($parameters['triggeredBy'] ?? null) === SynchronizationRunProgressServiceInterface::TRIGGER_RERUN) {
+			$triggeredBy = SynchronizationRunProgressServiceInterface::TRIGGER_RERUN;
 		}
 
 		try {

@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EudiIssuanceException;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EudiCredentialOfferServiceInterface;
 use OCA\Integriq\Service\EudiIssuerKeyServiceInterface;
 use OCA\Integriq\Service\EudiStatusListServiceInterface;
@@ -86,7 +86,7 @@ class EudiWalletController extends Controller {
 	 * @param EudiCredentialOfferServiceInterface $offerService Offer/token/credential/revocation lifecycle.
 	 * @param EudiIssuerKeyServiceInterface $keyService Issuer signing-key service (metadata JWKS).
 	 * @param EudiStatusListServiceInterface $statusListService Status-list token publish.
-	 * @param OpenRegisterCredentialBridge $authorizationService Reused consumer JWT bearer verification (REQ-001).
+	 * @param OpenRegisterCredentialBridgeInterface $authorizationService Reused consumer JWT bearer verification (REQ-001).
 	 * @param IThrottler $throttler Brute-force throttler for rejected credential presentations.
 	 * @param LoggerInterface $logger Logger for protocol-level rejections.
 	 */
@@ -96,7 +96,7 @@ class EudiWalletController extends Controller {
 		private readonly EudiCredentialOfferServiceInterface $offerService,
 		private readonly EudiIssuerKeyServiceInterface $keyService,
 		private readonly EudiStatusListServiceInterface $statusListService,
-		private readonly OpenRegisterCredentialBridge $authorizationService,
+		private readonly OpenRegisterCredentialBridgeInterface $authorizationService,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {

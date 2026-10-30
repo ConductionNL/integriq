@@ -42,7 +42,7 @@ namespace OCA\Integriq\Directory;
 
 use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
-use OCA\Integriq\Service\SynchronizationLogService;
+use OCA\Integriq\Service\SynchronizationLogServiceInterface;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -81,7 +81,7 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 	 * @param DirectorySource $directorySource Reads the connection.
 	 * @param GroupMappingResolver $mappingResolver Resolves the declared mapping.
 	 * @param OpenWorkReporter $openWorkReporter Asks consumers what a leaver still holds.
-	 * @param SynchronizationLogService $logService Writes the run record.
+	 * @param SynchronizationLogServiceInterface $logService Writes the run record.
 	 * @param IGroupManager $groupManager Nextcloud's group model.
 	 * @param IUserManager $userManager Nextcloud's account model.
 	 * @param IEventDispatcher $eventDispatcher Dispatches the guard event.
@@ -94,7 +94,7 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 		private readonly DirectorySource $directorySource,
 		private readonly GroupMappingResolver $mappingResolver,
 		private readonly OpenWorkReporter $openWorkReporter,
-		private readonly SynchronizationLogService $logService,
+		private readonly SynchronizationLogServiceInterface $logService,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserManager $userManager,
 		private readonly IEventDispatcher $eventDispatcher,

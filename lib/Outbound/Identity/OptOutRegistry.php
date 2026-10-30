@@ -46,8 +46,8 @@ namespace OCA\Integriq\Outbound\Identity;
 use InvalidArgumentException;
 use OCA\Integriq\Db\OptOut;
 use OCA\Integriq\Db\OptOutLogEntry;
-use OCA\Integriq\Db\OptOutLogMapper;
-use OCA\Integriq\Db\OptOutMapper;
+use OCA\Integriq\Db\OptOutLogMapperInterface;
+use OCA\Integriq\Db\OptOutMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -176,23 +176,23 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param OptOutMapper $mapper Reads and writes the opt-out table.
+	 * @param OptOutMapperInterface $mapper Reads and writes the opt-out table.
 	 * @param IAppConfig $appConfig Holds the authority flag.
 	 * @param ITimeFactory $time Stamps rows and log entries.
 	 * @param OptOutCategories $categories The exempt floor and the aliases.
 	 * @param RecipientKey $recipientKey Normalises a recipient per channel.
-	 * @param OptOutLogMapper $log The append-only decision log.
+	 * @param OptOutLogMapperInterface $log The append-only decision log.
 	 * @param UnsubscribeTokenService $tokens Builds the unsubscribe material.
 	 * @param LoggerInterface $logger Warns about failures that are answered closed.
 	 * @param OptOutRowBuilder $rows Builds and changes rows for record().
 	 */
 	public function __construct(
-		private readonly OptOutMapper $mapper,
+		private readonly OptOutMapperInterface $mapper,
 		private readonly IAppConfig $appConfig,
 		private readonly ITimeFactory $time,
 		private readonly OptOutCategories $categories,
 		private readonly RecipientKey $recipientKey,
-		private readonly OptOutLogMapper $log,
+		private readonly OptOutLogMapperInterface $log,
 		private readonly UnsubscribeTokenService $tokens,
 		private readonly LoggerInterface $logger,
 		private readonly OptOutRowBuilder $rows,

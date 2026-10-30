@@ -61,7 +61,7 @@ use Throwable;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-shared-mtls-transport-builds-guzzle-tls-options-from-encrypted-at-rest-certificate-material-req-001
  */
-class MtlsConfigResolver {
+class MtlsConfigResolver implements MtlsConfigResolverInterface {
 
 	/**
 	 * Auth mode value that selects mTLS dispatch.

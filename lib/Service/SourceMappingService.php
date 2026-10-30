@@ -45,7 +45,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
-class SourceMappingService {
+class SourceMappingService implements SourceMappingServiceInterface {
 
 	/**
 	 * Default MongoDB action payload skeleton.

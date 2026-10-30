@@ -45,21 +45,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
  * @spec openspec/specs/openconnector-notifications/spec.md
  */
-class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
-
-	/**
-	 * The app setting that names the group.
-	 *
-	 * @var string
-	 */
-	public const CONFIG_KEY = 'connection_alert_group';
-
-	/**
-	 * The group told when no other group is named.
-	 *
-	 * @var string
-	 */
-	public const DEFAULT_GROUP = 'admin';
+class ConnectionAlertRecipientResolver implements RecipientResolverInterface, AlertRecipientResolverInterface {
 
 	/**
 	 * Constructor.

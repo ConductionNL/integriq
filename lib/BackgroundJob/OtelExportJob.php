@@ -29,8 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Observability\Otel\OtelExportBreaker;
-use OCA\Integriq\Observability\Otel\OtelSettings;
+use OCA\Integriq\Observability\Otel\OtelExportBreakerInterface;
+use OCA\Integriq\Observability\Otel\OtelSettingsInterface;
 use OCA\Integriq\Observability\Otel\SpanMapperInterface;
 use OCA\Integriq\Observability\Otel\TraceExporterInterface;
 use OCA\Integriq\Service\ExecutionTraceServiceInterface;
@@ -71,20 +71,20 @@ class OtelExportJob extends QueuedJob {
 	 * @param ExecutionTraceServiceInterface $traces Reads the persisted trace.
 	 * @param SpanMapperInterface $mapper Maps the trace to OTLP spans.
 	 * @param TraceExporterInterface $exporter Sends the spans.
-	 * @param OtelSettings $settings The export settings.
+	 * @param OtelSettingsInterface $settings The export settings.
 	 * @param IJobList $jobList Schedules a retry for its run time.
 	 * @param LoggerInterface $logger Logs a dropped trace.
-	 * @param OtelExportBreaker $breaker Pauses sends during a collector outage.
+	 * @param OtelExportBreakerInterface $breaker Pauses sends during a collector outage.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly ExecutionTraceServiceInterface $traces,
 		private readonly SpanMapperInterface $mapper,
 		private readonly TraceExporterInterface $exporter,
-		private readonly OtelSettings $settings,
+		private readonly OtelSettingsInterface $settings,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
-		private readonly OtelExportBreaker $breaker,
+		private readonly OtelExportBreakerInterface $breaker,
 	) {
 		parent::__construct(time: $time);
 

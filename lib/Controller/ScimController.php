@@ -38,7 +38,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Directory\ScimProvisioningServiceInterface;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -94,7 +94,7 @@ class ScimController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param ScimProvisioningServiceInterface $provisioningService Applies the SCIM call.
-	 * @param OpenRegisterCredentialBridge $authorizationService The existing inbound credential check.
+	 * @param OpenRegisterCredentialBridgeInterface $authorizationService The existing inbound credential check.
 	 * @param LoggerInterface $logger Logger for rejections.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
@@ -103,7 +103,7 @@ class ScimController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly ScimProvisioningServiceInterface $provisioningService,
-		private readonly OpenRegisterCredentialBridge $authorizationService,
+		private readonly OpenRegisterCredentialBridgeInterface $authorizationService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

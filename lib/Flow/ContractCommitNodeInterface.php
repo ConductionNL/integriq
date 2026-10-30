@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use UnexpectedValueException;
 
 /**
@@ -36,7 +37,7 @@ interface ContractCommitNodeInterface {
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.contract-commit';
+	public const NODE_ID = FlowNodeIds::CONTRACT_COMMIT;
 
 	/**
 	 * The step type.

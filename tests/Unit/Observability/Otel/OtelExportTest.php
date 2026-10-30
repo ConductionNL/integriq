@@ -29,7 +29,7 @@ use OCA\Integriq\Observability\Otel\OtelSettings;
 use OCA\Integriq\Observability\Otel\OtlpTraceExporter;
 use OCA\Integriq\Observability\Otel\SpanMapper;
 use OCA\Integriq\Observability\Otel\TraceExporterInterface;
-use OCA\Integriq\Observability\Otel\TraceExportQueue;
+use OCA\Integriq\Service\Otel\TraceExportQueue;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\ExecutionTraceService;

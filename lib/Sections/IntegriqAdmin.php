@@ -7,7 +7,7 @@
  * {@see \OCA\OpenRegister\AppHost\Settings\GenericSettingsSection}. It carries
  * no section logic of its own: id (`integriq`), display name, icon file
  * and priority are supplied by the factory in
- * {@see \OCA\Integriq\AppInfo\Application::registerAppHostBoilerplate()},
+ * {@see \OCA\Integriq\Sections\SectionsRegistrar},
  * matching the pre-adoption values exactly (priority 97, `app-dark.svg`).
  *
  * The display name stays translated: the factory resolves integriq's own

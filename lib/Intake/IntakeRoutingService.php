@@ -190,13 +190,13 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 	 * afterwards.
 	 *
 	 * @param array<string,mixed> $rule The rule as the administrator wrote it.
-	 * @param IntakeChannelRegistry $registry The channels this instance has.
+	 * @param IntakeChannelRegistryInterface $registry The channels this instance has.
 	 *
 	 * @return void
 	 *
 	 * @throws IntakeRoutingException When the channel, the target or a mapped field is unknown.
 	 */
-	public function validateRule(array $rule, IntakeChannelRegistry $registry): void {
+	public function validateRule(array $rule, IntakeChannelRegistryInterface $registry): void {
 		$channelId = trim((string)($rule['channelId'] ?? ''));
 		if ($registry->has($channelId) === false) {
 			throw new IntakeRoutingException(

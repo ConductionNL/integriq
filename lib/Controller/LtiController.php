@@ -31,7 +31,7 @@ use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Lti\LtiAgsServiceInterface;
 use OCA\Integriq\Service\Lti\LtiKeyServiceInterface;
 use OCA\Integriq\Service\Lti\LtiLaunchServiceInterface;
-use OCA\Integriq\Service\Lti\LtiNrpsService;
+use OCA\Integriq\Service\Lti\LtiNrpsServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -69,7 +69,7 @@ class LtiController extends Controller {
 	 * @param IRequest $request The current request.
 	 * @param LtiLaunchServiceInterface $launchService OIDC login + launch validation + Deep Linking.
 	 * @param LtiAgsServiceInterface $agsService Service-token issuance + AGS.
-	 * @param LtiNrpsService $nrpsService NRPS roster read/pull.
+	 * @param LtiNrpsServiceInterface $nrpsService NRPS roster read/pull.
 	 * @param LtiKeyServiceInterface $keyService Signing-key lifecycle + JWKS publish.
 	 * @param LoggerInterface $logger Logger for protocol-level rejections.
 	 */
@@ -78,7 +78,7 @@ class LtiController extends Controller {
 		IRequest $request,
 		private readonly LtiLaunchServiceInterface $launchService,
 		private readonly LtiAgsServiceInterface $agsService,
-		private readonly LtiNrpsService $nrpsService,
+		private readonly LtiNrpsServiceInterface $nrpsService,
 		private readonly LtiKeyServiceInterface $keyService,
 		private readonly LoggerInterface $logger,
 	) {

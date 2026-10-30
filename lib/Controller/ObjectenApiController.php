@@ -37,9 +37,9 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandlerInterface;
-use OCA\Integriq\Service\Objecten\ObjectenTokenService;
-use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
-use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
+use OCA\Integriq\Service\Objecten\ObjectenTokenServiceInterface;
+use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandlerInterface;
+use OCA\Integriq\Service\Objecten\ObjectWriteHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -65,17 +65,17 @@ class ObjectenApiController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request The request.
-	 * @param ObjectenTokenService        $tokens  The one guard.
-	 * @param ObjecttypeEndpointHandler   $types   The Objecttypen API.
+	 * @param ObjectenTokenServiceInterface        $tokens  The one guard.
+	 * @param ObjecttypeEndpointHandlerInterface   $types   The Objecttypen API.
 	 * @param ObjectEndpointHandlerInterface       $objects The Objecten API read paths.
-	 * @param ObjectWriteHandler          $writes  The Objecten API write paths.
+	 * @param ObjectWriteHandlerInterface          $writes  The Objecten API write paths.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly ObjectenTokenService $tokens,
-		private readonly ObjecttypeEndpointHandler $types,
+		private readonly ObjectenTokenServiceInterface $tokens,
+		private readonly ObjecttypeEndpointHandlerInterface $types,
 		private readonly ObjectEndpointHandlerInterface $objects,
-		private readonly ObjectWriteHandler $writes,
+		private readonly ObjectWriteHandlerInterface $writes,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -445,7 +445,7 @@ class ObjectenApiController extends Controller {
 			writing: $writing
 		);
 
-		if ($verdict['verdict'] === ObjectenTokenService::ALLOWED) {
+		if ($verdict['verdict'] === ObjectenTokenServiceInterface::ALLOWED) {
 			return null;
 		}
 
@@ -472,11 +472,11 @@ class ObjectenApiController extends Controller {
 	 */
 	private function detailFor(string $verdict): string {
 		return match ($verdict) {
-			ObjectenTokenService::NO_TOKEN,
-			ObjectenTokenService::UNKNOWN_TOKEN => 'This API is reached with an "Authorization: Token <key>" header.',
-			ObjectenTokenService::UNKNOWN_OBJECTTYPE => 'No such objecttype is published here.',
-			ObjectenTokenService::REFUSED_OBJECTTYPE => 'This token does not carry a permission for that objecttype.',
-			ObjectenTokenService::READ_ONLY => 'This token may read that objecttype but not write it.',
+			ObjectenTokenServiceInterface::NO_TOKEN,
+			ObjectenTokenServiceInterface::UNKNOWN_TOKEN => 'This API is reached with an "Authorization: Token <key>" header.',
+			ObjectenTokenServiceInterface::UNKNOWN_OBJECTTYPE => 'No such objecttype is published here.',
+			ObjectenTokenServiceInterface::REFUSED_OBJECTTYPE => 'This token does not carry a permission for that objecttype.',
+			ObjectenTokenServiceInterface::READ_ONLY => 'This token may read that objecttype but not write it.',
 			default => 'Refused.',
 		};
 	}//end detailFor()

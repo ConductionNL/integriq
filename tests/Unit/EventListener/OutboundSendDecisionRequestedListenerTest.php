@@ -249,7 +249,7 @@ class OutboundSendDecisionRequestedListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testApplicationRegistersBothListeners(): void {
-		$source = (string)file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$source = (string)file_get_contents(__DIR__ . '/../../../lib/EventListener/EventListenerBindings.php');
 
 		$this->assertStringContainsString(
 			'addServiceListener(eventName: OutboundSendDecisionRequestedEvent::class, className: OutboundSendDecisionRequestedListener::class)',

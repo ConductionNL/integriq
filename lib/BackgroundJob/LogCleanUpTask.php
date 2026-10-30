@@ -22,7 +22,7 @@
 namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
-use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -48,13 +48,13 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
 	 * @param OrObjectService $orObjectService OR object service for log operations.
-	 * @param BodyCapturePolicy $bodyCapturePolicy Strips call bodies past their expiry.
+	 * @param BodyCapturePolicyInterface $bodyCapturePolicy Strips call bodies past their expiry.
 	 * @param LoggerInterface $logger Logs a record that could not be stripped or deleted.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly OrObjectService $orObjectService,
-		private readonly BodyCapturePolicy $bodyCapturePolicy,
+		private readonly BodyCapturePolicyInterface $bodyCapturePolicy,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

@@ -50,14 +50,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
  */
-class DigitalPostAccount {
-
-	/**
-	 * The consumer `authorizationType` of digital post.
-	 *
-	 * @var string
-	 */
-	public const AUTHORIZATION_TYPE = 'digital-post';
+class DigitalPostAccount implements DigitalPostAccountInterface {
 
 	/**
 	 * What the account must be allowed to do on `digitalPostMessage`.

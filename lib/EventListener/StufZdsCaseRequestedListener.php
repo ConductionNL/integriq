@@ -4,7 +4,7 @@
  * Integriq StufZdsCaseRequested Listener.
  *
  * Sends the StUF-ZDS case message a sibling app asks for through
- * {@see \OCA\Integriq\Service\StufZkn\StufZdsCaseClient} and writes the
+ * {@see StufZdsCaseClientInterface} and writes the
  * result slot. A request the client refuses before sending (unknown source,
  * log mode, missing zaaktype, unregistered template, unknown operation) is
  * recorded as a refusal, never as a sent message.
@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
-use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
+use OCA\Integriq\Service\StufZkn\StufZdsCaseClientInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -47,11 +47,11 @@ class StufZdsCaseRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param StufZdsCaseClient $client The ZDS case client.
+	 * @param StufZdsCaseClientInterface $client The ZDS case client.
 	 * @param LoggerInterface   $logger The logger.
 	 */
 	public function __construct(
-		private readonly StufZdsCaseClient $client,
+		private readonly StufZdsCaseClientInterface $client,
 		private readonly LoggerInterface $logger,
 	) {
 

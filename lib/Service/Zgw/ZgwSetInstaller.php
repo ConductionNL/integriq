@@ -45,7 +45,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a catalogue of constants with no
  * state to instantiate, the same reason ZgwSetInstallGuard gives.
  */
-class ZgwSetInstaller {
+class ZgwSetInstaller implements ZgwSetInstallerInterface {
 
 	/**
 	 * App config key holding the bindings, as JSON {"register/schema": "set slug"}.
@@ -333,4 +333,24 @@ class ZgwSetInstaller {
 		$synchronization['targetId']   = $binding;
 		return $synchronization;
 	}//end bind()
+
+	/**
+	 * Every packaged set, with its title and whether it writes back.
+	 *
+	 * @return list<array{slug: string, title: string, writesBack: bool}>
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 */
+	public function catalogue(): array {
+		$sets = [];
+		foreach (ZgwSetCatalogue::SETS as $slug => $title) {
+			$sets[] = [
+				'slug'       => $slug,
+				'title'      => $title,
+				'writesBack' => ZgwSetCatalogue::writesBack(slug: $slug),
+			];
+		}
+
+		return $sets;
+	}//end catalogue()
 }//end class

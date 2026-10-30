@@ -25,7 +25,7 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Observability\Otel\OtelSettings;
+use OCA\Integriq\Observability\Otel\OtelSettingsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -44,11 +44,11 @@ class OtelSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request.
-	 * @param OtelSettings $settings The export settings; its refusals are already translated.
+	 * @param OtelSettingsInterface $settings The export settings; its refusals are already translated.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly OtelSettings $settings,
+		private readonly OtelSettingsInterface $settings,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -80,7 +80,7 @@ class OtelSettingsController extends Controller {
 					'enabled' => $this->request->getParam('enabled', false),
 					'endpoint' => $this->request->getParam('endpoint', ''),
 					'allowLocal' => $this->request->getParam('allowLocal', false),
-					'samplingRatio' => $this->request->getParam('samplingRatio', OtelSettings::DEFAULT_SAMPLING_RATIO),
+					'samplingRatio' => $this->request->getParam('samplingRatio', OtelSettingsInterface::DEFAULT_SAMPLING_RATIO),
 					'serviceName' => $this->request->getParam('serviceName', ''),
 					'headerName' => $this->request->getParam('headerName', ''),
 					'credentialName' => $this->request->getParam('credentialName', ''),

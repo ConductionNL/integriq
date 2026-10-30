@@ -22,13 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Observability;
 
-use OCA\Integriq\Observability\Otel\SpanMapper;
-use OCA\Integriq\Observability\Otel\SpanMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds each Observability contract to the class that implements it, so callers
- * outside the Observability component depend on the contract only.
+ * Entry point of this component's container wiring for Application.
+ *
+ * The bindings themselves live in {@see ObservabilityBindings}, inside the component.
+ *
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class ObservabilityRegistrar {
 	/**
@@ -41,6 +42,6 @@ final class ObservabilityRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$context->registerServiceAlias(SpanMapperInterface::class, SpanMapper::class);
-	}
-}
+		(new ObservabilityBindings())->register(context: $context);
+	}//end register()
+}//end class

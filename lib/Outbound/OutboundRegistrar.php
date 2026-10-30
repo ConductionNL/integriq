@@ -22,21 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound;
 
-use OCA\Integriq\Outbound\Call\CallRecorder;
-use OCA\Integriq\Outbound\Call\CallRecorderInterface;
-use OCA\Integriq\Outbound\Call\CallReplayService;
-use OCA\Integriq\Outbound\Call\CallReplayServiceInterface;
-use OCA\Integriq\Outbound\Identity\OptOutRegistry;
-use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
-use OCA\Integriq\Outbound\Identity\SenderIdentityService;
-use OCA\Integriq\Outbound\Identity\SenderIdentityServiceInterface;
-use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
-use OCA\Integriq\Outbound\Identity\UnsubscribeTokenServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds each Outbound contract to the class that implements it, so callers
- * outside the Outbound component depend on the contract only.
+ * Entry point of this component's container wiring for Application.
+ *
+ * The bindings themselves live in {@see OutboundBindings}, inside the component.
+ *
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class OutboundRegistrar {
 	/**
@@ -49,10 +42,6 @@ final class OutboundRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$context->registerServiceAlias(OptOutRegistryInterface::class, OptOutRegistry::class);
-		$context->registerServiceAlias(CallReplayServiceInterface::class, CallReplayService::class);
-		$context->registerServiceAlias(UnsubscribeTokenServiceInterface::class, UnsubscribeTokenService::class);
-		$context->registerServiceAlias(SenderIdentityServiceInterface::class, SenderIdentityService::class);
-		$context->registerServiceAlias(CallRecorderInterface::class, CallRecorder::class);
-	}
-}
+		(new OutboundBindings())->register(context: $context);
+	}//end register()
+}//end class

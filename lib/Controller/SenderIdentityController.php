@@ -26,13 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Outbound\Identity\DomainAlignmentChecker;
-use OCA\Integriq\Outbound\Identity\HoldQueue;
-use OCA\Integriq\Outbound\Identity\OptOutCategories;
+use OCA\Integriq\Outbound\Identity\DomainAlignmentCheckerInterface;
+use OCA\Integriq\Outbound\Identity\HoldQueueInterface;
+use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
 use OCA\Integriq\Outbound\Identity\SenderIdentityServiceInterface;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenServiceInterface;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -76,12 +76,12 @@ class SenderIdentityController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 * @param SenderIdentityServiceInterface $identities The identities on this instance.
-	 * @param DomainAlignmentChecker $alignment Checks SPF, DKIM and DMARC.
+	 * @param DomainAlignmentCheckerInterface $alignment Checks SPF, DKIM and DMARC.
 	 * @param UnsubscribeTokenServiceInterface $tokens Mints and verifies unsubscribe tokens.
 	 * @param OptOutRegistryInterface $optOuts Holds the opt-outs an unsubscribe adds to.
-	 * @param HoldQueue $holdQueue Holds and withdraws a message inside its window.
+	 * @param HoldQueueInterface $holdQueue Holds and withdraws a message inside its window.
 	 * @param IL10N $l Translations.
 	 * @param IURLGenerator $urls Builds the confirmation form's target.
 	 */
@@ -89,12 +89,12 @@ class SenderIdentityController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly SenderIdentityServiceInterface $identities,
-		private readonly DomainAlignmentChecker $alignment,
+		private readonly DomainAlignmentCheckerInterface $alignment,
 		private readonly UnsubscribeTokenServiceInterface $tokens,
 		private readonly OptOutRegistryInterface $optOuts,
-		private readonly HoldQueue $holdQueue,
+		private readonly HoldQueueInterface $holdQueue,
 		private readonly IL10N $l,
 		private readonly IURLGenerator $urls,
 	) {
@@ -313,7 +313,7 @@ class SenderIdentityController extends Controller {
 					'address' => $claim['address'],
 					'state' => 'opted-out',
 					'scope' => OptOutRegistryInterface::SCOPE_INSTANCE,
-					'purpose' => OptOutCategories::PURPOSE_ALL,
+					'purpose' => OptOutCategoriesInterface::PURPOSE_ALL,
 					'source' => $source,
 					'sourceApp' => 'integriq',
 				]
@@ -411,7 +411,7 @@ class SenderIdentityController extends Controller {
 	 * @return string The sentence.
 	 */
 	private function describe(array $claim): string {
-		if ($claim['purpose'] === OptOutCategories::PURPOSE_MARKETING) {
+		if ($claim['purpose'] === OptOutCategoriesInterface::PURPOSE_MARKETING) {
 			if ($claim['scope'] === OptOutRegistryInterface::SCOPE_CHANNEL) {
 				return $this->l->t(
 					'You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.',
@@ -448,7 +448,7 @@ class SenderIdentityController extends Controller {
 		$params = $response->getParams();
 		$params['action'] = $this->urls->linkToRoute('integriq.senderIdentity.unsubscribeConfirm', ['token' => $token]);
 		// Offer to stop everything unless this link already does.
-		$params['offerAll'] = ($claim['scope'] !== OptOutRegistryInterface::SCOPE_INSTANCE || $claim['purpose'] !== OptOutCategories::PURPOSE_ALL);
+		$params['offerAll'] = ($claim['scope'] !== OptOutRegistryInterface::SCOPE_INSTANCE || $claim['purpose'] !== OptOutCategoriesInterface::PURPOSE_ALL);
 		$response->setParams($params);
 
 		return $response;

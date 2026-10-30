@@ -39,7 +39,7 @@ use OCA\Integriq\Exception\StufZknTranslationException;
  *
  * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
  */
-class StufZdsCaseClient {
+class StufZdsCaseClient implements StufZdsCaseClientInterface {
 
 	/**
 	 * Constructor.

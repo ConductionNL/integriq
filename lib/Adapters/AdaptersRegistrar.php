@@ -22,13 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters;
 
-use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
-use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalkerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds each Adapters contract to the class that implements it, so callers
- * outside the Adapters component depend on the contract only.
+ * Entry point of this component's container wiring for Application.
+ *
+ * The bindings themselves live in {@see AdaptersBindings}, inside the component.
+ *
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class AdaptersRegistrar {
 	/**
@@ -41,6 +42,6 @@ final class AdaptersRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$context->registerServiceAlias(SloCurriculumTreeWalkerInterface::class, SloCurriculumTreeWalker::class);
-	}
-}
+		(new AdaptersBindings())->register(context: $context);
+	}//end register()
+}//end class

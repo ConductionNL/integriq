@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the connection, the alerts, the profiles and the HTTP
  * types of one 401/503 answer; splitting them would spread one refusal over several classes.
  */
-class WebhookGate {
+class WebhookGate implements WebhookGateInterface {
 
 	/**
 	 * Constructor.

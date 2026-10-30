@@ -39,7 +39,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class SynchronizationLogService {
+class SynchronizationLogService implements SynchronizationLogServiceInterface {
 
 	/**
 	 * The OpenRegister register the synchronization log lives in.

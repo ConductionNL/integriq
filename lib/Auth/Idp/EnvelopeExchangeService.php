@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-one-time-signed-subject-envelope-handoff
  */
-class EnvelopeExchangeService {
+class EnvelopeExchangeService implements EnvelopeExchangeServiceInterface {
 
 	/**
 	 * Constructor.

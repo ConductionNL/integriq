@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\ConfigurationImportPreviewServiceInterface;
 use OCA\Integriq\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -59,7 +59,7 @@ class ConfigurationController extends Controller {
 	 * @param ConfigurationImportPreviewServiceInterface $previewService The non-mutating preview service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 *
 	 * @return void
 	 */
@@ -70,7 +70,7 @@ class ConfigurationController extends Controller {
 		private readonly ConfigurationImportPreviewServiceInterface $previewService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

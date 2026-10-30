@@ -25,8 +25,11 @@ namespace OCA\Integriq\Intake;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds each Intake contract to the class that implements it, so callers
- * outside the Intake component depend on the contract only.
+ * Entry point of this component's container wiring for Application.
+ *
+ * The bindings themselves live in {@see IntakeBindings}, inside the component.
+ *
+ * @spec exclude container wiring only, it forwards to the component's bindings and has no behaviour of its own
  */
 final class IntakeRegistrar {
 	/**
@@ -39,6 +42,6 @@ final class IntakeRegistrar {
 	 * @spec exclude container wiring only, it binds each contract to its class and has no behaviour of its own
 	 */
 	public function register(IRegistrationContext $context): void {
-		$context->registerServiceAlias(IntakeRoutingServiceInterface::class, IntakeRoutingService::class);
-	}
-}
+		(new IntakeBindings())->register(context: $context);
+	}//end register()
+}//end class

@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  *
  * @spec openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001
  */
-class EnvironmentService {
+class EnvironmentService implements EnvironmentServiceInterface {
 	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
 	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	private const REGISTER = 'integriq';
