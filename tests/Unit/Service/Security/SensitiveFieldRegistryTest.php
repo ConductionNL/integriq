@@ -312,8 +312,8 @@ class SensitiveFieldRegistryTest extends TestCase {
 		$this->assertSame('[{"Access_Token":"***REDACTED***","data":{"refresh_token":"***REDACTED***"}}]', $masked);
 
 		$this->assertSame(
-			'{"access_token":"***REDACTED***","meta":{},"list":[],"url":"https://idp.example/ü"}',
-			$this->registry->redactIssuedTokensInJson(body: '{"access_token":"x","meta":{},"list":[],"url":"https://idp.example/ü"}')
+			'{"access_token":"***REDACTED***","meta":{},"list":[],"url":"https://idp.example/ü","n":1.0}',
+			$this->registry->redactIssuedTokensInJson(body: '{"access_token":"x","meta":{},"list":[],"url":"https://idp.example/ü","n":1.0}')
 		);
 
 		$this->assertSame('access_token=a&x=1', $this->registry->redactIssuedTokensInJson(body: 'access_token=a&x=1'));

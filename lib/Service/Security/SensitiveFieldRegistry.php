@@ -199,7 +199,7 @@ class SensitiveFieldRegistry {
 			return $body;
 		}
 
-		$encoded = json_encode($masked, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+		$encoded = json_encode($masked, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION));
 		if ($encoded === false) {
 			return $body;
 		}
