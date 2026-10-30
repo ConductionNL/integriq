@@ -50,12 +50,13 @@ interface LtiLaunchServiceInterface {
 	 *
 	 * @param string $idToken The posted `id_token` JWS (compact serialization).
 	 * @param string $deploymentUuid The `lti_deployment` route parameter.
-	 * @param string|null $cookieState The `state` value round-tripped via the login's `SameSite=None` cookie.
-	 * @param string|null $presentedState The `state` value posted alongside the `id_token`.
+	 * @param string|null $cookieState The `state` value round-tripped via the login's `SameSite=None` cookie; required.
+	 * @param string|null $presentedState The `state` value posted alongside the `id_token`; required.
 	 *
 	 * @return array{launchReference: string, redirectUrl: string}
 	 *
-	 * @throws LtiValidationException On any validation failure (HTTP 400/401, no partial-trust fallback).
+	 * @throws LtiValidationException On any validation failure (HTTP 400/401, no partial-trust fallback),
+	 *                                including a missing or mismatching state (401).
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
