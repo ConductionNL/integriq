@@ -1,0 +1,1054 @@
+{
+    "unknown-schema": {
+        "outcome": {
+            "throws": "LogicException",
+            "message": "chain-B: schema slug \"mapping\" not found in openconnector register"
+        },
+        "log": []
+    },
+    "no-table": {
+        "outcome": {
+            "return": {
+                "slug": "source",
+                "legacyCount": 0,
+                "migratedCount": 0,
+                "skipped": 0,
+                "fkRewrites": 0
+            }
+        },
+        "log": [
+            [
+                "prepare.execute",
+                [
+                    "oc_openconnector_legacy_rows"
+                ]
+            ],
+            [
+                "logger.info",
+                "chain-B: legacy table oc_openconnector_legacy_rows not present \u2014 fresh install, skipping entity source"
+            ]
+        ]
+    },
+    "empty-table": {
+        "outcome": {
+            "return": {
+                "slug": "source",
+                "legacyCount": 0,
+                "migratedCount": 0,
+                "skipped": 0,
+                "fkRewrites": 0
+            }
+        },
+        "log": [
+            [
+                "prepare.execute",
+                [
+                    "oc_openconnector_legacy_rows"
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "<expression>"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ]
+                ]
+            ]
+        ]
+    },
+    "dry-run": {
+        "outcome": {
+            "return": {
+                "slug": "source",
+                "legacyCount": 5,
+                "migratedCount": 0,
+                "skipped": 0,
+                "fkRewrites": 0
+            }
+        },
+        "log": [
+            [
+                "prepare.execute",
+                [
+                    "oc_openconnector_legacy_rows"
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "<expression>"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ]
+                ]
+            ]
+        ]
+    },
+    "rows-one-batch": {
+        "outcome": {
+            "return": {
+                "slug": "source",
+                "legacyCount": 5,
+                "migratedCount": 4,
+                "skipped": 2,
+                "fkRewrites": 0,
+                "branching": null
+            }
+        },
+        "log": [
+            [
+                "prepare.execute",
+                [
+                    "oc_openconnector_legacy_rows"
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "<expression>"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ]
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        0
+                    ],
+                    [
+                        "setMaxResults",
+                        10
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-1\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"one\\\",\\\"configJson\\\":{\\\"a\\\":1},\\\"listCol\\\":[1,2],\\\"badJson\\\":\\\"{nope\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-02 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-02 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                "chain-B: source row id=2 has no uuid \u2014 skipping"
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-3\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"three\\\",\\\"dateCreated\\\":\\\"2023-05-05 05:05:05\\\",\\\"dateModified\\\":\\\"2023-06-06 06:06:06\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2023-05-05 05:05:05\",2]",
+                            "updated": "[\"2023-06-06 06:06:06\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-explode\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"insert fails\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.error",
+                "chain-B: source uuid=u-explode INSERT failed (RuntimeException): insert broke"
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-5\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"no id\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-6\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"created\\\":\\\"2022-02-02 02:02:02\\\",\\\"dateCreated\\\":\\\"2021-01-01 01:01:01\\\",\\\"updated\\\":\\\"2022-03-03 03:03:03\\\",\\\"dateModified\\\":\\\"2021-04-04 04:04:04\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2022-02-02 02:02:02\",2]",
+                            "updated": "[\"2022-03-03 03:03:03\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.info",
+                "chain-B: source \u2014 batch progress: 5 / 5"
+            ]
+        ]
+    },
+    "rows-batches": {
+        "outcome": {
+            "return": {
+                "slug": "source",
+                "legacyCount": 5,
+                "migratedCount": 4,
+                "skipped": 2,
+                "fkRewrites": 0,
+                "branching": null
+            }
+        },
+        "log": [
+            [
+                "prepare.execute",
+                [
+                    "oc_openconnector_legacy_rows"
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "<expression>"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ]
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        0
+                    ],
+                    [
+                        "setMaxResults",
+                        2
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-1\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"one\\\",\\\"configJson\\\":{\\\"a\\\":1},\\\"listCol\\\":[1,2],\\\"badJson\\\":\\\"{nope\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-02 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-02 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                "chain-B: source row id=2 has no uuid \u2014 skipping"
+            ],
+            [
+                "logger.info",
+                "chain-B: source \u2014 batch progress: 2 / 5"
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        2
+                    ],
+                    [
+                        "setMaxResults",
+                        2
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-3\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"three\\\",\\\"dateCreated\\\":\\\"2023-05-05 05:05:05\\\",\\\"dateModified\\\":\\\"2023-06-06 06:06:06\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2023-05-05 05:05:05\",2]",
+                            "updated": "[\"2023-06-06 06:06:06\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-explode\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"insert fails\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.error",
+                "chain-B: source uuid=u-explode INSERT failed (RuntimeException): insert broke"
+            ],
+            [
+                "logger.info",
+                "chain-B: source \u2014 batch progress: 4 / 5"
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        4
+                    ],
+                    [
+                        "setMaxResults",
+                        2
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-5\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"no id\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-6\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"created\\\":\\\"2022-02-02 02:02:02\\\",\\\"dateCreated\\\":\\\"2021-01-01 01:01:01\\\",\\\"updated\\\":\\\"2022-03-03 03:03:03\\\",\\\"dateModified\\\":\\\"2021-04-04 04:04:04\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2022-02-02 02:02:02\",2]",
+                            "updated": "[\"2022-03-03 03:03:03\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.info",
+                "chain-B: source \u2014 batch progress: 5 / 5"
+            ]
+        ]
+    },
+    "count-above-rows": {
+        "outcome": {
+            "return": {
+                "slug": "source",
+                "legacyCount": 9,
+                "migratedCount": 4,
+                "skipped": 2,
+                "fkRewrites": 0,
+                "branching": null
+            }
+        },
+        "log": [
+            [
+                "prepare.execute",
+                [
+                    "oc_openconnector_legacy_rows"
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "<expression>"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ]
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        0
+                    ],
+                    [
+                        "setMaxResults",
+                        3
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-1\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"one\\\",\\\"configJson\\\":{\\\"a\\\":1},\\\"listCol\\\":[1,2],\\\"badJson\\\":\\\"{nope\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-02 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-02 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                "chain-B: source row id=2 has no uuid \u2014 skipping"
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-3\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"three\\\",\\\"dateCreated\\\":\\\"2023-05-05 05:05:05\\\",\\\"dateModified\\\":\\\"2023-06-06 06:06:06\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2023-05-05 05:05:05\",2]",
+                            "updated": "[\"2023-06-06 06:06:06\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.info",
+                "chain-B: source \u2014 batch progress: 3 / 9"
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        3
+                    ],
+                    [
+                        "setMaxResults",
+                        3
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-explode\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"insert fails\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.error",
+                "chain-B: source uuid=u-explode INSERT failed (RuntimeException): insert broke"
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-5\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"name\\\":\\\"no id\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"u-6\",2]",
+                            "register": "[3,1]",
+                            "schema": "[10,1]",
+                            "object": "[\"{\\\"created\\\":\\\"2022-02-02 02:02:02\\\",\\\"dateCreated\\\":\\\"2021-01-01 01:01:01\\\",\\\"updated\\\":\\\"2022-03-03 03:03:03\\\",\\\"dateModified\\\":\\\"2021-04-04 04:04:04\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2022-02-02 02:02:02\",2]",
+                            "updated": "[\"2022-03-03 03:03:03\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.info",
+                "chain-B: source \u2014 batch progress: 6 / 9"
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_legacy_rows",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        6
+                    ],
+                    [
+                        "setMaxResults",
+                        3
+                    ]
+                ]
+            ]
+        ]
+    },
+    "sync-branching": {
+        "outcome": {
+            "return": {
+                "slug": "synchronization",
+                "legacyCount": 3,
+                "migratedCount": 2,
+                "skipped": 1,
+                "fkRewrites": 0,
+                "branching": {
+                    "integer-pk": 2,
+                    "register-schema": 1,
+                    "uuid": 1,
+                    "unrecognised": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "prepare.execute",
+                [
+                    "oc_openconnector_synchronizations"
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "<expression>"
+                    ],
+                    [
+                        "from",
+                        "openconnector_synchronizations",
+                        null
+                    ]
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_synchronizations",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        0
+                    ],
+                    [
+                        "setMaxResults",
+                        2
+                    ]
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "uuid"
+                    ],
+                    [
+                        "from",
+                        "openconnector_sources",
+                        null
+                    ],
+                    [
+                        "where",
+                        ""
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"s-1\",2]",
+                            "register": "[3,1]",
+                            "schema": "[20,1]",
+                            "object": "[\"{\\\"sourceId\\\":\\\"source-uuid-42\\\",\\\"targetId\\\":\\\"zaken\\/zaak\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                "chain-B: Synchronization sourceId/targetId value \"???\" matches no known format \u2014 preserved as-is, marked unrecognised"
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"s-2\",2]",
+                            "register": "[3,1]",
+                            "schema": "[20,1]",
+                            "object": "[\"{\\\"sourceId\\\":\\\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\\\",\\\"targetId\\\":\\\"???\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.info",
+                "chain-B: synchronization \u2014 batch progress: 2 / 3"
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_synchronizations",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        2
+                    ],
+                    [
+                        "setMaxResults",
+                        2
+                    ]
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "uuid"
+                    ],
+                    [
+                        "from",
+                        "openconnector_sources",
+                        null
+                    ],
+                    [
+                        "where",
+                        ""
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                "chain-B: synchronization row id=9 has no uuid \u2014 skipping"
+            ],
+            [
+                "logger.info",
+                "chain-B: synchronization \u2014 batch progress: 3 / 3"
+            ],
+            [
+                "logger.info",
+                "chain-B: synchronization sourceId/targetId branching counts \u2014 integer-PK\u2192uuid: 2, register/schema: 1, uuid: 1, unrecognised: 1"
+            ]
+        ]
+    },
+    "sync-branching-flag-off": {
+        "outcome": {
+            "return": {
+                "slug": "synchronization",
+                "legacyCount": 3,
+                "migratedCount": 2,
+                "skipped": 1,
+                "fkRewrites": 0,
+                "branching": null
+            }
+        },
+        "log": [
+            [
+                "prepare.execute",
+                [
+                    "oc_openconnector_synchronizations"
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "<expression>"
+                    ],
+                    [
+                        "from",
+                        "openconnector_synchronizations",
+                        null
+                    ]
+                ]
+            ],
+            [
+                "query",
+                [
+                    [
+                        "select",
+                        "*"
+                    ],
+                    [
+                        "from",
+                        "openconnector_synchronizations",
+                        null
+                    ],
+                    [
+                        "orderBy",
+                        "id",
+                        "ASC"
+                    ],
+                    [
+                        "setFirstResult",
+                        0
+                    ],
+                    [
+                        "setMaxResults",
+                        5
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"s-1\",2]",
+                            "register": "[3,1]",
+                            "schema": "[20,1]",
+                            "object": "[\"{\\\"sourceId\\\":\\\"42\\\",\\\"targetId\\\":\\\"zaken\\/zaak\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "statement",
+                [
+                    [
+                        "insert",
+                        "openregister_objects"
+                    ],
+                    [
+                        "values",
+                        {
+                            "uuid": "[\"s-2\",2]",
+                            "register": "[3,1]",
+                            "schema": "[20,1]",
+                            "object": "[\"{\\\"sourceId\\\":\\\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\\\",\\\"targetId\\\":\\\"???\\\",\\\"created\\\":\\\"2024-01-01 00:00:00\\\",\\\"updated\\\":\\\"2024-01-01 00:00:00\\\"}\",2]",
+                            "owner": "[null,2]",
+                            "created": "[\"2024-01-01 00:00:00\",2]",
+                            "updated": "[\"2024-01-01 00:00:00\",2]"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                "chain-B: synchronization row id=9 has no uuid \u2014 skipping"
+            ],
+            [
+                "logger.info",
+                "chain-B: synchronization \u2014 batch progress: 3 / 3"
+            ]
+        ]
+    }
+}
