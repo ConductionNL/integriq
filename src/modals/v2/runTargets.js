@@ -148,27 +148,35 @@ function synchronizationStatus(payload) {
 	}
 
 	const message = payload.message || ''
-
-	if (message === 'pending_approval') {
-		return {
-			type: 'warning',
-			text: t(
-				'integriq',
-				'The run is waiting for approval and made no changes. Approve the request to let it continue.',
-			),
-		}
-	}
-
-	if (message === 'Success') {
-		return {
-			type: 'success',
-			text: t('integriq', 'The synchronization completed successfully.'),
-		}
+	const known = synchronizationOutcomes()
+	if (Object.hasOwn(known, message)) {
+		return known[message]
 	}
 
 	return {
 		type: 'error',
 		text: message || t('integriq', 'The synchronization did not complete.'),
+	}
+}
+
+/**
+ * The banners for the run-log messages that are not a failure, keyed by message.
+ *
+ * @return {{[message: string]: {type: string, text: string}}} Banner per message.
+ */
+function synchronizationOutcomes() {
+	return {
+		pending_approval: {
+			type: 'warning',
+			text: t(
+				'integriq',
+				'The run is waiting for approval and made no changes. Approve the request to let it continue.',
+			),
+		},
+		Success: {
+			type: 'success',
+			text: t('integriq', 'The synchronization completed successfully.'),
+		},
 	}
 }
 
@@ -187,63 +195,81 @@ function deletionGuardNote(guard) {
 		return null
 	}
 
-	if (guard.reason === 'incremental_mode') {
-		return {
-			text: t(
-				'integriq',
-				'No objects were deleted: deletion detection is switched off entirely while this synchronization is in incremental mode. Force deletion cannot override that — set the sync mode to full first.',
-			),
-			rows: [],
-		}
-	}
+	const rows =
+		guard.reason === 'ratio_threshold_exceeded' ? ratioGuardRows(guard) : []
 
-	if (guard.reason === 'fetch_incomplete') {
-		return {
-			text: t(
-				'integriq',
-				'No objects were deleted: the fetch from the source did not complete, so the engine could not tell a genuinely removed record from one it simply never saw.',
-			),
-			rows: [],
-		}
-	}
+	return { text: deletionGuardText(guard.reason), rows }
+}
 
-	if (guard.reason === 'ratio_threshold_exceeded') {
-		const rows = []
-		if (guard.candidateCount !== null && guard.candidateCount !== undefined) {
-			rows.push({
-				label: t('integriq', 'Would have deleted'),
-				value: `${guard.candidateCount} / ${guard.totalContracts ?? '?'}`,
-			})
-		}
-		if (guard.ratio !== null && guard.ratio !== undefined) {
-			rows.push({
-				label: t('integriq', 'Share of existing objects'),
-				value: `${Math.round(Number(guard.ratio) * 1000) / 10}%`,
-			})
-		}
-		if (guard.threshold !== null && guard.threshold !== undefined) {
-			rows.push({
-				label: t('integriq', 'Guard threshold'),
-				value: `${Math.round(Number(guard.threshold) * 1000) / 10}%`,
-			})
-		}
-
-		return {
-			text: t(
-				'integriq',
-				'No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.',
-			),
-			rows,
-		}
-	}
-
-	return {
-		text: t(
+/**
+ * The explanation for one deletion-guard reason.
+ *
+ * @param {string|undefined} reason The `deletionGuard.reason` value.
+ * @return {string} Localised explanation.
+ */
+function deletionGuardText(reason) {
+	const texts = {
+		incremental_mode: t(
 			'integriq',
-			'No objects were deleted: a guard stopped the cleanup pass.',
+			'No objects were deleted: deletion detection is switched off entirely while this synchronization is in incremental mode. Force deletion cannot override that — set the sync mode to full first.',
 		),
-		rows: [],
+		fetch_incomplete: t(
+			'integriq',
+			'No objects were deleted: the fetch from the source did not complete, so the engine could not tell a genuinely removed record from one it simply never saw.',
+		),
+		ratio_threshold_exceeded: t(
+			'integriq',
+			'No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.',
+		),
 	}
+	if (Object.hasOwn(texts, reason)) {
+		return texts[reason]
+	}
+
+	return t(
+		'integriq',
+		'No objects were deleted: a guard stopped the cleanup pass.',
+	)
+}
+
+/**
+ * Format a 0..1 ratio as a percentage with one decimal.
+ *
+ * @param {number|string} ratio The ratio.
+ * @return {string} The percentage.
+ */
+function percent(ratio) {
+	return `${Math.round(Number(ratio) * 1000) / 10}%`
+}
+
+/**
+ * The numbers behind a tripped deletion-ratio guard, one row per known value.
+ *
+ * @param {object} guard The deletionGuard sub-object.
+ * @return {Array<{label: string, value: string}>} Rows for the values that are set.
+ */
+function ratioGuardRows(guard) {
+	const rows = [
+		[
+			'candidateCount',
+			t('integriq', 'Would have deleted'),
+			() => `${guard.candidateCount} / ${guard.totalContracts ?? '?'}`,
+		],
+		[
+			'ratio',
+			t('integriq', 'Share of existing objects'),
+			() => percent(guard.ratio),
+		],
+		[
+			'threshold',
+			t('integriq', 'Guard threshold'),
+			() => percent(guard.threshold),
+		],
+	]
+
+	return rows
+		.filter(([key]) => guard[key] !== null && guard[key] !== undefined)
+		.map(([, label, value]) => ({ label, value: value() }))
 }
 
 /**
@@ -259,20 +285,10 @@ function synchronizationSections(payload) {
 
 	const result = payload.result || {}
 	const guard = deletionGuardNote(result.objects?.deletionGuard)
-	const sections = []
 
 	// Ahead of the counters: `deleted: 0` next to a large `found` looks like a
 	// clean no-op, and the reason it is not one is the whole point.
-	if (guard !== null) {
-		sections.push({
-			id: 'deletionGuard',
-			title: t('integriq', 'Deletion guarded'),
-			kind: 'note',
-			noteType: 'warning',
-			value: guard.text,
-			rows: guard.rows,
-		})
-	}
+	const sections = guard === null ? [] : [deletionGuardSection(guard)]
 
 	return sections.concat([
 		{
@@ -285,34 +301,54 @@ function synchronizationSections(payload) {
 			id: 'run',
 			title: t('integriq', 'Run'),
 			kind: 'meta',
-			value: [
-				{
-					label: t('integriq', 'Execution time'),
-					value: formatMs(payload.executionTime),
-				},
-				{
-					label: t('integriq', 'Direction'),
-					value: result.type || '—',
-				},
-				{
-					label: t('integriq', 'Test mode'),
-					value: yesNo(payload.test === true),
-				},
-				{
-					label: t('integriq', 'Forced'),
-					value: yesNo(payload.force === true),
-				},
-				{
-					label: t('integriq', 'Contracts'),
-					value: String(countUuids(result.contracts)),
-				},
-				{
-					label: t('integriq', 'Contract logs'),
-					value: String(countUuids(result.logs)),
-				},
-			],
+			value: synchronizationRunMeta(payload),
 		},
 	])
+}
+
+/**
+ * The note section for a tripped deletion guard.
+ *
+ * @param {{text: string, rows: Array<object>}} guard The guard explanation.
+ * @return {object} A render section.
+ */
+function deletionGuardSection(guard) {
+	return {
+		id: 'deletionGuard',
+		title: t('integriq', 'Deletion guarded'),
+		kind: 'note',
+		noteType: 'warning',
+		value: guard.text,
+		rows: guard.rows,
+	}
+}
+
+/**
+ * The meta rows of a synchronization run log.
+ *
+ * @param {object} payload The returned run log.
+ * @return {Array<{label: string, value: string}>} Meta rows.
+ */
+function synchronizationRunMeta(payload) {
+	const result = payload.result || {}
+
+	return [
+		{
+			label: t('integriq', 'Execution time'),
+			value: formatMs(payload.executionTime),
+		},
+		{ label: t('integriq', 'Direction'), value: result.type || '—' },
+		{ label: t('integriq', 'Test mode'), value: yesNo(payload.test === true) },
+		{ label: t('integriq', 'Forced'), value: yesNo(payload.force === true) },
+		{
+			label: t('integriq', 'Contracts'),
+			value: String(countUuids(result.contracts)),
+		},
+		{
+			label: t('integriq', 'Contract logs'),
+			value: String(countUuids(result.logs)),
+		},
+	]
 }
 
 /**
@@ -354,26 +390,15 @@ function jobStatus(payload) {
 	}
 
 	const level = String(payload.level || '').toUpperCase()
-
-	if (level === 'ERROR') {
-		return {
-			type: 'error',
-			text: payload.message || t('integriq', 'The job failed.'),
-		}
+	const levels = {
+		ERROR: ['error', t('integriq', 'The job failed.')],
+		WARNING: ['warning', t('integriq', 'The job finished with a warning.')],
 	}
+	const [type, fallback] = Object.hasOwn(levels, level)
+		? levels[level]
+		: ['success', t('integriq', 'The job ran successfully.')]
 
-	if (level === 'WARNING') {
-		return {
-			type: 'warning',
-			text:
-				payload.message || t('integriq', 'The job finished with a warning.'),
-		}
-	}
-
-	return {
-		type: 'success',
-		text: payload.message || t('integriq', 'The job ran successfully.'),
-	}
+	return { type, text: payload.message || fallback }
 }
 
 /**
@@ -397,25 +422,7 @@ function jobSections(payload) {
 			id: 'run',
 			title: t('integriq', 'Run'),
 			kind: 'meta',
-			value: [
-				{ label: t('integriq', 'Level'), value: payload.level || '—' },
-				{
-					label: t('integriq', 'Execution time'),
-					value: formatMs(payload.executionTime),
-				},
-				{
-					label: t('integriq', 'Job class'),
-					value: payload.jobClass || '—',
-				},
-				{
-					label: t('integriq', 'Last run'),
-					value: payload.lastRun || '—',
-				},
-				{
-					label: t('integriq', 'Next run'),
-					value: payload.nextRun || '—',
-				},
-			],
+			value: jobRunMeta(payload),
 		},
 	]
 
@@ -433,6 +440,25 @@ function jobSections(payload) {
 }
 
 /**
+ * The meta rows of a job log.
+ *
+ * @param {object} payload The returned job log.
+ * @return {Array<{label: string, value: string}>} Meta rows.
+ */
+function jobRunMeta(payload) {
+	return [
+		{ label: t('integriq', 'Level'), value: payload.level || '—' },
+		{
+			label: t('integriq', 'Execution time'),
+			value: formatMs(payload.executionTime),
+		},
+		{ label: t('integriq', 'Job class'), value: payload.jobClass || '—' },
+		{ label: t('integriq', 'Last run'), value: payload.lastRun || '—' },
+		{ label: t('integriq', 'Next run'), value: payload.nextRun || '—' },
+	]
+}
+
+/**
  * Where "View full log" goes for a job.
  *
  * @param {object} item The job row.
@@ -440,6 +466,233 @@ function jobSections(payload) {
  */
 function jobLogsLink(item) {
 	return logsLocation('view-job-logs', rowId(item))
+}
+
+/**
+ * How a synchronization run's result is read, shared by both modes.
+ *
+ * @return {object} The status, sections and logsLink fields of a descriptor.
+ */
+function synchronizationResult() {
+	return {
+		status: synchronizationStatus,
+		sections: synchronizationSections,
+		logsLink: synchronizationLogsLink,
+	}
+}
+
+/**
+ * How a job run's result is read, shared by both modes.
+ *
+ * @return {object} The status, sections and logsLink fields of a descriptor.
+ */
+function jobResult() {
+	return {
+		status: jobStatus,
+		sections: jobSections,
+		logsLink: jobLogsLink,
+	}
+}
+
+/**
+ * The `test` switch of the synchronization Run modal.
+ *
+ * @return {object} An options entry.
+ */
+function testModeOption() {
+	return {
+		key: 'test',
+		label: t('integriq', 'Test mode'),
+		note: t(
+			'integriq',
+			'Run every step of the synchronization without saving anything: no contract is written and the target system is left untouched. Use it to verify a mapping or condition before a real run.',
+		),
+		noteType: 'info',
+	}
+}
+
+/**
+ * The `forceDeletion` switch of the synchronization Run modal.
+ *
+ * @return {object} An options entry.
+ */
+function forceDeletionOption() {
+	return {
+		key: 'forceDeletion',
+		label: t('integriq', 'Force deletion'),
+		note: t(
+			'integriq',
+			'Override the deletion-ratio guard, which aborts a cleanup pass that would delete an unusually large share of the existing objects. Only use this when you already know the deletions are correct.',
+		),
+		noteType: 'warning',
+		// REQ-018 hard-blocks deletion while syncMode is 'incremental', and
+		// forceDeletion explicitly cannot override that check — it only
+		// overrides the ratio guard. Absent syncMode means 'full' (the
+		// engine's own default), so only an explicit 'incremental' disables.
+		disabledWhen: (item) => item?.syncMode === 'incremental',
+		disabledNote: t(
+			'integriq',
+			'Not available while this synchronization is in incremental mode: deletion detection is switched off entirely and force deletion cannot override that. Set the sync mode to full first.',
+		),
+		// Run-only: the controller documents forceDeletion as not applicable
+		// to test runs, which make no deletions to guard in the first place.
+		hiddenWhen: (values) => values?.test === true,
+	}
+}
+
+/**
+ * The request of the synchronization Run modal.
+ *
+ * @param {object} item   The synchronization row.
+ * @param {object} values The switch values.
+ * @return {{url: string, body: object}} The request to POST.
+ */
+function synchronizationRunRequest(item, values) {
+	const id = rowId(item)
+
+	// Re-route rather than pass `test: true` — see the module docblock.
+	if (values.test === true) {
+		return {
+			url: `/apps/integriq/api/synchronizations/${id}/test`,
+			body: { force: values.force === true },
+		}
+	}
+
+	return {
+		url: `/apps/integriq/api/synchronizations/${id}/run`,
+		body: {
+			test: false,
+			force: values.force === true,
+			forceDeletion: values.forceDeletion === true,
+		},
+	}
+}
+
+/**
+ * The retry offer of the synchronization Run modal.
+ *
+ * The one case where the run tells us exactly which switch would have changed
+ * the outcome, so the modal can offer it directly rather than making the user
+ * work out that `forceDeletion` is what the guard message is referring to.
+ *
+ * @param {object|null} payload The returned run log.
+ * @return {{label: string, values: object}|null} The retry offer, or null.
+ */
+function forceDeletionRetry(payload) {
+	const guard = payload?.result?.objects?.deletionGuard || null
+	if (guard?.guarded !== true || guard.reason !== 'ratio_threshold_exceeded') {
+		return null
+	}
+
+	return {
+		label: t('integriq', 'Run again with force deletion'),
+		values: { forceDeletion: true },
+	}
+}
+
+/**
+ * The `synchronization/run` descriptor.
+ *
+ * @return {object} The descriptor.
+ */
+function synchronizationRunDescriptor() {
+	return {
+		title: t('integriq', 'Run synchronization'),
+		runLabel: t('integriq', 'Run'),
+		options: [testModeOption(), forceOption(), forceDeletionOption()],
+		request: synchronizationRunRequest,
+		...synchronizationResult(),
+		retry: forceDeletionRetry,
+	}
+}
+
+/**
+ * The `synchronization/test` descriptor.
+ *
+ * @return {object} The descriptor.
+ */
+function synchronizationTestDescriptor() {
+	return {
+		title: t('integriq', 'Test synchronization (dry run)'),
+		runLabel: t('integriq', 'Run test'),
+		intro: t(
+			'integriq',
+			'A dry run executes all the synchronization logic but saves nothing: no contract is written and the target system is not touched.',
+		),
+		options: [forceOption()],
+		request: (item, values) => ({
+			url: `/apps/integriq/api/synchronizations/${rowId(item)}/test`,
+			body: { force: values.force === true },
+		}),
+		...synchronizationResult(),
+	}
+}
+
+/**
+ * The `job/run` descriptor.
+ *
+ * @return {object} The descriptor.
+ */
+function jobRunDescriptor() {
+	const forceRun = {
+		key: 'forceRun',
+		label: t('integriq', 'Force run'),
+		note: t(
+			'integriq',
+			'Ignore both the schedule and the enabled flag, and execute the job right now. Without it, a job that is disabled or not yet due does nothing at all.',
+		),
+		noteType: 'info',
+	}
+
+	return {
+		title: t('integriq', 'Run job'),
+		runLabel: t('integriq', 'Run'),
+		options: [forceRun],
+		request: (item, values) => ({
+			url: `/apps/integriq/api/jobs/run/${rowId(item)}`,
+			body: { forceRun: values.forceRun === true },
+		}),
+		...jobResult(),
+	}
+}
+
+/**
+ * The `job/test` descriptor.
+ *
+ * Deliberately NOT called a dry run. JobsController::test() calls the same
+ * executeJob() that run() does with forceRun hardcoded to true
+ * (job-scheduling REQ-002: *"MUST ALWAYS pass forceRun: true"*) — the job
+ * executes for real. There is no dry-run mode for jobs anywhere in the
+ * engine, so neither this modal nor the row-action label may claim one.
+ *
+ * @return {object} The descriptor.
+ */
+function jobTestDescriptor() {
+	const forceRun = {
+		key: 'forceRun',
+		label: t('integriq', 'Force run'),
+		note: t(
+			'integriq',
+			'Always on for this action: the endpoint ignores the schedule and the enabled flag by definition.',
+		),
+		noteType: 'info',
+		locked: true,
+	}
+
+	return {
+		title: t('integriq', 'Force run job'),
+		runLabel: t('integriq', 'Force run'),
+		intro: t(
+			'integriq',
+			'This executes the job for real — it is not a dry run. The only difference from a normal run is that the schedule and the enabled flag are ignored.',
+		),
+		options: [forceRun],
+		request: (item) => ({
+			url: `/apps/integriq/api/jobs/test/${rowId(item)}`,
+			body: {},
+		}),
+		...jobResult(),
+	}
 }
 
 /**
@@ -454,157 +707,10 @@ function jobLogsLink(item) {
  */
 function buildDescriptors() {
 	return {
-		'synchronization/run': {
-			title: t('integriq', 'Run synchronization'),
-			runLabel: t('integriq', 'Run'),
-			options: [
-				{
-					key: 'test',
-					label: t('integriq', 'Test mode'),
-					note: t(
-						'integriq',
-						'Run every step of the synchronization without saving anything: no contract is written and the target system is left untouched. Use it to verify a mapping or condition before a real run.',
-					),
-					noteType: 'info',
-				},
-				forceOption(),
-				{
-					key: 'forceDeletion',
-					label: t('integriq', 'Force deletion'),
-					note: t(
-						'integriq',
-						'Override the deletion-ratio guard, which aborts a cleanup pass that would delete an unusually large share of the existing objects. Only use this when you already know the deletions are correct.',
-					),
-					noteType: 'warning',
-					// REQ-018 hard-blocks deletion while syncMode is 'incremental', and
-					// forceDeletion explicitly cannot override that check — it only
-					// overrides the ratio guard. Absent syncMode means 'full' (the
-					// engine's own default), so only an explicit 'incremental' disables.
-					disabledWhen: (item) => item?.syncMode === 'incremental',
-					disabledNote: t(
-						'integriq',
-						'Not available while this synchronization is in incremental mode: deletion detection is switched off entirely and force deletion cannot override that. Set the sync mode to full first.',
-					),
-					// Run-only: the controller documents forceDeletion as not applicable
-					// to test runs, which make no deletions to guard in the first place.
-					hiddenWhen: (values) => values?.test === true,
-				},
-			],
-			request: (item, values) => {
-				const id = rowId(item)
-
-				// Re-route rather than pass `test: true` — see the module docblock.
-				if (values.test === true) {
-					return {
-						url: `/apps/integriq/api/synchronizations/${id}/test`,
-						body: { force: values.force === true },
-					}
-				}
-
-				return {
-					url: `/apps/integriq/api/synchronizations/${id}/run`,
-					body: {
-						test: false,
-						force: values.force === true,
-						forceDeletion: values.forceDeletion === true,
-					},
-				}
-			},
-			status: synchronizationStatus,
-			sections: synchronizationSections,
-			logsLink: synchronizationLogsLink,
-			// The one case where the run tells us exactly which switch would
-			// have changed the outcome, so the modal can offer it directly
-			// rather than making the user work out that `forceDeletion` is
-			// what the guard message is referring to.
-			retry: (payload) => {
-				const guard = payload?.result?.objects?.deletionGuard || null
-				if (
-					guard?.guarded !== true
-					|| guard.reason !== 'ratio_threshold_exceeded'
-				) {
-					return null
-				}
-
-				return {
-					label: t('integriq', 'Run again with force deletion'),
-					values: { forceDeletion: true },
-				}
-			},
-		},
-
-		'synchronization/test': {
-			title: t('integriq', 'Test synchronization (dry run)'),
-			runLabel: t('integriq', 'Run test'),
-			intro: t(
-				'integriq',
-				'A dry run executes all the synchronization logic but saves nothing: no contract is written and the target system is not touched.',
-			),
-			options: [forceOption()],
-			request: (item, values) => ({
-				url: `/apps/integriq/api/synchronizations/${rowId(item)}/test`,
-				body: { force: values.force === true },
-			}),
-			status: synchronizationStatus,
-			sections: synchronizationSections,
-			logsLink: synchronizationLogsLink,
-		},
-
-		'job/run': {
-			title: t('integriq', 'Run job'),
-			runLabel: t('integriq', 'Run'),
-			options: [
-				{
-					key: 'forceRun',
-					label: t('integriq', 'Force run'),
-					note: t(
-						'integriq',
-						'Ignore both the schedule and the enabled flag, and execute the job right now. Without it, a job that is disabled or not yet due does nothing at all.',
-					),
-					noteType: 'info',
-				},
-			],
-			request: (item, values) => ({
-				url: `/apps/integriq/api/jobs/run/${rowId(item)}`,
-				body: { forceRun: values.forceRun === true },
-			}),
-			status: jobStatus,
-			sections: jobSections,
-			logsLink: jobLogsLink,
-		},
-
-		// Deliberately NOT called a dry run. JobsController::test() calls the same
-		// executeJob() that run() does with forceRun hardcoded to true
-		// (job-scheduling REQ-002: *"MUST ALWAYS pass forceRun: true"*) — the job
-		// executes for real. There is no dry-run mode for jobs anywhere in the
-		// engine, so neither this modal nor the row-action label may claim one.
-		'job/test': {
-			title: t('integriq', 'Force run job'),
-			runLabel: t('integriq', 'Force run'),
-			intro: t(
-				'integriq',
-				'This executes the job for real — it is not a dry run. The only difference from a normal run is that the schedule and the enabled flag are ignored.',
-			),
-			options: [
-				{
-					key: 'forceRun',
-					label: t('integriq', 'Force run'),
-					note: t(
-						'integriq',
-						'Always on for this action: the endpoint ignores the schedule and the enabled flag by definition.',
-					),
-					noteType: 'info',
-					locked: true,
-				},
-			],
-			request: (item) => ({
-				url: `/apps/integriq/api/jobs/test/${rowId(item)}`,
-				body: {},
-			}),
-			status: jobStatus,
-			sections: jobSections,
-			logsLink: jobLogsLink,
-		},
+		'synchronization/run': synchronizationRunDescriptor(),
+		'synchronization/test': synchronizationTestDescriptor(),
+		'job/run': jobRunDescriptor(),
+		'job/test': jobTestDescriptor(),
 	}
 }
 
