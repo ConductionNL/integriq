@@ -3478,11 +3478,14 @@ class EndpointService implements EndpointServiceInterface {
 	private function processAuthenticationRule(ObjectEntity $rule, array $data): array|JSONResponse {
 		$configuration = $rule->getObject()['configuration'] ?? [];
 
-		// Normalise all incoming header keys to lowercase once so all subsequent
-		// lookups are case-insensitive without multiple fallback variants.
+		// Normalise all incoming header keys once (lowercase, `-` folded to `_`)
+		// so all subsequent lookups are case- and separator-insensitive without
+		// multiple fallback variants. The configured header name below is
+		// folded the same way, so both sides of the lookup share one shape
+		// whichever producer built the bag.
 		$normalisedHeaders = [];
 		foreach (($data['headers'] ?? []) as $key => $value) {
-			$normalisedHeaders[strtolower((string)$key)] = $value;
+			$normalisedHeaders[str_replace('-', '_', strtolower((string)$key))] = $value;
 		}
 
 		// Default to the Authorization header (lowercase-normalised lookup).
@@ -3521,9 +3524,12 @@ class EndpointService implements EndpointServiceInterface {
 		}//end if
 
 		if (isset($configuration['authentication']['header']) === true) {
-			// Convert configured header name to lowercase + underscore variant
-			// for a single normalised lookup against $normalisedHeaders.
-			$lookupKey = strtolower((string)$configuration['authentication']['header']);
+			// PHP's SAPI folds a hyphenated header into an underscored
+			// $_SERVER key (e.g. X-Corsa-Secret -> HTTP_X_CORSA_SECRET), and
+			// getHeaders() never reintroduces the hyphen -- fold the
+			// configured name the same way as the bag keys above, or it never
+			// matches its own value.
+			$lookupKey = str_replace('-', '_', strtolower((string)$configuration['authentication']['header']));
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
