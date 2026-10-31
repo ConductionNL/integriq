@@ -476,8 +476,6 @@ class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 	private function migrateEntity(array $entity, bool $dryRun, int $batchSize): array {
 		$slug = $entity['slug'];
 		$table = $entity['legacyTable'];
-		$tableShort = str_replace('oc_', '', $table);
-		$hasSyncBranching = (bool)($entity['hasSyncBranching'] ?? false);
 
 		$schemaPk = $this->schemaPks[$slug] ?? null;
 		if ($schemaPk === null) {
@@ -490,93 +488,93 @@ class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 			return ['slug' => $slug, 'legacyCount' => 0, 'migratedCount' => 0, 'skipped' => 0, 'fkRewrites' => 0];
 		}
 
-		$count = $this->countLegacyRows(tableShort: $tableShort);
-		if ($count === 0) {
-			return ['slug' => $slug, 'legacyCount' => 0, 'migratedCount' => 0, 'skipped' => 0, 'fkRewrites' => 0];
+		$run = new EntityMigrationRun(entity: $entity, schemaPk: $schemaPk);
+		$run->count = $this->countLegacyRows(tableShort: $run->tableShort);
+		if ($run->count === 0 || $dryRun === true) {
+			return ['slug' => $slug, 'legacyCount' => $run->count, 'migratedCount' => 0, 'skipped' => 0, 'fkRewrites' => 0];
 		}
 
-		if ($dryRun === true) {
-			return ['slug' => $slug, 'legacyCount' => $count, 'migratedCount' => 0, 'skipped' => 0, 'fkRewrites' => 0];
+		$run->batchSize = $batchSize;
+		$this->migrateBatches(run: $run);
+
+		if ($run->hasSyncBranching === true) {
+			$this->logger->info(
+				sprintf(
+					'chain-B: synchronization sourceId/targetId branching counts — integer-PK→uuid: %d, register/schema: %d, uuid: %d, unrecognised: %d',
+					$run->syncBranchCounts['integer-pk'],
+					$run->syncBranchCounts['register-schema'],
+					$run->syncBranchCounts['uuid'],
+					$run->syncBranchCounts['unrecognised']
+				)
+			);
 		}
 
-		$migrated = 0;
-		$skipped = 0;
+		return $run->result();
+
+	}//end migrateEntity()
+
+	/**
+	 * Read an entity's legacy rows batch by batch and write each one.
+	 *
+	 * @param EntityMigrationRun $run The entity's run; its tallies are updated.
+	 *
+	 * @return void
+	 */
+	private function migrateBatches(EntityMigrationRun $run): void {
 		$offset = 0;
-		$syncBranchCounts = ['integer-pk' => 0, 'register-schema' => 0, 'uuid' => 0, 'unrecognised' => 0];
-
-		while ($offset < $count) {
-			$rows = $this->fetchLegacyBatch(tableShort: $tableShort, offset: $offset, batchSize: $batchSize);
+		while ($offset < $run->count) {
+			$rows = $this->fetchLegacyBatch(tableShort: $run->tableShort, offset: $offset, batchSize: $run->batchSize);
 			if ($rows === []) {
 				break;
 			}
 
 			foreach ($rows as $row) {
-				$jsonBody = $this->buildJsonBody(row: $row, hasSyncBranching: $hasSyncBranching, syncBranchCounts: $syncBranchCounts);
-				$uuid = (string)($row['uuid'] ?? '');
-				if ($uuid === '') {
-					$this->logger->warning(sprintf('chain-B: %s row id=%s has no uuid — skipping', $slug, (string)($row['id'] ?? '?')));
-					$skipped++;
-					continue;
-				}
+				$this->migrateRow(run: $run, row: $row);
+			}
 
-				try {
-					$this->insertObjectRow(
-						registerPk: (int)$this->registerPk,
-						schemaPk: $schemaPk,
-						uuid: $uuid,
-						legacyId: (int)($row['id'] ?? 0),
-						jsonBody: $jsonBody,
-						created: (string)($row['created'] ?? $row['date_created'] ?? date('Y-m-d H:i:s')),
-						updated: (string)($row['updated'] ?? $row['date_modified'] ?? date('Y-m-d H:i:s'))
-					);
-					$migrated++;
-				} catch (\Throwable $e) {
-					$this->logger->error(
-						sprintf(
-							'chain-B: %s uuid=%s INSERT failed (%s): %s',
-							$slug,
-							$uuid,
-							get_class($e),
-							$e->getMessage()
-						)
-					);
-					$skipped++;
-				}//end try
-			}//end foreach
+			$offset += $run->batchSize;
+			$this->logger->info(sprintf('chain-B: %s — batch progress: %d / %d', $run->slug, min($offset, $run->count), $run->count));
+		}
 
-			$offset += $batchSize;
-			$this->logger->info(sprintf('chain-B: %s — batch progress: %d / %d', $slug, min($offset, $count), $count));
-		}//end while
+	}//end migrateBatches()
 
-		if ($hasSyncBranching === true) {
-			$this->logger->info(
+	/**
+	 * Write one legacy row, or count it as skipped when it has no uuid or its insert fails.
+	 *
+	 * @param EntityMigrationRun $run The entity's run; its tallies are updated.
+	 * @param array<string, mixed> $row The legacy row.
+	 *
+	 * @return void
+	 */
+	private function migrateRow(EntityMigrationRun $run, array $row): void {
+		$object = new LegacyObjectRow(
+			row: $row,
+			body: $this->buildJsonBody(row: $row, hasSyncBranching: $run->hasSyncBranching, syncBranchCounts: $run->syncBranchCounts)
+		);
+		$uuid = $object->uuid();
+		if ($uuid === '') {
+			$this->logger->warning(sprintf('chain-B: %s row id=%s has no uuid — skipping', $run->slug, (string)($row['id'] ?? '?')));
+			$run->skipped++;
+			return;
+		}
+
+		try {
+			$this->insertObjectRow(schemaPk: $run->schemaPk, object: $object);
+			$run->migrated++;
+		} catch (\Throwable $e) {
+			$this->logger->error(
 				sprintf(
-					'chain-B: synchronization sourceId/targetId branching counts — integer-PK→uuid: %d, register/schema: %d, uuid: %d, unrecognised: %d',
-					$syncBranchCounts['integer-pk'],
-					$syncBranchCounts['register-schema'],
-					$syncBranchCounts['uuid'],
-					$syncBranchCounts['unrecognised']
+					'chain-B: %s uuid=%s INSERT failed (%s): %s',
+					$run->slug,
+					$uuid,
+					get_class($e),
+					$e->getMessage()
 				)
 			);
+			$run->skipped++;
 		}
 
-		if ($hasSyncBranching === true) {
-			$branching = $syncBranchCounts;
-		} else {
-			$branching = null;
-		}
-
-		return [
-			'slug' => $slug,
-			'legacyCount' => $count,
-			'migratedCount' => $migrated,
-			'skipped' => $skipped,
-			// Populated by FK rewrite pass.
-			'fkRewrites' => 0,
-			'branching' => $branching,
-		];
-
-	}//end migrateEntity()
+	}//end migrateRow()
 
 	/**
 	 * Probe information_schema for the presence of a legacy table.
@@ -754,30 +752,17 @@ class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 	}//end lookupSourceUuidByInt()
 
 	/**
-	 * Bulk INSERT one row into oc_openregister_objects.
+	 * Bulk INSERT one row into oc_openregister_objects, under the cached register PK.
 	 *
 	 * Dual-platform JSON build per spec REQ-002.
 	 *
-	 * @param integer $registerPk OR register PK.
 	 * @param integer $schemaPk OR schema PK.
-	 * @param string $uuid Row UUID.
-	 * @param integer $legacyId Legacy integer PK.
-	 * @param array<string, mixed> $jsonBody JSON body to insert.
-	 * @param string $created Created timestamp.
-	 * @param string $updated Updated timestamp.
+	 * @param LegacyObjectRow $object The row, with its JSON body.
 	 *
 	 * @return void
 	 */
-	private function insertObjectRow(
-		int $registerPk,
-		int $schemaPk,
-		string $uuid,
-		int $legacyId,
-		array $jsonBody,
-		string $created,
-		string $updated,
-	): void {
-		$jsonString = json_encode($jsonBody, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+	private function insertObjectRow(int $schemaPk, LegacyObjectRow $object): void {
+		$jsonString = json_encode($object->body, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
 		// Insert via QueryBuilder for portability; the `object` column receives
 		// the raw JSON string — Doctrine handles the JSON encoding on both
@@ -786,13 +771,13 @@ class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 		$qb->insert('openregister_objects')
 			->values(
 				[
-					'uuid' => $qb->createNamedParameter($uuid),
-					'register' => $qb->createNamedParameter($registerPk, \PDO::PARAM_INT),
+					'uuid' => $qb->createNamedParameter($object->uuid()),
+					'register' => $qb->createNamedParameter((int)$this->registerPk, \PDO::PARAM_INT),
 					'schema' => $qb->createNamedParameter($schemaPk, \PDO::PARAM_INT),
 					'object' => $qb->createNamedParameter($jsonString),
 					'owner' => $qb->createNamedParameter(null),
-					'created' => $qb->createNamedParameter($created),
-					'updated' => $qb->createNamedParameter($updated),
+					'created' => $qb->createNamedParameter($object->created()),
+					'updated' => $qb->createNamedParameter($object->updated()),
 				]
 			);
 		$qb->executeStatement();
