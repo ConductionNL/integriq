@@ -20,6 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Broker\BrokerPublication;
+use OCA\Integriq\Broker\BrokerResult;
+use OCA\Integriq\Broker\BrokerTransportInterface;
+use OCA\Integriq\Broker\BrokerTransportRegistryInterface;
+use OCA\Integriq\Exception\BrokerTransportException;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\FlowRunnerService;
@@ -46,6 +51,8 @@ use RuntimeException;
  *
  * @covers \OCA\Integriq\Service\EventService
  * @uses   \OCA\Integriq\Service\Event\ActionDelivery
+ * @uses   \OCA\Integriq\Broker\BrokerPublication
+ * @uses   \OCA\Integriq\Broker\BrokerResult
  */
 class EventServiceActionDispatchGoldenTest extends TestCase {
 
@@ -169,6 +176,10 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 					return null;
 				}
 
+				if (str_starts_with($answer, 'level:') === true) {
+					return ObjectServiceMockBuilder::objectEntity($this, ['level' => substr($answer, 6)], 'joblog-1');
+				}
+
 				return ObjectServiceMockBuilder::objectEntity($this, ['status' => $answer], 'joblog-1');
 			}
 		);
@@ -179,6 +190,10 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 				$this->log[] = ['flows.findFlow', $id];
 				if ($this->answer('findFlow') === 'throws') {
 					throw new RuntimeException('no flow');
+				}
+
+				if ($this->answer('findFlow') === 'null') {
+					return null;
 				}
 
 				return ObjectServiceMockBuilder::objectEntity($this, ['name' => 'flow'], 'flow-' . $id);
@@ -223,8 +238,52 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 			$jobs,
 			$call,
 			$flows,
+			brokerRegistry: $this->brokerRegistry(),
 		);
 	}//end service()
+
+	/**
+	 * A broker registry whose one transport answers as the case says, or none
+	 * when the case names no publish answer.
+	 *
+	 * @return BrokerTransportRegistryInterface|null
+	 */
+	private function brokerRegistry(): ?BrokerTransportRegistryInterface {
+		if (isset($this->case['answers']['publish']) === false) {
+			return null;
+		}
+
+		$transport = $this->createMock(BrokerTransportInterface::class);
+		$transport->method('publish')->willReturnCallback(
+			function (BrokerPublication $publication, array $configuration) {
+				$this->log[] = ['broker.publish', $publication->getTopic(), $configuration];
+				$answer = $this->answer('publish');
+				if ($answer === 'throws') {
+					throw new RuntimeException('broker broke');
+				}
+
+				if ($answer === 'refused') {
+					return BrokerResult::refused('b-1', 'no route', 312);
+				}
+
+				return BrokerResult::published('b-1', 'ref-1');
+			}
+		);
+
+		$registry = $this->createMock(BrokerTransportRegistryInterface::class);
+		$registry->method('get')->willReturnCallback(
+			function (string $brokerId) use ($transport) {
+				$this->log[] = ['broker.get', $brokerId];
+				if ($this->answer('get') === 'throws') {
+					throw new BrokerTransportException('unknown broker ' . $brokerId);
+				}
+
+				return $transport;
+			}
+		);
+
+		return $registry;
+	}//end brokerRegistry()
 
 	/**
 	 * The cases: subscription action, message data and collaborator answers.
@@ -263,6 +322,21 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 			'mapping-no-ids' => ['action' => ['kind' => 'mapping']],
 			'broker-no-id' => ['action' => ['kind' => 'broker']],
 			'broker-no-registry' => ['action' => ['kind' => 'broker', 'brokerId' => 'b-1', 'topic' => 't']],
+			'broker-unknown-id' => ['action' => ['kind' => 'broker', 'brokerId' => 'b-1', 'topic' => 't'], 'answers' => ['publish' => 'ok', 'get' => 'throws']],
+			'broker-published' => ['action' => ['kind' => 'broker', 'brokerId' => 'b-1', 'topic' => 't'], 'answers' => ['publish' => 'ok']],
+			'broker-refused' => ['action' => ['kind' => 'broker', 'brokerId' => 'b-1', 'topic' => 't'], 'answers' => ['publish' => 'refused']],
+			'broker-publish-throws' => ['action' => ['kind' => 'broker', 'brokerId' => 'b-1', 'topic' => 't'], 'answers' => ['publish' => 'throws']],
+			'job-level-error' => ['action' => ['kind' => 'job', 'jobId' => 'j-1'], 'answers' => ['executeJob' => 'level:ERROR']],
+			'job-find-throws' => ['action' => ['kind' => 'job', 'jobId' => 'j-1'], 'answers' => ['find.job' => 'throws']],
+			'flow-find-null' => ['action' => ['kind' => 'flow', 'flowId' => 'f-1'], 'answers' => ['findFlow' => 'null']],
+			'flow-run-stopped' => ['action' => ['kind' => 'flow', 'flowId' => 'f-1'], 'answers' => ['run' => 'stopped']],
+			'sync-retry-policy-capped' => ['action' => ['kind' => 'synchronization', 'synchronizationId' => 's-1'], 'retryPolicy' => ['maxRetries' => 2], 'message' => ['retryCount' => 1], 'answers' => ['synchronize' => 'throws']],
+			'job-retry-policy' => ['action' => ['kind' => 'job'], 'retryPolicy' => ['maxRetries' => 1]],
+			'flow-retry-policy' => ['action' => ['kind' => 'flow'], 'retryPolicy' => ['maxRetries' => 1]],
+			'notificaties-retry-policy' => ['action' => ['kind' => 'notificaties', 'channel' => 'zaken', 'sourceId' => 'src-1'], 'retryPolicy' => ['maxRetries' => 1], 'answers' => ['find.source' => 'null']],
+			'broker-retry-policy' => ['action' => ['kind' => 'broker', 'brokerId' => 'b-1', 'topic' => 't'], 'retryPolicy' => ['maxRetries' => 1], 'answers' => ['publish' => 'throws']],
+			'broker-refused-retry-policy' => ['action' => ['kind' => 'broker', 'brokerId' => 'b-1', 'topic' => 't'], 'retryPolicy' => ['maxRetries' => 1], 'answers' => ['publish' => 'refused']],
+			'notificaties-500-retry-policy' => ['action' => ['kind' => 'notificaties', 'channel' => 'zaken', 'sourceId' => 'src-1'], 'retryPolicy' => ['maxRetries' => 1], 'message' => ['eventId' => 'ev-1'], 'answers' => ['call' => '500']],
 		];
 	}//end cases()
 
