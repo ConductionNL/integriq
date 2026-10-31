@@ -80,3 +80,8 @@ bom-npm.cdx.json
 # are gate FIXTURES, not artefacts, and must stay tracked.
 /*.log
 /changed.tsv
+
+# Agent work files. They belong in an issue or a PR, not in the tree.
+/scratchpad/
+/task-audit.json
+/LANE-LOG.md

@@ -325,7 +325,7 @@ class StufZknClient implements StufZknProviderInterface {
 	 *
 	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:array<string,string>|null}
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-secure-transport
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-secure-transport
 	 */
 	public function transmit(
 		array $sourceConfiguration,

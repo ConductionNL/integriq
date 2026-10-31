@@ -27,7 +27,7 @@ use OCA\Integriq\Migration\MigrationMappingPresetRegistry;
 use OCA\Integriq\Migration\MigrationPreviewReader;
 use OCA\Integriq\Migration\MigrationSourceRegistry;
 use OCA\Integriq\Migration\UnknownMigrationSourceException;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -62,7 +62,7 @@ class MigrationSourcesController extends Controller {
 	 * @param MigrationPreviewReader $previewReader The read-only pass.
 	 * @param ColumnMappingValidator $validator The column mapping validator.
 	 * @param IUserSession $userSession Who is asking.
-	 * @param ActionAuthService $actionAuth Whether they may.
+	 * @param ActionAuthServiceInterface $actionAuth Whether they may.
 	 * @param MigrationMappingPresetRegistry $presetRegistry The seeded
 	 *                                                       named-incumbent
 	 *                                                       column-mapping
@@ -75,7 +75,7 @@ class MigrationSourcesController extends Controller {
 		private readonly MigrationPreviewReader $previewReader,
 		private readonly ColumnMappingValidator $validator,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly MigrationMappingPresetRegistry $presetRegistry,
 	) {
 		parent::__construct(appName: $appName, request: $request);

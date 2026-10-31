@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\SystemTag\ISystemTagManager;
@@ -64,12 +64,12 @@ class NextcloudFileTagEventListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param EventServiceInterface $eventService Service for managing CloudEvents.
 	 * @param ISystemTagManager $systemTagManager Resolves tag ids to human-readable names.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly LoggerInterface $logger,
 	) {

@@ -56,7 +56,7 @@ use Throwable;
  *
  * @spec openspec/specs/rod-adapter/spec.md
  */
-class RodService {
+class RodService implements RodServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding ROD sources and message records.

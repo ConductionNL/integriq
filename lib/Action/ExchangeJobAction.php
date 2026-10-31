@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Action;
 
-use OCA\Integriq\Service\Exchange\ExchangeJobRunner;
+use OCA\Integriq\Service\Exchange\ExchangeJobRunnerInterface;
 
 /**
  * Runs one exchange job (design D4).
@@ -40,10 +40,10 @@ class ExchangeJobAction {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExchangeJobRunner $runner The runner.
+	 * @param ExchangeJobRunnerInterface $runner The runner.
 	 */
 	public function __construct(
-		private readonly ExchangeJobRunner $runner,
+		private readonly ExchangeJobRunnerInterface $runner,
 	) {
 
 	}//end __construct()

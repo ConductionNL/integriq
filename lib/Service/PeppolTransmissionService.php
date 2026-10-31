@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
-class PeppolTransmissionService {
+class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding Peppol sources and transmissions.

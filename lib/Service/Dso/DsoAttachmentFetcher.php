@@ -56,7 +56,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
  */
-class DsoAttachmentFetcher {
+class DsoAttachmentFetcher implements DsoAttachmentFetcherInterface {
 
 	/**
 	 * Downloads tried per entry before it is `failed` for good (REQ-DSO-005).

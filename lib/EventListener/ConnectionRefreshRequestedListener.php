@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
-use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
@@ -77,7 +77,7 @@ class ConnectionRefreshRequestedListener implements IEventListener {
 		}
 
 		try {
-			$this->container->get(ConnectionRegistryService::class)->refreshRequested(app: $event->app, key: $event->key);
+			$this->container->get(ConnectionRegistryServiceInterface::class)->refreshRequested(app: $event->app, key: $event->key);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Integriq could not refresh the connections of {declaringApp}: {reason}',

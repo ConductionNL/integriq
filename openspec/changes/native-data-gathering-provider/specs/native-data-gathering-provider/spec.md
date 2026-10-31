@@ -171,3 +171,12 @@ tendril.
 - **THEN** its Source may ship enabled and its Job ships `isEnabled: false`
 - **AND** an admin opts in by enabling the Job, so a fresh install pulls no
   external feed on its first cron run
+
+#### Scenario: An upgrade switches off a Job an earlier version shipped enabled
+
+- **GIVEN** an install that imported a gathering connector's Job with
+  `isEnabled: true` and `version` 1.0.0
+- **WHEN** Integriq is upgraded to a version whose fragment ships that Job
+  with `isEnabled: false` and `version` 1.0.1
+- **THEN** the import overwrites the Job, so it is disabled after the upgrade
+- **AND** an administrator's own edits to that Job are overwritten with it

@@ -54,7 +54,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/swv-handoff/spec.md#requirement-source-adapter-maps-an-already-composed-dossier-onto-the-receivers-envelope-req-002
  */
-final class SwvHandoffSourceAdapter {
+final class SwvHandoffSourceAdapter implements DossierHandoffAdapterInterface {
 	/**
 	 * App id used for IAppConfig look-ups.
 	 */

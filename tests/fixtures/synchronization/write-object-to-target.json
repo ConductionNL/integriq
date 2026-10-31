@@ -1,0 +1,2472 @@
+{
+    "delete-endpoint-spaced-method-mapping": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": null,
+            "targetHash": "296f45d166505bbc71c6af88580e4419"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "deleteEndpoint": "/remove/{{ originId }}",
+                    "deleteMethod": "POST",
+                    "deleteMapping": "map-del"
+                }
+            ],
+            [
+                "mapping.getMapping",
+                "map-del"
+            ],
+            [
+                "mapping.executeMapping",
+                "map-del",
+                {
+                    "titel": "Besluit",
+                    "zaak": {
+                        "id": "z-1"
+                    }
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/remove/reg/schema",
+                "POST",
+                {
+                    "deleteEndpoint": "/remove/{{ originId }}",
+                    "deleteMethod": "POST",
+                    "deleteMapping": "map-del",
+                    "json": {
+                        "mappedBy": "map-del",
+                        "from": {
+                            "titel": "Besluit",
+                            "zaak": {
+                                "id": "z-1"
+                            }
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "delete-endpoint-tight": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": null,
+            "targetHash": "14d71035552fef7c92e4b5c611232830"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "deleteEndpoint": "/remove/{{originId}}"
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/remove/reg/schema",
+                "DELETE",
+                {
+                    "deleteEndpoint": "/remove/{{originId}}"
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "delete-default-location-stripped": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": null,
+            "targetHash": "8838727a18facf462e432c2408ed5fd6"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/t-2",
+                "DELETE",
+                [],
+                false,
+                false
+            ]
+        ]
+    },
+    "delete-traced": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": null,
+            "targetHash": "0c4b74d051a60b1b6462f91c44120a59"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/t-4",
+                "DELETE",
+                [],
+                false,
+                true
+            ]
+        ]
+    },
+    "delete-api-source": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": null,
+            "targetHash": "6226d9c458182a1b398687905a23d237"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/t-3",
+                "DELETE",
+                [],
+                false,
+                false
+            ]
+        ]
+    },
+    "create-idposition-given-object": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "new-1"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "idPosition": "data.id"
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "idPosition": "data.id",
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "or.find",
+                "origin-1",
+                "reg",
+                "schema"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "origin origin-1",
+                    "status": "written",
+                    "remote": "new-1"
+                },
+                "reg",
+                "schema",
+                "origin-1"
+            ]
+        ]
+    },
+    "create-null-object-reads-origin": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "new-2"
+        },
+        "targetObject": null,
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "openRegisters.find",
+                "origin-1"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "idposition": "data.ref"
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "idposition": "data.ref",
+                    "json": {
+                        "uuid": "origin-1",
+                        "titel": "stored origin-1",
+                        "zaak": {
+                            "id": "z-9"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "create-body-id-api-source": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "new-3"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "create-no-id": {
+        "exception": [
+            "Exception",
+            "Could not determine an id from target synchronization"
+        ],
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "create-id-in-request-body": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "new-4"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "idInRequestBody": "titel"
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "idInRequestBody": "titel",
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "create-failed-answer": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "err-1"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "or.find",
+                "origin-1",
+                "reg",
+                "schema"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "origin origin-1",
+                    "status": "failed",
+                    "reason": "broken"
+                },
+                "reg",
+                "schema",
+                "origin-1"
+            ]
+        ]
+    },
+    "create-conflict-refused": {
+        "exception": [
+            "OCA\\Integriq\\Exception\\TargetWriteRefusedException",
+            "The target refused the write with status 409; the local change is kept and marked as a conflict."
+        ],
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "conflictStatusProperty": "remoteState"
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "conflictStatusProperty": "remoteState",
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "create-transport-failure": {
+        "exception": [
+            "RuntimeException",
+            "connection refused"
+        ],
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "or.find",
+                "origin-1",
+                "reg",
+                "schema"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "origin origin-1",
+                    "status": "failed",
+                    "reason": "connection refused"
+                },
+                "reg",
+                "schema",
+                "origin-1"
+            ]
+        ]
+    },
+    "create-validation-record": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "new-5"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [
+            {
+                "side": "target",
+                "originId": "origin-1",
+                "messageSchema": "ms-1",
+                "errors": [
+                    {
+                        "path": "/",
+                        "message": "The target message could not be checked against message schema ms-1: message validation is not available"
+                    }
+                ]
+            }
+        ],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "validation": {
+                        "messageSchema": "ms-1",
+                        "mode": "record"
+                    }
+                }
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\MessageValidation\\SynchronizationMessageGate"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "validation": {
+                        "messageSchema": "ms-1",
+                        "mode": "record"
+                    },
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "create-validation-refuse": {
+        "exception": [
+            "OCA\\Integriq\\Exception\\MessageValidationRefusedException",
+            "The target message could not be checked against message schema ms-1: message validation is not available"
+        ],
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "validation": {
+                        "messageSchema": "ms-1",
+                        "mode": "refuse"
+                    }
+                }
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\MessageValidation\\SynchronizationMessageGate"
+            ]
+        ]
+    },
+    "create-file-upload": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "new-7"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "fileUpload": {
+                        "fileId": 7,
+                        "fieldName": "doc",
+                        "includeObject": true
+                    }
+                }
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "fileUpload": {
+                        "fileId": 7,
+                        "fieldName": "doc",
+                        "includeObject": true
+                    },
+                    "multipart": [
+                        {
+                            "name": "titel",
+                            "contents": "Besluit"
+                        },
+                        {
+                            "name": "zaak",
+                            "contents": "{\"id\":\"z-1\"}"
+                        },
+                        {
+                            "name": "doc",
+                            "contents": "content-7",
+                            "filename": "file-7.pdf",
+                            "headers": {
+                                "Content-Type": "application/pdf"
+                            }
+                        }
+                    ]
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "create-traced": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "new-8"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items",
+                "POST",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                true
+            ]
+        ]
+    },
+    "pulled-object-updates": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "z-1"
+        },
+        "targetObject": {
+            "ok": true,
+            "targetId": "z-1"
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "targetIdPosition": "zaak.id"
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/z-1",
+                "PUT",
+                {
+                    "targetIdPosition": "zaak.id",
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "or.find",
+                "origin-1",
+                "reg",
+                "schema"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "origin origin-1",
+                    "status": "written",
+                    "remote": "z-1"
+                },
+                "reg",
+                "schema",
+                "origin-1"
+            ]
+        ]
+    },
+    "update-endpoint-spaced-method-mapping": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "u-1"
+        },
+        "targetObject": {
+            "v": 2,
+            "targetId": "u-1"
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "updateEndpoint": "/put/{{ originId }}",
+                    "updateMethod": "PATCH",
+                    "updateMapping": "map-up"
+                }
+            ],
+            [
+                "mapping.getMapping",
+                "map-up"
+            ],
+            [
+                "mapping.executeMapping",
+                "map-up",
+                {
+                    "titel": "Besluit",
+                    "zaak": {
+                        "id": "z-1"
+                    }
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/put/u-1",
+                "PATCH",
+                {
+                    "updateEndpoint": "/put/{{ originId }}",
+                    "updateMethod": "PATCH",
+                    "updateMapping": "map-up",
+                    "json": {
+                        "mappedBy": "map-up",
+                        "from": {
+                            "titel": "Besluit",
+                            "zaak": {
+                                "id": "z-1"
+                            }
+                        }
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "or.find",
+                "origin-1",
+                "reg",
+                "schema"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "origin origin-1",
+                    "status": "written",
+                    "remote": "u-1"
+                },
+                "reg",
+                "schema",
+                "origin-1"
+            ]
+        ]
+    },
+    "update-endpoint-tight": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "u-2"
+        },
+        "targetObject": {
+            "v": 3,
+            "targetId": "u-2"
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "updateEndpoint": "/put/{{originId}}"
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/put/u-2",
+                "PUT",
+                {
+                    "updateEndpoint": "/put/{{originId}}",
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "update-url-under-location": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "https://api.example.invalid/v1/zaken/77"
+        },
+        "targetObject": {
+            "v": 4,
+            "targetId": "https://api.example.invalid/v1/zaken/77"
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/zaken/77",
+                "PUT",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "update-url-elsewhere": {
+        "exception": [
+            "Exception",
+            "Refused to write to https://elsewhere.example.invalid/zaken/77: it is not under the target source location. A remote id may only address the store the synchronization writes to."
+        ],
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "update-default-non-json": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "u-3"
+        },
+        "targetObject": {
+            "targetId": "u-3"
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/u-3",
+                "PUT",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "update-failed-answer": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "u-4"
+        },
+        "targetObject": {
+            "message": "gateway",
+            "targetId": "u-4"
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/u-4",
+                "PUT",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "or.find",
+                "origin-1",
+                "reg",
+                "schema"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "origin origin-1",
+                    "status": "failed",
+                    "reason": "gateway"
+                },
+                "reg",
+                "schema",
+                "origin-1"
+            ]
+        ]
+    },
+    "update-conflict-refused": {
+        "exception": [
+            "OCA\\Integriq\\Exception\\TargetWriteRefusedException",
+            "The target refused the write with status 412; the local change is kept and marked as a conflict."
+        ],
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "conflictStatusProperty": "remoteState"
+                }
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/u-5",
+                "PUT",
+                {
+                    "conflictStatusProperty": "remoteState",
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "update-file-upload-and-validation": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "u-6"
+        },
+        "targetObject": {
+            "v": 5,
+            "targetId": "u-6"
+        },
+        "pendingFindings": [
+            {
+                "side": "target",
+                "originId": "origin-1",
+                "messageSchema": "ms-2",
+                "errors": [
+                    {
+                        "path": "/",
+                        "message": "The target message could not be checked against message schema ms-2: message validation is not available"
+                    }
+                ]
+            }
+        ],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "fileUpload": {
+                        "fileId": 8
+                    },
+                    "validation": {
+                        "messageSchema": "ms-2"
+                    }
+                }
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\MessageValidation\\SynchronizationMessageGate"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/u-6",
+                "PUT",
+                {
+                    "fileUpload": {
+                        "fileId": 8
+                    },
+                    "validation": {
+                        "messageSchema": "ms-2"
+                    },
+                    "multipart": [
+                        {
+                            "name": "upload",
+                            "contents": "content-8",
+                            "filename": "file-8.pdf",
+                            "headers": {
+                                "Content-Type": "application/pdf"
+                            }
+                        }
+                    ]
+                },
+                false,
+                false
+            ]
+        ]
+    },
+    "update-transport-failure": {
+        "exception": [
+            "RuntimeException",
+            "timeout"
+        ],
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "call.call",
+                "target-uuid",
+                "/items/u-7",
+                "PUT",
+                {
+                    "json": {
+                        "titel": "Besluit",
+                        "zaak": {
+                            "id": "z-1"
+                        }
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "or.find",
+                "origin-1",
+                "reg",
+                "schema"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "naam": "origin origin-1",
+                    "status": "failed",
+                    "reason": "timeout"
+                },
+                "reg",
+                "schema",
+                "origin-1"
+            ]
+        ]
+    },
+    "zgw-document-already-delivered": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "doc-1"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "zgwDocument": {
+                        "zakenSource": "z"
+                    }
+                }
+            ]
+        ]
+    },
+    "stuf-document-already-delivered": {
+        "contract": {
+            "synchronizationId": "sync-1",
+            "originId": "origin-1",
+            "targetId": "z-1"
+        },
+        "targetObject": {
+            "titel": "Besluit",
+            "zaak": {
+                "id": "z-1"
+            }
+        },
+        "pendingFindings": [],
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "or.find",
+                "target-uuid",
+                "integriq",
+                "source"
+            ],
+            [
+                "openRegisters.setRegister",
+                "reg"
+            ],
+            [
+                "openRegisters.setSchema",
+                "schema"
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "targetIdPosition": "zaak.id",
+                    "stufDocument": {
+                        "documenttype": "d"
+                    }
+                }
+            ]
+        ]
+    }
+}

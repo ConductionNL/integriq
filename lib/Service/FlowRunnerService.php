@@ -64,7 +64,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-orchestration/spec.md
  */
-class FlowRunnerService {
+class FlowRunnerService implements FlowRunnerServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding flow objects.

@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
  *
  * @spec openspec/specs/vng-klantinteracties-adapter/spec.md
  */
-class AvgBsnPolicyRule {
+class AvgBsnPolicyRule implements AvgBsnPolicyRuleInterface {
 
 	/**
 	 * Default dot-path (within the rule's data envelope) at which the

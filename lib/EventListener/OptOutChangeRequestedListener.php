@@ -28,7 +28,7 @@ namespace OCA\Integriq\EventListener;
 
 use InvalidArgumentException;
 use OCA\Integriq\Event\OptOutChangeRequestedEvent;
-use OCA\Integriq\Outbound\Identity\OptOutRegistry;
+use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -46,11 +46,11 @@ class OptOutChangeRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param OptOutRegistry $registry Records the wish.
+	 * @param OptOutRegistryInterface $registry Records the wish.
 	 * @param LoggerInterface $logger Records why an event was left unhandled.
 	 */
 	public function __construct(
-		private readonly OptOutRegistry $registry,
+		private readonly OptOutRegistryInterface $registry,
 		private readonly LoggerInterface $logger,
 	) {
 

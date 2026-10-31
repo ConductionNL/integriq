@@ -35,14 +35,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  *
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-its-pulls-per-day-req-crun-002
  */
-class RunSummaryService {
-
-	/**
-	 * The longest window one request may ask for, in days.
-	 *
-	 * @var int
-	 */
-	public const MAX_WINDOW_DAYS = 31;
+class RunSummaryService implements RunSummaryServiceInterface {
 
 	/**
 	 * Exception code: a date that is not Y-m-d.
@@ -50,13 +43,6 @@ class RunSummaryService {
 	 * @var int
 	 */
 	public const WINDOW_NOT_A_DATE = 1;
-
-	/**
-	 * Exception code: a window over 31 days, or one that runs backwards.
-	 *
-	 * @var int
-	 */
-	public const WINDOW_TOO_LONG = 2;
 
 	/**
 	 * Run records read per page.

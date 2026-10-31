@@ -36,7 +36,7 @@ use Throwable;
  *
  * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
  */
-class OtelExportBreaker {
+class OtelExportBreaker implements OtelExportBreakerInterface {
 
 	/**
 	 * The app id the breaker state is stored under.

@@ -118,11 +118,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\SynchronizationNotMigratableException;
-use OCA\Integriq\Flow\ApplyMappingNode;
-use OCA\Integriq\Flow\ContractCommitNode;
-use OCA\Integriq\Flow\ContractMatchNode;
-use OCA\Integriq\Flow\ContractSweepNode;
-use OCA\Integriq\Flow\SourcePaginateNode;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCP\IL10N;
 use Throwable;
 
@@ -131,7 +127,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#3-migration--deprecation
  */
-class SynchronizationFlowGenerator {
+class SynchronizationFlowGenerator implements SynchronizationFlowGeneratorInterface {
 
 	/**
 	 * The item key the fetched page is written under.
@@ -509,7 +505,7 @@ class SynchronizationFlowGenerator {
 		return [
 			[
 				'id' => 'map',
-				'type' => ApplyMappingNode::NODE_ID,
+				'type' => FlowNodeIds::APPLY_MAPPING,
 				'config' => [
 					'mapping' => $mappingId,
 					'input' => self::KEY_SOURCE,
@@ -600,7 +596,7 @@ class SynchronizationFlowGenerator {
 			['id' => 'trigger', 'type' => 'openregister.trigger-manual', 'config' => []],
 			[
 				'id' => 'fetch',
-				'type' => SourcePaginateNode::NODE_ID,
+				'type' => FlowNodeIds::SOURCE_PAGINATE,
 				'config' => [
 					'synchronization' => $reference,
 					'output' => self::KEY_PAGE,
@@ -667,7 +663,7 @@ class SynchronizationFlowGenerator {
 		return [
 			[
 				'id' => 'contract',
-				'type' => ContractMatchNode::NODE_ID,
+				'type' => FlowNodeIds::CONTRACT_MATCH,
 				'config' => [
 					'synchronization' => $reference,
 					'idPosition' => self::KEY_SOURCE . '.' . $idPosition,
@@ -709,7 +705,7 @@ class SynchronizationFlowGenerator {
 			...$this->actionRules->stepsFor(synchronization: $synchronization, reference: $reference),
 			[
 				'id' => 'commit',
-				'type' => ContractCommitNode::NODE_ID,
+				'type' => FlowNodeIds::CONTRACT_COMMIT,
 				'config' => [
 					'synchronization' => $reference,
 					'contractPosition' => self::KEY_CONTRACT,
@@ -723,7 +719,7 @@ class SynchronizationFlowGenerator {
 			],
 			[
 				'id' => 'sweep',
-				'type' => ContractSweepNode::NODE_ID,
+				'type' => FlowNodeIds::CONTRACT_SWEEP,
 				'config' => [
 					'synchronization' => $reference,
 					'targetIdsPosition' => self::KEY_SYNCED_ID,

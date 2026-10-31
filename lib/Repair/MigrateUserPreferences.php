@@ -80,7 +80,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -219,13 +219,13 @@ class MigrateUserPreferences implements IRepairStep {
 					continue;
 				}
 
-				$existing = $this->config->getUserValue($userId, Application::APP_ID, $key, '');
+				$existing = $this->config->getUserValue($userId, AppIdentity::APP_ID, $key, '');
 				if ($existing !== '') {
 					$this->alreadyPresent++;
 					continue;
 				}
 
-				$this->config->setUserValue($userId, Application::APP_ID, $key, $old);
+				$this->config->setUserValue($userId, AppIdentity::APP_ID, $key, $old);
 				$this->migrated++;
 			} catch (Throwable $e) {
 				$this->logger->warning(

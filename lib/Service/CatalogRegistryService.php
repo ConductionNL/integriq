@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class CatalogRegistryService {
+class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	/**
 	 * Directory holding the register.d seed fragments this service reads
 	 * for seeded source templates.

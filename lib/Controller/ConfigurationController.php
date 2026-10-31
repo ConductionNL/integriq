@@ -4,9 +4,9 @@
  * Integriq configuration import/export controller.
  *
  * Thin, routed wrapper over the existing, already-tested
- * {@see \OCA\Integriq\Service\ConfigurationService} (REQ-001–REQ-005,
+ * {@see ConfigurationServiceInterface} (REQ-001–REQ-005,
  * reused unchanged) plus the non-mutating
- * {@see \OCA\Integriq\Service\ConfigurationImportPreviewService}
+ * {@see ConfigurationImportPreviewServiceInterface}
  * (REQ-007/REQ-009). Before connector-catalog-ui the service was fully
  * implemented but unrouted — reachable only from PHPUnit.
  *
@@ -26,9 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\ConfigurationImportPreviewService;
-use OCA\Integriq\Service\ConfigurationService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ConfigurationImportPreviewServiceInterface;
+use OCA\Integriq\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -55,22 +55,22 @@ class ConfigurationController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param ConfigurationService $configService The existing export/import service (unchanged).
-	 * @param ConfigurationImportPreviewService $previewService The non-mutating preview service.
+	 * @param ConfigurationServiceInterface $configService The existing export/import service (unchanged).
+	 * @param ConfigurationImportPreviewServiceInterface $previewService The non-mutating preview service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly ConfigurationService $configService,
-		private readonly ConfigurationImportPreviewService $previewService,
+		private readonly ConfigurationServiceInterface $configService,
+		private readonly ConfigurationImportPreviewServiceInterface $previewService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

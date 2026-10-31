@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\CaseSystem;
 
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
@@ -84,6 +85,7 @@ class CaseSystemOperationsTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 			new CaseSystemOperations(zgw: $zgw, mock: new CaseSystemMock()),
 		);
 	}//end callService()

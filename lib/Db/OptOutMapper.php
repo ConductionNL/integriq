@@ -41,7 +41,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
  */
-class OptOutMapper extends QBMapper {
+class OptOutMapper extends QBMapper implements OptOutMapperInterface {
 
 	/**
 	 * The table, unprefixed.

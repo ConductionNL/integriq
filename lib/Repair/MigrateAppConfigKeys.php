@@ -75,7 +75,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -189,13 +189,13 @@ class MigrateAppConfigKeys implements IRepairStep {
 					continue;
 				}
 
-				$existing = $this->appConfig->getValueString(Application::APP_ID, $key, '');
+				$existing = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '');
 				if ($existing !== '') {
 					$alreadyPresent++;
 					continue;
 				}
 
-				$this->appConfig->setValueString(Application::APP_ID, $key, $old);
+				$this->appConfig->setValueString(AppIdentity::APP_ID, $key, $old);
 				$migrated++;
 			} catch (Throwable $e) {
 				$this->logger->warning(

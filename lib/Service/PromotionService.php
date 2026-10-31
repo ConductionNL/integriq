@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/environments-and-promotion/spec.md
  */
-class PromotionService {
+class PromotionService implements PromotionServiceInterface {
 	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
 	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	private const REGISTER = 'integriq';

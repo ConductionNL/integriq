@@ -38,14 +38,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-is-idempotent-and-keeps-linked-rows-req-conn-002
  */
-class ConnectionStore {
-
-	/**
-	 * The register every connection row lives in.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'integriq';
+class ConnectionStore implements ConnectionStoreInterface {
 
 	/**
 	 * The connection schema slug. Not `connection`: stackiq owns that global slug (umbrella D11).
