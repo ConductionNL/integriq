@@ -444,15 +444,12 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 		$loaded = $data;
 		$source = $this->resolveSource(sourceSlug: (string)($data['aggregatorSourceSlug'] ?? ''));
 		$configuration = ($source->getObject()['configuration'] ?? []);
-		$run = new BankfeedSyncRun(
-			provider: $this->resolveProvider(configuration: $configuration),
-			configuration: $configuration,
-			connection: $data
-		);
+		$provider = $this->resolveProvider(configuration: $configuration);
+		$run = new BankfeedSyncRun(configuration: $configuration, connection: $data);
 
 		// Phase 1 — pull every account first; any throw aborts the whole
 		// connection before anything is persisted.
-		$pulled = $this->pullAccounts(run: $run, accounts: (array)($data['accounts'] ?? []));
+		$pulled = $this->pullAccounts(run: $run, provider: $provider);
 
 		// Phase 2 — persist batches + emit events, then advance the watermark.
 		foreach ($pulled as $pull) {
@@ -485,8 +482,8 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 	/**
 	 * Pull the transactions of every account that has an aggregator account id.
 	 *
-	 * @param BankfeedSyncRun                  $run      The aggregator and window of this sync.
-	 * @param array<int, array<string, mixed>> $accounts The connection's accounts.
+	 * @param BankfeedSyncRun                 $run      The accounts and window of this sync.
+	 * @param Psd2AggregatorProviderInterface $provider The aggregator binding of the connection's source.
 	 *
 	 * @return array<int, array{iban: string, transactions: array}> The pulled transactions per account.
 	 *
@@ -495,9 +492,9 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 	 *
 	 * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
 	 */
-	private function pullAccounts(BankfeedSyncRun $run, array $accounts): array {
+	private function pullAccounts(BankfeedSyncRun $run, Psd2AggregatorProviderInterface $provider): array {
 		$pulled = [];
-		foreach ($accounts as $account) {
+		foreach ($run->accounts as $account) {
 			$accountId = (string)($account['aggregatorAccountId'] ?? '');
 			if ($accountId === '') {
 				continue;
@@ -505,7 +502,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 			$pulled[] = [
 				'iban' => (string)($account['iban'] ?? ''),
-				'transactions' => $run->provider->listTransactions(
+				'transactions' => $provider->listTransactions(
 					sourceConfiguration: $run->configuration,
 					accountId: $accountId,
 					since: $run->since,
@@ -521,8 +518,8 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 	 * Persist one account's pulled transactions as a bankfeed_batch and emit
 	 * the synced event that points at it.
 	 *
-	 * @param BankfeedSyncRun                             $run  The connection and window of this sync.
-	 * @param array{iban: string, transactions: array}    $pull One account's pulled transactions.
+	 * @param BankfeedSyncRun                          $run  The connection and window of this sync.
+	 * @param array{iban: string, transactions: array} $pull One account's pulled transactions.
 	 *
 	 * @return void
 	 *
