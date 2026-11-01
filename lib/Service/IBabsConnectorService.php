@@ -97,15 +97,11 @@ class IBabsConnectorService implements IBabsConnectorServiceInterface {
 	/**
 	 * Get the HTTP status code from a call log ObjectEntity.
 	 *
-	 * @param ObjectEntity|null $callLog The entity returned by CallService::call().
+	 * @param ObjectEntity $callLog The entity returned by CallService::call().
 	 *
-	 * @return int HTTP status code, 0 if callLog is null or missing.
+	 * @return int HTTP status code, 0 if it is missing.
 	 */
-	private function getStatusCode(?ObjectEntity $callLog): int {
-		if ($callLog === null) {
-			return 0;
-		}
-
+	private function getStatusCode(ObjectEntity $callLog): int {
 		$data = $callLog->getObject();
 		return (int)($data['statusCode'] ?? 0);
 	}//end getStatusCode()
@@ -113,15 +109,11 @@ class IBabsConnectorService implements IBabsConnectorServiceInterface {
 	/**
 	 * Get the decoded response body from a call log ObjectEntity.
 	 *
-	 * @param ObjectEntity|null $callLog The entity returned by CallService::call().
+	 * @param ObjectEntity $callLog The entity returned by CallService::call().
 	 *
 	 * @return mixed The decoded response body, or null.
 	 */
-	private function getResponseBody(?ObjectEntity $callLog): mixed {
-		if ($callLog === null) {
-			return null;
-		}
-
+	private function getResponseBody(ObjectEntity $callLog): mixed {
 		$data = $callLog->getObject();
 		$body = $data['response']['body'] ?? null;
 		if (is_string($body) === true) {
@@ -168,14 +160,14 @@ class IBabsConnectorService implements IBabsConnectorServiceInterface {
 	/**
 	 * The id iBabs gave a created resource: `id`, else the alternate key.
 	 *
-	 * @param ObjectEntity|null $callLog      The call log of the create request.
-	 * @param string            $alternateKey The body key read when `id` is absent.
+	 * @param ObjectEntity $callLog      The call log of the create request.
+	 * @param string       $alternateKey The body key read when `id` is absent.
 	 *
 	 * @return mixed The id, or null when the body is no object or names none.
 	 *
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
 	 */
-	private function responseId(?ObjectEntity $callLog, string $alternateKey): mixed {
+	private function responseId(ObjectEntity $callLog, string $alternateKey): mixed {
 		$body = $this->getResponseBody(callLog: $callLog);
 		if (is_array($body) === false) {
 			return null;
@@ -607,13 +599,13 @@ class IBabsConnectorService implements IBabsConnectorServiceInterface {
 	/**
 	 * Why a besluitenlijst answer cannot be stored, if it cannot.
 	 *
-	 * @param ObjectEntity|null $callLog The call log of the besluitenlijst request.
+	 * @param ObjectEntity $callLog The call log of the besluitenlijst request.
 	 *
 	 * @return string|null The failure message, or null when the answer holds a besluitenlijst.
 	 *
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-5
 	 */
-	private function besluitenlijstFailure(?ObjectEntity $callLog): ?string {
+	private function besluitenlijstFailure(ObjectEntity $callLog): ?string {
 		$statusCode = $this->getStatusCode(callLog: $callLog);
 		if ($statusCode === 404) {
 			return 'Besluitenlijst not yet published';
