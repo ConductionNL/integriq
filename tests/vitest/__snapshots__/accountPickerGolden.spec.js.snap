@@ -1,0 +1,793 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`account picker golden > DsoPkiSettings renders as recorded 1`] = `
+[
+  [
+    "initial",
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "",
+      "accountOptions": [
+        {
+          "displayName": "Anna",
+          "id": "anna",
+          "user": "anna",
+        },
+        {
+          "displayName": "bob",
+          "id": "bob",
+          "user": "bob",
+        },
+      ],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "Searching accounts failed.",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "Searching accounts failed.",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+]
+`;
+
+exports[`account picker golden > OpenFormulierenConnectionSettings renders as recorded 1`] = `
+[
+  [
+    "initial",
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "",
+      "accountOptions": [
+        {
+          "displayName": "Anna",
+          "id": "anna",
+          "user": "anna",
+        },
+        {
+          "displayName": "bob",
+          "id": "bob",
+          "user": "bob",
+        },
+      ],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "Searching accounts failed.",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "Searching accounts failed.",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+]
+`;
+
+exports[`account picker golden > WebhookConnectionRow renders as recorded 1`] = `
+[
+  [
+    "initial",
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "two entries",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "",
+      "accountOptions": [
+        {
+          "displayName": "Anna",
+          "id": "anna",
+          "user": "anna",
+        },
+        {
+          "displayName": "bob",
+          "id": "bob",
+          "user": "bob",
+        },
+      ],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "no entries",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "request fails",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "Searching accounts failed.",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    undefined,
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "a",
+    false,
+    [],
+    {
+      "accountError": "",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+  [
+    "malformed body",
+    "an",
+    true,
+    [
+      [
+        "get",
+        "/ocs/v2.php/core/autocomplete/get",
+        {
+          "params": {
+            "itemId": "",
+            "itemType": "",
+            "limit": 10,
+            "search": "an",
+            "shareTypes": [
+              0,
+            ],
+          },
+        },
+      ],
+    ],
+    {
+      "accountError": "Searching accounts failed.",
+      "accountOptions": [],
+      "searchingAccounts": false,
+    },
+  ],
+]
+`;
