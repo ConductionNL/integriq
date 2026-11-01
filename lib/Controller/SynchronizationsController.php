@@ -59,6 +59,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class SynchronizationsController extends Controller {
+	use LogPageListing;
+
 	/**
 	 * Constructor for the SynchronizationsController.
 	 *
@@ -148,99 +150,7 @@ class SynchronizationsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logs(SearchServiceInterface $searchService): JSONResponse {
-		try {
-			// Get filters from request.
-			$filters = $this->request->getParams();
-			$specialFilters = [];
-
-			// Pagination using _page and _limit.
-			if (isset($filters['_limit']) === true) {
-				$limit = (int)$filters['_limit'];
-			} else {
-				$limit = 20;
-			}
-
-			if (isset($filters['_page']) === true) {
-				$page = (int)$filters['_page'];
-			} else {
-				$page = 1;
-			}
-
-			$offset = (($page - 1) * $limit);
-			unset($filters['_limit'], $filters['_page']);
-
-			// Handle special filters.
-			if (empty($filters['date_from']) === false) {
-				$specialFilters['date_from'] = $filters['date_from'];
-			}
-
-			if (empty($filters['date_to']) === false) {
-				$specialFilters['date_to'] = $filters['date_to'];
-			}
-
-			if (empty($filters['status']) === false) {
-				$specialFilters['status'] = $filters['status'];
-			}
-
-			if (empty($filters['slow_syncs']) === false) {
-				// 5 seconds in milliseconds.
-				$specialFilters['slow_syncs'] = 5000;
-			}
-
-			// Build search conditions and parameters.
-			$searchConditions = [];
-			$searchParams = [];
-
-			if (empty($specialFilters['date_from']) === false) {
-				$searchConditions[] = 'created >= ?';
-				$searchParams[] = $specialFilters['date_from'];
-			}
-
-			if (empty($specialFilters['date_to']) === false) {
-				$searchConditions[] = 'created <= ?';
-				$searchParams[] = $specialFilters['date_to'];
-			}
-
-			if (empty($specialFilters['status']) === false) {
-				$searchConditions[] = 'status = ?';
-				$searchParams[] = $specialFilters['status'];
-			}
-
-			if (empty($specialFilters['slow_syncs']) === false) {
-				$searchConditions[] = 'sync_time > ?';
-				$searchParams[] = $specialFilters['slow_syncs'];
-			}
-
-			// Remove special query params from filters.
-			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-			// Get synchronization logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'synchronization_log'], $filters);
-			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
-			$syncLogs = ($matches['results'] ?? $matches);
-			$total = ($matches['total'] ?? count($syncLogs));
-			if ($limit > 0) {
-				$pages = ceil($total / $limit);
-				$currentPage = (floor($offset / $limit) + 1);
-			} else {
-				$pages = 1;
-				$currentPage = 1;
-			}
-
-			// Return flattened paginated response.
-			return new JSONResponse(
-				[
-					'results' => $syncLogs,
-					'page' => $currentPage,
-					'pages' => $pages,
-					'results_count' => count($syncLogs),
-					'total' => $total,
-				]
-			);
-		} catch (\Exception $e) {
-			return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
-		}//end try
-
+		return $this->logPage(searchService: $searchService, schema: 'synchronization_log');
 	}//end logs()
 
 	/**

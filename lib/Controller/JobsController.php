@@ -49,6 +49,8 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class JobsController extends Controller {
+	use LogPageListing;
+
 	/**
 	 * Constructor for the JobController.
 	 *
@@ -87,102 +89,7 @@ class JobsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logs(SearchServiceInterface $searchService): JSONResponse {
-		try {
-			// Get filters from request.
-			$filters = $this->request->getParams();
-			$specialFilters = [];
-
-			// Pagination using _page and _limit.
-			if (isset($filters['_limit']) === true) {
-				$limit = (int)$filters['_limit'];
-			} else {
-				$limit = 20;
-			}
-
-			if (isset($filters['_page']) === true) {
-				$page = (int)$filters['_page'];
-			} else {
-				$page = 1;
-			}
-
-			$offset = (($page - 1) * $limit);
-			unset($filters['_limit'], $filters['_page']);
-
-			// Handle special filters.
-			if (empty($filters['date_from']) === false) {
-				$specialFilters['date_from'] = $filters['date_from'];
-			}
-
-			if (empty($filters['date_to']) === false) {
-				$specialFilters['date_to'] = $filters['date_to'];
-			}
-
-			if (empty($filters['status']) === false) {
-				$specialFilters['status'] = $filters['status'];
-			}
-
-			if (empty($filters['slow_executions']) === false) {
-				$specialFilters['slow_executions'] = 5000;
-				// 5 seconds in milliseconds.
-			}
-
-			// Build search conditions and parameters.
-			$searchConditions = [];
-			$searchParams = [];
-
-			if (empty($specialFilters['date_from']) === false) {
-				$searchConditions[] = 'created >= ?';
-				$searchParams[] = $specialFilters['date_from'];
-			}
-
-			if (empty($specialFilters['date_to']) === false) {
-				$searchConditions[] = 'created <= ?';
-				$searchParams[] = $specialFilters['date_to'];
-			}
-
-			if (empty($specialFilters['status']) === false) {
-				$searchConditions[] = 'status = ?';
-				$searchParams[] = $specialFilters['status'];
-			}
-
-			if (empty($specialFilters['slow_executions']) === false) {
-				$searchConditions[] = 'execution_time > ?';
-				$searchParams[] = $specialFilters['slow_executions'];
-			}
-
-			// Remove special query params from filters.
-			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-			// Get job logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'job_log'], $filters);
-			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
-			$jobLogs = ($matches['results'] ?? $matches);
-			$total = ($matches['total'] ?? count($jobLogs));
-			if ($limit > 0) {
-				$pages = ceil($total / $limit);
-			} else {
-				$pages = 1;
-			}
-
-			if ($limit > 0) {
-				$currentPage = (floor($offset / $limit) + 1);
-			} else {
-				$currentPage = 1;
-			}
-
-			// Return flattened paginated response.
-			return new JSONResponse(
-				[
-					'results' => $jobLogs,
-					'page' => $currentPage,
-					'pages' => $pages,
-					'results_count' => count($jobLogs),
-					'total' => $total,
-				]
-			);
-		} catch (\Exception $e) {
-			return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
-		}//end try
+		return $this->logPage(searchService: $searchService, schema: 'job_log');
 	}//end logs()
 
 	/**
