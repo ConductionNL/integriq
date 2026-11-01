@@ -3872,28 +3872,84 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$flowToken = new FlowToken();
 		}
 
-		// Execution-trace REQ-001: a manual synchronization run is one of the
-		// four traced entry points. When `synchronize()` is invoked directly
-		// (no active trace supplied — e.g. a manual run or JobService's own
-		// dispatch), mint a fresh `sync`-entryPoint context and own its
-		// persistence below. When `$trace` is already supplied (e.g. a
-		// `synchronization` rule inside an already-traced endpoint pipeline,
-		// EndpointService::processSyncRule()), reuse the SAME context so the
-		// sync's steps join the caller's single execution trace instead of
-		// starting a disconnected one.
+		// Execution-trace REQ-001: without a caller's trace this run mints and
+		// persists its own; a supplied trace (e.g. a `synchronization` rule in
+		// an already-traced endpoint pipeline) is reused so the sync's steps
+		// join the caller's single execution trace.
 		$ownsTrace = ($trace === null);
 		if ($ownsTrace === true) {
-			$trace = new ExecutionTraceContext(
-				entryPoint: 'sync',
-				// `id` first: OpenRegister returns an object's identifier as
-				// `id` (mirrored on `@self.id`) and does NOT expose a top-level
-				// `uuid`, so reading `uuid` alone always yielded null and every
-				// sync-entryPoint trace was stored without an entryPointId.
-				entryPointId: (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
-				triggeredBy: 'manual'
-			);
+			$trace = $this->mintSyncTrace(synchronization: $synchronization);
 		}
 
+		$this->assertValidMutationType(mutationType: $mutationType);
+
+		$startTime = microtime(true);
+
+		$run = new ExternSyncRun();
+		$run->synchronization = $synchronization;
+		$run->flowToken = &$flowToken;
+		$run->isTest = $isTest;
+		$run->force = $force;
+		$run->data = $data;
+		$run->mutationType = $mutationType;
+		$run->forceDeletion = $forceDeletion;
+		$run->approvalRequestId = $approvalRequestId;
+		$run->trace = $trace;
+
+		// Shortcut for intern-to-extern sync.
+		if (($synchronization['sourceType'] ?? null) === 'register/schema' && $object !== null) {
+			$contract = $this->runInternToExtern(run: $run, object: $object);
+			if ($ownsTrace === true) {
+				$this->persistOwnedTrace(trace: $trace, status: 'success');
+			}
+
+			return $contract;
+		}
+
+		// Handle full extern-to-intern sync.
+		$run->log = $this->createRunLog(run: $run, type: 'externToIntern');
+		$this->startRunProgress(run: $run, triggeredBy: $triggeredBy);
+		$run->log = $this->synchronizeExternToIntern(run: $run, source: $source);
+
+		$traceStatus = $this->closeExternRun(run: $run, startTime: $startTime);
+		if ($ownsTrace === true) {
+			$this->persistOwnedTrace(trace: $trace, status: $traceStatus);
+		}
+
+		return $run->log->jsonSerialize();
+	}//end synchronize()
+
+	/**
+	 * Mint the `sync`-entryPoint trace a run owns when no caller supplied one.
+	 *
+	 * @param array $synchronization The hydrated synchronization.
+	 *
+	 * @return ExecutionTraceContext The new trace.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
+	 */
+	private function mintSyncTrace(array $synchronization): ExecutionTraceContext {
+		return new ExecutionTraceContext(
+			entryPoint: 'sync',
+			// `id` first: OpenRegister returns an object's identifier as `id`
+			// (mirrored on `@self.id`) and does NOT expose a top-level `uuid`.
+			entryPointId: (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
+			triggeredBy: 'manual'
+		);
+	}//end mintSyncTrace()
+
+	/**
+	 * Reject a mutation type the engine does not know.
+	 *
+	 * @param string|null $mutationType The requested mutation type, null for none.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the mutation type is not one of VALID_MUTATION_TYPES.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function assertValidMutationType(?string $mutationType): void {
 		if ($mutationType !== null && in_array($mutationType, $this::VALID_MUTATION_TYPES) === false) {
 			throw new Exception(
 				sprintf(
@@ -3903,149 +3959,151 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				)
 			);
 		}
+	}//end assertValidMutationType()
 
-		// Start execution time measurement.
-		$startTime = microtime(true);
+	/**
+	 * Build a run's in-memory log, so it carries a stable uuid for the contract
+	 * logs; the append-only row is persisted once at the end of the run.
+	 *
+	 * @param ExternSyncRun $run  The run.
+	 * @param string        $type The run direction: `internToExtern` or `externToIntern`.
+	 *
+	 * @return SynchronizationRunLog The run log.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function createRunLog(ExternSyncRun $run, string $type): SynchronizationRunLog {
+		$synchronization = $run->synchronization;
 
-		// Prepare initial log array.
-		//
-		// `id` first, `uuid` as the fallback. This read `uuid` alone, and the
-		// hydrated synchronization does not carry that key — every other use in
-		// this service reads `id` (the contract lookups, the contract's own
-		// synchronizationId). So every run log was written with an EMPTY
-		// synchronization id, and filtering logs by synchronization returned
-		// nothing at all: the rows were there, just unattributable. Measured by
-		// trying it — a filtered query came back empty for a run that had just
-		// written 374 objects, which reads exactly like "the sync did nothing".
-		$log = [
-			'synchronizationId' => (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
-			'result' => [
-				'objects' => [
-					'found' => 0,
-					'skipped' => 0,
-					'created' => 0,
-					'updated' => 0,
-					'deleted' => 0,
-					'invalid' => 0,
+		// `id` first, `uuid` as the fallback: every other use in this service
+		// reads `id`, and a log without it cannot be filtered by synchronization.
+		return $this->synchronizationLogService->createFromArray(
+			object: [
+				'synchronizationId' => (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null)),
+				'result' => [
+					'objects' => [
+						'found' => 0,
+						'skipped' => 0,
+						'created' => 0,
+						'updated' => 0,
+						'deleted' => 0,
+						'invalid' => 0,
+					],
+					'contracts' => [],
+					'logs' => [],
+					'type' => $type,
 				],
-				'contracts' => [],
-				'logs' => [],
-			],
-			'test' => $isTest,
-			'force' => $force,
-			'expires' => $this->calculateExpires(...[$this->errorRetention]),
-		];
+				'test' => $run->isTest,
+				'force' => $run->force,
+				'expires' => $this->calculateExpires(...[$this->errorRetention]),
+			]
+		);
+	}//end createRunLog()
 
-		// Shortcut for intern-to-extern sync.
-		if (($synchronization['sourceType'] ?? null) === 'register/schema' && $object !== null) {
-			// Build the in-memory log first so it carries a stable uuid for the
-			// contract logs; the append-only row is persisted once at the end.
-			$log['result']['type'] = 'internToExtern';
-			$log = $this->synchronizationLogService->createFromArray(object: $log);
+	/**
+	 * Run the intern-to-extern shortcut for one object and persist its run log.
+	 *
+	 * @param ExternSyncRun                                $run    The run.
+	 * @param array|\OCA\OpenRegister\Db\ObjectEntity      $object The object to push, updated in place.
+	 *
+	 * @return array|null The contract, or null when the object was not pushed.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function runInternToExtern(ExternSyncRun $run, array|\OCA\OpenRegister\Db\ObjectEntity &$object): ?array {
+		$log = $this->createRunLog(run: $run, type: 'internToExtern');
 
-			$contract = $this->synchronizeInternToExtern(
-				synchronization: $synchronization,
-				object: $object,
-				log: $log,
-				flowToken: $flowToken,
-				isTest: $isTest,
-				force: $force,
-				mutationType: $mutationType,
-				trace: $trace,
-			);
+		$contract = $this->synchronizeInternToExtern(
+			synchronization: $run->synchronization,
+			object: $object,
+			log: $log,
+			flowToken: $run->flowToken,
+			isTest: $run->isTest,
+			force: $run->force,
+			mutationType: $run->mutationType,
+			trace: $run->trace,
+		);
 
-			// Write-once finalize of the (append-only) run-log for this branch.
-			$this->synchronizationLogService->persist(log: $log);
+		// Write-once finalize of the (append-only) run-log for this branch.
+		$this->synchronizationLogService->persist(log: $log);
 
-			if ($ownsTrace === true) {
-				$this->persistOwnedTrace(trace: $trace, status: 'success');
-			}
+		return $contract;
+	}//end runInternToExtern()
 
-			return $contract;
-		}//end if
-
-		$log['result']['type'] = 'externToIntern';
-
-		// Build the in-memory log first so it carries a stable uuid for the
-		// contract logs; the append-only row is persisted once at the end.
-		$log = $this->synchronizationLogService->createFromArray(object: $log);
-
-		// OPEN THE PROGRESS RECORD BEFORE ANY WORK. The run-log above is
-		// in-memory until the very end and its schema is appendOnly+immutable,
-		// so until this row exists the run is invisible for its whole duration.
+	/**
+	 * Open the run's progress record before any work.
+	 *
+	 * The run-log is in-memory until the very end and its schema is
+	 * appendOnly+immutable, so until this row exists the run is invisible for
+	 * its whole duration.
+	 *
+	 * @param ExternSyncRun $run         The run.
+	 * @param string|null   $triggeredBy What started the run, null to read the trace.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-every-run-records-its-source-and-what-started-it-req-crun-001
+	 */
+	private function startRunProgress(ExternSyncRun $run, ?string $triggeredBy): void {
+		$synchronization = $run->synchronization;
 		$this->runProgressService?->start(
 			synchronizationId: (string)($synchronization['id'] ?? $synchronization['uuid'] ?? ''),
-			// Opt-out per synchronization. Defaults ON: a run nobody can watch
-			// is the defect being fixed, so invisibility should be the choice,
-			// not the default. Also the arm-switch for the overhead control.
+			// Opt-out per synchronization; defaults ON, so invisibility is the
+			// choice, not the default.
 			enabled: (bool)($synchronization['sourceConfig']['recordRunProgress'] ?? true),
-			// The source as it is now, and what started the run, so a summary
-			// per source per day never has to guess (connection-run-monitoring
-			// REQ-CRUN-001).
 			sourceId: $this->runSourceId(synchronization: $synchronization),
 			triggeredBy: SynchronizationRunProgressService::resolveTrigger(
 				requested: $triggeredBy,
-				traceTrigger: $trace?->getTriggeredBy()
+				traceTrigger: $run->trace?->getTriggeredBy()
 			)
 		);
+	}//end startRunProgress()
 
-		// Handle full extern-to-intern sync.
-		$run = new ExternSyncRun();
-		$run->synchronization = $synchronization;
-		$run->log = $log;
-		$run->flowToken = &$flowToken;
-		$run->isTest = $isTest;
-		$run->force = $force;
-		$run->data = $data;
-		$run->mutationType = $mutationType;
-		$run->forceDeletion = $forceDeletion;
-		$run->approvalRequestId = $approvalRequestId;
-		$run->trace = $trace;
-		$log = $this->synchronizeExternToIntern(run: $run, source: $source);
-
-		// A gated, not-yet-approved run already finalized its own log with a
-		// `pending_approval` message and made no writes — do not overwrite it
-		// with 'Success' (synchronization-engine REQ-015). Nor a resumed run
-		// whose source changed after the preview (`approval_superseded`,
-		// REQ-INAV-004): it wrote nothing and opened a new request.
-		$pausedMessage = $log->getMessage();
+	/**
+	 * Close an extern-to-intern run: finalize its log and progress record.
+	 *
+	 * A gated, not-yet-approved run already finalized its own log with a
+	 * `pending_approval` message and made no writes, so it is not overwritten
+	 * with 'Success' (synchronization-engine REQ-015). Nor is a resumed run
+	 * whose source changed after the preview (`approval_superseded`,
+	 * REQ-INAV-004).
+	 *
+	 * @param ExternSyncRun $run       The run, its log as the extern run returned it.
+	 * @param float         $startTime The run's start, from microtime(true).
+	 *
+	 * @return string The status to persist an owned trace with.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function closeExternRun(ExternSyncRun $run, float $startTime): string {
+		$pausedMessage = $run->log->getMessage();
 		if ($pausedMessage === 'pending_approval' || $pausedMessage === 'approval_superseded') {
-			// Terminal for this run even though no work happened — leaving it
+			// Terminal for this run even though no work happened; leaving it
 			// `running` would show as hung forever.
 			$this->runProgressService?->finish(
 				status: 'success',
-				counters: $this->progressCountersFromLog(log: $log),
+				counters: $this->progressCountersFromLog(log: $run->log),
 				message: $pausedMessage
 			);
 
-			if ($ownsTrace === true) {
-				$this->persistOwnedTrace(trace: $trace, status: 'short_circuited');
-			}
-
-			return $log->jsonSerialize();
+			return 'short_circuited';
 		}
 
-		// Finalize log.
-		$executionTime = (int)round((microtime(true) - $startTime) * 1000);
-		$log->setExecutionTime($executionTime);
-		$log->setMessage('Success');
-		$log->setExpires($this->calculateExpires(...[$this->successRetention, $this->successRetention]));
+		$run->log->setExecutionTime((int)round((microtime(true) - $startTime) * 1000));
+		$run->log->setMessage('Success');
+		$run->log->setExpires($this->calculateExpires(...[$this->successRetention, $this->successRetention]));
 
-		$log = $this->synchronizationLogService->update(log: $log);
+		$run->log = $this->synchronizationLogService->update(log: $run->log);
 
-		// NOT throttled — the terminal write must always land, or a finished run
+		// NOT throttled: the terminal write must always land, or a finished run
 		// stays `running` and every watcher reads it as hung.
 		$this->runProgressService?->finish(
 			status: 'success',
-			counters: $this->progressCountersFromLog(log: $log)
+			counters: $this->progressCountersFromLog(log: $run->log)
 		);
 
-		if ($ownsTrace === true) {
-			$this->persistOwnedTrace(trace: $trace, status: 'success');
-		}
-
-		return $log->jsonSerialize();
-	}//end synchronize()
+		return 'success';
+	}//end closeExternRun()
 
 	/**
 	 * The source id a run records: the synchronization's `sourceId` as it is now.
