@@ -840,6 +840,71 @@ class SourceCallNodeTest extends TestCase {
 	}//end testCallRunsAsTheRunOwnerAndRestoresTheSession()
 
 	/**
+	 * Every outcome of a call matches the golden file recorded before the
+	 * outcome step was split: transport failures, a missing call log, status
+	 * checks, where the status is read from, and the success shape, under both
+	 * error policies.
+	 *
+	 * Regenerate with SOURCE_CALL_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryCallOutcomeMatchesTheGoldenFile(): void {
+		$entity = function (array $object): ObjectEntity {
+			$log = new ObjectEntity();
+			$log->setUuid('33333333-3333-3333-3333-333333333333');
+			$log->setObject($object);
+			return $log;
+		};
+		$cases = [
+			'ok-200' => [fn () => $this->promisedLog(statusCode: 200, body: '{"a":1}'), []],
+			'server-error' => [fn () => $this->promisedLog(statusCode: 500, body: '{"e":1}', statusMessage: 'Boom'), []],
+			'accepted-404' => [fn () => $this->promisedLog(statusCode: 404, body: '{}', statusMessage: 'Not Found'), ['acceptStatuses' => [200, 404]]],
+			'transport' => [fn () => new \GuzzleHttp\Promise\RejectedPromise(new RuntimeException('timed out')), []],
+			'not-a-call-log' => [fn () => new FulfilledPromise('a string'), []],
+			'status-only-in-response' => [fn () => new FulfilledPromise($entity(['response' => ['statusCode' => 201, 'statusMessage' => 'Created', 'body' => '{"b":2}', 'headers' => ['X' => ['y']]]])), []],
+			'no-status-at-all' => [fn () => new FulfilledPromise($entity(['response' => ['body' => '']])), []],
+			'top-level-message-wins' => [fn () => new FulfilledPromise($entity(['statusCode' => 202, 'statusMessage' => 'Top', 'response' => ['statusCode' => 500, 'statusMessage' => 'Inner', 'body' => '{}']])), []],
+			'post-lowercase-method' => [fn () => $this->promisedLog(statusCode: 200, body: '{"c":3}'), ['method' => 'post']],
+			'decode-text' => [fn () => $this->promisedLog(statusCode: 200, body: 'plain words', contentType: 'text/plain'), ['decode' => 'TEXT ']],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => [$promise, $config]) {
+			foreach (['raise', 'continue'] as $policy) {
+				$this->setUp();
+				$this->givenSource();
+				$this->givenOwner();
+				$this->callService->method('callAsync')->willReturnCallback($promise);
+				$stepConfig = array_merge($this->config(), $config);
+				if ($policy === 'continue') {
+					$stepConfig['onError'] = 'continue';
+				}
+
+				try {
+					$outcome = ['out' => $this->node->execute([['json' => ['n' => 1]]], $stepConfig, $this->context())];
+				} catch (FlowNodeException $exception) {
+					$outcome = ['message' => $exception->getMessage(), 'details' => $exception->getDetails(), 'previous' => ($exception->getPrevious() === null ? null : $exception->getPrevious()->getMessage())];
+				}
+
+				$actual[$name . '/' . $policy] = $outcome;
+			}
+		}
+
+		$golden = __DIR__ . '/../../fixtures/flow/source-call-outcomes.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('SOURCE_CALL_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryCallOutcomeMatchesTheGoldenFile()
+
+	/**
 	 * The step's default configuration used by most tests.
 	 *
 	 * @return array<string, mixed> The configuration.
