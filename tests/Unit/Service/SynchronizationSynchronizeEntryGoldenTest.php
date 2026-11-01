@@ -54,6 +54,18 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\Integriq\Service\SynchronizationService
  * @uses   \OCA\Integriq\Service\Synchronization\ExternSyncRun
+ * @uses   \OCA\Integriq\Service\Helper\ExecutionTraceContext
+ * @uses   \OCA\Integriq\Service\Helper\FlowToken
+ * @uses   \OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate
+ * @uses   \OCA\Integriq\Service\ResponseDecoder
+ * @uses   \OCA\Integriq\Service\Security\SensitiveFieldRegistry
+ * @uses   \OCA\Integriq\Service\SynchronizationLogService
+ * @uses   \OCA\Integriq\Service\SynchronizationRunLog
+ * @uses   \OCA\Integriq\Service\SynchronizationRunProgressService
+ * @uses   \OCA\Integriq\Service\Synchronization\ApiFetch
+ * @uses   \OCA\Integriq\Service\Synchronization\ChangeSetBuilder
+ * @uses   \OCA\Integriq\Service\Synchronization\SourceItemRequest
+ * @uses   \OCA\Integriq\Service\Synchronization\SourcePage
  */
 class SynchronizationSynchronizeEntryGoldenTest extends TestCase {
 
