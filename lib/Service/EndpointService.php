@@ -40,7 +40,6 @@ use OCA\Integriq\Service\MessageValidation\EndpointMessageGate;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RateLimit\RateLimitDecision;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
-use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -4664,76 +4663,4 @@ class EndpointService implements EndpointServiceInterface {
 		return $flowToken;
 		// Return the overridden request.
 	}//end updateRequestWithRuleData()
-
-	/**
-	 * Parse raw content into structured data based on content type.
-	 *
-	 * @param IRequest $request The current request, used to inspect headers and raw body.
-	 *
-	 * @return mixed Parsed data (array for JSON/XML) or original string.
-	 *
-	 * @spec openspec/specs/endpoint-runtime/spec.md
-	 */
-	private function parseContent(IRequest $request): mixed {
-		$contentType = $request->getHeader('Content-Type');
-
-		if (str_contains($contentType, 'multipart/form-data') === true) {
-			[$post, $files] = request_parse_body();
-
-			$parsedFiles = array_map(
-				function ($file) {
-					return file_get_contents($file['tmp_name']);
-				},
-				$files
-			);
-
-			return array_merge($post, $parsedFiles);
-		}
-
-		$content = $this->getRawContent();
-
-		// Try JSON decode first.
-		$json = json_decode($content, true);
-		if ($json !== null) {
-			return $json;
-		}
-
-		// Try XML decode if content type suggests XML or content looks like XML.
-		if ($contentType === 'application/xml' || $contentType === 'text/xml'
-			|| ($contentType === '' && $this->looksLikeXml(content: $content) === true)
-		) {
-			libxml_use_internal_errors(true);
-			$xml = SafeXmlParser::parse($content);
-			libxml_clear_errors();
-
-			if ($xml !== false) {
-				return json_decode(json_encode($xml), true);
-			}
-		}
-
-		// Return original content as fallback.
-		return $request->getParams();
-	}//end parseContent()
-
-	/**
-	 * Check if content appears to be XML.
-	 *
-	 * @param string $content Content to check.
-	 *
-	 * @return bool True if content is valid XML.
-	 *
-	 * @spec openspec/specs/endpoint-runtime/spec.md
-	 */
-	private function looksLikeXml(string $content): bool {
-		// Suppress XML errors.
-		libxml_use_internal_errors(true);
-
-		// Use the safe parser so the XXE loader cannot leak in from SOAPService.
-		$result = SafeXmlParser::parse($content) !== false;
-
-		// Clear any XML errors.
-		libxml_clear_errors();
-
-		return $result;
-	}//end looksLikeXml()
 }//end class
