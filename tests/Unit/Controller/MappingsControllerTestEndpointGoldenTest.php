@@ -96,6 +96,7 @@ class MappingsControllerTestEndpointGoldenTest extends TestCase {
 	private function controller(array $case): array {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($case['params']);
+		$request->method('getParam')->willReturnCallback(static fn (string $key, mixed $default = null): mixed => ($case['params'][$key] ?? $default));
 
 		$actingUser = $this->createMock(IUser::class);
 		$actingUser->method('getUID')->willReturn('alice');
