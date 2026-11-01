@@ -213,42 +213,92 @@ export function emptyRuleDraft() {
  * @spec openspec/specs/rule-editor-ui/spec.md
  */
 export function normaliseConditions(raw) {
-	if (raw === null || raw === undefined || raw === '') {
+	if (isBlankConditions(raw)) {
 		return emptyRootGroup()
 	}
 	if (typeof raw === 'string') {
-		try {
-			return normaliseConditions(JSON.parse(raw))
-		} catch (_e) {
-			return emptyRootGroup()
-		}
+		return normaliseConditionText(raw)
 	}
 	if (Array.isArray(raw)) {
-		if (raw.length === 0) return emptyRootGroup()
-		// Single-item array wrapping a group → unwrap and recurse.
-		if (
-			raw.length === 1
-			&& raw[0]
-			&& typeof raw[0] === 'object'
-			&& !Array.isArray(raw[0])
-		) {
-			return normaliseConditions(raw[0])
-		}
-		// Multi-item array of leaves → wrap with AND.
-		return { and: raw }
+		return normaliseConditionList(raw)
 	}
-	if (typeof raw === 'object') {
-		const keys = Object.keys(raw)
-		if (
-			keys.length === 1
-			&& (keys[0] === 'and' || keys[0] === 'or')
-			&& Array.isArray(raw[keys[0]])
-		) {
-			return raw
-		}
-		return { and: [raw] }
+	return typeof raw === 'object' ? normaliseConditionObject(raw) : emptyRootGroup()
+}
+
+/**
+ * Whether a stored conditions value holds nothing: null, undefined or ''.
+ *
+ * @param {unknown} raw The stored value.
+ * @return {boolean} True when blank.
+ */
+function isBlankConditions(raw) {
+	return raw === null || raw === undefined || raw === ''
+}
+
+/**
+ * Normalise conditions stored as an object: a group as it is, a leaf wrapped
+ * in an AND group.
+ *
+ * @param {object} node The stored object.
+ * @return {object} JsonLogic group node.
+ */
+function normaliseConditionObject(node) {
+	return isConditionGroup(node) ? node : { and: [node] }
+}
+
+/**
+ * Normalise conditions stored as JSON text by the legacy raw editor.
+ *
+ * @param {string} text The stored text.
+ * @return {object} JsonLogic group node; an empty AND group when unparseable.
+ */
+function normaliseConditionText(text) {
+	try {
+		return normaliseConditions(JSON.parse(text))
+	} catch (_e) {
+		return emptyRootGroup()
 	}
-	return emptyRootGroup()
+}
+
+/**
+ * Normalise conditions stored as a list.
+ *
+ * @param {Array} list The stored list.
+ * @return {object} JsonLogic group node.
+ */
+function normaliseConditionList(list) {
+	if (list.length === 0) return emptyRootGroup()
+	// Single-item array wrapping a group → unwrap and recurse.
+	if (list.length === 1 && isPlainObject(list[0])) {
+		return normaliseConditions(list[0])
+	}
+	// Multi-item array of leaves → wrap with AND.
+	return { and: list }
+}
+
+/**
+ * Whether a value is a non-null object that is not an array.
+ *
+ * @param {unknown} value The value.
+ * @return {boolean} True for a plain object.
+ */
+function isPlainObject(value) {
+	return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * Whether an object is a JsonLogic group: one `and` or `or` key holding a list.
+ *
+ * @param {object} node The object.
+ * @return {boolean} True for a group node.
+ */
+function isConditionGroup(node) {
+	const keys = Object.keys(node)
+	return (
+		keys.length === 1
+		&& (keys[0] === 'and' || keys[0] === 'or')
+		&& Array.isArray(node[keys[0]])
+	)
 }
 
 /**
