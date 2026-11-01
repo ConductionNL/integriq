@@ -31,15 +31,16 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
+import namedEditorDialog from '../../src/mixins/namedEditorDialog.js'
 import { editorSlotScopeProps } from '../../src/modals/editorSlotScope.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
 /**
  * Imports the loader binds to the real module instead of a stub, because the
- * options object spreads them into its props.
+ * options object spreads or mixes them in.
  */
-const REAL_BINDINGS = { editorSlotScopeProps }
+const REAL_BINDINGS = { editorSlotScopeProps, namedEditorDialog }
 
 /**
  * Load an SFC's `export default {…}` options object without a bundler.
@@ -194,6 +195,67 @@ describe('the installed nextcloud-vue must bind the save path this app depends o
 				+ 'is pinned in package.json.',
 		).toContain('confirm')
 	})
+})
+
+/**
+ * One options section of a component with its mixins merged under it, the
+ * way Vue resolves them (the component's own entries win).
+ *
+ * @param {object} options Component options.
+ * @param {string} key Section name, such as `computed`.
+ * @return {object} The merged section.
+ */
+function section(options, key) {
+	return Object.assign(
+		{},
+		...(options.mixins || []).map((mixin) => mixin[key] || {}),
+		options[key] || {},
+	)
+}
+
+describe('name, open and cancel behaviour of the mapping and synchronization editors', () => {
+	const NAMES = ['', '   ', '---', 'a', 'Sync 1']
+
+	for (const relPath of [
+		'src/modals/v2/MappingEditorModal.vue',
+		'src/modals/v2/SynchronizationEditorModal.vue',
+	]) {
+		const options = loadSfcOptions(relPath)
+		const computed = section(options, 'computed')
+		const t = (app, text) => '[' + text + ']'
+
+		it(`${relPath} answers as recorded`, () => {
+			const seen = []
+			const vm = { t, seedDraft: () => seen.push('seed') }
+			const record = {
+				isCreate: [null, { id: 1 }].map((item) =>
+					computed.isCreate.call({ ...vm, item }),
+				),
+				nameLabel: computed.nameLabel.call(vm),
+				nameError: NAMES.flatMap((name) =>
+					[false, true].map((nameTouched) =>
+						computed.nameError.call({
+							...vm,
+							draft: { name },
+							nameTouched,
+						}),
+					),
+				),
+			}
+			const watcher = section(options, 'watch').show
+			record.showImmediate = watcher.immediate
+			watcher.handler.call(vm, false)
+			watcher.handler.call(vm, true)
+			record.seeded = seen.length
+			const closes = []
+			const cancel = section(options, 'methods').onCancel
+			cancel.call({ saving: true, close: () => closes.push('busy') })
+			cancel.call({ saving: false, close: () => closes.push('idle') })
+			cancel.call({ saving: false, close: undefined })
+			record.closes = closes
+			expect(record).toMatchSnapshot()
+		})
+	}
 })
 
 describe('form-dialog slot contract for the bespoke editor modals', () => {
