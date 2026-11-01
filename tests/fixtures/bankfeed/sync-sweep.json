@@ -1,0 +1,1371 @@
+{
+    "nothing": {
+        "trace": [],
+        "outcome": {
+            "return": 0
+        }
+    },
+    "not-active": {
+        "trace": [],
+        "outcome": {
+            "return": 0
+        }
+    },
+    "watermark": {
+        "trace": [
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-1",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-2",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-mark",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-1-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-1-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-1",
+                "subject": "c-mark",
+                "data": {
+                    "connectionId": "c-mark",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-1"
+                }
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-mark",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-2-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-2-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-2",
+                "subject": "c-mark",
+                "data": {
+                    "connectionId": "c-mark",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-2"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-mark",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-mark",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "lastSyncAt": "clock+0d",
+                    "consentGrantedAt": "2025-09-01T00:00:00+00:00"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-mark",
+                    "batches": 2
+                }
+            }
+        ],
+        "outcome": {
+            "return": 2
+        }
+    },
+    "granted": {
+        "trace": [
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-1",
+                "since": "2025-09-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-2",
+                "since": "2025-09-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-grant",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-09-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-1-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-1-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-1",
+                "subject": "c-grant",
+                "data": {
+                    "connectionId": "c-grant",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-09-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-1"
+                }
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-grant",
+                    "accountIban": "",
+                    "since": "2025-09-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-2-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-2-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-2",
+                "subject": "c-grant",
+                "data": {
+                    "connectionId": "c-grant",
+                    "accountIban": "",
+                    "since": "2025-09-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-2"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-grant",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-grant",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "lastSyncAt": "clock+0d",
+                    "consentGrantedAt": "2025-09-01T00:00:00+00:00"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-grant",
+                    "batches": 2
+                }
+            }
+        ],
+        "outcome": {
+            "return": 2
+        }
+    },
+    "backfill": {
+        "trace": [
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-1",
+                "since": "clock-30d",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-2",
+                "since": "clock-30d",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-fresh",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "clock-30d",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-1-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-1-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-1",
+                "subject": "c-fresh",
+                "data": {
+                    "connectionId": "c-fresh",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "clock-30d",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-1"
+                }
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-fresh",
+                    "accountIban": "",
+                    "since": "clock-30d",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-2-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-2-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-2",
+                "subject": "c-fresh",
+                "data": {
+                    "connectionId": "c-fresh",
+                    "accountIban": "",
+                    "since": "clock-30d",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-2"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-fresh",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-fresh",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "lastSyncAt": "clock+0d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-fresh",
+                    "batches": 2
+                }
+            }
+        ],
+        "outcome": {
+            "return": 2
+        }
+    },
+    "rest-provider": {
+        "trace": [
+            {
+                "pull": "rest",
+                "configuration": {
+                    "provider": "rest"
+                },
+                "accountId": "acc-1",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "rest",
+                "configuration": {
+                    "provider": "rest"
+                },
+                "accountId": "acc-2",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-rest",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-1-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-1-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-1",
+                "subject": "c-rest",
+                "data": {
+                    "connectionId": "c-rest",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-1"
+                }
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-rest",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-2-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-2-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-2",
+                "subject": "c-rest",
+                "data": {
+                    "connectionId": "c-rest",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-2"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-rest",
+                    "aggregatorSourceSlug": "psd2-rest",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-rest",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "lastSyncAt": "clock+0d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-rest",
+                    "batches": 2
+                }
+            }
+        ],
+        "outcome": {
+            "return": 2
+        }
+    },
+    "expired": {
+        "trace": [
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-expired",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "expired",
+                    "consentReference": "ref-c-expired",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "consentExpiresAt": "clock-1d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Consent expired",
+                "context": {
+                    "connectionId": "c-expired"
+                }
+            }
+        ],
+        "outcome": {
+            "return": 0
+        }
+    },
+    "expiring": {
+        "trace": [
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-expiring",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-expiring",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "consentExpiresAt": "clock+2d",
+                    "lastSyncAt": "2025-10-01T00:00:00+00:00",
+                    "expiryWarnedAt": "clock+0d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Consent expiring soon",
+                "context": {
+                    "connectionId": "c-expiring",
+                    "consentExpiresAt": "clock+2d"
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.consent.expiring",
+                "source": "/bankfeed/connections/conn-uuid-0",
+                "subject": "c-expiring",
+                "data": {
+                    "connectionId": "c-expiring",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "consentReference": "ref-c-expiring",
+                    "consentExpiresAt": "clock+2d"
+                }
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-1",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-2",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-expiring",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-1-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-1-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-1",
+                "subject": "c-expiring",
+                "data": {
+                    "connectionId": "c-expiring",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-1"
+                }
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-expiring",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-2-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-2-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-2",
+                "subject": "c-expiring",
+                "data": {
+                    "connectionId": "c-expiring",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-2"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-expiring",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-expiring",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "consentExpiresAt": "clock+2d",
+                    "lastSyncAt": "clock+0d",
+                    "expiryWarnedAt": "clock+0d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-expiring",
+                    "batches": 2
+                }
+            }
+        ],
+        "outcome": {
+            "return": 2
+        }
+    },
+    "expiring-warned": {
+        "trace": [
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-1",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-2",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-warned",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-1-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-1-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-1",
+                "subject": "c-warned",
+                "data": {
+                    "connectionId": "c-warned",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-1"
+                }
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-warned",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-2-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-2-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-2",
+                "subject": "c-warned",
+                "data": {
+                    "connectionId": "c-warned",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-2"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-warned",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-warned",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "consentExpiresAt": "clock+2d",
+                    "expiryWarnedAt": "2025-10-02T00:00:00+00:00",
+                    "lastSyncAt": "clock+0d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-warned",
+                    "batches": 2
+                }
+            }
+        ],
+        "outcome": {
+            "return": 2
+        }
+    },
+    "valid-consent": {
+        "trace": [
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-1",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-2",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-valid",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-1-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-1-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-1",
+                "subject": "c-valid",
+                "data": {
+                    "connectionId": "c-valid",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-1"
+                }
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-valid",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-2-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-2-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-2",
+                "subject": "c-valid",
+                "data": {
+                    "connectionId": "c-valid",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-2"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-valid",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-valid",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "consentExpiresAt": "clock+60d",
+                    "lastSyncAt": "clock+0d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-valid",
+                    "batches": 2
+                }
+            }
+        ],
+        "outcome": {
+            "return": 2
+        }
+    },
+    "no-accounts": {
+        "trace": [
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-empty",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-empty",
+                    "accounts": [],
+                    "lastSyncAt": "clock+0d"
+                }
+            }
+        ],
+        "outcome": {
+            "return": 0
+        }
+    },
+    "pull-fails": {
+        "trace": [
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-1",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-fail",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "log": "warning",
+                "message": "[BankfeedSyncService] connection sync failed; watermark not advanced",
+                "context": {
+                    "connectionId": "c-fail",
+                    "exception": "aggregator timeout"
+                }
+            }
+        ],
+        "outcome": {
+            "return": 0
+        }
+    },
+    "consent-revoked": {
+        "trace": [
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-revoked",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-gone",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "revoked",
+                    "consentReference": "ref-c-gone",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-revoked"
+                        }
+                    ],
+                    "lastSyncAt": "2025-10-01T00:00:00+00:00"
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[BankfeedSyncService] consent revoked",
+                "context": {
+                    "connectionId": "c-gone",
+                    "reason": "consent withdrawn at the bank"
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.consent.revoked",
+                "source": "/bankfeed/connections/conn-uuid-0",
+                "subject": "c-gone",
+                "data": {
+                    "connectionId": "c-gone",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "consentReference": "ref-c-gone",
+                    "consentExpiresAt": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": 0
+        }
+    },
+    "no-source": {
+        "trace": [
+            {
+                "log": "warning",
+                "message": "[BankfeedSyncService] connection sync failed; watermark not advanced",
+                "context": {
+                    "connectionId": "c-nosource",
+                    "exception": "A PSD2 source slug is required."
+                }
+            }
+        ],
+        "outcome": {
+            "return": 0
+        }
+    },
+    "disabled-source": {
+        "trace": [
+            {
+                "log": "warning",
+                "message": "[BankfeedSyncService] connection sync failed; watermark not advanced",
+                "context": {
+                    "connectionId": "c-disabled",
+                    "exception": "PSD2 source \"psd2-disabled\" is disabled. Enable it before connecting bank accounts."
+                }
+            }
+        ],
+        "outcome": {
+            "return": 0
+        }
+    },
+    "one-fails-others-sync": {
+        "trace": [
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-1",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-2",
+                "since": "2025-10-01T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-a",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-1-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-1-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-1",
+                "subject": "c-a",
+                "data": {
+                    "connectionId": "c-a",
+                    "accountIban": "NL01BANK0000000001",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-1"
+                }
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-a",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-2-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-2-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-2",
+                "subject": "c-a",
+                "data": {
+                    "connectionId": "c-a",
+                    "accountIban": "",
+                    "since": "2025-10-01T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-2"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-0",
+                "object": {
+                    "connectionId": "c-a",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-a",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-1",
+                            "iban": "NL01BANK0000000001"
+                        },
+                        {
+                            "iban": "NL02BANK0000000002"
+                        },
+                        {
+                            "aggregatorAccountId": "",
+                            "iban": "NL03"
+                        },
+                        {
+                            "aggregatorAccountId": "acc-2"
+                        }
+                    ],
+                    "lastSyncAt": "clock+0d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-a",
+                    "batches": 2
+                }
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-fail",
+                "since": "clock-30d",
+                "until": "clock+0d"
+            },
+            {
+                "log": "warning",
+                "message": "[BankfeedSyncService] connection sync failed; watermark not advanced",
+                "context": {
+                    "connectionId": "c-b",
+                    "exception": "aggregator timeout"
+                }
+            },
+            {
+                "pull": "log",
+                "configuration": {
+                    "provider": "log",
+                    "expiryWarningDays": 7
+                },
+                "accountId": "acc-3",
+                "since": "2025-10-03T00:00:00+00:00",
+                "until": "clock+0d"
+            },
+            {
+                "save": "bankfeed_batch",
+                "uuid": null,
+                "object": {
+                    "connectionId": "c-c",
+                    "accountIban": "NL33",
+                    "since": "2025-10-03T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "transactions": [
+                        {
+                            "id": "acc-3-t1",
+                            "amount": "12.50"
+                        },
+                        {
+                            "id": "acc-3-t2",
+                            "amount": "-3.00"
+                        }
+                    ]
+                }
+            },
+            {
+                "event": "nl.conduction.bankfeed.transactions.synced",
+                "source": "/bankfeed/batches/batch-3",
+                "subject": "c-c",
+                "data": {
+                    "connectionId": "c-c",
+                    "accountIban": "NL33",
+                    "since": "2025-10-03T00:00:00+00:00",
+                    "until": "clock+0d",
+                    "transactionCount": 2,
+                    "batchUri": "/apps/openregister/api/objects/integriq/bankfeed_batch/batch-3"
+                }
+            },
+            {
+                "save": "bankfeed_connection",
+                "uuid": "conn-uuid-2",
+                "object": {
+                    "connectionId": "c-c",
+                    "aggregatorSourceSlug": "psd2-log",
+                    "lifecycleState": "active",
+                    "consentReference": "ref-c-c",
+                    "accounts": [
+                        {
+                            "aggregatorAccountId": "acc-3",
+                            "iban": "NL33"
+                        }
+                    ],
+                    "lastSyncAt": "clock+0d"
+                }
+            },
+            {
+                "log": "info",
+                "message": "Transactions synced",
+                "context": {
+                    "connectionId": "c-c",
+                    "batches": 1
+                }
+            }
+        ],
+        "outcome": {
+            "return": 3
+        }
+    }
+}
