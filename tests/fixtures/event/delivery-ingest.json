@@ -1252,6 +1252,194 @@
             ]
         ]
     },
+    "send-truthy-string-refused": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": {
+                "code": "allowed",
+                "reason": ""
+            },
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "",
+                "service",
+                "piet@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": "no",
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "service",
+                                "recipient": "piet@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "piet@example.org",
+                            "body": "b"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "gate.recordRefusal",
+                "",
+                "case-1",
+                {
+                    "send": "no",
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": null,
+                    "address": "piet@example.org",
+                    "category": "service"
+                },
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "log.info",
+                "[EventService] delivery not routed: the opt-out list refused it",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "code": "allowed"
+                }
+            ]
+        ]
+    },
+    "send-truthy-int-refused": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": {
+                "code": "allowed",
+                "reason": ""
+            },
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "",
+                "service",
+                "piet@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": 1,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "service",
+                                "recipient": "piet@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "piet@example.org",
+                            "body": "b"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "gate.recordRefusal",
+                "",
+                "case-1",
+                {
+                    "send": 1,
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": null,
+                    "address": "piet@example.org",
+                    "category": "service"
+                },
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "log.info",
+                "[EventService] delivery not routed: the opt-out list refused it",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "code": "allowed"
+                }
+            ]
+        ]
+    },
     "forged-user-in-payload": {
         "outcome": {
             "event": "evt-1",

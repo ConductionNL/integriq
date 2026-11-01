@@ -152,6 +152,18 @@ class EventServiceDeliveryIngestGoldenTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	public function decision(string $address, string $category): array {
+		if (array_key_exists('sendValue', $this->case) === true) {
+			return [
+				'send' => $this->case['sendValue'],
+				'overridden' => false,
+				'code' => 'allowed',
+				'reason' => '',
+				'unsubscribe' => null,
+				'address' => $address,
+				'category' => $category,
+			];
+		}
+
 		$send = (($this->case['answers']['send'] ?? 'yes') === 'yes');
 		$unsubscribe = null;
 		if ($send === true && ($this->case['answers']['unsubscribe'] ?? 'yes') === 'yes') {
@@ -272,6 +284,8 @@ class EventServiceDeliveryIngestGoldenTest extends TestCase {
 			'no-gate-default-category-refused' => ['gate' => false, 'payload' => ['recipient' => 'jan@example.org']],
 			'no-gate-floor-sent' => ['gate' => false, 'payload' => ['recipient' => 'jan@example.org', 'category' => ' BESLUIT ', 'body' => 'b'], 'answers' => ['messages' => '1']],
 			'no-gate-alias-sent' => ['gate' => false, 'payload' => ['recipient' => 'jan@example.org', 'category' => 'Invordering']],
+			'send-truthy-string-refused' => ['payload' => ['recipient' => 'piet@example.org', 'body' => 'b'], 'sendValue' => 'no', 'answers' => ['messages' => '1']],
+			'send-truthy-int-refused' => ['payload' => ['recipient' => 'piet@example.org', 'body' => 'b'], 'sendValue' => 1, 'answers' => ['messages' => '1']],
 			'forged-user-in-payload' => [
 				'payload' => ['recipient' => 'piet@example.org', 'userId' => 'mallory', 'requestedBy' => 'mallory', 'owner' => 'mallory'],
 				'request' => ['userId' => 'alice', 'externalReference' => 'ext-9'],
@@ -363,4 +377,24 @@ class EventServiceDeliveryIngestGoldenTest extends TestCase {
 			$this->assertSame('alice', $saved[0][1]['userId'], $name);
 		}
 	}//end testTheStoredEventCarriesTheRequestUserNotAPayloadOne()
+
+	/**
+	 * Only a decision whose send is exactly true routes: a truthy non-boolean is refused.
+	 *
+	 * @return void
+	 */
+	public function testATruthyNonBooleanSendIsRefusedNotRouted(): void {
+		$cases = $this->cases();
+		foreach (['send-truthy-string-refused', 'send-truthy-int-refused'] as $name) {
+			$run = $this->runCase($cases[$name]);
+			$calls = array_column($run['log'], 0);
+			$this->assertSame(['code' => 'allowed', 'reason' => ''], $run['outcome']['refusal'], $name);
+			$this->assertSame([], $run['outcome']['messages'], $name);
+			$this->assertContains('gate.recordRefusal', $calls, $name);
+			$this->assertNotContains('processEvent', $calls, $name);
+			$this->assertNotContains('gate.open', $calls, $name);
+			$this->assertNotContains('gate.handedOver', $calls, $name);
+			$this->assertNotContains('gate.failed', $calls, $name);
+		}
+	}//end testATruthyNonBooleanSendIsRefusedNotRouted()
 }//end class
