@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\StufZkn;
 
 use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\StufZkn\CaseDocumentDelivery;
 use OCA\Integriq\Service\StufZkn\OutboundDocumentTranslator;
 use PHPUnit\Framework\TestCase;
 
@@ -36,6 +37,7 @@ use PHPUnit\Framework\TestCase;
  * OUTBOUND_DOCUMENT_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\StufZkn\OutboundDocumentTranslator
+ * @uses   \OCA\Integriq\Service\StufZkn\CaseDocumentDelivery
  * @uses   \OCA\Integriq\Service\Stuf\StufLiteralLeakGuard
  * @uses   \OCA\Integriq\Service\Stuf\StufXmlParser
  */
@@ -129,15 +131,16 @@ class OutboundDocumentMessageGoldenTest extends TestCase {
 	 * @return array{referentienummer:string,xml:string}
 	 */
 	private function render(array $case): array {
-		return (new OutboundDocumentTranslator())->documentMessage(
+		$delivery = new CaseDocumentDelivery(
 			document: $case['document'],
-			documentId: $case['documentId'],
 			zaakIdentificatie: $case['zaakIdentificatie'],
 			documenttype: $case['documenttype'],
 			file: $case['file'],
 			zender: $case['zender'],
 			ontvanger: $case['ontvanger']
 		);
+
+		return (new OutboundDocumentTranslator())->documentMessage(delivery: $delivery, documentId: $case['documentId']);
 	}//end render()
 
 	/**
