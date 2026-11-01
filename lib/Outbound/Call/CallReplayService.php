@@ -109,6 +109,8 @@ class CallReplayService implements CallReplayServiceInterface {
 	 * @param array<string,mixed> $options `dryRun` and `mappingVersion`.
 	 *
 	 * @return array<string,mixed> What happened, per item.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 	 */
 	public function replay(string $uuid, string $actorUid, array $options = []): array {
 		$record = $this->recorder->read($uuid);
