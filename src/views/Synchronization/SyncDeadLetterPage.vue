@@ -144,7 +144,7 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
+import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -155,6 +155,7 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import SyncDeadLetterDetailModal from '../../modals/Synchronization/SyncDeadLetterDetailModal.vue'
+import bulkSelection from '../../mixins/bulkSelection.js'
 
 export default {
 	name: 'SyncDeadLetterPage',
@@ -168,6 +169,8 @@ export default {
 		SyncDeadLetterDetailModal,
 	},
 
+	mixins: [bulkSelection],
+
 	data() {
 		return {
 			rows: [],
@@ -175,11 +178,7 @@ export default {
 			statusFilter: 'failed',
 			synchronizationFilter: '',
 			statusOptions: ['failed', 'replayed', 'discarded'],
-			selected: [],
 			detail: { open: false, entry: null },
-			bulkConfirm: null,
-			busy: false,
-			reloadTimer: null,
 		}
 	},
 
@@ -189,23 +188,27 @@ export default {
 
 	methods: {
 		t,
-		isSelected(row) {
-			return this.selected.includes(row.uuid || row.id)
+
+		/**
+		 * The path of the bulk endpoint for a verb.
+		 *
+		 * @param {string} verb The bulk verb, `replay` or `discard`.
+		 * @return {string} The path.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-bulk-replay-and-discard-for-sync-item-dead-letters-req-dlr-011
+		 */
+		bulkUrl(verb) {
+			return `/apps/integriq/api/sync-dead-letter/${verb}`
 		},
 
 		/**
-		 * Toggle a row in the bulk-selection set.
+		 * The toast after a bulk run without failures.
 		 *
-		 * @param {object} row Dead-letter entry row.
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
+		 * @param {number} ok How many ids were processed.
+		 * @return {string} The toast text.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-bulk-replay-and-discard-for-sync-item-dead-letters-req-dlr-011
 		 */
-		toggleSelect(row) {
-			const id = row.uuid || row.id
-			if (this.selected.includes(id)) {
-				this.selected = this.selected.filter((x) => x !== id)
-			} else {
-				this.selected = [...this.selected, id]
-			}
+		bulkSuccessText(ok) {
+			return t('integriq', '{ok} items processed', { ok })
 		},
 
 		/**
@@ -225,16 +228,6 @@ export default {
 		 */
 		closeDetail() {
 			this.detail = { open: false, entry: null }
-		},
-
-		/**
-		 * Debounced reload used by the synchronization filter field.
-		 *
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
-		 */
-		reloadDebounced() {
-			clearTimeout(this.reloadTimer)
-			this.reloadTimer = setTimeout(() => this.reload(), 400)
 		},
 
 		/**
@@ -260,48 +253,6 @@ export default {
 				this.rows = []
 			} finally {
 				this.loading = false
-			}
-		},
-
-		/**
-		 * Apply the confirmed bulk verb (replay/discard) to the selected ids.
-		 *
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-bulk-replay-and-discard-for-sync-item-dead-letters-req-dlr-011
-		 */
-		async commitBulk() {
-			const verb = this.bulkConfirm
-			if (!verb || !this.selected.length) {
-				return
-			}
-			this.busy = true
-			try {
-				const res = await axios.post(
-					generateUrl(`/apps/integriq/api/sync-dead-letter/${verb}`),
-					{ ids: this.selected },
-				)
-				const results = res.data?.results || {}
-				const ok = Object.values(results).filter((r) => r === 'ok').length
-				const failed = Object.keys(results).length - ok
-				if (failed > 0) {
-					showError(
-						t('integriq', '{ok} processed, {failed} failed', {
-							ok,
-							failed,
-						}),
-					)
-				} else {
-					showSuccess(t('integriq', '{ok} items processed', { ok }))
-				}
-				await this.reload()
-			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				showError(
-					t('integriq', 'Bulk action failed')
-						+ (detail ? `: ${detail}` : ''),
-				)
-			} finally {
-				this.busy = false
-				this.bulkConfirm = null
 			}
 		},
 	},
