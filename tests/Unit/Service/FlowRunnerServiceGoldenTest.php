@@ -40,6 +40,7 @@ use RuntimeException;
  *
  * @covers \OCA\Integriq\Service\FlowRunnerService
  * @uses   \OCA\Integriq\Service\Helper\FlowToken
+ * @uses   \OCA\Integriq\Service\Helper\FlowExecution
  */
 class FlowRunnerServiceGoldenTest extends TestCase {
 
