@@ -31,15 +31,22 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
+import { editorSlotScopeProps } from '../../src/modals/editorSlotScope.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
+
+/**
+ * Imports the loader binds to the real module instead of a stub, because the
+ * options object spreads them into its props.
+ */
+const REAL_BINDINGS = { editorSlotScopeProps }
 
 /**
  * Load an SFC's `export default {…}` options object without a bundler.
  *
  * The repo's vitest environment is `node` with no SFC transform, so the
- * component cannot be imported. Every `import` is replaced with a stub of the
- * same shape: the options object references imported identifiers only in
+ * component cannot be imported. Every `import` except those in REAL_BINDINGS
+ * is replaced with a stub of the same shape: the options object references imported identifiers only in
  * `components:` (never in the logic under test), so a stub is indistinguishable
  * from the real binding for these assertions — and using the real file is the
  * point. A copied-out `canSave` would pass forever after someone edited the
@@ -84,11 +91,11 @@ function loadSfcOptions(relPath) {
 	script = script.replace(/import\s+['"][^'"]+['"]\s*;?/g, '')
 
 	const stubs = [...bound]
-		.map((name) => `const ${name} = function () {};`)
+		.map((name) => `const ${name} = REAL.${name} ?? function () {};`)
 		.join('\n')
 	const body = `${stubs}\n${script.replace('export default', 'return')}`
 
-	return new Function(body)()
+	return new Function('REAL', body)(REAL_BINDINGS)
 }
 
 /**
@@ -207,6 +214,16 @@ describe('form-dialog slot contract for the bespoke editor modals', () => {
 				...extraVm,
 				draft: { ...validDraft },
 				...overrides,
+			})
+
+			it('declares the recorded slot scope props', () => {
+				const props = Object.fromEntries(
+					Object.entries(options.props).map(([prop, def]) => [
+						prop,
+						{ type: def.type.name, default: def.default },
+					]),
+				)
+				expect(props).toMatchSnapshot()
 			})
 
 			it('declares only props the host slot actually binds', () => {
