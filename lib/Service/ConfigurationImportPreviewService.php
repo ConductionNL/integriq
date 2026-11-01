@@ -125,15 +125,7 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 		}
 
 		$components = $oas['components'];
-		$slugMaps = $this->buildTargetSlugMaps();
-
-		$result = [
-			'creates' => [],
-			'updates' => [],
-			'collisions' => [],
-			'unresolvedReferences' => [],
-			'credentialsNeedingReentry' => [],
-		];
+		$run = new ConfigurationImportPreviewRun(slugMaps: $this->buildTargetSlugMaps());
 
 		foreach (self::COMPONENT_SCHEMAS as $bucket => $schema) {
 			$entities = ($components[$bucket] ?? []);
@@ -146,57 +138,70 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 					continue;
 				}
 
-				$slug = (string)($payload['slug'] ?? $slugKey);
-
-				$classified = $this->classify(schema: $schema, slug: $slug, slugMaps: $slugMaps);
-				if ($classified['bucket'] === 'updates') {
-					$result['updates'][] = [
-						'type' => $schema,
-						'slug' => $slug,
-						'id' => $classified['id'],
-					];
-				}
-
-				if ($classified['bucket'] === 'collisions') {
-					$result['collisions'][] = [
-						'type' => $schema,
-						'slug' => $slug,
-						'reason' => 'slug matches an existing ' . $classified['collidesWith'] . ' object',
-					];
-				}
-
-				if ($classified['bucket'] === 'creates') {
-					$result['creates'][] = [
-						'type' => $schema,
-						'slug' => $slug,
-					];
-				}
-
-				$unresolvedRefs = $this->findUnresolvedReferences(
-					schema: $schema,
-					slug: $slug,
-					payload: $payload,
-					slugMaps: $slugMaps
+				$this->previewEntity(
+					run: $run,
+					entity: ['type' => $schema, 'slug' => (string)($payload['slug'] ?? $slugKey), 'payload' => $payload]
 				);
-				foreach ($unresolvedRefs as $unresolved) {
-					$result['unresolvedReferences'][] = $unresolved;
-				}
+			}
+		}
 
-				if ($schema === 'source') {
-					$missing = $this->missingCredentialFields(payload: $payload);
-					if (count($missing) > 0) {
-						$result['credentialsNeedingReentry'][] = [
-							'type' => 'source',
-							'slug' => $slug,
-							'fields' => $missing,
-						];
-					}
-				}
-			}//end foreach
-		}//end foreach
-
-		return $result;
+		return $run->result;
 	}//end preview()
+
+	/**
+	 * Add one entity's classification, unresolved references and missing credentials to the preview.
+	 *
+	 * @param ConfigurationImportPreviewRun $run The preview; its result is filled.
+	 * @param array{type: string, slug: string, payload: array<string, mixed>} $entity The entity's schema, slug and payload.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-classifies-creates-updates-and-collisions
+	 */
+	private function previewEntity(ConfigurationImportPreviewRun $run, array $entity): void {
+		$this->recordClassification(run: $run, entity: $entity);
+
+		foreach ($this->findUnresolvedReferences(entity: $entity, slugMaps: $run->slugMaps) as $unresolved) {
+			$run->result['unresolvedReferences'][] = $unresolved;
+		}
+
+		if ($entity['type'] === 'source') {
+			$missing = $this->missingCredentialFields(payload: $entity['payload']);
+			if (count($missing) > 0) {
+				$run->result['credentialsNeedingReentry'][] = [
+					'type' => 'source',
+					'slug' => $entity['slug'],
+					'fields' => $missing,
+				];
+			}
+		}
+
+	}//end previewEntity()
+
+	/**
+	 * Add one entity to the creates, updates or collisions of the preview.
+	 *
+	 * @param ConfigurationImportPreviewRun $run The preview; its result is filled.
+	 * @param array{type: string, slug: string, payload: array<string, mixed>} $entity The entity's schema, slug and payload.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-classifies-creates-updates-and-collisions
+	 */
+	private function recordClassification(ConfigurationImportPreviewRun $run, array $entity): void {
+		$classified = $this->classify(schema: $entity['type'], slug: $entity['slug'], slugMaps: $run->slugMaps);
+		$row = ['type' => $entity['type'], 'slug' => $entity['slug']];
+		if ($classified['bucket'] === 'updates') {
+			$row['id'] = $classified['id'];
+		}
+
+		if ($classified['bucket'] === 'collisions') {
+			$row['reason'] = 'slug matches an existing ' . $classified['collidesWith'] . ' object';
+		}
+
+		$run->result[$classified['bucket']][] = $row;
+
+	}//end recordClassification()
 
 	/**
 	 * Classify one entity against the target environment's slug maps:
@@ -255,76 +260,88 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 	 *   - inside nested `configuration` arrays: keys equal to an entity
 	 *     type or ending in `<type>Id` (rule handler convention)
 	 *
-	 * @param string $schema The entity's schema slug.
-	 * @param string $slug The entity's own slug (for reporting).
-	 * @param array<string,mixed> $payload The entity payload.
+	 * @param array{type: string, slug: string, payload: array<string, mixed>} $entity The entity's schema, slug (for reporting) and payload.
 	 * @param array<string,array<string,string>> $slugMaps schema => slug => uuid.
 	 *
 	 * @return array<int,array<string,string>>
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-surfaces-an-unresolvable-slug-reference-as-a-blocking-warning
 	 */
-	private function findUnresolvedReferences(string $schema, string $slug, array $payload, array $slugMaps): array {
-		$unresolved = [];
-
-		$report = function (string $field, string $value) use (&$unresolved, $schema, $slug): void {
-			$unresolved[] = [
-				'type' => $schema,
-				'slug' => $slug,
-				'field' => $field,
-				'value' => $value,
-			];
-		};
+	private function findUnresolvedReferences(array $entity, array $slugMaps): array {
+		$payload = $entity['payload'];
+		$refs = [];
 
 		// Top-level source_id / target_id (mapping + rule handlers translate
 		// these against the source slug map).
 		foreach (['source_id', 'target_id'] as $field) {
 			$value = ($payload[$field] ?? null);
 			if (is_string($value) === true && $value !== '' && isset($slugMaps['source'][$value]) === false) {
-				$report($field, $value);
+				$refs[] = ['field' => $field, 'value' => $value];
 			}
 		}
 
-		// Endpoint-specific top-level references.
-		if ($schema === 'endpoint') {
-			$targetType = (string)($payload['targetType'] ?? '');
-			$targetId = ($payload['targetId'] ?? null);
-			if (is_string($targetId) === true && $targetId !== ''
-				&& $targetType !== 'register/schema'
-				&& str_contains($targetId, '/') === false
-				&& isset($slugMaps['source'][$targetId]) === false
-			) {
-				$report('targetId', $targetId);
-			}
-
-			foreach (['inputMapping', 'outputMapping'] as $field) {
-				$value = ($payload[$field] ?? null);
-				if (is_string($value) === true && $value !== '' && isset($slugMaps['mapping'][$value]) === false) {
-					$report($field, $value);
-				}
-			}
-
-			$rules = ($payload['rules'] ?? []);
-			if (is_array($rules) === true) {
-				foreach ($rules as $ruleRef) {
-					if (is_string($ruleRef) === true && $ruleRef !== '' && isset($slugMaps['rule'][$ruleRef]) === false) {
-						$report('rules[]', $ruleRef);
-					}
-				}
-			}
-		}//end if
+		if ($entity['type'] === 'endpoint') {
+			$refs = array_merge($refs, $this->unresolvedEndpointReferences(payload: $payload, slugMaps: $slugMaps));
+		}
 
 		// Nested configuration references (rule handler convention: keys
 		// equal to an entity type or ending with `<type>Id`).
 		$configuration = ($payload['configuration'] ?? null);
 		if (is_array($configuration) === true) {
 			foreach ($this->scanConfigurationReferences(config: $configuration, slugMaps: $slugMaps) as $ref) {
-				$report('configuration.' . $ref['field'], $ref['value']);
+				$refs[] = ['field' => 'configuration.' . $ref['field'], 'value' => $ref['value']];
 			}
 		}
 
-		return $unresolved;
+		return array_map(
+			static fn (array $ref): array => ['type' => $entity['type'], 'slug' => $entity['slug'], 'field' => $ref['field'], 'value' => $ref['value']],
+			$refs
+		);
 	}//end findUnresolvedReferences()
+
+	/**
+	 * The endpoint-specific top-level references of one endpoint payload that
+	 * resolve to nothing in the target: its targetId, input and output mapping and rules.
+	 *
+	 * @param array<string, mixed> $payload The endpoint payload.
+	 * @param array<string, array<string, string>> $slugMaps The target's slug maps.
+	 *
+	 * @return array<int, array{field: string, value: string}>
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-classifies-creates-updates-and-collisions
+	 */
+	private function unresolvedEndpointReferences(array $payload, array $slugMaps): array {
+		$refs = [];
+		$targetType = (string)($payload['targetType'] ?? '');
+		$targetId = ($payload['targetId'] ?? null);
+		if (is_string($targetId) === true && $targetId !== ''
+			&& $targetType !== 'register/schema'
+			&& str_contains($targetId, '/') === false
+			&& isset($slugMaps['source'][$targetId]) === false
+		) {
+			$refs[] = ['field' => 'targetId', 'value' => $targetId];
+		}
+
+		foreach (['inputMapping', 'outputMapping'] as $field) {
+			$value = ($payload[$field] ?? null);
+			if (is_string($value) === true && $value !== '' && isset($slugMaps['mapping'][$value]) === false) {
+				$refs[] = ['field' => $field, 'value' => $value];
+			}
+		}
+
+		$rules = ($payload['rules'] ?? []);
+		if (is_array($rules) === false) {
+			return $refs;
+		}
+
+		foreach ($rules as $ruleRef) {
+			if (is_string($ruleRef) === true && $ruleRef !== '' && isset($slugMaps['rule'][$ruleRef]) === false) {
+				$refs[] = ['field' => 'rules[]', 'value' => $ruleRef];
+			}
+		}
+
+		return $refs;
+	}//end unresolvedEndpointReferences()
 
 	/**
 	 * Recursively scan a nested configuration array for entity-reference

@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * IMPORT_PREVIEW_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\ConfigurationImportPreviewService
+ * @uses   \OCA\Integriq\Service\ConfigurationImportPreviewRun
  */
 class ConfigurationImportPreviewGoldenTest extends TestCase {
 
