@@ -494,19 +494,12 @@ class EndpointService implements EndpointServiceInterface {
 		// REQ-MSV-002: the request body is checked against the endpoint's
 		// message schema before any rule or dispatch runs. Mode refuse answers
 		// here; mode record carries the finding to the call log.
-		$validationFindings = [];
-		$requestCheck = $this->validateMessage(
+		$validationFindings = $this->requestMessageFindings(
 			endpointData: $endpointData,
-			direction: EndpointMessageGate::REQUEST,
-			body: $this->getRawContent(),
 			context: ['method' => $request->getMethod(), 'path' => $path]
 		);
-		if ($requestCheck instanceof JSONResponse === true) {
-			return $requestCheck;
-		}
-
-		if ($requestCheck !== null) {
-			$validationFindings[] = $requestCheck;
+		if ($validationFindings instanceof JSONResponse === true) {
+			return $validationFindings;
 		}
 
 		// Execution-trace REQ-001: mint the traceId before any downstream
@@ -551,6 +544,36 @@ class EndpointService implements EndpointServiceInterface {
 			return $this->failedRequest(exception: $e, trace: $trace);
 		}//end try
 	}//end doHandleRequest()
+
+	/**
+	 * Check the request body against the endpoint's request message schema
+	 * (REQ-MSV-002).
+	 *
+	 * @param array $endpointData The endpoint configuration.
+	 * @param array $context      The request method and path, for the finding.
+	 *
+	 * @return JSONResponse|array The refusal in mode refuse, else the findings to record (empty when the body passes or no check is configured).
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function requestMessageFindings(array $endpointData, array $context): JSONResponse|array {
+		$requestCheck = $this->validateMessage(
+			endpointData: $endpointData,
+			direction: EndpointMessageGate::REQUEST,
+			body: $this->getRawContent(),
+			context: $context
+		);
+		if ($requestCheck instanceof JSONResponse === true) {
+			return $requestCheck;
+		}
+
+		if ($requestCheck === null) {
+			return [];
+		}
+
+		return [$requestCheck];
+
+	}//end requestMessageFindings()
 
 	/**
 	 * The data envelope the endpoint rules read: the original request's
